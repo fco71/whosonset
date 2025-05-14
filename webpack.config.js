@@ -1,37 +1,46 @@
 const path = require('path');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
-  entry: './src/index.tsx',  // Point to your .tsx entry file
-  output: {
-    filename: 'bundle.js',
-    path: path.resolve(__dirname, 'dist'),
-  },
-  module: {
-    rules: [
-      {
-        test: /\.tsx?$/,  // Handle .tsx and .ts files
-        use: 'ts-loader',  // Use ts-loader to compile TypeScript
-        exclude: /node_modules/,
-      },
-      {
-        test: /\.module\.css$/,  // Match only .module.css files
-        use: ['style-loader', {
-          loader: 'css-loader',
-          options: {
-            modules: {
-              localIdentName: '[name]__[local]___[hash:base64:5]',  // Customize class name format
+    mode: 'development',
+    entry: './src/index.tsx',
+    output: {
+        path: path.resolve(__dirname, 'dist'),
+        filename: 'bundle.js',
+    },
+    devtool: 'inline-source-map',
+    devServer: {
+        static: './dist',
+        hot: true,
+    },
+    module: {
+        rules: [
+            {
+                test: /\.tsx?$/,
+                use: 'ts-loader',
+                exclude: /node_modules/,
             },
-          },
-        }],
-      },
-      {
-        test: /\.css$/,  // Handle non-module .css files
-        exclude: /\.module\.css$/,  // Exclude module CSS files
-        use: ['style-loader', 'css-loader'],  // Regular CSS files without modules
-      },
+            {
+                test: /\.css$/i,
+                use: [
+                    "style-loader",
+                    {
+                        loader: "css-loader",
+                        options: {
+                            importLoaders: 1,
+                        },
+                    },
+                    'postcss-loader',
+                ],
+            },
+        ],
+    },
+    resolve: {
+        extensions: ['.tsx', '.ts', '.js'],
+    },
+    plugins: [
+        new HtmlWebpackPlugin({
+            template: './public/index.html',
+        }),
     ],
-  },
-  resolve: {
-    extensions: ['.tsx', '.ts', '.js'],  // Resolve these extensions
-  },
 };

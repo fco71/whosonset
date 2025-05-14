@@ -1,7 +1,7 @@
 // src/App.tsx
 import React from 'react';
-import styles from './App.module.css';
 import ProjectList from './components/ProjectList';
+import './index.css';
 
 interface AppProps {
     name: string;
@@ -15,8 +15,8 @@ const App: React.FC<AppProps> = ({ name }) => {
     ];
 
     return (
-        <div className={styles.container}>
-            <h1 className={styles.heading}>Hello, {name}!</h1>
+        <div className="bg-gray-100 min-h-screen flex flex-col items-center justify-center">
+            <h1 className="text-3xl font-bold text-gray-800 mb-4">Hello, {name}!</h1>
             <ProjectList projects={projects} />
         </div>
     );
