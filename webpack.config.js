@@ -1,5 +1,7 @@
+// webpack.config.js
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const Dotenv = require('dotenv-webpack');
 
 module.exports = {
     mode: 'development',
@@ -42,5 +44,14 @@ module.exports = {
         new HtmlWebpackPlugin({
             template: './public/index.html',
         }),
+      new Dotenv({
+        path: './.env', // load this now instead of the ones in '.env'
+        safe: false, // load '.env.example' to verify the '.env' entries.
+                    // the following is good forGithub Actions
+        allowEmptyValues: true, // allow empty variables in the '.env' file, handle them in you code
+        systemvars: true, // load all the predefined 'process.env' variables
+        silent: true, // hide any errors
+        defaults: false // load '.env.defaults' as the default values
+      })
     ],
 };

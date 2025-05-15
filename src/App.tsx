@@ -1,4 +1,3 @@
-// src/App.tsx
 import React from 'react';
 import ProjectList from './components/ProjectList';
 import RegisterForm from './components/RegisterForm'; // Import the RegisterForm component

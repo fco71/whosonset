@@ -9,8 +9,8 @@ const RegisterForm: React.FC = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [displayName, setDisplayName] = useState('');
-    const [country, setCountry] = useState('');
-    const [userType, setUserType] = useState('');
+    const [country, setCountry] = useState('Dominican Republic'); // Default value
+    const [userType, setUserType] = useState('Crew'); // Default value
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -53,11 +53,18 @@ const RegisterForm: React.FC = () => {
             </div>
             <div>
                 <label>Country:</label>
-                <input type="text" value={country} onChange={e => setCountry(e.target.value)} />
+                <select value={country} onChange={e => setCountry(e.target.value)}>
+                    <option value="Dominican Republic">Dominican Republic</option>
+                    <option value="United States">United States</option>
+                    <option value="Other">Other</option>
+                </select>
             </div>
             <div>
                 <label>User Type:</label>
-                <input type="text" value={userType} onChange={e => setUserType(e.target.value)} />
+                <select value={userType} onChange={e => setUserType(e.target.value)}>
+                    <option value="Crew">Crew</option>
+                    <option value="Producer">Producer</option>
+                </select>
             </div>
             <button type="submit">Register</button>
         </form>
