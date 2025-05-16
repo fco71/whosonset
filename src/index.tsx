@@ -9,14 +9,14 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 // Component imports
 import Login from './components/Login';
 import Register from './components/Register';
-import PrivateRoute from './components/PrivateRoute';  // Import PrivateRoute
+import PrivateRoute from './components/PrivateRoute';
 import AddProject from './components/AddProject';
 import Home from './components/Home';
 import ProjectDetail from './components/ProjectDetail';
 
 const CrewSearch = () => <h2>Crew Search (Protected)</h2>;
 
-interface AppProps {}
+interface AppProps { }
 
 const App: React.FC<AppProps> = () => {
     const [authUser, setAuthUser] = useState<any>(null);
@@ -41,63 +41,63 @@ const App: React.FC<AppProps> = () => {
         }).catch(error => console.log(error))
     }
 
-  return (
-    <Router>
-        <header>
-            <nav>
-                <ul>
-                    <li>
-                        <Link to="/">Home</Link>
-                    </li>
-                    {!authUser ? (
-                        <>
-                            <li>
-                                <Link to="/login">Login</Link>
-                            </li>
-                            <li>
-                                <Link to="/register">Register</Link>
-                            </li>
-                        </>
-                    ) : (
-                        <>
+    return (
+        <Router>
+            <header>
+                <nav>
+                    <ul>
                         <li>
-                            <Link to="/projects/add">Add Project</Link>
+                            <Link to="/">Home</Link>
                         </li>
-                        <li>
-                            <Link to="/crew">Crew Search</Link>
-                        </li>
-                        <li>
-                            <button onClick={userSignOut}>Sign Out</button>
-                        </li>
-                        </>
-                    )}
-                </ul>
-            </nav>
-        </header>
+                        {!authUser ? (
+                            <>
+                                <li>
+                                    <Link to="/login">Login</Link>
+                                </li>
+                                <li>
+                                    <Link to="/register">Register</Link>
+                                </li>
+                            </>
+                        ) : (
+                            <>
+                                <li>
+                                    <Link to="/projects/add">Add Project</Link>
+                                </li>
+                                <li>
+                                    <Link to="/crew">Crew Search</Link>
+                                </li>
+                                <li>
+                                    <button onClick={userSignOut}>Sign Out</button>
+                                </li>
+                            </>
+                        )}
+                    </ul>
+                </nav>
+            </header>
 
-        <div className="container">
-            <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/projects/:projectId" element={<ProjectDetail />} />
-                <Route path="/projects/add" element={<PrivateRoute><AddProject /></PrivateRoute>} />
-                <Route path="/crew" element={<PrivateRoute><CrewSearch /></PrivateRoute>} />
-            </Routes>
-        </div>
-    </Router>
-  );
+            <div className="container">
+                <Routes>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/register" element={<Register />} />
+                    <Route path="/projects/:projectId" element={<ProjectDetail />} />
+                    <Route path="/projects/add" element={<PrivateRoute><AddProject /></PrivateRoute>} />
+                    <Route path="/crew" element={<PrivateRoute><CrewSearch /></PrivateRoute>} />
+                </Routes>
+            </div>
+        </Router>
+    );
 }
 
 const rootElement = document.getElementById('root');
 
 if (rootElement) {
-  const root = ReactDOM.createRoot(rootElement);
-  root.render(
-    <React.StrictMode>
-      <App />
-    </React.StrictMode>
-  );
+    const root = ReactDOM.createRoot(rootElement);
+    root.render(
+        <React.StrictMode>
+            <App />
+        </React.StrictMode>
+    );
 } else {
-  console.error("Could not find root element!");
+    console.error("Could not find root element!");
 }

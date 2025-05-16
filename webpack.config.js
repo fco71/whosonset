@@ -9,11 +9,13 @@ module.exports = {
     output: {
         path: path.resolve(__dirname, 'dist'),
         filename: 'bundle.js',
+        publicPath: '/', //  Needed for correct routing.
     },
     devtool: 'inline-source-map',
     devServer: {
         static: './dist',
         hot: true,
+        historyApiFallback: true, //  Enable SPA routing
     },
     module: {
         rules: [
@@ -44,14 +46,14 @@ module.exports = {
         new HtmlWebpackPlugin({
             template: './public/index.html',
         }),
-      new Dotenv({
-        path: './.env', // load this now instead of the ones in '.env'
-        safe: false, // load '.env.example' to verify the '.env' entries.
-                    // the following is good forGithub Actions
-        allowEmptyValues: true, // allow empty variables in the '.env' file, handle them in you code
-        systemvars: true, // load all the predefined 'process.env' variables
-        silent: true, // hide any errors
-        defaults: false // load '.env.defaults' as the default values
-      })
+        new Dotenv({
+            path: './.env', // load this now instead of the ones in '.env'
+            safe: false, // load '.env.example' to verify the '.env' entries.
+            // the following is good for Github Actions
+            allowEmptyValues: true, // allow empty variables in the '.env' file, handle them in you code
+            systemvars: true, // load all the predefined 'process.env' variables
+            silent: true, // hide any errors
+            defaults: false // load '.env.defaults' as the default values
+        })
     ],
 };
