@@ -37,6 +37,11 @@ module.exports = {
                     'postcss-loader',
                 ],
             },
+            //To read images, videos, audios and fonts
+            {
+              test: /\.(png|svg|jpg|jpeg|gif|woff|woff2|eot|ttf|otf)$/i,
+              type: 'asset/resource',
+            },
         ],
     },
     resolve: {

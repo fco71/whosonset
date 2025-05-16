@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { db, auth, storage } from '../firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage"; // Improvement 2: Added deleteObject
 
 interface Project {
     id: string;
@@ -48,10 +48,10 @@ const ProjectDetail: React.FC = () => {
     const [genre, setGenre] = useState<string>('');
     const [director, setDirector] = useState<string>('');
     const [producer, setProducer] = useState<string>('');
-    const [coverImage, setCoverImage] = useState<File | null>(null); // State for image file
-    const [posterImage, setPosterImage] = useState<File | null>(null); // State for poster file
-    const [coverImageUrl, setCoverImageUrl] = useState<string>(''); // Stored URL for the image
-    const [posterImageUrl, setPosterImageUrl] = useState<string>(''); // Stored URL for the poster
+    const [coverImage, setCoverImage] = useState<File | null>(null);
+    const [posterImage, setPosterImage] = useState<File | null>(null);
+    const [coverImageUrl, setCoverImageUrl] = useState<string>('');
+    const [posterImageUrl, setPosterImageUrl] = useState<string>('');
     const [projectWebsite, setProjectWebsite] = useState<string>('');
     const [productionBudget, setProductionBudget] = useState<string>('');
     const [productionCompanyContact, setProductionCompanyContact] = useState<string>('');
@@ -59,6 +59,8 @@ const ProjectDetail: React.FC = () => {
 
     useEffect(() => {
         const fetchProject = async () => {
+            setLoading(true);
+            setError(null);
             try {
                 if (projectId) {
                     const projectDocRef = doc(db, 'Projects', projectId);
@@ -66,11 +68,11 @@ const ProjectDetail: React.FC = () => {
 
                     if (projectDocSnapshot.exists()) {
                         const projectData = projectDocSnapshot.data() as Project;
-
-                        setProject({
+                        const fullProjectData = {
                             ...projectData,
                             id: projectDocSnapshot.id,
-                        });
+                        };
+                        setProject(fullProjectData);
 
                         // Initialize editing state
                         setProjectName(projectData.projectName);
@@ -85,12 +87,12 @@ const ProjectDetail: React.FC = () => {
                         setGenre(projectData.genre);
                         setDirector(projectData.director === undefined ? '' : projectData.director);
                         setProducer(projectData.producer === undefined ? '' : projectData.producer);
-                        setCoverImageUrl(projectData.coverImageUrl);
-                        setPosterImageUrl(projectData.posterImageUrl);
-                        setProjectWebsite(projectData.projectWebsite);
-                        setProductionBudget(projectData.productionBudget);
-                        setProductionCompanyContact(projectData.productionCompanyContact);
-                        setIsVerified(projectData.isVerified);
+                        setCoverImageUrl(projectData.coverImageUrl || '');
+                        setPosterImageUrl(projectData.posterImageUrl || '');
+                        setProjectWebsite(projectData.projectWebsite || '');
+                        setProductionBudget(projectData.productionBudget || '');
+                        setProductionCompanyContact(projectData.productionCompanyContact || '');
+                        setIsVerified(projectData.isVerified || false);
 
                     } else {
                         setError('Project not found.');
@@ -98,8 +100,9 @@ const ProjectDetail: React.FC = () => {
                 } else {
                     setError('Project ID is missing.');
                 }
-            } catch (error: any) {
-                setError(error.message);
+            } catch (err: any) {
+                console.error("Error fetching project:", err);
+                setError(err.message || 'Failed to fetch project data.');
             } finally {
                 setLoading(false);
             }
@@ -114,7 +117,6 @@ const ProjectDetail: React.FC = () => {
 
     const handleCancelClick = () => {
         setIsEditing(false);
-        // Reset editing fields to project data in case of cancel
         if (project) {
             setProjectName(project.projectName);
             setCountry(project.country);
@@ -136,121 +138,185 @@ const ProjectDetail: React.FC = () => {
             setProductionBudget(project.productionBudget);
             setProductionCompanyContact(project.productionCompanyContact);
             setIsVerified(project.isVerified);
+            setError(null); // Clear any previous save errors
         }
     };
 
     const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             setCoverImage(e.target.files[0]);
+        } else {
+            setCoverImage(null);
         }
     };
 
     const handlePosterImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             setPosterImage(e.target.files[0]);
+        } else {
+            setPosterImage(null);
         }
     };
 
-    const uploadImage = async (image: File | null, imageName: string) => {
-        if (!image) return '';
+    // Improvement 2: New function to delete old image
+    const deleteOldImage = async (url: string) => {
+        if (!url) return;
+        try {
+            // Extract the path from the URL. Firebase Storage URLs typically look like:
+            // https://firebasestorage.googleapis.com/v0/b/your-bucket/o/path%2Fto%2Fimage.jpg?alt=media&token=...
+            // We need "path/to/image.jpg"
+            const pathWithQuery = url.split("/o/")[1];
+            const encodedPath = pathWithQuery.split("?")[0];
+            const decodedPath = decodeURIComponent(encodedPath);
+            const oldRef = ref(storage, decodedPath);
+            await deleteObject(oldRef);
+            console.log("Old image deleted successfully:", decodedPath);
+        } catch (e: any) {
+            // If deletion fails (e.g., file not found, permissions), log warning but don't block update.
+            console.warn("Could not delete old image:", url, e.message);
+        }
+    };
 
-        const storageRef = ref(storage, `images/${imageName}`);
+
+    const uploadImage = async (imageFile: File | null, baseImageName: string) => {
+        if (!imageFile) return '';
+        if (!project) {
+            setError("Project context is missing for image upload.");
+            return '';
+        }
+
+        // Improvement 4: Image type validation
+        if (!imageFile.type.startsWith("image/")) {
+            setError("Please upload a valid image file (e.g., JPG, PNG).");
+            return ''; // Indicate failure
+        }
+
+        // Improvement 1: Use new storage path structure projects/{projectId}/{imageName}
+        // baseImageName here is the intended filename, e.g., "cover_projectID" or "poster_projectID"
+        const storageRef = ref(storage, `projects/${project.id}/${baseImageName}`);
 
         try {
-            await uploadBytes(storageRef, image);
-            const url = await getDownloadURL(storageRef);
-            return url;
-        } catch (error: any) {
-            console.error("Error uploading image: ", error);
-            setError(error.message);
-            return '';
+            await uploadBytes(storageRef, imageFile);
+            const downloadUrl = await getDownloadURL(storageRef);
+            return downloadUrl;
+        } catch (uploadError: any) {
+            console.error("Error uploading image: ", uploadError);
+            setError(`Image upload failed for ${baseImageName}: ${uploadError.message}`);
+            return ''; // Indicate failure
         }
     };
 
     const handleSaveClick = async () => {
         if (!project) return;
 
-        try {
-            setLoading(true); // Start loading before uploads
+        setLoading(true);
+        setError(null); // Clear previous errors
 
-            // Upload images and get URLs
-            const newCoverImageUrl = await uploadImage(coverImage, `cover_${project.id}`);
-            const newPosterImageUrl = await uploadImage(posterImage, `poster_${project.id}`);
+        try {
+            let newCoverImageUrl = project.coverImageUrl; // Keep old URL by default
+            let newPosterImageUrl = project.posterImageUrl; // Keep old URL by default
+
+            // Handle Cover Image
+            if (coverImage) { // If a new cover image file is selected
+                if (project.coverImageUrl) { // And if there was an old cover image
+                    await deleteOldImage(project.coverImageUrl); // Improvement 2: Delete old one
+                }
+                // Use a consistent name for the cover image, including project.id for uniqueness within its folder
+                newCoverImageUrl = await uploadImage(coverImage, `cover_${project.id}_${Date.now()}.${coverImage.name.split('.').pop()}`);
+                if (!newCoverImageUrl) { // If uploadImage returned empty string (error)
+                    // Error is already set by uploadImage, so just stop further processing
+                    setLoading(false);
+                    return;
+                }
+            }
+
+            // Handle Poster Image
+            if (posterImage) { // If a new poster image file is selected
+                if (project.posterImageUrl) { // And if there was an old poster image
+                    await deleteOldImage(project.posterImageUrl); // Improvement 2: Delete old one
+                }
+                 // Use a consistent name for the poster image
+                newPosterImageUrl = await uploadImage(posterImage, `poster_${project.id}_${Date.now()}.${posterImage.name.split('.').pop()}`);
+                if (!newPosterImageUrl) { // If uploadImage returned empty string (error)
+                    setLoading(false);
+                    return;
+                }
+            }
 
             const projectDocRef = doc(db, 'Projects', project.id);
-            await updateDoc(projectDocRef, {
-                projectName: projectName,
-                country: country,
-                productionCompany: productionCompany,
-                status: status,
-                logline: logline,
-                synopsis: synopsis,
-                startDate: startDate,
-                endDate: endDate,
-                location: location,
-                genre: genre,
-                director: director,
-                producer: producer,
-                coverImageUrl: newCoverImageUrl || coverImageUrl, // Use new URL if uploaded, else keep old
-                posterImageUrl: newPosterImageUrl || posterImageUrl,
-                projectWebsite: projectWebsite,
-                productionBudget: productionBudget,
-                productionCompanyContact: productionCompanyContact,
-                isVerified: isVerified,
-            });
+            const updatedData = {
+                projectName,
+                country,
+                productionCompany,
+                status,
+                logline,
+                synopsis,
+                startDate,
+                endDate,
+                location,
+                genre,
+                director,
+                producer,
+                coverImageUrl: newCoverImageUrl,
+                posterImageUrl: newPosterImageUrl,
+                projectWebsite,
+                productionBudget,
+                productionCompanyContact,
+                isVerified,
+            };
 
-            // Update local state with new values
-            setProject({
-                ...project,
-                projectName: projectName,
-                country: country,
-                productionCompany: productionCompany,
-                status: status,
-                logline: logline,
-                synopsis: synopsis,
-                startDate: startDate,
-                endDate: endDate,
-                location: location,
-                genre: genre,
-                director: director,
-                producer: producer,
-                coverImageUrl: newCoverImageUrl || coverImageUrl,
-                posterImageUrl: newPosterImageUrl || posterImageUrl,
-                projectWebsite: projectWebsite,
-                productionBudget: productionBudget,
-                productionCompanyContact: productionCompanyContact,
-                isVerified: isVerified,
-                id: project.id
-            });
+            await updateDoc(projectDocRef, updatedData);
 
-            setCoverImage(null);
-            setPosterImage(null);
+            // Update local project state
+            setProject(prevProject => ({
+                ...prevProject!,
+                ...updatedData
+            }));
+
+            setCoverImage(null); // Clear file input state
+            setPosterImage(null); // Clear file input state
+            setCoverImageUrl(newCoverImageUrl); // Update state with new URL
+            setPosterImageUrl(newPosterImageUrl); // Update state with new URL
             setIsEditing(false);
-        } catch (error: any) {
-            console.error("Error updating project:", error.message);
-            setError(error.message);
+
+        } catch (saveError: any) {
+            console.error("Error updating project:", saveError.message);
+            setError(saveError.message || "Failed to save project changes.");
         } finally {
-            setLoading(false); // End loading whether success or fail
+            setLoading(false);
         }
     };
 
-    if (loading) {
-        return <p>Loading...</p>;
+    if (loading && !isEditing) { // Only show full page loading if not in edit mode's own loading
+        return <p>Loading project details...</p>;
+    }
+    
+    // Improvement 3: Show specific loading message when saving/uploading from edit mode
+    if (loading && isEditing) {
+        return <p>Uploading images and saving changes…</p>;
     }
 
-    if (error) {
+
+    if (error && !isEditing) { // Only show full page error if not related to edit mode validation
         return <p>Error: {error}</p>;
     }
 
-    if (!project) {
+    if (!project && !loading) { // If not loading and project is still null
         return <p>Project not found.</p>;
     }
+    
+    if (!project) { // Fallback if project is null after loading (e.g. fetch error not caught well)
+         return <p>Loading project details or project not available...</p>;
+    }
+
 
     return (
         <div>
             <h2>Project Detail</h2>
             {isEditing ? (
                 <div>
+                    {/* Display general error messages during editing, if any */}
+                    {error && <p style={{ color: 'red' }}>Error: {error}</p>}
                     <div>
                         <label htmlFor="projectName">Project Name:</label>
                         <input
@@ -367,7 +433,7 @@ const ProjectDetail: React.FC = () => {
                         {coverImage ? (
                             <img
                                 src={URL.createObjectURL(coverImage)}
-                                alt="Cover Preview"
+                                alt="Cover image preview" // Improvement 5
                                 style={{ width: '150px', marginTop: '8px' }}
                             />
                         ) : (
@@ -386,7 +452,7 @@ const ProjectDetail: React.FC = () => {
                         {posterImage ? (
                             <img
                                 src={URL.createObjectURL(posterImage)}
-                                alt="Poster Preview"
+                                alt="Poster image preview" // Improvement 5
                                 style={{ width: '150px', marginTop: '8px' }}
                             />
                         ) : (
@@ -457,20 +523,19 @@ const ProjectDetail: React.FC = () => {
                     {project.coverImageUrl && (
                         <div>
                             <strong>Cover Image:</strong><br />
-                            <img src={project.coverImageUrl} alt="Cover" style={{ maxWidth: '200px' }} />
+                            <img src={project.coverImageUrl} alt={`${project.projectName} Cover`} style={{ maxWidth: '200px' }} />
                         </div>
                     )}
                     {project.posterImageUrl && (
                         <div>
                             <strong>Poster Image:</strong><br />
-                            <img src={project.posterImageUrl} alt="Poster" style={{ maxWidth: '200px' }} />
+                            <img src={project.posterImageUrl} alt={`${project.projectName} Poster`} style={{ maxWidth: '200px' }} />
                         </div>
                     )}
-                    <p><strong>Project Website:</strong> <a href={project.projectWebsite} target="_blank" rel="noopener noreferrer">{project.projectWebsite}</a></p>
+                    <p><strong>Project Website:</strong> {project.projectWebsite ? <a href={project.projectWebsite.startsWith('http') ? project.projectWebsite : `http://${project.projectWebsite}`} target="_blank" rel="noopener noreferrer">{project.projectWebsite}</a> : 'N/A'}</p>
                     <p><strong>Production Budget:</strong> {project.productionBudget}</p>
                     <p><strong>Production Company Contact:</strong> {project.productionCompanyContact}</p>
                     <p><strong>Verified:</strong> {project.isVerified ? 'Yes' : 'No'}</p>
-                    {/* Show edit button only if current user is owner */}
                     {auth.currentUser && auth.currentUser.uid === project.owner_uid && (
                         <button onClick={handleEditClick}>Edit</button>
                     )}
