@@ -1,8 +1,9 @@
 // src/components/ProjectDetail.tsx
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { db } from '../firebase';
+import { db, auth, storage } from '../firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 interface Project {
     id: string;
@@ -38,7 +39,7 @@ const ProjectDetail: React.FC = () => {
     const [projectName, setProjectName] = useState<string>('');
     const [country, setCountry] = useState<string>('');
     const [productionCompany, setProductionCompany] = useState<string>('');
-    const [status, setStatus] = useState<string>('Pre-Production'); // Default value
+    const [status, setStatus] = useState<string>('Pre-Production');
     const [logline, setLogline] = useState<string>('');
     const [synopsis, setSynopsis] = useState<string>('');
     const [startDate, setStartDate] = useState<string>('');
@@ -47,8 +48,10 @@ const ProjectDetail: React.FC = () => {
     const [genre, setGenre] = useState<string>('');
     const [director, setDirector] = useState<string>('');
     const [producer, setProducer] = useState<string>('');
-    const [coverImageUrl, setCoverImageUrl] = useState<string>('');
-    const [posterImageUrl, setPosterImageUrl] = useState<string>('');
+    const [coverImage, setCoverImage] = useState<File | null>(null); // State for image file
+    const [posterImage, setPosterImage] = useState<File | null>(null); // State for poster file
+    const [coverImageUrl, setCoverImageUrl] = useState<string>(''); // Stored URL for the image
+    const [posterImageUrl, setPosterImageUrl] = useState<string>(''); // Stored URL for the poster
     const [projectWebsite, setProjectWebsite] = useState<string>('');
     const [productionBudget, setProductionBudget] = useState<string>('');
     const [productionCompanyContact, setProductionCompanyContact] = useState<string>('');
@@ -80,8 +83,8 @@ const ProjectDetail: React.FC = () => {
                         setEndDate(projectData.endDate);
                         setLocation(projectData.location);
                         setGenre(projectData.genre);
-                        setDirector(projectData.director);
-                        setProducer(projectData.producer);
+                        setDirector(projectData.director === undefined ? '' : projectData.director);
+                        setProducer(projectData.producer === undefined ? '' : projectData.producer);
                         setCoverImageUrl(projectData.coverImageUrl);
                         setPosterImageUrl(projectData.posterImageUrl);
                         setProjectWebsite(projectData.projectWebsite);
@@ -106,7 +109,6 @@ const ProjectDetail: React.FC = () => {
     }, [projectId]);
 
     const handleEditClick = () => {
-        console.log("handleEditClick called"); // Debugging
         setIsEditing(true);
     };
 
@@ -114,36 +116,45 @@ const ProjectDetail: React.FC = () => {
         setIsEditing(false);
     };
 
+    const handleCoverImageChange = (e: any) => {
+        if (e.target.files && e.target.files[0]) {
+            setCoverImage(e.target.files[0]);
+        }
+    };
+
+    const handlePosterImageChange = (e: any) => {
+        if (e.target.files && e.target.files[0]) {
+            setPosterImage(e.target.files[0]);
+        }
+    };
+
+    const uploadImage = async (image: File | null, imageName: string) => {
+        if (!image) return '';
+
+        const storageRef = ref(storage, `images/${imageName}`);
+
+        try {
+            await uploadBytes(storageRef, image);
+            const url = await getDownloadURL(storageRef);
+            return url;
+        } catch (error: any) {
+            console.error("Error uploading image: ", error);
+            setError(error.message);
+            return '';
+        }
+    };
+
     const handleSaveClick = async () => {
         if (!project) return;
 
-        console.log("handleSaveClick called"); // Debugging
-
         try {
+            setLoading(true); // Start loading before uploads
+
+            // Upload images and get URLs
+            const newCoverImageUrl = await uploadImage(coverImage, `cover_${project.id}`);
+            const newPosterImageUrl = await uploadImage(posterImage, `poster_${project.id}`);
+
             const projectDocRef = doc(db, 'Projects', project.id);
-
-            console.log("Project ID:", project.id); // Debugging
-            console.log("Data to update:", { // Debugging
-                projectName: projectName,
-                country: country,
-                productionCompany: productionCompany,
-                status: status,
-                logline: logline,
-                synopsis: synopsis,
-                startDate: startDate,
-                endDate: endDate,
-                location: location,
-                genre: genre,
-                director: director,
-                producer: producer,
-                coverImageUrl: coverImageUrl,
-                posterImageUrl: posterImageUrl,
-                projectWebsite: projectWebsite,
-                productionBudget: productionBudget,
-                productionCompanyContact: productionCompanyContact,
-                isVerified: isVerified,
-            });
-
             await updateDoc(projectDocRef, {
                 projectName: projectName,
                 country: country,
@@ -157,15 +168,13 @@ const ProjectDetail: React.FC = () => {
                 genre: genre,
                 director: director,
                 producer: producer,
-                coverImageUrl: coverImageUrl,
-                posterImageUrl: posterImageUrl,
+                coverImageUrl: newCoverImageUrl || coverImageUrl, // Use new URL if uploaded, else keep old
+                posterImageUrl: newPosterImageUrl || posterImageUrl,
                 projectWebsite: projectWebsite,
                 productionBudget: productionBudget,
                 productionCompanyContact: productionCompanyContact,
                 isVerified: isVerified,
             });
-
-            console.log("Project updated successfully!"); // Debugging
 
             // Update local state with new values
             setProject({
@@ -182,8 +191,8 @@ const ProjectDetail: React.FC = () => {
                 genre: genre,
                 director: director,
                 producer: producer,
-                coverImageUrl: coverImageUrl,
-                posterImageUrl: posterImageUrl,
+                coverImageUrl: newCoverImageUrl || coverImageUrl,
+                posterImageUrl: newPosterImageUrl || posterImageUrl,
                 projectWebsite: projectWebsite,
                 productionBudget: productionBudget,
                 productionCompanyContact: productionCompanyContact,
@@ -191,17 +200,14 @@ const ProjectDetail: React.FC = () => {
                 id: project.id
             });
 
-            console.log("Project state updated:", project); // Debugging
-            console.log("isEditing:", isEditing); // Debugging
-
             setIsEditing(false);
         } catch (error: any) {
             console.error("Error updating project:", error.message);
             setError(error.message);
+        } finally {
+            setLoading(false); // End loading whether success or fail
         }
     };
-
-    console.log("isEditing:", isEditing); // Debugging
 
     if (loading) {
         return <p>Loading...</p>;
@@ -332,21 +338,19 @@ const ProjectDetail: React.FC = () => {
                         />
                     </div>
                     <div>
-                        <label htmlFor="coverImageUrl">Cover Image URL:</label>
+                        <label htmlFor="coverImage">Cover Image:</label>
                         <input
-                            type="text"
-                            id="coverImageUrl"
-                            value={coverImageUrl}
-                            onChange={(e) => setCoverImageUrl((e.target as HTMLInputElement).value)}
+                            type="file"
+                            id="coverImage"
+                            onChange={handleCoverImageChange}
                         />
                     </div>
                     <div>
-                        <label htmlFor="posterImageUrl">Poster Image URL:</label>
+                        <label htmlFor="posterImage">Poster Image:</label>
                         <input
-                            type="text"
-                            id="posterImageUrl"
-                            value={posterImageUrl}
-                            onChange={(e) => setPosterImageUrl((e.target as HTMLInputElement).value)}
+                            type="file"
+                            id="posterImage"
+                            onChange={handlePosterImageChange}
                         />
                     </div>
                     <div>
@@ -400,10 +404,10 @@ const ProjectDetail: React.FC = () => {
                     <p>End Date: {project.endDate}</p>
                     <p>Location: {project.location}</p>
                     <p>Genre: {project.genre}</p>
-                    <p>Director: {project.director}</p>
-                    <p>Producer: {project.producer}</p>
-                    <p>Cover Image URL: {project.coverImageUrl}</p>
-                    <p>Poster Image URL: {project.posterImageUrl}</p>
+                    <p>Director: {director}</p>
+                    <p>Producer: {producer}</p>
+                    <img src={project.coverImageUrl} alt="Cover" style={{ maxWidth: '200px' }} />
+                    <img src={project.posterImageUrl} alt="Poster" style={{ maxWidth: '200px' }} />
                     <p>Project Website: {project.projectWebsite}</p>
                     <p>Production Budget: {project.productionBudget}</p>
                     <p>Production Company Contact: {project.productionCompanyContact}</p>
