@@ -114,15 +114,38 @@ const ProjectDetail: React.FC = () => {
 
     const handleCancelClick = () => {
         setIsEditing(false);
+        // Reset editing fields to project data in case of cancel
+        if (project) {
+            setProjectName(project.projectName);
+            setCountry(project.country);
+            setProductionCompany(project.productionCompany);
+            setStatus(project.status);
+            setLogline(project.logline);
+            setSynopsis(project.synopsis);
+            setStartDate(project.startDate);
+            setEndDate(project.endDate);
+            setLocation(project.location);
+            setGenre(project.genre);
+            setDirector(project.director || '');
+            setProducer(project.producer || '');
+            setCoverImage(null);
+            setPosterImage(null);
+            setCoverImageUrl(project.coverImageUrl);
+            setPosterImageUrl(project.posterImageUrl);
+            setProjectWebsite(project.projectWebsite);
+            setProductionBudget(project.productionBudget);
+            setProductionCompanyContact(project.productionCompanyContact);
+            setIsVerified(project.isVerified);
+        }
     };
 
-    const handleCoverImageChange = (e: any) => {
+    const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             setCoverImage(e.target.files[0]);
         }
     };
 
-    const handlePosterImageChange = (e: any) => {
+    const handlePosterImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             setPosterImage(e.target.files[0]);
         }
@@ -200,6 +223,8 @@ const ProjectDetail: React.FC = () => {
                 id: project.id
             });
 
+            setCoverImage(null);
+            setPosterImage(null);
             setIsEditing(false);
         } catch (error: any) {
             console.error("Error updating project:", error.message);
@@ -232,7 +257,7 @@ const ProjectDetail: React.FC = () => {
                             type="text"
                             id="projectName"
                             value={projectName}
-                            onChange={(e) => setProjectName((e.target as HTMLInputElement).value)}
+                            onChange={(e) => setProjectName(e.target.value)}
                         />
                     </div>
                     <div>
@@ -241,7 +266,7 @@ const ProjectDetail: React.FC = () => {
                             type="text"
                             id="country"
                             value={country}
-                            onChange={(e) => setCountry((e.target as HTMLInputElement).value)}
+                            onChange={(e) => setCountry(e.target.value)}
                         />
                     </div>
                     <div>
@@ -250,7 +275,7 @@ const ProjectDetail: React.FC = () => {
                             type="text"
                             id="productionCompany"
                             value={productionCompany}
-                            onChange={(e) => setProductionCompany((e.target as HTMLInputElement).value)}
+                            onChange={(e) => setProductionCompany(e.target.value)}
                         />
                     </div>
                     <div>
@@ -258,13 +283,12 @@ const ProjectDetail: React.FC = () => {
                         <select
                             id="status"
                             value={status}
-                            onChange={(e) => setStatus((e.target as HTMLSelectElement).value)}
+                            onChange={(e) => setStatus(e.target.value)}
                         >
                             <option value="Pre-Production">Pre-Production</option>
-                            <option value="Filming">Filming</option>
+                            <option value="Production">Production</option>
                             <option value="Post-Production">Post-Production</option>
                             <option value="Completed">Completed</option>
-                            <option value="Canceled">Canceled</option>
                         </select>
                     </div>
                     <div>
@@ -272,7 +296,7 @@ const ProjectDetail: React.FC = () => {
                         <textarea
                             id="logline"
                             value={logline}
-                            onChange={(e) => setLogline((e.target as HTMLTextAreaElement).value)}
+                            onChange={(e) => setLogline(e.target.value)}
                         />
                     </div>
                     <div>
@@ -280,25 +304,25 @@ const ProjectDetail: React.FC = () => {
                         <textarea
                             id="synopsis"
                             value={synopsis}
-                            onChange={(e) => setSynopsis((e.target as HTMLTextAreaElement).value)}
+                            onChange={(e) => setSynopsis(e.target.value)}
                         />
                     </div>
                     <div>
                         <label htmlFor="startDate">Start Date:</label>
                         <input
-                            type="text"
+                            type="date"
                             id="startDate"
                             value={startDate}
-                            onChange={(e) => setStartDate((e.target as HTMLInputElement).value)}
+                            onChange={(e) => setStartDate(e.target.value)}
                         />
                     </div>
                     <div>
                         <label htmlFor="endDate">End Date:</label>
                         <input
-                            type="text"
+                            type="date"
                             id="endDate"
                             value={endDate}
-                            onChange={(e) => setEndDate((e.target as HTMLInputElement).value)}
+                            onChange={(e) => setEndDate(e.target.value)}
                         />
                     </div>
                     <div>
@@ -307,7 +331,7 @@ const ProjectDetail: React.FC = () => {
                             type="text"
                             id="location"
                             value={location}
-                            onChange={(e) => setLocation((e.target as HTMLInputElement).value)}
+                            onChange={(e) => setLocation(e.target.value)}
                         />
                     </div>
                     <div>
@@ -316,7 +340,7 @@ const ProjectDetail: React.FC = () => {
                             type="text"
                             id="genre"
                             value={genre}
-                            onChange={(e) => setGenre((e.target as HTMLInputElement).value)}
+                            onChange={(e) => setGenre(e.target.value)}
                         />
                     </div>
                     <div>
@@ -325,7 +349,7 @@ const ProjectDetail: React.FC = () => {
                             type="text"
                             id="director"
                             value={director}
-                            onChange={(e) => setDirector((e.target as HTMLInputElement).value)}
+                            onChange={(e) => setDirector(e.target.value)}
                         />
                     </div>
                     <div>
@@ -334,32 +358,54 @@ const ProjectDetail: React.FC = () => {
                             type="text"
                             id="producer"
                             value={producer}
-                            onChange={(e) => setProducer((e.target as HTMLInputElement).value)}
+                            onChange={(e) => setProducer(e.target.value)}
                         />
                     </div>
                     <div>
                         <label htmlFor="coverImage">Cover Image:</label>
-                        <input
-                            type="file"
-                            id="coverImage"
-                            onChange={handleCoverImageChange}
-                        />
+                        <input type="file" id="coverImage" accept="image/*" onChange={handleCoverImageChange} />
+                        {coverImage ? (
+                            <img
+                                src={URL.createObjectURL(coverImage)}
+                                alt="Cover Preview"
+                                style={{ width: '150px', marginTop: '8px' }}
+                            />
+                        ) : (
+                            coverImageUrl && (
+                                <img
+                                    src={coverImageUrl}
+                                    alt="Current Cover"
+                                    style={{ width: '150px', marginTop: '8px' }}
+                                />
+                            )
+                        )}
                     </div>
                     <div>
                         <label htmlFor="posterImage">Poster Image:</label>
-                        <input
-                            type="file"
-                            id="posterImage"
-                            onChange={handlePosterImageChange}
-                        />
+                        <input type="file" id="posterImage" accept="image/*" onChange={handlePosterImageChange} />
+                        {posterImage ? (
+                            <img
+                                src={URL.createObjectURL(posterImage)}
+                                alt="Poster Preview"
+                                style={{ width: '150px', marginTop: '8px' }}
+                            />
+                        ) : (
+                            posterImageUrl && (
+                                <img
+                                    src={posterImageUrl}
+                                    alt="Current Poster"
+                                    style={{ width: '150px', marginTop: '8px' }}
+                                />
+                            )
+                        )}
                     </div>
                     <div>
                         <label htmlFor="projectWebsite">Project Website:</label>
                         <input
-                            type="text"
+                            type="url"
                             id="projectWebsite"
                             value={projectWebsite}
-                            onChange={(e) => setProjectWebsite((e.target as HTMLInputElement).value)}
+                            onChange={(e) => setProjectWebsite(e.target.value)}
                         />
                     </div>
                     <div>
@@ -368,7 +414,7 @@ const ProjectDetail: React.FC = () => {
                             type="text"
                             id="productionBudget"
                             value={productionBudget}
-                            onChange={(e) => setProductionBudget((e.target as HTMLInputElement).value)}
+                            onChange={(e) => setProductionBudget(e.target.value)}
                         />
                     </div>
                     <div>
@@ -377,42 +423,57 @@ const ProjectDetail: React.FC = () => {
                             type="text"
                             id="productionCompanyContact"
                             value={productionCompanyContact}
-                            onChange={(e) => setProductionCompanyContact((e.target as HTMLInputElement).value)}
+                            onChange={(e) => setProductionCompanyContact(e.target.value)}
                         />
                     </div>
                     <div>
-                        <label htmlFor="isVerified">Is Verified:</label>
+                        <label htmlFor="isVerified">Verified:</label>
                         <input
                             type="checkbox"
                             id="isVerified"
                             checked={isVerified}
-                            onChange={(e) => setIsVerified((e.target as HTMLInputElement).checked)}
+                            onChange={(e) => setIsVerified(e.target.checked)}
                         />
                     </div>
-                    <button onClick={handleSaveClick}>Save</button>
-                    <button onClick={handleCancelClick}>Cancel</button>
+                    <button onClick={handleSaveClick} disabled={loading}>
+                        {loading ? 'Saving...' : 'Save'}
+                    </button>
+                    <button onClick={handleCancelClick} disabled={loading}>Cancel</button>
                 </div>
             ) : (
                 <div>
-                    <h3>{project.projectName}</h3>
-                    <p>Country: {project.country}</p>
-                    <p>Production Company: {project.productionCompany}</p>
-                    <p>Status: {project.status}</p>
-                    <p>Logline: {project.logline}</p>
-                    <p>Synopsis: {project.synopsis}</p>
-                    <p>Start Date: {project.startDate}</p>
-                    <p>End Date: {project.endDate}</p>
-                    <p>Location: {project.location}</p>
-                    <p>Genre: {project.genre}</p>
-                    <p>Director: {director}</p>
-                    <p>Producer: {producer}</p>
-                    <img src={project.coverImageUrl} alt="Cover" style={{ maxWidth: '200px' }} />
-                    <img src={project.posterImageUrl} alt="Poster" style={{ maxWidth: '200px' }} />
-                    <p>Project Website: {project.projectWebsite}</p>
-                    <p>Production Budget: {project.productionBudget}</p>
-                    <p>Production Company Contact: {project.productionCompanyContact}</p>
-                    <p>Is Verified: {project.isVerified ? 'Yes' : 'No'}</p>
-                    <button onClick={handleEditClick}>Edit</button>
+                    <p><strong>Project Name:</strong> {project.projectName}</p>
+                    <p><strong>Country:</strong> {project.country}</p>
+                    <p><strong>Production Company:</strong> {project.productionCompany}</p>
+                    <p><strong>Status:</strong> {project.status}</p>
+                    <p><strong>Logline:</strong> {project.logline}</p>
+                    <p><strong>Synopsis:</strong> {project.synopsis}</p>
+                    <p><strong>Start Date:</strong> {project.startDate}</p>
+                    <p><strong>End Date:</strong> {project.endDate}</p>
+                    <p><strong>Location:</strong> {project.location}</p>
+                    <p><strong>Genre:</strong> {project.genre}</p>
+                    <p><strong>Director:</strong> {project.director}</p>
+                    <p><strong>Producer:</strong> {project.producer}</p>
+                    {project.coverImageUrl && (
+                        <div>
+                            <strong>Cover Image:</strong><br />
+                            <img src={project.coverImageUrl} alt="Cover" style={{ maxWidth: '200px' }} />
+                        </div>
+                    )}
+                    {project.posterImageUrl && (
+                        <div>
+                            <strong>Poster Image:</strong><br />
+                            <img src={project.posterImageUrl} alt="Poster" style={{ maxWidth: '200px' }} />
+                        </div>
+                    )}
+                    <p><strong>Project Website:</strong> <a href={project.projectWebsite} target="_blank" rel="noopener noreferrer">{project.projectWebsite}</a></p>
+                    <p><strong>Production Budget:</strong> {project.productionBudget}</p>
+                    <p><strong>Production Company Contact:</strong> {project.productionCompanyContact}</p>
+                    <p><strong>Verified:</strong> {project.isVerified ? 'Yes' : 'No'}</p>
+                    {/* Show edit button only if current user is owner */}
+                    {auth.currentUser && auth.currentUser.uid === project.owner_uid && (
+                        <button onClick={handleEditClick}>Edit</button>
+                    )}
                 </div>
             )}
         </div>
