@@ -1,6 +1,6 @@
 /* Define default values for variables (if not already defined) */
 $body-background: #282a36 !default;
-$primary-color: #6272a4 !default;
+$primary-color: rgba(0, 123, 255, 0.8);
 $secondary-color: #44475a !default;
 $text-color: #f8f8f2 !default;
 $accent-color: #ff79c6 !default;
@@ -13,6 +13,7 @@ $sidebar-width: 270px !default;
 $sidebar-background: #21222C !default;
 $sidebar-text-color: #f1fa8c !default;
 $card-background: #343746 !default;
+$hero-height: 60vh;
 
 /* Import the color module*/
 @use "sass:color";
@@ -25,14 +26,14 @@ html, body {
 }
 
 body {
-    background-color: $body-background;
-    color: $text-color;
-    font-family: $font-family;
-    font-size: $font-size-base;
-    line-height: 1.6;
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
+  margin: 0;
+  font-family: $font-family;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: $body-background;
+  font-size: $font-size-base;
+  color: #333;
+  line-height: 1.6;
 }
 
 #root {
@@ -173,6 +174,64 @@ a:hover {
   margin-top: 20px;
   font-style: italic;
   color: #888;
+}
+
+/* Hero Section Styles */
+.hero {
+  position: relative;
+  height: $hero-height;
+  background: url('https://images.unsplash.com/photo-1507838153414-b4b798869bb5?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D') center/cover no-repeat;
+  color: white;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* Dark overlay */
+  }
+
+  * {
+    position: relative;
+    z-index: 2; /* Ensure content is above overlay */
+  }
+
+  h1 {
+    font-size: 3em;
+    margin-bottom: 0.5em;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  }
+
+  p {
+    font-size: 1.2em;
+    margin-bottom: 1.5em;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+  }
+
+  .btn-primary {
+    background-color: $primary-color;
+    color: white;
+    padding: 12px 24px;
+    border: none;
+    border-radius: $border-radius;
+    cursor: pointer;
+    font-size: 1.1em;
+    transition: background-color 0.3s ease;
+    text-decoration: none;
+
+    &:hover {
+      background-color: color.adjust($primary-color, $lightness: -10%);
+    }
+  }
 }
 
 /* Additional styles can be added as needed */
