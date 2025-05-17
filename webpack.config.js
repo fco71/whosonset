@@ -24,40 +24,31 @@ module.exports = {
         use: 'ts-loader',
         exclude: /node_modules/,
       },
-      // CSS Modules (for component-specific styles)
       {
-        test: /\.module\.s[ac]ss$/i,  // Matches .module.scss or .module.sass
+        test: /\.s[ac]ss$/i,
         use: [
           "style-loader",
           {
             loader: "css-loader",
             options: {
-              modules: {
-                localIdentName: '[name]__[local]--[hash:base64:5]', // Customize class names
-              },
-              importLoaders: 2,
+              importLoaders: 1,
+              //modules: { //Lets remove that
+              //  mode: "local",
+              //  localIdentName: "[name]__[local]--[hash:base64:5]",
+              //},
             },
           },
           "postcss-loader",
-          "sass-loader",
+          {
+            loader: "sass-loader",
+            options: {
+              sourceMap: true,
+              //sassOptions: { //LETS REMOVE THAT
+              //  includePaths: [path.resolve(__dirname, "src/styles")],
+              //},
+            },
+          },
         ],
-        include: path.resolve(__dirname, 'src'),
-      },
-      // Global styles (for index.scss and other global stylesheets)
-      {
-        test: /\.s[ac]ss$/i,
-        use: [
-          "style-loader",
-          "css-loader",
-          "postcss-loader",
-          "sass-loader",
-        ],
-        include: path.resolve(__dirname, 'src'),
-        exclude: /\.module\.s[ac]ss$/i,  // Exclude CSS Modules
-      },
-      {
-        test: /\.(png|svg|jpg|jpeg|gif)$/i,
-        type: 'asset/resource',
       },
     ],
   },
