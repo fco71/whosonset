@@ -1,0 +1,53 @@
+@import 'variables.scss';
+
+.navigation {
+    background-color: $primary-color;
+    color: white;
+    padding: 1rem 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+    .navigation-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        max-width: 1200px;
+        margin: 0 auto; /* Center the navigation */
+    }
+
+    .navigation-item {
+        margin: 0;
+        padding: 0.5rem 1rem;
+        transition: background-color 0.3s ease;
+
+        &:hover {
+            background-color: darken($primary-color, 10%);
+        }
+    }
+
+    .navigation-link,
+    .navigation-button {
+        color: white;
+        text-decoration: none;
+        background: none;
+        border: none;
+        padding: 0.5rem 1rem;
+        cursor: pointer;
+        font-size: 1em;
+        display: block; /* Make the whole item clickable */
+        transition: all 0.3s ease;
+
+        &:hover {
+            color: lighten(white, 10%);
+        }
+    }
+
+    /* Ensure the button looks like a link */
+    .navigation-button {
+        &:hover {
+            background-color: darken($primary-color, 10%);
+        }
+    }
+}
