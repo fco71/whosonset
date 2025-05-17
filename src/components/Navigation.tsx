@@ -1,9 +1,6 @@
 // src/components/Navigation.tsx
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth } from '../firebase';
-import { signOut } from 'firebase/auth';
 import '../styles/Navigation.scss';
 
 interface NavigationProps {
