@@ -1,10 +1,28 @@
+@use "sass:color";
+@use 'variables.scss' as v;
+
+/* Reset some basic elements */
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
 body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+    background-color: v.$body-background;
+    color: v.$text-color;
+    font-family: v.$font-family;
+    font-size: v.$font-size-base;
+    line-height: 1.6;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+#root {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 code {
@@ -14,8 +32,8 @@ code {
 
 /* Basic styling for the header and navigation */
 header {
-  background-color: #333;
-  color: white;
+  background-color: v.$primary-color;
+  color: v.$text-color;
   padding: 10px 0;
   text-align: center;
 }
@@ -25,16 +43,16 @@ nav ul {
   padding: 0;
   margin: 0;
   display: flex;
-  justify-content: center; /* Center the navigation items horizontally */
-  align-items: center; /* Vertically align items in the center */
+  justify-content: center;
+  align-items: center;
 }
 
 nav li {
-  margin: 0 15px; /* Add horizontal spacing between items */
+  margin: 0 15px;
 }
 
 nav a, nav button {
-  color: white;
+  color: v.$text-color;
   text-decoration: none;
   background: none;
   border: none;
@@ -44,17 +62,17 @@ nav a, nav button {
 }
 
 nav a:hover, nav button:hover {
-  background-color: #555;
+  background-color: color.adjust(v.$primary-color, $lightness: -10%);
 }
 
 /* Basic container styling to center content */
 .container {
   max-width: 1200px;
-  margin: 20px auto; /* Center the container horizontally */
+  margin: 20px auto;
   padding: 20px;
-  background-color: #f4f4f4;
-  border-radius: 8px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  background-color: v.$secondary-color;
+  border-radius: v.$border-radius;
+  box-shadow: v.$box-shadow;
 }
 
 /* Style for forms */
@@ -65,9 +83,9 @@ form {
   max-width: 500px;
   margin: 20px auto;
   padding: 20px;
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  background-color: v.$card-background;
+  border-radius: v.$border-radius;
+  box-shadow: v.$box-shadow;
 }
 
 form div {
@@ -78,6 +96,7 @@ form label {
   display: block;
   margin-bottom: 5px;
   font-weight: bold;
+  color: v.$text-color; //Ensure labels are readable
 }
 
 form input[type="text"],
@@ -88,33 +107,37 @@ form select {
   width: 100%;
   padding: 8px;
   border: 1px solid #ddd;
-  border-radius: 4px;
+  border-radius: v.$border-radius;
   box-sizing: border-box;
   margin-top: 5px;
   font-size: 1em;
+  color: v.$text-color; //Ensure text is readable
+  background-color: #555; //A slightly darker background for inputs
 }
 
 form textarea {
-  resize: vertical; /* Allows vertical resizing of the textarea */
+  resize: vertical;
 }
 
-form button[type="submit"] {
-  background-color: #5cb85c;
-  color: white;
+form button[type="submit"],
+button {
+  background-color: v.$accent-color;
+  color: v.$text-color;
   padding: 10px 15px;
   border: none;
-  border-radius: 4px;
+  border-radius: v.$border-radius;
   cursor: pointer;
   font-size: 1em;
-}
+  transition: background-color $transition-speed ease;
 
-form button[type="submit"]:hover {
-  background-color: #4cae4c;
+  &:hover {
+    background-color: color.adjust(v.$accent-color, $lightness: -10%);
+  }
 }
 
 /* General link styles */
 a {
-  color: #007bff;
+  color: v.$primary-color;
   text-decoration: none;
 }
 

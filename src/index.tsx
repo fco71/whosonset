@@ -1,7 +1,7 @@
 // src/index.tsx
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom/client';
-import './index.css';
+import './styles/index.scss'; // Changed import
 import { BrowserRouter as Router, Route, Routes, Link, Navigate } from 'react-router-dom';
 import { auth } from './firebase';
 import { onAuthStateChanged, signOut } from "firebase/auth";

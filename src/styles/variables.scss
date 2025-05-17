@@ -1,0 +1,31 @@
+// src/styles/variables.scss
+//Color Palette (Dark Theme)
+$body-background: #282a36 !default;
+$primary-color: #6272a4 !default;
+$secondary-color: #44475a !default;
+$text-color: #f8f8f2 !default;
+$accent-color: #ff79c6 !default;
+
+//Typography
+$font-family: 'Fira Code', monospace !default;
+$font-size-base: 16px !default;
+$font-size-large: 20px !default;
+
+//Spacing and Sizing
+$spacing-unit: 8px !default;
+$border-radius: 8px !default;
+$card-padding: 24px !default;
+
+//Shadows
+$box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5) !default;
+
+//UI Elements
+$transition-speed: 0.3s !default;
+
+//Sidebar
+$sidebar-width: 270px !default;
+$sidebar-background: #21222C !default;
+$sidebar-text-color: #f1fa8c !default;
+
+//Card
+$card-background: #343746 !default;
