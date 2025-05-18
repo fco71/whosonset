@@ -20,4 +20,4 @@ const auth: Auth = getAuth(app);
 const db: Firestore = getFirestore(app);
 const storage: FirebaseStorage = getStorage(app); // Initialize Firebase Storage and rely on configuration to that bucket, it knows, because it is setup through .env
 
-export { auth, db, storage };
+export { app, auth, db, storage }; // 👈 Export 'app' to fix ImageUploader import

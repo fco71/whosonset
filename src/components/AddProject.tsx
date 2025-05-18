@@ -82,9 +82,9 @@ const AddProject: React.FC = () => {
   if (error) return <p>Error: {error.message}</p>;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
-      <h2 className="text-2xl font-semibold mb-6">Add New Project</h2>
-      <form onSubmit={handleSubmit} className="space-y-6">
+    <div className="max-w-4xl mx-auto px-4 py-10">
+      <h2 className="text-3xl font-semibold mb-8">Add New Project</h2>
+      <form onSubmit={handleSubmit} className="space-y-8">
         <ProjectForm
           projectName={projectName}
           setProjectName={setProjectName}
@@ -125,17 +125,19 @@ const AddProject: React.FC = () => {
           handleCoverImageUploaded={handleCoverImageUploaded}
           handlePosterImageUploaded={handlePosterImageUploaded}
         />
-        <div className="flex justify-between items-center pt-4">
+
+        {/* Submit + Cancel Buttons */}
+        <div className="flex justify-end gap-4 pt-6">
           <button
             type="button"
             onClick={handleCancel}
-            className="text-gray-600 border border-gray-400 px-4 py-2 rounded hover:bg-gray-100 text-sm"
+            className="px-5 py-2 border border-gray-400 text-gray-700 rounded-md hover:bg-gray-100 transition"
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
+            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
           >
             Add Project
           </button>
