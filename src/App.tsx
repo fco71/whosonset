@@ -4,7 +4,7 @@ import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 
 import ProjectList from './components/ProjectList';
 import RegisterForm from './components/RegisterForm';
-import AllProjects from './pages/AllProjects'; // <- Ensure this path matches where your AllProjects.tsx file is
+import AllProjects from './components/AllProjects'; // <- Ensure this path matches where your AllProjects.tsx file is
 
 interface AppProps {
   name: string;
