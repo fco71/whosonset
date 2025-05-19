@@ -13,8 +13,11 @@ module.exports = {
   },
   devtool: 'inline-source-map',
   devServer: {
-    static: './dist',
+    static: {
+      directory: path.join(__dirname, 'public'), // serve static files
+    },
     hot: true,
+    open: true,
     historyApiFallback: true,
   },
   module: {
