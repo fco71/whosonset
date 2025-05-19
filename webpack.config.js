@@ -9,16 +9,19 @@ module.exports = {
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: 'bundle.js',
-    publicPath: '/',
+    publicPath: '/', // ✅ Ensures proper SPA routing
   },
   devtool: 'inline-source-map',
   devServer: {
+    historyApiFallback: true, // ✅ Required for React Router to handle routes like /projects
     static: {
-      directory: path.join(__dirname, 'public'), // serve static files
+      directory: path.join(__dirname, 'public'), // ✅ Serves public/index.html
+      publicPath: '/', // ✅ Matches your output.publicPath
     },
-    hot: true,
-    open: true,
-    historyApiFallback: true,
+    compress: true,
+    port: 8080,
+    open: true, // Optional: opens browser automatically
+    hot: true,  // Optional: hot reload support
   },
   module: {
     rules: [
@@ -39,9 +42,7 @@ module.exports = {
           'style-loader',
           {
             loader: 'css-loader',
-            options: {
-              importLoaders: 1,
-            },
+            options: { importLoaders: 1 },
           },
           'postcss-loader',
           'sass-loader',
@@ -54,7 +55,7 @@ module.exports = {
   },
   plugins: [
     new HtmlWebpackPlugin({
-      template: './public/index.html',
+      template: './public/index.html', // ✅ Must exist
     }),
     new Dotenv({
       path: './.env',

@@ -11,17 +11,32 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUploaded }) => {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [imageName, setImageName] = useState<string | null>(null);
+  const [file, setFile] = useState<File | null>(null); // the raw file
+  const [imageSrc, setImageSrc] = useState<string | null>(null); // object URL to show in <img>
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const selectedFile = e.target.files?.[0];
+
+    if (!selectedFile) {
+      setFile(null);
+      setImageSrc(null);
+      setImageName(null);
+      return;
+    }
+
+    setFile(selectedFile);
+    setImageName(selectedFile.name);
+
+    // Create an object URL for the image preview
+    const objectURL = URL.createObjectURL(selectedFile);
+    setImageSrc(objectURL);
+
 
     const storage = getStorage(app);
-    const storageRef = ref(storage, `project-images/${file.name}`);
-    const uploadTask = uploadBytesResumable(storageRef, file);
+    const storageRef = ref(storage, `project-images/${selectedFile.name}`);
+    const uploadTask = uploadBytesResumable(storageRef, selectedFile);
 
     setUploading(true);
-    setImageName(file.name);
 
     uploadTask.on(
       'state_changed',
@@ -37,6 +52,8 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUploaded }) => {
         getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
           onImageUploaded(downloadURL);
           setUploading(false);
+          // Clean up the object URL after upload is complete (optional but good practice)
+          URL.revokeObjectURL(objectURL);
         });
       }
     );
@@ -56,7 +73,12 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUploaded }) => {
         {uploading ? (
           <p className="text-sm text-blue-300">Uploading... {uploadProgress}%</p>
         ) : imageName ? (
-          <p className="text-sm text-white font-medium">Selected: {imageName}</p>
+          <>
+            <p className="text-sm text-white font-medium">Selected: {imageName}</p>
+            {imageSrc && (
+              <img src={imageSrc} alt="Image Preview" className="mt-2 max-w-full h-auto" />
+            )}
+          </>
         ) : (
           <p className="text-sm text-gray-200 italic">No image selected</p>
         )}
