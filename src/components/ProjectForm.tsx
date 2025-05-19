@@ -42,91 +42,64 @@ interface ProjectFormProps {
   handlePosterImageUploaded: (url: string) => void;
 }
 
-const ProjectForm: React.FC<ProjectFormProps> = ({
-  projectName,
-  setProjectName,
-  country,
-  setCountry,
-  productionCompany,
-  setProductionCompany,
-  status,
-  setStatus,
-  logline,
-  setLogline,
-  synopsis,
-  setSynopsis,
-  startDate,
-  setStartDate,
-  endDate,
-  setEndDate,
-  location,
-  setLocation,
-  genre,
-  setGenre,
-  director,
-  setDirector,
-  producer,
-  setProducer,
-  coverImageUrl,
-  setCoverImageUrl,
-  posterImageUrl,
-  setPosterImageUrl,
-  projectWebsite,
-  setProjectWebsite,
-  productionBudget,
-  setProductionBudget,
-  productionCompanyContact,
-  setProductionCompanyContact,
-  isVerified,
-  setIsVerified,
-  handleCoverImageUploaded,
-  handlePosterImageUploaded
-}) => {
+const SectionHeader = ({ title }: { title: string }) => (
+  <h3 className="col-span-full text-xl font-semibold text-white border-b border-gray-700 pb-2 mb-2 mt-6">
+    {title}
+  </h3>
+);
+
+const ProjectForm: React.FC<ProjectFormProps> = (props) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-white rounded-xl shadow">
-      {/** Text Inputs */}
-      <Input label="Project Name" value={projectName} onChange={setProjectName} />
-      <Input label="Country" value={country} onChange={setCountry} />
-      <Input label="Production Company" value={productionCompany} onChange={setProductionCompany} />
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-gray-800 rounded-xl border border-gray-700">
+
+      <SectionHeader title="General Info" />
+      <Input label="Project Name" value={props.projectName} onChange={props.setProjectName} />
+      <Input label="Country" value={props.country} onChange={props.setCountry} />
+      <Input label="Production Company" value={props.productionCompany} onChange={props.setProductionCompany} />
       <Select
         label="Status"
-        value={status}
-        onChange={setStatus}
+        value={props.status}
+        onChange={props.setStatus}
         options={["Pre-Production", "Filming", "Post-Production", "Completed", "Canceled"]}
       />
-      <Textarea label="Logline" value={logline} onChange={setLogline} />
-      <Textarea label="Synopsis" value={synopsis} onChange={setSynopsis} />
-      <Input label="Start Date" type="date" value={startDate} onChange={setStartDate} />
-      <Input label="End Date" type="date" value={endDate} onChange={setEndDate} />
-      <Input label="Location" value={location} onChange={setLocation} />
-      <Input label="Genre" value={genre} onChange={setGenre} />
-      <Input label="Director" value={director} onChange={setDirector} />
-      <Input label="Producer" value={producer} onChange={setProducer} />
 
-      {/** Image Uploaders */}
+      <SectionHeader title="Creative Info" />
+      <Textarea label="Logline" value={props.logline} onChange={props.setLogline} />
+      <Textarea label="Synopsis" value={props.synopsis} onChange={props.setSynopsis} />
+      <Input label="Genre" value={props.genre} onChange={props.setGenre} />
+      <Input label="Director" value={props.director} onChange={props.setDirector} />
+      <Input label="Producer" value={props.producer} onChange={props.setProducer} />
+
+      <SectionHeader title="Schedule" />
+      <Input label="Start Date" type="date" value={props.startDate} onChange={props.setStartDate} />
+      <Input label="End Date" type="date" value={props.endDate} onChange={props.setEndDate} />
+      <Input label="Location" value={props.location} onChange={props.setLocation} />
+
+      <SectionHeader title="Images" />
       <div className="md:col-span-2">
-        <label className="block text-sm font-medium text-gray-700 mb-1">Cover Image</label>
-        <ImageUploader onImageUploaded={handleCoverImageUploaded} />
+        <label className="block text-sm font-medium text-gray-300 mb-1">Cover Image</label>
+        <ImageUploader onImageUploaded={props.handleCoverImageUploaded} />
       </div>
       <div className="md:col-span-2">
-        <label className="block text-sm font-medium text-gray-700 mb-1">Poster Image</label>
-        <ImageUploader onImageUploaded={handlePosterImageUploaded} />
+        <label className="block text-sm font-medium text-gray-300 mb-1">Poster Image</label>
+        <ImageUploader onImageUploaded={props.handlePosterImageUploaded} />
       </div>
 
-      {/** Remaining Inputs */}
-      <Input label="Project Website" value={projectWebsite} onChange={setProjectWebsite} />
-      <Input label="Production Budget" value={productionBudget} onChange={setProductionBudget} />
-      <Input label="Company Contact" value={productionCompanyContact} onChange={setProductionCompanyContact} />
+      <SectionHeader title="Contact & Website" />
+      <Input label="Project Website" value={props.projectWebsite} onChange={props.setProjectWebsite} />
+      <Input label="Production Budget" value={props.productionBudget} onChange={props.setProductionBudget} />
+      <Input label="Company Contact" value={props.productionCompanyContact} onChange={props.setProductionCompanyContact} />
 
+      <SectionHeader title="Verification" />
       <div className="flex items-center space-x-2 md:col-span-2">
         <input
           id="isVerified"
           type="checkbox"
-          checked={isVerified}
-          onChange={(e) => setIsVerified(e.target.checked)}
-          className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+          checked={props.isVerified}
+          onChange={(e) => props.setIsVerified(e.target.checked)}
+          className="h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded"
         />
-        <label htmlFor="isVerified" className="text-sm text-gray-700">Is Verified</label>
+        <label htmlFor="isVerified" className="text-sm text-gray-300">Is Verified</label>
       </div>
     </div>
   );
@@ -145,12 +118,12 @@ const Input = ({
   type?: string;
 }) => (
   <div>
-    <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+    <label className="block text-sm font-medium text-gray-300 mb-1">{label}</label>
     <input
       type={type}
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full border border-gray-300 rounded-md p-2 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+      className="w-full bg-gray-900 text-white border border-gray-600 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
     />
   </div>
 );
@@ -166,12 +139,12 @@ const Textarea = ({
   onChange: (val: string) => void;
 }) => (
   <div className="md:col-span-2">
-    <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+    <label className="block text-sm font-medium text-gray-300 mb-1">{label}</label>
     <textarea
       value={value}
       onChange={(e) => onChange(e.target.value)}
       rows={4}
-      className="w-full border border-gray-300 rounded-md p-2 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+      className="w-full bg-gray-900 text-white border border-gray-600 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
     />
   </div>
 );
@@ -189,11 +162,11 @@ const Select = ({
   options: string[];
 }) => (
   <div>
-    <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+    <label className="block text-sm font-medium text-gray-300 mb-1">{label}</label>
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full border border-gray-300 rounded-md p-2 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+      className="w-full bg-gray-900 text-white border border-gray-600 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
     >
       {options.map((opt) => (
         <option key={opt} value={opt}>{opt}</option>

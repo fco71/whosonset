@@ -25,6 +25,10 @@ module.exports = {
         exclude: /node_modules/,
       },
       {
+        test: /\.css$/i,
+        use: ['style-loader', 'css-loader', 'postcss-loader'],
+      },
+      {
         test: /\.s[ac]ss$/i,
         use: [
           "style-loader",
@@ -32,22 +36,10 @@ module.exports = {
             loader: "css-loader",
             options: {
               importLoaders: 1,
-              //modules: { //Lets remove that
-              //  mode: "local",
-              //  localIdentName: "[name]__[local]--[hash:base64:5]",
-              //},
             },
           },
           "postcss-loader",
-          {
-            loader: "sass-loader",
-            options: {
-              sourceMap: true,
-              //sassOptions: { //LETS REMOVE THAT
-              //  includePaths: [path.resolve(__dirname, "src/styles")],
-              //},
-            },
-          },
+          "sass-loader",
         ],
       },
     ],
@@ -60,13 +52,12 @@ module.exports = {
       template: './public/index.html',
     }),
     new Dotenv({
-      path: './.env', // load this now instead of the ones in '.env'
-      safe: false, // load '.env.example' to verify the '.env' entries.
-      // the following is good for Github Actions
-      allowEmptyValues: true, // allow empty variables in the '.env' file, handle them in you code
-      systemvars: true, // load all the predefined 'process.env' variables
-      silent: true, // hide any errors
-      defaults: false // load '.env.defaults' as the default values
+      path: './.env',
+      safe: false,
+      allowEmptyValues: true,
+      systemvars: true,
+      silent: true,
+      defaults: false
     })
   ],
 };

@@ -6,7 +6,7 @@ import { BrowserRouter as Router, Route, Routes, Link, Navigate } from 'react-ro
 import { auth } from './firebase';
 import { onAuthStateChanged, signOut } from "firebase/auth";
 
-// import './index.css';
+import './index.css';
 
 
 // Component imports

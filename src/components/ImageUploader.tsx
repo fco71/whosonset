@@ -43,22 +43,22 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUploaded }) => {
   };
 
   return (
-    <div className="border border-gray-300 rounded-md p-4 bg-gray-50">
+    <div className="border border-gray-600 rounded-md p-4 bg-gray-800">
       <input
         type="file"
         accept="image/*"
         onChange={handleFileChange}
         ref={fileInputRef}
-        className="block w-full text-sm text-gray-700"
+        className="block w-full text-sm text-white"
       />
 
       <div className="mt-2">
         {uploading ? (
-          <p className="text-sm text-gray-600">Uploading... {uploadProgress}%</p>
+          <p className="text-sm text-blue-300">Uploading... {uploadProgress}%</p>
         ) : imageName ? (
-          <p className="text-sm text-gray-700">Selected: {imageName}</p>
+          <p className="text-sm text-white font-medium">Selected: {imageName}</p>
         ) : (
-          <p className="text-sm text-gray-700 mt-2">No image selected</p>
+          <p className="text-sm text-gray-200 italic">No image selected</p>
         )}
       </div>
     </div>

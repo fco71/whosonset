@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import ImageUploader from './ImageUploader';
 import ProjectForm from './ProjectForm';
 
 const AddProject: React.FC = () => {
@@ -82,9 +81,9 @@ const AddProject: React.FC = () => {
   if (error) return <p>Error: {error.message}</p>;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-10">
-      <h2 className="text-3xl font-semibold mb-8">Add New Project</h2>
-      <form onSubmit={handleSubmit} className="space-y-8">
+    <div className="max-w-5xl mx-auto px-6 py-10">
+      <h2 className="text-3xl font-bold mb-8 text-center">Add New Project</h2>
+      <form onSubmit={handleSubmit} className="space-y-8 bg-white p-8 shadow-md rounded-lg">
         <ProjectForm
           projectName={projectName}
           setProjectName={setProjectName}
@@ -126,18 +125,18 @@ const AddProject: React.FC = () => {
           handlePosterImageUploaded={handlePosterImageUploaded}
         />
 
-        {/* Submit + Cancel Buttons */}
-        <div className="flex justify-end gap-4 pt-6">
+        {/* ✅ Updated Button Styles */}
+        <div className="flex flex-col sm:flex-row justify-end gap-4 pt-6">
           <button
             type="button"
             onClick={handleCancel}
-            className="px-5 py-2 border border-gray-400 text-gray-700 rounded-md hover:bg-gray-100 transition"
+            className="w-full sm:w-auto px-6 py-2 text-white bg-gray-500 hover:bg-gray-600 rounded-md transition"
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+            className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
           >
             Add Project
           </button>
