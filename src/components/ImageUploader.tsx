@@ -11,8 +11,9 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUploaded }) => {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [imageName, setImageName] = useState<string | null>(null);
-  const [file, setFile] = useState<File | null>(null); // the raw file
-  const [imageSrc, setImageSrc] = useState<string | null>(null); // object URL to show in <img>
+  const [file, setFile] = useState<File | null>(null);
+  const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [objectURLToRevoke, setObjectURLToRevoke] = useState<string | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -27,11 +28,17 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUploaded }) => {
     setFile(selectedFile);
     setImageName(selectedFile.name);
 
-    // Create an object URL for the image preview
+    // Clean up old object URL
+    if (objectURLToRevoke) {
+      URL.revokeObjectURL(objectURLToRevoke);
+    }
+
+    // Create preview URL
     const objectURL = URL.createObjectURL(selectedFile);
     setImageSrc(objectURL);
+    setObjectURLToRevoke(objectURL);
 
-
+    // Upload to Firebase
     const storage = getStorage(app);
     const storageRef = ref(storage, `project-images/${selectedFile.name}`);
     const uploadTask = uploadBytesResumable(storageRef, selectedFile);
@@ -52,11 +59,17 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUploaded }) => {
         getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
           onImageUploaded(downloadURL);
           setUploading(false);
-          // Clean up the object URL after upload is complete (optional but good practice)
-          URL.revokeObjectURL(objectURL);
         });
       }
     );
+  };
+
+  const handleImageLoad = () => {
+    // Safe to revoke after image has loaded
+    if (objectURLToRevoke) {
+      URL.revokeObjectURL(objectURLToRevoke);
+      setObjectURLToRevoke(null);
+    }
   };
 
   return (
@@ -76,7 +89,16 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUploaded }) => {
           <>
             <p className="text-sm text-white font-medium">Selected: {imageName}</p>
             {imageSrc && (
-              <img src={imageSrc} alt="Image Preview" className="mt-2 max-w-full h-auto" />
+              <img
+                src={imageSrc}
+                alt="Image Preview"
+                className="mt-2 max-w-full h-auto rounded-md shadow"
+                onLoad={handleImageLoad}
+                onError={(e) => {
+                  console.warn('Preview failed to load');
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
             )}
           </>
         ) : (
