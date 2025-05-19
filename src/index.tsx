@@ -1,13 +1,11 @@
+
 // src/index.tsx
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom/client';
-import './styles/index.scss';
+import './tailwind.css';
 import { BrowserRouter as Router, Route, Routes, Link, Navigate } from 'react-router-dom';
 import { auth } from './firebase';
 import { onAuthStateChanged, signOut } from "firebase/auth";
-
-
-
 
 // Component imports
 import Login from './components/Login';
