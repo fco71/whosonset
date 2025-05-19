@@ -1,13 +1,51 @@
-/* src/styles/index.scss */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* This file uses Tailwind CSS directives. 
+   Make sure your build process uses PostCSS with the Tailwind CSS plugin. */
+// @tailwind base;
+// @tailwind components;
+// @tailwind utilities;
 
-/* Your custom SCSS */
 body {
-  @apply bg-gray-900 text-white;
+  background-color: #030712; /* Tailwind bg-gray-950 */
+  color: #f3f4f6;            /* Tailwind text-gray-100 */
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"; /* Tailwind font-sans */
+  input, textarea, select {
+    background-color: #111827; /* Tailwind bg-gray-900 */
+    border: 1px solid #374151; /* Tailwind border-gray-700 */
+    color: #fff;               /* Tailwind text-white */
+    label {
+      font-size: 0.875rem;       /* Tailwind text-sm */
+      color: #d1d5db;            /* Tailwind text-gray-300 */
+      margin-bottom: 0.25rem;    /* Tailwind mb-1 */
+      display: block;            /* Tailwind block */
+    }
+  }
 }
 
-h1 {
-  @apply text-4xl font-bold;
+input::placeholder,
+textarea::placeholder {
+  color: #6b7280;            /* Tailwind placeholder-gray-500 */
+}
+
+input, textarea, select {
+  background-color: #111827; /* Tailwind bg-gray-900 */
+  border: 1px solid #374151; /* Tailwind border-gray-700 */
+  color: #fff;               /* Tailwind text-white */
+label {
+  font-size: 0.875rem;       /* Tailwind text-sm */
+  color: #d1d5db;            /* Tailwind text-gray-300 */
+  margin-bottom: 0.25rem;    /* Tailwind mb-1 */
+  display: block;            /* Tailwind block */
+}
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #6b7280;            /* Tailwind placeholder-gray-500 */
+}
+
+label {
+  font-size: 0.875rem;    /* Tailwind text-sm */
+  color: #d1d5db;         /* Tailwind text-gray-300 */
+  margin-bottom: 0.25rem; /* Tailwind mb-1 */
+  display: block;         /* Tailwind block */
 }
