@@ -43,14 +43,14 @@ interface ProjectFormProps {
 }
 
 const SectionHeader = ({ title }: { title: string }) => (
-  <h3 className="col-span-full text-xl font-semibold text-white border-b border-gray-700 pb-2 mb-2 mt-6">
+  <h3 className="col-span-full text-xl font-semibold text-white border-b border-gray-700 pb-2 mb-4 mt-8">
     {title}
   </h3>
 );
 
 const ProjectForm: React.FC<ProjectFormProps> = (props) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-gray-800 rounded-xl border border-gray-700">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 p-6 bg-gray-800 rounded-xl border border-gray-700">
 
       <SectionHeader title="General Info" />
       <Input label="Project Name" value={props.projectName} onChange={props.setProjectName} />
@@ -76,13 +76,15 @@ const ProjectForm: React.FC<ProjectFormProps> = (props) => {
       <Input label="Location" value={props.location} onChange={props.setLocation} />
 
       <SectionHeader title="Images" />
-      <div className="md:col-span-2">
-        <label className="block text-sm font-medium text-gray-300 mb-1">Cover Image</label>
-        <ImageUploader onImageUploaded={props.handleCoverImageUploaded} />
-      </div>
-      <div className="md:col-span-2">
-        <label className="block text-sm font-medium text-gray-300 mb-1">Poster Image</label>
-        <ImageUploader onImageUploaded={props.handlePosterImageUploaded} />
+      <div className="md:col-span-2 space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-1">Cover Image</label>
+          <ImageUploader onImageUploaded={props.handleCoverImageUploaded} />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-1">Poster Image</label>
+          <ImageUploader onImageUploaded={props.handlePosterImageUploaded} />
+        </div>
       </div>
 
       <SectionHeader title="Contact & Website" />
@@ -91,7 +93,7 @@ const ProjectForm: React.FC<ProjectFormProps> = (props) => {
       <Input label="Company Contact" value={props.productionCompanyContact} onChange={props.setProductionCompanyContact} />
 
       <SectionHeader title="Verification" />
-      <div className="flex items-center space-x-2 md:col-span-2">
+      <div className="flex items-center space-x-2 md:col-span-2 mt-2">
         <input
           id="isVerified"
           type="checkbox"

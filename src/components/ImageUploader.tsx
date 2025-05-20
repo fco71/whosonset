@@ -1,5 +1,10 @@
 import React, { useRef, useState } from 'react';
-import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import {
+  getStorage,
+  ref,
+  uploadBytesResumable,
+  getDownloadURL,
+} from 'firebase/storage';
 import { app } from '../firebase';
 
 interface ImageUploaderProps {
@@ -28,15 +33,20 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUploaded }) => {
     setFile(selectedFile);
     setImageName(selectedFile.name);
 
-    // Clean up old object URL
+    // Clean up previous object URL
     if (objectURLToRevoke) {
       URL.revokeObjectURL(objectURLToRevoke);
     }
 
-    // Create preview URL
-    const objectURL = URL.createObjectURL(selectedFile);
-    setImageSrc(objectURL);
-    setObjectURLToRevoke(objectURL);
+    // Safely create object URL
+    try {
+      const objectURL = URL.createObjectURL(selectedFile);
+      setImageSrc(objectURL);
+      setObjectURLToRevoke(objectURL);
+    } catch (err) {
+      console.error('Failed to create preview URL:', err);
+      setImageSrc(null);
+    }
 
     // Upload to Firebase
     const storage = getStorage(app);
@@ -48,7 +58,9 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUploaded }) => {
     uploadTask.on(
       'state_changed',
       (snapshot) => {
-        const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+        const progress = Math.round(
+          (snapshot.bytesTransferred / snapshot.totalBytes) * 100
+        );
         setUploadProgress(progress);
       },
       (error) => {
@@ -65,7 +77,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUploaded }) => {
   };
 
   const handleImageLoad = () => {
-    // Safe to revoke after image has loaded
+    // Safe to revoke after image loaded
     if (objectURLToRevoke) {
       URL.revokeObjectURL(objectURLToRevoke);
       setObjectURLToRevoke(null);
@@ -91,18 +103,18 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUploaded }) => {
             {imageSrc && (
               <img
                 src={imageSrc}
-                alt="Image Preview"
+                alt="Preview"
                 className="mt-2 max-w-full h-auto rounded-md shadow"
                 onLoad={handleImageLoad}
                 onError={(e) => {
-                  console.warn('Preview failed to load');
+                  console.warn('Preview failed to load:', e);
                   e.currentTarget.style.display = 'none';
                 }}
               />
             )}
           </>
         ) : (
-          <p className="text-sm text-gray-200 italic">No image selected</p>
+          <p className="text-sm text-gray-300 italic">No image selected</p>
         )}
       </div>
     </div>

@@ -33,6 +33,11 @@ const AddProject: React.FC = () => {
     if (user) {
       try {
         const projectsCollectionRef = collection(db, 'Projects');
+
+        // Only save if the URLs are real Firebase ones
+        const safeCoverUrl = coverImageUrl.startsWith('http') ? coverImageUrl : '';
+        const safePosterUrl = posterImageUrl.startsWith('http') ? posterImageUrl : '';
+
         await addDoc(projectsCollectionRef, {
           projectName,
           country,
@@ -46,14 +51,15 @@ const AddProject: React.FC = () => {
           genre,
           director,
           producer,
-          coverImageUrl,
-          posterImageUrl,
+          coverImageUrl: safeCoverUrl,
+          posterImageUrl: safePosterUrl,
           projectWebsite,
           productionBudget,
           productionCompanyContact,
           isVerified,
           owner_uid: user.uid,
         });
+
         console.log('Project added successfully!');
         navigate('/');
       } catch (error: any) {
@@ -66,11 +72,11 @@ const AddProject: React.FC = () => {
   };
 
   const handleCoverImageUploaded = (url: string) => {
-    setCoverImageUrl(url);
+    setCoverImageUrl(url); // Will always be Firebase URL
   };
 
   const handlePosterImageUploaded = (url: string) => {
-    setPosterImageUrl(url);
+    setPosterImageUrl(url); // Will always be Firebase URL
   };
 
   const handleCancel = () => {
@@ -125,7 +131,6 @@ const AddProject: React.FC = () => {
           handlePosterImageUploaded={handlePosterImageUploaded}
         />
 
-        {/* ✅ Updated Button Styles */}
         <div className="flex flex-col sm:flex-row justify-end gap-4 pt-6">
           <button
             type="button"
