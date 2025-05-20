@@ -20,7 +20,7 @@ module.exports = {
     },
     compress: true,
     port: 8080,
-    open: true, // Optional: opens browser automatically
+    open: false, // Optional: opens browser automatically
     hot: true,  // Optional: hot reload support
   },
   module: {
