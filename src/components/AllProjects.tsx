@@ -18,7 +18,9 @@ const AllProjects: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState(searchQuery);
   const [statusFilter, setStatusFilter] = useState('');
+  const [sortBy, setSortBy] = useState('newest'); // Added sort state
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -39,13 +41,23 @@ const AllProjects: React.FC = () => {
     fetchProjects();
   }, []);
 
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 300);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchQuery]);
+
   const resetFilters = () => {
     setSearchQuery('');
     setStatusFilter('');
   };
 
   const filteredProjects = projects.filter(project => {
-    const query = searchQuery.toLowerCase();
+    const query = debouncedQuery.toLowerCase();
     const matchesSearch =
       project.projectName.toLowerCase().includes(query) ||
       project.productionCompany.toLowerCase().includes(query);
@@ -53,6 +65,31 @@ const AllProjects: React.FC = () => {
       statusFilter === '' || project.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  const sortedProjects = [...filteredProjects].sort((a, b) => {  // Added sorting logic
+    if (sortBy === 'a-z') {
+      return a.projectName.localeCompare(b.projectName);
+    } else if (sortBy === 'z-a') {
+      return b.projectName.localeCompare(a.projectName);
+    } else {
+      return b.id.localeCompare(a.id); // Assumes newer projects have higher IDs (Firestore auto IDs are time-based)
+    }
+  });
+
+  const highlightMatch = (text: string, query: string) => {
+    if (!query) return text;
+    const regex = new RegExp(`(${query})`, 'gi');
+    const parts = text.split(regex);
+    return parts.map((part, i) =>
+      part.toLowerCase() === query.toLowerCase() ? (
+        <mark key={i} className="bg-yellow-300 text-gray-900 rounded px-1">
+          {part}
+        </mark>
+      ) : (
+        part
+      )
+    );
+  };
 
   if (loading) {
     return <div className="text-white p-8">Loading projects...</div>;
@@ -88,6 +125,15 @@ const AllProjects: React.FC = () => {
           <option value="Post-Production">Post-Production</option>
           <option value="Completed">Completed</option>
         </select>
+        <select
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value)}
+          className="w-full md:w-1/4 px-4 py-2 rounded-lg bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="newest">Newest</option>
+          <option value="a-z">A–Z</option>
+          <option value="z-a">Z–A</option>
+        </select>
 
         {(searchQuery || statusFilter) && (
           <button
@@ -101,7 +147,7 @@ const AllProjects: React.FC = () => {
 
       {/* Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {filteredProjects.map(project => (
+        {sortedProjects.map(project => (
           <Link
             to={`/projects/${project.id}`}
             key={project.id}
@@ -123,10 +169,10 @@ const AllProjects: React.FC = () => {
             <div className="flex-1 min-w-0 p-5 flex flex-col justify-between">
               <div className="space-y-2">
                 <h2 className="text-xl font-bold text-pink-400 truncate">
-                  {project.projectName}
+                  {highlightMatch(project.projectName, debouncedQuery)}
                 </h2>
                 <p className="text-white font-medium truncate">
-                  {project.productionCompany}
+                  {highlightMatch(project.productionCompany, debouncedQuery)}
                 </p>
                 {project.director && (
                   <p className="text-sm text-gray-300 truncate">
