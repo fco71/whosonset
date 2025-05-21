@@ -35,6 +35,9 @@ const ProjectDetail: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [isEditing, setIsEditing] = useState<boolean>(false);
 
+    // ADDED SNIPPET 2: Added saveSuccess state
+    const [saveSuccess, setSaveSuccess] = useState(false);
+
     // State variables for editing
     const [projectName, setProjectName] = useState<string>('');
     const [country, setCountry] = useState<string>('');
@@ -336,6 +339,10 @@ const ProjectDetail: React.FC = () => {
 
             setIsEditing(false);
 
+            // ADDED SNIPPET 2: After successful save
+            setSaveSuccess(true);
+            setTimeout(() => setSaveSuccess(false), 3000);
+
         } catch (saveError: any) {
             console.error("Error updating project:", saveError); // Log the full error
             setError(saveError.message || "Failed to save project changes.");
@@ -344,13 +351,22 @@ const ProjectDetail: React.FC = () => {
         }
     };
 
+    //  Define handleChange function
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+        const { name, value } = e.target;
+        setProject(prevProject => ({
+            ...prevProject!, // Assuming project is never null when editing
+            [name]: value
+        }));
+    };
+
     // ... (rest of your JSX and loading/error display logic)
     // Make sure to use projectId from useParams in JSX where needed if project might be null initially
 
     if (loading && !project && !isEditing) { // More specific initial loading
         return <p>Loading project details...</p>;
     }
-    
+
     if (loading && isEditing) {
         return <p>Uploading images and saving changes…</p>;
     }
@@ -358,7 +374,7 @@ const ProjectDetail: React.FC = () => {
     if (error && !isEditing && !project) { // Show error if project couldn't be fetched
         return <p>Error: {error}</p>;
     }
-    
+
     if (!project) { // If still no project after loading/error checks (e.g. not found)
          return <p>{error || 'Project not found or not available.'}</p>; // Display existing error or generic message
     }
@@ -368,153 +384,283 @@ const ProjectDetail: React.FC = () => {
     return (
         <div>
             <h2>Project Detail for ID: {projectId}</h2> {/* Display projectId for clarity */}
+            {/* REPLACED isEditing block with new form */}
             {isEditing ? (
+              <form className="max-w-5xl mx-auto p-6 bg-white rounded shadow-md space-y-6">
+                {error && <p className="text-red-600 text-sm">{error}</p>}
+                {saveSuccess && <p className="text-green-500 text-sm">Project updated successfully!</p>}
+
+                {/* Basic Details */}
                 <div>
-                    {error && <p style={{ color: 'red' }}>Error: {error}</p>}
-                    {/* Project Name */}
+                  <h3 className="text-xl font-semibold mb-4 border-b pb-1">Basic Information</h3>
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
-                        <label htmlFor="projectName">Project Name:</label>
-                        <input type="text" id="projectName" value={projectName} onChange={(e) => setProjectName(e.target.value)} />
+                      <label htmlFor="projectName" className="block text-sm font-medium">Project Name</label>
+                      <input type="text" id="projectName" value={projectName} onChange={(e) => setProjectName(e.target.value)} className="mt-1 w-full border rounded px-3 py-2" />
                     </div>
-                    {/* Country */}
                     <div>
-                        <label htmlFor="country">Country:</label>
-                        <input type="text" id="country" value={country} onChange={(e) => setCountry(e.target.value)} />
+                      <label htmlFor="country" className="block text-sm font-medium">Country</label>
+                      <input type="text" id="country" value={country} onChange={(e) => setCountry(e.target.value)} className="mt-1 w-full border rounded px-3 py-2" />
                     </div>
-                    {/* Production Company */}
                     <div>
-                        <label htmlFor="productionCompany">Production Company:</label>
-                        <input type="text" id="productionCompany" value={productionCompany} onChange={(e) => setProductionCompany(e.target.value)} />
+                      <label htmlFor="productionCompany" className="block text-sm font-medium">Production Company</label>
+                      <input type="text" id="productionCompany" value={productionCompany} onChange={(e) => setProductionCompany(e.target.value)} className="mt-1 w-full border rounded px-3 py-2" />
                     </div>
-                    {/* Status */}
                     <div>
-                        <label htmlFor="status">Status:</label>
-                        <select id="status" value={status} onChange={(e) => setStatus(e.target.value)}>
-                            <option value="Pre-Production">Pre-Production</option>
-                            <option value="Production">Production</option>
-                            <option value="Post-Production">Post-Production</option>
-                            <option value="Completed">Completed</option>
-                        </select>
+                      <label htmlFor="status" className="block text-sm font-medium">Status</label>
+                      <select id="status" value={status} onChange={(e) => setStatus(e.target.value)} className="mt-1 w-full border rounded px-3 py-2">
+                        <option value="Pre-Production">Pre-Production</option>
+                        <option value="Production">Production</option>
+                        <option value="Post-Production">Post-Production</option>
+                        <option value="Completed">Completed</option>
+                      </select>
                     </div>
-                    {/* Logline */}
-                    <div>
-                        <label htmlFor="logline">Logline:</label>
-                        <textarea id="logline" value={logline} onChange={(e) => setLogline(e.target.value)} />
-                    </div>
-                    {/* Synopsis */}
-                    <div>
-                        <label htmlFor="synopsis">Synopsis:</label>
-                        <textarea id="synopsis" value={synopsis} onChange={(e) => setSynopsis(e.target.value)} />
-                    </div>
-                    {/* Start Date */}
-                    <div>
-                        <label htmlFor="startDate">Start Date:</label>
-                        <input type="date" id="startDate" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-                    </div>
-                    {/* End Date */}
-                    <div>
-                        <label htmlFor="endDate">End Date:</label>
-                        <input type="date" id="endDate" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-                    </div>
-                    {/* Location */}
-                    <div>
-                        <label htmlFor="location">Location:</label>
-                        <input type="text" id="location" value={location} onChange={(e) => setLocation(e.target.value)} />
-                    </div>
-                    {/* Genre */}
-                    <div>
-                        <label htmlFor="genre">Genre:</label>
-                        <input type="text" id="genre" value={genre} onChange={(e) => setGenre(e.target.value)} />
-                    </div>
-                    {/* Director */}
-                    <div>
-                        <label htmlFor="director">Director:</label>
-                        <input type="text" id="director" value={director} onChange={(e) => setDirector(e.target.value)} />
-                    </div>
-                    {/* Producer */}
-                    <div>
-                        <label htmlFor="producer">Producer:</label>
-                        <input type="text" id="producer" value={producer} onChange={(e) => setProducer(e.target.value)} />
-                    </div>
-                    {/* Cover Image */}
-                    <div>
-                        <label htmlFor="coverImage">Cover Image:</label>
-                        <input type="file" id="coverImage" accept="image/*" onChange={handleCoverImageChange} />
-                        {coverImage ? (
-                            <img src={URL.createObjectURL(coverImage)} alt="Cover image preview" style={{ width: '150px', marginTop: '8px' }} />
-                        ) : (
-                            coverImageUrl && <img src={coverImageUrl} alt="Current Cover" style={{ width: '150px', marginTop: '8px' }} />
-                        )}
-                    </div>
-                    {/* Poster Image */}
-                    <div>
-                        <label htmlFor="posterImage">Poster Image:</label>
-                        <input type="file" id="posterImage" accept="image/*" onChange={handlePosterImageChange} />
-                        {posterImage ? (
-                            <img src={URL.createObjectURL(posterImage)} alt="Poster image preview" style={{ width: '150px', marginTop: '8px' }} />
-                        ) : (
-                            posterImageUrl && <img src={posterImageUrl} alt="Current Poster" style={{ width: '150px', marginTop: '8px' }} />
-                        )}
-                    </div>
-                    {/* Project Website */}
-                    <div>
-                        <label htmlFor="projectWebsite">Project Website:</label>
-                        <input type="url" id="projectWebsite" value={projectWebsite} onChange={(e) => setProjectWebsite(e.target.value)} />
-                    </div>
-                    {/* Production Budget */}
-                    <div>
-                        <label htmlFor="productionBudget">Production Budget:</label>
-                        <input type="text" id="productionBudget" value={productionBudget} onChange={(e) => setProductionBudget(e.target.value)} />
-                    </div>
-                    {/* Production Company Contact */}
-                    <div>
-                        <label htmlFor="productionCompanyContact">Production Company Contact:</label>
-                        <input type="text" id="productionCompanyContact" value={productionCompanyContact} onChange={(e) => setProductionCompanyContact(e.target.value)} />
-                    </div>
-                    {/* Verified */}
-                    <div>
-                        <label htmlFor="isVerified">Verified:</label>
-                        <input type="checkbox" id="isVerified" checked={isVerified} onChange={(e) => setIsVerified(e.target.checked)} />
-                    </div>
-                    <button onClick={handleSaveClick} disabled={loading}>
-                        {loading ? 'Saving...' : 'Save'}
-                    </button>
-                    <button onClick={handleCancelClick} disabled={loading}>Cancel</button>
+                  </div>
                 </div>
+
+                {/* Story Details */}
+                <div>
+                  <h3 className="text-xl font-semibold mb-4 border-b pb-1">Story Info</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="logline" className="block text-sm font-medium">Logline</label>
+                      <textarea id="logline" value={logline} onChange={(e) => setLogline(e.target.value)} className="mt-1 w-full border rounded px-3 py-2" rows={2} />
+                    </div>
+                    <div>
+                      <label htmlFor="synopsis" className="block text-sm font-medium">Synopsis</label>
+                      <textarea id="synopsis" value={synopsis} onChange={(e) => setSynopsis(e.target.value)} className="mt-1 w-full border rounded px-3 py-2" rows={4} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Production Timeline */}
+                <div>
+                  <h3 className="text-xl font-semibold mb-4 border-b pb-1">Production Timeline</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="startDate" className="block text-sm font-medium">Start Date</label>
+                      <input type="date" id="startDate" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="mt-1 w-full border rounded px-3 py-2" />
+                    </div>
+                    <div>
+                      <label htmlFor="endDate" className="block text-sm font-medium">End Date</label>
+                      <input type="date" id="endDate" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="mt-1 w-full border rounded px-3 py-2" />
+                    </div>
+                     <div>
+                      <label htmlFor="location" className="block text-sm font-medium">Location</label>
+                      <input type="text" id="location" value={location} onChange={(e) => setLocation(e.target.value)} className="mt-1 w-full border rounded px-3 py-2" />
+                    </div>
+                    <div>
+                      <label htmlFor="genre" className="block text-sm font-medium">Genre</label>
+                      <input type="text" id="genre" value={genre} onChange={(e) => setGenre(e.target.value)} className="mt-1 w-full border rounded px-3 py-2" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Creatives */}
+                <div>
+                  <h3 className="text-xl font-semibold mb-4 border-b pb-1">Creative Team</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="director" className="block text-sm font-medium">Director</label>
+                      <input type="text" id="director" value={director} onChange={(e) => setDirector(e.target.value)} className="mt-1 w-full border rounded px-3 py-2" />
+                    </div>
+                    <div>
+                      <label htmlFor="producer" className="block text-sm font-medium">Producer</label>
+                      <input type="text" id="producer" value={producer} onChange={(e) => setProducer(e.target.value)} className="mt-1 w-full border rounded px-3 py-2" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Media Upload */}
+                <div>
+                  <h3 className="text-xl font-semibold mb-4 border-b pb-1">Media</h3>
+                  <div className="grid grid-cols-2 gap-4 items-start">
+                    <div>
+                      <label htmlFor="coverImage" className="block text-sm font-medium">Cover Image</label>
+                      <input type="file" id="coverImage" accept="image/*" onChange={handleCoverImageChange} className="mt-1" />
+                      {coverImage ? (
+                        <img src={URL.createObjectURL(coverImage)} alt="Preview" className="w-36 mt-2 rounded shadow" />
+                      ) : (
+                        <img src={coverImageUrl} alt="Current Cover" className="w-36 mt-2 rounded shadow" />
+                      )}
+                    </div>
+                    <div>
+                      <label htmlFor="posterImage" className="block text-sm font-medium">Poster Image</label>
+                      <input type="file" id="posterImage" accept="image/*" onChange={handlePosterImageChange} className="mt-1" />
+                      {posterImage ? (
+                        <img src={URL.createObjectURL(posterImage)} alt="Preview" className="w-36 mt-2 rounded shadow" />
+                      ) : (
+                        posterImageUrl && <img src={posterImageUrl} alt="Current Poster" className="w-36 mt-2 rounded shadow" />
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Additional Info */}
+                <div>
+                  <h3 className="text-xl font-semibold mb-4 border-b pb-1">Additional</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="projectWebsite" className="block text-sm font-medium">Website</label>
+                      <input type="url" id="projectWebsite" value={projectWebsite} onChange={(e) => setProjectWebsite(e.target.value)} className="mt-1 w-full border rounded px-3 py-2" />
+                    </div>
+                    <div>
+                      <label htmlFor="productionBudget" className="block text-sm font-medium">Budget</label>
+                      <input type="text" id="productionBudget" value={productionBudget} onChange={(e) => setProductionBudget(e.target.value)} className="mt-1 w-full border rounded px-3 py-2" />
+                    </div>
+                    <div>
+                      <label htmlFor="productionCompanyContact" className="block text-sm font-medium">Company Contact</label>
+                      <input type="text" id="productionCompanyContact" value={productionCompanyContact} onChange={(e) => setProductionCompanyContact(e.target.value)} className="mt-1 w-full border rounded px-3 py-2" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Buttons */}
+                <div className="pt-4 border-t mt-6 flex justify-end space-x-4">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditing(false)}
+                    className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveClick}
+                    disabled={loading}
+                    className={`px-4 py-2 rounded text-white ${loading ? 'bg-green-400' : 'bg-green-600 hover:bg-green-700'}`}
+                  >
+                    {loading ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </div>
+              </form>
             ) : (
-                <div>
-                    <p><strong>Project Name:</strong> {project.projectName}</p>
-                    <p><strong>Country:</strong> {project.country}</p>
-                    <p><strong>Production Company:</strong> {project.productionCompany}</p>
-                    <p><strong>Status:</strong> {project.status}</p>
-                    <p><strong>Logline:</strong> {project.logline}</p>
-                    <p><strong>Synopsis:</strong> {project.synopsis}</p>
-                    <p><strong>Start Date:</strong> {project.startDate || 'N/A'}</p> {/* Display N/A if empty string */}
-                    <p><strong>End Date:</strong> {project.endDate || 'N/A'}</p>   {/* Display N/A if empty string */}
-                    <p><strong>Location:</strong> {project.location}</p>
-                    <p><strong>Genre:</strong> {project.genre}</p>
-                    <p><strong>Director:</strong> {project.director || 'N/A'}</p>
-                    <p><strong>Producer:</strong> {project.producer || 'N/A'}</p>
-                    {project.coverImageUrl && (
-                        <div>
-                            <strong>Cover Image:</strong><br />
-                            <img src={project.coverImageUrl} alt={`${project.projectName} Cover`} style={{ maxWidth: '200px' }} />
-                        </div>
-                    )}
-                    {project.posterImageUrl && (
-                        <div>
-                            <strong>Poster Image:</strong><br />
-                            <img src={project.posterImageUrl} alt={`${project.projectName} Poster`} style={{ maxWidth: '200px' }} />
-                        </div>
-                    )}
-                    <p><strong>Project Website:</strong> {project.projectWebsite ? <a href={project.projectWebsite.startsWith('http') ? project.projectWebsite : `http://${project.projectWebsite}`} target="_blank" rel="noopener noreferrer">{project.projectWebsite}</a> : 'N/A'}</p>
-                    <p><strong>Production Budget:</strong> {project.productionBudget || 'N/A'}</p>
-                    <p><strong>Production Company Contact:</strong> {project.productionCompanyContact || 'N/A'}</p>
-                    <p><strong>Verified:</strong> {project.isVerified ? 'Yes' : 'No'}</p>
-                    {auth.currentUser && project.owner_uid && auth.currentUser.uid === project.owner_uid && ( // Check project.owner_uid
-                        <button onClick={handleEditClick}>Edit</button>
-                    )}
-                </div>
+              <div className="space-y-10">
+                {/* Basic Info */}
+                <section>
+                  <h2 className="text-xl font-semibold mb-4 border-b border-gray-700 pb-1">Basic Info</h2>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block mb-1">Project Name</label>
+                      <input
+                        name="projectName"
+                        value={project?.projectName || ''} // default value to empty string
+                        onChange={handleChange}
+                        className="w-full bg-gray-800 p-2 rounded border border-gray-700"
+                        readOnly //disable editing of readonly view
+                      />
+                    </div>
+                    <div>
+                      <label className="block mb-1">Status</label>
+                      <select
+                        name="status"
+                        value={project?.status || ''} // default value to empty string
+                        onChange={handleChange}
+                        className="w-full bg-gray-800 p-2 rounded border border-gray-700"
+                        disabled //disable editing of readonly view
+                      >
+                        <option value="">Select</option>
+                        <option value="Pre-Production">Pre-Production</option>
+                        <option value="Filming">Filming</option>
+                        <option value="Post-Production">Post-Production</option>
+                        <option value="Released">Released</option>
+                      </select>
+                    </div>
+                  </div>
+                   <div className="grid grid-cols-1">
+                      <label className="block mb-1">Logline</label>
+                      <input
+                        name="logline"
+                        value={project?.logline || ''} // default value to empty string
+                        onChange={handleChange}
+                        className="w-full bg-gray-800 p-2 rounded border border-gray-700"
+                        readOnly //disable editing of readonly view
+                      />
+                   </div>
+                    <div className="grid grid-cols-1">
+                      <label className="block mb-1">Synopsis</label>
+                      <textarea
+                        name="synopsis"
+                        value={project?.synopsis || ''} // default value to empty string
+                        onChange={handleChange}
+                        rows={4}
+                        className="w-full bg-gray-800 p-2 rounded border border-gray-700"
+                        readOnly //disable editing of readonly view
+                      />
+                  </div>
+                </section>
+
+                {/* Production Info */}
+                <section>
+                  <h2 className="text-xl font-semibold mb-4 border-b border-gray-700 pb-1">Production Info</h2>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block mb-1">Production Company</label>
+                      <input
+                        name="productionCompany"
+                        value={project?.productionCompany || ''} // default value to empty string
+                        onChange={handleChange}
+                        className="w-full bg-gray-800 p-2 rounded border border-gray-700"
+                        readOnly //disable editing of readonly view
+                      />
+                    </div>
+                    <div>
+                      <label className="block mb-1">Country</label>
+                      <input
+                        name="country"
+                        value={project?.country || ''} // default value to empty string
+                        onChange={handleChange}
+                        className="w-full bg-gray-800 p-2 rounded border border-gray-700"
+                        readOnly //disable editing of readonly view
+                      />
+                    </div>
+                    <div>
+                      <label className="block mb-1">Start Date</label>
+                      <input
+                        type="date"
+                        name="startDate"
+                        value={project?.startDate || ''} // default value to empty string
+                        onChange={handleChange}
+                        className="w-full bg-gray-800 p-2 rounded border border-gray-700"
+                         readOnly //disable editing of readonly view
+                      />
+                    </div>
+                    <div>
+                      <label className="block mb-1">End Date</label>
+                      <input
+                        type="date"
+                        name="endDate"
+                        value={project?.endDate || ''} // default value to empty string
+                        onChange={handleChange}
+                        className="w-full bg-gray-800 p-2 rounded border border-gray-700"
+                         readOnly //disable editing of readonly view
+                      />
+                    </div>
+                     <div className="md:col-span-2">
+                      <label className="block mb-1">Location</label>
+                      <input
+                        name="location"
+                        value={project?.location || ''} // default value to empty string
+                        onChange={handleChange}
+                        className="w-full bg-gray-800 p-2 rounded border border-gray-700"
+                        readOnly //disable editing of readonly view
+                      />
+                    </div>
+                  </div>
+                </section>
+                {auth.currentUser && project?.owner_uid && auth.currentUser.uid === project.owner_uid && (
+                    //REPLACED with Snippet 1
+                    <button onClick={() => setIsEditing(true)} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                      Edit Project
+                    </button>
+                )}
+                {/* ADDED Snippet 2 - Second Edit Button */}
+                {auth.currentUser && project?.owner_uid && auth.currentUser.uid === project.owner_uid && (
+                    <button onClick={() => setIsEditing(true)} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                      Edit Project
+                    </button>
+                )}
+              </div>
             )}
         </div>
     );
