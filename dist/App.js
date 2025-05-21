@@ -1,6 +1,7 @@
-import { jsxs as _jsxs, jsx as _jsx } from "react/jsx-runtime";
+/*import { jsxs as _jsxs, jsx as _jsx } from "react/jsx-runtime";
 import styles from './App.module.css';
 import ProjectList from './components/ProjectList';
+import '../src/styles/globals.css';
 var App = function (_a) {
     var name = _a.name;
     var projects = [
