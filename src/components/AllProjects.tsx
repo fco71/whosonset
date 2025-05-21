@@ -14,13 +14,21 @@ interface Project {
   posterImageUrl?: string;
 }
 
+const statusBadgeColors: Record<string, string> = {
+  'In Development': 'bg-indigo-600 text-white',
+  'Pre-Production': 'bg-yellow-500 text-black',
+  'Production': 'bg-green-500 text-white',
+  'Post-Production': 'bg-orange-500 text-white',
+  'Completed': 'bg-blue-500 text-white',
+};
+
 const AllProjects: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState(searchQuery);
   const [statusFilter, setStatusFilter] = useState('');
-  const [sortBy, setSortBy] = useState('newest'); // Added sort state
+  const [sortBy, setSortBy] = useState('newest');
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -46,9 +54,7 @@ const AllProjects: React.FC = () => {
       setDebouncedQuery(searchQuery);
     }, 300);
 
-    return () => {
-      clearTimeout(handler);
-    };
+    return () => clearTimeout(handler);
   }, [searchQuery]);
 
   const resetFilters = () => {
@@ -66,14 +72,10 @@ const AllProjects: React.FC = () => {
     return matchesSearch && matchesStatus;
   });
 
-  const sortedProjects = [...filteredProjects].sort((a, b) => {  // Added sorting logic
-    if (sortBy === 'a-z') {
-      return a.projectName.localeCompare(b.projectName);
-    } else if (sortBy === 'z-a') {
-      return b.projectName.localeCompare(a.projectName);
-    } else {
-      return b.id.localeCompare(a.id); // Assumes newer projects have higher IDs (Firestore auto IDs are time-based)
-    }
+  const sortedProjects = [...filteredProjects].sort((a, b) => {
+    if (sortBy === 'a-z') return a.projectName.localeCompare(b.projectName);
+    if (sortBy === 'z-a') return b.projectName.localeCompare(a.projectName);
+    return b.id.localeCompare(a.id);
   });
 
   const highlightMatch = (text: string, query: string) => {
@@ -189,7 +191,11 @@ const AllProjects: React.FC = () => {
                 </p>
               </div>
               <div className="mt-3">
-                <span className="inline-block text-xs font-semibold px-3 py-1 bg-blue-700 text-white rounded-full">
+                <span
+                  className={`inline-block text-xs font-semibold px-3 py-1 rounded-full ${
+                    statusBadgeColors[project.status] || 'bg-gray-600 text-white'
+                  }`}
+                >
                   {project.status}
                 </span>
               </div>
