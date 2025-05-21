@@ -4,13 +4,11 @@ import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
 import { auth } from './firebase';
-// Combine imports from both files - KEEP ONLY ONE OF THESE LINES, BUT INCLUDE ALL NECESSARY FUNCTIONS
-import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
+import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
+
 import ProjectList from './components/ProjectList';
 import RegisterForm from './components/RegisterForm';
 import AllProjects from './components/AllProjects';
-
-// Component imports
 import Login from './components/Login';
 import Register from './components/Register';
 import PrivateRoute from './components/PrivateRoute';
@@ -18,48 +16,16 @@ import AddProject from './components/AddProject';
 import Home from './components/Home';
 import ProjectDetail from './components/ProjectDetail';
 
-const CrewSearch = () => <h2>Crew Search (Protected)</h2>;
+const CrewSearch = () => <h2 className="text-white p-6">Crew Search (Protected)</h2>;
 
 const App: React.FC = () => {
-    // CODE FROM src/App.tsx STARTS HERE
-    const [user, setUser] = useState<any>(null);
-
-    useEffect(() => {
-        const auth = getAuth();
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-            if (user) {
-                console.log('User signed in:', user);
-                setUser(user);
-            } else {
-                console.log('No user signed in.');
-                setUser(null);
-            }
-        });
-
-        return () => unsubscribe();
-    }, []);
-
-    const projects = [
-        { project_id: '1', project_name: 'Project A', logline: 'A thrilling adventure.' },
-        { project_id: '2', project_name: 'Project B', logline: 'A heartwarming romance.' },
-        { project_id: 3, project_name: 'Project C', logline: 'A hilarious comedy.' },
-    ];
-    // CODE FROM src/App.tsx ENDS HERE
-
     const [authUser, setAuthUser] = useState<any>(null);
 
     useEffect(() => {
-        const listen = onAuthStateChanged(auth, (user) => {
-            if (user) {
-                setAuthUser(user);
-            } else {
-                setAuthUser(null);
-            }
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            setAuthUser(user || null);
         });
-
-        return () => {
-            listen();
-        };
+        return () => unsubscribe();
     }, []);
 
     const userSignOut = () => {
@@ -70,28 +36,36 @@ const App: React.FC = () => {
 
     return (
         <Router>
-            <header>
-                <nav>
-                    <ul>
-                        <li><Link to="/">Home</Link></li>
-                        <li><Link to="/projects">All Projects</Link></li>
+            <header className="bg-gray-800 text-white py-4 px-6 shadow-md">
+                <nav className="flex flex-wrap items-center justify-between">
+                    <ul className="flex gap-4 flex-wrap">
+                        <li><Link to="/" className="hover:underline">Home</Link></li>
+                        <li><Link to="/projects" className="hover:underline">All Projects</Link></li>
                         {!authUser ? (
                             <>
-                                <li><Link to="/login">Login</Link></li>
-                                <li><Link to="/register">Register</Link></li>
+                                <li><Link to="/login" className="hover:underline">Login</Link></li>
+                                <li><Link to="/register" className="hover:underline">Register</Link></li>
                             </>
                         ) : (
                             <>
-                                <li><Link to="/projects/add">Add Project</Link></li>
-                                <li><Link to="/crew">Crew Search</Link></li>
-                                <li><button onClick={userSignOut}>Sign Out</button></li>
+                                <li><Link to="/projects/add" className="hover:underline">Add Project</Link></li>
+                                <li><Link to="/crew" className="hover:underline">Crew Search</Link></li>
+                                <li>
+                                    <button
+                                        onClick={userSignOut}
+                                        className="text-sm bg-red-600 hover:bg-red-500 px-3 py-1 rounded"
+                                    >
+                                        Sign Out
+                                    </button>
+                                </li>
                             </>
                         )}
                     </ul>
                 </nav>
             </header>
 
-            <div className="container grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Remove layout constraints here */}
+            <main className="bg-gray-900 min-h-screen">
                 <Routes>
                     <Route path="/" element={<Home />} />
                     <Route path="/projects" element={<AllProjects />} />
@@ -101,7 +75,7 @@ const App: React.FC = () => {
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
                 </Routes>
-            </div>
+            </main>
         </Router>
     );
 };

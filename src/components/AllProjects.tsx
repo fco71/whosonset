@@ -16,7 +16,6 @@ interface Project {
 const AllProjects: React.FC = () => {
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
-
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
 
@@ -62,12 +61,12 @@ const AllProjects: React.FC = () => {
         <div className="min-h-screen bg-gray-900 text-white p-6">
             <div className="flex items-center justify-between mb-6">
                 <h1 className="text-3xl font-bold">All Projects</h1>
-                <button className="bg-gray-700 px-4 py-2 rounded-full text-sm text-white hover:bg-gray-600 transition">
+                <button className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">
                     Add
                 </button>
             </div>
 
-            {/* Search and Filter Bar */}
+            {/* Search and Filter */}
             <div className="flex flex-col md:flex-row md:items-center gap-4 mb-6">
                 <input
                     type="text"
@@ -99,48 +98,61 @@ const AllProjects: React.FC = () => {
                 )}
             </div>
 
-            {/* ADD THE GRID CONTAINER HERE */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {filteredProjects.map(project => (
                     <div
                         key={project.id}
-                        className="flex flex-col md:flex-row bg-gray-800 rounded-xl overflow-hidden border border-blue-500/20 hover:border-blue-500/70 shadow-md hover:shadow-blue-500/20 transition duration-300 transform hover:scale-[1.01] h-48 md:h-56"
+                        className="flex flex-col md:flex-row bg-gray-800 rounded-xl overflow-hidden border border-blue-500/20 hover:border-blue-500/70 shadow-md hover:shadow-blue-500/30 transition duration-300 transform hover:scale-[1.01] min-h-[220px]"
                     >
-                        <div className="w-full md:w-40 md:min-w-[160px] h-48 md:h-full bg-black flex items-center justify-center">
+                        {/* Image */}
+                        <div className="w-full md:w-[200px] h-[220px] md:h-auto bg-black flex items-center justify-center shrink-0">
                             <img
                                 src={project.posterImageUrl || '/my-icon.png'}
                                 alt={project.projectName}
-                                className="max-w-full max-h-full object-contain"
+                                className="w-full h-full object-cover"
                                 onError={(e) => {
                                     (e.target as HTMLImageElement).src = '/my-icon.png';
                                 }}
                             />
                         </div>
 
-                        <div className="flex-1 p-4 flex flex-col justify-between overflow-hidden">
-                            <div className="space-y-1">
-                                <h2 className="text-xl font-bold text-pink-400 truncate">{project.projectName}</h2>
-                                <p className="font-semibold text-white truncate">{project.productionCompany}</p>
+                        {/* Info */}
+                        <div className="flex-1 min-w-0 p-5 flex flex-col justify-between">
+                            <div className="space-y-2">
+                                <h2 className="text-xl font-bold text-pink-400 truncate">
+                                    {project.projectName}
+                                </h2>
+                                <p className="text-white font-medium truncate">
+                                    {project.productionCompany}
+                                </p>
                                 {project.director && (
                                     <p className="text-sm text-gray-300 truncate">
-                                        <strong>Director:</strong> {project.director}
+                                        <span className="font-semibold">Director:</span> {project.director}
                                     </p>
                                 )}
                                 {project.producer && (
                                     <p className="text-sm text-gray-300 truncate">
-                                        <strong>Producer:</strong> {project.producer}
+                                        <span className="font-semibold">Producer:</span> {project.producer}
                                     </p>
                                 )}
-                                <p className="text-sm text-gray-400 mt-2 line-clamp-2">
+                                <p className="text-sm text-gray-400 mt-1 line-clamp-2">
                                     {project.logline}
                                 </p>
+                            </div>
+                            <div className="mt-3">
+                                <span className="inline-block text-xs font-semibold px-3 py-1 bg-blue-700 text-white rounded-full">
+                                    {project.status}
+                                </span>
                             </div>
                         </div>
                     </div>
                 ))}
 
                 {filteredProjects.length === 0 && (
-                    <div className="text-center text-gray-400 mt-8">No projects match your filters.</div>
+                    <div className="text-center text-gray-400 mt-8 col-span-full">
+                        No projects match your filters.
+                    </div>
                 )}
             </div>
         </div>
