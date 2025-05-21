@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
+import { Link } from 'react-router-dom';
 
 interface Project {
   id: string;
@@ -101,9 +102,10 @@ const AllProjects: React.FC = () => {
       {/* Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {filteredProjects.map(project => (
-          <div
+          <Link
+            to={`/projects/${project.id}`}
             key={project.id}
-            className="flex flex-col md:flex-row bg-gray-800 rounded-xl overflow-hidden border border-blue-500/20 hover:border-blue-500/70 shadow-md hover:shadow-blue-500/30 transition duration-300 transform hover:scale-[1.01] min-h-[220px]"
+            className="flex flex-col md:flex-row bg-gray-800 rounded-xl overflow-hidden border border-blue-500/20 hover:border-blue-500/70 shadow-md hover:shadow-blue-500/30 transition duration-300 transform hover:scale-[1.01] min-h-[220px] cursor-pointer"
           >
             {/* Fixed Image Container */}
             <div className="w-full md:w-[200px] h-[200px] bg-black flex items-center justify-center shrink-0">
@@ -146,7 +148,7 @@ const AllProjects: React.FC = () => {
                 </span>
               </div>
             </div>
-          </div>
+          </Link>
         ))}
 
         {filteredProjects.length === 0 && (
