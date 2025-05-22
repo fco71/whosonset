@@ -2,9 +2,15 @@
 import './styles/globals.css';
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
+import {
+    BrowserRouter as Router,
+    Route,
+    Routes,
+    Link,
+    useLocation
+} from 'react-router-dom';
 import { auth } from './firebase';
-import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 
 import ProjectList from './components/ProjectList';
 import RegisterForm from './components/RegisterForm';
@@ -16,10 +22,13 @@ import AddProject from './components/AddProject';
 import Home from './components/Home';
 import ProjectDetail from './components/ProjectDetail';
 
+import { AnimatePresence } from 'framer-motion';
+
 const CrewSearch = () => <h2 className="text-white p-6">Crew Search (Protected)</h2>;
 
 const App: React.FC = () => {
     const [authUser, setAuthUser] = useState<any>(null);
+    const location = useLocation(); // Needed for AnimatePresence keying
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -35,7 +44,7 @@ const App: React.FC = () => {
     };
 
     return (
-        <Router>
+        <>
             <header className="bg-gray-800 text-white py-4 px-6 shadow-md">
                 <nav className="flex flex-wrap items-center justify-between">
                     <ul className="flex gap-4 flex-wrap">
@@ -64,21 +73,29 @@ const App: React.FC = () => {
                 </nav>
             </header>
 
-            {/* Remove layout constraints here */}
             <main className="bg-gray-900 min-h-screen">
-                <Routes>
-                    <Route path="/" element={<Home />} />
-                    <Route path="/projects" element={<AllProjects />} />
-                    <Route path="/projects/:projectId" element={<ProjectDetail />} />
-                    <Route path="/projects/add" element={<PrivateRoute><AddProject /></PrivateRoute>} />
-                    <Route path="/crew" element={<PrivateRoute><CrewSearch /></PrivateRoute>} />
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/register" element={<Register />} />
-                </Routes>
+                <AnimatePresence mode="wait">
+                    <Routes location={location} key={location.pathname}>
+                        <Route path="/" element={<Home />} />
+                        <Route path="/projects" element={<AllProjects />} />
+                        <Route path="/projects/:projectId" element={<ProjectDetail />} />
+                        <Route path="/projects/add" element={<PrivateRoute><AddProject /></PrivateRoute>} />
+                        <Route path="/crew" element={<PrivateRoute><CrewSearch /></PrivateRoute>} />
+                        <Route path="/login" element={<Login />} />
+                        <Route path="/register" element={<Register />} />
+                    </Routes>
+                </AnimatePresence>
             </main>
-        </Router>
+        </>
     );
 };
+
+// Router wrapper to allow AnimatePresence to access location
+const RootWithRouter = () => (
+    <Router>
+        <App />
+    </Router>
+);
 
 const rootElement = document.getElementById('root');
 
@@ -86,7 +103,7 @@ if (rootElement) {
     const root = ReactDOM.createRoot(rootElement);
     root.render(
         <React.StrictMode>
-            <App />
+            <RootWithRouter />
         </React.StrictMode>
     );
 } else {

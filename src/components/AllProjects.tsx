@@ -3,6 +3,7 @@ import { collection, getDocs } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { onAuthStateChanged } from 'firebase/auth';
 
 interface Project {
   id: string;
@@ -28,12 +29,25 @@ const getStatusBadgeColor = (rawStatus: string) => {
   return 'bg-gray-600 text-white';
 };
 
-const formatStatus = (status: string) => {
-  return status
+const formatStatus = (status: string) =>
+  status
     .toLowerCase()
     .split(/[-_\s]+/)
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
+
+const containerVariants = {
+  hidden: {},
+  show: {
+    transition: {
+      staggerChildren: 0.08,
+    },
+  },
+};
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0 },
 };
 
 const AllProjects: React.FC = () => {
@@ -43,14 +57,20 @@ const AllProjects: React.FC = () => {
   const [debouncedQuery, setDebouncedQuery] = useState(searchQuery);
   const [statusFilter, setStatusFilter] = useState('');
   const [sortBy, setSortBy] = useState('newest');
+  const [authUser, setAuthUser] = useState<any>(null);
 
-  const user = auth.currentUser;
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setAuthUser(user);
+    });
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     const fetchProjects = async () => {
       try {
         const snapshot = await getDocs(collection(db, 'Projects'));
-        const data = snapshot.docs.map(doc => ({
+        const data = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         })) as Project[];
@@ -69,7 +89,6 @@ const AllProjects: React.FC = () => {
     const handler = setTimeout(() => {
       setDebouncedQuery(searchQuery);
     }, 300);
-
     return () => clearTimeout(handler);
   }, [searchQuery]);
 
@@ -78,13 +97,12 @@ const AllProjects: React.FC = () => {
     setStatusFilter('');
   };
 
-  const filteredProjects = projects.filter(project => {
+  const filteredProjects = projects.filter((project) => {
     const query = debouncedQuery.toLowerCase();
     const matchesSearch =
       project.projectName.toLowerCase().includes(query) ||
       project.productionCompany.toLowerCase().includes(query);
-    const matchesStatus =
-      statusFilter === '' || project.status === statusFilter;
+    const matchesStatus = statusFilter === '' || project.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
@@ -116,27 +134,26 @@ const AllProjects: React.FC = () => {
   return (
     <motion.div
       className="min-h-screen bg-gray-900 text-white p-6"
-      initial={{ opacity: 0, y: 30 }}
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -30 }}
-      transition={{ duration: 0.4 }}
+      exit={{ opacity: 0, y: 20 }}
+      transition={{ duration: 0.1, ease: 'easeOut' }}
     >
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">All Projects</h1>
-
-        {user && (
+        {authUser && (
           <Link
-            to="/add-project"
-            className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2"
+            to="/projects/add"
+            className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition"
           >
             <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5"
+              className="w-4 h-4"
               fill="none"
-              viewBox="0 0 24 24"
               stroke="currentColor"
+              strokeWidth={2}
+              viewBox="0 0 24 24"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
             </svg>
             Add
           </Link>
@@ -184,56 +201,65 @@ const AllProjects: React.FC = () => {
         )}
       </div>
 
-      {/* Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {sortedProjects.map(project => (
-          <Link
-            to={`/projects/${project.id}`}
+      {/* Animated Cards */}
+      <motion.div
+        className="grid grid-cols-1 md:grid-cols-2 gap-6"
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+      >
+        {sortedProjects.map((project) => (
+          <motion.div
             key={project.id}
-            className="flex flex-col md:flex-row bg-gray-800 rounded-xl overflow-hidden border border-blue-500/20 hover:border-blue-500/70 shadow-md hover:shadow-blue-500/30 transition duration-300 transform hover:scale-[1.01] min-h-[220px] cursor-pointer"
+            variants={cardVariants}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
           >
-            <div className="w-full md:w-[200px] h-[200px] bg-black flex items-center justify-center shrink-0">
-              <img
-                src={project.posterImageUrl || '/my-icon.png'}
-                alt={project.projectName}
-                className="max-w-full max-h-full object-contain"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/my-icon.png';
-                }}
-              />
-            </div>
-
-            <div className="flex-1 min-w-0 p-5 flex flex-col justify-between">
-              <div className="space-y-2">
-                <h2 className="text-xl font-bold text-pink-400 truncate">
-                  {highlightMatch(project.projectName, debouncedQuery)}
-                </h2>
-                <p className="text-white font-medium truncate">
-                  {highlightMatch(project.productionCompany, debouncedQuery)}
-                </p>
-                {project.director && (
-                  <p className="text-sm text-gray-300 truncate">
-                    <span className="font-semibold">Director:</span> {project.director}
-                  </p>
-                )}
-                {project.producer && (
-                  <p className="text-sm text-gray-300 truncate">
-                    <span className="font-semibold">Producer:</span> {project.producer}
-                  </p>
-                )}
-                <p className="text-sm text-gray-400 mt-1 line-clamp-2">
-                  {project.logline}
-                </p>
+            <Link
+              to={`/projects/${project.id}`}
+              className="flex flex-col md:flex-row bg-gray-800 rounded-xl overflow-hidden border border-blue-500/20 hover:border-blue-500/70 shadow-md hover:shadow-blue-500/30 transition duration-300 transform hover:scale-[1.01] min-h-[220px] cursor-pointer"
+            >
+              <div className="w-full md:w-[200px] h-[200px] bg-black flex items-center justify-center shrink-0">
+                <img
+                  src={project.posterImageUrl || '/my-icon.png'}
+                  alt={project.projectName}
+                  className="max-w-full max-h-full object-contain"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/my-icon.png';
+                  }}
+                />
               </div>
-              <div className="mt-3">
-                <span
-                  className={`inline-block text-xs font-semibold px-3 py-1 rounded-full ${getStatusBadgeColor(project.status)}`}
-                >
-                  {formatStatus(project.status)}
-                </span>
+              <div className="flex-1 min-w-0 p-5 flex flex-col justify-between">
+                <div className="space-y-2">
+                  <h2 className="text-xl font-bold text-pink-400 truncate">
+                    {highlightMatch(project.projectName, debouncedQuery)}
+                  </h2>
+                  <p className="text-white font-medium truncate">
+                    {highlightMatch(project.productionCompany, debouncedQuery)}
+                  </p>
+                  {project.director && (
+                    <p className="text-sm text-gray-300 truncate">
+                      <span className="font-semibold">Director:</span> {project.director}
+                    </p>
+                  )}
+                  {project.producer && (
+                    <p className="text-sm text-gray-300 truncate">
+                      <span className="font-semibold">Producer:</span> {project.producer}
+                    </p>
+                  )}
+                  <p className="text-sm text-gray-400 mt-1 line-clamp-2">{project.logline}</p>
+                </div>
+                <div className="mt-3">
+                  <span
+                    className={`inline-block text-xs font-semibold px-3 py-1 rounded-full ${getStatusBadgeColor(
+                      project.status
+                    )}`}
+                  >
+                    {formatStatus(project.status)}
+                  </span>
+                </div>
               </div>
-            </div>
-          </Link>
+            </Link>
+          </motion.div>
         ))}
 
         {filteredProjects.length === 0 && (
@@ -241,7 +267,7 @@ const AllProjects: React.FC = () => {
             No projects match your filters.
           </div>
         )}
-      </div>
+      </motion.div>
     </motion.div>
   );
 };
