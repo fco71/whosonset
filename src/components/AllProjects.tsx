@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, auth } from '../firebase';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 
 interface Project {
   id: string;
@@ -14,12 +15,25 @@ interface Project {
   posterImageUrl?: string;
 }
 
-const statusBadgeColors: Record<string, string> = {
-  'In Development': 'bg-indigo-600 text-white',
-  'Pre-Production': 'bg-yellow-500 text-black',
-  'Production': 'bg-green-500 text-white',
-  'Post-Production': 'bg-orange-500 text-white',
-  'Completed': 'bg-blue-500 text-white',
+const getStatusBadgeColor = (rawStatus: string) => {
+  const status = rawStatus.toLowerCase();
+
+  if (status.includes('development')) return 'bg-indigo-600 text-white';
+  if (status.includes('pre')) return 'bg-yellow-500 text-black';
+  if (status.includes('filming') || status.includes('production')) return 'bg-green-500 text-white';
+  if (status.includes('post')) return 'bg-orange-500 text-white';
+  if (status.includes('completed')) return 'bg-blue-500 text-white';
+  if (status.includes('cancel')) return 'bg-red-500 text-white';
+
+  return 'bg-gray-600 text-white';
+};
+
+const formatStatus = (status: string) => {
+  return status
+    .toLowerCase()
+    .split(/[-_\s]+/)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
 };
 
 const AllProjects: React.FC = () => {
@@ -29,6 +43,8 @@ const AllProjects: React.FC = () => {
   const [debouncedQuery, setDebouncedQuery] = useState(searchQuery);
   const [statusFilter, setStatusFilter] = useState('');
   const [sortBy, setSortBy] = useState('newest');
+
+  const user = auth.currentUser;
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -98,12 +114,33 @@ const AllProjects: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-6">
+    <motion.div
+      className="min-h-screen bg-gray-900 text-white p-6"
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -30 }}
+      transition={{ duration: 0.4 }}
+    >
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">All Projects</h1>
-        <button className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">
-          Add
-        </button>
+
+        {user && (
+          <Link
+            to="/add-project"
+            className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Add
+          </Link>
+        )}
       </div>
 
       {/* Search and Filter */}
@@ -155,7 +192,6 @@ const AllProjects: React.FC = () => {
             key={project.id}
             className="flex flex-col md:flex-row bg-gray-800 rounded-xl overflow-hidden border border-blue-500/20 hover:border-blue-500/70 shadow-md hover:shadow-blue-500/30 transition duration-300 transform hover:scale-[1.01] min-h-[220px] cursor-pointer"
           >
-            {/* Fixed Image Container */}
             <div className="w-full md:w-[200px] h-[200px] bg-black flex items-center justify-center shrink-0">
               <img
                 src={project.posterImageUrl || '/my-icon.png'}
@@ -167,7 +203,6 @@ const AllProjects: React.FC = () => {
               />
             </div>
 
-            {/* Info Section */}
             <div className="flex-1 min-w-0 p-5 flex flex-col justify-between">
               <div className="space-y-2">
                 <h2 className="text-xl font-bold text-pink-400 truncate">
@@ -192,11 +227,9 @@ const AllProjects: React.FC = () => {
               </div>
               <div className="mt-3">
                 <span
-                  className={`inline-block text-xs font-semibold px-3 py-1 rounded-full ${
-                    statusBadgeColors[project.status] || 'bg-gray-600 text-white'
-                  }`}
+                  className={`inline-block text-xs font-semibold px-3 py-1 rounded-full ${getStatusBadgeColor(project.status)}`}
                 >
-                  {project.status}
+                  {formatStatus(project.status)}
                 </span>
               </div>
             </div>
@@ -209,7 +242,7 @@ const AllProjects: React.FC = () => {
           </div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 };
 
