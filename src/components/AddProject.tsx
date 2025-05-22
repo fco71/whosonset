@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import ProjectForm from './ProjectForm';
 
@@ -58,6 +58,7 @@ const AddProject: React.FC = () => {
           productionCompanyContact,
           isVerified,
           owner_uid: user.uid,
+          createdAt: serverTimestamp(), // ✅ required for pagination
         });
 
         console.log('Project added successfully!');
