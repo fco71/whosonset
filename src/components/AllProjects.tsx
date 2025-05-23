@@ -23,6 +23,7 @@ interface Project {
   director?: string;
   producer?: string;
   posterImageUrl?: string;
+  genres?: string[];
 }
 
 const PROJECTS_PER_PAGE = 48;
@@ -70,6 +71,7 @@ const AllProjects: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const [authUser, setAuthUser] = useState<any>(null);
+  const [pageNumber, setPageNumber] = useState(1);
 
   const isInitialLoad = useRef(true);
 
@@ -84,7 +86,7 @@ const AllProjects: React.FC = () => {
   }, [searchQuery]);
 
   useEffect(() => {
-    fetchProjects();
+    fetchProjects('reset');
   }, []);
 
   const fetchProjects = async (direction: 'next' | 'prev' | 'reset' = 'reset') => {
@@ -94,13 +96,16 @@ const AllProjects: React.FC = () => {
 
       if (direction === 'next' && lastVisible) {
         q = query(collection(db, 'Projects'), orderBy('projectName'), startAfter(lastVisible), limit(PROJECTS_PER_PAGE));
+        setPageNumber((prev) => prev + 1);
       } else if (direction === 'prev' && prevPages.length > 0) {
         const prev = prevPages[prevPages.length - 2];
         q = query(collection(db, 'Projects'), orderBy('projectName'), startAfter(prev), limit(PROJECTS_PER_PAGE));
         setPrevPages((prev) => prev.slice(0, -1));
+        setPageNumber((prev) => Math.max(prev - 1, 1));
       } else {
         q = query(collection(db, 'Projects'), orderBy('projectName'), limit(PROJECTS_PER_PAGE));
         setPrevPages([]);
+        setPageNumber(1);
       }
 
       const snapshot = await getDocs(q);
@@ -137,7 +142,7 @@ const AllProjects: React.FC = () => {
   const sortedProjects = [...filteredProjects].sort((a, b) => {
     if (sortBy === 'a-z') return a.projectName.localeCompare(b.projectName);
     if (sortBy === 'z-a') return b.projectName.localeCompare(a.projectName);
-    return b.id.localeCompare(a.id); // fallback: newest
+    return b.id.localeCompare(a.id);
   });
 
   const highlightMatch = (text: string, query: string) => {
@@ -154,6 +159,20 @@ const AllProjects: React.FC = () => {
       )
     );
   };
+
+  const renderSkeletons = () =>
+    Array.from({ length: 6 }).map((_, i) => (
+      <div key={i} className="flex flex-col md:flex-row animate-pulse bg-gray-800 rounded-xl overflow-hidden border border-gray-700 min-h-[220px]">
+        <div className="w-full md:w-[200px] h-[200px] bg-gray-700" />
+        <div className="flex-1 p-5 space-y-4">
+          <div className="h-6 bg-gray-700 rounded w-3/4" />
+          <div className="h-4 bg-gray-700 rounded w-1/2" />
+          <div className="h-4 bg-gray-700 rounded w-1/3" />
+          <div className="h-3 bg-gray-600 rounded w-full" />
+          <div className="h-3 bg-gray-600 rounded w-5/6" />
+        </div>
+      </div>
+    ));
 
   return (
     <motion.div
@@ -220,7 +239,7 @@ const AllProjects: React.FC = () => {
 
       {/* Cards */}
       {loading ? (
-        <div className="text-white py-12">Loading projects...</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">{renderSkeletons()}</div>
       ) : (
         <>
           <motion.div
@@ -264,6 +283,18 @@ const AllProjects: React.FC = () => {
                         </p>
                       )}
                       <p className="text-sm text-gray-400 mt-1 line-clamp-2">{project.logline}</p>
+                      {project.genres && project.genres.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-1">
+                          {project.genres.map((genre, index) => (
+                            <span
+                              key={index}
+                              className="bg-gray-700 text-xs text-white px-2 py-1 rounded-full"
+                            >
+                              {genre}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     <div className="mt-3">
                       <span
@@ -285,7 +316,7 @@ const AllProjects: React.FC = () => {
           )}
 
           {/* Pagination Controls */}
-          <div className="flex justify-center gap-4 mt-10">
+          <div className="flex justify-center items-center gap-6 mt-10">
             <button
               disabled={prevPages.length < 2}
               onClick={() => fetchProjects('prev')}
@@ -293,6 +324,7 @@ const AllProjects: React.FC = () => {
             >
               Previous
             </button>
+            <span className="text-gray-300 text-sm">Page {pageNumber}</span>
             <button
               disabled={projects.length < PROJECTS_PER_PAGE}
               onClick={() => fetchProjects('next')}

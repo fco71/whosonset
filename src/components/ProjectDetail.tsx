@@ -2,8 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { db, auth, storage } from '../firebase';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, query, where, orderBy, startAfter, limit, getDocs, QueryDocumentSnapshot } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import { Link } from 'react-router-dom'; // Import Link from react-router-dom
 
 interface Project {
     id: string;
@@ -26,6 +27,16 @@ interface Project {
     productionCompanyContact: string;
     isVerified: boolean;
     owner_uid: string;
+    genres?: string[];
+    ownerId?: string;
+}
+
+interface Review {
+    id: string;
+    author: string;
+    content: string;
+    createdAt: Date;
+    projectId: string;
 }
 
 const ProjectDetail: React.FC = () => {
@@ -37,6 +48,11 @@ const ProjectDetail: React.FC = () => {
     const [saveSuccess, setSaveSuccess] = useState(false);
     const [coverImage, setCoverImage] = useState<File | null>(null);
     const [posterImage, setPosterImage] = useState<File | null>(null);
+    const [reviews, setReviews] = useState<Review[]>([]);
+    const [lastVisibleReview, setLastVisibleReview] = useState<QueryDocumentSnapshot | null>(null);
+    const [prevReviewPages, setPrevReviewPages] = useState<QueryDocumentSnapshot[]>([]);
+    const [loadingReviews, setLoadingReviews] = useState(false);
+    const user = auth.currentUser;
 
     // Form state object
     const [formState, setFormState] = useState<Partial<Project>>({});
@@ -74,6 +90,8 @@ const ProjectDetail: React.FC = () => {
                             productionCompanyContact: firestoreData.productionCompanyContact || '',
                             isVerified: typeof firestoreData.isVerified === 'boolean' ? firestoreData.isVerified : false,
                             owner_uid: firestoreData.owner_uid || '',
+                            genres: firestoreData.genres || [],
+                            ownerId: firestoreData.ownerId || '',
                         };
                         setProject(projectWithDefaults);
 
@@ -97,15 +115,81 @@ const ProjectDetail: React.FC = () => {
         fetchProject();
     }, [projectId]);
 
+
+    useEffect(() => {
+        if (projectId) {
+            fetchReviews('reset');
+        }
+    }, [projectId]);
+
+    useEffect(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, [reviews]);
+
+    const REVIEWS_PER_PAGE = 5;
+
+    const fetchReviews = async (direction: 'next' | 'prev' | 'reset' = 'reset') => {
+        if (!projectId) return;
+        setLoadingReviews(true);
+
+        try {
+            let q;
+            const reviewsCollection = collection(db, 'Projects', projectId, 'Reviews');
+
+            if (direction === 'next' && lastVisibleReview) {
+                q = query(
+                    reviewsCollection,
+                    orderBy('createdAt', 'desc'),
+                    startAfter(lastVisibleReview),
+                    limit(REVIEWS_PER_PAGE)
+                );
+            } else if (direction === 'prev' && prevReviewPages.length > 1) {
+                const prev = prevReviewPages[prevReviewPages.length - 2];
+                q = query(
+                    reviewsCollection,
+                    orderBy('createdAt', 'desc'),
+                    startAfter(prev),
+                    limit(REVIEWS_PER_PAGE)
+                );
+                setPrevReviewPages((prev) => prev.slice(0, -1));
+            } else {
+                q = query(
+                    reviewsCollection,
+                    orderBy('createdAt', 'desc'),
+                    limit(REVIEWS_PER_PAGE)
+                );
+                setPrevReviewPages([]);
+            }
+
+            const snapshot = await getDocs(q);
+            const docs = snapshot.docs;
+            const data = docs.map((doc) => ({
+                id: doc.id,
+                projectId: projectId,
+                ...(doc.data() as Omit<Review, 'id' | 'createdAt' | 'projectId'>),
+                createdAt: doc.data().createdAt?.toDate?.() || new Date(),
+            }));
+
+            setReviews(data);
+            setLastVisibleReview(docs[docs.length - 1] || null);
+            if (direction === 'next') setPrevReviewPages((prev) => [...prev, docs[0]]);
+            if (direction === 'reset') setPrevReviewPages([docs[0]]);
+        } catch (err) {
+            console.error('Failed to fetch reviews:', err);
+        } finally {
+            setLoadingReviews(false);
+        }
+    };
+
     const handleEditClick = () => {
         setIsEditing(true);
-        setFormState(project!); // Populate form state with current project data
+        setFormState(project!);
         setError(null);
     };
 
     const handleCancelClick = () => {
         setIsEditing(false);
-        setFormState(project!); // Reset form state to original project data
+        setFormState(project!);
         setCoverImage(null);
         setPosterImage(null);
         setError(null);
@@ -247,6 +331,37 @@ const ProjectDetail: React.FC = () => {
         }));
     };
 
+    const getStatusBadgeColor = (rawStatus: string) => {
+        const status = rawStatus.toLowerCase();
+        if (status.includes('development')) return 'bg-indigo-600 text-white';
+        if (status.includes('pre')) return 'bg-yellow-500 text-black';
+        if (status.includes('filming') || status.includes('production')) return 'bg-green-500 text-white';
+        if (status.includes('post')) return 'bg-orange-500 text-white';
+        if (status.includes('completed')) return 'bg-blue-500 text-white';
+        if (status.includes('cancel')) return 'bg-red-500 text-white';
+        return 'bg-gray-600 text-white';
+    };
+
+    const formatStatus = (status: string) =>
+        status
+            .toLowerCase()
+            .split(/[-_\s]+/)
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+
+    const Field = ({ label, value }: { label: string; value: string }) => (
+        <div>
+            <dt className="text-sm font-medium text-gray-400">{label}</dt>
+            <dd className="text-sm text-white">{value || '—'}</dd>
+        </div>
+    );
+
+    const handleSuggestClick = () => {
+        const subject = `Suggestion for project: ${project?.projectName}`;
+        const body = encodeURIComponent(`I would like to suggest an update to the project "${project?.projectName}".\n\nDetails:\n`);
+        window.location.href = `mailto:admin@example.com?subject=${subject}&body=${body}`;
+    };
+
     if (loading && !project && !isEditing) {
         return <p>Loading project details...</p>;
     }
@@ -263,9 +378,67 @@ const ProjectDetail: React.FC = () => {
         return <p>{error || 'Project not found or not available.'}</p>;
     }
 
+    const reviewSection = (
+        <section className="mt-12">
+            <h2 className="text-2xl font-semibold text-white mb-6">Reviews</h2>
+
+            {loadingReviews ? (
+                <ul className="space-y-4">
+                    {[...Array(REVIEWS_PER_PAGE)].map((_, i) => (
+                        <li key={i} className="bg-gray-800 rounded-lg p-4 animate-pulse">
+                            <div className="h-4 bg-gray-700 rounded w-1/4 mb-2"></div>
+                            <div className="h-4 bg-gray-700 rounded w-3/4 mb-1"></div>
+                            <div className="h-4 bg-gray-700 rounded w-2/3"></div>
+                        </li>
+                    ))}
+                </ul>
+            ) : reviews.length === 0 ? (
+                <p className="text-gray-400">No reviews yet.</p>
+            ) : (
+                <ul className="space-y-4">
+                    {reviews.map((r) => (
+                        <li key={r.id} className="bg-gray-900 rounded-lg p-5 border border-gray-700">
+                            <div className="flex justify-between items-center mb-2">
+                                <span className="text-sm font-medium text-teal-400">{r.author}</span>
+                                <span className="text-xs text-gray-500">{r.createdAt.toLocaleString()}</span>
+                            </div>
+                            <p className="text-sm text-white">{r.content}</p>
+                        </li>
+                    ))}
+                </ul>
+            )}
+
+            {/* Pagination */}
+            <div className="mt-8 flex items-center justify-between gap-6">
+                <button
+                    onClick={() => fetchReviews('prev')}
+                    disabled={prevReviewPages.length < 2}
+                    className="px-4 py-2 rounded-md text-sm font-medium bg-gray-700 hover:bg-gray-600 text-white disabled:opacity-40"
+                >
+                    ← Previous
+                </button>
+
+                <span className="text-gray-400 text-sm">
+                    Page {prevReviewPages.length || 1}
+                </span>
+
+                <button
+                    onClick={() => fetchReviews('next')}
+                    disabled={reviews.length < REVIEWS_PER_PAGE}
+                    className="px-4 py-2 rounded-md text-sm font-medium bg-gray-700 hover:bg-gray-600 text-white disabled:opacity-40"
+                >
+                    Next →
+                </button>
+            </div>
+        </section>
+    );
+
     return (
-        <div>
-            <h2>Project Detail for ID: {projectId}</h2>
+        <div className="min-h-screen bg-gray-900 p-6">
+            <Link to="/" className="inline-block mb-6 text-blue-500 hover:text-blue-400 transition-colors">
+                ← Back to All Projects
+            </Link>
+
             {isEditing ? (
                 <form className="max-w-5xl mx-auto p-6 bg-white rounded shadow-md space-y-6">
                     {error && <p className="text-red-600 text-sm">{error}</p>}
@@ -409,113 +582,77 @@ const ProjectDetail: React.FC = () => {
                     </div>
                 </form>
             ) : (
-                <div className="space-y-10">
-                    <section>
-                        <h2 className="text-xl font-semibold mb-4 border-b border-gray-700 pb-1">Basic Info</h2>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block mb-1">Project Name</label>
-                                <input
-                                    name="projectName"
-                                    value={project?.projectName || ''}
-                                    className="w-full bg-gray-800 p-2 rounded border border-gray-700"
-                                    readOnly
-                                />
-                            </div>
-                            <div>
-                                <label className="block mb-1">Status</label>
-                                <select
-                                    name="status"
-                                    value={project?.status || ''}
-                                    className="w-full bg-gray-800 p-2 rounded border border-gray-700"
-                                    disabled
-                                >
-                                    <option value="">Select</option>
-                                    <option value="Pre-Production">Pre-Production</option>
-                                    <option value="Production">Production</option>
-                                    <option value="Post-Production">Post-Production</option>
-                                    <option value="Completed">Completed</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-1">
-                            <label className="block mb-1">Logline</label>
-                            <input
-                                name="logline"
-                                value={project?.logline || ''}
-                                className="w-full bg-gray-800 p-2 rounded border border-gray-700"
-                                readOnly
+                <div className="max-w-4xl mx-auto py-12">
+                    <div className="space-y-8 text-white">
+                        {project.coverImageUrl && (
+                            <img
+                                src={project.coverImageUrl}
+                                alt="Cover"
+                                className="w-full h-64 object-cover rounded-md shadow-lg"
                             />
-                        </div>
-                        <div className="grid grid-cols-1">
-                            <label className="block mb-1">Synopsis</label>
-                            <textarea
-                                name="synopsis"
-                                value={project?.synopsis || ''}
-                                rows={4}
-                                className="w-full bg-gray-800 p-2 rounded border border-gray-700"
-                                readOnly
-                            />
-                        </div>
-                    </section>
+                        )}
 
-                    <section>
-                        <h2 className="text-xl font-semibold mb-4 border-b border-gray-700 pb-1">Production Info</h2>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block mb-1">Production Company</label>
-                                <input
-                                    name="productionCompany"
-                                    value={project?.productionCompany || ''}
-                                    className="w-full bg-gray-800 p-2 rounded border border-gray-700"
-                                    readOnly
-                                />
-                            </div>
-                            <div>
-                                <label className="block mb-1">Country</label>
-                                <input
-                                    name="country"
-                                    value={project?.country || ''}
-                                    className="w-full bg-gray-800 p-2 rounded border border-gray-700"
-                                    readOnly
-                                />
-                            </div>
-                            <div>
-                                <label className="block mb-1">Start Date</label>
-                                <input
-                                    type="date"
-                                    name="startDate"
-                                    value={project?.startDate || ''}
-                                    className="w-full bg-gray-800 p-2 rounded border border-gray-700"
-                                    readOnly
-                                />
-                            </div>
-                            <div>
-                                <label className="block mb-1">End Date</label>
-                                <input
-                                    type="date"
-                                    name="endDate"
-                                    value={project?.endDate || ''}
-                                    className="w-full bg-gray-800 p-2 rounded border border-gray-700"
-                                    readOnly
-                                />
-                            </div>
-                            <div className="md:col-span-2">
-                                <label className="block mb-1">Location</label>
-                                <input
-                                    name="location"
-                                    value={project?.location || ''}
-                                    className="w-full bg-gray-800 p-2 rounded border border-gray-700"
-                                    readOnly
-                                />
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
+                            <h1 className="text-3xl font-bold">{project.projectName}</h1>
+                            <div className="flex gap-2 mt-2 md:mt-0 flex-wrap">
+                                <span className={`text-xs font-semibold px-2 py-1 rounded-full ${getStatusBadgeColor(project.status)}`}>
+                                    {formatStatus(project.status)}
+                                </span>
+                                {project.genres?.map((genre) => (
+                                    <span key={genre} className="text-xs px-2 py-1 bg-gray-700 rounded-full">
+                                        {genre}
+                                    </span>
+                                ))}
                             </div>
                         </div>
-                    </section>
-                    {auth.currentUser && project?.owner_uid && auth.currentUser.uid === project.owner_uid && (
-                        <button onClick={handleEditClick} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-                            Edit Project
-                        </button>
-                    )}
+
+                        <div className="grid md:grid-cols-3 gap-6 items-start">
+                            {project.posterImageUrl && (
+                                <img
+                                    src={project.posterImageUrl}
+                                    alt="Poster"
+                                    className="w-full h-auto rounded-md shadow-md col-span-1"
+                                />
+                            )}
+                            <div className="md:col-span-2 grid grid-cols-2 gap-4">
+                                <Field label="Production Company" value={project.productionCompany} />
+                                <Field label="Country" value={project.country} />
+                                <Field label="Start Date" value={project.startDate} />
+                                <Field label="End Date" value={project.endDate} />
+                                <Field label="Location" value={project.location} />
+                            </div>
+                        </div>
+
+                        <div>
+                            <h2 className="text-xl font-semibold mb-2">Logline</h2>
+                            <p className="text-gray-300">{project.logline}</p>
+                        </div>
+
+                        <div>
+                            <h2 className="text-xl font-semibold mb-2">Synopsis</h2>
+                            <p className="text-gray-300 whitespace-pre-line">{project.synopsis}</p>
+                        </div>
+
+                        {reviewSection}
+
+                        <div className="mt-10">
+                            {user?.uid === project.owner_uid ? (
+                                <button
+                                    onClick={handleEditClick}
+                                    className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-md"
+                                >
+                                    Edit Project
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={handleSuggestClick}
+                                    className="px-5 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md"
+                                >
+                                    Suggest Update
+                                </button>
+                            )}
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
