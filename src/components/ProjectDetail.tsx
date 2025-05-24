@@ -2,42 +2,47 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { db, auth, storage } from '../firebase';
-import { doc, getDoc, updateDoc, collection, query, where, orderBy, startAfter, limit, getDocs, QueryDocumentSnapshot } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, query, orderBy, startAfter, limit, getDocs, QueryDocumentSnapshot } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
-import { Link } from 'react-router-dom'; // Import Link from react-router-dom
+import { Link } from 'react-router-dom';
+
+import ProjectShowcase from '../components/ProjectShowcase';
+// import LoadingSpinner from '../components/LoadingSpinner';
 
 interface Project {
-    id: string;
-    projectName: string;
-    country: string;
-    productionCompany: string;
-    status: string;
-    logline: string;
-    synopsis: string;
-    startDate: string;
-    endDate: string;
-    location: string;
-    genre: string;
-    director: string;
-    producer: string;
-    coverImageUrl: string;
-    posterImageUrl: string;
-    projectWebsite: string;
-    productionBudget: string;
-    productionCompanyContact: string;
-    isVerified: boolean;
-    owner_uid: string;
-    genres?: string[];
-    ownerId?: string;
+id: string;
+projectName: string;
+country: string;
+productionCompany: string;
+status: string;
+logline: string;
+synopsis: string;
+startDate: string;
+endDate: string;
+location: string;
+genre: string;
+director: string;
+producer: string;
+coverImageUrl: string;
+posterImageUrl: string;
+projectWebsite: string;
+productionBudget: string;
+productionCompanyContact: string;
+isVerified: boolean;
+owner_uid: string;
+genres?: string[];
+ownerId?: string;
 }
 
 interface Review {
-    id: string;
-    author: string;
-    content: string;
-    createdAt: Date;
-    projectId: string;
+id: string;
+author: string;
+content: string;
+createdAt: Date;
+projectId: string;
 }
+
+const LoadingSpinner: React.FC = () => <div className="text-white text-center mt-10 p-4">Loading...</div>;
 
 const ProjectDetail: React.FC = () => {
     const { projectId } = useParams<{ projectId: string }>();
@@ -54,13 +59,13 @@ const ProjectDetail: React.FC = () => {
     const [loadingReviews, setLoadingReviews] = useState(false);
     const user = auth.currentUser;
 
-    // Form state object
     const [formState, setFormState] = useState<Partial<Project>>({});
 
     useEffect(() => {
         const fetchProject = async () => {
             setLoading(true);
             setError(null);
+            setProject(null);
             try {
                 if (projectId) {
                     const projectDocRef = doc(db, 'Projects', projectId);
@@ -68,7 +73,6 @@ const ProjectDetail: React.FC = () => {
 
                     if (projectDocSnapshot.exists()) {
                         const firestoreData = projectDocSnapshot.data();
-
                         const projectWithDefaults: Project = {
                             id: projectDocSnapshot.id,
                             projectName: firestoreData.projectName || '',
@@ -90,14 +94,11 @@ const ProjectDetail: React.FC = () => {
                             productionCompanyContact: firestoreData.productionCompanyContact || '',
                             isVerified: typeof firestoreData.isVerified === 'boolean' ? firestoreData.isVerified : false,
                             owner_uid: firestoreData.owner_uid || '',
-                            genres: firestoreData.genres || [],
+                            genres: firestoreData.genres || (firestoreData.genre ? [firestoreData.genre] : []),
                             ownerId: firestoreData.ownerId || '',
                         };
                         setProject(projectWithDefaults);
-
-                        // Initialize form state
                         setFormState(projectWithDefaults);
-
                     } else {
                         setError('Project not found.');
                     }
@@ -112,9 +113,13 @@ const ProjectDetail: React.FC = () => {
             }
         };
 
-        fetchProject();
+        if (projectId) {
+            fetchProject();
+        } else {
+            setError("Project ID is missing from URL.");
+            setLoading(false);
+        }
     }, [projectId]);
-
 
     useEffect(() => {
         if (projectId) {
@@ -123,201 +128,167 @@ const ProjectDetail: React.FC = () => {
     }, [projectId]);
 
     useEffect(() => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, [reviews]);
+        if (!isEditing) {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }, [reviews, isEditing]);
 
     const REVIEWS_PER_PAGE = 5;
 
     const fetchReviews = async (direction: 'next' | 'prev' | 'reset' = 'reset') => {
         if (!projectId) return;
         setLoadingReviews(true);
-
         try {
             let q;
             const reviewsCollection = collection(db, 'Projects', projectId, 'Reviews');
-
             if (direction === 'next' && lastVisibleReview) {
-                q = query(
-                    reviewsCollection,
-                    orderBy('createdAt', 'desc'),
-                    startAfter(lastVisibleReview),
-                    limit(REVIEWS_PER_PAGE)
-                );
-            } else if (direction === 'prev' && prevReviewPages.length > 1) {
-                const prev = prevReviewPages[prevReviewPages.length - 2];
-                q = query(
-                    reviewsCollection,
-                    orderBy('createdAt', 'desc'),
-                    startAfter(prev),
-                    limit(REVIEWS_PER_PAGE)
-                );
-                setPrevReviewPages((prev) => prev.slice(0, -1));
+                q = query(reviewsCollection, orderBy('createdAt', 'desc'), startAfter(lastVisibleReview), limit(REVIEWS_PER_PAGE));
+            } else if (direction === 'prev') {
+                if (prevReviewPages.length <= 1) { setLoadingReviews(false); return; }
+                const newPrevPages = prevReviewPages.slice(0, -1);
+                const cursorForPrevPage = newPrevPages.length > 1 ? newPrevPages[newPrevPages.length - 2] : null;
+                q = cursorForPrevPage ? query(reviewsCollection, orderBy('createdAt', 'desc'), startAfter(cursorForPrevPage), limit(REVIEWS_PER_PAGE))
+                                      : query(reviewsCollection, orderBy('createdAt', 'desc'), limit(REVIEWS_PER_PAGE));
+                setPrevReviewPages(newPrevPages);
             } else {
-                q = query(
-                    reviewsCollection,
-                    orderBy('createdAt', 'desc'),
-                    limit(REVIEWS_PER_PAGE)
-                );
+                q = query(reviewsCollection, orderBy('createdAt', 'desc'), limit(REVIEWS_PER_PAGE));
                 setPrevReviewPages([]);
             }
-
             const snapshot = await getDocs(q);
             const docs = snapshot.docs;
-            const data = docs.map((doc) => ({
-                id: doc.id,
-                projectId: projectId,
-                ...(doc.data() as Omit<Review, 'id' | 'createdAt' | 'projectId'>),
-                createdAt: doc.data().createdAt?.toDate?.() || new Date(),
-            }));
-
-            setReviews(data);
-            setLastVisibleReview(docs[docs.length - 1] || null);
-            if (direction === 'next') setPrevReviewPages((prev) => [...prev, docs[0]]);
-            if (direction === 'reset') setPrevReviewPages([docs[0]]);
-        } catch (err) {
-            console.error('Failed to fetch reviews:', err);
+            const fetchedReviews = docs.map((doc) => ({ id: doc.id, projectId: projectId, ...(doc.data() as Omit<Review, 'id' | 'createdAt' | 'projectId'>), createdAt: doc.data().createdAt?.toDate?.() || new Date() }));
+            setReviews(fetchedReviews);
+            const newLastVisible = docs.length > 0 ? docs[docs.length - 1] : null;
+            setLastVisibleReview(newLastVisible);
+            if (direction === 'next' && docs.length > 0) setPrevReviewPages((prev) => [...prev, docs[0]]);
+            else if (direction === 'reset' && docs.length > 0) setPrevReviewPages(docs[0] ? [docs[0]] : []);
+        } catch (err: any) { // Added : any for err
+            console.error('Failed to fetch reviews:', err); setError(err.message || 'Failed to fetch reviews.'); // Added err.message
         } finally {
             setLoadingReviews(false);
         }
     };
 
     const handleEditClick = () => {
-        setIsEditing(true);
-        setFormState(project!);
-        setError(null);
+        if (project) {
+            setFormState({ ...project });
+            setIsEditing(true);
+            setError(null);
+        }
     };
 
     const handleCancelClick = () => {
         setIsEditing(false);
-        setFormState(project!);
-        setCoverImage(null);
-        setPosterImage(null);
-        setError(null);
+        if (project) setFormState({ ...project });
+        setCoverImage(null); setPosterImage(null); setError(null);
     };
 
     const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            setCoverImage(e.target.files[0]);
-        } else {
-            setCoverImage(null);
-        }
+        if (e.target.files && e.target.files[0]) setCoverImage(e.target.files[0]);
+        else setCoverImage(null);
     };
 
     const handlePosterImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            setPosterImage(e.target.files[0]);
-        } else {
-            setPosterImage(null);
-        }
+        if (e.target.files && e.target.files[0]) setPosterImage(e.target.files[0]);
+        else setPosterImage(null);
     };
 
     const deleteOldImage = async (url: string) => {
         if (!url || !url.startsWith("https://firebasestorage.googleapis.com/")) return;
         try {
             const pathWithQuery = url.split("/o/")[1];
-            if (!pathWithQuery) {
-                console.warn("Could not parse path from old image URL:", url);
-                return;
-            }
+            if (!pathWithQuery) { console.warn("Could not parse path from old image URL:", url); return; }
             const encodedPath = pathWithQuery.split("?")[0];
             const decodedPath = decodeURIComponent(encodedPath);
             const oldRef = ref(storage, decodedPath);
             await deleteObject(oldRef);
             console.log("Old image deleted successfully:", decodedPath);
         } catch (e: any) {
-            console.warn("Could not delete old image:", url, e.message);
+            if (e.code === 'storage/object-not-found') console.log("Old image not found:", url);
+            else console.warn("Could not delete old image:", url, e.message);
         }
     };
 
     const uploadImage = async (imageFile: File | null, baseImageName: string) => {
         if (!imageFile) return '';
-        if (!project || !projectId) {
-            setError("Project context or ID is missing for image upload.");
-            return '';
-        }
-
-        if (!imageFile.type.startsWith("image/")) {
-            setError("Please upload a valid image file (e.g., JPG, PNG).");
-            return '';
-        }
-
+        if (!projectId) { setError("Project ID is missing for image upload."); return ''; }
+        if (!imageFile.type.startsWith("image/")) { setError("Please upload a valid image file."); return ''; }
         const storageRef = ref(storage, `projects/${projectId}/${baseImageName}`);
-
         try {
             await uploadBytes(storageRef, imageFile);
-            const downloadUrl = await getDownloadURL(storageRef);
-            return downloadUrl;
+            return await getDownloadURL(storageRef);
         } catch (uploadError: any) {
             console.error("Error uploading image: ", uploadError);
-            setError(`Image upload failed for ${baseImageName}: ${uploadError.message}`);
+            setError(`Image upload failed: ${uploadError.message}`);
             return '';
         }
     };
 
     const handleSaveClick = async () => {
-        if (!project || !projectId) {
-            setError("Cannot save, project data or ID is missing.");
-            return;
-        }
+        if (!project || !projectId) { setError("Cannot save, project data missing."); return; }
+        // More robust check for actual changes
+        const formKeys = Object.keys(formState) as Array<keyof Project>;
+        const hasTextChanged = formKeys.some(key => {
+            if (key === 'genres') { // Special handling for arrays
+                return JSON.stringify(formState[key] || []) !== JSON.stringify(project[key] || []);
+            }
+            return formState[key] !== project[key];
+        });
 
-        setLoading(true);
-        setError(null);
+        if (!hasTextChanged && !coverImage && !posterImage) { setIsEditing(false); return; }
 
+        setLoading(true); setError(null);
         try {
             let newCoverImageUrl = project.coverImageUrl;
             let newPosterImageUrl = project.posterImageUrl;
-
             if (coverImage) {
-                if (project.coverImageUrl) {
-                    await deleteOldImage(project.coverImageUrl);
-                }
+                if (project.coverImageUrl) await deleteOldImage(project.coverImageUrl);
                 const coverExtension = coverImage.name.split('.').pop() || 'jpg';
                 newCoverImageUrl = await uploadImage(coverImage, `cover_${projectId}_${Date.now()}.${coverExtension}`);
-                if (!newCoverImageUrl) {
-                    setLoading(false);
-                    return;
-                }
+                if (!newCoverImageUrl) { setLoading(false); return; }
             }
-
             if (posterImage) {
-                if (project.posterImageUrl) {
-                    await deleteOldImage(project.posterImageUrl);
-                }
+                if (project.posterImageUrl) await deleteOldImage(project.posterImageUrl);
                 const posterExtension = posterImage.name.split('.').pop() || 'jpg';
                 newPosterImageUrl = await uploadImage(posterImage, `poster_${projectId}_${Date.now()}.${posterExtension}`);
-                if (!newPosterImageUrl) {
-                    setLoading(false);
-                    return;
-                }
+                if (!newPosterImageUrl) { setLoading(false); return; }
             }
+            const updatedData: Partial<Project> = { ...formState, coverImageUrl: newCoverImageUrl, posterImageUrl: newPosterImageUrl };
+            if (formState.genres && Array.isArray(formState.genres)) {
+                updatedData.genres = formState.genres;
+                if (updatedData.hasOwnProperty('genre')) delete (updatedData as any).genre;
+            } else if (typeof formState.genre === 'string') {
+                updatedData.genres = formState.genre.split(',').map(g => g.trim()).filter(g => g);
+                if (updatedData.hasOwnProperty('genre')) delete (updatedData as any).genre;
+            }
+            const { id, owner_uid, ownerId, ...writableData } = updatedData as any; // ownerId might also be immutable
+            await updateDoc(doc(db, 'Projects', projectId), writableData);
 
-            const projectDocRef = doc(db, 'Projects', projectId);
-            const updatedData = {
-                ...formState,
-                coverImageUrl: newCoverImageUrl,
-                posterImageUrl: newPosterImageUrl,
-            };
+            // Update local project state
+            setProject(prev => {
+                if (!prev) return null;
+                const newProjectState: Project = {
+                    ...prev, // Start with previous state
+                    ...formState, // Apply changes from formState
+                    coverImageUrl: newCoverImageUrl, // Ensure new image URL is used
+                    posterImageUrl: newPosterImageUrl, // Ensure new image URL is used
+                    genres: writableData.genres || prev.genres, // Update genres
+                    id: projectId, // Ensure ID is preserved
+                    owner_uid: prev.owner_uid // Ensure owner_uid is preserved
+                };
+                // If genres array was set, ensure single 'genre' string is removed from local state if it exists
+                if (newProjectState.genres && newProjectState.hasOwnProperty('genre')) {
+                    delete (newProjectState as any).genre;
+                }
+                return newProjectState;
+            });
+            // Also update formState to reflect the saved state, including new image URLs
+            setFormState(prev => ({...prev, ...writableData, coverImageUrl: newCoverImageUrl, posterImageUrl: newPosterImageUrl}));
 
-            await updateDoc(projectDocRef, updatedData);
-
-            // Update the local project state
-            setProject(prevProject => ({
-                ...prevProject!,
-                ...updatedData,
-                id: projectId,
-                owner_uid: prevProject!.owner_uid
-            }));
-
-            setCoverImage(null);
-            setPosterImage(null);
-
-            setIsEditing(false);
-            setSaveSuccess(true);
+            setCoverImage(null); setPosterImage(null); setIsEditing(false); setSaveSuccess(true);
             setTimeout(() => setSaveSuccess(false), 3000);
-
         } catch (saveError: any) {
-            console.error("Error updating project:", saveError);
-            setError(saveError.message || "Failed to save project changes.");
+            console.error("Error updating project:", saveError); setError(saveError.message || "Failed to save.");
         } finally {
             setLoading(false);
         }
@@ -325,76 +296,26 @@ const ProjectDetail: React.FC = () => {
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
-        setFormState(prevState => ({
-            ...prevState,
-            [name]: value
-        }));
+        setFormState(prevState => ({ ...prevState, [name]: value }));
     };
 
-    const getStatusBadgeColor = (rawStatus: string) => {
-        const status = rawStatus.toLowerCase();
-        if (status.includes('development')) return 'bg-indigo-600 text-white';
-        if (status.includes('pre')) return 'bg-yellow-500 text-black';
-        if (status.includes('filming') || status.includes('production')) return 'bg-green-500 text-white';
-        if (status.includes('post')) return 'bg-orange-500 text-white';
-        if (status.includes('completed')) return 'bg-blue-500 text-white';
-        if (status.includes('cancel')) return 'bg-red-500 text-white';
-        return 'bg-gray-600 text-white';
+    const handleGenresChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { value } = e.target;
+        const genresArray = value.split(',').map(g => g.trim()).filter(g => g);
+        setFormState(prev => ({ ...prev, genres: genresArray, genre: value })); // Keep genre string for input field
     };
-
-    const formatStatus = (status: string) =>
-        status
-            .toLowerCase()
-            .split(/[-_\s]+/)
-            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-            .join(' ');
-
-    const Field = ({ label, value }: { label: string; value: string }) => (
-        <div>
-            <dt className="text-sm font-medium text-gray-400">{label}</dt>
-            <dd className="text-sm text-white">{value || '—'}</dd>
-        </div>
-    );
 
     const handleSuggestClick = () => {
         const subject = `Suggestion for project: ${project?.projectName}`;
-        const body = encodeURIComponent(`I would like to suggest an update to the project "${project?.projectName}".\n\nDetails:\n`);
-        window.location.href = `mailto:admin@example.com?subject=${subject}&body=${body}`;
+        const body = encodeURIComponent(`I would like to suggest an update for "${project?.projectName}".\n\nDetails:\n`);
+        window.location.href = `mailto:admin@example.com?subject=${subject}&body=${body}`; // Replace with your admin email
     };
-
-    if (loading && !project && !isEditing) {
-        return <p>Loading project details...</p>;
-    }
-
-    if (loading && isEditing) {
-        return <p>Uploading images and saving changes…</p>;
-    }
-
-    if (error && !isEditing && !project) {
-        return <p>Error: {error}</p>;
-    }
-
-    if (!project) {
-        return <p>{error || 'Project not found or not available.'}</p>;
-    }
 
     const reviewSection = (
         <section className="mt-12">
             <h2 className="text-2xl font-semibold text-white mb-6">Reviews</h2>
-
-            {loadingReviews ? (
-                <ul className="space-y-4">
-                    {[...Array(REVIEWS_PER_PAGE)].map((_, i) => (
-                        <li key={i} className="bg-gray-800 rounded-lg p-4 animate-pulse">
-                            <div className="h-4 bg-gray-700 rounded w-1/4 mb-2"></div>
-                            <div className="h-4 bg-gray-700 rounded w-3/4 mb-1"></div>
-                            <div className="h-4 bg-gray-700 rounded w-2/3"></div>
-                        </li>
-                    ))}
-                </ul>
-            ) : reviews.length === 0 ? (
-                <p className="text-gray-400">No reviews yet.</p>
-            ) : (
+            {loadingReviews ? ( <div className="text-gray-400">Loading reviews...</div> ) :
+             reviews.length === 0 ? ( <p className="text-gray-400">No reviews yet.</p> ) : (
                 <ul className="space-y-4">
                     {reviews.map((r) => (
                         <li key={r.id} className="bg-gray-900 rounded-lg p-5 border border-gray-700">
@@ -407,28 +328,10 @@ const ProjectDetail: React.FC = () => {
                     ))}
                 </ul>
             )}
-
-            {/* Pagination */}
             <div className="mt-8 flex items-center justify-between gap-6">
-                <button
-                    onClick={() => fetchReviews('prev')}
-                    disabled={prevReviewPages.length < 2}
-                    className="px-4 py-2 rounded-md text-sm font-medium bg-gray-700 hover:bg-gray-600 text-white disabled:opacity-40"
-                >
-                    ← Previous
-                </button>
-
-                <span className="text-gray-400 text-sm">
-                    Page {prevReviewPages.length || 1}
-                </span>
-
-                <button
-                    onClick={() => fetchReviews('next')}
-                    disabled={reviews.length < REVIEWS_PER_PAGE}
-                    className="px-4 py-2 rounded-md text-sm font-medium bg-gray-700 hover:bg-gray-600 text-white disabled:opacity-40"
-                >
-                    Next →
-                </button>
+                <button onClick={() => fetchReviews('prev')} disabled={loadingReviews || prevReviewPages.length <= 1} className="px-4 py-2 rounded-md text-sm font-medium bg-gray-700 hover:bg-gray-600 text-white disabled:opacity-40">← Previous</button>
+                <span className="text-gray-400 text-sm">Page {prevReviewPages.length || (reviews.length > 0 ? 1 : 0) }</span>
+                <button onClick={() => fetchReviews('next')} disabled={loadingReviews || reviews.length < REVIEWS_PER_PAGE} className="px-4 py-2 rounded-md text-sm font-medium bg-gray-700 hover:bg-gray-600 text-white disabled:opacity-40">Next →</button>
             </div>
         </section>
     );
@@ -440,205 +343,97 @@ const ProjectDetail: React.FC = () => {
             </Link>
 
             {isEditing ? (
+                // --- EDITING FORM ---
                 <form className="max-w-5xl mx-auto p-6 bg-white rounded shadow-md space-y-6">
-                    {error && <p className="text-red-600 text-sm">{error}</p>}
-                    {saveSuccess && <p className="text-green-500 text-sm">Project updated successfully!</p>}
-
+                    {error && <p className="text-red-600 text-sm mb-4">{error}</p>}
+                    {saveSuccess && <p className="text-green-500 text-sm mb-4">Project updated successfully!</p>}
+                    {/* Form sections from your provided code */}
                     <div>
                         <h3 className="text-xl font-semibold mb-4 border-b pb-1">Basic Information</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label htmlFor="projectName" className="block text-sm font-medium">Project Name</label>
-                                <input type="text" id="projectName" name="projectName" value={formState.projectName || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" />
-                            </div>
-                            <div>
-                                <label htmlFor="country" className="block text-sm font-medium">Country</label>
-                                <input type="text" id="country" name="country" value={formState.country || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" />
-                            </div>
-                            <div>
-                                <label htmlFor="productionCompany" className="block text-sm font-medium">Production Company</label>
-                                <input type="text" id="productionCompany" name="productionCompany" value={formState.productionCompany || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" />
-                            </div>
-                            <div>
-                                <label htmlFor="status" className="block text-sm font-medium">Status</label>
-                                <select id="status" name="status" value={formState.status || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2">
-                                    <option value="Pre-Production">Pre-Production</option>
-                                    <option value="Production">Production</option>
-                                    <option value="Post-Production">Post-Production</option>
-                                    <option value="Completed">Completed</option>
-                                </select>
-                            </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div><label htmlFor="projectName" className="block text-sm font-medium">Project Name</label><input type="text" id="projectName" name="projectName" value={formState.projectName || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" /></div>
+                            <div><label htmlFor="country" className="block text-sm font-medium">Country</label><input type="text" id="country" name="country" value={formState.country || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" /></div>
+                            <div><label htmlFor="productionCompany" className="block text-sm font-medium">Production Company</label><input type="text" id="productionCompany" name="productionCompany" value={formState.productionCompany || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" /></div>
+                            <div><label htmlFor="status" className="block text-sm font-medium">Status</label><select id="status" name="status" value={formState.status || 'Pre-Production'} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2"><option value="Pre-Production">Pre-Production</option><option value="Development">Development</option><option value="Production">Production</option><option value="Post-Production">Post-Production</option><option value="Completed">Completed</option><option value="Cancelled">Cancelled</option></select></div>
                         </div>
                     </div>
-
                     <div>
                         <h3 className="text-xl font-semibold mb-4 border-b pb-1">Story Info</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label htmlFor="logline" className="block text-sm font-medium">Logline</label>
-                                <textarea id="logline" name="logline" value={formState.logline || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" rows={2} />
-                            </div>
-                            <div>
-                                <label htmlFor="synopsis" className="block text-sm font-medium">Synopsis</label>
-                                <textarea id="synopsis" name="synopsis" value={formState.synopsis || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" rows={4} />
-                            </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div><label htmlFor="logline" className="block text-sm font-medium">Logline</label><textarea id="logline" name="logline" value={formState.logline || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" rows={2} /></div>
+                            <div><label htmlFor="synopsis" className="block text-sm font-medium">Synopsis</label><textarea id="synopsis" name="synopsis" value={formState.synopsis || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" rows={4} /></div>
                         </div>
                     </div>
-
                     <div>
                         <h3 className="text-xl font-semibold mb-4 border-b pb-1">Production Timeline</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label htmlFor="startDate" className="block text-sm font-medium">Start Date</label>
-                                <input type="date" id="startDate" name="startDate" value={formState.startDate || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" />
-                            </div>
-                            <div>
-                                <label htmlFor="endDate" className="block text-sm font-medium">End Date</label>
-                                <input type="date" id="endDate" name="endDate" value={formState.endDate || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" />
-                            </div>
-                            <div>
-                                <label htmlFor="location" className="block text-sm font-medium">Location</label>
-                                <input type="text" id="location" name="location" value={formState.location || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" />
-                            </div>
-                            <div>
-                                <label htmlFor="genre" className="block text-sm font-medium">Genre</label>
-                                <input type="text" id="genre" name="genre" value={formState.genre || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" />
-                            </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div><label htmlFor="startDate" className="block text-sm font-medium">Start Date</label><input type="date" id="startDate" name="startDate" value={formState.startDate || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" /></div>
+                            <div><label htmlFor="endDate" className="block text-sm font-medium">End Date</label><input type="date" id="endDate" name="endDate" value={formState.endDate || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" /></div>
+                            <div><label htmlFor="location" className="block text-sm font-medium">Location</label><input type="text" id="location" name="location" value={formState.location || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" /></div>
+                            <div><label htmlFor="genres" className="block text-sm font-medium">Genres (comma-separated)</label><input type="text" id="genres" name="genres" value={(Array.isArray(formState.genres) ? formState.genres.join(', ') : formState.genre) || ''} onChange={handleGenresChange} className="mt-1 w-full border rounded px-3 py-2" placeholder="e.g., Action, Comedy" /></div>
                         </div>
                     </div>
-
                     <div>
                         <h3 className="text-xl font-semibold mb-4 border-b pb-1">Creative Team</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label htmlFor="director" className="block text-sm font-medium">Director</label>
-                                <input type="text" id="director" name="director" value={formState.director || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" />
-                            </div>
-                            <div>
-                                <label htmlFor="producer" className="block text-sm font-medium">Producer</label>
-                                <input type="text" id="producer" name="producer" value={formState.producer || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" />
-                            </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div><label htmlFor="director" className="block text-sm font-medium">Director</label><input type="text" id="director" name="director" value={formState.director || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" /></div>
+                            <div><label htmlFor="producer" className="block text-sm font-medium">Producer</label><input type="text" id="producer" name="producer" value={formState.producer || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" /></div>
                         </div>
                     </div>
-
                     <div>
                         <h3 className="text-xl font-semibold mb-4 border-b pb-1">Media</h3>
-                        <div className="grid grid-cols-2 gap-4 items-start">
-                            <div>
-                                <label htmlFor="coverImage" className="block text-sm font-medium">Cover Image</label>
-                                <input type="file" id="coverImage" accept="image/*" onChange={handleCoverImageChange} className="mt-1" />
-                                {coverImage ? (
-                                    <img src={URL.createObjectURL(coverImage)} alt="Preview" className="w-36 mt-2 rounded shadow" />
-                                ) : (
-                                    <img src={project.coverImageUrl} alt="Current Cover" className="w-36 mt-2 rounded shadow" />
-                                )}
-                            </div>
-                            <div>
-                                <label htmlFor="posterImage" className="block text-sm font-medium">Poster Image</label>
-                                <input type="file" id="posterImage" accept="image/*" onChange={handlePosterImageChange} className="mt-1" />
-                                {posterImage ? (
-                                    <img src={URL.createObjectURL(posterImage)} alt="Preview" className="w-36 mt-2 rounded shadow" />
-                                ) : (
-                                    <img src={project.posterImageUrl} alt="Current Poster" className="w-36 mt-2 rounded shadow" />
-                                )}
-                            </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                            <div><label htmlFor="coverImage" className="block text-sm font-medium">Cover Image</label><input type="file" id="coverImage" accept="image/*" onChange={handleCoverImageChange} className="mt-1" />{coverImage ? <img src={URL.createObjectURL(coverImage)} alt="New Cover Preview" className="w-36 h-auto mt-2 rounded shadow object-cover" /> : formState.coverImageUrl ? <img src={formState.coverImageUrl} alt="Current Cover" className="w-36 h-auto mt-2 rounded shadow object-cover" /> : null}</div>
+                            <div><label htmlFor="posterImage" className="block text-sm font-medium">Poster Image</label><input type="file" id="posterImage" accept="image/*" onChange={handlePosterImageChange} className="mt-1" />{posterImage ? <img src={URL.createObjectURL(posterImage)} alt="New Poster Preview" className="w-36 h-auto mt-2 rounded shadow object-cover" /> : formState.posterImageUrl ? <img src={formState.posterImageUrl} alt="Current Poster" className="w-36 h-auto mt-2 rounded shadow object-cover" /> : null}</div>
                         </div>
                     </div>
-
                     <div>
                         <h3 className="text-xl font-semibold mb-4 border-b pb-1">Additional</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label htmlFor="projectWebsite" className="block text-sm font-medium">Website</label>
-                                <input type="url" id="projectWebsite" name="projectWebsite" value={formState.projectWebsite || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" />
-                            </div>
-                            <div>
-                                <label htmlFor="productionBudget" className="block text-sm font-medium">Budget</label>
-                                <input type="text" id="productionBudget" name="productionBudget" value={formState.productionBudget || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" />
-                            </div>
-                            <div>
-                                <label htmlFor="productionCompanyContact" className="block text-sm font-medium">Company Contact</label>
-                                <input type="text" id="productionCompanyContact" name="productionCompanyContact" value={formState.productionCompanyContact || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" />
-                            </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div><label htmlFor="projectWebsite" className="block text-sm font-medium">Website</label><input type="url" id="projectWebsite" name="projectWebsite" value={formState.projectWebsite || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" /></div>
+                            <div><label htmlFor="productionBudget" className="block text-sm font-medium">Budget</label><input type="text" id="productionBudget" name="productionBudget" value={formState.productionBudget || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" /></div>
+                            <div><label htmlFor="productionCompanyContact" className="block text-sm font-medium">Company Contact</label><input type="text" id="productionCompanyContact" name="productionCompanyContact" value={formState.productionCompanyContact || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" /></div>
                         </div>
                     </div>
-
                     <div className="pt-4 border-t mt-6 flex justify-end space-x-4">
-                        <button
-                            type="button"
-                            onClick={handleCancelClick}
-                            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="button"
-                            onClick={handleSaveClick}
-                            disabled={loading}
-                            className={`px-4 py-2 rounded text-white ${loading ? 'bg-green-400' : 'bg-green-600 hover:bg-green-700'}`}
-                        >
-                            {loading ? 'Saving...' : 'Save Changes'}
-                        </button>
+                        <button type="button" onClick={handleCancelClick} className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600" disabled={loading}>Cancel</button>
+                        <button type="button" onClick={handleSaveClick} disabled={loading} className={`px-4 py-2 rounded text-white ${loading ? 'bg-green-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}>{loading ? 'Saving...' : 'Save Changes'}</button>
                     </div>
                 </form>
             ) : (
-                <div className="max-w-4xl mx-auto py-12">
-                    <div className="space-y-8 text-white">
+                // --- DISPLAYING PROJECT DETAILS ---
+                loading && !project ? ( <LoadingSpinner /> ) :
+                error && !project ? ( <p className="text-white text-center mt-10">Error: {error}</p> ) :
+                project ? (
+                    <div className="max-w-4xl mx-auto py-12">
+                        {/* MODIFICATION 1: Small, fixed-size cover image at the top */}
                         {project.coverImageUrl && (
-                            <img
-                                src={project.coverImageUrl}
-                                alt="Cover"
-                                className="w-full h-64 object-cover rounded-md shadow-lg"
-                            />
+                            <div className="mb-6 flex justify-center"> {/* Centers the image container */}
+                                <img
+                                    src={project.coverImageUrl}
+                                    alt={`${project.projectName} Cover`}
+                                    // Example: Fixed width, auto height, max height, contain to fit
+                                    className="w-64 h-auto max-h-48 object-contain rounded-md shadow-lg"
+                                    // Alternative for fixed aspect ratio (e.g., 16:9) and object-cover:
+                                    // className="w-64 h-36 object-cover rounded-md shadow-lg"
+                                />
+                            </div>
                         )}
 
-                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
-                            <h1 className="text-3xl font-bold">{project.projectName}</h1>
-                            <div className="flex gap-2 mt-2 md:mt-0 flex-wrap">
-                                <span className={`text-xs font-semibold px-2 py-1 rounded-full ${getStatusBadgeColor(project.status)}`}>
-                                    {formatStatus(project.status)}
-                                </span>
-                                {project.genres?.map((genre) => (
-                                    <span key={genre} className="text-xs px-2 py-1 bg-gray-700 rounded-full">
-                                        {genre}
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="grid md:grid-cols-3 gap-6 items-start">
-                            {project.posterImageUrl && (
-                                <img
-                                    src={project.posterImageUrl}
-                                    alt="Poster"
-                                    className="w-full h-auto rounded-md shadow-md col-span-1"
-                                />
-                            )}
-                            <div className="md:col-span-2 grid grid-cols-2 gap-4">
-                                <Field label="Production Company" value={project.productionCompany} />
-                                <Field label="Country" value={project.country} />
-                                <Field label="Start Date" value={project.startDate} />
-                                <Field label="End Date" value={project.endDate} />
-                                <Field label="Location" value={project.location} />
-                            </div>
-                        </div>
-
-                        <div>
-                            <h2 className="text-xl font-semibold mb-2">Logline</h2>
-                            <p className="text-gray-300">{project.logline}</p>
-                        </div>
-
-                        <div>
-                            <h2 className="text-xl font-semibold mb-2">Synopsis</h2>
-                            <p className="text-gray-300 whitespace-pre-line">{project.synopsis}</p>
-                        </div>
-
+                        <ProjectShowcase
+                            project={project}
+                            userId={user?.uid}
+                            // Pass onEditClick if ProjectShowcase itself renders an edit button for the owner.
+                            // If the edit button is handled *only* below, this prop might not be needed by ProjectShowcase.
+                            onEditClick={handleEditClick}
+                        />
                         {reviewSection}
 
-                        <div className="mt-10">
-                            {user?.uid === project.owner_uid ? (
+                        {/* MODIFICATION 2: Conditional Edit/Suggest Button */}
+                        <div className="mt-10 text-center"> {/* Ensures buttons are centered */}
+                            {user && user.uid === project.owner_uid ? (
                                 <button
-                                    onClick={handleEditClick}
+                                    onClick={handleEditClick} // This will set isEditing to true
                                     className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-md"
                                 >
                                     Edit Project
@@ -653,7 +448,9 @@ const ProjectDetail: React.FC = () => {
                             )}
                         </div>
                     </div>
-                </div>
+                ) : (
+                    <div className="text-white text-center mt-10">Project not found or not available.</div>
+                )
             )}
         </div>
     );
