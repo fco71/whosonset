@@ -19,7 +19,7 @@ const AddProject: React.FC = () => {
   const [director, setDirector] = useState('');
   const [producer, setProducer] = useState('');
   const [coverImageUrl, setCoverImageUrl] = useState('');
-  const [posterImageUrl, setPosterImageUrl] = useState('');
+  // Removed posterImageUrl state
   const [projectWebsite, setProjectWebsite] = useState('');
   const [productionBudget, setProductionBudget] = useState('');
   const [productionCompanyContact, setProductionCompanyContact] = useState('');
@@ -34,9 +34,9 @@ const AddProject: React.FC = () => {
       try {
         const projectsCollectionRef = collection(db, 'Projects');
 
-        // Only save if the URLs are real Firebase ones
+        // Only save if the URL is a real Firebase one
         const safeCoverUrl = coverImageUrl.startsWith('http') ? coverImageUrl : '';
-        const safePosterUrl = posterImageUrl.startsWith('http') ? posterImageUrl : '';
+        // Removed safePosterUrl
 
         await addDoc(projectsCollectionRef, {
           projectName,
@@ -52,7 +52,7 @@ const AddProject: React.FC = () => {
           director,
           producer,
           coverImageUrl: safeCoverUrl,
-          posterImageUrl: safePosterUrl,
+          // Removed posterImageUrl from document data
           projectWebsite,
           productionBudget,
           productionCompanyContact,
@@ -76,9 +76,7 @@ const AddProject: React.FC = () => {
     setCoverImageUrl(url); // Will always be Firebase URL
   };
 
-  const handlePosterImageUploaded = (url: string) => {
-    setPosterImageUrl(url); // Will always be Firebase URL
-  };
+  // Removed handlePosterImageUploaded
 
   const handleCancel = () => {
     navigate('/');
@@ -118,8 +116,7 @@ const AddProject: React.FC = () => {
           setProducer={setProducer}
           coverImageUrl={coverImageUrl}
           setCoverImageUrl={setCoverImageUrl}
-          posterImageUrl={posterImageUrl}
-          setPosterImageUrl={setPosterImageUrl}
+          // Removed posterImageUrl and setPosterImageUrl props
           projectWebsite={projectWebsite}
           setProjectWebsite={setProjectWebsite}
           productionBudget={productionBudget}
@@ -129,7 +126,7 @@ const AddProject: React.FC = () => {
           isVerified={isVerified}
           setIsVerified={setIsVerified}
           handleCoverImageUploaded={handleCoverImageUploaded}
-          handlePosterImageUploaded={handlePosterImageUploaded}
+          // Removed handlePosterImageUploaded prop
         />
 
         <div className="flex flex-col sm:flex-row justify-end gap-4 pt-6">

@@ -22,7 +22,7 @@ interface Project {
   logline: string;
   director?: string;
   producer?: string;
-  posterImageUrl?: string;
+  coverImageUrl?: string; // Changed from posterImageUrl
   genres?: string[];
 }
 
@@ -134,7 +134,7 @@ const AllProjects: React.FC = () => {
     const query = debouncedQuery.toLowerCase();
     const matchesSearch =
       project.projectName.toLowerCase().includes(query) ||
-      project.productionCompany.toLowerCase().includes(query);
+      project.productionCompany?.toLowerCase().includes(query); // Added optional chaining
     const matchesStatus = statusFilter === '' || project.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -256,7 +256,7 @@ const AllProjects: React.FC = () => {
                 >
                   <div className="w-full md:w-[200px] h-[200px] bg-black flex items-center justify-center shrink-0">
                     <img
-                      src={project.posterImageUrl || '/my-icon.png'}
+                      src={project.coverImageUrl || '/my-icon.png'} // Changed from posterImageUrl
                       alt={project.projectName}
                       className="max-w-full max-h-full object-contain"
                       onError={(e) => {
@@ -270,7 +270,7 @@ const AllProjects: React.FC = () => {
                         {highlightMatch(project.projectName, debouncedQuery)}
                       </h2>
                       <p className="text-white font-medium truncate">
-                        {highlightMatch(project.productionCompany, debouncedQuery)}
+                        {project.productionCompany ? highlightMatch(project.productionCompany, debouncedQuery) : 'N/A'} {/* Added null check */}
                       </p>
                       {project.director && (
                         <p className="text-sm text-gray-300 truncate">

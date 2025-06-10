@@ -11,8 +11,7 @@ type Project = {
   location?: string;
   logline?: string;
   synopsis?: string;
-  posterImageUrl?: string;
-  coverImageUrl?: string;
+  coverImageUrl?: string; // Changed from posterImageUrl to coverImageUrl
   ownerId?: string;
 };
 
@@ -34,13 +33,10 @@ const ProjectShowcase: React.FC<Props> = ({ project, userId, onEditClick }) => {
   return (
     <div className="px-6 py-10 max-w-6xl mx-auto text-white space-y-10">
 
-      {project.coverImageUrl && (
-        <img
-          src={project.coverImageUrl}
-          alt="Cover"
-          className="w-full h-64 object-cover rounded-md shadow"
-        />
-      )}
+      {/* Removed the large coverImageUrl display from here, as ProjectDetail now handles it */}
+      {/* If you intend for ProjectShowcase to *also* display the cover image, you can uncomment this block.
+          However, the current ProjectDetail.tsx only passes 'project' and 'userId' to ProjectShowcase, 
+          and handles the main cover image display itself. */}
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mt-6">
         <h1 className="text-3xl font-bold">{project.projectName}</h1>
@@ -55,14 +51,10 @@ const ProjectShowcase: React.FC<Props> = ({ project, userId, onEditClick }) => {
       </div>
 
       <div className="grid md:grid-cols-3 gap-6 items-start">
-        {project.posterImageUrl && (
-          <img
-            src={project.posterImageUrl}
-            alt="Poster"
-            className="w-full h-auto rounded shadow-md col-span-1"
-          />
-        )}
-        <div className="md:col-span-2 grid grid-cols-2 gap-4">
+        {/* Removed posterImageUrl display */}
+        {/* If you wanted a secondary image, it would now be a second 'coverImage' field, 
+            or you'd rename 'posterImage' to something like 'thumbnailImage' and manage it separately. */}
+        <div className="md:col-span-3 grid grid-cols-2 gap-4"> {/* Adjusted col-span as one image is removed */}
           <Field label="Production Company" value={project.productionCompany} />
           <Field label="Country" value={project.country} />
           <Field label="Start Date" value={project.startDate} />

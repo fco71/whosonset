@@ -28,8 +28,7 @@ interface ProjectFormProps {
   setProducer: (value: string) => void;
   coverImageUrl: string;
   setCoverImageUrl: (value: string) => void;
-  posterImageUrl: string;
-  setPosterImageUrl: (value: string) => void;
+  // Removed posterImageUrl and setPosterImageUrl from props
   projectWebsite: string;
   setProjectWebsite: (value: string) => void;
   productionBudget: string;
@@ -39,7 +38,7 @@ interface ProjectFormProps {
   isVerified: boolean;
   setIsVerified: (value: boolean) => void;
   handleCoverImageUploaded: (url: string) => void;
-  handlePosterImageUploaded: (url: string) => void;
+  // Removed handlePosterImageUploaded from props
 }
 
 const SectionHeader = ({ title }: { title: string }) => (
@@ -81,10 +80,7 @@ const ProjectForm: React.FC<ProjectFormProps> = (props) => {
           <label className="block text-sm font-medium text-gray-300 mb-1">Cover Image</label>
           <ImageUploader onImageUploaded={props.handleCoverImageUploaded} />
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1">Poster Image</label>
-          <ImageUploader onImageUploaded={props.handlePosterImageUploaded} />
-        </div>
+        {/* Removed Poster Image uploader */}
       </div>
 
       <SectionHeader title="Contact & Website" />

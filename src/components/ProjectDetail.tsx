@@ -24,7 +24,7 @@ genre: string;
 director: string;
 producer: string;
 coverImageUrl: string;
-posterImageUrl: string;
+// Removed posterImageUrl
 projectWebsite: string;
 productionBudget: string;
 productionCompanyContact: string;
@@ -52,7 +52,7 @@ const ProjectDetail: React.FC = () => {
     const [isEditing, setIsEditing] = useState<boolean>(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
     const [coverImage, setCoverImage] = useState<File | null>(null);
-    const [posterImage, setPosterImage] = useState<File | null>(null);
+    // Removed posterImage state
     const [reviews, setReviews] = useState<Review[]>([]);
     const [lastVisibleReview, setLastVisibleReview] = useState<QueryDocumentSnapshot | null>(null);
     const [prevReviewPages, setPrevReviewPages] = useState<QueryDocumentSnapshot[]>([]);
@@ -88,7 +88,7 @@ const ProjectDetail: React.FC = () => {
                             director: firestoreData.director || '',
                             producer: firestoreData.producer || '',
                             coverImageUrl: firestoreData.coverImageUrl || '',
-                            posterImageUrl: firestoreData.posterImageUrl || '',
+                            // Removed posterImageUrl from default assignment
                             projectWebsite: firestoreData.projectWebsite || '',
                             productionBudget: firestoreData.productionBudget || '',
                             productionCompanyContact: firestoreData.productionCompanyContact || '',
@@ -180,7 +180,8 @@ const ProjectDetail: React.FC = () => {
     const handleCancelClick = () => {
         setIsEditing(false);
         if (project) setFormState({ ...project });
-        setCoverImage(null); setPosterImage(null); setError(null);
+        setCoverImage(null); // Removed setPosterImage
+        setError(null);
     };
 
     const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -188,10 +189,7 @@ const ProjectDetail: React.FC = () => {
         else setCoverImage(null);
     };
 
-    const handlePosterImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) setPosterImage(e.target.files[0]);
-        else setPosterImage(null);
-    };
+    // Removed handlePosterImageChange
 
     const deleteOldImage = async (url: string) => {
         if (!url || !url.startsWith("https://firebasestorage.googleapis.com/")) return;
@@ -232,28 +230,25 @@ const ProjectDetail: React.FC = () => {
             if (key === 'genres') { // Special handling for arrays
                 return JSON.stringify(formState[key] || []) !== JSON.stringify(project[key] || []);
             }
+            // REMOVED THE LINE THAT CAUSED THE ERROR: if (key === 'posterImageUrl') { return false; }
             return formState[key] !== project[key];
         });
 
-        if (!hasTextChanged && !coverImage && !posterImage) { setIsEditing(false); return; }
+        // Simplified check for image changes, as only coverImage remains
+        if (!hasTextChanged && !coverImage) { setIsEditing(false); return; }
 
         setLoading(true); setError(null);
         try {
             let newCoverImageUrl = project.coverImageUrl;
-            let newPosterImageUrl = project.posterImageUrl;
+            // Removed newPosterImageUrl
             if (coverImage) {
                 if (project.coverImageUrl) await deleteOldImage(project.coverImageUrl);
                 const coverExtension = coverImage.name.split('.').pop() || 'jpg';
                 newCoverImageUrl = await uploadImage(coverImage, `cover_${projectId}_${Date.now()}.${coverExtension}`);
                 if (!newCoverImageUrl) { setLoading(false); return; }
             }
-            if (posterImage) {
-                if (project.posterImageUrl) await deleteOldImage(project.posterImageUrl);
-                const posterExtension = posterImage.name.split('.').pop() || 'jpg';
-                newPosterImageUrl = await uploadImage(posterImage, `poster_${projectId}_${Date.now()}.${posterExtension}`);
-                if (!newPosterImageUrl) { setLoading(false); return; }
-            }
-            const updatedData: Partial<Project> = { ...formState, coverImageUrl: newCoverImageUrl, posterImageUrl: newPosterImageUrl };
+            // Removed posterImage upload logic
+            const updatedData: Partial<Project> = { ...formState, coverImageUrl: newCoverImageUrl }; // Removed posterImageUrl from here
             if (formState.genres && Array.isArray(formState.genres)) {
                 updatedData.genres = formState.genres;
                 if (updatedData.hasOwnProperty('genre')) delete (updatedData as any).genre;
@@ -262,6 +257,10 @@ const ProjectDetail: React.FC = () => {
                 if (updatedData.hasOwnProperty('genre')) delete (updatedData as any).genre;
             }
             const { id, owner_uid, ownerId, ...writableData } = updatedData as any; // ownerId might also be immutable
+            // Ensure posterImageUrl is removed from writableData if it somehow remains
+            if (writableData.hasOwnProperty('posterImageUrl')) {
+                delete (writableData as any).posterImageUrl;
+            }
             await updateDoc(doc(db, 'Projects', projectId), writableData);
 
             // Update local project state
@@ -271,7 +270,7 @@ const ProjectDetail: React.FC = () => {
                     ...prev, // Start with previous state
                     ...formState, // Apply changes from formState
                     coverImageUrl: newCoverImageUrl, // Ensure new image URL is used
-                    posterImageUrl: newPosterImageUrl, // Ensure new image URL is used
+                    // Removed posterImageUrl from newProjectState
                     genres: writableData.genres || prev.genres, // Update genres
                     id: projectId, // Ensure ID is preserved
                     owner_uid: prev.owner_uid // Ensure owner_uid is preserved
@@ -280,12 +279,17 @@ const ProjectDetail: React.FC = () => {
                 if (newProjectState.genres && newProjectState.hasOwnProperty('genre')) {
                     delete (newProjectState as any).genre;
                 }
+                // Ensure posterImageUrl is removed from local state
+                if (newProjectState.hasOwnProperty('posterImageUrl')) {
+                    delete (newProjectState as any).posterImageUrl;
+                }
                 return newProjectState;
             });
             // Also update formState to reflect the saved state, including new image URLs
-            setFormState(prev => ({...prev, ...writableData, coverImageUrl: newCoverImageUrl, posterImageUrl: newPosterImageUrl}));
+            setFormState(prev => ({...prev, ...writableData, coverImageUrl: newCoverImageUrl})); // Removed posterImageUrl from here
 
-            setCoverImage(null); setPosterImage(null); setIsEditing(false); setSaveSuccess(true);
+            setCoverImage(null); // Removed setPosterImage
+            setIsEditing(false); setSaveSuccess(true);
             setTimeout(() => setSaveSuccess(false), 3000);
         } catch (saveError: any) {
             console.error("Error updating project:", saveError); setError(saveError.message || "Failed to save.");
@@ -384,7 +388,7 @@ const ProjectDetail: React.FC = () => {
                         <h3 className="text-xl font-semibold mb-4 border-b pb-1">Media</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
                             <div><label htmlFor="coverImage" className="block text-sm font-medium">Cover Image</label><input type="file" id="coverImage" accept="image/*" onChange={handleCoverImageChange} className="mt-1" />{coverImage ? <img src={URL.createObjectURL(coverImage)} alt="New Cover Preview" className="w-36 h-auto mt-2 rounded shadow object-cover" /> : formState.coverImageUrl ? <img src={formState.coverImageUrl} alt="Current Cover" className="w-36 h-auto mt-2 rounded shadow object-cover" /> : null}</div>
-                            <div><label htmlFor="posterImage" className="block text-sm font-medium">Poster Image</label><input type="file" id="posterImage" accept="image/*" onChange={handlePosterImageChange} className="mt-1" />{posterImage ? <img src={URL.createObjectURL(posterImage)} alt="New Poster Preview" className="w-36 h-auto mt-2 rounded shadow object-cover" /> : formState.posterImageUrl ? <img src={formState.posterImageUrl} alt="Current Poster" className="w-36 h-auto mt-2 rounded shadow object-cover" /> : null}</div>
+                            {/* Removed Poster Image input */}
                         </div>
                     </div>
                     <div>
