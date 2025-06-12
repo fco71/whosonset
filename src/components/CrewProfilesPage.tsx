@@ -1,9 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '../firebase';
-import CrewProfileCard from '../components/CrewProfileCard';
+import React from 'react';
 
-interface CrewProfile {
+export interface CrewProfile {
   id: string;
   name: string;
   role: string;
@@ -13,46 +10,41 @@ interface CrewProfile {
   avatarUrl?: string;
 }
 
-const CrewProfilesPage: React.FC = () => {
-  const [crewProfiles, setCrewProfiles] = useState<CrewProfile[]>([]);
-  const [loading, setLoading] = useState(true);
+interface CrewProfileCardProps {
+  profile: CrewProfile;
+}
 
-  useEffect(() => {
-    const fetchCrewProfiles = async () => {
-      try {
-        const querySnapshot = await getDocs(collection(db, 'Crew'));
-        const profiles = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as CrewProfile[];
-        setCrewProfiles(profiles);
-      } catch (error) {
-        console.error('Error fetching crew profiles:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCrewProfiles();
-  }, []);
-
+const CrewProfileCard: React.FC<CrewProfileCardProps> = ({ profile }) => {
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-6">
-      <h1 className="text-3xl font-bold mb-6">Crew Profiles</h1>
-
-      {loading ? (
-        <div className="text-center text-gray-400">Loading crew profiles...</div>
-      ) : crewProfiles.length === 0 ? (
-        <div className="text-center text-gray-400">No crew profiles found.</div>
-      ) : (
-        <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-          {crewProfiles.map(profile => (
-            <CrewProfileCard key={profile.id} profile={profile} />
-          ))}
-        </div>
+    <div className="bg-gray-800 rounded-lg shadow-md p-4 flex flex-col items-center text-white">
+      {profile.avatarUrl && (
+        <img
+          src={profile.avatarUrl}
+          alt={profile.name}
+          className="w-24 h-24 rounded-full object-cover mb-4"
+        />
       )}
+      <h2 className="text-xl font-semibold">{profile.name}</h2>
+      <p className="text-gray-400">{profile.role}</p>
+      <p className="mt-2 text-sm text-center">{profile.bio}</p>
+      <p className="mt-1 text-xs text-gray-500">{profile.location}</p>
+
+      <div className="mt-4 flex gap-2">
+        {profile.resumeUrl && (
+          <a
+            href={profile.resumeUrl}
+            download
+            className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+          >
+            Download Resume
+          </a>
+        )}
+        <button className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm">
+          Add to Collection
+        </button>
+      </div>
     </div>
   );
 };
 
-export default CrewProfilesPage;
+export default CrewProfileCard;
