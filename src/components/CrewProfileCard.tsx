@@ -1,4 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { db } from '../firebase';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth } from '../firebase';
+import { FaDownload, FaBookmark, FaRegBookmark } from 'react-icons/fa';
 
 export interface CrewProfile {
   id: string;
@@ -15,32 +20,64 @@ interface CrewProfileCardProps {
 }
 
 const CrewProfileCard: React.FC<CrewProfileCardProps> = ({ profile }) => {
-  return (
-    <div className="bg-gray-800 rounded-lg shadow-md p-4 flex flex-col items-center text-white">
-      {profile.avatarUrl && (
-        <img
-          src={profile.avatarUrl}
-          alt={profile.name}
-          className="w-24 h-24 rounded-full object-cover mb-4"
-        />
-      )}
-      <h2 className="text-xl font-semibold">{profile.name}</h2>
-      <p className="text-gray-400">{profile.role}</p>
-      <p className="mt-2 text-sm text-center">{profile.bio}</p>
-      <p className="mt-1 text-xs text-gray-500">{profile.location}</p>
+  const [user] = useAuthState(auth);
+  const [isSaved, setIsSaved] = useState(false);
 
-      <div className="mt-4 flex gap-2">
-        {profile.resumeUrl && (
-          <a
-            href={profile.resumeUrl}
-            download
-            className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
-          >
-            Download Resume
-          </a>
-        )}
-        <button className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm">
-          Add to Collection
+  const handleSaveToCollection = async () => {
+    if (!user) {
+      alert('Please log in to save profiles.');
+      return;
+    }
+
+    const docRef = doc(db, `collections/${user.uid}/savedCrew/${profile.id}`);
+
+    try {
+      if (isSaved) {
+        await deleteDoc(docRef);
+        setIsSaved(false);
+      } else {
+        await setDoc(docRef, profile);
+        setIsSaved(true);
+      }
+    } catch (error) {
+      console.error('Error saving crew profile:', error);
+    }
+  };
+
+  const handleDownloadResume = () => {
+    if (profile.resumeUrl) {
+      window.open(profile.resumeUrl, '_blank');
+    } else {
+      alert('No resume available.');
+    }
+  };
+
+  return (
+    <div className="bg-gray-800 rounded-lg shadow p-6 flex flex-col items-center text-center">
+      <img
+        src={profile.avatarUrl || '/default-avatar.png'}
+        alt={profile.name}
+        className="w-24 h-24 rounded-full mb-4 object-cover"
+      />
+      <h2 className="text-xl font-semibold">{profile.name}</h2>
+      <p className="text-sm text-gray-400">{profile.role} – {profile.location}</p>
+      <p className="mt-2 text-sm text-gray-300">{profile.bio}</p>
+
+      <div className="mt-4 flex gap-3">
+        <button
+          onClick={handleSaveToCollection}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded flex items-center"
+        >
+          {isSaved ? <FaBookmark className="mr-2" /> : <FaRegBookmark className="mr-2" />}
+          {isSaved ? 'Saved' : 'Save'}
+        </button>
+
+        <button
+          onClick={handleDownloadResume}
+          className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded flex items-center"
+        >
+          <FaDownload className="mr-2" />
+          Download Resume
         </button>
       </div>
     </div>
