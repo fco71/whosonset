@@ -1,49 +1,57 @@
 // src/components/EditCrewProfile.tsx
 import React, { useState, useEffect } from 'react';
+import { auth, db, storage } from '../firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
-// Define the shape of your form data
 interface FormData {
   name: string;
   role: string;
   location: string;
   skills: string;
   bio: string;
-  avatarUrl: string; // Assuming you store the URL after upload
-  resumeUrl: string; // Assuming you store the URL after upload
+  avatarUrl: string;
+  resumeUrl: string;
 }
 
 const EditCrewProfile: React.FC = () => {
-  // Initialize form state with empty strings for all fields
   const [form, setForm] = useState<FormData>({
     name: '',
     role: '',
     location: '',
     skills: '',
     bio: '',
-    avatarUrl: '', // Initial empty string
-    resumeUrl: '', // Initial empty string
+    avatarUrl: '',
+    resumeUrl: '',
   });
 
-  // This useEffect can be used to load existing profile data if you're editing
-  // For example, if you pass a 'crewId' prop, you'd fetch data here.
-  useEffect(() => {
-    // Example: Fetch existing profile data if editing a specific user
-    // In a real app, you might get an ID from URL params or props
-    // const fetchProfileData = async () => {
-    //   try {
-    //     const response = await fetch('/api/crew/your_crew_id'); // Replace with your API endpoint
-    //     const data = await response.json();
-    //     setForm(data); // Set the fetched data to your form state
-    //   } catch (error) {
-    //     console.error('Error fetching profile data:', error);
-    //   }
-    // };
-    // fetchProfileData();
-  }, []); // Empty dependency array means this runs once on mount
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
 
-  // Handles changes for all text, textarea, and select inputs
+  const currentUser = auth.currentUser;
+
+  // Fetch existing profile data on mount
+  useEffect(() => {
+    const loadProfile = async () => {
+      if (!currentUser) return;
+      try {
+        const docRef = doc(db, 'crewProfiles', currentUser.uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data() as FormData;
+          setForm(data);
+        }
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+      }
+    };
+
+    loadProfile();
+  }, [currentUser]);
+
+  // Handles changes for all inputs
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
     setForm((prevForm) => ({
@@ -52,58 +60,58 @@ const EditCrewProfile: React.FC = () => {
     }));
   };
 
-  // Handles avatar image file selection
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
+  // Handles avatar image file selection and upload
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files?.[0] && currentUser) {
       const file = e.target.files[0];
-      // In a real application, you would upload this file to a server
-      // and update `form.avatarUrl` with the URL returned by the server.
-      // For now, let's create a temporary URL for preview:
-      setForm((prevForm) => ({
-        ...prevForm,
-        avatarUrl: URL.createObjectURL(file), // Creates a temporary URL for preview
-      }));
-      // console.log("Selected Avatar File:", file);
+      const avatarRef = ref(storage, `avatars/${currentUser.uid}`);
+      try {
+        await uploadBytes(avatarRef, file);
+        const url = await getDownloadURL(avatarRef);
+        setForm((prevForm) => ({
+          ...prevForm,
+          avatarUrl: url,
+        }));
+      } catch (error) {
+        console.error('Avatar upload failed:', error);
+      }
     }
   };
 
-  // Handles resume PDF file selection
-  const handleResumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
+  // Handles resume PDF file selection and upload
+  const handleResumeChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files?.[0] && currentUser) {
       const file = e.target.files[0];
-      // In a real application, you would upload this file to a server
-      // and update `form.resumeUrl` with the URL returned by the server.
-      // For now, let's create a temporary URL for preview:
-      setForm((prevForm) => ({
-        ...prevForm,
-        resumeUrl: URL.createObjectURL(file), // Creates a temporary URL for preview
-      }));
-      // console.log("Selected Resume File:", file);
+      const resumeRef = ref(storage, `resumes/${currentUser.uid}`);
+      try {
+        await uploadBytes(resumeRef, file);
+        const url = await getDownloadURL(resumeRef);
+        setForm((prevForm) => ({
+          ...prevForm,
+          resumeUrl: url,
+        }));
+      } catch (error) {
+        console.error('Resume upload failed:', error);
+      }
     }
   };
 
-  // Handles the save button click
-  const handleSave = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault(); // Prevent default button behavior (if inside a form)
-    // Here you would typically send the 'form' data to your backend API
-    console.log('Saving profile:', form);
-    // Example API call:
-    // fetch('/api/save-profile', {
-    //   method: 'POST',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //   },
-    //   body: JSON.stringify(form),
-    // })
-    // .then(response => response.json())
-    // .then(data => {
-    //   console.log('Profile saved successfully:', data);
-    //   // Optionally, redirect or show a success message
-    // })
-    // .catch(error => {
-    //   console.error('Error saving profile:', error);
-    //   // Show an error message
-    // });
+  // Save profile to Firestore
+  const handleSave = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    if (!currentUser) return;
+    setLoading(true);
+    setMessage(null);
+
+    try {
+      await setDoc(doc(db, 'crewProfiles', currentUser.uid), form);
+      setMessage('Profile saved successfully!');
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      setMessage('Failed to save profile.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -154,7 +162,11 @@ const EditCrewProfile: React.FC = () => {
           <label className="block mb-1">Avatar Image:</label>
           <input type="file" accept="image/*" onChange={handleAvatarChange} />
           {form.avatarUrl && (
-            <img src={form.avatarUrl} alt="avatar" className="mt-2 h-20 w-20 object-cover rounded-full" />
+            <img
+              src={form.avatarUrl}
+              alt="avatar"
+              className="mt-2 h-20 w-20 object-cover rounded-full"
+            />
           )}
         </div>
 
@@ -177,10 +189,16 @@ const EditCrewProfile: React.FC = () => {
         {/* Save Button */}
         <button
           onClick={handleSave}
-          className="bg-green-600 px-4 py-2 rounded hover:bg-green-500"
+          disabled={loading}
+          className="bg-green-600 px-4 py-2 rounded hover:bg-green-500 disabled:opacity-50"
         >
-          Save Profile
+          {loading ? 'Saving...' : 'Save Profile'}
         </button>
+
+        {/* Status message */}
+        {message && (
+          <p className="mt-2 text-sm text-center text-gray-300">{message}</p>
+        )}
       </div>
     </div>
   );
