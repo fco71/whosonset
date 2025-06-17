@@ -21,6 +21,7 @@ import PrivateRoute from './components/PrivateRoute';
 import AddProject from './components/AddProject';
 import Home from './components/Home';
 import ProjectDetail from './components/ProjectDetail';
+import EditCrewProfile from './components/EditCrewProfile';
 
 import SavedCrewProfilesPage from './pages/SavedCrewProfilesPage';
 import SavedProjectsPage from './pages/SavedProjectsPage';
@@ -64,6 +65,7 @@ const App: React.FC = () => {
                                 <li><Link to="/projects/add" className="hover:underline">Add Project</Link></li>
                                 <li><Link to="/crew" className="hover:underline">Crew Search</Link></li>
                                 <li><Link to="/collections" className="hover:underline">My Collections</Link></li>
+                                <li><Link to="/edit-profile" className="hover:underline">Edit Profile</Link></li>
                                 <li>
                                     <button
                                         onClick={userSignOut}
@@ -89,6 +91,7 @@ const App: React.FC = () => {
                         <Route path="/collections" element={<PrivateRoute><CollectionsHubPage /></PrivateRoute>} />
                         <Route path="/saved-crew" element={<PrivateRoute><SavedCrewProfilesPage /></PrivateRoute>} />
                         <Route path="/saved-projects" element={<PrivateRoute><SavedProjectsPage /></PrivateRoute>} />
+                        <Route path="/edit-profile" element={<PrivateRoute><EditCrewProfile /></PrivateRoute>} />
                         <Route path="/login" element={<Login />} />
                         <Route path="/register" element={<Register />} />
                     </Routes>
@@ -98,7 +101,6 @@ const App: React.FC = () => {
     );
 };
 
-// Router wrapper to allow AnimatePresence to access location
 const RootWithRouter = () => (
     <Router>
         <App />
