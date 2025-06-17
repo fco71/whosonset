@@ -10,8 +10,7 @@ interface FormData {
   location: string;
   skills: string;
   bio: string;
-  avatarUrl: string;
-  resumeUrl: string;
+  profileImageUrl: string;
 }
 
 const EditCrewProfile: React.FC = () => {
@@ -24,15 +23,14 @@ const EditCrewProfile: React.FC = () => {
     location: '',
     skills: '',
     bio: '',
-    avatarUrl: '',
-    resumeUrl: '',
+    profileImageUrl: '',
   });
 
   const [errors, setErrors] = useState<Partial<FormData>>({});
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  // Fetch existing profile if available
+  // Fetch existing profile
   useEffect(() => {
     const fetchProfile = async () => {
       if (!currentUser) return;
@@ -40,7 +38,15 @@ const EditCrewProfile: React.FC = () => {
         const docRef = doc(db, 'crewProfiles', currentUser.uid);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
-          setForm(docSnap.data() as FormData);
+          const data = docSnap.data();
+          setForm({
+            name: data.name || '',
+            role: data.role || '',
+            location: data.location || '',
+            skills: data.skills || '',
+            bio: data.bio || '',
+            profileImageUrl: data.profileImageUrl || '',
+          });
         }
       } catch (error) {
         console.error('Error loading profile:', error);
@@ -71,29 +77,16 @@ const EditCrewProfile: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleProfileImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!currentUser || !e.target.files?.[0]) return;
     const file = e.target.files[0];
-    const storageRef = ref(storage, `avatars/${currentUser.uid}`);
+    const storageRef = ref(storage, `profileImages/${currentUser.uid}`);
     try {
       await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(storageRef);
-      setForm((prevForm) => ({ ...prevForm, avatarUrl: downloadURL }));
+      setForm((prevForm) => ({ ...prevForm, profileImageUrl: downloadURL }));
     } catch (error) {
-      console.error('Error uploading avatar:', error);
-    }
-  };
-
-  const handleResumeChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!currentUser || !e.target.files?.[0]) return;
-    const file = e.target.files[0];
-    const storageRef = ref(storage, `resumes/${currentUser.uid}.pdf`);
-    try {
-      await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(storageRef);
-      setForm((prevForm) => ({ ...prevForm, resumeUrl: downloadURL }));
-    } catch (error) {
-      console.error('Error uploading resume:', error);
+      console.error('Error uploading profile image:', error);
     }
   };
 
@@ -110,7 +103,8 @@ const EditCrewProfile: React.FC = () => {
     setMessage(null);
 
     try {
-      await setDoc(doc(db, 'crewProfiles', currentUser.uid), form);
+      const docRef = doc(db, 'crewProfiles', currentUser.uid);
+      await setDoc(docRef, { ...form, uid: currentUser.uid });
       setMessage('Profile saved successfully!');
     } catch (error) {
       console.error('Error saving profile:', error);
@@ -171,44 +165,42 @@ const EditCrewProfile: React.FC = () => {
         />
         {errors.bio && <p className="text-red-400 text-sm">{errors.bio}</p>}
 
-        {/* Avatar Upload */}
+        {/* Profile Image Upload */}
         <div>
-          <label className="block mb-1">Avatar Image:</label>
-          <input type="file" accept="image/*" onChange={handleAvatarChange} />
-          {form.avatarUrl && (
+          <label className="block mb-1">Profile Image:</label>
+          <input type="file" accept="image/*" onChange={handleProfileImageChange} />
+          {form.profileImageUrl && (
             <>
-              <img src={form.avatarUrl} alt="avatar" className="mt-2 h-20 w-20 object-cover rounded-full" />
+              <img
+                src={form.profileImageUrl}
+                alt="profile"
+                className="mt-2 h-20 w-20 object-cover rounded-full"
+              />
               <button
-                onClick={() => setForm((prev) => ({ ...prev, avatarUrl: '' }))}
+                onClick={() => setForm((prev) => ({ ...prev, profileImageUrl: '' }))}
                 className="mt-2 text-red-400 underline text-sm"
               >
-                Remove Avatar
+                Remove Profile Image
               </button>
             </>
           )}
         </div>
 
-        {/* Resume Upload */}
-        <div>
-          <label className="block mb-1">Resume (PDF):</label>
-          <input type="file" accept="application/pdf" onChange={handleResumeChange} />
-          {form.resumeUrl && (
-            <>
-              <a
-                href={form.resumeUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-400 underline mt-2 block"
-              >
-                View Uploaded Resume
-              </a>
-              <button
-                onClick={() => setForm((prev) => ({ ...prev, resumeUrl: '' }))}
-                className="mt-1 text-red-400 underline text-sm"
-              >
-                Remove Resume
-              </button>
-            </>
+        {/* Resume Placeholder */}
+        <div className="pt-4">
+          <label className="block mb-1">Resume:</label>
+          <p className="text-sm text-gray-300 mb-1">
+            Your resume will be automatically generated based on your profile info.
+          </p>
+          {currentUser && (
+            <a
+              href={`/resume/${currentUser.uid}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-400 underline text-sm"
+            >
+              View Generated Resume
+            </a>
           )}
         </div>
 
@@ -221,7 +213,7 @@ const EditCrewProfile: React.FC = () => {
           {loading ? 'Saving...' : 'Save Profile'}
         </button>
 
-        {/* Public Profile Preview */}
+        {/* Public Profile Link */}
         {currentUser && (
           <a
             href={`/crew/${currentUser.uid}`}
