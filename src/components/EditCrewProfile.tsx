@@ -1,3 +1,4 @@
+// src/components/EditCrewProfile.tsx
 import React, { useState, useEffect } from 'react';
 import { getAuth } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -25,89 +26,80 @@ const EditCrewProfile: React.FC = () => {
     bio: '',
     profileImageUrl: '',
   });
-
   const [errors, setErrors] = useState<Partial<FormData>>({});
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  // Fetch existing profile
+  // Load existing profile on mount
   useEffect(() => {
     const fetchProfile = async () => {
       if (!currentUser) return;
       try {
-        const docRef = doc(db, 'crewProfiles', currentUser.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          setForm({
-            name: data.name || '',
-            role: data.role || '',
-            location: data.location || '',
-            skills: data.skills || '',
-            bio: data.bio || '',
-            profileImageUrl: data.profileImageUrl || '',
-          });
+        const snap = await getDoc(doc(db, 'crewProfiles', currentUser.uid));
+        if (snap.exists()) {
+          const data = snap.data() as Partial<FormData>;
+          setForm((f) => ({ ...f, ...data }));
         }
-      } catch (error) {
-        console.error('Error loading profile:', error);
+      } catch (err) {
+        console.error('Error loading profile:', err);
       }
     };
-
     fetchProfile();
   }, [currentUser]);
 
+  // Simple field‐by‐field validation
+  const validateForm = () => {
+    const newErr: Partial<FormData> = {};
+    if (!form.name.trim()) newErr.name = 'Name is required';
+    if (!form.role.trim()) newErr.role = 'Role is required';
+    if (!form.location.trim()) newErr.location = 'Location is required';
+    if (!form.skills.trim()) newErr.skills = 'Skills are required';
+    if (!form.bio.trim()) newErr.bio = 'Bio is required';
+    setErrors(newErr);
+    return Object.keys(newErr).length === 0;
+  };
+
+  // Generic input handler
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    setForm((prevForm) => ({
-      ...prevForm,
-      [name]: value,
-    }));
+    setForm((f) => ({ ...f, [name]: value }));
   };
 
-  const validateForm = () => {
-    const newErrors: Partial<FormData> = {};
-    if (!form.name.trim()) newErrors.name = 'Name is required';
-    if (!form.role.trim()) newErrors.role = 'Role is required';
-    if (!form.location.trim()) newErrors.location = 'Location is required';
-    if (!form.skills.trim()) newErrors.skills = 'Skills are required';
-    if (!form.bio.trim()) newErrors.bio = 'Bio is required';
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
+  // Upload profile image, store its download URL
   const handleProfileImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!currentUser || !e.target.files?.[0]) return;
     const file = e.target.files[0];
     const storageRef = ref(storage, `profileImages/${currentUser.uid}`);
     try {
       await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(storageRef);
-      setForm((prevForm) => ({ ...prevForm, profileImageUrl: downloadURL }));
-    } catch (error) {
-      console.error('Error uploading profile image:', error);
+      const url = await getDownloadURL(storageRef);
+      setForm((f) => ({ ...f, profileImageUrl: url }));
+    } catch (err) {
+      console.error('Error uploading profile image:', err);
+      setMessage('Failed to upload image.');
     }
   };
 
+  // Save to Firestore under crewProfiles/{uid}
   const handleSave = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     if (!currentUser) return;
-
     if (!validateForm()) {
-      setMessage('Please fix the errors before saving.');
+      setMessage('Please fix errors before saving.');
       return;
     }
-
     setLoading(true);
     setMessage(null);
-
     try {
-      const docRef = doc(db, 'crewProfiles', currentUser.uid);
-      await setDoc(docRef, { ...form, uid: currentUser.uid });
+      await setDoc(doc(db, 'crewProfiles', currentUser.uid), {
+        ...form,
+        uid: currentUser.uid,
+      });
       setMessage('Profile saved successfully!');
-    } catch (error) {
-      console.error('Error saving profile:', error);
+    } catch (err) {
+      console.error('Error saving profile:', err);
       setMessage('Failed to save profile.');
     } finally {
       setLoading(false);
@@ -117,7 +109,7 @@ const EditCrewProfile: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
       <div className="max-w-xl mx-auto bg-gray-800 p-6 rounded-lg shadow-md space-y-4">
-        <h2 className="text-2xl font-bold mb-4">Edit Crew Profile</h2>
+        <h2 className="text-2xl font-bold">Edit Crew Profile</h2>
 
         <input
           name="name"
@@ -165,32 +157,32 @@ const EditCrewProfile: React.FC = () => {
         />
         {errors.bio && <p className="text-red-400 text-sm">{errors.bio}</p>}
 
-        {/* Profile Image Upload */}
+        {/* Profile Image */}
         <div>
           <label className="block mb-1">Profile Image:</label>
           <input type="file" accept="image/*" onChange={handleProfileImageChange} />
           {form.profileImageUrl && (
-            <>
+            <div className="mt-2 flex items-center gap-4">
               <img
                 src={form.profileImageUrl}
                 alt="profile"
-                className="mt-2 h-20 w-20 object-cover rounded-full"
+                className="h-20 w-20 object-cover rounded-full"
               />
               <button
-                onClick={() => setForm((prev) => ({ ...prev, profileImageUrl: '' }))}
-                className="mt-2 text-red-400 underline text-sm"
+                onClick={() => setForm((f) => ({ ...f, profileImageUrl: '' }))}
+                className="text-red-400 underline text-sm"
               >
-                Remove Profile Image
+                Remove
               </button>
-            </>
+            </div>
           )}
         </div>
 
-        {/* Resume Placeholder */}
+        {/* Resume link */}
         <div className="pt-4">
           <label className="block mb-1">Resume:</label>
           <p className="text-sm text-gray-300 mb-1">
-            Your resume will be automatically generated based on your profile info.
+            Your resume will be generated from this profile.
           </p>
           {currentUser && (
             <a
@@ -204,16 +196,16 @@ const EditCrewProfile: React.FC = () => {
           )}
         </div>
 
-        {/* Save Button */}
         <button
           onClick={handleSave}
           disabled={loading}
           className="bg-green-600 px-4 py-2 rounded hover:bg-green-500 disabled:opacity-50"
         >
-          {loading ? 'Saving...' : 'Save Profile'}
+          {loading ? 'Saving…' : 'Save Profile'}
         </button>
 
-        {/* Public Profile Link */}
+        {message && <p className="mt-4 text-center text-sm text-yellow-400">{message}</p>}
+
         {currentUser && (
           <a
             href={`/crew/${currentUser.uid}`}
@@ -223,10 +215,6 @@ const EditCrewProfile: React.FC = () => {
           >
             View Public Profile
           </a>
-        )}
-
-        {message && (
-          <p className="mt-4 text-center text-sm text-yellow-400">{message}</p>
         )}
       </div>
     </div>
