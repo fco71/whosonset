@@ -33,6 +33,7 @@
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.5",
+    "@google-cloud/storage": "^7.16.0",
     "@tailwindcss/line-clamp": "^0.4.4",
     "firebase": "^11.7.3",
     "framer-motion": "^12.12.1",
