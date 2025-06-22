@@ -1,8 +1,16 @@
-import * as functions from "firebase-functions";
-import * as admin from "firebase-admin";
+import { initializeApp, applicationDefault } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
 
-admin.initializeApp();
+// Initialize Firebase Admin with the project-specific configuration
+initializeApp({
+  credential: applicationDefault(),
+  projectId: 'whosonsetdepez', // Your project ID
+});
 
+// Get a reference to the Firestore database
+const db = getFirestore();
+
+// The complete list of job titles to be seeded
 const jobTitles = [
   "Executive Producer",
   "Producer",
@@ -91,21 +99,23 @@ const jobTitles = [
   "Other",
 ];
 
-export const seedJobTitles = functions.https.onRequest(async (_req, res) => {
-  try {
-    const db = admin.firestore();
-    const batch = db.batch();
-    const col = db.collection("jobTitles");
+/**
+ * Seeds the 'jobTitles' collection in Firestore with a predefined list.
+ */
+async function seed() {
+  const batch = db.batch();
+  const col = db.collection("jobTitles");
 
-    jobTitles.forEach((name) => {
-      const docRef = col.doc();
-      batch.set(docRef, {name});
-    });
+  jobTitles.forEach((name) => {
+    const docRef = col.doc(); // Create a new document with an auto-generated ID
+    batch.set(docRef, { name });
+  });
 
-    await batch.commit();
-    res.status(200).send(`✅ Seeded ${jobTitles.length} job titles.`);
-  } catch (e) {
-    console.error("❌ Seeding failed:", e);
-    res.status(500).send("❌ Seeding failed: " + (e as Error).message);
-  }
+  await batch.commit();
+  console.log(`✅ Seeded ${jobTitles.length} job titles.`);
+}
+
+// Execute the seed function and catch any potential errors
+seed().catch((err) => {
+  console.error("❌ Seeding failed:", err);
 });
