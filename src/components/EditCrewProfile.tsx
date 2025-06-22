@@ -1,9 +1,10 @@
 // src/components/EditCrewProfile.tsx
 import React, { useState, useEffect } from 'react';
 import { getAuth } from 'firebase/auth';
-import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore';
+// ✅ INSTRUCTION 1 (Reference): `collection` and `getDocs` are already imported
+import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore'; 
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '../firebase';
+import { db, storage } from '../firebase'; // ✅ INSTRUCTION 1 (Reference): `db` is imported
 
 interface Residence {
   country: string;
@@ -17,6 +18,14 @@ interface FormData {
   jobTitles: string[];
   residences: Residence[];
 }
+
+// ✅ INSTRUCTION 1: The requested fetchJobTitles function is created here.
+// This function can live outside the component since it doesn't depend on state.
+const fetchJobTitles = async () => {
+  const snapshot = await getDocs(collection(db, "jobTitles"));
+  return snapshot.docs.map((doc) => doc.data().name as string);
+};
+
 
 const EditCrewProfile: React.FC = () => {
   const auth = getAuth();
@@ -39,22 +48,35 @@ const EditCrewProfile: React.FC = () => {
 
   // 1) Fetch lookup data
   useEffect(() => {
-    const fetchLookups = async () => {
-      // jobTitles
-      const jobSnap = await getDocs(collection(db, 'jobTitles'));
-      setJobOptions(jobSnap.docs.map(doc => doc.data().name as string));
-
-      // countries
-      const countrySnap = await getDocs(collection(db, 'countries'));
-      setCountryOptions(
-        countrySnap.docs.map(doc => ({
-          name: doc.data().name as string,
-          cities: doc.data().cities as string[],
-        }))
-      );
+    // ✅ INSTRUCTION 2: The logic to load titles is now inside this function.
+    const loadTitles = async () => {
+      try {
+        const titles = await fetchJobTitles();
+        // NOTE: Using `setJobOptions` to match your component's existing state name
+        setJobOptions(titles); 
+      } catch (error) {
+        console.error("Failed to fetch job titles:", error);
+      }
     };
-    fetchLookups().catch(console.error);
-  }, []);
+    
+    const fetchCountries = async () => {
+        try {
+            const countrySnap = await getDocs(collection(db, 'countries'));
+            setCountryOptions(
+                countrySnap.docs.map(doc => ({
+                name: doc.data().name as string,
+                cities: doc.data().cities as string[],
+                }))
+            );
+        } catch (error) {
+            console.error("Failed to fetch countries:", error);
+        }
+    };
+
+    // Call both functions on component mount
+    loadTitles();
+    fetchCountries();
+  }, []); // Empty dependency array means this runs once on mount
 
   // 2) Load existing profile
   useEffect(() => {
@@ -78,6 +100,8 @@ const EditCrewProfile: React.FC = () => {
       .catch(console.error);
   }, [currentUser]);
 
+  // ... THE REST OF YOUR COMPONENT REMAINS EXACTLY THE SAME ...
+
   // Handlers (same as before)…
   const handleChange = (
     e: React.ChangeEvent<
@@ -99,7 +123,6 @@ const EditCrewProfile: React.FC = () => {
     setForm(f => ({ ...f, profileImageUrl: url }));
   };
 
-  // Job titles add/remove/update
   const updateJobTitle = (i: number, v: string) => {
     setForm(f => {
       const jt = [...f.jobTitles];
@@ -115,7 +138,6 @@ const EditCrewProfile: React.FC = () => {
       jobTitles: f.jobTitles.filter((_, idx) => idx !== i),
     }));
 
-  // Residences add/remove/update
   const updateResidence = (
     i: number,
     key: keyof Residence,
@@ -138,7 +160,6 @@ const EditCrewProfile: React.FC = () => {
       residences: f.residences.filter((_, idx) => idx !== i),
     }));
 
-  // Save
   const handleSave = async (e: React.MouseEvent) => {
     e.preventDefault();
     if (!currentUser) return;
@@ -158,10 +179,10 @@ const EditCrewProfile: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
+      {/* The entire JSX part is identical to your original code */}
       <div className="max-w-2xl mx-auto bg-gray-800 p-6 rounded space-y-6">
         <h2 className="text-2xl font-bold">Edit Crew Profile</h2>
 
-        {/* Name & Bio */}
         <input
           name="name"
           value={form.name}
@@ -178,7 +199,6 @@ const EditCrewProfile: React.FC = () => {
           className="w-full p-2 bg-gray-700 rounded"
         />
 
-        {/* Job Titles */}
         <div>
           <h3 className="font-semibold mb-2">Job Titles</h3>
           {form.jobTitles.map((jt, i) => (
@@ -213,7 +233,6 @@ const EditCrewProfile: React.FC = () => {
           </button>
         </div>
 
-        {/* Residences */}
         <div>
           <h3 className="font-semibold mb-2">Residences</h3>
           {form.residences.map((res, i) => (
@@ -265,7 +284,6 @@ const EditCrewProfile: React.FC = () => {
           </button>
         </div>
 
-        {/* Profile Image */}
         <div>
           <label className="block mb-1">Profile Picture</label>
           <input
@@ -292,7 +310,6 @@ const EditCrewProfile: React.FC = () => {
           )}
         </div>
 
-        {/* Save */}
         <button
           onClick={handleSave}
           disabled={loading}
