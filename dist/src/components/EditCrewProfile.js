@@ -1,10 +1,15 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 // src/components/EditCrewProfile.tsx
+// Original single-dropdown version
 import { useState, useEffect } from 'react';
 import { getAuth } from 'firebase/auth';
 import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
+const fetchJobTitles = async () => {
+    const snapshot = await getDocs(collection(db, "jobTitles"));
+    return snapshot.docs.map((doc) => doc.data().name);
+};
 const EditCrewProfile = () => {
     const auth = getAuth();
     const currentUser = auth.currentUser;
@@ -21,18 +26,29 @@ const EditCrewProfile = () => {
     const [message, setMessage] = useState(null);
     // 1) Fetch lookup data
     useEffect(() => {
-        const fetchLookups = async () => {
-            // jobTitles
-            const jobSnap = await getDocs(collection(db, 'jobTitles'));
-            setJobOptions(jobSnap.docs.map(doc => doc.data().name));
-            // countries
-            const countrySnap = await getDocs(collection(db, 'countries'));
-            setCountryOptions(countrySnap.docs.map(doc => ({
-                name: doc.data().name,
-                cities: doc.data().cities,
-            })));
+        const loadTitles = async () => {
+            try {
+                const titles = await fetchJobTitles();
+                setJobOptions(titles);
+            }
+            catch (error) {
+                console.error("Failed to fetch job titles:", error);
+            }
         };
-        fetchLookups().catch(console.error);
+        const fetchCountries = async () => {
+            try {
+                const countrySnap = await getDocs(collection(db, 'countries'));
+                setCountryOptions(countrySnap.docs.map(doc => ({
+                    name: doc.data().name,
+                    cities: doc.data().cities,
+                })));
+            }
+            catch (error) {
+                console.error("Failed to fetch countries:", error);
+            }
+        };
+        loadTitles();
+        fetchCountries();
     }, []);
     // 2) Load existing profile
     useEffect(() => {
@@ -56,7 +72,7 @@ const EditCrewProfile = () => {
         })
             .catch(console.error);
     }, [currentUser]);
-    // Handlers (same as before)…
+    // Handlers
     const handleChange = (e) => {
         const { name, value } = e.target;
         setForm(f => ({ ...f, [name]: value }));
@@ -70,7 +86,6 @@ const EditCrewProfile = () => {
         const url = await getDownloadURL(storageRef);
         setForm(f => ({ ...f, profileImageUrl: url }));
     };
-    // Job titles add/remove/update
     const updateJobTitle = (i, v) => {
         setForm(f => {
             const jt = [...f.jobTitles];
@@ -83,7 +98,6 @@ const EditCrewProfile = () => {
         ...f,
         jobTitles: f.jobTitles.filter((_, idx) => idx !== i),
     }));
-    // Residences add/remove/update
     const updateResidence = (i, key, value) => {
         setForm(f => {
             const rs = [...f.residences];
@@ -99,7 +113,6 @@ const EditCrewProfile = () => {
         ...f,
         residences: f.residences.filter((_, idx) => idx !== i),
     }));
-    // Save
     const handleSave = async (e) => {
         e.preventDefault();
         if (!currentUser)

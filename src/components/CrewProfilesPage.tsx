@@ -1,50 +1,106 @@
-import React from 'react';
+// src/pages/EditCrewProfilePage.tsx
+import React, { useState, useEffect, FormEvent } from 'react';
+import { auth, db } from '../firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { useAuthState } from 'react-firebase-hooks/auth'; // A popular library for handling auth state
+import JobTitleSelector from '../components/JobTitleSelector';
 
-export interface CrewProfile {
-  id: string;
-  name: string;
-  role: string;
-  bio: string;
-  location: string;
-  resumeUrl?: string;
-  avatarUrl?: string;
-}
+const EditCrewProfilePage: React.FC = () => {
+    // Using a hook to get the current user and loading state
+    const [user, loadingAuth] = useAuthState(auth);
 
-interface CrewProfileCardProps {
-  profile: CrewProfile;
-}
+    // State for the form fields
+    const [department, setDepartment] = useState('');
+    const [jobTitle, setJobTitle] = useState('');
 
-const CrewProfileCard: React.FC<CrewProfileCardProps> = ({ profile }) => {
-  return (
-    <div className="bg-gray-800 rounded-lg shadow-md p-4 flex flex-col items-center text-white">
-      {profile.avatarUrl && (
-        <img
-          src={profile.avatarUrl}
-          alt={profile.name}
-          className="w-24 h-24 rounded-full object-cover mb-4"
-        />
-      )}
-      <h2 className="text-xl font-semibold">{profile.name}</h2>
-      <p className="text-gray-400">{profile.role}</p>
-      <p className="mt-2 text-sm text-center">{profile.bio}</p>
-      <p className="mt-1 text-xs text-gray-500">{profile.location}</p>
+    // State to manage loading of profile data and form submission
+    const [loadingProfile, setLoadingProfile] = useState(true);
+    const [message, setMessage] = useState('');
 
-      <div className="mt-4 flex gap-2">
-        {profile.resumeUrl && (
-          <a
-            href={profile.resumeUrl}
-            download
-            className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
-          >
-            Download Resume
-          </a>
-        )}
-        <button className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm">
-          Add to Collection
-        </button>
-      </div>
-    </div>
-  );
+    // useEffect to fetch the crew profile data when the component loads
+    useEffect(() => {
+        const fetchCrewProfile = async () => {
+            if (!user) return; // Wait until user is loaded
+
+            const profileDocRef = doc(db, 'crewProfiles', user.uid);
+            const profileSnap = await getDoc(profileDocRef);
+
+            if (profileSnap.exists()) {
+                const profileData = profileSnap.data();
+                setDepartment(profileData.department || '');
+                setJobTitle(profileData.jobTitle || '');
+            } else {
+                console.log("No crew profile found for this user.");
+            }
+            setLoadingProfile(false);
+        };
+
+        // Only fetch data if auth has finished loading and we have a user
+        if (!loadingAuth && user) {
+            fetchCrewProfile();
+        }
+    }, [user, loadingAuth]); // Rerun when user or auth loading state changes
+
+    const handleProfileUpdate = async (e: FormEvent) => {
+        e.preventDefault();
+        if (!user) {
+            setMessage('Error: You must be logged in to update your profile.');
+            return;
+        }
+
+        setMessage('Updating profile...');
+        try {
+            const userId = user.uid;
+            // The data object to save to Firestore
+            const crewProfileData = {
+                department,
+                jobTitle,
+                // If you have other fields on the form, add them here.
+                // For example:
+                // yearsOfExperience: experience,
+            };
+
+            // Use setDoc with { merge: true } to update fields without overwriting the whole document
+            await setDoc(doc(db, "crewProfiles", userId), crewProfileData, { merge: true });
+
+            setMessage('Profile updated successfully!');
+        } catch (error) {
+            console.error("Error updating profile: ", error);
+            setMessage('An error occurred while updating the profile.');
+        }
+    };
+
+    if (loadingAuth || loadingProfile) {
+        return <div>Loading Profile...</div>;
+    }
+
+    if (!user) {
+        return <div>Please log in to edit your profile.</div>;
+    }
+
+    return (
+        <div>
+            <h2>Edit Your Crew Profile</h2>
+            <form onSubmit={handleProfileUpdate}>
+                <JobTitleSelector
+                    selectedDepartment={department}
+                    selectedJobTitle={jobTitle}
+                    onDepartmentChange={setDepartment}
+                    onJobTitleChange={setJobTitle}
+                />
+                
+                {/* You can add other profile fields here */}
+                {/* <div>
+                    <label>Years of Experience:</label>
+                    <input type="number" value={otherProfileFields.yearsOfExperience} ... />
+                </div> 
+                */}
+
+                <button type="submit">Save Changes</button>
+            </form>
+            {message && <p>{message}</p>}
+        </div>
+    );
 };
 
-export default CrewProfileCard;
+export default EditCrewProfilePage;
