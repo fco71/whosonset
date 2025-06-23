@@ -1,10 +1,11 @@
 // src/components/EditCrewProfile.tsx
+// Original single-dropdown version
+
 import React, { useState, useEffect } from 'react';
 import { getAuth } from 'firebase/auth';
-// ✅ INSTRUCTION 1 (Reference): `collection` and `getDocs` are already imported
 import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore'; 
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '../firebase'; // ✅ INSTRUCTION 1 (Reference): `db` is imported
+import { db, storage } from '../firebase';
 
 interface Residence {
   country: string;
@@ -19,8 +20,6 @@ interface FormData {
   residences: Residence[];
 }
 
-// ✅ INSTRUCTION 1: The requested fetchJobTitles function is created here.
-// This function can live outside the component since it doesn't depend on state.
 const fetchJobTitles = async () => {
   const snapshot = await getDocs(collection(db, "jobTitles"));
   return snapshot.docs.map((doc) => doc.data().name as string);
@@ -48,11 +47,9 @@ const EditCrewProfile: React.FC = () => {
 
   // 1) Fetch lookup data
   useEffect(() => {
-    // ✅ INSTRUCTION 2: The logic to load titles is now inside this function.
     const loadTitles = async () => {
       try {
         const titles = await fetchJobTitles();
-        // NOTE: Using `setJobOptions` to match your component's existing state name
         setJobOptions(titles); 
       } catch (error) {
         console.error("Failed to fetch job titles:", error);
@@ -73,10 +70,9 @@ const EditCrewProfile: React.FC = () => {
         }
     };
 
-    // Call both functions on component mount
     loadTitles();
     fetchCountries();
-  }, []); // Empty dependency array means this runs once on mount
+  }, []);
 
   // 2) Load existing profile
   useEffect(() => {
@@ -100,9 +96,7 @@ const EditCrewProfile: React.FC = () => {
       .catch(console.error);
   }, [currentUser]);
 
-  // ... THE REST OF YOUR COMPONENT REMAINS EXACTLY THE SAME ...
-
-  // Handlers (same as before)…
+  // Handlers
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
@@ -179,7 +173,6 @@ const EditCrewProfile: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
-      {/* The entire JSX part is identical to your original code */}
       <div className="max-w-2xl mx-auto bg-gray-800 p-6 rounded space-y-6">
         <h2 className="text-2xl font-bold">Edit Crew Profile</h2>
 
