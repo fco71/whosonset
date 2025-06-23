@@ -13,7 +13,8 @@ const RegisterForm: React.FC = () => {
     const [country, setCountry] = useState('Dominican Republic');
     const [userType, setUserType] = useState('Crew');
 
-    // State for the JobTitleSelector
+    // --- (1) ADDED HERE: State management for the form ---
+    // These variables will hold the selections from the JobTitleSelector.
     const [department, setDepartment] = useState('');
     const [jobTitle, setJobTitle] = useState('');
 
@@ -21,13 +22,14 @@ const RegisterForm: React.FC = () => {
         e.preventDefault();
 
         try {
-            // 1. Create user in Firebase Auth
+            // Create user in Firebase Auth
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const firebaseUser = userCredential.user;
+            const userId = firebaseUser.uid;
 
-            // 2. Create the main user document in the 'users' collection
+            // Create the main user document in the 'users' collection
             const newUser: User = {
-                uid: firebaseUser.uid,
+                uid: userId,
                 email: firebaseUser.email,
                 displayName: displayName,
                 photoURL: null,
@@ -35,18 +37,27 @@ const RegisterForm: React.FC = () => {
                 country: country,
                 user_type: userType,
             };
-            await setDoc(doc(db, 'users', firebaseUser.uid), newUser);
+            await setDoc(doc(db, 'users', userId), newUser);
             console.log('User document created successfully!');
 
-            // --- (NEW) 3. If user is Crew, create a separate profile in 'crewProfiles' ---
+            // If user is Crew, create a separate profile in 'crewProfiles'
             if (userType === 'Crew') {
-                const crewProfileData = {
-                    department: department,
-                    jobTitle: jobTitle,
-                    // You can add other crew-specific default fields here
-                    // e.g., availability: 'available', yearsOfExperience: 0
+
+                // --- (2) ADDED HERE: Saving data to 'crewProfiles' on submit ---
+                // Define any other profile fields you might need here.
+                // For now, it's an empty object as a placeholder.
+                const otherProfileFields = {
+                    availability: 'available',
+                    yearsOfExperience: 0,
+                    // add other default fields here
                 };
-                await setDoc(doc(db, "crewProfiles", firebaseUser.uid), crewProfileData);
+
+                await setDoc(doc(db, "crewProfiles", userId), {
+                    department,
+                    jobTitle,
+                    ...otherProfileFields,
+                });
+
                 console.log('Crew profile created successfully!');
             }
 
@@ -57,7 +68,7 @@ const RegisterForm: React.FC = () => {
 
     return (
         <form onSubmit={handleSubmit}>
-            {/* ... other input fields for email, password, displayName, etc. ... */}
+            {/* Input fields for email, password, displayName, etc. */}
             <div>
                 <label>Email:</label>
                 <input type="email" value={email} onChange={e => setEmail(e.target.value)} required />
@@ -71,14 +82,6 @@ const RegisterForm: React.FC = () => {
                 <input type="text" value={displayName} onChange={e => setDisplayName(e.target.value)} required />
             </div>
             <div>
-                <label>Country:</label>
-                <select value={country} onChange={e => setCountry(e.target.value)}>
-                    <option value="Dominican Republic">Dominican Republic</option>
-                    <option value="United States">United States</option>
-                    <option value="Other">Other</option>
-                </select>
-            </div>
-            <div>
                 <label>User Type:</label>
                 <select value={userType} onChange={e => setUserType(e.target.value)}>
                     <option value="Crew">Crew</option>
@@ -86,6 +89,7 @@ const RegisterForm: React.FC = () => {
                 </select>
             </div>
 
+            {/* Conditionally render JobTitleSelector and pass state to it */}
             {userType === 'Crew' && (
                 <JobTitleSelector
                     selectedDepartment={department}
