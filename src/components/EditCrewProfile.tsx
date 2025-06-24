@@ -4,6 +4,7 @@ import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
 import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
+import { ProjectEntry } from '../types/ProjectEntry';
 
 // Interfaces remain the same
 interface Residence {
@@ -27,6 +28,7 @@ interface FormData {
   profileImageUrl: string;
   jobTitles: JobTitleEntry[];
   residences: Residence[];
+  projects: ProjectEntry[];
 }
 
 const fetchJobDepartments = async (): Promise<JobDepartment[]> => {
@@ -50,6 +52,7 @@ const EditCrewProfile: React.FC = () => {
     profileImageUrl: '',
     jobTitles: [{ department: '', title: '' }],
     residences: [{ country: '', city: '' }],
+    projects: [{ projectName: '', role: '', description: '' }],
   });
 
   const [departments, setDepartments] = useState<JobDepartment[]>([]);
@@ -115,6 +118,7 @@ const EditCrewProfile: React.FC = () => {
                     ...data,
                     jobTitles: data.jobTitles?.length ? data.jobTitles : [{ department: '', title: '' }],
                     residences: data.residences?.length ? data.residences : [{ country: '', city: '' }],
+                    projects: data.projects?.length ? data.projects : [{ projectName: '', role: '', description: '' }],
                 }));
             } else {
                 console.log("DEBUG: No existing profile document found for this user.");
@@ -171,6 +175,20 @@ const EditCrewProfile: React.FC = () => {
 
   const removeResidence = (i: number) =>
     setForm(f => ({ ...f, residences: f.residences.filter((_, idx) => idx !== i) }));
+
+  const updateProject = (i: number, field: keyof ProjectEntry, value: string) => {
+    setForm(f => {
+      const updated = [...f.projects];
+      updated[i] = { ...updated[i], [field]: value };
+      return { ...f, projects: updated };
+    });
+  };
+
+  const addProject = () =>
+    setForm(f => ({ ...f, projects: [...f.projects, { projectName: '', role: '', description: '' }] }));
+
+  const removeProject = (i: number) =>
+    setForm(f => ({ ...f, projects: f.projects.filter((_, idx) => idx !== i) }));
 
   const handleSave = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -232,6 +250,36 @@ const EditCrewProfile: React.FC = () => {
             </div>
           ))}
           <button onClick={addResidence} className="text-blue-400 underline text-sm">+ Add Residence</button>
+        </div>
+        <div>
+          <h3 className="font-semibold mb-2">Projects</h3>
+          {form.projects.map((proj, i) => (
+            <div key={i} className="mb-4 space-y-1">
+              <input
+                value={proj.projectName}
+                onChange={e => updateProject(i, 'projectName', e.target.value)}
+                placeholder="Project Name"
+                className="w-full p-2 bg-gray-700 rounded"
+              />
+              <input
+                value={proj.role}
+                onChange={e => updateProject(i, 'role', e.target.value)}
+                placeholder="Your Role"
+                className="w-full p-2 bg-gray-700 rounded"
+              />
+              <input
+                value={proj.description}
+                onChange={e => updateProject(i, 'description', e.target.value)}
+                placeholder="Short description (optional)"
+                maxLength={100}
+                className="w-full p-2 bg-gray-700 rounded text-sm"
+              />
+              {form.projects.length > 1 && (
+                <button type="button" onClick={() => removeProject(i)} className="text-red-400 text-sm">❌ Remove</button>
+              )}
+            </div>
+          ))}
+          <button type="button" onClick={addProject} className="text-blue-400 underline text-sm">+ Add Project</button>
         </div>
         <div>
           <label className="block mb-1">Profile Picture</label>

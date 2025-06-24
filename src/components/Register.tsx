@@ -6,6 +6,7 @@ import { auth, db, storage } from '../firebase';
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { doc, setDoc, collection, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ProjectEntry } from '../types/ProjectEntry';
 
 // --- Interfaces to define the shape of your data ---
 interface Residence {
@@ -32,6 +33,7 @@ interface FormData {
   profileImageUrl: string;
   jobTitles: JobTitleEntry[];
   residences: Residence[];
+  projects: ProjectEntry[];
   userType: 'Crew' | 'Producer';
 }
 
@@ -55,6 +57,7 @@ const Register: React.FC = () => {
     profileImageUrl: '',
     jobTitles: [{ department: '', title: '' }],
     residences: [{ country: 'Dominican Republic', city: '' }],
+    projects: [{ projectName: '', role: '', description: '' }],
     userType: 'Crew',
   });
 
@@ -120,6 +123,17 @@ const Register: React.FC = () => {
   const addResidence = () => setForm(f => ({ ...f, residences: [...f.residences, { country: '', city: '' }] }));
   const removeResidence = (i: number) => setForm(f => ({ ...f, residences: f.residences.filter((_, idx) => idx !== i) }));
 
+  const updateProject = (i: number, field: keyof ProjectEntry, value: string) => {
+    setForm(f => {
+      const updated = [...f.projects];
+      updated[i] = { ...updated[i], [field]: value };
+      return { ...f, projects: updated };
+    });
+  };
+
+  const addProject = () => setForm(f => ({ ...f, projects: [...f.projects, { projectName: '', role: '', description: '' }] }));
+  const removeProject = (i: number) => setForm(f => ({ ...f, projects: f.projects.filter((_, idx) => idx !== i) }));
+
   // --- The new handleSubmit that performs all registration steps ---
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -166,6 +180,7 @@ const Register: React.FC = () => {
           profileImageUrl: uploadedImageUrl,
           jobTitles: form.jobTitles.filter(j => j.department && j.title),
           residences: form.residences.filter(r => r.country && r.city),
+          projects: form.projects.filter(p => p.projectName && p.role),
           availability: 'available', // Example default field
         });
       }
@@ -244,6 +259,38 @@ const Register: React.FC = () => {
                 </div>
               ))}
               <button type="button" onClick={addResidence} className="text-blue-400 underline text-sm">+ Add Residence</button>
+            </div>
+
+            {/* Projects Section */}
+            <div>
+              <h3 className="font-semibold mb-2">My Projects</h3>
+              {form.projects.map((proj, i) => (
+                <div key={i} className="mb-4 space-y-1">
+                  <input
+                    value={proj.projectName}
+                    onChange={e => updateProject(i, 'projectName', e.target.value)}
+                    placeholder="Project Name"
+                    className="w-full p-2 bg-gray-700 rounded"
+                  />
+                  <input
+                    value={proj.role}
+                    onChange={e => updateProject(i, 'role', e.target.value)}
+                    placeholder="Your Role"
+                    className="w-full p-2 bg-gray-700 rounded"
+                  />
+                  <input
+                    value={proj.description}
+                    onChange={e => updateProject(i, 'description', e.target.value)}
+                    placeholder="Short description (optional)"
+                    maxLength={100}
+                    className="w-full p-2 bg-gray-700 rounded text-sm"
+                  />
+                  {form.projects.length > 1 && (
+                    <button type="button" onClick={() => removeProject(i)} className="text-red-400 text-sm">❌ Remove</button>
+                  )}
+                </div>
+              ))}
+              <button type="button" onClick={addProject} className="text-blue-400 underline text-sm">+ Add Project</button>
             </div>
             
             {/* Profile Picture Section */}
