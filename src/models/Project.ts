@@ -1,24 +1,24 @@
 // src/models/Project.ts
 export interface Project {
-    project_id: string;
-    project_name: string;
+    id: string;
+    projectName: string;
     country: string;
-    production_company: string;
+    productionCompany: string;
     status: string;
     logline: string;
     synopsis: string;
-    start_date: Date | null;
-    end_date: Date | null;
+    startDate: string;
+    endDate: string;
     location: string;
     genre: string;
     director: string;
     producer: string;
-    crew_ids: string[];
+    coverImageUrl: string;
+    projectWebsite: string;
+    productionBudget: string;
+    productionCompanyContact: string;
+    isVerified: boolean;
     owner_uid: string;
-    cover_image_url: string;
-    poster_image_url: string;
-    project_website: string;
-    production_budget: number;
-    production_company_contact: string;
-    is_verified: boolean;
+    createdAt?: any; // serverTimestamp
+    genres?: string[];
 }

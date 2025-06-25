@@ -5,6 +5,7 @@ import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import { ProjectEntry } from '../types/ProjectEntry';
+import { JobTitleEntry } from '../types/JobTitleEntry';
 
 // Interfaces remain the same
 interface Residence {
@@ -15,11 +16,6 @@ interface Residence {
 interface JobDepartment {
   name: string;
   titles: string[];
-}
-
-interface JobTitleEntry {
-  department: string;
-  title: string;
 }
 
 interface FormData {
@@ -50,7 +46,7 @@ const EditCrewProfile: React.FC = () => {
     name: '',
     bio: '',
     profileImageUrl: '',
-    jobTitles: [{ department: '', title: '' }],
+    jobTitles: [{ department: '', title: '', subcategories: [] }],
     residences: [{ country: '', city: '' }],
     projects: [{ projectName: '', role: '', description: '' }],
   });
@@ -116,7 +112,7 @@ const EditCrewProfile: React.FC = () => {
                 setForm(f => ({
                     ...f,
                     ...data,
-                    jobTitles: data.jobTitles?.length ? data.jobTitles : [{ department: '', title: '' }],
+                    jobTitles: data.jobTitles?.length ? data.jobTitles : [{ department: '', title: '', subcategories: [] }],
                     residences: data.residences?.length ? data.residences : [{ country: '', city: '' }],
                     projects: data.projects?.length ? data.projects : [{ projectName: '', role: '', description: '' }],
                 }));
@@ -148,16 +144,23 @@ const EditCrewProfile: React.FC = () => {
     setForm(f => ({ ...f, profileImageUrl: url }));
   };
 
-  const updateJobEntry = (i: number, field: keyof JobTitleEntry, value: string) => {
+  const updateJobEntry = (i: number, field: keyof JobTitleEntry, value: any) => {
     setForm(f => {
       const updated = [...f.jobTitles];
-      updated[i] = { ...updated[i], [field]: value };
+      const newEntry = { ...updated[i], [field]: value };
+
+      if (field === 'department') {
+        newEntry.title = '';
+        newEntry.subcategories = [];
+      }
+
+      updated[i] = newEntry;
       return { ...f, jobTitles: updated };
     });
   };
 
   const addJobEntry = () =>
-    setForm(f => ({ ...f, jobTitles: [...f.jobTitles, { department: '', title: '' }] }));
+    setForm(f => ({ ...f, jobTitles: [...f.jobTitles, { department: '', title: '', subcategories: [] }] }));
 
   const removeJobEntry = (i: number) =>
     setForm(f => ({ ...f, jobTitles: f.jobTitles.filter((_, idx) => idx !== i) }));
@@ -219,20 +222,55 @@ const EditCrewProfile: React.FC = () => {
         <div>
           <h3 className="font-semibold mb-2">Job Titles</h3>
           {form.jobTitles.map((entry, i) => (
-            <div key={i} className="flex gap-2 mb-2 items-center">
-              <select value={entry.department} onChange={e => { updateJobEntry(i, 'department', e.target.value); updateJobEntry(i, 'title', ''); }} className="p-2 bg-gray-700 rounded flex-1">
-                <option value="">— Department —</option>
-                {departments.map(d => (<option key={d.name} value={d.name}>{d.name}</option>))}
-                <option value="Other">Other</option>
-              </select>
-              {entry.department === 'Other' ? (<input value={entry.title} onChange={e => updateJobEntry(i, 'title', e.target.value)} placeholder="Enter job title" className="p-2 bg-gray-700 rounded flex-1" />) : (<select value={entry.title} onChange={e => updateJobEntry(i, 'title', e.target.value)} className="p-2 bg-gray-700 rounded flex-1" disabled={!entry.department}>
-                <option value="">— Title —</option>
-                {departments.find(d => d.name === entry.department)?.titles.map(title => (<option key={title} value={title}>{title}</option>))}
-              </select>)}
-              {form.jobTitles.length > 1 && (<button onClick={() => removeJobEntry(i)} className="text-red-400">❌</button>)}
+            <div key={i} className="mb-4 space-y-2">
+              <div className="flex gap-2 items-center">
+                <select value={entry.department} onChange={e => updateJobEntry(i, 'department', e.target.value)} className="p-2 bg-gray-700 rounded flex-1">
+                  <option value="">— Department —</option>
+                  {departments.map(d => (<option key={d.name} value={d.name}>{d.name}</option>))}
+                  <option value="Other">Other</option>
+                </select>
+                {entry.department === 'Other' ? (
+                  <input value={entry.title} onChange={e => updateJobEntry(i, 'title', e.target.value)} placeholder="Enter job title" className="p-2 bg-gray-700 rounded flex-1" />
+                ) : (
+                  <select value={entry.title} onChange={e => updateJobEntry(i, 'title', e.target.value)} className="p-2 bg-gray-700 rounded flex-1" disabled={!entry.department}>
+                    <option value="">— Title —</option>
+                    {departments.find(d => d.name === entry.department)?.titles.map(title => (<option key={title} value={title}>{title}</option>))}
+                  </select>
+                )}
+                {form.jobTitles.length > 1 && (<button type="button" onClick={() => removeJobEntry(i)} className="text-red-400">❌</button>)}
+              </div>
+              
+              {/* Subcategories */}
+              {entry.title && (
+                <div className="ml-4 space-y-1">
+                  {entry.subcategories?.map((sub, idx) => (
+                    <input
+                      key={idx}
+                      value={sub}
+                      onChange={(e) => {
+                        const newSubs = [...(entry.subcategories || [])];
+                        newSubs[idx] = e.target.value;
+                        updateJobEntry(i, 'subcategories', newSubs);
+                      }}
+                      placeholder={`Subcategory ${idx + 1}`}
+                      className="p-2 bg-gray-700 rounded w-full text-sm"
+                    />
+                  ))}
+                  
+                  {(entry.subcategories?.length || 0) < 3 && (
+                    <button
+                      type="button"
+                      onClick={() => updateJobEntry(i, 'subcategories', [...(entry.subcategories || []), ''])}
+                      className="text-blue-400 underline text-sm"
+                    >
+                      + Add Subcategory
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           ))}
-          <button onClick={addJobEntry} className="text-blue-400 underline text-sm">+ Add Job Title</button>
+          <button type="button" onClick={addJobEntry} className="text-blue-400 underline text-sm">+ Add Job Title</button>
         </div>
         <div>
           <h3 className="font-semibold mb-2">Residences</h3>

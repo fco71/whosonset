@@ -3,19 +3,50 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
   
-    // This is the new block you need to add
-    match /jobTitles/{jobId} {
-      // Allow any authenticated user to read the list of job titles.
-      allow read: if request.auth != null; 
-      
-      // Prevent anyone from accidentally deleting or changing them from the website.
-      allow write: if false;
+    // Allow read/write access to Projects collection
+    match /Projects/{projectId} {
+      allow read: if true; // Anyone can read projects
+      allow write: if request.auth != null; // Only authenticated users can write
     }
 
-    // Your existing rule for crewProfiles remains the same
+    // Allow read/write access to jobDepartments collection
+    match /jobDepartments/{deptId} {
+      allow read: if request.auth != null;
+      allow write: if false; // Prevent accidental changes
+    }
+
+    // Allow read/write access to countries collection
+    match /countries/{countryId} {
+      allow read: if request.auth != null;
+      allow write: if false; // Prevent accidental changes
+    }
+
+    // Allow read/write access to jobTitles collection
+    match /jobTitles/{jobId} {
+      allow read: if request.auth != null; 
+      allow write: if false; // Prevent accidental changes
+    }
+
+    // Allow read/write access to crewProfiles collection
     match /crewProfiles/{userId} {
-      allow read;
-      allow write: if request.auth.uid == userId;
+      allow read: if true; // Anyone can read crew profiles
+      allow write: if request.auth.uid == userId; // Only the user can edit their own profile
+    }
+
+    // Allow read/write access to users collection
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth.uid == userId; // Only the user can edit their own data
+    }
+
+    // Allow read/write access to collections (saved projects/crew)
+    match /collections/{userId}/{document=**} {
+      allow read, write: if request.auth.uid == userId; // Only the user can access their collections
+    }
+
+    // Allow read/write access to UserCollections collection
+    match /UserCollections/{userId} {
+      allow read, write: if request.auth.uid == userId; // Only the user can access their collections
     }
   }
 }
