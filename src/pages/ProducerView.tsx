@@ -47,6 +47,7 @@ const ProducerView: React.FC = () => {
   const [departments, setDepartments] = useState<JobDepartment[]>([]);
   const [countries, setCountries] = useState<Country[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isFiltering, setIsFiltering] = useState(false);
 
   // Filter states
   const [filters, setFilters] = useState({
@@ -90,6 +91,7 @@ const ProducerView: React.FC = () => {
     const fetchCrewProfiles = async () => {
       try {
         setLoading(true);
+        setIsFiltering(true);
         
         // Start with base query for published profiles
         let q = query(
@@ -145,6 +147,8 @@ const ProducerView: React.FC = () => {
         console.error('Error fetching crew profiles:', error);
       } finally {
         setLoading(false);
+        // Add delay for smooth transition
+        setTimeout(() => setIsFiltering(false), 300);
       }
     };
 
@@ -189,47 +193,52 @@ const ProducerView: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-          <p>Loading crew profiles...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSkeleton />;
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Crew Directory</h1>
-          <p className="text-gray-400">
-            Browse and filter crew profiles to find the perfect team for your project
-          </p>
+    <div className="min-h-screen bg-white">
+      {/* Hero Section */}
+      <div className="bg-gradient-to-br from-gray-50 to-white border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-8 py-24">
+          <div className="text-center mb-16 animate-fade-in">
+            <h1 className="text-6xl font-light text-gray-900 mb-6 tracking-tight animate-slide-up">
+              Discover
+            </h1>
+            <h2 className="text-4xl font-light text-gray-600 mb-8 tracking-wide animate-slide-up-delay">
+              Creative Talent
+            </h2>
+            <p className="text-xl font-light text-gray-500 max-w-2xl mx-auto leading-relaxed animate-slide-up-delay-2">
+              Connect with exceptional crew members from around the world. 
+              Find the perfect collaborators for your next project.
+            </p>
+          </div>
         </div>
+      </div>
 
-        {/* Filters */}
-        <div className="bg-gray-800 p-6 rounded-lg mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold">Filters</h2>
+      {/* Filters Section */}
+      <div className="bg-white border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-8 py-12">
+          <div className="flex items-center justify-between mb-8 animate-fade-in">
+            <h3 className="text-2xl font-light text-gray-900 tracking-wide">Refine Search</h3>
             <button
               onClick={clearFilters}
-              className="text-blue-400 hover:text-blue-300 text-sm"
+              className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-all duration-300 tracking-wide uppercase hover:scale-105"
             >
-              Clear All Filters
+              Clear All
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 animate-fade-in-delay">
             {/* Department Filter */}
-            <div>
-              <label className="block text-sm font-medium mb-2">Department</label>
+            <div className="animate-slide-up-filter">
+              <label className="block text-xs font-medium text-gray-700 mb-3 uppercase tracking-wider">
+                Department
+              </label>
               <select
                 value={filters.department}
                 onChange={(e) => handleFilterChange('department', e.target.value)}
-                className="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:border-blue-500 focus:outline-none"
+                className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
               >
                 <option value="">All Departments</option>
                 {departments.map(dept => (
@@ -241,15 +250,17 @@ const ProducerView: React.FC = () => {
             </div>
 
             {/* Job Title Filter */}
-            <div>
-              <label className="block text-sm font-medium mb-2">Job Title</label>
+            <div className="animate-slide-up-filter-delay-1">
+              <label className="block text-xs font-medium text-gray-700 mb-3 uppercase tracking-wider">
+                Role
+              </label>
               <select
                 value={filters.jobTitle}
                 onChange={(e) => handleFilterChange('jobTitle', e.target.value)}
-                className="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:border-blue-500 focus:outline-none"
+                className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
                 disabled={!filters.department}
               >
-                <option value="">All Titles</option>
+                <option value="">All Roles</option>
                 {getAvailableJobTitles().map(title => (
                   <option key={title} value={title}>
                     {title}
@@ -259,12 +270,14 @@ const ProducerView: React.FC = () => {
             </div>
 
             {/* Country Filter */}
-            <div>
-              <label className="block text-sm font-medium mb-2">Country</label>
+            <div className="animate-slide-up-filter-delay-2">
+              <label className="block text-xs font-medium text-gray-700 mb-3 uppercase tracking-wider">
+                Country
+              </label>
               <select
                 value={filters.country}
                 onChange={(e) => handleFilterChange('country', e.target.value)}
-                className="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:border-blue-500 focus:outline-none"
+                className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
               >
                 <option value="">All Countries</option>
                 {countries.map(country => (
@@ -276,14 +289,16 @@ const ProducerView: React.FC = () => {
             </div>
 
             {/* City Filter */}
-            <div>
-              <label className="block text-sm font-medium mb-2">City</label>
+            <div className="animate-slide-up-filter-delay-3">
+              <label className="block text-xs font-medium text-gray-700 mb-3 uppercase tracking-wider">
+                City
+              </label>
               <input
                 type="text"
                 value={filters.city}
                 onChange={(e) => handleFilterChange('city', e.target.value)}
                 placeholder="Enter city name"
-                className="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:border-blue-500 focus:outline-none"
+                className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
                 list="cities-list"
               />
               {filters.country && (
@@ -296,14 +311,16 @@ const ProducerView: React.FC = () => {
             </div>
 
             {/* Availability Filter */}
-            <div>
-              <label className="block text-sm font-medium mb-2">Availability</label>
+            <div className="animate-slide-up-filter-delay-4">
+              <label className="block text-xs font-medium text-gray-700 mb-3 uppercase tracking-wider">
+                Availability
+              </label>
               <select
                 value={filters.availability}
                 onChange={(e) => handleFilterChange('availability', e.target.value)}
-                className="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:border-blue-500 focus:outline-none"
+                className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
               >
-                <option value="">All Availability</option>
+                <option value="">All Status</option>
                 <option value="available">Available</option>
                 <option value="soon">Available Soon</option>
                 <option value="unavailable">Unavailable</option>
@@ -311,73 +328,163 @@ const ProducerView: React.FC = () => {
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Results */}
-        <div className="mb-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">
-              Results ({filteredProfiles.length} crew members)
-            </h2>
-            {Object.values(filters).some(f => f) && (
-              <div className="text-sm text-gray-400">
-                Showing filtered results
-              </div>
-            )}
+      {/* Results Section */}
+      <div className="bg-gray-50">
+        <div className="max-w-7xl mx-auto px-8 py-16">
+          <div className="mb-12 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <h3 className="text-3xl font-light text-gray-900 tracking-wide">
+                {filteredProfiles.length} {filteredProfiles.length === 1 ? 'Talent' : 'Talents'} Found
+              </h3>
+              {Object.values(filters).some(f => f) && (
+                <div className="text-sm font-light text-gray-500 tracking-wide">
+                  Showing filtered results
+                </div>
+              )}
+            </div>
           </div>
+
+          {/* Crew Profiles Grid */}
+          {filteredProfiles.length === 0 ? (
+            <div className="text-center py-24 animate-fade-in">
+              <div className="text-8xl mb-8 opacity-20 animate-bounce-slow">🔍</div>
+              <h3 className="text-2xl font-light text-gray-900 mb-4 tracking-wide">
+                No talent found
+              </h3>
+              <p className="text-lg font-light text-gray-500 max-w-md mx-auto leading-relaxed">
+                Try adjusting your search criteria or check back later for new profiles
+              </p>
+            </div>
+          ) : (
+            <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 transition-all duration-500 ${isFiltering ? 'opacity-50 scale-95' : 'opacity-100 scale-100'}`}>
+              {filteredProfiles.map((profile, index) => (
+                <CrewProfileCard 
+                  key={profile.uid} 
+                  profile={profile} 
+                  index={index}
+                  isFiltering={isFiltering}
+                />
+              ))}
+            </div>
+          )}
         </div>
-
-        {/* Crew Profiles Grid */}
-        {filteredProfiles.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="text-6xl mb-4">🔍</div>
-            <h3 className="text-xl font-semibold mb-2">No crew members found</h3>
-            <p className="text-gray-400">
-              Try adjusting your filters or check back later for new profiles
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredProfiles.map((profile) => (
-              <CrewProfileCard key={profile.uid} profile={profile} />
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );
 };
 
-// Crew Profile Card Component
-const CrewProfileCard: React.FC<{ profile: CrewProfile }> = ({ profile }) => {
+// Loading Skeleton Component
+const LoadingSkeleton: React.FC = () => {
+  return (
+    <div className="min-h-screen bg-white">
+      {/* Hero Skeleton */}
+      <div className="bg-gradient-to-br from-gray-50 to-white border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-8 py-24">
+          <div className="text-center mb-16">
+            <div className="h-16 bg-gray-200 rounded-lg mb-6 animate-pulse"></div>
+            <div className="h-12 bg-gray-200 rounded-lg mb-8 animate-pulse"></div>
+            <div className="h-6 bg-gray-200 rounded-lg max-w-2xl mx-auto animate-pulse"></div>
+          </div>
+        </div>
+      </div>
+
+      {/* Filters Skeleton */}
+      <div className="bg-white border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-8 py-12">
+          <div className="flex items-center justify-between mb-8">
+            <div className="h-8 bg-gray-200 rounded w-32 animate-pulse"></div>
+            <div className="h-6 bg-gray-200 rounded w-20 animate-pulse"></div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="animate-pulse">
+                <div className="h-4 bg-gray-200 rounded w-20 mb-3"></div>
+                <div className="h-14 bg-gray-200 rounded-lg"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Results Skeleton */}
+      <div className="bg-gray-50">
+        <div className="max-w-7xl mx-auto px-8 py-16">
+          <div className="mb-12">
+            <div className="h-10 bg-gray-200 rounded w-48 animate-pulse"></div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="bg-white rounded-2xl p-8 animate-pulse">
+                <div className="flex items-start gap-6 mb-6">
+                  <div className="w-20 h-20 bg-gray-200 rounded-full"></div>
+                  <div className="flex-1">
+                    <div className="h-6 bg-gray-200 rounded mb-2"></div>
+                    <div className="h-4 bg-gray-200 rounded mb-1"></div>
+                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                  </div>
+                </div>
+                <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded mb-6 w-2/3"></div>
+                <div className="h-6 bg-gray-200 rounded w-20 mb-6"></div>
+                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                  <div className="h-4 bg-gray-200 rounded w-16"></div>
+                  <div className="h-4 bg-gray-200 rounded w-24"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Crew Profile Card Component with Animations
+const CrewProfileCard: React.FC<{ 
+  profile: CrewProfile; 
+  index: number;
+  isFiltering: boolean;
+}> = ({ profile, index, isFiltering }) => {
   const primaryJob = profile.jobTitles[0];
   const primaryResidence = profile.residences[0];
 
   return (
-    <div className="bg-gray-800 rounded-lg p-6 hover:bg-gray-750 transition-colors cursor-pointer">
-      <div className="flex items-start gap-4 mb-4">
+    <div 
+      className={`group bg-white rounded-2xl p-8 hover:shadow-2xl transition-all duration-700 cursor-pointer border border-gray-100 hover:border-gray-200 animate-card-entrance`}
+      style={{
+        animationDelay: `${index * 100}ms`,
+        transform: isFiltering ? 'scale(0.95) opacity(0.5)' : 'scale(1) opacity(1)',
+        transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
+      }}
+    >
+      <div className="flex items-start gap-6 mb-6">
         {profile.profileImageUrl ? (
           <img
             src={profile.profileImageUrl}
             alt={profile.name}
-            className="w-16 h-16 rounded-full object-cover"
+            className="w-20 h-20 rounded-full object-cover transition-transform duration-300 group-hover:scale-110"
           />
         ) : (
-          <div className="w-16 h-16 rounded-full bg-gray-700 flex items-center justify-center">
-            <span className="text-2xl text-gray-400">
+          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
+            <span className="text-2xl text-gray-500 font-light">
               {profile.name.charAt(0).toUpperCase()}
             </span>
           </div>
         )}
         
         <div className="flex-1">
-          <h3 className="font-semibold text-lg mb-1">{profile.name}</h3>
+          <h3 className="text-xl font-light text-gray-900 mb-2 tracking-wide group-hover:text-black transition-all duration-300 group-hover:scale-105">
+            {profile.name}
+          </h3>
           {primaryJob && (
-            <p className="text-blue-400 text-sm">
+            <p className="text-sm font-medium text-gray-600 mb-1 tracking-wide transition-colors duration-300 group-hover:text-gray-800">
               {primaryJob.department} • {primaryJob.title}
             </p>
           )}
           {primaryResidence && (
-            <p className="text-gray-400 text-sm">
+            <p className="text-sm font-light text-gray-500 tracking-wide transition-colors duration-300 group-hover:text-gray-600">
               📍 {primaryResidence.city}, {primaryResidence.country}
             </p>
           )}
@@ -385,37 +492,37 @@ const CrewProfileCard: React.FC<{ profile: CrewProfile }> = ({ profile }) => {
       </div>
 
       {profile.bio && (
-        <p className="text-gray-300 text-sm mb-4 line-clamp-2">
+        <p className="text-gray-600 font-light leading-relaxed mb-6 line-clamp-3 transition-colors duration-300 group-hover:text-gray-700">
           {profile.bio}
         </p>
       )}
 
       {profile.availability && (
-        <div className="mb-4">
-          <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+        <div className="mb-6">
+          <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium tracking-wide transition-all duration-300 group-hover:scale-105 ${
             profile.availability === 'available' 
-              ? 'bg-green-900 text-green-300' 
+              ? 'bg-green-100 text-green-800 group-hover:bg-green-200' 
               : profile.availability === 'soon'
-              ? 'bg-yellow-900 text-yellow-300'
-              : 'bg-red-900 text-red-300'
+              ? 'bg-yellow-100 text-yellow-800 group-hover:bg-yellow-200'
+              : 'bg-red-100 text-red-800 group-hover:bg-red-200'
           }`}>
-            {profile.availability === 'available' ? '✅ Available' :
-             profile.availability === 'soon' ? '⏰ Available Soon' : '❌ Unavailable'}
+            {profile.availability === 'available' ? 'Available' :
+             profile.availability === 'soon' ? 'Available Soon' : 'Unavailable'}
           </span>
         </div>
       )}
 
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-gray-400">
+      <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+        <div className="text-sm font-light text-gray-500 tracking-wide transition-colors duration-300 group-hover:text-gray-600">
           {profile.projects?.length || 0} projects
         </div>
         <a
           href={`/resume/${profile.uid}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-blue-400 hover:text-blue-300 text-sm font-medium"
+          className="text-sm font-medium text-gray-900 hover:text-black transition-all duration-300 tracking-wide group-hover:underline group-hover:scale-105"
         >
-          View Resume →
+          View Profile →
         </a>
       </div>
     </div>

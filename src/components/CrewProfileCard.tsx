@@ -53,32 +53,59 @@ const CrewProfileCard: React.FC<CrewProfileCardProps> = ({ profile }) => {
   };
 
   return (
-    <div className="bg-gray-800 rounded-lg shadow p-6 flex flex-col items-center text-center">
-      <img
-        src={profile.avatarUrl || '/default-avatar.png'}
-        alt={profile.name}
-        className="w-24 h-24 rounded-full mb-4 object-cover"
-      />
-      <h2 className="text-xl font-semibold">{profile.name}</h2>
-      <p className="text-sm text-gray-400">{profile.role} – {profile.location}</p>
-      <p className="mt-2 text-sm text-gray-300">{profile.bio}</p>
+    <div className="group bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden">
+      {/* Profile Image */}
+      <div className="h-48 bg-gray-100 flex items-center justify-center overflow-hidden">
+        <img
+          src={profile.avatarUrl || '/default-avatar.png'}
+          alt={profile.name}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+        />
+      </div>
 
-      <div className="mt-4 flex gap-3">
-        <button
-          onClick={handleSaveToCollection}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded flex items-center"
-        >
-          {isSaved ? <FaBookmark className="mr-2" /> : <FaRegBookmark className="mr-2" />}
-          {isSaved ? 'Saved' : 'Save'}
-        </button>
+      {/* Profile Content */}
+      <div className="p-6">
+        <h2 className="text-xl font-light text-gray-900 mb-2 tracking-wide group-hover:text-gray-700 transition-colors">
+          {profile.name}
+        </h2>
+        <p className="text-sm font-medium text-gray-500 mb-3 tracking-wider uppercase">
+          {profile.role} • {profile.location}
+        </p>
+        <p className="text-gray-600 leading-relaxed line-clamp-3 mb-6">
+          {profile.bio}
+        </p>
 
-        <button
-          onClick={handleDownloadResume}
-          className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded flex items-center"
-        >
-          <FaDownload className="mr-2" />
-          Download Resume
-        </button>
+        {/* Action Buttons */}
+        <div className="flex gap-3">
+          <button
+            onClick={handleSaveToCollection}
+            className={`flex-1 flex items-center justify-center px-4 py-3 rounded-lg font-light tracking-wide transition-all duration-300 hover:scale-105 ${
+              isSaved 
+                ? 'bg-gray-900 text-white hover:bg-gray-800' 
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            {isSaved ? (
+              <>
+                <FaBookmark className="mr-2 text-sm" />
+                Saved
+              </>
+            ) : (
+              <>
+                <FaRegBookmark className="mr-2 text-sm" />
+                Save
+              </>
+            )}
+          </button>
+
+          <button
+            onClick={handleDownloadResume}
+            className="flex-1 flex items-center justify-center px-4 py-3 bg-gray-900 text-white rounded-lg font-light tracking-wide hover:bg-gray-800 transition-all duration-300 hover:scale-105"
+          >
+            <FaDownload className="mr-2 text-sm" />
+            Resume
+          </button>
+        </div>
       </div>
     </div>
   );

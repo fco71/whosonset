@@ -361,372 +361,600 @@ const EditCrewProfile: React.FC = () => {
 
   // --- JSX / HTML (no changes) ---
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-8">
-      <div className="max-w-2xl mx-auto bg-gray-800 p-6 rounded space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold">Edit Crew Profile</h2>
-          <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-            isPublished 
-              ? 'bg-green-900 text-green-300 border border-green-600' 
-              : 'bg-gray-700 text-gray-300 border border-gray-600'
-          }`}>
-            {isPublished ? '🌐 Published' : '🔒 Private'}
+    <div className="min-h-screen bg-white">
+      {/* Hero Section */}
+      <div className="bg-gradient-to-br from-gray-50 to-white border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-8 py-24">
+          <div className="text-center mb-16 animate-fade-in">
+            <h1 className="text-6xl font-light text-gray-900 mb-6 tracking-tight animate-slide-up">
+              Edit
+            </h1>
+            <h2 className="text-4xl font-light text-gray-600 mb-8 tracking-wide animate-slide-up-delay">
+              Crew Profile
+            </h2>
+            <p className="text-xl font-light text-gray-500 max-w-2xl mx-auto leading-relaxed animate-slide-up-delay-2">
+              Update your professional information and showcase your experience. 
+              Keep your profile current to attract the best opportunities.
+            </p>
           </div>
         </div>
-        <input name="name" value={form.name} onChange={handleChange} placeholder="Full Name" className="w-full p-2 bg-gray-700 rounded" />
-        <textarea name="bio" value={form.bio} onChange={handleChange} placeholder="Short Bio" rows={3} className="w-full p-2 bg-gray-700 rounded" />
-        <div>
-          <h3 className="font-semibold mb-2">Job Titles</h3>
-          {form.jobTitles.map((entry, i) => (
-            <div key={i} className="mb-4 space-y-2">
-              <div className="space-y-2">
-                <select value={entry.department} onChange={e => updateJobEntry(i, 'department', e.target.value)} className="p-2 bg-gray-700 rounded w-full">
-                  <option value="">— Department —</option>
-                  {departments.map(d => (<option key={d.name} value={d.name}>{d.name}</option>))}
-                  <option value="Other">Other</option>
-                </select>
-                {entry.department === 'Other' ? (
-                  <input value={entry.title} onChange={e => updateJobEntry(i, 'title', e.target.value)} placeholder="Enter job title" className="p-2 bg-gray-700 rounded w-full" />
-                ) : (
-                  <select value={entry.title} onChange={e => updateJobEntry(i, 'title', e.target.value)} className="p-2 bg-gray-700 rounded w-full" disabled={!entry.department}>
-                    <option value="">— Title —</option>
-                    {departments.find(d => d.name === entry.department)?.titles.map(title => (<option key={title} value={title}>{title}</option>))}
-                  </select>
-                )}
-                {form.jobTitles.length > 1 && (
-                  <button type="button" onClick={() => removeJobEntry(i)} className="text-red-400 text-sm">❌ Remove</button>
-                )}
+      </div>
+
+      {/* Form Section */}
+      <div className="bg-gray-50">
+        <div className="max-w-4xl mx-auto px-8 py-16">
+          <div className="bg-white rounded-xl shadow-sm p-8 animate-fade-in">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-8">
+              <h3 className="text-2xl font-light text-gray-900 tracking-wide">Profile Information</h3>
+              <div className={`px-4 py-2 rounded-full text-sm font-medium tracking-wider ${
+                isPublished 
+                  ? 'bg-green-100 text-green-800' 
+                  : 'bg-gray-100 text-gray-600'
+              }`}>
+                {isPublished ? '🌐 Published' : '🔒 Private'}
+              </div>
+            </div>
+
+            {/* Basic Information */}
+            <div className="space-y-6 mb-8">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-3 uppercase tracking-wider">
+                  Full Name
+                </label>
+                <input 
+                  name="name" 
+                  value={form.name} 
+                  onChange={handleChange} 
+                  placeholder="Enter your full name" 
+                  className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]" 
+                />
               </div>
               
-              {/* Additional Job Titles */}
-              {entry.title && (
-                <div className="ml-4 space-y-2">
-                  {entry.subcategories?.map((sub, idx) => (
-                    <div key={idx} className="space-y-1">
-                      <select
-                        value={sub.department || ''}
-                        onChange={(e) => {
-                          const newSubs = [...(entry.subcategories || [])];
-                          newSubs[idx] = { 
-                            department: e.target.value, 
-                            title: '', 
-                            subcategories: [] 
-                          };
-                          updateJobEntry(i, 'subcategories', newSubs);
-                        }}
-                        className="p-2 bg-gray-700 rounded w-full text-sm"
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-3 uppercase tracking-wider">
+                  Bio
+                </label>
+                <textarea 
+                  name="bio" 
+                  value={form.bio} 
+                  onChange={handleChange} 
+                  placeholder="Tell us about yourself and your experience" 
+                  rows={4} 
+                  className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02] resize-none" 
+                />
+              </div>
+            </div>
+
+            {/* Job Titles Section */}
+            <div className="mb-8">
+              <h3 className="text-lg font-light text-gray-900 mb-4 tracking-wide">Job Titles</h3>
+              {form.jobTitles.map((entry, i) => (
+                <div key={i} className="mb-6 p-6 bg-gray-50 rounded-lg space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
+                        Department
+                      </label>
+                      <select 
+                        value={entry.department} 
+                        onChange={e => updateJobEntry(i, 'department', e.target.value)} 
+                        className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
                       >
-                        <option value="">— Select Department —</option>
-                        {departments.map(dept => (
-                          <option key={dept.name} value={dept.name}>
-                            {dept.name}
-                          </option>
-                        ))}
+                        <option value="">Select Department</option>
+                        {departments.map(d => (<option key={d.name} value={d.name}>{d.name}</option>))}
                         <option value="Other">Other</option>
                       </select>
-                      
-                      {sub.department && (
-                        <>
-                          {sub.department === 'Other' ? (
-                            <input
-                              type="text"
-                              value={sub.title}
-                              onChange={(e) => {
-                                const newSubs = [...(entry.subcategories || [])];
-                                newSubs[idx] = { ...sub, title: e.target.value };
-                                updateJobEntry(i, 'subcategories', newSubs);
-                              }}
-                              placeholder="Enter job title"
-                              className="p-2 bg-gray-700 rounded w-full text-sm"
-                            />
-                          ) : (
-                            <select
-                              value={sub.title}
-                              onChange={(e) => {
-                                const newSubs = [...(entry.subcategories || [])];
-                                newSubs[idx] = { ...sub, title: e.target.value };
-                                updateJobEntry(i, 'subcategories', newSubs);
-                              }}
-                              className="p-2 bg-gray-700 rounded w-full text-sm"
-                            >
-                              <option value="">— Select Job Title —</option>
-                              {departments
-                                .find(d => d.name === sub.department)
-                                ?.titles.map(title => (
-                                  <option key={title} value={title} className="truncate">
-                                    {title}
-                                  </option>
-                                ))}
-                            </select>
-                          )}
-                        </>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
+                        Job Title
+                      </label>
+                      {entry.department === 'Other' ? (
+                        <input 
+                          value={entry.title} 
+                          onChange={e => updateJobEntry(i, 'title', e.target.value)} 
+                          placeholder="Enter job title" 
+                          className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]" 
+                        />
+                      ) : (
+                        <select 
+                          value={entry.title} 
+                          onChange={e => updateJobEntry(i, 'title', e.target.value)} 
+                          className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]" 
+                          disabled={!entry.department}
+                        >
+                          <option value="">Select Job Title</option>
+                          {departments.find(d => d.name === entry.department)?.titles.map(title => (<option key={title} value={title}>{title}</option>))}
+                        </select>
                       )}
                     </div>
-                  ))}
+                  </div>
+                  
+                  {form.jobTitles.length > 1 && (
+                    <button 
+                      type="button" 
+                      onClick={() => removeJobEntry(i)} 
+                      className="text-red-600 hover:text-red-700 text-sm font-medium transition-colors"
+                    >
+                      Remove Job Title
+                    </button>
+                  )}
+                  
+                  {/* Additional Job Titles */}
+                  {entry.title && (
+                    <div className="ml-4 space-y-4 border-l-2 border-gray-200 pl-4">
+                      {entry.subcategories?.map((sub, idx) => (
+                        <div key={idx} className="space-y-3">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
+                                Additional Department
+                              </label>
+                              <select
+                                value={sub.department || ''}
+                                onChange={(e) => {
+                                  const newSubs = [...(entry.subcategories || [])];
+                                  newSubs[idx] = { 
+                                    department: e.target.value, 
+                                    title: '', 
+                                    subcategories: [] 
+                                  };
+                                  updateJobEntry(i, 'subcategories', newSubs);
+                                }}
+                                className="w-full p-3 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02] text-sm"
+                              >
+                                <option value="">Select Department</option>
+                                {departments.map(dept => (
+                                  <option key={dept.name} value={dept.name}>
+                                    {dept.name}
+                                  </option>
+                                ))}
+                                <option value="Other">Other</option>
+                              </select>
+                            </div>
+                            
+                            {sub.department && (
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
+                                  Additional Job Title
+                                </label>
+                                {sub.department === 'Other' ? (
+                                  <input
+                                    type="text"
+                                    value={sub.title}
+                                    onChange={(e) => {
+                                      const newSubs = [...(entry.subcategories || [])];
+                                      newSubs[idx] = { ...sub, title: e.target.value };
+                                      updateJobEntry(i, 'subcategories', newSubs);
+                                    }}
+                                    placeholder="Enter job title"
+                                    className="w-full p-3 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02] text-sm"
+                                  />
+                                ) : (
+                                  <select
+                                    value={sub.title}
+                                    onChange={(e) => {
+                                      const newSubs = [...(entry.subcategories || [])];
+                                      newSubs[idx] = { ...sub, title: e.target.value };
+                                      updateJobEntry(i, 'subcategories', newSubs);
+                                    }}
+                                    className="w-full p-3 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02] text-sm"
+                                  >
+                                    <option value="">Select Job Title</option>
+                                    {departments
+                                      .find(d => d.name === sub.department)
+                                      ?.titles.map(title => (
+                                        <option key={title} value={title} className="truncate">
+                                          {title}
+                                        </option>
+                                      ))}
+                                  </select>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+              <button 
+                type="button" 
+                onClick={addJobEntry} 
+                className="text-gray-600 hover:text-gray-800 font-medium text-sm transition-colors"
+              >
+                + Add Job Title
+              </button>
+            </div>
+
+            {/* Residences Section */}
+            <div className="mb-8">
+              <h3 className="text-lg font-light text-gray-900 mb-4 tracking-wide">Residences</h3>
+              {form.residences.map((res, i) => (
+                <div key={i} className="mb-4 p-6 bg-gray-50 rounded-lg space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
+                        Country
+                      </label>
+                      <select 
+                        value={res.country} 
+                        onChange={e => updateResidence(i, 'country', e.target.value)} 
+                        className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
+                      >
+                        <option value="">Select Country</option>
+                        {countryOptions.map(c => (<option key={c.name} value={c.name}>{c.name}</option>))}
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
+                        City
+                      </label>
+                      <input 
+                        value={res.city} 
+                        onChange={e => updateResidence(i, 'city', e.target.value)} 
+                        placeholder="Enter city name"
+                        className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
+                        list={`cities-${i}`}
+                      />
+                      {res.country && (
+                        <datalist id={`cities-${i}`}>
+                          {countryOptions.find(c => c.name === res.country)?.cities.map(city => (
+                            <option key={city} value={city} />
+                          ))}
+                        </datalist>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {form.residences.length > 1 && (
+                    <button 
+                      type="button" 
+                      onClick={() => removeResidence(i)} 
+                      className="text-red-600 hover:text-red-700 text-sm font-medium transition-colors"
+                    >
+                      Remove Residence
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button 
+                onClick={addResidence} 
+                className="text-gray-600 hover:text-gray-800 font-medium text-sm transition-colors"
+              >
+                + Add Residence
+              </button>
+            </div>
+
+            {/* Projects Section */}
+            <div className="mb-8">
+              <h3 className="text-lg font-light text-gray-900 mb-4 tracking-wide">Projects</h3>
+              {form.projects.map((proj, i) => (
+                <div key={i} className="mb-4 p-6 bg-gray-50 rounded-lg space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
+                        Project Name
+                      </label>
+                      <input
+                        value={proj.projectName}
+                        onChange={e => updateProject(i, 'projectName', e.target.value)}
+                        placeholder="Enter project name"
+                        className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
+                        Your Role
+                      </label>
+                      <input
+                        value={proj.role}
+                        onChange={e => updateProject(i, 'role', e.target.value)}
+                        placeholder="Enter your role"
+                        className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
+                      Description (Optional)
+                    </label>
+                    <input
+                      value={proj.description}
+                      onChange={e => updateProject(i, 'description', e.target.value)}
+                      placeholder="Short description of your contribution"
+                      maxLength={100}
+                      className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02] text-sm"
+                    />
+                  </div>
+                  {form.projects.length > 1 && (
+                    <button 
+                      type="button" 
+                      onClick={() => removeProject(i)} 
+                      className="text-red-600 hover:text-red-700 text-sm font-medium transition-colors"
+                    >
+                      Remove Project
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button 
+                type="button" 
+                onClick={addProject} 
+                className="text-gray-600 hover:text-gray-800 font-medium text-sm transition-colors"
+              >
+                + Add Project
+              </button>
+            </div>
+
+            {/* Education Section */}
+            <div className="mb-8">
+              <h3 className="text-lg font-light text-gray-900 mb-4 tracking-wide">Education</h3>
+              {form.education.map((edu, i) => (
+                <div key={i} className="mb-3 flex items-center gap-3">
+                  <input
+                    value={edu}
+                    onChange={e => updateEducation(i, e.target.value)}
+                    placeholder="e.g., Bachelor of Arts in Film Studies, UCLA"
+                    className="flex-1 p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02] text-sm"
+                    maxLength={80}
+                  />
+                  {form.education.length > 1 && (
+                    <button 
+                      type="button" 
+                      onClick={() => removeEducation(i)} 
+                      className="text-red-600 hover:text-red-700 text-sm font-medium transition-colors"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button 
+                type="button" 
+                onClick={addEducation} 
+                className="text-gray-600 hover:text-gray-800 font-medium text-sm transition-colors"
+              >
+                + Add Education
+              </button>
+            </div>
+
+            {/* Profile Picture Section */}
+            <div className="mb-8">
+              <label className="block text-xs font-medium text-gray-700 mb-3 uppercase tracking-wider">
+                Profile Picture
+              </label>
+              <input 
+                type="file" 
+                accept="image/*" 
+                onChange={handleProfileImageChange}
+                className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
+              />
+              {form.profileImageUrl && (
+                <div className="mt-4 flex items-center gap-4">
+                  <img src={form.profileImageUrl} className="h-20 w-20 rounded-full object-cover border-2 border-gray-200" />
+                  <button 
+                    onClick={() => setForm(f => ({ ...f, profileImageUrl: '' }))} 
+                    className="text-red-600 hover:text-red-700 text-sm font-medium transition-colors" 
+                    type="button"
+                  >
+                    Remove
+                  </button>
                 </div>
               )}
             </div>
-          ))}
-          <button type="button" onClick={addJobEntry} className="text-blue-400 underline text-sm">+ Add Job Title</button>
-        </div>
-        <div>
-          <h3 className="font-semibold mb-2">Residences</h3>
-          {form.residences.map((res, i) => (
-            <div key={i} className="space-y-2 mb-4">
-              <select value={res.country} onChange={e => updateResidence(i, 'country', e.target.value)} className="p-2 bg-gray-700 rounded w-full">
-                <option value="">— Select Country —</option>
-                {countryOptions.map(c => (<option key={c.name} value={c.name}>{c.name}</option>))}
-              </select>
-              
-              <div className="relative">
-                <input 
-                  value={res.city} 
-                  onChange={e => updateResidence(i, 'city', e.target.value)} 
-                  placeholder="Enter city name"
-                  className="p-2 bg-gray-700 rounded w-full"
-                  list={`cities-${i}`}
-                />
-                {res.country && (
-                  <datalist id={`cities-${i}`}>
-                    {countryOptions.find(c => c.name === res.country)?.cities.map(city => (
-                      <option key={city} value={city} />
-                    ))}
-                  </datalist>
-                )}
+
+            {/* Contact Info Section */}
+            <div className="mb-8">
+              <h3 className="text-lg font-light text-gray-900 mb-4 tracking-wide">Contact Information (Optional)</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="your.email@example.com"
+                    value={form.contactInfo?.email || ''}
+                    onChange={e =>
+                      setForm(f => ({ ...f, contactInfo: { ...f.contactInfo, email: e.target.value } }))
+                    }
+                    className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
+                    Phone
+                  </label>
+                  <input
+                    type="tel"
+                    placeholder="+1 (555) 123-4567"
+                    value={form.contactInfo?.phone || ''}
+                    onChange={e =>
+                      setForm(f => ({ ...f, contactInfo: { ...f.contactInfo, phone: e.target.value } }))
+                    }
+                    className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
+                    Website
+                  </label>
+                  <input
+                    type="url"
+                    placeholder="https://yourwebsite.com"
+                    value={form.contactInfo?.website || ''}
+                    onChange={e =>
+                      setForm(f => ({ ...f, contactInfo: { ...f.contactInfo, website: e.target.value } }))
+                    }
+                    className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
+                    Instagram
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="@yourusername"
+                    value={form.contactInfo?.instagram || ''}
+                    onChange={e =>
+                      setForm(f => ({ ...f, contactInfo: { ...f.contactInfo, instagram: e.target.value } }))
+                    }
+                    className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
+                  />
+                </div>
               </div>
-              
-              {form.residences.length > 1 && (
-                <button type="button" onClick={() => removeResidence(i)} className="text-red-400 text-sm">❌ Remove</button>
+            </div>
+
+            {/* Other Info Section */}
+            <div className="mb-8">
+              <label className="block text-xs font-medium text-gray-700 mb-3 uppercase tracking-wider">
+                Other Relevant Information (Optional)
+              </label>
+              <textarea
+                placeholder="Add any other skills, certifications, memberships, etc."
+                value={form.otherInfo || ''}
+                onChange={e =>
+                  setForm(f => ({ ...f, otherInfo: e.target.value }))
+                }
+                rows={4}
+                className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02] resize-none"
+              />
+            </div>
+
+            {/* Publish Toggle Section */}
+            <div className="mb-8 p-6 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="flex items-center gap-3 mb-3">
+                <input
+                  type="checkbox"
+                  id="publish-toggle"
+                  checked={isPublished}
+                  onChange={(e) => setIsPublished(e.target.checked)}
+                  className="w-5 h-5 text-gray-600 bg-white border-gray-300 rounded focus:ring-gray-500 focus:ring-2"
+                />
+                <label htmlFor="publish-toggle" className="font-medium text-gray-900">
+                  Publish Resume Publicly
+                </label>
+              </div>
+              {isPublished ? (
+                <div className="text-sm text-green-600">
+                  ✅ Your resume will be visible via a public link once saved.
+                </div>
+              ) : (
+                <div className="text-sm text-gray-600">
+                  🔒 Your resume is private and only visible to you.
+                </div>
+              )}
+              {isPublished && (
+                <p className="text-yellow-600 text-sm mt-2">
+                  ⚠️ Once published, your resume will be accessible to anyone with the link.
+                </p>
               )}
             </div>
-          ))}
-          <button onClick={addResidence} className="text-blue-400 underline text-sm">+ Add Residence</button>
-        </div>
-        <div>
-          <h3 className="font-semibold mb-2">Projects</h3>
-          {form.projects.map((proj, i) => (
-            <div key={i} className="mb-4 space-y-1">
-              <input
-                value={proj.projectName}
-                onChange={e => updateProject(i, 'projectName', e.target.value)}
-                placeholder="Project Name"
-                className="w-full p-2 bg-gray-700 rounded"
-              />
-              <input
-                value={proj.role}
-                onChange={e => updateProject(i, 'role', e.target.value)}
-                placeholder="Your Role"
-                className="w-full p-2 bg-gray-700 rounded"
-              />
-              <input
-                value={proj.description}
-                onChange={e => updateProject(i, 'description', e.target.value)}
-                placeholder="Short description (optional)"
-                maxLength={100}
-                className="w-full p-2 bg-gray-700 rounded text-sm"
-              />
-              {form.projects.length > 1 && (
-                <button type="button" onClick={() => removeProject(i)} className="text-red-400 text-sm">❌ Remove</button>
-              )}
+
+            {/* Availability Section */}
+            <div className="mb-8 p-6 bg-gray-50 rounded-lg border border-gray-200">
+              <h4 className="font-medium text-gray-900 mb-4">Availability Status</h4>
+              <div className="space-y-3">
+                <label className="flex items-center gap-3">
+                  <input
+                    type="radio"
+                    name="availability"
+                    value="available"
+                    checked={form.availability === 'available'}
+                    onChange={(e) => setForm(f => ({ ...f, availability: e.target.value as 'available' | 'unavailable' | 'soon' }))}
+                    className="w-4 h-4 text-green-600 bg-white border-gray-300 focus:ring-green-500 focus:ring-2"
+                  />
+                  <span className="text-green-700 font-medium">✅ Available for work</span>
+                </label>
+                <label className="flex items-center gap-3">
+                  <input
+                    type="radio"
+                    name="availability"
+                    value="soon"
+                    checked={form.availability === 'soon'}
+                    onChange={(e) => setForm(f => ({ ...f, availability: e.target.value as 'available' | 'unavailable' | 'soon' }))}
+                    className="w-4 h-4 text-yellow-600 bg-white border-gray-300 focus:ring-yellow-500 focus:ring-2"
+                  />
+                  <span className="text-yellow-700 font-medium">⏰ Available soon</span>
+                </label>
+                <label className="flex items-center gap-3">
+                  <input
+                    type="radio"
+                    name="availability"
+                    value="unavailable"
+                    checked={form.availability === 'unavailable'}
+                    onChange={(e) => setForm(f => ({ ...f, availability: e.target.value as 'available' | 'unavailable' | 'soon' }))}
+                    className="w-4 h-4 text-red-600 bg-white border-gray-300 focus:ring-red-500 focus:ring-2"
+                  />
+                  <span className="text-red-700 font-medium">❌ Currently unavailable</span>
+                </label>
+              </div>
+              <p className="text-sm text-gray-600 mt-3">
+                This helps producers know when you're available for new projects
+              </p>
             </div>
-          ))}
-          <button type="button" onClick={addProject} className="text-blue-400 underline text-sm">+ Add Project</button>
-        </div>
-        <div>
-          <h3 className="font-semibold mb-2">Education</h3>
-          {form.education.map((edu, i) => (
-            <div key={i} className="mb-2 flex items-center gap-2">
-              <input
-                value={edu}
-                onChange={e => updateEducation(i, e.target.value)}
-                placeholder="e.g., Bachelor of Arts in Film Studies, UCLA"
-                className="flex-1 p-2 bg-gray-700 rounded text-sm"
-                maxLength={80}
-              />
-              {form.education.length > 1 && (
-                <button type="button" onClick={() => removeEducation(i)} className="text-red-400 text-sm">❌</button>
-              )}
+
+            {/* Share Resume Section */}
+            {isPublished && user && (
+              <div className="mb-8 p-6 bg-blue-50 rounded-lg border border-blue-200">
+                <h4 className="font-medium text-blue-900 mb-3">Share Your Resume</h4>
+                <div className="flex items-center gap-3 mb-3">
+                  <input
+                    type="text"
+                    value={`${window.location.origin}/resume/${user.uid}`}
+                    readOnly
+                    className="flex-1 p-3 bg-white border border-blue-200 rounded-lg text-sm text-gray-600"
+                  />
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(`${window.location.origin}/resume/${user.uid}`);
+                      setMessage('Link copied to clipboard!');
+                      setTimeout(() => setMessage(null), 3000);
+                    }}
+                    className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                  >
+                    Copy
+                  </button>
+                </div>
+                <p className="text-xs text-blue-700">
+                  Share this link with potential employers or collaborators
+                </p>
+              </div>
+            )}
+
+            {/* Save Button */}
+            <button 
+              onClick={handleSave} 
+              disabled={loading} 
+              className="w-full bg-gray-900 text-white py-4 rounded-lg hover:bg-gray-800 disabled:opacity-50 font-light tracking-wide transition-all duration-300 hover:scale-[1.02]"
+            >
+              {loading ? 'Saving…' : 'Save Profile'}
+            </button>
+            
+            {message && (
+              <p className="text-center text-green-600 mt-4 font-medium">{message}</p>
+            )}
+
+            {/* Resume Preview */}
+            <hr className="my-8 border-gray-200" />
+            <h3 className="text-xl font-light text-gray-900 mb-6 tracking-wide">Resume Preview</h3>
+            <div ref={resumeRef} className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+              <ResumeView profile={form} />
             </div>
-          ))}
-          <button type="button" onClick={addEducation} className="text-blue-400 underline text-sm">+ Add Education</button>
-        </div>
-        <div>
-          <label className="block mb-1">Profile Picture</label>
-          <input type="file" accept="image/*" onChange={handleProfileImageChange} />
-          {form.profileImageUrl && (<div className="mt-2 flex items-center gap-4"><img src={form.profileImageUrl} className="h-20 w-20 rounded-full object-cover" /><button onClick={() => setForm(f => ({ ...f, profileImageUrl: '' }))} className="text-red-400 underline text-sm" type="button">Remove</button></div>)}
-        </div>
-
-        {/* Contact Info Section */}
-        <div>
-          <h3 className="font-semibold mb-2">Contact Info (optional)</h3>
-          <input
-            type="email"
-            placeholder="Email"
-            value={form.contactInfo?.email || ''}
-            onChange={e =>
-              setForm(f => ({ ...f, contactInfo: { ...f.contactInfo, email: e.target.value } }))
-            }
-            className="w-full p-2 bg-gray-700 rounded mb-2"
-          />
-          <input
-            type="tel"
-            placeholder="Phone"
-            value={form.contactInfo?.phone || ''}
-            onChange={e =>
-              setForm(f => ({ ...f, contactInfo: { ...f.contactInfo, phone: e.target.value } }))
-            }
-            className="w-full p-2 bg-gray-700 rounded mb-2"
-          />
-          <input
-            type="url"
-            placeholder="Website"
-            value={form.contactInfo?.website || ''}
-            onChange={e =>
-              setForm(f => ({ ...f, contactInfo: { ...f.contactInfo, website: e.target.value } }))
-            }
-            className="w-full p-2 bg-gray-700 rounded mb-2"
-          />
-          <input
-            type="text"
-            placeholder="Instagram Handle"
-            value={form.contactInfo?.instagram || ''}
-            onChange={e =>
-              setForm(f => ({ ...f, contactInfo: { ...f.contactInfo, instagram: e.target.value } }))
-            }
-            className="w-full p-2 bg-gray-700 rounded"
-          />
-        </div>
-
-        {/* Other Info Section */}
-        <div className="mt-6">
-          <label className="block font-semibold mb-1">Other Relevant Info (optional)</label>
-          <textarea
-            placeholder="Add any other skills, certifications, memberships, etc."
-            value={form.otherInfo || ''}
-            onChange={e =>
-              setForm(f => ({ ...f, otherInfo: e.target.value }))
-            }
-            rows={4}
-            className="w-full p-2 bg-gray-700 rounded"
-          />
-        </div>
-
-        {/* Publish Toggle Section */}
-        <div className="mt-6 p-4 bg-gray-700 rounded border border-gray-600">
-          <div className="flex items-center gap-3 mb-2">
-            <input
-              type="checkbox"
-              id="publish-toggle"
-              checked={isPublished}
-              onChange={(e) => setIsPublished(e.target.checked)}
-              className="w-4 h-4 text-blue-600 bg-gray-800 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
-            />
-            <label htmlFor="publish-toggle" className="font-semibold text-white">
-              Publish Resume Publicly
-            </label>
+            <button
+              onClick={handleDownloadPDF}
+              className="mt-6 bg-gray-900 hover:bg-gray-800 text-white py-3 px-6 rounded-lg font-light tracking-wide transition-all duration-300 hover:scale-105"
+            >
+              Download as PDF
+            </button>
           </div>
-          {isPublished ? (
-            <div className="text-sm text-green-400">
-              ✅ Your resume will be visible via a public link once saved.
-            </div>
-          ) : (
-            <div className="text-sm text-gray-400">
-              🔒 Your resume is private and only visible to you.
-            </div>
-          )}
-          {isPublished && (
-            <p className="text-yellow-400 text-sm mt-2">
-              ⚠️ Once published, your resume will be accessible to anyone with the link.
-            </p>
-          )}
         </div>
-
-        {/* Availability Section */}
-        <div className="mt-4 p-4 bg-gray-700 rounded border border-gray-600">
-          <h4 className="font-semibold text-white mb-3">Availability Status</h4>
-          <div className="space-y-2">
-            <label className="flex items-center gap-3">
-              <input
-                type="radio"
-                name="availability"
-                value="available"
-                checked={form.availability === 'available'}
-                onChange={(e) => setForm(f => ({ ...f, availability: e.target.value as 'available' | 'unavailable' | 'soon' }))}
-                className="w-4 h-4 text-green-600 bg-gray-800 border-gray-600 focus:ring-green-500 focus:ring-2"
-              />
-              <span className="text-green-400">✅ Available for work</span>
-            </label>
-            <label className="flex items-center gap-3">
-              <input
-                type="radio"
-                name="availability"
-                value="soon"
-                checked={form.availability === 'soon'}
-                onChange={(e) => setForm(f => ({ ...f, availability: e.target.value as 'available' | 'unavailable' | 'soon' }))}
-                className="w-4 h-4 text-yellow-600 bg-gray-800 border-gray-600 focus:ring-yellow-500 focus:ring-2"
-              />
-              <span className="text-yellow-400">⏰ Available soon</span>
-            </label>
-            <label className="flex items-center gap-3">
-              <input
-                type="radio"
-                name="availability"
-                value="unavailable"
-                checked={form.availability === 'unavailable'}
-                onChange={(e) => setForm(f => ({ ...f, availability: e.target.value as 'available' | 'unavailable' | 'soon' }))}
-                className="w-4 h-4 text-red-600 bg-gray-800 border-gray-600 focus:ring-red-500 focus:ring-2"
-              />
-              <span className="text-red-400">❌ Currently unavailable</span>
-            </label>
-          </div>
-          <p className="text-sm text-gray-400 mt-2">
-            This helps producers know when you're available for new projects
-          </p>
-        </div>
-
-        {/* Share Resume Section */}
-        {isPublished && user && (
-          <div className="mt-4 p-4 bg-blue-900 rounded border border-blue-600">
-            <h4 className="font-semibold text-blue-200 mb-2">Share Your Resume</h4>
-            <div className="flex items-center gap-2 mb-2">
-              <input
-                type="text"
-                value={`${window.location.origin}/resume/${user.uid}`}
-                readOnly
-                className="flex-1 p-2 bg-gray-800 rounded text-sm text-gray-300 border border-gray-600"
-              />
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(`${window.location.origin}/resume/${user.uid}`);
-                  setMessage('Link copied to clipboard!');
-                  setTimeout(() => setMessage(null), 3000);
-                }}
-                className="px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded text-sm"
-              >
-                Copy
-              </button>
-            </div>
-            <p className="text-xs text-blue-300">
-              Share this link with potential employers or collaborators
-            </p>
-          </div>
-        )}
-
-        <button onClick={handleSave} disabled={loading} className="w-full bg-green-600 py-2 rounded hover:bg-green-500 disabled:opacity-50">{loading ? 'Saving…' : 'Save Profile'}</button>
-        {message && <p className="text-center text-yellow-400">{message}</p>}
-
-        {/* Resume Preview */}
-        <hr className="my-6 border-gray-700" />
-        <h3 className="text-xl font-bold mb-2">Resume Preview</h3>
-        <div ref={resumeRef}>
-          <ResumeView profile={form} />
-        </div>
-        <button
-          onClick={handleDownloadPDF}
-          className="mt-4 bg-blue-600 hover:bg-blue-500 text-white py-2 px-4 rounded"
-        >
-          Download as PDF
-        </button>
       </div>
     </div>
   );
