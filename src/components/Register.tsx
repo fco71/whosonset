@@ -10,6 +10,7 @@ import { ProjectEntry } from '../types/ProjectEntry';
 import { JobTitleEntry } from '../types/JobTitleEntry';
 import { JOB_SUBCATEGORIES } from '../types/JobSubcategories';
 import { Residence, ContactInfo } from '../types/CrewProfile';
+import LocationSelector from './LocationSelector';
 
 // --- Interfaces to define the shape of your data ---
 interface JobDepartment {
@@ -376,31 +377,12 @@ const Register: React.FC = () => {
               <h3 className="font-semibold mb-2">My Residences</h3>
               {form.residences.map((res, i) => (
                 <div key={i} className="space-y-2 mb-4">
-                  <select value={res.country} onChange={e => updateResidence(i, 'country', e.target.value)} className="p-2 bg-gray-700 rounded w-full">
-                    <option value="">— Select Country —</option>
-                    {countryOptions.map(c => (<option key={c.name} value={c.name}>{c.name}</option>))}
-                  </select>
-                  
-                  <div className="relative">
-                    <input 
-                      value={res.city} 
-                      onChange={e => updateResidence(i, 'city', e.target.value)} 
-                      placeholder="Enter city name"
-                      className="p-2 bg-gray-700 rounded w-full"
-                      list={`cities-${i}`}
-                    />
-                    {res.country && (
-                      <datalist id={`cities-${i}`}>
-                        {countryOptions.find(c => c.name === res.country)?.cities.map(city => (
-                          <option key={city} value={city} />
-                        ))}
-                      </datalist>
-                    )}
-                  </div>
-                  
-                  {form.residences.length > 1 && (
-                    <button type="button" onClick={() => removeResidence(i)} className="text-red-400 text-sm">❌ Remove</button>
-                  )}
+                  <LocationSelector
+                    selectedCountry={res.country}
+                    selectedCity={res.city}
+                    onCountryChange={(value: string) => updateResidence(i, 'country', value)}
+                    onCityChange={(value: string) => updateResidence(i, 'city', value)}
+                  />
                 </div>
               ))}
               <button type="button" onClick={addResidence} className="text-blue-400 underline text-sm">+ Add Residence</button>

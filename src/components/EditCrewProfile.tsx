@@ -9,6 +9,7 @@ import { JobTitleEntry } from '../types/JobTitleEntry';
 import { JOB_SUBCATEGORIES } from '../types/JobSubcategories';
 import { CrewProfileFormData, Residence, ContactInfo } from '../types/CrewProfile';
 import ResumeView from './ResumeView';
+import LocationSelector from './LocationSelector';
 
 // Import html2pdf using require to bypass TypeScript issues
 const html2pdf = require('html2pdf.js');
@@ -557,34 +558,12 @@ const EditCrewProfile: React.FC = () => {
                       <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
                         Country
                       </label>
-                      <select 
-                        value={res.country} 
-                        onChange={e => updateResidence(i, 'country', e.target.value)} 
-                        className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
-                      >
-                        <option value="">Select Country</option>
-                        {countryOptions.map(c => (<option key={c.name} value={c.name}>{c.name}</option>))}
-                      </select>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
-                        City
-                      </label>
-                      <input 
-                        value={res.city} 
-                        onChange={e => updateResidence(i, 'city', e.target.value)} 
-                        placeholder="Enter city name"
-                        className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
-                        list={`cities-${i}`}
+                      <LocationSelector
+                        selectedCountry={res.country}
+                        selectedCity={res.city}
+                        onCountryChange={(value: string) => updateResidence(i, 'country', value)}
+                        onCityChange={(value: string) => updateResidence(i, 'city', value)}
                       />
-                      {res.country && (
-                        <datalist id={`cities-${i}`}>
-                          {countryOptions.find(c => c.name === res.country)?.cities.map(city => (
-                            <option key={city} value={city} />
-                          ))}
-                        </datalist>
-                      )}
                     </div>
                   </div>
                   
