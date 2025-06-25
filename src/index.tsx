@@ -23,6 +23,7 @@ import Home from './components/Home';
 import ProjectDetail from './components/ProjectDetail';
 import EditCrewProfile from './components/EditCrewProfile';
 import PublicResumePage from './components/PublicResumePage';
+import ProducerView from './pages/ProducerView';
 
 import SavedCrewProfilesPage from './pages/SavedCrewProfilesPage';
 import SavedProjectsPage from './pages/SavedProjectsPage';
@@ -64,7 +65,7 @@ const App: React.FC = () => {
                         ) : (
                             <>
                                 <li><Link to="/projects/add" className="hover:underline">Add Project</Link></li>
-                                <li><Link to="/crew" className="hover:underline">Crew Search</Link></li>
+                                <li><Link to="/crew" className="hover:underline">Crew Directory</Link></li>
                                 <li><Link to="/collections" className="hover:underline">My Collections</Link></li>
                                 <li><Link to="/edit-profile" className="hover:underline">Edit Profile</Link></li>
                                 <li>
@@ -88,7 +89,7 @@ const App: React.FC = () => {
                         <Route path="/projects" element={<AllProjects />} />
                         <Route path="/projects/:projectId" element={<ProjectDetail />} />
                         <Route path="/projects/add" element={<PrivateRoute><AddProject /></PrivateRoute>} />
-                        <Route path="/crew" element={<PrivateRoute><CrewSearch /></PrivateRoute>} />
+                        <Route path="/crew" element={<ProducerView />} />
                         <Route path="/collections" element={<PrivateRoute><CollectionsHubPage /></PrivateRoute>} />
                         <Route path="/saved-crew" element={<PrivateRoute><SavedCrewProfilesPage /></PrivateRoute>} />
                         <Route path="/saved-projects" element={<PrivateRoute><SavedProjectsPage /></PrivateRoute>} />

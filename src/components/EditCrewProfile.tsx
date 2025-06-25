@@ -39,6 +39,7 @@ interface FormData {
   };
   otherInfo?: string; // freeform text
   isPublished?: boolean; // Publish status
+  availability?: 'available' | 'unavailable' | 'soon'; // Availability status
 }
 
 const fetchJobDepartments = async (): Promise<JobDepartment[]> => {
@@ -72,6 +73,7 @@ const EditCrewProfile: React.FC = () => {
     },
     otherInfo: '',
     isPublished: false,
+    availability: 'available',
   });
 
   const [departments, setDepartments] = useState<JobDepartment[]>([]);
@@ -211,6 +213,7 @@ const EditCrewProfile: React.FC = () => {
             },
             otherInfo: data.otherInfo || '',
             isPublished: data.isPublished || false,
+            availability: data.availability || 'available',
           });
           setIsPublished(data.isPublished || false);
           console.log("DEBUG: Form state updated with profile data");
@@ -636,6 +639,49 @@ const EditCrewProfile: React.FC = () => {
               ⚠️ Once published, your resume will be accessible to anyone with the link.
             </p>
           )}
+        </div>
+
+        {/* Availability Section */}
+        <div className="mt-4 p-4 bg-gray-700 rounded border border-gray-600">
+          <h4 className="font-semibold text-white mb-3">Availability Status</h4>
+          <div className="space-y-2">
+            <label className="flex items-center gap-3">
+              <input
+                type="radio"
+                name="availability"
+                value="available"
+                checked={form.availability === 'available'}
+                onChange={(e) => setForm(f => ({ ...f, availability: e.target.value as 'available' | 'unavailable' | 'soon' }))}
+                className="w-4 h-4 text-green-600 bg-gray-800 border-gray-600 focus:ring-green-500 focus:ring-2"
+              />
+              <span className="text-green-400">✅ Available for work</span>
+            </label>
+            <label className="flex items-center gap-3">
+              <input
+                type="radio"
+                name="availability"
+                value="soon"
+                checked={form.availability === 'soon'}
+                onChange={(e) => setForm(f => ({ ...f, availability: e.target.value as 'available' | 'unavailable' | 'soon' }))}
+                className="w-4 h-4 text-yellow-600 bg-gray-800 border-gray-600 focus:ring-yellow-500 focus:ring-2"
+              />
+              <span className="text-yellow-400">⏰ Available soon</span>
+            </label>
+            <label className="flex items-center gap-3">
+              <input
+                type="radio"
+                name="availability"
+                value="unavailable"
+                checked={form.availability === 'unavailable'}
+                onChange={(e) => setForm(f => ({ ...f, availability: e.target.value as 'available' | 'unavailable' | 'soon' }))}
+                className="w-4 h-4 text-red-600 bg-gray-800 border-gray-600 focus:ring-red-500 focus:ring-2"
+              />
+              <span className="text-red-400">❌ Currently unavailable</span>
+            </label>
+          </div>
+          <p className="text-sm text-gray-400 mt-2">
+            This helps producers know when you're available for new projects
+          </p>
         </div>
 
         {/* Share Resume Section */}
