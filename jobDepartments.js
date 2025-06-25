@@ -16,7 +16,7 @@ const db = getFirestore();
 const jobDepartments = [
     { name: "Production", titles: ["Executive Producer", "Producer", "Co-Producer", "Associate Producer", "Line Producer", "Production Manager", "Unit Production Manager (UPM)", "Production Coordinator", "Production Secretary", "Production Assistant (PA)"] },
     { name: "Locations", titles: ["Location Manager", "Assistant Location Manager", "Location Scout"] },
-    { name: "Direction", titles: ["Director", "Assistant Director (AD) - 1st AD, 2nd AD, 2nd 2nd AD", "Script Supervisor (Continuity)"] },
+    { name: "Directing", titles: ["Director", "Assistant Director (AD) - 1st AD, 2nd AD, 2nd 2nd AD", "Script Supervisor (Continuity)"] },
     { name: "Writing", titles: ["Writer", "Screenwriter", "Story Editor"] },
     { name: "Camera", titles: ["Director of Photography (DP) / Cinematographer", "Camera Operator", "1st Assistant Camera (1st AC) / Focus Puller", "2nd Assistant Camera (2nd AC) / Clapper Loader", "Camera Technician", "Steadicam Operator", "Drone Operator", "Still Photographer"] },
     { name: "Sound", titles: ["Production Sound Mixer", "Boom Operator", "Sound Assistant", "Sound Designer (Post-Production)", "Foley Artist (Post-Production)", "Foley Mixer (Post-Production)"] },

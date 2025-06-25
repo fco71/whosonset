@@ -116,7 +116,7 @@ const App: React.FC = () => {
                         <Route path="/resume/:uid" element={<PublicResumePage />} />
                         
                         {/* New routes */}
-                        <Route path="/chat" element={<PrivateRoute><ChatInterface selectedRoom={selectedChatRoom} onRoomSelect={setSelectedChatRoom} /></PrivateRoute>} />
+                        <Route path="/chat" element={<PrivateRoute><ChatInterface currentUserId={authUser?.uid || ''} currentUser={authUser} /></PrivateRoute>} />
                         <Route path="/jobs" element={<JobSearchPage />} />
                         <Route path="/jobs/:jobId" element={<div>Job Detail Page (Coming Soon)</div>} />
                         <Route path="/jobs/:jobId/apply" element={<div>Job Application Page (Coming Soon)</div>} />

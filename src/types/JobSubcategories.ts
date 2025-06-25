@@ -26,7 +26,7 @@ export const ALL_JOB_TITLES = [
   "Production Secretary",
   "Production Assistant (PA)",
   
-  // Direction Department
+  // Directing Department
   "Director",
   "Assistant Director (AD) - 1st AD, 2nd AD, 2nd 2nd AD",
   "Script Supervisor (Continuity)",

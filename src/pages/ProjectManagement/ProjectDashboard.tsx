@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db, auth } from '../../firebase';
 import { Project } from '../../models/Project';
-import { ProjectCrew, ProjectTimeline, ProjectBudget } from '../../types/ProjectManagement';
+import { ProjectCrew, ProjectTimeline, ProjectBudget, ProjectDocument } from '../../types/ProjectManagement';
 import ProjectTimelineView from './ProjectTimelineView';
 import ProjectCrewManagement from './ProjectCrewManagement';
 import ProjectBudgetView from './ProjectBudgetView';
@@ -282,17 +282,17 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ projectId }) => {
           <ProjectDocuments
             projectId={projectId}
             documents={(project.documents || []).map(doc => ({
-              id: doc.id || '',
+              id: doc.id,
               projectId: projectId,
-              fileName: doc.fileName || 'Untitled Document',
-              fileUrl: doc.fileUrl || '',
-              fileType: doc.fileType || 'application/octet-stream',
-              category: doc.category || 'other',
-              uploadedBy: doc.uploadedBy || 'Unknown',
-              uploadedAt: doc.uploadedAt || new Date(),
-              description: doc.description || '',
-              isPublic: doc.isPublic || false
-            }))}
+              fileName: doc.fileName,
+              fileUrl: doc.fileUrl,
+              fileType: doc.fileType,
+              category: doc.category,
+              uploadedBy: doc.uploadedBy,
+              uploadedAt: doc.uploadedAt,
+              description: doc.description,
+              isPublic: doc.isPublic
+            } as ProjectDocument))}
             onDocumentsUpdate={loadProjectData}
           />
         )}

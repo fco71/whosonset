@@ -15,7 +15,7 @@ const db = getFirestore();
 const departments = [
     { name: "Production", jobTitles: ["Executive Producer", "Producer", "Co-Producer", "Associate Producer", "Line Producer", "Production Manager", "Unit Production Manager (UPM)", "Production Coordinator", "Production Secretary", "Production Assistant (PA)"] },
     { name: "Locations", jobTitles: ["Location Manager", "Assistant Location Manager", "Location Scout"] },
-    { name: "Direction", jobTitles: ["Director", "Assistant Director (AD) - 1st AD, 2nd AD, 2nd 2nd AD", "Script Supervisor (Continuity)"] },
+    { name: "Directing", jobTitles: ["Director", "Assistant Director (AD) - 1st AD, 2nd AD, 2nd 2nd AD", "Script Supervisor (Continuity)"] },
     { name: "Writing", jobTitles: ["Writer", "Screenwriter", "Story Editor"] },
     // ... (rest of the department data is the same)
     { name: "Camera", jobTitles: ["Director of Photography (DP) / Cinematographer", "Camera Operator", "1st Assistant Camera (1st AC) / Focus Puller", "2nd Assistant Camera (2nd AC) / Clapper Loader", "Camera Technician", "Steadicam Operator", "Drone Operator", "Still Photographer"] },
