@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 // --- MODIFIED: Added onAuthStateChanged for robust user checking ---
 import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
 import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore';
@@ -8,6 +8,9 @@ import { ProjectEntry } from '../types/ProjectEntry';
 import { JobTitleEntry } from '../types/JobTitleEntry';
 import { JOB_SUBCATEGORIES } from '../types/JobSubcategories';
 import ResumeView from './ResumeView';
+
+// Import html2pdf using require to bypass TypeScript issues
+const html2pdf = require('html2pdf.js');
 
 // Interfaces remain the same
 interface Residence {
@@ -27,13 +30,14 @@ interface FormData {
   jobTitles: JobTitleEntry[];
   residences: Residence[];
   projects: ProjectEntry[];
-  contactInfo: {
-    email: string;
-    phone: string;
-    website: string;
-    instagram: string;
+  education: string[]; // Array of education entries
+  contactInfo?: {
+    email?: string;
+    phone?: string;
+    website?: string;
+    instagram?: string;
   };
-  otherInfo: string; // freeform text
+  otherInfo?: string; // freeform text
 }
 
 const fetchJobDepartments = async (): Promise<JobDepartment[]> => {
@@ -58,6 +62,7 @@ const EditCrewProfile: React.FC = () => {
     jobTitles: [{ department: '', title: '', subcategories: [] }],
     residences: [{ country: '', city: '' }],
     projects: [{ projectName: '', role: '', description: '' }],
+    education: [],
     contactInfo: {
       email: '',
       phone: '',
@@ -71,6 +76,36 @@ const EditCrewProfile: React.FC = () => {
   const [countryOptions, setCountryOptions] = useState<{ name: string; cities: string[] }[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  // PDF download functionality
+  const resumeRef = useRef<HTMLDivElement | null>(null);
+
+  const handleDownloadPDF = () => {
+    if (!resumeRef.current) return;
+
+    html2pdf()
+      .from(resumeRef.current)
+      .set({
+        margin: [0.2, 0.2, 0.2, 0.2], // Even smaller margins
+        filename: `${form.name.replace(/\s+/g, '_')}_Resume.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { 
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          logging: false,
+          letterRendering: true,
+        },
+        jsPDF: { 
+          unit: 'mm', // Use millimeters for more precise control
+          format: 'a4', // Use A4 instead of letter
+          orientation: 'portrait',
+          compress: true,
+        },
+        pagebreak: { mode: 'avoid-all' },
+      })
+      .save();
+  };
 
   // --- ADDED: Robust authentication check ---
   // This effect runs once to set up a listener that updates the 'user' state
@@ -119,12 +154,19 @@ const EditCrewProfile: React.FC = () => {
 
     // Fetch user-specific profile data
     const loadProfile = async () => {
-      if (!user) return;
+      if (!user) {
+        console.log("DEBUG: No user found, skipping profile load");
+        return;
+      }
+      console.log("DEBUG: Loading profile for user:", user.uid);
       try {
         const docRef = doc(db, 'crewProfiles', user.uid);
+        console.log("DEBUG: Document reference created:", docRef.path);
         const docSnap = await getDoc(docRef);
+        console.log("DEBUG: Document snapshot retrieved, exists:", docSnap.exists());
         if (docSnap.exists()) {
           const data = docSnap.data();
+          console.log("DEBUG: Profile data loaded:", data);
           
           // Migrate old string-based subcategories to new JobTitleEntry format
           const migratedJobTitles = data.jobTitles?.map((jobTitle: any) => {
@@ -157,6 +199,7 @@ const EditCrewProfile: React.FC = () => {
             jobTitles: migratedJobTitles,
             residences: data.residences || [{ country: '', city: '' }],
             projects: data.projects || [{ projectName: '', role: '', description: '' }],
+            education: data.education || [],
             contactInfo: data.contactInfo || {
               email: '',
               phone: '',
@@ -165,9 +208,12 @@ const EditCrewProfile: React.FC = () => {
             },
             otherInfo: data.otherInfo || '',
           });
+          console.log("DEBUG: Form state updated with profile data");
+        } else {
+          console.log("DEBUG: No profile document found for user:", user.uid);
         }
       } catch (error) {
-        console.error("Error loading profile:", error);
+        console.error("DEBUG: Error loading profile:", error);
       }
     };
 
@@ -264,19 +310,41 @@ const EditCrewProfile: React.FC = () => {
   const removeProject = (i: number) =>
     setForm(f => ({ ...f, projects: f.projects.filter((_, idx) => idx !== i) }));
 
+  const updateEducation = (i: number, value: string) => {
+    setForm(f => {
+      const education = [...f.education];
+      education[i] = value;
+      return { ...f, education };
+    });
+  };
+
+  const addEducation = () =>
+    setForm(f => ({ ...f, education: [...f.education, ''] }));
+
+  const removeEducation = (i: number) =>
+    setForm(f => ({ ...f, education: f.education.filter((_, idx) => idx !== i) }));
+
   const handleSave = async (e: React.MouseEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user) {
+      console.log("DEBUG: No user found, cannot save");
+      return;
+    }
+    console.log("DEBUG: Starting save process for user:", user.uid);
+    console.log("DEBUG: Form data to save:", form);
     setLoading(true);
     try {
-      await setDoc(doc(db, 'crewProfiles', user.uid), {
+      const docRef = doc(db, 'crewProfiles', user.uid);
+      console.log("DEBUG: Saving to document:", docRef.path);
+      await setDoc(docRef, {
         ...form,
         uid: user.uid,
       });
+      console.log("DEBUG: Save successful!");
       setMessage('Profile saved!');
     } catch(error) { // Added error logging
+      console.error("DEBUG: Save failed with error:", error);
       setMessage('Failed to save.');
-      console.error("DEBUG: Save failed.", error);
     } finally {
       setLoading(false);
     }
@@ -448,6 +516,24 @@ const EditCrewProfile: React.FC = () => {
           <button type="button" onClick={addProject} className="text-blue-400 underline text-sm">+ Add Project</button>
         </div>
         <div>
+          <h3 className="font-semibold mb-2">Education</h3>
+          {form.education.map((edu, i) => (
+            <div key={i} className="mb-2 flex items-center gap-2">
+              <input
+                value={edu}
+                onChange={e => updateEducation(i, e.target.value)}
+                placeholder="e.g., Bachelor of Arts in Film Studies, UCLA"
+                className="flex-1 p-2 bg-gray-700 rounded text-sm"
+                maxLength={80}
+              />
+              {form.education.length > 1 && (
+                <button type="button" onClick={() => removeEducation(i)} className="text-red-400 text-sm">❌</button>
+              )}
+            </div>
+          ))}
+          <button type="button" onClick={addEducation} className="text-blue-400 underline text-sm">+ Add Education</button>
+        </div>
+        <div>
           <label className="block mb-1">Profile Picture</label>
           <input type="file" accept="image/*" onChange={handleProfileImageChange} />
           {form.profileImageUrl && (<div className="mt-2 flex items-center gap-4"><img src={form.profileImageUrl} className="h-20 w-20 rounded-full object-cover" /><button onClick={() => setForm(f => ({ ...f, profileImageUrl: '' }))} className="text-red-400 underline text-sm" type="button">Remove</button></div>)}
@@ -514,7 +600,15 @@ const EditCrewProfile: React.FC = () => {
         {/* Resume Preview */}
         <hr className="my-6 border-gray-700" />
         <h3 className="text-xl font-bold mb-2">Resume Preview</h3>
-        <ResumeView profile={form} />
+        <div ref={resumeRef}>
+          <ResumeView profile={form} />
+        </div>
+        <button
+          onClick={handleDownloadPDF}
+          className="mt-4 bg-blue-600 hover:bg-blue-500 text-white py-2 px-4 rounded"
+        >
+          Download as PDF
+        </button>
       </div>
     </div>
   );

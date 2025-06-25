@@ -30,6 +30,7 @@ interface CrewProfileData {
   jobTitles: JobTitleEntry[];
   projects?: Project[];
   residences?: Residence[];
+  education?: string[];
   contactInfo?: ContactInfo;
   otherInfo?: string;
 }
@@ -49,9 +50,9 @@ const ResumeView: React.FC<ResumeViewProps> = ({ profile }) => {
     background: 'white',
     color: 'black',
     fontFamily: "'Times New Roman', serif",
-    fontSize: '12pt',
-    lineHeight: 1.4,
-    padding: '20mm',
+    fontSize: '11pt',
+    lineHeight: 1.3,
+    padding: '15mm',
     boxShadow: '0 0 10px rgba(0,0,0,0.1)',
     overflow: 'hidden',
     position: 'relative',
@@ -60,22 +61,23 @@ const ResumeView: React.FC<ResumeViewProps> = ({ profile }) => {
   const headerStyle: React.CSSProperties = {
     display: 'flex',
     alignItems: 'flex-start',
-    gap: '12mm',
-    marginBottom: '8mm',
+    gap: '10mm',
+    marginBottom: '6mm',
     borderBottom: '2pt solid #333',
-    paddingBottom: '4mm',
+    paddingBottom: '3mm',
   };
 
   const profileImageStyle: React.CSSProperties = {
-    width: '35mm',
-    height: '45mm',
+    width: '30mm',
+    height: '40mm',
     borderRadius: '3mm',
     objectFit: 'cover' as const,
     border: '1pt solid #ccc',
+    flexShrink: 0,
   };
 
   const nameStyle: React.CSSProperties = {
-    fontSize: '24pt',
+    fontSize: '22pt',
     fontWeight: 'bold',
     margin: 0,
     color: '#333',
@@ -89,18 +91,18 @@ const ResumeView: React.FC<ResumeViewProps> = ({ profile }) => {
   };
 
   const sectionStyle: React.CSSProperties = {
-    marginBottom: '6mm',
+    marginBottom: '5mm',
   };
 
   const sectionTitleStyle: React.CSSProperties = {
-    fontSize: '14pt',
+    fontSize: '13pt',
     fontWeight: 'bold',
     color: '#333',
     borderBottom: '1pt solid #333',
     paddingBottom: '1mm',
     marginBottom: '3mm',
     textTransform: 'uppercase' as const,
-    letterSpacing: '1pt',
+    letterSpacing: '0.5pt',
   };
 
   const jobTitlesListStyle: React.CSSProperties = {
@@ -111,7 +113,7 @@ const ResumeView: React.FC<ResumeViewProps> = ({ profile }) => {
 
   const jobTitleItemStyle: React.CSSProperties = {
     marginBottom: '1mm',
-    fontSize: '11pt',
+    fontSize: '10pt',
   };
 
   const projectsListStyle: React.CSSProperties = {
@@ -122,7 +124,7 @@ const ResumeView: React.FC<ResumeViewProps> = ({ profile }) => {
 
   const projectItemStyle: React.CSSProperties = {
     marginBottom: '2mm',
-    fontSize: '11pt',
+    fontSize: '10pt',
   };
 
   const projectNameStyle: React.CSSProperties = {
@@ -154,14 +156,14 @@ const ResumeView: React.FC<ResumeViewProps> = ({ profile }) => {
   };
 
   const otherInfoStyle: React.CSSProperties = {
-    fontSize: '11pt',
+    fontSize: '10pt',
     color: '#333',
     whiteSpace: 'pre-wrap' as const,
     lineHeight: 1.3,
   };
 
   const contentWrapperStyle: React.CSSProperties = {
-    height: 'calc(297mm - 40mm)',
+    height: 'calc(297mm - 30mm)',
     overflow: 'hidden',
     display: 'flex',
     flexDirection: 'column' as const,
@@ -181,9 +183,33 @@ const ResumeView: React.FC<ResumeViewProps> = ({ profile }) => {
               width: 210mm !important;
               height: 297mm !important;
               margin: 0 !important;
-              padding: 15mm !important;
+              padding: 12mm !important;
               box-shadow: none !important;
-              page-break-after: always;
+              page-break-after: avoid;
+              page-break-inside: avoid;
+              break-inside: avoid;
+              font-size: 11pt !important;
+              line-height: 1.3 !important;
+            }
+            
+            .resume-container img {
+              max-width: 30mm !important;
+              max-height: 40mm !important;
+              object-fit: cover !important;
+            }
+            
+            .resume-container h1 {
+              font-size: 22pt !important;
+            }
+            
+            .resume-container h2 {
+              font-size: 13pt !important;
+              margin-bottom: 3mm !important;
+            }
+            
+            .resume-container p, .resume-container li {
+              font-size: 10pt !important;
+              margin-bottom: 1mm !important;
             }
             
             @page {
@@ -209,7 +235,12 @@ const ResumeView: React.FC<ResumeViewProps> = ({ profile }) => {
             {/* Header */}
             <div style={headerStyle}>
               {profile.profileImageUrl && (
-                <img src={profile.profileImageUrl} alt="Profile" style={profileImageStyle} />
+                <img 
+                  src={profile.profileImageUrl} 
+                  alt="Profile" 
+                  style={profileImageStyle}
+                  crossOrigin="anonymous"
+                />
               )}
               <div>
                 <h1 style={nameStyle}>{profile.name}</h1>
@@ -225,12 +256,18 @@ const ResumeView: React.FC<ResumeViewProps> = ({ profile }) => {
               <ul style={jobTitlesListStyle}>
                 {profile.jobTitles
                   .filter(jt => jt.department && jt.title)
+                  .slice(0, 4)
                   .map((jt, i) => (
                     <li key={i} style={jobTitleItemStyle}>
                       <strong>{jt.title}</strong> — {jt.department}
                     </li>
                   ))}
               </ul>
+              {profile.jobTitles.filter(jt => jt.department && jt.title).length > 4 && (
+                <p style={{ fontSize: '9pt', color: '#666', fontStyle: 'italic', margin: '1mm 0 0 0' }}>
+                  (Showing top 4 positions - prioritize most relevant first)
+                </p>
+              )}
             </div>
 
             {/* Projects */}
@@ -240,7 +277,7 @@ const ResumeView: React.FC<ResumeViewProps> = ({ profile }) => {
                 <ul style={projectsListStyle}>
                   {profile.projects
                     .filter(p => p.projectName && p.role)
-                    .slice(0, 5)
+                    .slice(0, 3)
                     .map((p, i) => (
                       <li key={i} style={projectItemStyle}>
                         <span style={projectNameStyle}>{p.projectName}</span>
@@ -251,6 +288,33 @@ const ResumeView: React.FC<ResumeViewProps> = ({ profile }) => {
                       </li>
                     ))}
                 </ul>
+                {profile.projects.filter(p => p.projectName && p.role).length > 3 && (
+                  <p style={{ fontSize: '9pt', color: '#666', fontStyle: 'italic', margin: '1mm 0 0 0' }}>
+                    (Showing top 3 projects - prioritize most relevant first)
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Education */}
+            {profile.education && profile.education.filter(edu => edu.trim()).length > 0 && (
+              <div style={sectionStyle}>
+                <h2 style={sectionTitleStyle}>Education</h2>
+                <ul style={jobTitlesListStyle}>
+                  {profile.education
+                    .filter(edu => edu.trim())
+                    .slice(0, 2)
+                    .map((edu, i) => (
+                      <li key={i} style={jobTitleItemStyle}>
+                        {edu}
+                      </li>
+                    ))}
+                </ul>
+                {profile.education.filter(edu => edu.trim()).length > 2 && (
+                  <p style={{ fontSize: '9pt', color: '#666', fontStyle: 'italic', margin: '1mm 0 0 0' }}>
+                    (Showing top 2 education entries - prioritize most relevant first)
+                  </p>
+                )}
               </div>
             )}
 

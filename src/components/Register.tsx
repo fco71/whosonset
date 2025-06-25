@@ -31,8 +31,9 @@ interface FormData {
   jobTitles: JobTitleEntry[];
   residences: Residence[];
   projects: ProjectEntry[];
+  education: string[]; // Array of education entries
   userType: 'Crew' | 'Producer';
-  contactInfo: {
+  contactInfo?: {
     email?: string;
     phone?: string;
     website?: string;
@@ -62,6 +63,7 @@ const Register: React.FC = () => {
     jobTitles: [{ department: '', title: '', subcategories: [] }],
     residences: [{ country: 'Dominican Republic', city: '' }],
     projects: [{ projectName: '', role: '', description: '' }],
+    education: [],
     userType: 'Crew',
     contactInfo: {
       email: '',
@@ -178,6 +180,17 @@ const Register: React.FC = () => {
   const addProject = () => setForm(f => ({ ...f, projects: [...f.projects, { projectName: '', role: '', description: '' }] }));
   const removeProject = (i: number) => setForm(f => ({ ...f, projects: f.projects.filter((_, idx) => idx !== i) }));
 
+  const updateEducation = (i: number, value: string) => {
+    setForm(f => {
+      const education = [...f.education];
+      education[i] = value;
+      return { ...f, education };
+    });
+  };
+
+  const addEducation = () => setForm(f => ({ ...f, education: [...f.education, ''] }));
+  const removeEducation = (i: number) => setForm(f => ({ ...f, education: f.education.filter((_, idx) => idx !== i) }));
+
   // --- The new handleSubmit that performs all registration steps ---
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -225,6 +238,7 @@ const Register: React.FC = () => {
           jobTitles: form.jobTitles.filter(j => j.department && j.title),
           residences: form.residences.filter(r => r.country && r.city),
           projects: form.projects.filter(p => p.projectName && p.role),
+          education: form.education.filter(edu => edu.trim()),
           contactInfo: form.contactInfo,
           otherInfo: form.otherInfo,
           availability: 'available', // Example default field
@@ -429,6 +443,26 @@ const Register: React.FC = () => {
                 </div>
               ))}
               <button type="button" onClick={addProject} className="text-blue-400 underline text-sm">+ Add Project</button>
+            </div>
+
+            {/* Education Section */}
+            <div>
+              <h3 className="font-semibold mb-2">Education</h3>
+              {form.education.map((edu, i) => (
+                <div key={i} className="mb-2 flex items-center gap-2">
+                  <input
+                    value={edu}
+                    onChange={e => updateEducation(i, e.target.value)}
+                    placeholder="e.g., Bachelor of Arts in Film Studies, UCLA"
+                    className="flex-1 p-2 bg-gray-700 rounded text-sm"
+                    maxLength={80}
+                  />
+                  {form.education.length > 1 && (
+                    <button type="button" onClick={() => removeEducation(i)} className="text-red-400 text-sm">❌</button>
+                  )}
+                </div>
+              ))}
+              <button type="button" onClick={addEducation} className="text-blue-400 underline text-sm">+ Add Education</button>
             </div>
             
             {/* Profile Picture Section */}
