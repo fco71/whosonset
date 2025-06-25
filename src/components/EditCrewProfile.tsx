@@ -7,6 +7,7 @@ import { db, storage } from '../firebase';
 import { ProjectEntry } from '../types/ProjectEntry';
 import { JobTitleEntry } from '../types/JobTitleEntry';
 import { JOB_SUBCATEGORIES } from '../types/JobSubcategories';
+import ResumeView from './ResumeView';
 
 // Interfaces remain the same
 interface Residence {
@@ -26,6 +27,13 @@ interface FormData {
   jobTitles: JobTitleEntry[];
   residences: Residence[];
   projects: ProjectEntry[];
+  contactInfo: {
+    email: string;
+    phone: string;
+    website: string;
+    instagram: string;
+  };
+  otherInfo: string; // freeform text
 }
 
 const fetchJobDepartments = async (): Promise<JobDepartment[]> => {
@@ -50,6 +58,13 @@ const EditCrewProfile: React.FC = () => {
     jobTitles: [{ department: '', title: '', subcategories: [] }],
     residences: [{ country: '', city: '' }],
     projects: [{ projectName: '', role: '', description: '' }],
+    contactInfo: {
+      email: '',
+      phone: '',
+      website: '',
+      instagram: '',
+    },
+    otherInfo: '',
   });
 
   const [departments, setDepartments] = useState<JobDepartment[]>([]);
@@ -142,6 +157,13 @@ const EditCrewProfile: React.FC = () => {
             jobTitles: migratedJobTitles,
             residences: data.residences || [{ country: '', city: '' }],
             projects: data.projects || [{ projectName: '', role: '', description: '' }],
+            contactInfo: data.contactInfo || {
+              email: '',
+              phone: '',
+              website: '',
+              instagram: '',
+            },
+            otherInfo: data.otherInfo || '',
           });
         }
       } catch (error) {
@@ -186,23 +208,21 @@ const EditCrewProfile: React.FC = () => {
     setForm(f => ({ ...f, profileImageUrl: url }));
   };
 
-  const updateJobEntry = (i: number, field: keyof JobTitleEntry, value: any) => {
+  const updateJobEntry = (i: number, field: 'department' | 'title' | 'subcategories', value: string | JobTitleEntry[]) => {
     setForm(f => {
       const updated = [...f.jobTitles];
-      const newEntry = { ...updated[i], [field]: value };
+      const newEntry = { ...updated[i] };
 
       if (field === 'department') {
+        newEntry.department = value as string;
         newEntry.title = '';
         newEntry.subcategories = [];
-      }
-
-      if (field === 'title') {
+      } else if (field === 'title') {
+        newEntry.title = value as string;
         newEntry.subcategories = [];
-      }
-
-      if (field === 'subcategories') {
+      } else if (field === 'subcategories') {
         // Ensure subcategories are in correct format
-        newEntry.subcategories = ensureSubcategoriesFormat(value);
+        newEntry.subcategories = ensureSubcategoriesFormat(value as JobTitleEntry[]);
       }
 
       updated[i] = newEntry;
@@ -358,19 +378,6 @@ const EditCrewProfile: React.FC = () => {
                       )}
                     </div>
                   ))}
-                  
-                  {(entry.subcategories?.length || 0) < 3 && (
-                    <button
-                      type="button"
-                      onClick={() => updateJobEntry(i, 'subcategories', [
-                        ...(entry.subcategories || []), 
-                        { department: '', title: '', subcategories: [] }
-                      ])}
-                      className="text-blue-400 underline text-sm"
-                    >
-                      + Add Additional Job Title
-                    </button>
-                  )}
                 </div>
               )}
             </div>
@@ -380,16 +387,32 @@ const EditCrewProfile: React.FC = () => {
         <div>
           <h3 className="font-semibold mb-2">Residences</h3>
           {form.residences.map((res, i) => (
-            <div key={i} className="flex gap-2 mb-2">
-              <select value={res.country} onChange={e => updateResidence(i, 'country', e.target.value)} className="p-2 bg-gray-700 rounded">
-                <option value="">— Country —</option>
+            <div key={i} className="space-y-2 mb-4">
+              <select value={res.country} onChange={e => updateResidence(i, 'country', e.target.value)} className="p-2 bg-gray-700 rounded w-full">
+                <option value="">— Select Country —</option>
                 {countryOptions.map(c => (<option key={c.name} value={c.name}>{c.name}</option>))}
               </select>
-              <select value={res.city} onChange={e => updateResidence(i, 'city', e.target.value)} disabled={!res.country} className="p-2 bg-gray-700 rounded flex-1">
-                <option value="">— City —</option>
-                {countryOptions.find(c => c.name === res.country)?.cities.map(city => (<option key={city} value={city}>{city}</option>))}
-              </select>
-              {form.residences.length > 1 && (<button onClick={() => removeResidence(i)} className="text-red-400">❌</button>)}
+              
+              <div className="relative">
+                <input 
+                  value={res.city} 
+                  onChange={e => updateResidence(i, 'city', e.target.value)} 
+                  placeholder="Enter city name"
+                  className="p-2 bg-gray-700 rounded w-full"
+                  list={`cities-${i}`}
+                />
+                {res.country && (
+                  <datalist id={`cities-${i}`}>
+                    {countryOptions.find(c => c.name === res.country)?.cities.map(city => (
+                      <option key={city} value={city} />
+                    ))}
+                  </datalist>
+                )}
+              </div>
+              
+              {form.residences.length > 1 && (
+                <button type="button" onClick={() => removeResidence(i)} className="text-red-400 text-sm">❌ Remove</button>
+              )}
             </div>
           ))}
           <button onClick={addResidence} className="text-blue-400 underline text-sm">+ Add Residence</button>
@@ -429,8 +452,69 @@ const EditCrewProfile: React.FC = () => {
           <input type="file" accept="image/*" onChange={handleProfileImageChange} />
           {form.profileImageUrl && (<div className="mt-2 flex items-center gap-4"><img src={form.profileImageUrl} className="h-20 w-20 rounded-full object-cover" /><button onClick={() => setForm(f => ({ ...f, profileImageUrl: '' }))} className="text-red-400 underline text-sm" type="button">Remove</button></div>)}
         </div>
+
+        {/* Contact Info Section */}
+        <div>
+          <h3 className="font-semibold mb-2">Contact Info (optional)</h3>
+          <input
+            type="email"
+            placeholder="Email"
+            value={form.contactInfo?.email || ''}
+            onChange={e =>
+              setForm(f => ({ ...f, contactInfo: { ...f.contactInfo, email: e.target.value } }))
+            }
+            className="w-full p-2 bg-gray-700 rounded mb-2"
+          />
+          <input
+            type="tel"
+            placeholder="Phone"
+            value={form.contactInfo?.phone || ''}
+            onChange={e =>
+              setForm(f => ({ ...f, contactInfo: { ...f.contactInfo, phone: e.target.value } }))
+            }
+            className="w-full p-2 bg-gray-700 rounded mb-2"
+          />
+          <input
+            type="url"
+            placeholder="Website"
+            value={form.contactInfo?.website || ''}
+            onChange={e =>
+              setForm(f => ({ ...f, contactInfo: { ...f.contactInfo, website: e.target.value } }))
+            }
+            className="w-full p-2 bg-gray-700 rounded mb-2"
+          />
+          <input
+            type="text"
+            placeholder="Instagram Handle"
+            value={form.contactInfo?.instagram || ''}
+            onChange={e =>
+              setForm(f => ({ ...f, contactInfo: { ...f.contactInfo, instagram: e.target.value } }))
+            }
+            className="w-full p-2 bg-gray-700 rounded"
+          />
+        </div>
+
+        {/* Other Info Section */}
+        <div className="mt-6">
+          <label className="block font-semibold mb-1">Other Relevant Info (optional)</label>
+          <textarea
+            placeholder="Add any other skills, certifications, memberships, etc."
+            value={form.otherInfo || ''}
+            onChange={e =>
+              setForm(f => ({ ...f, otherInfo: e.target.value }))
+            }
+            rows={4}
+            className="w-full p-2 bg-gray-700 rounded"
+          />
+        </div>
+
         <button onClick={handleSave} disabled={loading} className="w-full bg-green-600 py-2 rounded hover:bg-green-500 disabled:opacity-50">{loading ? 'Saving…' : 'Save Profile'}</button>
         {message && <p className="text-center text-yellow-400">{message}</p>}
+
+        {/* Resume Preview */}
+        <hr className="my-6 border-gray-700" />
+        <h3 className="text-xl font-bold mb-2">Resume Preview</h3>
+        <ResumeView profile={form} />
       </div>
     </div>
   );

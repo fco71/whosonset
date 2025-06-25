@@ -32,6 +32,13 @@ interface FormData {
   residences: Residence[];
   projects: ProjectEntry[];
   userType: 'Crew' | 'Producer';
+  contactInfo: {
+    email?: string;
+    phone?: string;
+    website?: string;
+    instagram?: string;
+  };
+  otherInfo?: string; // freeform text
 }
 
 const fetchJobDepartments = async (): Promise<JobDepartment[]> => {
@@ -56,6 +63,13 @@ const Register: React.FC = () => {
     residences: [{ country: 'Dominican Republic', city: '' }],
     projects: [{ projectName: '', role: '', description: '' }],
     userType: 'Crew',
+    contactInfo: {
+      email: '',
+      phone: '',
+      website: '',
+      instagram: '',
+    },
+    otherInfo: '',
   });
 
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -211,6 +225,8 @@ const Register: React.FC = () => {
           jobTitles: form.jobTitles.filter(j => j.department && j.title),
           residences: form.residences.filter(r => r.country && r.city),
           projects: form.projects.filter(p => p.projectName && p.role),
+          contactInfo: form.contactInfo,
+          otherInfo: form.otherInfo,
           availability: 'available', // Example default field
         });
       }
@@ -341,19 +357,6 @@ const Register: React.FC = () => {
                           )}
                         </div>
                       ))}
-                      
-                      {(entry.subcategories?.length || 0) < 3 && (
-                        <button
-                          type="button"
-                          onClick={() => updateJobEntry(i, 'subcategories', [
-                            ...(entry.subcategories || []), 
-                            { department: '', title: '', subcategories: [] }
-                          ])}
-                          className="text-blue-400 underline text-sm"
-                        >
-                          + Add Additional Job Title
-                        </button>
-                      )}
                     </div>
                   )}
                 </div>
@@ -365,16 +368,32 @@ const Register: React.FC = () => {
             <div>
               <h3 className="font-semibold mb-2">My Residences</h3>
               {form.residences.map((res, i) => (
-                <div key={i} className="flex gap-2 mb-2">
-                  <select value={res.country} onChange={e => updateResidence(i, 'country', e.target.value)} className="p-2 bg-gray-700 rounded">
-                    <option value="">— Country —</option>
+                <div key={i} className="space-y-2 mb-4">
+                  <select value={res.country} onChange={e => updateResidence(i, 'country', e.target.value)} className="p-2 bg-gray-700 rounded w-full">
+                    <option value="">— Select Country —</option>
                     {countryOptions.map(c => (<option key={c.name} value={c.name}>{c.name}</option>))}
                   </select>
-                  <select value={res.city} onChange={e => updateResidence(i, 'city', e.target.value)} disabled={!res.country} className="p-2 bg-gray-700 rounded flex-1">
-                    <option value="">— City —</option>
-                    {countryOptions.find(c => c.name === res.country)?.cities.map(city => (<option key={city} value={city}>{city}</option>))}
-                  </select>
-                  {form.residences.length > 1 && (<button type="button" onClick={() => removeResidence(i)} className="text-red-400">❌</button>)}
+                  
+                  <div className="relative">
+                    <input 
+                      value={res.city} 
+                      onChange={e => updateResidence(i, 'city', e.target.value)} 
+                      placeholder="Enter city name"
+                      className="p-2 bg-gray-700 rounded w-full"
+                      list={`cities-${i}`}
+                    />
+                    {res.country && (
+                      <datalist id={`cities-${i}`}>
+                        {countryOptions.find(c => c.name === res.country)?.cities.map(city => (
+                          <option key={city} value={city} />
+                        ))}
+                      </datalist>
+                    )}
+                  </div>
+                  
+                  {form.residences.length > 1 && (
+                    <button type="button" onClick={() => removeResidence(i)} className="text-red-400 text-sm">❌ Remove</button>
+                  )}
                 </div>
               ))}
               <button type="button" onClick={addResidence} className="text-blue-400 underline text-sm">+ Add Residence</button>
@@ -416,6 +435,61 @@ const Register: React.FC = () => {
             <div>
               <label className="block mb-1 font-semibold">Profile Picture</label>
               <input type="file" accept="image/*" onChange={handleImageFileChange} className="text-sm" />
+            </div>
+
+            {/* Contact Info Section */}
+            <div>
+              <h3 className="font-semibold mb-2">Contact Info (optional)</h3>
+              <input
+                type="email"
+                placeholder="Email"
+                value={form.contactInfo?.email || ''}
+                onChange={e =>
+                  setForm(f => ({ ...f, contactInfo: { ...f.contactInfo, email: e.target.value } }))
+                }
+                className="w-full p-2 bg-gray-700 rounded mb-2"
+              />
+              <input
+                type="tel"
+                placeholder="Phone"
+                value={form.contactInfo?.phone || ''}
+                onChange={e =>
+                  setForm(f => ({ ...f, contactInfo: { ...f.contactInfo, phone: e.target.value } }))
+                }
+                className="w-full p-2 bg-gray-700 rounded mb-2"
+              />
+              <input
+                type="url"
+                placeholder="Website"
+                value={form.contactInfo?.website || ''}
+                onChange={e =>
+                  setForm(f => ({ ...f, contactInfo: { ...f.contactInfo, website: e.target.value } }))
+                }
+                className="w-full p-2 bg-gray-700 rounded mb-2"
+              />
+              <input
+                type="text"
+                placeholder="Instagram Handle"
+                value={form.contactInfo?.instagram || ''}
+                onChange={e =>
+                  setForm(f => ({ ...f, contactInfo: { ...f.contactInfo, instagram: e.target.value } }))
+                }
+                className="w-full p-2 bg-gray-700 rounded"
+              />
+            </div>
+
+            {/* Other Info Section */}
+            <div className="mt-6">
+              <label className="block font-semibold mb-1">Other Relevant Info (optional)</label>
+              <textarea
+                placeholder="Add any other skills, certifications, memberships, etc."
+                value={form.otherInfo || ''}
+                onChange={e =>
+                  setForm(f => ({ ...f, otherInfo: e.target.value }))
+                }
+                rows={4}
+                className="w-full p-2 bg-gray-700 rounded"
+              />
             </div>
           </>
         )}
