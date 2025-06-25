@@ -38,6 +38,7 @@ interface FormData {
     instagram?: string;
   };
   otherInfo?: string; // freeform text
+  isPublished?: boolean; // Publish status
 }
 
 const fetchJobDepartments = async (): Promise<JobDepartment[]> => {
@@ -70,12 +71,14 @@ const EditCrewProfile: React.FC = () => {
       instagram: '',
     },
     otherInfo: '',
+    isPublished: false,
   });
 
   const [departments, setDepartments] = useState<JobDepartment[]>([]);
   const [countryOptions, setCountryOptions] = useState<{ name: string; cities: string[] }[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [isPublished, setIsPublished] = useState(false);
 
   // PDF download functionality
   const resumeRef = useRef<HTMLDivElement | null>(null);
@@ -207,7 +210,9 @@ const EditCrewProfile: React.FC = () => {
               instagram: '',
             },
             otherInfo: data.otherInfo || '',
+            isPublished: data.isPublished || false,
           });
+          setIsPublished(data.isPublished || false);
           console.log("DEBUG: Form state updated with profile data");
         } else {
           console.log("DEBUG: No profile document found for user:", user.uid);
@@ -339,6 +344,7 @@ const EditCrewProfile: React.FC = () => {
       await setDoc(docRef, {
         ...form,
         uid: user.uid,
+        isPublished, // Save publish state
       });
       console.log("DEBUG: Save successful!");
       setMessage('Profile saved!');
@@ -354,8 +360,16 @@ const EditCrewProfile: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
       <div className="max-w-2xl mx-auto bg-gray-800 p-6 rounded space-y-6">
-        <h2 className="text-2xl font-bold">Edit Crew Profile</h2>
-        { /* The rest of your JSX from your file goes here. It was omitted for brevity but is unchanged. */ }
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold">Edit Crew Profile</h2>
+          <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+            isPublished 
+              ? 'bg-green-900 text-green-300 border border-green-600' 
+              : 'bg-gray-700 text-gray-300 border border-gray-600'
+          }`}>
+            {isPublished ? '🌐 Published' : '🔒 Private'}
+          </div>
+        </div>
         <input name="name" value={form.name} onChange={handleChange} placeholder="Full Name" className="w-full p-2 bg-gray-700 rounded" />
         <textarea name="bio" value={form.bio} onChange={handleChange} placeholder="Short Bio" rows={3} className="w-full p-2 bg-gray-700 rounded" />
         <div>
@@ -593,6 +607,64 @@ const EditCrewProfile: React.FC = () => {
             className="w-full p-2 bg-gray-700 rounded"
           />
         </div>
+
+        {/* Publish Toggle Section */}
+        <div className="mt-6 p-4 bg-gray-700 rounded border border-gray-600">
+          <div className="flex items-center gap-3 mb-2">
+            <input
+              type="checkbox"
+              id="publish-toggle"
+              checked={isPublished}
+              onChange={(e) => setIsPublished(e.target.checked)}
+              className="w-4 h-4 text-blue-600 bg-gray-800 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+            />
+            <label htmlFor="publish-toggle" className="font-semibold text-white">
+              Publish Resume Publicly
+            </label>
+          </div>
+          {isPublished ? (
+            <div className="text-sm text-green-400">
+              ✅ Your resume will be visible via a public link once saved.
+            </div>
+          ) : (
+            <div className="text-sm text-gray-400">
+              🔒 Your resume is private and only visible to you.
+            </div>
+          )}
+          {isPublished && (
+            <p className="text-yellow-400 text-sm mt-2">
+              ⚠️ Once published, your resume will be accessible to anyone with the link.
+            </p>
+          )}
+        </div>
+
+        {/* Share Resume Section */}
+        {isPublished && user && (
+          <div className="mt-4 p-4 bg-blue-900 rounded border border-blue-600">
+            <h4 className="font-semibold text-blue-200 mb-2">Share Your Resume</h4>
+            <div className="flex items-center gap-2 mb-2">
+              <input
+                type="text"
+                value={`${window.location.origin}/resume/${user.uid}`}
+                readOnly
+                className="flex-1 p-2 bg-gray-800 rounded text-sm text-gray-300 border border-gray-600"
+              />
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(`${window.location.origin}/resume/${user.uid}`);
+                  setMessage('Link copied to clipboard!');
+                  setTimeout(() => setMessage(null), 3000);
+                }}
+                className="px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded text-sm"
+              >
+                Copy
+              </button>
+            </div>
+            <p className="text-xs text-blue-300">
+              Share this link with potential employers or collaborators
+            </p>
+          </div>
+        )}
 
         <button onClick={handleSave} disabled={loading} className="w-full bg-green-600 py-2 rounded hover:bg-green-500 disabled:opacity-50">{loading ? 'Saving…' : 'Save Profile'}</button>
         {message && <p className="text-center text-yellow-400">{message}</p>}

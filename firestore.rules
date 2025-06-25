@@ -29,7 +29,7 @@ service cloud.firestore {
 
     // Allow read/write access to crewProfiles collection
     match /crewProfiles/{userId} {
-      allow read: if true; // Anyone can read crew profiles
+      allow read: if true; // Anyone can read crew profiles (published or not - filtering happens in app)
       allow write: if request.auth.uid == userId; // Only the user can edit their own profile
     }
 

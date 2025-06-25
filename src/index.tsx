@@ -22,6 +22,7 @@ import AddProject from './components/AddProject';
 import Home from './components/Home';
 import ProjectDetail from './components/ProjectDetail';
 import EditCrewProfile from './components/EditCrewProfile';
+import PublicResumePage from './components/PublicResumePage';
 
 import SavedCrewProfilesPage from './pages/SavedCrewProfilesPage';
 import SavedProjectsPage from './pages/SavedProjectsPage';
@@ -92,6 +93,7 @@ const App: React.FC = () => {
                         <Route path="/saved-crew" element={<PrivateRoute><SavedCrewProfilesPage /></PrivateRoute>} />
                         <Route path="/saved-projects" element={<PrivateRoute><SavedProjectsPage /></PrivateRoute>} />
                         <Route path="/edit-profile" element={<PrivateRoute><EditCrewProfile /></PrivateRoute>} />
+                        <Route path="/resume/:uid" element={<PublicResumePage />} />
                         <Route path="/login" element={<Login />} />
                         <Route path="/register" element={<Register />} />
                     </Routes>
