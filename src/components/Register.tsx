@@ -8,6 +8,7 @@ import { doc, setDoc, collection, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { ProjectEntry } from '../types/ProjectEntry';
 import { JobTitleEntry } from '../types/JobTitleEntry';
+import { JOB_SUBCATEGORIES } from '../types/JobSubcategories';
 
 // --- Interfaces to define the shape of your data ---
 interface Residence {
@@ -97,6 +98,23 @@ const Register: React.FC = () => {
     }
   };
 
+  // --- Helper function to ensure subcategories are in correct format ---
+  const ensureSubcategoriesFormat = (subcategories: any[]): JobTitleEntry[] => {
+    return subcategories.map((sub: any) => {
+      if (typeof sub === 'string') {
+        // Convert old string format to new object format
+        return { department: '', title: sub, subcategories: [] };
+      } else {
+        // Already in new format, ensure it has the right structure
+        return {
+          department: sub.department || '',
+          title: sub.title || '',
+          subcategories: sub.subcategories || []
+        };
+      }
+    });
+  };
+
   const updateJobEntry = (i: number, field: keyof JobTitleEntry, value: any) => {
     setForm(f => {
       const updated = [...f.jobTitles];
@@ -105,6 +123,15 @@ const Register: React.FC = () => {
       if (field === 'department') {
         newEntry.title = '';
         newEntry.subcategories = [];
+      }
+
+      if (field === 'title') {
+        newEntry.subcategories = [];
+      }
+
+      if (field === 'subcategories') {
+        // Ensure subcategories are in correct format
+        newEntry.subcategories = ensureSubcategoriesFormat(value);
       }
 
       updated[i] = newEntry;
@@ -230,47 +257,101 @@ const Register: React.FC = () => {
               <h3 className="font-semibold mb-2">My Job Titles</h3>
               {form.jobTitles.map((entry, i) => (
                 <div key={i} className="mb-4 space-y-2">
-                  <div className="flex gap-2 items-center">
-                    <select value={entry.department} onChange={e => updateJobEntry(i, 'department', e.target.value)} className="p-2 bg-gray-700 rounded flex-1">
+                  <div className="space-y-2">
+                    <select value={entry.department} onChange={e => updateJobEntry(i, 'department', e.target.value)} className="p-2 bg-gray-700 rounded w-full">
                       <option value="">— Department —</option>
                       {departments.map(d => (<option key={d.name} value={d.name}>{d.name}</option>))}
                       <option value="Other">Other</option>
                     </select>
                     {entry.department === 'Other' ? (
-                      <input value={entry.title} onChange={e => updateJobEntry(i, 'title', e.target.value)} placeholder="Enter job title" className="p-2 bg-gray-700 rounded flex-1" />
+                      <input value={entry.title} onChange={e => updateJobEntry(i, 'title', e.target.value)} placeholder="Enter job title" className="p-2 bg-gray-700 rounded w-full" />
                     ) : (
-                      <select value={entry.title} onChange={e => updateJobEntry(i, 'title', e.target.value)} className="p-2 bg-gray-700 rounded flex-1" disabled={!entry.department}>
+                      <select value={entry.title} onChange={e => updateJobEntry(i, 'title', e.target.value)} className="p-2 bg-gray-700 rounded w-full" disabled={!entry.department}>
                         <option value="">— Title —</option>
                         {departments.find(d => d.name === entry.department)?.titles.map(title => (<option key={title} value={title}>{title}</option>))}
                       </select>
                     )}
-                    {form.jobTitles.length > 1 && (<button type="button" onClick={() => removeJobEntry(i)} className="text-red-400">❌</button>)}
+                    {form.jobTitles.length > 1 && (
+                      <button type="button" onClick={() => removeJobEntry(i)} className="text-red-400 text-sm">❌ Remove</button>
+                    )}
                   </div>
                   
-                  {/* Subcategories */}
+                  {/* Additional Job Titles */}
                   {entry.title && (
-                    <div className="ml-4 space-y-1">
+                    <div className="ml-4 space-y-2">
                       {entry.subcategories?.map((sub, idx) => (
-                        <input
-                          key={idx}
-                          value={sub}
-                          onChange={(e) => {
-                            const newSubs = [...(entry.subcategories || [])];
-                            newSubs[idx] = e.target.value;
-                            updateJobEntry(i, 'subcategories', newSubs);
-                          }}
-                          placeholder={`Subcategory ${idx + 1}`}
-                          className="p-2 bg-gray-700 rounded w-full text-sm"
-                        />
+                        <div key={idx} className="space-y-1">
+                          <select
+                            value={sub.department || ''}
+                            onChange={(e) => {
+                              const newSubs = [...(entry.subcategories || [])];
+                              newSubs[idx] = { 
+                                department: e.target.value, 
+                                title: '', 
+                                subcategories: [] 
+                              };
+                              updateJobEntry(i, 'subcategories', newSubs);
+                            }}
+                            className="p-2 bg-gray-700 rounded w-full text-sm"
+                          >
+                            <option value="">— Select Department —</option>
+                            {departments.map(dept => (
+                              <option key={dept.name} value={dept.name}>
+                                {dept.name}
+                              </option>
+                            ))}
+                            <option value="Other">Other</option>
+                          </select>
+                          
+                          {sub.department && (
+                            <>
+                              {sub.department === 'Other' ? (
+                                <input
+                                  type="text"
+                                  value={sub.title}
+                                  onChange={(e) => {
+                                    const newSubs = [...(entry.subcategories || [])];
+                                    newSubs[idx] = { ...sub, title: e.target.value };
+                                    updateJobEntry(i, 'subcategories', newSubs);
+                                  }}
+                                  placeholder="Enter job title"
+                                  className="p-2 bg-gray-700 rounded w-full text-sm"
+                                />
+                              ) : (
+                                <select
+                                  value={sub.title}
+                                  onChange={(e) => {
+                                    const newSubs = [...(entry.subcategories || [])];
+                                    newSubs[idx] = { ...sub, title: e.target.value };
+                                    updateJobEntry(i, 'subcategories', newSubs);
+                                  }}
+                                  className="p-2 bg-gray-700 rounded w-full text-sm"
+                                >
+                                  <option value="">— Select Job Title —</option>
+                                  {departments
+                                    .find(d => d.name === sub.department)
+                                    ?.titles.map(title => (
+                                      <option key={title} value={title} className="truncate">
+                                        {title}
+                                      </option>
+                                    ))}
+                                </select>
+                              )}
+                            </>
+                          )}
+                        </div>
                       ))}
                       
                       {(entry.subcategories?.length || 0) < 3 && (
                         <button
                           type="button"
-                          onClick={() => updateJobEntry(i, 'subcategories', [...(entry.subcategories || []), ''])}
+                          onClick={() => updateJobEntry(i, 'subcategories', [
+                            ...(entry.subcategories || []), 
+                            { department: '', title: '', subcategories: [] }
+                          ])}
                           className="text-blue-400 underline text-sm"
                         >
-                          + Add Subcategory
+                          + Add Additional Job Title
                         </button>
                       )}
                     </div>

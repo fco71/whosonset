@@ -1,5 +1,5 @@
 export interface JobTitleEntry {
   department: string;
   title: string;
-  subcategories?: string[]; // Optional array, up to 3
+  subcategories?: JobTitleEntry[]; // Additional job titles as nested JobTitleEntry objects
 } 
