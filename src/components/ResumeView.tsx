@@ -22,6 +22,7 @@ interface CrewProfileData {
   education?: string[];
   contactInfo?: ContactInfo;
   otherInfo?: string;
+  languages?: string[];
 }
 
 interface ResumeViewProps {
@@ -238,6 +239,18 @@ const ResumeView: React.FC<ResumeViewProps> = ({ profile }) => {
                 )}
               </div>
             </div>
+
+            {/* Languages */}
+            {profile.languages && profile.languages.length > 0 && (
+              <section style={sectionStyle}>
+                <div style={sectionTitleStyle}>Languages</div>
+                <ul style={jobTitlesListStyle}>
+                  {profile.languages.slice(0, 3).map((lang, idx) => (
+                    <li key={idx} style={jobTitleItemStyle}>{lang}</li>
+                  ))}
+                </ul>
+              </section>
+            )}
 
             {/* Job Titles */}
             <div style={sectionStyle}>

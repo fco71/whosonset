@@ -15,6 +15,7 @@ export interface CrewProfile {
   otherInfo?: string;
   isPublished: boolean;
   availability?: 'available' | 'unavailable' | 'soon';
+  languages?: string[];
 }
 
 // Supporting interfaces
@@ -54,4 +55,5 @@ export interface CrewProfileFormData {
   otherInfo?: string;
   isPublished?: boolean;
   availability?: 'available' | 'unavailable' | 'soon';
+  languages?: string[];
 } 

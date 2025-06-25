@@ -52,6 +52,7 @@ const EditCrewProfile: React.FC = () => {
     otherInfo: '',
     isPublished: false,
     availability: 'available',
+    languages: [],
   });
 
   const [departments, setDepartments] = useState<JobDepartment[]>([]);
@@ -192,6 +193,7 @@ const EditCrewProfile: React.FC = () => {
             otherInfo: data.otherInfo || '',
             isPublished: data.isPublished || false,
             availability: data.availability || 'available',
+            languages: data.languages || [],
           });
           setIsPublished(data.isPublished || false);
           console.log("DEBUG: Form state updated with profile data");
@@ -310,6 +312,22 @@ const EditCrewProfile: React.FC = () => {
   const removeEducation = (i: number) =>
     setForm(f => ({ ...f, education: f.education.filter((_, idx) => idx !== i) }));
 
+  const updateLanguage = (i: number, value: string) => {
+    setForm(f => {
+      const newLangs = [...(f.languages || [])];
+      newLangs[i] = value;
+      return { ...f, languages: newLangs };
+    });
+  };
+
+  const addLanguage = () => {
+    setForm(f => ({ ...f, languages: [...(f.languages || []), ''] }));
+  };
+
+  const removeLanguage = (i: number) => {
+    setForm(f => ({ ...f, languages: (f.languages || []).filter((_: string, idx: number) => idx !== i) }));
+  };
+
   const handleSave = async (e: React.MouseEvent) => {
     e.preventDefault();
     if (!user) {
@@ -324,9 +342,10 @@ const EditCrewProfile: React.FC = () => {
       console.log("DEBUG: Saving to document:", docRef.path);
       await setDoc(docRef, {
         ...form,
+        languages: form.languages || [],
         uid: user.uid,
         isPublished, // Save publish state
-      });
+      }, { merge: true });
       console.log("DEBUG: Save successful!");
       setMessage('Profile saved!');
     } catch(error) { // Added error logging
@@ -547,6 +566,27 @@ const EditCrewProfile: React.FC = () => {
                 + Add Job Title
               </button>
             </div>
+
+            {/* Languages Section */}
+            <section>
+              <label style={{ fontWeight: 'bold', display: 'block', marginBottom: 4 }}>Languages (up to 3, optional):</label>
+              {(form.languages || []).map((lang: string, idx: number) => (
+                <div key={idx} style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
+                  <input
+                    type="text"
+                    value={lang}
+                    maxLength={40}
+                    onChange={e => updateLanguage(idx, e.target.value)}
+                    placeholder={`Language #${idx + 1}`}
+                    style={{ marginRight: 8, flex: 1 }}
+                  />
+                  <button type="button" onClick={() => removeLanguage(idx)} style={{ color: 'red' }}>Remove</button>
+                </div>
+              ))}
+              {(form.languages?.length || 0) < 3 && (
+                <button type="button" onClick={addLanguage} style={{ marginTop: 4 }}>Add Language</button>
+              )}
+            </section>
 
             {/* Residences Section */}
             <div className="mb-8">
