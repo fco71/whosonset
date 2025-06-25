@@ -1,35 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../firebase';
+import { CrewProfile, Residence, ContactInfo } from '../types/CrewProfile';
 import { JobTitleEntry } from '../types/JobTitleEntry';
 import { ProjectEntry } from '../types/ProjectEntry';
-
-interface Residence {
-  country: string;
-  city: string;
-}
-
-interface ContactInfo {
-  email?: string;
-  phone?: string;
-  website?: string;
-  instagram?: string;
-}
-
-interface CrewProfile {
-  uid: string;
-  name: string;
-  bio?: string;
-  profileImageUrl?: string;
-  jobTitles: JobTitleEntry[];
-  residences: Residence[];
-  projects?: ProjectEntry[];
-  education?: string[];
-  contactInfo?: ContactInfo;
-  otherInfo?: string;
-  isPublished: boolean;
-  availability?: 'available' | 'unavailable' | 'soon';
-}
 
 interface JobDepartment {
   name: string;
@@ -480,7 +454,7 @@ const CrewProfileCard: React.FC<{
           </h3>
           {primaryJob && (
             <p className="text-sm font-medium text-gray-600 mb-1 tracking-wide transition-colors duration-300 group-hover:text-gray-800">
-              {primaryJob.department} • {primaryJob.title}
+              {primaryJob.title}
             </p>
           )}
           {primaryResidence && (

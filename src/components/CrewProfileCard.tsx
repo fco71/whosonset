@@ -4,19 +4,10 @@ import { db } from '../firebase';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../firebase';
 import { FaDownload, FaBookmark, FaRegBookmark } from 'react-icons/fa';
-
-export interface CrewProfile {
-  id: string;
-  name: string;
-  role: string;
-  bio: string;
-  location: string;
-  resumeUrl?: string;
-  avatarUrl?: string;
-}
+import { LegacyCrewProfile } from '../types/CrewProfile';
 
 interface CrewProfileCardProps {
-  profile: CrewProfile;
+  profile: LegacyCrewProfile;
 }
 
 const CrewProfileCard: React.FC<CrewProfileCardProps> = ({ profile }) => {
@@ -77,33 +68,30 @@ const CrewProfileCard: React.FC<CrewProfileCardProps> = ({ profile }) => {
 
         {/* Action Buttons */}
         <div className="flex gap-3">
+          {profile.resumeUrl && (
+            <button
+              onClick={handleDownloadResume}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-black transition-all duration-300 text-sm font-medium tracking-wide"
+            >
+              <FaDownload className="text-xs" />
+              Download Resume
+            </button>
+          )}
           <button
             onClick={handleSaveToCollection}
-            className={`flex-1 flex items-center justify-center px-4 py-3 rounded-lg font-light tracking-wide transition-all duration-300 hover:scale-105 ${
-              isSaved 
-                ? 'bg-gray-900 text-white hover:bg-gray-800' 
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
+            className="flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-300 text-sm font-medium tracking-wide"
           >
             {isSaved ? (
               <>
-                <FaBookmark className="mr-2 text-sm" />
+                <FaBookmark className="text-xs" />
                 Saved
               </>
             ) : (
               <>
-                <FaRegBookmark className="mr-2 text-sm" />
+                <FaRegBookmark className="text-xs" />
                 Save
               </>
             )}
-          </button>
-
-          <button
-            onClick={handleDownloadResume}
-            className="flex-1 flex items-center justify-center px-4 py-3 bg-gray-900 text-white rounded-lg font-light tracking-wide hover:bg-gray-800 transition-all duration-300 hover:scale-105"
-          >
-            <FaDownload className="mr-2 text-sm" />
-            Resume
           </button>
         </div>
       </div>

@@ -4,21 +4,15 @@ import { auth, db, storage } from '../firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc, collection, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ProjectEntry } from '../types/ProjectEntry';
+import { JobTitleEntry } from '../types/JobTitleEntry';
+import { JOB_SUBCATEGORIES } from '../types/JobSubcategories';
+import { Residence, ContactInfo } from '../types/CrewProfile';
 
 // --- Interfaces (from EditCrewProfile) ---
-interface Residence {
-  country: string;
-  city: string;
-}
-
 interface JobDepartment {
-  name:string;
+  name: string;
   titles: string[];
-}
-
-interface JobTitleEntry {
-  department: string;
-  title: string;
 }
 
 // --- Modified FormData to include registration fields ---

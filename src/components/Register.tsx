@@ -9,13 +9,9 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { ProjectEntry } from '../types/ProjectEntry';
 import { JobTitleEntry } from '../types/JobTitleEntry';
 import { JOB_SUBCATEGORIES } from '../types/JobSubcategories';
+import { Residence, ContactInfo } from '../types/CrewProfile';
 
 // --- Interfaces to define the shape of your data ---
-interface Residence {
-  country: string;
-  city: string;
-}
-
 interface JobDepartment {
   name: string;
   titles: string[];
@@ -33,12 +29,7 @@ interface FormData {
   projects: ProjectEntry[];
   education: string[]; // Array of education entries
   userType: 'Crew' | 'Producer';
-  contactInfo?: {
-    email?: string;
-    phone?: string;
-    website?: string;
-    instagram?: string;
-  };
+  contactInfo?: ContactInfo;
   otherInfo?: string; // freeform text
   availability?: 'available' | 'unavailable' | 'soon'; // Availability status
 }

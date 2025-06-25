@@ -1,26 +1,15 @@
-import React from 'react';
+import React, { useRef } from 'react';
+import { ProjectEntry } from '../types/ProjectEntry';
+import { JobTitleEntry } from '../types/JobTitleEntry';
+import { Residence, ContactInfo } from '../types/CrewProfile';
+
+// Import html2pdf using require to bypass TypeScript issues
+const html2pdf = require('html2pdf.js');
 
 interface Project {
   projectName: string;
   role: string;
-  description?: string;
-}
-
-interface JobTitleEntry {
-  department: string;
-  title: string;
-}
-
-interface Residence {
-  country: string;
-  city: string;
-}
-
-interface ContactInfo {
-  email?: string;
-  phone?: string;
-  website?: string;
-  instagram?: string;
+  description: string;
 }
 
 interface CrewProfileData {

@@ -7,39 +7,16 @@ import { db, storage } from '../firebase';
 import { ProjectEntry } from '../types/ProjectEntry';
 import { JobTitleEntry } from '../types/JobTitleEntry';
 import { JOB_SUBCATEGORIES } from '../types/JobSubcategories';
+import { CrewProfileFormData, Residence, ContactInfo } from '../types/CrewProfile';
 import ResumeView from './ResumeView';
 
 // Import html2pdf using require to bypass TypeScript issues
 const html2pdf = require('html2pdf.js');
 
 // Interfaces remain the same
-interface Residence {
-  country: string;
-  city: string;
-}
-
 interface JobDepartment {
   name: string;
   titles: string[];
-}
-
-interface FormData {
-  name: string;
-  bio: string;
-  profileImageUrl: string;
-  jobTitles: JobTitleEntry[];
-  residences: Residence[];
-  projects: ProjectEntry[];
-  education: string[]; // Array of education entries
-  contactInfo?: {
-    email?: string;
-    phone?: string;
-    website?: string;
-    instagram?: string;
-  };
-  otherInfo?: string; // freeform text
-  isPublished?: boolean; // Publish status
-  availability?: 'available' | 'unavailable' | 'soon'; // Availability status
 }
 
 const fetchJobDepartments = async (): Promise<JobDepartment[]> => {
@@ -57,7 +34,7 @@ const EditCrewProfile: React.FC = () => {
   // --- MODIFIED: Use state to track the user, which is more reliable on load ---
   const [user, setUser] = useState<User | null>(null);
 
-  const [form, setForm] = useState<FormData>({
+  const [form, setForm] = useState<CrewProfileFormData>({
     name: '',
     bio: '',
     profileImageUrl: '',
@@ -945,7 +922,14 @@ const EditCrewProfile: React.FC = () => {
             <hr className="my-8 border-gray-200" />
             <h3 className="text-xl font-light text-gray-900 mb-6 tracking-wide">Resume Preview</h3>
             <div ref={resumeRef} className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-              <ResumeView profile={form} />
+              <ResumeView profile={{
+                ...form,
+                projects: form.projects?.map(project => ({
+                  projectName: project.projectName,
+                  role: project.role,
+                  description: project.description || '' // Ensure description is always a string
+                }))
+              }} />
             </div>
             <button
               onClick={handleDownloadPDF}
