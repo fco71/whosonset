@@ -4,12 +4,8 @@ import { db } from '../firebase';
 
 interface Country {
   name: string;
-  code: string;
-}
-
-interface City {
-  name: string;
-  country: string;
+  code?: string;
+  cities: string[];
 }
 
 interface LocationSelectorProps {
@@ -28,36 +24,26 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
   placeholder = "Select location..."
 }) => {
   const [countries, setCountries] = useState<Country[]>([]);
-  const [cities, setCities] = useState<City[]>([]);
-  const [filteredCities, setFilteredCities] = useState<City[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchCountriesAndCities = async () => {
+    const fetchCountries = async () => {
       setLoading(true);
       try {
         const countriesSnapshot = await getDocs(collection(db, 'countries'));
-        const citiesSnapshot = await getDocs(collection(db, 'cities'));
         setCountries(countriesSnapshot.docs.map(doc => doc.data() as Country));
-        setCities(citiesSnapshot.docs.map(doc => doc.data() as City));
       } catch (error) {
-        console.error('Error fetching locations:', error);
-        // Fallback to empty arrays if collections don't exist
+        console.error('Error fetching countries:', error);
         setCountries([]);
-        setCities([]);
       }
       setLoading(false);
     };
-    fetchCountriesAndCities();
+    fetchCountries();
   }, []);
 
-  useEffect(() => {
-    if (selectedCountry) {
-      setFilteredCities(cities.filter(city => city.country === selectedCountry));
-    } else {
-      setFilteredCities([]);
-    }
-  }, [selectedCountry, cities]);
+  // Find the selected country object
+  const selectedCountryObj = countries.find(c => c.name === selectedCountry);
+  const cityOptions = selectedCountryObj?.cities || [];
 
   return (
     <div className="flex flex-col gap-2">
@@ -69,7 +55,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
       >
         <option value="">Select Country</option>
         {countries.map(country => (
-          <option key={country.code} value={country.name}>{country.name}</option>
+          <option key={country.name} value={country.name}>{country.name}</option>
         ))}
       </select>
       <select
@@ -79,8 +65,8 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
         disabled={!selectedCountry || loading}
       >
         <option value="">Select City</option>
-        {filteredCities.map(city => (
-          <option key={city.name} value={city.name}>{city.name}</option>
+        {cityOptions.map(city => (
+          <option key={city} value={city}>{city}</option>
         ))}
       </select>
     </div>
