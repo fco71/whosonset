@@ -42,7 +42,8 @@ export interface ChatRoom {
   projectId?: string;
   department?: string;
   location?: string;
-  lastMessage?: ChatMessage;
+  avatarUrl?: string;
+  lastMessage?: string;
   unreadCount: number;
   isActive: boolean;
   createdAt: Date;
@@ -67,6 +68,8 @@ export interface ChatCallout {
   urgency: 'low' | 'medium' | 'high' | 'urgent';
   department?: string;
   location?: string;
+  startDate?: Date;
+  rate?: number;
   requiredSkills?: string[];
   equipment?: string[];
   timeWindow?: {
@@ -134,4 +137,4 @@ export interface ChatStats {
   calloutsPosted: number;
   calloutsResponded: number;
   projectsCollaborated: number;
-} 
+}

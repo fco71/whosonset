@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, doc, serverTimestamp, where } from 'firebase/firestore';
-import { db, auth } from '../../firebase';
+import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, doc, serverTimestamp, where, enableNetwork, disableNetwork } from 'firebase/firestore';
+import { db, auth, handleFirestoreError } from '../../firebase';
 import { ChatMessage, ChatRoom, ChatCallout, ChatPresence } from '../../types/Chat';
 import './ChatInterface.scss';
 
@@ -19,6 +19,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ currentUserId, currentUse
   const [filterDepartment, setFilterDepartment] = useState<string>('all');
   const [showCalloutForm, setShowCalloutForm] = useState(false);
   const [presence, setPresence] = useState<ChatPresence[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
@@ -28,58 +30,125 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ currentUserId, currentUse
     'Production', 'Directing', 'Editing', 'VFX', 'Stunts', 'Transport'
   ];
 
+  // Initialize Firestore connection
   useEffect(() => {
-    // Load chat rooms
-    const roomsQuery = query(
-      collection(db, 'chatRooms'),
-      where('participants', 'array-contains', currentUserId),
-      orderBy('updatedAt', 'desc')
-    );
+    const initializeFirestore = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        // Enable network connection
+        await enableNetwork(db);
+        
+        // Load initial data
+        await loadChatRooms();
+        await loadCallouts();
+        
+        setIsLoading(false);
+      } catch (err) {
+        console.error('Error initializing Firestore:', err);
+        setError('Failed to connect to chat service. Please refresh the page.');
+        setIsLoading(false);
+      }
+    };
 
-    const unsubscribeRooms = onSnapshot(roomsQuery, (snapshot) => {
-      const roomsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as ChatRoom[];
-      setRooms(roomsData);
-    });
-
-    // Load callouts
-    const calloutsQuery = query(
-      collection(db, 'callouts'),
-      orderBy('createdAt', 'desc')
-    );
-
-    const unsubscribeCallouts = onSnapshot(calloutsQuery, (snapshot) => {
-      const calloutsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as ChatCallout[];
-      setCallouts(calloutsData);
-    });
+    if (currentUserId) {
+      initializeFirestore();
+    }
 
     return () => {
-      unsubscribeRooms();
-      unsubscribeCallouts();
+      // Cleanup function
     };
   }, [currentUserId]);
 
-  useEffect(() => {
-    if (currentRoom) {
-      const messagesQuery = query(
-        collection(db, `chatRooms/${currentRoom.id}/messages`),
-        orderBy('timestamp', 'asc')
+  const loadChatRooms = async () => {
+    try {
+      const roomsQuery = query(
+        collection(db, 'chatRooms'),
+        where('participants', 'array-contains', currentUserId),
+        orderBy('updatedAt', 'desc')
       );
 
-      const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
-        const messagesData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as ChatMessage[];
-        setMessages(messagesData);
-      });
+      const unsubscribeRooms = onSnapshot(roomsQuery, 
+        (snapshot) => {
+          const roomsData = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          })) as ChatRoom[];
+          setRooms(roomsData);
+        },
+        (error) => {
+          console.error('Error loading chat rooms:', error);
+          handleFirestoreError(error);
+        }
+      );
 
-      return unsubscribe;
+      return unsubscribeRooms;
+    } catch (error) {
+      console.error('Error setting up chat rooms listener:', error);
+      handleFirestoreError(error);
+    }
+  };
+
+  const loadCallouts = async () => {
+    try {
+      const calloutsQuery = query(
+        collection(db, 'callouts'),
+        orderBy('createdAt', 'desc')
+      );
+
+      const unsubscribeCallouts = onSnapshot(calloutsQuery, 
+        (snapshot) => {
+          const calloutsData = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          })) as ChatCallout[];
+          setCallouts(calloutsData);
+        },
+        (error) => {
+          console.error('Error loading callouts:', error);
+          handleFirestoreError(error);
+        }
+      );
+
+      return unsubscribeCallouts;
+    } catch (error) {
+      console.error('Error setting up callouts listener:', error);
+      handleFirestoreError(error);
+    }
+  };
+
+  useEffect(() => {
+    if (currentRoom) {
+      const loadMessages = async () => {
+        try {
+          const messagesQuery = query(
+            collection(db, `chatRooms/${currentRoom.id}/messages`),
+            orderBy('timestamp', 'asc')
+          );
+
+          const unsubscribe = onSnapshot(messagesQuery, 
+            (snapshot) => {
+              const messagesData = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+              })) as ChatMessage[];
+              setMessages(messagesData);
+            },
+            (error) => {
+              console.error('Error loading messages:', error);
+              handleFirestoreError(error);
+            }
+          );
+
+          return unsubscribe;
+        } catch (error) {
+          console.error('Error setting up messages listener:', error);
+          handleFirestoreError(error);
+        }
+      };
+
+      loadMessages();
     }
   }, [currentRoom]);
 
@@ -109,6 +178,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ currentUserId, currentUse
       setNewMessage('');
     } catch (error) {
       console.error('Error sending message:', error);
+      handleFirestoreError(error);
     }
   };
 
@@ -129,6 +199,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ currentUserId, currentUse
       setShowCalloutForm(false);
     } catch (error) {
       console.error('Error creating callout:', error);
+      handleFirestoreError(error);
     }
   };
 
@@ -154,6 +225,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ currentUserId, currentUse
       await updateDoc(calloutRef, { responses: updatedResponses });
     } catch (error) {
       console.error('Error responding to callout:', error);
+      handleFirestoreError(error);
     }
   };
 
@@ -177,6 +249,35 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ currentUserId, currentUse
       default: return '⚫';
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="chat-interface">
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Connecting to chat service...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="chat-interface">
+        <div className="error-container">
+          <div className="error-icon">⚠️</div>
+          <h3>Connection Error</h3>
+          <p>{error}</p>
+          <button 
+            className="retry-btn"
+            onClick={() => window.location.reload()}
+          >
+            Retry Connection
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="chat-interface">
@@ -204,6 +305,52 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ currentUserId, currentUse
 
         {activeTab === 'chats' && (
           <div className="chat-rooms">
+            <div className="rooms-header">
+              <h3>Your Conversations</h3>
+              <button className="new-chat-btn">+ New Chat</button>
+            </div>
+            
+            <div className="rooms-list">
+              {rooms.map(room => (
+                <div 
+                  key={room.id} 
+                  className={`room-item ${currentRoom?.id === room.id ? 'active' : ''}`}
+                  onClick={() => setCurrentRoom(room)}
+                >
+                  <div className="room-avatar">
+                    <img src={room.avatarUrl || '/default-avatar.png'} alt="" />
+                    <div className="online-indicator"></div>
+                  </div>
+                  <div className="room-info">
+                    <h4>{room.name}</h4>
+                    <p>{room.lastMessage}</p>
+                  </div>
+                  <div className="room-meta">
+                    <span className="message-time">
+                      {room.updatedAt?.toLocaleTimeString()}
+                    </span>
+                    {room.unreadCount > 0 && (
+                      <span className="unread-badge">{room.unreadCount}</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'callouts' && (
+          <div className="callouts-section">
+            <div className="callouts-header">
+              <h3>Industry Callouts</h3>
+              <button 
+                className="new-callout-btn"
+                onClick={() => setShowCalloutForm(true)}
+              >
+                + New Callout
+              </button>
+            </div>
+
             <div className="department-filter">
               <select 
                 value={filterDepartment} 
@@ -215,76 +362,46 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ currentUserId, currentUse
                 ))}
               </select>
             </div>
-            
-            {rooms
-              .filter(room => filterDepartment === 'all' || room.department === filterDepartment)
-              .map(room => (
-                <div 
-                  key={room.id}
-                  className={`chat-room ${currentRoom?.id === room.id ? 'active' : ''}`}
-                  onClick={() => setCurrentRoom(room)}
-                >
-                  <div className="room-info">
-                    <h4>{room.name}</h4>
-                    <p>{room.type}</p>
-                    {room.lastMessage && (
-                      <p className="last-message">{room.lastMessage.content}</p>
-                    )}
-                  </div>
-                  {room.unreadCount > 0 && (
-                    <span className="unread-badge">{room.unreadCount}</span>
-                  )}
-                </div>
-              ))}
-          </div>
-        )}
 
-        {activeTab === 'callouts' && (
-          <div className="callouts-list">
-            <button 
-              className="create-callout-btn"
-              onClick={() => setShowCalloutForm(true)}
-            >
-              + New Callout
-            </button>
-            
-            {callouts.map(callout => (
-              <div key={callout.id} className="callout-item">
-                <div className="callout-header">
-                  <h4>{callout.title}</h4>
-                  <span 
-                    className="urgency-badge"
-                    style={{ backgroundColor: getUrgencyColor(callout.urgency) }}
-                  >
-                    {callout.urgency}
-                  </span>
-                </div>
-                <p>{callout.description}</p>
-                <div className="callout-meta">
-                  <span>{callout.department}</span>
-                  <span>{callout.location}</span>
-                  <span>{callout.responses.length} responses</span>
-                </div>
-              </div>
-            ))}
+            <div className="callouts-list">
+              {callouts
+                .filter(callout => filterDepartment === 'all' || callout.department === filterDepartment)
+                .map(callout => (
+                  <div key={callout.id} className="callout-item">
+                    <div className="callout-header">
+                      <h4>{callout.title}</h4>
+                      <span 
+                        className="urgency-badge"
+                        style={{ backgroundColor: getUrgencyColor(callout.urgency) }}
+                      >
+                        {callout.urgency}
+                      </span>
+                    </div>
+                    <p>{callout.description}</p>
+                    <div className="callout-meta">
+                      <span>📅 {callout.startDate?.toLocaleDateString()}</span>
+                      <span>📍 {callout.location}</span>
+                      <span>💰 ${callout.rate}</span>
+                    </div>
+                    <div className="callout-actions">
+                      <button 
+                        className="respond-btn"
+                        onClick={() => respondToCallout(callout.id, { interest: 'interested' })}
+                      >
+                        Respond
+                      </button>
+                      <button className="details-btn">Details</button>
+                    </div>
+                  </div>
+                ))}
+            </div>
           </div>
         )}
 
         {activeTab === 'projects' && (
-          <div className="projects-list">
-            {/* Project channels will be populated from user's projects */}
-            <div className="project-channel">
-              <h4>🎬 Production Hub</h4>
-              <p>General production discussions</p>
-            </div>
-            <div className="project-channel">
-              <h4>📹 Camera Department</h4>
-              <p>Camera and cinematography</p>
-            </div>
-            <div className="project-channel">
-              <h4>🎤 Sound Department</h4>
-              <p>Audio and sound design</p>
-            </div>
+          <div className="projects-section">
+            <h3>Project Collaborations</h3>
+            <p>Project collaboration features coming soon...</p>
           </div>
         )}
       </div>
@@ -293,11 +410,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ currentUserId, currentUse
         {currentRoom ? (
           <>
             <div className="chat-header">
-              <div className="room-details">
-                <h3>{currentRoom.name}</h3>
-                <p>{currentRoom.type} • {currentRoom.participants.length} participants</p>
+              <div className="chat-info">
+                <img src={currentRoom.avatarUrl || '/default-avatar.png'} alt="" />
+                <div>
+                  <h3>{currentRoom.name}</h3>
+                  <span className="status">
+                    {getStatusIcon('online')} Online
+                  </span>
+                </div>
               </div>
-              <div className="room-actions">
+              <div className="chat-actions">
                 <button className="action-btn">📞</button>
                 <button className="action-btn">📹</button>
                 <button className="action-btn">⚙️</button>
@@ -349,19 +471,21 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ currentUserId, currentUse
             <div className="message-input">
               <div className="input-actions">
                 <button className="action-btn">📎</button>
-                <button className="action-btn">🎬</button>
-                <button className="action-btn">📍</button>
-                <button className="action-btn">📅</button>
+                <button className="action-btn">😊</button>
+                <button className="action-btn">📷</button>
               </div>
               <input
                 type="text"
+                placeholder="Type your message..."
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                placeholder="Type your message..."
-                className="message-input-field"
               />
-              <button onClick={sendMessage} className="send-btn">
+              <button 
+                className="send-btn"
+                onClick={sendMessage}
+                disabled={!newMessage.trim()}
+              >
                 ➤
               </button>
             </div>
@@ -369,18 +493,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ currentUserId, currentUse
         ) : (
           <div className="no-chat-selected">
             <div className="welcome-message">
-              <h2>🎬 Film Industry Chat</h2>
-              <p>Connect with crew members, respond to callouts, and collaborate on projects</p>
+              <h2>🎬 Welcome to Who's On Set Chat</h2>
+              <p>Select a conversation to start messaging with your film industry connections.</p>
               <div className="quick-actions">
-                <button className="quick-action-btn">
-                  📢 Browse Callouts
-                </button>
-                <button className="quick-action-btn">
-                  👥 Find Crew
-                </button>
-                <button className="quick-action-btn">
-                  🎬 Join Projects
-                </button>
+                <button className="action-btn">Start New Chat</button>
+                <button className="action-btn">Browse Callouts</button>
+                <button className="action-btn">Find Collaborators</button>
               </div>
             </div>
           </div>
@@ -388,12 +506,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ currentUserId, currentUse
       </div>
 
       {showCalloutForm && (
-        <div className="callout-modal">
-          <div className="callout-form">
-            <h3>Create New Callout</h3>
-            <CalloutForm onSubmit={createCallout} onCancel={() => setShowCalloutForm(false)} />
-          </div>
-        </div>
+        <CalloutForm 
+          onSubmit={createCallout}
+          onCancel={() => setShowCalloutForm(false)}
+        />
       )}
     </div>
   );

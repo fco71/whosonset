@@ -36,6 +36,7 @@ import JobSearchPage from './components/JobSearch/JobSearchPage';
 import ProjectDashboard from './pages/ProjectManagement/ProjectDashboard';
 import AvailabilityCalendar from './components/Availability/AvailabilityCalendar';
 import GanttChart from './components/GanttChart/GanttChart';
+import SocialDashboard from './components/Social/SocialDashboard';
 
 import { AnimatePresence } from 'framer-motion';
 
@@ -82,6 +83,7 @@ const App: React.FC = () => {
                             <>
                                 <li><Link to="/projects/add" className="hover:underline">Add Project</Link></li>
                                 <li><Link to="/crew" className="hover:underline">Crew Directory</Link></li>
+                                <li><Link to="/social" className="hover:underline">Network</Link></li>
                                 <li><Link to="/collections" className="hover:underline">My Collections</Link></li>
                                 <li><Link to="/chat" className="hover:underline">Messages</Link></li>
                                 <li><Link to="/availability" className="hover:underline">Availability</Link></li>
@@ -109,6 +111,7 @@ const App: React.FC = () => {
                         <Route path="/projects/add" element={<PrivateRoute><AddProject /></PrivateRoute>} />
                         <Route path="/projects/:projectId/manage" element={<PrivateRoute><ProjectDashboardWrapper /></PrivateRoute>} />
                         <Route path="/crew" element={<ProducerView />} />
+                        <Route path="/social" element={<PrivateRoute><SocialDashboard currentUserId={authUser?.uid || ''} currentUser={authUser} /></PrivateRoute>} />
                         <Route path="/collections" element={<PrivateRoute><CollectionsHubPage /></PrivateRoute>} />
                         <Route path="/saved-crew" element={<PrivateRoute><SavedCrewProfilesPage /></PrivateRoute>} />
                         <Route path="/saved-projects" element={<PrivateRoute><SavedProjectsPage /></PrivateRoute>} />
