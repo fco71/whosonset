@@ -7,7 +7,6 @@ import ProjectTimelineView from './ProjectTimelineView';
 import ProjectCrewManagement from './ProjectCrewManagement';
 import ProjectBudgetView from './ProjectBudgetView';
 import ProjectDocuments from './ProjectDocuments';
-import './ProjectDashboard.scss';
 
 interface ProjectDashboardProps {
   projectId: string;
@@ -87,13 +86,13 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ projectId }) => {
 
   const getProjectStatusColor = (status: string) => {
     switch (status) {
-      case 'development': return '#FF6B35';
-      case 'pre_production': return '#FFD93D';
-      case 'production': return '#6BCF7F';
-      case 'post_production': return '#4D96FF';
-      case 'completed': return '#6BCF7F';
-      case 'cancelled': return '#FF6B6B';
-      default: return '#999';
+      case 'development': return 'bg-orange-100 text-orange-800';
+      case 'pre_production': return 'bg-yellow-100 text-yellow-800';
+      case 'production': return 'bg-green-100 text-green-800';
+      case 'post_production': return 'bg-blue-100 text-blue-800';
+      case 'completed': return 'bg-green-100 text-green-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -105,197 +104,216 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ projectId }) => {
 
   if (isLoading) {
     return (
-      <div className="project-dashboard">
-        <div className="loading">Loading project dashboard...</div>
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-8 py-16">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
+            <p className="text-lg font-light text-gray-600">Loading project dashboard...</p>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (!project) {
     return (
-      <div className="project-dashboard">
-        <div className="error">Project not found</div>
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-8 py-16">
+          <div className="text-center">
+            <h2 className="text-2xl font-light text-gray-900 mb-4">Project not found</h2>
+            <p className="text-lg font-light text-gray-600">The project you're looking for doesn't exist or has been removed.</p>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="project-dashboard">
-      <div className="dashboard-header">
-        <div className="project-info">
-          <h1>{project.projectName}</h1>
-          <div className="project-meta">
-            <span 
-              className="status-badge"
-              style={{ backgroundColor: getProjectStatusColor(project.status) }}
-            >
-              {project.status.replace('_', ' ').toUpperCase()}
-            </span>
-            <span className="production-company">{project.productionCompany}</span>
-            <span className="location">{project.location}</span>
-          </div>
-        </div>
-        
-        <div className="project-stats">
-          <div className="stat-item">
-            <span className="stat-value">{crew.length}</span>
-            <span className="stat-label">Crew Members</span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-value">{getProjectProgress()}%</span>
-            <span className="stat-label">Progress</span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-value">
-              {budget ? `${budget.currency}${budget.spentBudget.toLocaleString()}` : 'N/A'}
-            </span>
-            <span className="stat-label">Spent</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="dashboard-tabs">
-        <button
-          className={`tab ${activeTab === 'overview' ? 'active' : ''}`}
-          onClick={() => setActiveTab('overview')}
-        >
-          Overview
-        </button>
-        <button
-          className={`tab ${activeTab === 'crew' ? 'active' : ''}`}
-          onClick={() => setActiveTab('crew')}
-        >
-          Crew ({crew.length})
-        </button>
-        <button
-          className={`tab ${activeTab === 'timeline' ? 'active' : ''}`}
-          onClick={() => setActiveTab('timeline')}
-        >
-          Timeline ({timeline.length})
-        </button>
-        <button
-          className={`tab ${activeTab === 'budget' ? 'active' : ''}`}
-          onClick={() => setActiveTab('budget')}
-        >
-          Budget
-        </button>
-        <button
-          className={`tab ${activeTab === 'documents' ? 'active' : ''}`}
-          onClick={() => setActiveTab('documents')}
-        >
-          Documents
-        </button>
-      </div>
-
-      <div className="dashboard-content">
-        {activeTab === 'overview' && (
-          <div className="overview-tab">
-            <div className="overview-grid">
-              <div className="overview-card">
-                <h3>Project Summary</h3>
-                <p className="logline">{project.logline}</p>
-                <div className="project-details">
-                  <div className="detail-row">
-                    <span className="label">Director:</span>
-                    <span className="value">{project.director}</span>
-                  </div>
-                  <div className="detail-row">
-                    <span className="label">Producer:</span>
-                    <span className="value">{project.producer}</span>
-                  </div>
-                  <div className="detail-row">
-                    <span className="label">Genre:</span>
-                    <span className="value">{project.genre}</span>
-                  </div>
-                  <div className="detail-row">
-                    <span className="label">Budget:</span>
-                    <span className="value">{project.productionBudget}</span>
-                  </div>
-                </div>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-8 py-16">
+        {/* Dashboard Header */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 mb-8">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="flex-1">
+              <h1 className="text-4xl font-light text-gray-900 mb-4 tracking-tight">
+                {project.projectName}
+              </h1>
+              <div className="flex flex-wrap items-center gap-4">
+                <span className={`px-3 py-1 rounded-full text-sm font-medium tracking-wider ${getProjectStatusColor(project.status)}`}>
+                  {project.status.replace('_', ' ').toUpperCase()}
+                </span>
+                <span className="text-sm font-light text-gray-600">
+                  {project.productionCompany}
+                </span>
+                <span className="text-sm font-light text-gray-600">
+                  {project.location}
+                </span>
               </div>
-
-              <div className="overview-card">
-                <h3>Timeline Overview</h3>
-                <div className="timeline-summary">
-                  <div className="timeline-item">
-                    <span className="date">{new Date(project.startDate).toLocaleDateString()}</span>
-                    <span className="label">Start Date</span>
-                  </div>
-                  <div className="timeline-item">
-                    <span className="date">{new Date(project.endDate).toLocaleDateString()}</span>
-                    <span className="label">End Date</span>
-                  </div>
-                </div>
-                <div className="progress-bar">
-                  <div 
-                    className="progress-fill"
-                    style={{ width: `${getProjectProgress()}%` }}
-                  ></div>
-                </div>
-                <span className="progress-text">{getProjectProgress()}% Complete</span>
+            </div>
+            
+            <div className="flex gap-6">
+              <div className="text-center">
+                <div className="text-2xl font-light text-gray-900 mb-1">{crew.length}</div>
+                <div className="text-sm font-medium text-gray-500 tracking-wider uppercase">Crew Members</div>
               </div>
-
-              <div className="overview-card">
-                <h3>Recent Activity</h3>
-                <div className="activity-list">
-                  {crew.slice(0, 3).map(member => (
-                    <div key={member.id} className="activity-item">
-                      <span className="activity-text">
-                        {member.crewMemberId} joined as {member.role}
-                      </span>
-                      <span className="activity-date">
-                        {new Date(member.addedAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                  ))}
+              <div className="text-center">
+                <div className="text-2xl font-light text-gray-900 mb-1">{getProjectProgress()}%</div>
+                <div className="text-sm font-medium text-gray-500 tracking-wider uppercase">Progress</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-light text-gray-900 mb-1">
+                  {budget ? `${budget.currency}${budget.spentBudget.toLocaleString()}` : 'N/A'}
                 </div>
+                <div className="text-sm font-medium text-gray-500 tracking-wider uppercase">Spent</div>
               </div>
             </div>
           </div>
-        )}
+        </div>
 
-        {activeTab === 'crew' && (
-          <ProjectCrewManagement 
-            projectId={projectId}
-            crew={crew}
-            onCrewUpdate={loadProjectData}
-          />
-        )}
+        {/* Dashboard Tabs */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-8">
+          <div className="flex border-b border-gray-100">
+            <button
+              className={`px-6 py-4 text-sm font-light tracking-wide transition-colors duration-300 border-b-2 ${
+                activeTab === 'overview' 
+                  ? 'text-gray-900 border-gray-900' 
+                  : 'text-gray-600 border-transparent hover:text-gray-900'
+              }`}
+              onClick={() => setActiveTab('overview')}
+            >
+              Overview
+            </button>
+            <button
+              className={`px-6 py-4 text-sm font-light tracking-wide transition-colors duration-300 border-b-2 ${
+                activeTab === 'crew' 
+                  ? 'text-gray-900 border-gray-900' 
+                  : 'text-gray-600 border-transparent hover:text-gray-900'
+              }`}
+              onClick={() => setActiveTab('crew')}
+            >
+              Crew ({crew.length})
+            </button>
+            <button
+              className={`px-6 py-4 text-sm font-light tracking-wide transition-colors duration-300 border-b-2 ${
+                activeTab === 'timeline' 
+                  ? 'text-gray-900 border-gray-900' 
+                  : 'text-gray-600 border-transparent hover:text-gray-900'
+              }`}
+              onClick={() => setActiveTab('timeline')}
+            >
+              Timeline ({timeline.length})
+            </button>
+            <button
+              className={`px-6 py-4 text-sm font-light tracking-wide transition-colors duration-300 border-b-2 ${
+                activeTab === 'budget' 
+                  ? 'text-gray-900 border-gray-900' 
+                  : 'text-gray-600 border-transparent hover:text-gray-900'
+              }`}
+              onClick={() => setActiveTab('budget')}
+            >
+              Budget
+            </button>
+            <button
+              className={`px-6 py-4 text-sm font-light tracking-wide transition-colors duration-300 border-b-2 ${
+                activeTab === 'documents' 
+                  ? 'text-gray-900 border-gray-900' 
+                  : 'text-gray-600 border-transparent hover:text-gray-900'
+              }`}
+              onClick={() => setActiveTab('documents')}
+            >
+              Documents
+            </button>
+          </div>
+        </div>
 
-        {activeTab === 'timeline' && (
-          <ProjectTimelineView
-            projectId={projectId}
-            timeline={timeline}
-            onTimelineUpdate={loadProjectData}
-          />
-        )}
+        {/* Dashboard Content */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+          {activeTab === 'overview' && (
+            <div className="p-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div>
+                  <h3 className="text-xl font-light text-gray-900 mb-4 tracking-wide">Project Summary</h3>
+                  <p className="text-gray-600 leading-relaxed mb-6">{project.logline}</p>
+                  <div className="space-y-4">
+                    <div className="flex justify-between">
+                      <span className="text-sm font-medium text-gray-700">Director:</span>
+                      <span className="text-sm font-light text-gray-900">{project.director}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm font-medium text-gray-700">Producer:</span>
+                      <span className="text-sm font-light text-gray-900">{project.producer}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm font-medium text-gray-700">Genre:</span>
+                      <span className="text-sm font-light text-gray-900">{project.genre}</span>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-xl font-light text-gray-900 mb-4 tracking-wide">Recent Activity</h3>
+                  <div className="space-y-4">
+                    {crew.slice(0, 3).map((member) => (
+                      <div key={member.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                        <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                          <span className="text-sm font-medium text-gray-600">
+                            {member.crewMemberId?.charAt(0) || '?'}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{member.crewMemberId}</p>
+                          <p className="text-xs font-light text-gray-600">{member.role}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
-        {activeTab === 'budget' && (
-          <ProjectBudgetView
-            projectId={projectId}
-            budget={budget}
-            onBudgetUpdate={loadProjectData}
-          />
-        )}
+          {activeTab === 'crew' && (
+            <ProjectCrewManagement 
+              projectId={projectId} 
+              crew={crew} 
+              onCrewUpdate={loadProjectData} 
+            />
+          )}
 
-        {activeTab === 'documents' && (
-          <ProjectDocuments
-            projectId={projectId}
-            documents={(project.documents || []).map(doc => ({
-              id: doc.id,
-              projectId: projectId,
-              fileName: doc.fileName,
-              fileUrl: doc.fileUrl,
-              fileType: doc.fileType,
-              category: doc.category,
-              uploadedBy: doc.uploadedBy,
-              uploadedAt: doc.uploadedAt,
-              description: doc.description,
-              isPublic: doc.isPublic
-            } as ProjectDocument))}
-            onDocumentsUpdate={loadProjectData}
-          />
-        )}
+          {activeTab === 'timeline' && (
+            <ProjectTimelineView 
+              projectId={projectId} 
+              timeline={timeline} 
+              onTimelineUpdate={loadProjectData} 
+            />
+          )}
+
+          {activeTab === 'budget' && (
+            <ProjectBudgetView 
+              projectId={projectId} 
+              budget={budget} 
+              onBudgetUpdate={loadProjectData} 
+            />
+          )}
+
+          {activeTab === 'documents' && (
+            <ProjectDocuments 
+              projectId={projectId} 
+              documents={(project.documents || []).map(doc => ({
+                id: doc.id,
+                projectId: projectId,
+                fileName: doc.fileName,
+                fileUrl: doc.fileUrl,
+                fileType: doc.fileType,
+                category: doc.category,
+                uploadedBy: doc.uploadedBy,
+                uploadedAt: doc.uploadedAt,
+                description: doc.description,
+                isPublic: doc.isPublic
+              } as ProjectDocument))}
+              onDocumentsUpdate={loadProjectData} 
+            />
+          )}
+        </div>
       </div>
     </div>
   );

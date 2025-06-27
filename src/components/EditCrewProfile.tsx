@@ -575,25 +575,37 @@ const EditCrewProfile: React.FC = () => {
                 </div>
 
                 {/* Languages Section */}
-                <section>
-                  <label style={{ fontWeight: 'bold', display: 'block', marginBottom: 4 }}>Languages (up to 3, optional):</label>
+                <div className="mb-8">
+                  <h3 className="text-lg font-light text-gray-900 mb-4 tracking-wide">Languages (up to 3, optional)</h3>
                   {(form.languages || []).map((lang: string, idx: number) => (
-                    <div key={idx} style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
+                    <div key={idx} className="mb-3 flex items-center gap-3">
                       <input
                         type="text"
                         value={lang}
                         maxLength={40}
                         onChange={e => updateLanguage(idx, e.target.value)}
                         placeholder={`Language #${idx + 1}`}
-                        style={{ marginRight: 8, flex: 1 }}
+                        className="flex-1 p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02] text-sm"
                       />
-                      <button type="button" onClick={() => removeLanguage(idx)} style={{ color: 'red' }}>Remove</button>
+                      <button 
+                        type="button" 
+                        onClick={() => removeLanguage(idx)} 
+                        className="text-red-600 hover:text-red-700 text-sm font-medium transition-colors"
+                      >
+                        Remove
+                      </button>
                     </div>
                   ))}
                   {(form.languages?.length || 0) < 3 && (
-                    <button type="button" onClick={addLanguage} style={{ marginTop: 4 }}>Add Language</button>
+                    <button 
+                      type="button" 
+                      onClick={addLanguage} 
+                      className="text-gray-600 hover:text-gray-800 font-medium text-sm transition-colors"
+                    >
+                      + Add Language
+                    </button>
                   )}
-                </section>
+                </div>
 
                 {/* Residences Section */}
                 <div className="mb-8">

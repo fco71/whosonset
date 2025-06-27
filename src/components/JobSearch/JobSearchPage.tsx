@@ -4,7 +4,6 @@ import { db } from '../../firebase';
 import { JobPosting, JobSearchFilter } from '../../types/JobApplication';
 import JobSearchFilters from './JobSearchFilters';
 import JobCard from './JobCard';
-import './JobSearchPage.scss';
 
 const JobSearchPage: React.FC = () => {
   const [jobs, setJobs] = useState<JobPosting[]>([]);
@@ -166,73 +165,105 @@ const JobSearchPage: React.FC = () => {
   };
 
   return (
-    <div className="job-search-page">
-      <div className="job-search-header">
-        <div className="search-container">
-          <input
-            type="text"
-            placeholder="Search jobs by title, department, location, or keywords..."
-            value={searchQuery}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            className="search-input"
-          />
-          <button className="search-button">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="11" cy="11" r="8"/>
-              <path d="m21 21-4.35-4.35"/>
-            </svg>
-          </button>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-8 py-16">
+        {/* Hero Section */}
+        <div className="text-center mb-12 animate-fade-in">
+          <h1 className="text-4xl font-light text-gray-900 mb-4 tracking-tight animate-slide-up">
+            Job Search
+          </h1>
+          <p className="text-xl font-light text-gray-600 max-w-2xl mx-auto leading-relaxed animate-slide-up-delay">
+            Find your next opportunity in the film industry. Browse through available positions and connect with production teams.
+          </p>
         </div>
-        
-        <div className="search-stats">
-          <span>{filteredJobs.length} jobs found</span>
-          {Object.keys(filters).length > 0 && (
-            <button onClick={clearFilters} className="clear-filters">
-              Clear filters
-            </button>
-          )}
-        </div>
-      </div>
 
-      <div className="job-search-content">
-        <aside className="filters-sidebar">
-          <JobSearchFilters
-            filters={filters}
-            onFilterChange={handleFilterChange}
-          />
-        </aside>
-
-        <main className="jobs-main">
-          <div className="jobs-grid">
-            {filteredJobs.map(job => (
-              <JobCard key={job.id} job={job} />
-            ))}
-          </div>
-
-          {filteredJobs.length === 0 && !isLoading && (
-            <div className="no-jobs">
-              <div className="no-jobs-content">
-                <h3>No jobs found</h3>
-                <p>Try adjusting your search criteria or filters</p>
-                <button onClick={clearFilters} className="clear-filters-btn">
-                  Clear all filters
-                </button>
+        {/* Search Header */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 mb-8 animate-slide-up-delay">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="flex-1">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search jobs by title, department, location, or keywords..."
+                  value={searchQuery}
+                  onChange={(e) => handleSearchChange(e.target.value)}
+                  className="w-full p-4 pl-12 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
+                />
+                <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="11" cy="11" r="8"/>
+                    <path d="m21 21-4.35-4.35"/>
+                  </svg>
+                </div>
               </div>
             </div>
-          )}
-
-          {hasMore && (
-            <div className="load-more">
-              <button
-                onClick={loadMoreJobs}
-                disabled={isLoading}
-                className="load-more-btn"
-              >
-                {isLoading ? 'Loading...' : 'Load more jobs'}
-              </button>
+            
+            <div className="flex items-center gap-4">
+              <span className="text-sm font-light text-gray-600">
+                {filteredJobs.length} jobs found
+              </span>
+              {Object.keys(filters).length > 0 && (
+                <button 
+                  onClick={clearFilters} 
+                  className="px-4 py-2 text-sm font-light text-gray-600 hover:text-gray-900 transition-colors duration-300"
+                >
+                  Clear filters
+                </button>
+              )}
             </div>
-          )}
-        </main>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          {/* Filters Sidebar */}
+          <aside className="lg:col-span-1">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 sticky top-8">
+              <JobSearchFilters
+                filters={filters}
+                onFilterChange={handleFilterChange}
+              />
+            </div>
+          </aside>
+
+          {/* Jobs List */}
+          <main className="lg:col-span-3">
+            {isLoading && jobs.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
+                <p className="text-lg font-light text-gray-600">Loading jobs...</p>
+              </div>
+            ) : filteredJobs.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="text-6xl mb-4 opacity-20">💼</div>
+                <h3 className="text-2xl font-light text-gray-900 mb-4 tracking-wide">
+                  No jobs found
+                </h3>
+                <p className="text-lg font-light text-gray-500 max-w-md mx-auto leading-relaxed">
+                  Try adjusting your search criteria or filters to find more opportunities.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {filteredJobs.map((job) => (
+                  <JobCard key={job.id} job={job} />
+                ))}
+                
+                {hasMore && (
+                  <div className="text-center pt-8">
+                    <button
+                      onClick={loadMoreJobs}
+                      disabled={isLoading}
+                      className="px-8 py-4 bg-gray-900 text-white font-light tracking-wide rounded-lg hover:bg-gray-800 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                    >
+                      {isLoading ? 'Loading...' : 'Load More Jobs'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </main>
+        </div>
       </div>
     </div>
   );

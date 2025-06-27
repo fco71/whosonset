@@ -1,6 +1,5 @@
 import React from 'react';
 import { JobSearchFilter } from '../../types/JobApplication';
-import './JobSearchFilters.scss';
 
 interface JobSearchFiltersProps {
   filters: JobSearchFilter;
@@ -47,15 +46,17 @@ const JobSearchFilters: React.FC<JobSearchFiltersProps> = ({ filters, onFilterCh
   };
 
   return (
-    <div className="job-search-filters">
-      <h3>Filters</h3>
+    <div className="space-y-6">
+      <h3 className="text-lg font-light text-gray-900 tracking-wide">Filters</h3>
       
-      <div className="filter-section">
-        <h4>Department</h4>
+      <div className="space-y-3">
+        <label className="block text-xs font-medium text-gray-700 uppercase tracking-wider">
+          Department
+        </label>
         <select
           value={filters.department || ''}
           onChange={(e) => handleFilterChange('department', e.target.value || undefined)}
-          className="filter-select"
+          className="w-full p-3 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02] text-sm"
         >
           <option value="">All Departments</option>
           {departments.map(dept => (
@@ -64,12 +65,14 @@ const JobSearchFilters: React.FC<JobSearchFiltersProps> = ({ filters, onFilterCh
         </select>
       </div>
 
-      <div className="filter-section">
-        <h4>Experience Level</h4>
+      <div className="space-y-3">
+        <label className="block text-xs font-medium text-gray-700 uppercase tracking-wider">
+          Experience Level
+        </label>
         <select
           value={filters.experienceLevel || ''}
           onChange={(e) => handleFilterChange('experienceLevel', e.target.value || undefined)}
-          className="filter-select"
+          className="w-full p-3 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02] text-sm"
         >
           <option value="">All Levels</option>
           {experienceLevels.map(level => (
@@ -78,66 +81,76 @@ const JobSearchFilters: React.FC<JobSearchFiltersProps> = ({ filters, onFilterCh
         </select>
       </div>
 
-      <div className="filter-section">
-        <h4>Location</h4>
+      <div className="space-y-3">
+        <label className="block text-xs font-medium text-gray-700 uppercase tracking-wider">
+          Location
+        </label>
         <input
           type="text"
           placeholder="Enter location..."
           value={filters.location || ''}
           onChange={(e) => handleFilterChange('location', e.target.value || undefined)}
-          className="filter-input"
+          className="w-full p-3 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02] text-sm"
         />
       </div>
 
-      <div className="filter-section">
-        <h4>Salary Range</h4>
-        <div className="salary-range">
+      <div className="space-y-3">
+        <label className="block text-xs font-medium text-gray-700 uppercase tracking-wider">
+          Salary Range
+        </label>
+        <div className="grid grid-cols-3 gap-2 items-center">
           <input
             type="number"
             placeholder="Min"
             value={filters.salaryMin || ''}
             onChange={(e) => handleFilterChange('salaryMin', e.target.value ? Number(e.target.value) : undefined)}
-            className="salary-input"
+            className="w-full p-3 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02] text-sm"
           />
-          <span>to</span>
+          <span className="text-center text-sm font-light text-gray-500">to</span>
           <input
             type="number"
             placeholder="Max"
             value={filters.salaryMax || ''}
             onChange={(e) => handleFilterChange('salaryMax', e.target.value ? Number(e.target.value) : undefined)}
-            className="salary-input"
+            className="w-full p-3 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02] text-sm"
           />
         </div>
       </div>
 
-      <div className="filter-section">
-        <h4>Job Type</h4>
-        <div className="checkbox-group">
-          <label className="checkbox-label">
+      <div className="space-y-3">
+        <label className="block text-xs font-medium text-gray-700 uppercase tracking-wider">
+          Job Type
+        </label>
+        <div className="space-y-2">
+          <label className="flex items-center gap-3">
             <input
               type="checkbox"
               checked={filters.isRemote || false}
               onChange={(e) => handleFilterChange('isRemote', e.target.checked)}
+              className="w-4 h-4 text-gray-900 bg-white border-gray-300 rounded focus:ring-gray-500 focus:ring-2"
             />
-            Remote Work
+            <span className="text-sm font-light text-gray-900">Remote Work</span>
           </label>
-          <label className="checkbox-label">
+          <label className="flex items-center gap-3">
             <input
               type="checkbox"
               checked={filters.isUrgent || false}
               onChange={(e) => handleFilterChange('isUrgent', e.target.checked)}
+              className="w-4 h-4 text-gray-900 bg-white border-gray-300 rounded focus:ring-gray-500 focus:ring-2"
             />
-            Urgent Positions
+            <span className="text-sm font-light text-gray-900">Urgent Positions</span>
           </label>
         </div>
       </div>
 
-      <div className="filter-section">
-        <h4>Posted Date</h4>
+      <div className="space-y-3">
+        <label className="block text-xs font-medium text-gray-700 uppercase tracking-wider">
+          Posted Date
+        </label>
         <select
           value={filters.datePosted || 'all'}
           onChange={(e) => handleFilterChange('datePosted', e.target.value)}
-          className="filter-select"
+          className="w-full p-3 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02] text-sm"
         >
           {dateOptions.map(option => (
             <option key={option.value} value={option.value}>{option.label}</option>

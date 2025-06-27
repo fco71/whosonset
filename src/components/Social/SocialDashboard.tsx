@@ -3,7 +3,6 @@ import { collection, query, where, orderBy, getDocs, addDoc, updateDoc, doc, onS
 import { db } from '../../firebase';
 import { FriendRequest, SocialNotification, ActivityFeedItem, SocialConnection } from '../../types/Social';
 import { CrewProfile } from '../../types/CrewProfile';
-import './SocialDashboard.scss';
 
 interface SocialDashboardProps {
   currentUserId: string;
@@ -200,8 +199,8 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({ currentUserId, curren
             userId: currentUserId,
             connectedUserId: request.fromUserId,
             status: 'connected',
-            mutualConnections: 0,
-            createdAt: serverTimestamp()
+            createdAt: serverTimestamp(),
+            lastInteraction: serverTimestamp()
           };
           await addDoc(collection(db, 'connections'), connectionData);
         }
@@ -222,310 +221,321 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({ currentUserId, curren
 
   const getConnectionStatus = (userId: string) => {
     const connection = connections.find(c => c.connectedUserId === userId);
-    const request = friendRequests.find(r => 
-      (r.fromUserId === userId && r.toUserId === currentUserId) ||
-      (r.fromUserId === currentUserId && r.toUserId === userId)
-    );
-    
     if (connection) return 'connected';
-    if (request) return request.status;
-    return null;
+    
+    const pendingRequest = friendRequests.find(r => r.fromUserId === userId);
+    if (pendingRequest) return 'pending';
+    
+    return 'none';
   };
 
-  const filteredProfiles = crewProfiles.filter(profile => {
-    const isCurrentUser = profile.uid === currentUserId;
-    const hasConnection = getConnectionStatus(profile.uid);
-    const matchesSearch = searchQuery === '' || 
-      profile.name?.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    return !isCurrentUser && !hasConnection && matchesSearch;
-  });
-
   const renderActivityFeed = () => (
-    <div className="activity-feed">
-      <div className="feed-header">
-        <h3>🎬 Industry Activity</h3>
-        <p>Stay updated with your network's latest projects and achievements</p>
-      </div>
-      
-      <div className="feed-items">
-        {activityFeed.map(item => (
-          <div key={item.id} className="feed-item">
-            <div className="feed-avatar">
-              <img src="/default-avatar.png" alt="" />
+    <div className="space-y-6">
+      {activityFeed.map((item) => (
+        <div key={item.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
+              <span className="text-lg font-medium text-gray-600">
+                {item.title?.charAt(0) || '?'}
+              </span>
             </div>
-            <div className="feed-content">
-              <div className="feed-header">
-                <span className="user-name">{item.title}</span>
-                <span className="feed-time">
-                  {new Date(item.createdAt).toLocaleDateString()}
-                </span>
-              </div>
-              <p className="feed-description">{item.description}</p>
-              <div className="feed-actions">
-                <button className="action-btn like-btn">
-                  ❤️ {item.likes}
-                </button>
-                <button className="action-btn comment-btn">
-                  💬 {item.comments}
-                </button>
-                <button className="action-btn share-btn">
-                  📤 Share
-                </button>
-              </div>
+            <div className="flex-1">
+              <p className="text-sm font-light text-gray-900 mb-2">
+                <span className="font-medium">{item.title}</span>
+              </p>
+              <p className="text-sm font-light text-gray-600 mb-2">{item.description}</p>
+              <p className="text-xs font-light text-gray-500">
+                {item.createdAt?.toLocaleDateString()}
+              </p>
             </div>
           </div>
-        ))}
-      </div>
+        </div>
+      ))}
     </div>
   );
 
   const renderFriends = () => (
-    <div className="friends-section">
-      <div className="friends-header">
-        <h3>👥 Your Connections</h3>
-        <p>{connections.length} professional connections</p>
-      </div>
-      
-      <div className="friends-grid">
-        {connections.map(connection => {
-          const connectedProfile = crewProfiles.find(p => p.uid === connection.connectedUserId);
-          if (!connectedProfile) return null;
-
-          return (
-            <div key={connection.id} className="friend-card">
-              <div className="friend-avatar">
-                <img src={connectedProfile.profileImageUrl || '/default-avatar.png'} alt="" />
-                <div className="online-indicator"></div>
-              </div>
-              <div className="friend-info">
-                <h4>{connectedProfile.name}</h4>
-                <p>{connectedProfile.jobTitles?.[0]?.title}</p>
-                <span className="location">
-                  📍 {connectedProfile.residences?.[0]?.city}
+    <div className="space-y-6">
+      {connections.map((connection) => (
+        <div key={connection.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
+                <span className="text-lg font-medium text-gray-600">
+                  {connection.connectedUserId?.charAt(0) || '?'}
                 </span>
               </div>
-              <div className="friend-actions">
-                <button className="message-btn">Message</button>
-                <button className="view-profile-btn">View Profile</button>
+              <div>
+                <h4 className="text-sm font-medium text-gray-900">{connection.connectedUserId}</h4>
+                <p className="text-xs font-light text-gray-500">Connected since {connection.createdAt?.toLocaleDateString()}</p>
               </div>
             </div>
-          );
-        })}
-      </div>
+            <button className="px-4 py-2 bg-gray-100 text-gray-700 font-light tracking-wide rounded-lg hover:bg-gray-200 transition-all duration-300 text-sm">
+              Message
+            </button>
+          </div>
+        </div>
+      ))}
     </div>
   );
 
   const renderFriendRequests = () => (
-    <div className="requests-section">
-      <div className="requests-header">
-        <h3>📨 Friend Requests</h3>
-        <p>{friendRequests.length} pending requests</p>
-      </div>
-      
-      <div className="requests-list">
-        {friendRequests.map(request => {
-          const fromProfile = crewProfiles.find(p => p.uid === request.fromUserId);
-          if (!fromProfile) return null;
-
-          return (
-            <div key={request.id} className="request-item">
-              <div className="request-avatar">
-                <img src={fromProfile.profileImageUrl || '/default-avatar.png'} alt="" />
-              </div>
-              <div className="request-info">
-                <h4>{fromProfile.name}</h4>
-                <p>{fromProfile.jobTitles?.[0]?.title}</p>
-                {request.message && <p className="request-message">"{request.message}"</p>}
-                <span className="request-time">
-                  {new Date(request.createdAt).toLocaleDateString()}
+    <div className="space-y-6">
+      {friendRequests.map((request) => (
+        <div key={request.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
+                <span className="text-lg font-medium text-gray-600">
+                  {request.fromUserId?.charAt(0) || '?'}
                 </span>
               </div>
-              <div className="request-actions">
-                <button 
-                  className="accept-btn"
-                  onClick={() => respondToFriendRequest(request.id, 'accepted')}
-                >
-                  Accept
-                </button>
-                <button 
-                  className="reject-btn"
-                  onClick={() => respondToFriendRequest(request.id, 'rejected')}
-                >
-                  Decline
-                </button>
+              <div>
+                <h4 className="text-sm font-medium text-gray-900">{request.fromUserId}</h4>
+                <p className="text-xs font-light text-gray-500">{request.message}</p>
               </div>
             </div>
-          );
-        })}
-      </div>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => respondToFriendRequest(request.id, 'accepted')}
+                className="px-4 py-2 bg-green-600 text-white font-light tracking-wide rounded-lg hover:bg-green-700 transition-all duration-300 text-sm"
+              >
+                Accept
+              </button>
+              <button 
+                onClick={() => respondToFriendRequest(request.id, 'rejected')}
+                className="px-4 py-2 bg-red-600 text-white font-light tracking-wide rounded-lg hover:bg-red-700 transition-all duration-300 text-sm"
+              >
+                Decline
+              </button>
+            </div>
+          </div>
+        </div>
+      ))}
     </div>
   );
 
   const renderNotifications = () => (
-    <div className="notifications-section">
-      <div className="notifications-header">
-        <h3>🔔 Notifications</h3>
-        <p>{unreadCount} unread notifications</p>
-      </div>
-      
-      <div className="notifications-list">
-        {notifications.map(notification => (
-          <div 
-            key={notification.id} 
-            className={`notification-item ${!notification.isRead ? 'unread' : ''}`}
-            onClick={() => markNotificationAsRead(notification.id)}
-          >
-            <div className="notification-icon">
-              {notification.type === 'friend_request' && '👥'}
-              {notification.type === 'project_invite' && '🎬'}
-              {notification.type === 'message' && '��'}
-              {notification.type === 'mention' && '📢'}
-              {notification.type === 'like' && '❤️'}
-              {notification.type === 'comment' && '💭'}
-              {notification.type === 'project_update' && '📝'}
+    <div className="space-y-6">
+      {notifications.map((notification) => (
+        <div key={notification.id} className={`bg-white rounded-xl shadow-sm border border-gray-100 p-6 ${!notification.isRead ? 'bg-blue-50 border-blue-200' : ''}`}>
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <p className="text-sm font-light text-gray-900 mb-2">{notification.message}</p>
+              <p className="text-xs font-light text-gray-500">{notification.createdAt?.toLocaleDateString()}</p>
             </div>
-            <div className="notification-content">
-              <h4>{notification.title}</h4>
-              <p>{notification.message}</p>
-              <span className="notification-time">
-                {new Date(notification.createdAt).toLocaleDateString()}
-              </span>
-            </div>
-            {!notification.isRead && <div className="unread-indicator"></div>}
+            {!notification.isRead && (
+              <button 
+                onClick={() => markNotificationAsRead(notification.id)}
+                className="px-3 py-1 bg-blue-600 text-white text-xs font-medium rounded-full hover:bg-blue-700 transition-colors"
+              >
+                Mark Read
+              </button>
+            )}
           </div>
-        ))}
-      </div>
+        </div>
+      ))}
     </div>
   );
 
   const renderDiscover = () => (
-    <div className="discover-section">
-      <div className="discover-header">
-        <h3>🔍 Discover People</h3>
-        <div className="search-bar">
-          <input
-            type="text"
-            placeholder="Search by name, role, or location..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
+    <div className="space-y-6">
+      <div className="mb-6">
+        <input
+          type="text"
+          placeholder="Search crew members..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
+        />
       </div>
       
-      <div className="discover-grid">
-        {filteredProfiles.map(profile => (
-          <div key={profile.uid} className="discover-card">
-            <div className="discover-avatar">
-              <img src={profile.profileImageUrl || '/default-avatar.png'} alt="" />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {crewProfiles
+          .filter(profile => 
+            profile.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            profile.jobTitles?.some(job => job.title?.toLowerCase().includes(searchQuery.toLowerCase()))
+          )
+          .map((profile) => (
+            <div key={profile.uid} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-lg transition-all duration-300">
+              <div className="text-center mb-4">
+                {profile.profileImageUrl ? (
+                  <img 
+                    src={profile.profileImageUrl} 
+                    alt={profile.name} 
+                    className="w-16 h-16 rounded-full mx-auto mb-3 object-cover"
+                  />
+                ) : (
+                  <div className="w-16 h-16 bg-gray-200 rounded-full mx-auto mb-3 flex items-center justify-center">
+                    <span className="text-xl font-medium text-gray-600">
+                      {profile.name?.charAt(0) || '?'}
+                    </span>
+                  </div>
+                )}
+                <h4 className="text-lg font-light text-gray-900 tracking-wide">{profile.name}</h4>
+                <p className="text-sm font-light text-gray-600">
+                  {profile.jobTitles?.[0]?.title || 'Film Professional'}
+                </p>
+              </div>
+              
+              <div className="space-y-3">
+                {profile.bio && (
+                  <p className="text-sm font-light text-gray-600 line-clamp-3">{profile.bio}</p>
+                )}
+                
+                <div className="flex justify-center">
+                  {getConnectionStatus(profile.uid) === 'connected' ? (
+                    <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full tracking-wider">
+                      Connected
+                    </span>
+                  ) : getConnectionStatus(profile.uid) === 'pending' ? (
+                    <span className="px-3 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full tracking-wider">
+                      Request Sent
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setSelectedProfile(profile);
+                        setShowRequestModal(true);
+                      }}
+                      className="px-4 py-2 bg-gray-900 text-white font-light tracking-wide rounded-lg hover:bg-gray-800 transition-all duration-300 hover:scale-105 text-sm"
+                    >
+                      Connect
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
-            <div className="discover-info">
-              <h4>{profile.name}</h4>
-              <p>{profile.jobTitles?.[0]?.title}</p>
-              <span className="location">
-                📍 {profile.residences?.[0]?.city}, {profile.residences?.[0]?.country}
-              </span>
-            </div>
-            <div className="discover-actions">
-              <button 
-                className="connect-btn"
-                onClick={() => {
-                  setSelectedProfile(profile);
-                  setShowRequestModal(true);
-                }}
-              >
-                Connect
-              </button>
-              <button className="view-profile-btn">View Profile</button>
-            </div>
-          </div>
-        ))}
+          ))}
       </div>
     </div>
   );
 
   return (
-    <div className="social-dashboard">
-      <div className="dashboard-header">
-        <h1>🎬 Film Industry Network</h1>
-        <p>Connect, collaborate, and stay updated with your professional network</p>
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-8 py-16">
+        {/* Header */}
+        <div className="text-center mb-12 animate-fade-in">
+          <h1 className="text-4xl font-light text-gray-900 mb-4 tracking-tight animate-slide-up">
+            Social Hub
+          </h1>
+          <p className="text-xl font-light text-gray-600 max-w-2xl mx-auto leading-relaxed animate-slide-up-delay">
+            Connect with film industry professionals, stay updated on activities, and discover new collaborators.
+          </p>
+        </div>
 
-      <div className="dashboard-tabs">
-        <button 
-          className={`tab ${activeTab === 'feed' ? 'active' : ''}`}
-          onClick={() => setActiveTab('feed')}
-        >
-          📰 Activity Feed
-        </button>
-        <button 
-          className={`tab ${activeTab === 'friends' ? 'active' : ''}`}
-          onClick={() => setActiveTab('friends')}
-        >
-          👥 Friends ({connections.length})
-        </button>
-        <button 
-          className={`tab ${activeTab === 'requests' ? 'active' : ''}`}
-          onClick={() => setActiveTab('requests')}
-        >
-          📨 Requests ({friendRequests.length})
-        </button>
-        <button 
-          className={`tab ${activeTab === 'notifications' ? 'active' : ''}`}
-          onClick={() => setActiveTab('notifications')}
-        >
-          🔔 Notifications ({unreadCount})
-        </button>
-        <button 
-          className={`tab ${activeTab === 'discover' ? 'active' : ''}`}
-          onClick={() => setActiveTab('discover')}
-        >
-          🔍 Discover
-        </button>
-      </div>
-
-      <div className="dashboard-content">
-        {activeTab === 'feed' && renderActivityFeed()}
-        {activeTab === 'friends' && renderFriends()}
-        {activeTab === 'requests' && renderFriendRequests()}
-        {activeTab === 'notifications' && renderNotifications()}
-        {activeTab === 'discover' && renderDiscover()}
-      </div>
-
-      {showRequestModal && selectedProfile && (
-        <div className="request-modal">
-          <div className="modal-content">
-            <h3>Connect with {selectedProfile.name}</h3>
-            <div className="profile-preview">
-              <img src={selectedProfile.profileImageUrl || '/default-avatar.png'} alt="" />
-              <div>
-                <h4>{selectedProfile.name}</h4>
-                <p>{selectedProfile.jobTitles?.[0]?.title}</p>
-              </div>
-            </div>
-            <textarea
-              placeholder="Add a personal message (optional)..."
-              value={requestMessage}
-              onChange={(e) => setRequestMessage(e.target.value)}
-              className="request-message"
-            />
-            <div className="modal-actions">
-              <button 
-                className="cancel-btn"
-                onClick={() => setShowRequestModal(false)}
-              >
-                Cancel
-              </button>
-              <button 
-                className="send-btn"
-                onClick={() => sendFriendRequest(selectedProfile.uid, requestMessage)}
-              >
-                Send Request
-              </button>
-            </div>
+        {/* Tabs */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-8">
+          <div className="flex border-b border-gray-100">
+            <button
+              className={`px-6 py-4 text-sm font-light tracking-wide transition-colors duration-300 border-b-2 ${
+                activeTab === 'feed' 
+                  ? 'text-gray-900 border-gray-900' 
+                  : 'text-gray-600 border-transparent hover:text-gray-900'
+              }`}
+              onClick={() => setActiveTab('feed')}
+            >
+              Activity Feed
+            </button>
+            <button
+              className={`px-6 py-4 text-sm font-light tracking-wide transition-colors duration-300 border-b-2 ${
+                activeTab === 'friends' 
+                  ? 'text-gray-900 border-gray-900' 
+                  : 'text-gray-600 border-transparent hover:text-gray-900'
+              }`}
+              onClick={() => setActiveTab('friends')}
+            >
+              Friends ({connections.length})
+            </button>
+            <button
+              className={`px-6 py-4 text-sm font-light tracking-wide transition-colors duration-300 border-b-2 ${
+                activeTab === 'requests' 
+                  ? 'text-gray-900 border-gray-900' 
+                  : 'text-gray-600 border-transparent hover:text-gray-900'
+              }`}
+              onClick={() => setActiveTab('requests')}
+            >
+              Requests {friendRequests.length > 0 && (
+                <span className="ml-2 px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded-full">
+                  {friendRequests.length}
+                </span>
+              )}
+            </button>
+            <button
+              className={`px-6 py-4 text-sm font-light tracking-wide transition-colors duration-300 border-b-2 ${
+                activeTab === 'notifications' 
+                  ? 'text-gray-900 border-gray-900' 
+                  : 'text-gray-600 border-transparent hover:text-gray-900'
+              }`}
+              onClick={() => setActiveTab('notifications')}
+            >
+              Notifications {unreadCount > 0 && (
+                <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+            <button
+              className={`px-6 py-4 text-sm font-light tracking-wide transition-colors duration-300 border-b-2 ${
+                activeTab === 'discover' 
+                  ? 'text-gray-900 border-gray-900' 
+                  : 'text-gray-600 border-transparent hover:text-gray-900'
+              }`}
+              onClick={() => setActiveTab('discover')}
+            >
+              Discover
+            </button>
           </div>
         </div>
-      )}
+
+        {/* Content */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
+          {activeTab === 'feed' && renderActivityFeed()}
+          {activeTab === 'friends' && renderFriends()}
+          {activeTab === 'requests' && renderFriendRequests()}
+          {activeTab === 'notifications' && renderNotifications()}
+          {activeTab === 'discover' && renderDiscover()}
+        </div>
+
+        {/* Friend Request Modal */}
+        {showRequestModal && selectedProfile && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full mx-4">
+              <h3 className="text-xl font-light text-gray-900 mb-4 tracking-wide">
+                Send Connection Request
+              </h3>
+              <p className="text-sm font-light text-gray-600 mb-4">
+                Send a message to {selectedProfile.name} along with your connection request.
+              </p>
+              <textarea
+                value={requestMessage}
+                onChange={(e) => setRequestMessage(e.target.value)}
+                placeholder="Write a brief message..."
+                className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02] resize-none mb-6"
+                rows={4}
+              />
+              <div className="flex gap-3">
+                <button
+                  onClick={() => sendFriendRequest(selectedProfile.uid, requestMessage)}
+                  className="flex-1 px-4 py-2 bg-gray-900 text-white font-light tracking-wide rounded-lg hover:bg-gray-800 transition-all duration-300 text-sm"
+                >
+                  Send Request
+                </button>
+                <button
+                  onClick={() => {
+                    setShowRequestModal(false);
+                    setRequestMessage('');
+                    setSelectedProfile(null);
+                  }}
+                  className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 font-light tracking-wide rounded-lg hover:bg-gray-200 transition-all duration-300 text-sm"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
