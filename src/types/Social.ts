@@ -1,4 +1,4 @@
-export interface FriendRequest {
+export interface FollowRequest {
   id: string;
   fromUserId: string;
   toUserId: string;
@@ -8,12 +8,11 @@ export interface FriendRequest {
   updatedAt: Date;
 }
 
-export interface SocialConnection {
+export interface Follow {
   id: string;
-  userId: string;
-  connectedUserId: string;
-  status: 'connected' | 'pending' | 'blocked';
-  mutualConnections: number;
+  followerId: string;
+  followingId: string;
+  status: 'active' | 'blocked';
   createdAt: Date;
   lastInteraction?: Date;
 }
@@ -21,7 +20,7 @@ export interface SocialConnection {
 export interface SocialNotification {
   id: string;
   userId: string;
-  type: 'friend_request' | 'project_invite' | 'message' | 'mention' | 'like' | 'comment' | 'project_update';
+  type: 'follow_request' | 'follow_accepted' | 'project_invite' | 'message' | 'mention' | 'like' | 'comment' | 'project_update';
   title: string;
   message: string;
   relatedUserId?: string;
@@ -35,7 +34,7 @@ export interface SocialNotification {
 export interface ActivityFeedItem {
   id: string;
   userId: string;
-  type: 'project_created' | 'project_joined' | 'profile_updated' | 'connection_made' | 'achievement_earned';
+  type: 'project_created' | 'project_joined' | 'profile_updated' | 'follow_made' | 'achievement_earned';
   title: string;
   description: string;
   imageUrl?: string;
@@ -63,15 +62,21 @@ export interface SocialProfile {
     imdb?: string;
   };
   stats: {
-    connections: number;
-    projects: number;
-    recommendations: number;
     followers: number;
     following: number;
+    projects: number;
+    recommendations: number;
   };
   isPublic: boolean;
   lastActive: Date;
   availability: 'available' | 'busy' | 'away' | 'offline';
+  privacySettings: {
+    requireApprovalForFollows: boolean;
+    showOnlineStatus: boolean;
+    showLastSeen: boolean;
+    allowMessages: boolean;
+    allowMentions: boolean;
+  };
 }
 
 export interface SocialComment {
@@ -105,18 +110,22 @@ export interface SocialMention {
   createdAt: Date;
 }
 
+// Legacy types for backward compatibility
+export interface FriendRequest extends FollowRequest {}
+export interface SocialConnection extends Follow {}
+
 export interface SocialSettings {
   userId: string;
   privacy: {
-    profileVisibility: 'public' | 'connections' | 'private';
+    profileVisibility: 'public' | 'followers' | 'private';
     showOnlineStatus: boolean;
     showLastSeen: boolean;
-    allowFriendRequests: boolean;
+    requireApprovalForFollows: boolean;
     allowMessages: boolean;
     allowMentions: boolean;
   };
   notifications: {
-    friendRequests: boolean;
+    followRequests: boolean;
     projectInvites: boolean;
     messages: boolean;
     mentions: boolean;
