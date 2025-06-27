@@ -68,41 +68,36 @@ const App: React.FC = () => {
 
     return (
         <>
-            <header className="bg-gray-800 text-white py-4 px-6 shadow-md">
-                <nav className="flex flex-wrap items-center justify-between">
-                    <ul className="flex gap-4 flex-wrap">
-                        <li><Link to="/" className="hover:underline">Home</Link></li>
-                        <li><Link to="/projects" className="hover:underline">All Projects</Link></li>
-                        <li><Link to="/jobs" className="hover:underline">Job Search</Link></li>
-                        {!authUser ? (
-                            <>
-                                <li><Link to="/login" className="hover:underline">Login</Link></li>
-                                <li><Link to="/register" className="hover:underline">Register</Link></li>
-                            </>
+            <header className="bg-white bg-opacity-80 backdrop-blur-md shadow-sm fixed w-full z-50 top-0 left-0">
+                <nav className="flex items-center justify-between px-6 py-3">
+                    {/* Left: Home/Logo */}
+                    <div>
+                        <Link to="/" className="text-xl font-bold text-gray-900 hover:opacity-80 transition">whosonset</Link>
+                    </div>
+                    {/* Right: Notifications & Profile */}
+                    <div className="flex items-center gap-4">
+                        {/* Notifications Bell */}
+                        <Link to="/chat" className="relative group" title="Messages & Notifications">
+                            <span className="material-icons text-gray-700 text-2xl group-hover:text-blue-600 transition">notifications</span>
+                            {/* Optionally, add a red dot for unread */}
+                            {/* <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span> */}
+                        </Link>
+                        {/* Profile Avatar */}
+                        {authUser ? (
+                            <Link to="/profile" className="flex items-center gap-2 group">
+                                {/* Replace with user avatar if available */}
+                                <span className="material-icons text-gray-700 text-2xl group-hover:text-blue-600 transition">account_circle</span>
+                                {/* <img src={authUser.photoURL} alt="Profile" className="w-8 h-8 rounded-full object-cover" /> */}
+                            </Link>
                         ) : (
-                            <>
-                                <li><Link to="/projects/add" className="hover:underline">Add Project</Link></li>
-                                <li><Link to="/crew" className="hover:underline">Crew Directory</Link></li>
-                                <li><Link to="/social" className="hover:underline">Network</Link></li>
-                                <li><Link to="/collections" className="hover:underline">My Collections</Link></li>
-                                <li><Link to="/chat" className="hover:underline">Messages</Link></li>
-                                <li><Link to="/availability" className="hover:underline">Availability</Link></li>
-                                <li><Link to="/edit-profile" className="hover:underline">Edit Profile</Link></li>
-                                <li>
-                                    <button
-                                        onClick={userSignOut}
-                                        className="text-sm bg-red-600 hover:bg-red-500 px-3 py-1 rounded"
-                                    >
-                                        Sign Out
-                                    </button>
-                                </li>
-                            </>
+                            <Link to="/login" className="text-gray-700 hover:text-blue-600 transition">Login</Link>
                         )}
-                    </ul>
+                    </div>
                 </nav>
             </header>
 
-            <main className="bg-gray-900 min-h-screen">
+            {/* Add padding top to main to offset fixed header */}
+            <main className="bg-gray-900 min-h-screen pt-20">
                 <AnimatePresence mode="wait">
                     <Routes location={location} key={location.pathname}>
                         <Route path="/" element={<Home />} />

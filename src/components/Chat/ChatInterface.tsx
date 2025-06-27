@@ -32,17 +32,19 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ currentUserId, currentUse
 
   // Initialize Firestore connection
   useEffect(() => {
+    let unsubscribeRooms: (() => void) | undefined;
+    let unsubscribeCallouts: (() => void) | undefined;
+
     const initializeFirestore = async () => {
       try {
         setIsLoading(true);
         setError(null);
         
-        // Enable network connection
         await enableNetwork(db);
         
-        // Load initial data
-        await loadChatRooms();
-        await loadCallouts();
+        // Set up listeners and store unsubscribe functions
+        unsubscribeRooms = await loadChatRooms();
+        unsubscribeCallouts = await loadCallouts();
         
         setIsLoading(false);
       } catch (err) {
@@ -57,7 +59,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ currentUserId, currentUse
     }
 
     return () => {
-      // Cleanup function
+      // Cleanup listeners
+      if (unsubscribeRooms) unsubscribeRooms();
+      if (unsubscribeCallouts) unsubscribeCallouts();
     };
   }, [currentUserId]);
 
@@ -87,6 +91,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ currentUserId, currentUse
     } catch (error) {
       console.error('Error setting up chat rooms listener:', error);
       handleFirestoreError(error);
+      return () => {};
     }
   };
 
@@ -115,6 +120,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ currentUserId, currentUse
     } catch (error) {
       console.error('Error setting up callouts listener:', error);
       handleFirestoreError(error);
+      return () => {};
     }
   };
 
