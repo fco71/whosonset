@@ -252,67 +252,131 @@ const Register: React.FC = () => {
 
   // --- The new JSX with the full form ---
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <form
-        className="register-form bg-white bg-opacity-100 shadow-2xl rounded-2xl px-8 py-10 w-full max-w-md flex flex-col gap-6 border border-gray-100"
-        onSubmit={handleSubmit}
-        autoComplete="off"
-      >
-        <h2 className="text-xl font-semibold text-gray-800 tracking-wide mb-4 text-center" style={{ letterSpacing: '0.04em' }}>Create Your Account</h2>
-        {error && <div className="text-red-500 text-sm mb-2 text-center">{error}</div>}
-        <div className="flex flex-col gap-4">
-          <label className="form-label">Email</label>
-          <input
-            className="form-input"
-            type="email"
-            name="email"
-            value={form.email}
-            onChange={handleChange}
-            required
-            placeholder="Email address"
-          />
-          <label className="form-label">Password</label>
-          <input
-            className="form-input"
-            type="password"
-            name="password"
-            value={form.password}
-            onChange={handleChange}
-            required
-            placeholder="Password"
-          />
-          <label className="form-label">Name</label>
-          <input
-            className="form-input"
-            type="text"
-            name="name"
-            value={form.name}
-            onChange={handleChange}
-            required
-            placeholder="Full name"
-          />
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white flex items-center justify-center px-4 py-12">
+      <div className="max-w-md w-full animate-fade-in">
+        {/* Header */}
+        <div className="text-center mb-8 animate-slide-up">
+          <h1 className="text-4xl font-light text-gray-900 mb-2 tracking-tight">
+            whosonset
+          </h1>
+          <h2 className="text-2xl font-light text-gray-600 tracking-wide">
+            Create Account
+          </h2>
+          <p className="text-base font-light text-gray-500 mt-2">
+            Join the film industry community
+          </p>
         </div>
-        <div className="h-px bg-gray-200 my-2" />
-        <div className="flex flex-col gap-2">
-          <label className="form-label">Location</label>
-          <LocationSelector
-            selectedCountry={form.residences[0]?.country || ''}
-            selectedCity={form.residences[0]?.city || ''}
-            onCountryChange={country => updateResidence(0, 'country', country)}
-            onCityChange={city => updateResidence(0, 'city', city)}
-          />
+
+        {/* Register Card */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 animate-slide-up-delay">
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg animate-fade-in">
+              <p className="text-sm font-medium text-red-800">
+                {error}
+              </p>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
+            <div>
+              <label htmlFor="email" className="block text-xs font-medium text-gray-700 mb-3 uppercase tracking-wider">
+                Email Address
+              </label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value={form.email}
+                onChange={handleChange}
+                required
+                className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
+                placeholder="Enter your email"
+                disabled={loading}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="password" className="block text-xs font-medium text-gray-700 mb-3 uppercase tracking-wider">
+                Password
+              </label>
+              <input
+                type="password"
+                id="password"
+                name="password"
+                value={form.password}
+                onChange={handleChange}
+                required
+                className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
+                placeholder="Create a password"
+                disabled={loading}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="name" className="block text-xs font-medium text-gray-700 mb-3 uppercase tracking-wider">
+                Full Name
+              </label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                value={form.name}
+                onChange={handleChange}
+                required
+                className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
+                placeholder="Enter your full name"
+                disabled={loading}
+              />
+            </div>
+
+            <div className="pt-4 border-t border-gray-100">
+              <label className="block text-xs font-medium text-gray-700 mb-3 uppercase tracking-wider">
+                Location
+              </label>
+              <LocationSelector
+                selectedCountry={form.residences[0]?.country || ''}
+                selectedCity={form.residences[0]?.city || ''}
+                onCountryChange={country => updateResidence(0, 'country', country)}
+                onCityChange={city => updateResidence(0, 'city', city)}
+              />
+            </div>
+
+            <button 
+              type="submit" 
+              className="w-full px-6 py-4 bg-gray-900 text-white font-light tracking-wide rounded-lg hover:bg-gray-800 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              disabled={loading}
+            >
+              {loading ? (
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                  Creating account...
+                </div>
+              ) : (
+                'Create Account'
+              )}
+            </button>
+          </form>
+
+          <div className="mt-8 pt-6 border-t border-gray-100 text-center">
+            <p className="text-sm font-light text-gray-500">
+              Already have an account?{' '}
+              <Link 
+                to="/login" 
+                className="text-gray-900 font-medium hover:text-gray-700 transition-colors duration-300 hover:underline"
+              >
+                Sign in
+              </Link>
+            </p>
+          </div>
         </div>
-        <button
-          type="submit"
-          className="register-btn mt-4"
-          disabled={loading}
-        >
-          {loading ? 'Registering...' : 'Register'}
-        </button>
-        <div className="text-center text-sm text-gray-500 mt-2">
-          Already have an account? <Link to="/login" className="text-blue-600 hover:underline">Login</Link>
+
+        {/* Footer */}
+        <div className="text-center mt-8 animate-slide-up-delay-2">
+          <p className="text-xs font-light text-gray-400 tracking-wide">
+            © 2024 whosonset. All rights reserved.
+          </p>
         </div>
-      </form>
+      </div>
     </div>
   );
 };

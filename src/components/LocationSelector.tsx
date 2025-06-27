@@ -46,9 +46,9 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
   const cityOptions = selectedCountryObj?.cities || [];
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="space-y-3">
       <select
-        className="location-dropdown"
+        className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
         value={selectedCountry}
         onChange={e => onCountryChange(e.target.value)}
         disabled={loading}
@@ -59,7 +59,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
         ))}
       </select>
       <select
-        className="location-dropdown"
+        className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
         value={selectedCity}
         onChange={e => onCityChange(e.target.value)}
         disabled={!selectedCountry || loading}

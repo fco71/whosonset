@@ -4,6 +4,7 @@
 /* @import 'tailwindcss/components.css'; */
 /* @import 'tailwindcss/utilities.css'; */
 
+/* Base styles for the application */
 body {
   background-color: #111827; /* Tailwind bg-gray-900 */
   color: #f3f4f6;           /* Tailwind text-gray-100 */

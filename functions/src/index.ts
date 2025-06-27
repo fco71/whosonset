@@ -105,7 +105,12 @@ export const seedJobTitles = functions.https.onRequest(async (_req, res) => {
     await batch.commit();
     res.status(200).send(`✅ Seeded ${jobTitles.length} job titles.`);
   } catch (e) {
-    console.error("❌ Seeding failed:", e);
-    res.status(500).send("❌ Seeding failed: " + (e as Error).message);
+    if (e instanceof Error) {
+      console.error("❌ Seeding failed:", e);
+      res.status(500).send("❌ Seeding failed: " + e.message);
+    } else {
+      console.error("❌ Seeding failed:", e);
+      res.status(500).send("❌ Seeding failed: Unknown error");
+    }
   }
 });

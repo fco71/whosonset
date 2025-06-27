@@ -162,8 +162,14 @@ const ProjectDetail: React.FC = () => {
             setLastVisibleReview(newLastVisible);
             if (direction === 'next' && docs.length > 0) setPrevReviewPages((prev) => [...prev, docs[0]]);
             else if (direction === 'reset' && docs.length > 0) setPrevReviewPages(docs[0] ? [docs[0]] : []);
-        } catch (err: any) { // Added : any for err
-            console.error('Failed to fetch reviews:', err); setError(err.message || 'Failed to fetch reviews.'); // Added err.message
+        } catch (err) {
+            if (err instanceof Error) {
+                console.error('Failed to fetch reviews:', err);
+                setError(err.message || 'Failed to fetch reviews.');
+            } else {
+                console.error('Failed to fetch reviews:', err);
+                setError('Failed to fetch reviews.');
+            }
         } finally {
             setLoadingReviews(false);
         }
@@ -201,9 +207,14 @@ const ProjectDetail: React.FC = () => {
             const oldRef = ref(storage, decodedPath);
             await deleteObject(oldRef);
             console.log("Old image deleted successfully:", decodedPath);
-        } catch (e: any) {
-            if (e.code === 'storage/object-not-found') console.log("Old image not found:", url);
-            else console.warn("Could not delete old image:", url, e.message);
+        } catch (e) {
+            if (e && typeof e === 'object' && 'code' in e && e.code === 'storage/object-not-found') {
+                console.log("Old image not found:", url);
+            } else if (e instanceof Error) {
+                console.warn("Could not delete old image:", url, e.message);
+            } else {
+                console.warn("Could not delete old image:", url, e);
+            }
         }
     };
 
@@ -215,9 +226,14 @@ const ProjectDetail: React.FC = () => {
         try {
             await uploadBytes(storageRef, imageFile);
             return await getDownloadURL(storageRef);
-        } catch (uploadError: any) {
-            console.error("Error uploading image: ", uploadError);
-            setError(`Image upload failed: ${uploadError.message}`);
+        } catch (uploadError) {
+            if (uploadError instanceof Error) {
+                console.error("Error uploading image: ", uploadError);
+                setError(`Image upload failed: ${uploadError.message}`);
+            } else {
+                console.error("Error uploading image: ", uploadError);
+                setError("Image upload failed.");
+            }
             return '';
         }
     };
@@ -291,8 +307,14 @@ const ProjectDetail: React.FC = () => {
             setCoverImage(null); // Removed setPosterImage
             setIsEditing(false); setSaveSuccess(true);
             setTimeout(() => setSaveSuccess(false), 3000);
-        } catch (saveError: any) {
-            console.error("Error updating project:", saveError); setError(saveError.message || "Failed to save.");
+        } catch (saveError) {
+            if (saveError instanceof Error) {
+                console.error("Error updating project:", saveError);
+                setError(saveError.message || "Failed to save.");
+            } else {
+                console.error("Error updating project:", saveError);
+                setError("Failed to save.");
+            }
         } finally {
             setLoading(false);
         }
