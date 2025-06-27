@@ -89,8 +89,8 @@ const ResumeView: React.FC<ResumeViewProps> = ({ profile }) => {
     fontWeight: 'bold',
     color: '#333',
     borderBottom: '1pt solid #333',
-    paddingBottom: '1mm',
-    marginBottom: '3mm',
+    paddingBottom: '3mm',
+    marginBottom: '5mm',
     textTransform: 'uppercase' as const,
     letterSpacing: '0.5pt',
   };
@@ -194,7 +194,9 @@ const ResumeView: React.FC<ResumeViewProps> = ({ profile }) => {
             
             .resume-container h2 {
               font-size: 13pt !important;
-              margin-bottom: 3mm !important;
+              padding-bottom: 3mm !important;
+              margin-bottom: 5mm !important;
+              border-bottom: 1pt solid #333 !important;
             }
             
             .resume-container p, .resume-container li {
