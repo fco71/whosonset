@@ -145,6 +145,57 @@ const Home: React.FC = () => {
                     )}
                 </div>
             </div>
+
+            {/* Social Features Promotion Section */}
+            <div className="bg-white border-b border-gray-100">
+                <div className="max-w-7xl mx-auto px-8 py-16">
+                    <div className="text-center mb-12 animate-fade-in">
+                        <div className="text-6xl mb-6">🤝</div>
+                        <h3 className="text-3xl font-light text-gray-900 tracking-wide mb-4">
+                            Connect with Industry Professionals
+                        </h3>
+                        <p className="text-lg font-light text-gray-600 max-w-2xl mx-auto leading-relaxed">
+                            Build your network, discover talented crew members, and stay updated with industry activities
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+                        <div className="text-center p-6 rounded-xl bg-gray-50 hover:bg-gray-100 transition-all duration-300">
+                            <div className="text-4xl mb-4">👥</div>
+                            <h4 className="text-xl font-light text-gray-900 mb-3 tracking-wide">Follow & Connect</h4>
+                            <p className="text-gray-600 font-light leading-relaxed">
+                                Send follow requests to professionals you admire and build meaningful connections
+                            </p>
+                        </div>
+                        <div className="text-center p-6 rounded-xl bg-gray-50 hover:bg-gray-100 transition-all duration-300">
+                            <div className="text-4xl mb-4">💬</div>
+                            <h4 className="text-xl font-light text-gray-900 mb-3 tracking-wide">Direct Messaging</h4>
+                            <p className="text-gray-600 font-light leading-relaxed">
+                                Message your followers directly to discuss projects, opportunities, and collaborations
+                            </p>
+                        </div>
+                        <div className="text-center p-6 rounded-xl bg-gray-50 hover:bg-gray-100 transition-all duration-300">
+                            <div className="text-4xl mb-4">📢</div>
+                            <h4 className="text-xl font-light text-gray-900 mb-3 tracking-wide">Activity Feed</h4>
+                            <p className="text-gray-600 font-light leading-relaxed">
+                                Stay updated with industry news, project updates, and professional achievements
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="text-center animate-fade-in-delay">
+                        <Link 
+                            to="/social" 
+                            className="inline-block px-8 py-4 bg-gray-900 text-white font-light tracking-wide rounded-lg hover:bg-gray-800 transition-all duration-300 hover:scale-105"
+                        >
+                            Explore Social Hub
+                        </Link>
+                        <p className="text-sm text-gray-500 mt-4 font-light">
+                            Discover professionals • Send follow requests • Build your network
+                        </p>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 };

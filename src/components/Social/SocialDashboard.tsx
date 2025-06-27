@@ -388,6 +388,22 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({ currentUserId, curren
           <p className="text-gray-600 font-light">Connect with film professionals and stay updated</p>
         </div>
 
+        {/* Help Banner */}
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-start gap-3">
+            <div className="text-blue-600 text-lg">💡</div>
+            <div className="flex-1">
+              <h4 className="text-sm font-medium text-blue-900 mb-1">How to connect with professionals:</h4>
+              <ul className="text-sm text-blue-800 space-y-1">
+                <li>• Go to <strong>Discover</strong> tab to find professionals</li>
+                <li>• Click <strong>Follow</strong> to send a connection request</li>
+                <li>• Check <strong>Requests</strong> tab to approve incoming requests</li>
+                <li>• Use <strong>Messages</strong> to chat with your connections</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-red-800 text-sm">{error}</p>

@@ -4,6 +4,8 @@ import { db } from '../firebase';
 import { CrewProfile, Residence, ContactInfo } from '../types/CrewProfile';
 import { JobTitleEntry } from '../types/JobTitleEntry';
 import { ProjectEntry } from '../types/ProjectEntry';
+import { auth } from '../firebase';
+import FollowButton from '../components/Social/FollowButton';
 
 interface JobDepartment {
   name: string;
@@ -22,6 +24,7 @@ const ProducerView: React.FC = () => {
   const [countries, setCountries] = useState<Country[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFiltering, setIsFiltering] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string>('');
 
   // Filter states
   const [filters, setFilters] = useState({
@@ -58,6 +61,14 @@ const ProducerView: React.FC = () => {
     };
 
     fetchLookupData();
+  }, []);
+
+  // Get current user ID
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setCurrentUserId(user?.uid || '');
+    });
+    return () => unsubscribe();
   }, []);
 
   // Fetch crew profiles with optimized queries
@@ -339,6 +350,7 @@ const ProducerView: React.FC = () => {
                   profile={profile} 
                   index={index}
                   isFiltering={isFiltering}
+                  currentUserId={currentUserId}
                 />
               ))}
             </div>
@@ -420,7 +432,8 @@ const CrewProfileCard: React.FC<{
   profile: CrewProfile; 
   index: number;
   isFiltering: boolean;
-}> = ({ profile, index, isFiltering }) => {
+  currentUserId: string;
+}> = ({ profile, index, isFiltering, currentUserId }) => {
   const primaryJob = profile.jobTitles[0];
   const primaryResidence = profile.residences[0];
 
@@ -483,6 +496,18 @@ const CrewProfileCard: React.FC<{
             {profile.availability === 'available' ? 'Available' :
              profile.availability === 'soon' ? 'Available Soon' : 'Unavailable'}
           </span>
+        </div>
+      )}
+
+      {/* Follow Button - Only show if user is logged in and not viewing their own profile */}
+      {currentUserId && currentUserId !== profile.uid && (
+        <div className="mb-6">
+          <FollowButton 
+            currentUserId={currentUserId}
+            targetUserId={profile.uid}
+            size="sm"
+            className="w-full"
+          />
         </div>
       )}
 

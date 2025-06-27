@@ -92,14 +92,26 @@ const FollowButton: React.FC<FollowButtonProps> = ({
           <button
             onClick={handleUnfollow}
             disabled={loading}
-            className={`bg-red-600 text-white hover:bg-red-700 hover:scale-105 ${baseClasses}`}
+            className={`bg-red-600 text-white hover:bg-red-700 hover:scale-105 ${baseClasses} flex items-center gap-2`}
+            title="Click to unfollow"
           >
-            {loading ? 'Unfollowing...' : 'Unfollow'}
+            {loading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                Unfollowing...
+              </>
+            ) : (
+              <>
+                <span>✓</span>
+                Following
+              </>
+            )}
           </button>
         );
       case 'pending':
         return (
-          <span className={`bg-yellow-100 text-yellow-800 font-medium rounded-full tracking-wider ${getSizeClasses()} ${className}`}>
+          <span className={`bg-yellow-100 text-yellow-800 font-medium rounded-full tracking-wider ${getSizeClasses()} ${className} flex items-center gap-2`} title="Request sent, waiting for approval">
+            <span>⏳</span>
             Request Sent
           </span>
         );
@@ -108,9 +120,20 @@ const FollowButton: React.FC<FollowButtonProps> = ({
           <button
             onClick={handleFollow}
             disabled={loading}
-            className={`bg-gray-900 text-white hover:bg-gray-800 hover:scale-105 ${baseClasses}`}
+            className={`bg-gray-900 text-white hover:bg-gray-800 hover:scale-105 ${baseClasses} flex items-center gap-2`}
+            title="Click to send follow request"
           >
-            {loading ? 'Sending...' : 'Follow'}
+            {loading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                Sending...
+              </>
+            ) : (
+              <>
+                <span>+</span>
+                Follow
+              </>
+            )}
           </button>
         );
     }
