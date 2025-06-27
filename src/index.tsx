@@ -68,30 +68,36 @@ const App: React.FC = () => {
 
     return (
         <>
-            <header className="bg-gray-800 text-white py-4 px-6 shadow-md">
-                <nav className="flex flex-wrap items-center justify-between">
-                    <ul className="flex gap-4 flex-wrap">
-                        <li><Link to="/" className="hover:underline">Home</Link></li>
-                        <li><Link to="/projects" className="hover:underline">All Projects</Link></li>
-                        <li><Link to="/jobs" className="hover:underline">Job Search</Link></li>
+            <header className="bg-white bg-opacity-90 backdrop-blur-md shadow-sm fixed w-full z-50 top-0 left-0 border-b border-gray-100">
+                <nav className="flex flex-wrap items-center justify-between px-8 py-2">
+                    <div>
+                        {/* Typographical logo */}
+                        <Link to="/" className="tracking-widest text-lg font-medium text-gray-800 uppercase select-none" style={{ letterSpacing: '0.15em', fontFamily: 'Inter, Helvetica, Arial, sans-serif' }}>
+                            whosonset
+                        </Link>
+                    </div>
+                    <ul className="flex gap-5 flex-wrap items-center">
+                        <li><Link to="/" className="nav-link">Home</Link></li>
+                        <li><Link to="/projects" className="nav-link">All Projects</Link></li>
+                        <li><Link to="/jobs" className="nav-link">Job Search</Link></li>
                         {!authUser ? (
                             <>
-                                <li><Link to="/login" className="hover:underline">Login</Link></li>
-                                <li><Link to="/register" className="hover:underline">Register</Link></li>
+                                <li><Link to="/login" className="nav-link">Login</Link></li>
+                                <li><Link to="/register" className="nav-link">Register</Link></li>
                             </>
                         ) : (
                             <>
-                                <li><Link to="/projects/add" className="hover:underline">Add Project</Link></li>
-                                <li><Link to="/crew" className="hover:underline">Crew Directory</Link></li>
-                                <li><Link to="/social" className="hover:underline">Network</Link></li>
-                                <li><Link to="/collections" className="hover:underline">My Collections</Link></li>
-                                <li><Link to="/chat" className="hover:underline">Messages</Link></li>
-                                <li><Link to="/availability" className="hover:underline">Availability</Link></li>
-                                <li><Link to="/edit-profile" className="hover:underline">Edit Profile</Link></li>
+                                <li><Link to="/projects/add" className="nav-link">Add Project</Link></li>
+                                <li><Link to="/crew" className="nav-link">Crew Directory</Link></li>
+                                <li><Link to="/social" className="nav-link">Network</Link></li>
+                                <li><Link to="/collections" className="nav-link">My Collections</Link></li>
+                                <li><Link to="/chat" className="nav-link">Messages</Link></li>
+                                <li><Link to="/availability" className="nav-link">Availability</Link></li>
+                                <li><Link to="/edit-profile" className="nav-link">Edit Profile</Link></li>
                                 <li>
                                     <button
                                         onClick={userSignOut}
-                                        className="text-sm bg-red-600 hover:bg-red-500 px-3 py-1 rounded"
+                                        className="text-xs px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 transition"
                                     >
                                         Sign Out
                                     </button>
@@ -102,7 +108,7 @@ const App: React.FC = () => {
                 </nav>
             </header>
 
-            <main className="bg-gray-900 min-h-screen">
+            <main className="bg-gray-900 min-h-screen pt-16">
                 <AnimatePresence mode="wait">
                     <Routes location={location} key={location.pathname}>
                         <Route path="/" element={<Home />} />
