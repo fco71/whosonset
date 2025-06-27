@@ -31,7 +31,6 @@ import SavedProjectsPage from './pages/SavedProjectsPage';
 import CollectionsHubPage from './pages/CollectionsHubPage';
 
 // New components
-import ChatInterface from './components/Chat/ChatInterface';
 import JobSearchPage from './components/JobSearch/JobSearchPage';
 import ProjectDashboard from './pages/ProjectManagement/ProjectDashboard';
 import AvailabilityCalendar from './components/Availability/AvailabilityCalendar';
@@ -94,7 +93,6 @@ const App: React.FC = () => {
                                 <li><Link to="/crew" className="nav-link">Crew Directory</Link></li>
                                 <li><Link to="/social" className="nav-link">Social Hub</Link></li>
                                 <li><Link to="/collections" className="nav-link">My Collections</Link></li>
-                                <li><Link to="/chat" className="nav-link">Messages</Link></li>
                                 <li><NotificationBell currentUserId={authUser?.uid || ''} /></li>
                                 <li><Link to="/edit-profile" className="nav-link">Resume Builder</Link></li>
                                 <li>
@@ -129,7 +127,6 @@ const App: React.FC = () => {
                         <Route path="/resume/:uid" element={<PublicResumePage />} />
                         
                         {/* New routes */}
-                        <Route path="/chat" element={<PrivateRoute><ChatInterface currentUserId={authUser?.uid || ''} currentUserName={authUser?.displayName || authUser?.email || 'User'} currentUserAvatar={authUser?.photoURL} /></PrivateRoute>} />
                         <Route path="/jobs" element={<JobSearchPage />} />
                         <Route path="/jobs/:jobId" element={<div>Job Detail Page (Coming Soon)</div>} />
                         <Route path="/jobs/:jobId/apply" element={<div>Job Application Page (Coming Soon)</div>} />

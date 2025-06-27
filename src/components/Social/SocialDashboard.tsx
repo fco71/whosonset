@@ -8,6 +8,7 @@ import { UserUtils, UserProfile } from '../../utilities/userUtils';
 import QuickMessage from './QuickMessage';
 import FollowButton from './FollowButton';
 import ActivityFeed from './ActivityFeed';
+import ChatInterface from '../Chat/ChatInterface';
 
 interface SocialDashboardProps {
   currentUserId: string;
@@ -20,7 +21,7 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
   currentUserName,
   currentUserAvatar 
 }) => {
-  const [activeTab, setActiveTab] = useState<'activity' | 'followers' | 'following' | 'requests' | 'notifications' | 'discover'>('activity');
+  const [activeTab, setActiveTab] = useState<'activity' | 'followers' | 'following' | 'requests' | 'notifications' | 'discover' | 'messages'>('activity');
   const [followRequests, setFollowRequests] = useState<FollowRequest[]>([]);
   const [notifications, setNotifications] = useState<SocialNotification[]>([]);
   const [followers, setFollowers] = useState<Follow[]>([]);
@@ -523,7 +524,7 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
                 <li>• Go to <strong>Discover</strong> tab to find professionals</li>
                 <li>• Click <strong>Follow</strong> to send a connection request</li>
                 <li>• Check <strong>Requests</strong> tab to approve incoming requests</li>
-                <li>• Use <strong>Messages</strong> to chat with your connections</li>
+                <li>• Use <strong>Messages</strong> tab to chat with your connections</li>
               </ul>
             </div>
           </div>
@@ -544,7 +545,8 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
               { id: 'following', label: 'Following', count: following.length },
               { id: 'requests', label: 'Requests', count: followRequests.length },
               { id: 'notifications', label: 'Notifications', count: unreadCount },
-              { id: 'discover', label: 'Discover', count: null }
+              { id: 'discover', label: 'Discover', count: null },
+              { id: 'messages', label: 'Messages', count: null }
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -573,6 +575,7 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
           {activeTab === 'requests' && renderFollowRequests()}
           {activeTab === 'notifications' && renderNotifications()}
           {activeTab === 'discover' && renderDiscover()}
+          {activeTab === 'messages' && <ChatInterface currentUserId={currentUserId} currentUserName={currentUserName} />}
         </div>
 
         {/* Follow Request Modal */}
