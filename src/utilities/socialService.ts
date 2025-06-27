@@ -11,10 +11,12 @@ import {
   serverTimestamp,
   deleteDoc,
   writeBatch,
-  getDoc
+  getDoc,
+  increment,
+  limit
 } from 'firebase/firestore';
 import { db } from '../firebase';
-import { FollowRequest, Follow, SocialNotification, ActivityFeedItem } from '../types/Social';
+import { FollowRequest, Follow, SocialNotification, ActivityFeedItem, SocialLike, SocialComment } from '../types/Social';
 
 export class SocialService {
   // Follow Request Operations
@@ -362,12 +364,258 @@ export class SocialService {
   // Activity Feed Operations
   static async createActivityFeedItem(item: Omit<ActivityFeedItem, 'id'>): Promise<void> {
     try {
+      console.log('[SocialService] Creating activity feed item:', item);
       await addDoc(collection(db, 'activityFeed'), {
         ...item,
         createdAt: serverTimestamp()
       });
+      console.log('[SocialService] Activity feed item created successfully');
     } catch (error) {
       console.error('Error creating activity feed item:', error);
+      throw error;
+    }
+  }
+
+  static async getActivityFeed(userId: string, itemLimit: number = 20): Promise<ActivityFeedItem[]> {
+    try {
+      console.log('[SocialService] Getting activity feed for user:', userId);
+      const feedQuery = query(
+        collection(db, 'activityFeed'),
+        where('isPublic', '==', true),
+        orderBy('createdAt', 'desc'),
+        limit(itemLimit)
+      );
+      
+      const snapshot = await getDocs(feedQuery);
+      const items = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate()
+      })) as ActivityFeedItem[];
+      
+      console.log('[SocialService] Retrieved', items.length, 'activity feed items');
+      return items;
+    } catch (error) {
+      console.error('Error getting activity feed:', error);
+      return [];
+    }
+  }
+
+  static subscribeToActivityFeed(userId: string, callback: (items: ActivityFeedItem[]) => void) {
+    try {
+      console.log('[SocialService] Setting up activity feed listener for user:', userId);
+      const feedQuery = query(
+        collection(db, 'activityFeed'),
+        where('isPublic', '==', true),
+        orderBy('createdAt', 'desc'),
+        limit(20)
+      );
+
+      return onSnapshot(feedQuery, (snapshot) => {
+        try {
+          const items = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            createdAt: doc.data().createdAt?.toDate()
+          })) as ActivityFeedItem[];
+          console.log('[SocialService] Activity feed updated:', items.length, 'items');
+          callback(items);
+        } catch (error) {
+          console.error('[SocialService] Error processing activity feed snapshot:', error);
+          callback([]);
+        }
+      }, (error) => {
+        console.error('[SocialService] Activity feed listener error:', error);
+        callback([]);
+      });
+    } catch (error) {
+      console.error('[SocialService] Error setting up activity feed listener:', error);
+      return () => {};
+    }
+  }
+
+  // Like Operations
+  static async likeActivity(activityId: string, userId: string, userName: string): Promise<void> {
+    try {
+      console.log('[SocialService] Liking activity:', activityId, 'by user:', userId);
+      
+      // Check if already liked
+      const existingLike = await this.getLike(activityId, userId);
+      if (existingLike) {
+        console.log('[SocialService] User already liked this activity');
+        return;
+      }
+
+      // Create like
+      const likeData = {
+        activityId,
+        userId,
+        userName,
+        createdAt: serverTimestamp()
+      };
+      
+      await addDoc(collection(db, 'likes'), likeData);
+      
+      // Update activity feed item likes count
+      const activityRef = doc(db, 'activityFeed', activityId);
+      await updateDoc(activityRef, {
+        likes: increment(1)
+      });
+      
+      console.log('[SocialService] Activity liked successfully');
+    } catch (error) {
+      console.error('Error liking activity:', error);
+      throw error;
+    }
+  }
+
+  static async unlikeActivity(activityId: string, userId: string): Promise<void> {
+    try {
+      console.log('[SocialService] Unliking activity:', activityId, 'by user:', userId);
+      
+      // Find and delete like
+      const like = await this.getLike(activityId, userId);
+      if (like) {
+        await deleteDoc(doc(db, 'likes', like.id));
+        
+        // Update activity feed item likes count
+        const activityRef = doc(db, 'activityFeed', activityId);
+        await updateDoc(activityRef, {
+          likes: increment(-1)
+        });
+      }
+      
+      console.log('[SocialService] Activity unliked successfully');
+    } catch (error) {
+      console.error('Error unliking activity:', error);
+      throw error;
+    }
+  }
+
+  static async getLike(activityId: string, userId: string): Promise<SocialLike | null> {
+    try {
+      const likeQuery = query(
+        collection(db, 'likes'),
+        where('activityId', '==', activityId),
+        where('userId', '==', userId)
+      );
+      const snapshot = await getDocs(likeQuery);
+      
+      if (!snapshot.empty) {
+        const doc = snapshot.docs[0];
+        return {
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt?.toDate()
+        } as SocialLike;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error getting like:', error);
+      return null;
+    }
+  }
+
+  static async getLikesForActivity(activityId: string): Promise<SocialLike[]> {
+    try {
+      const likesQuery = query(
+        collection(db, 'likes'),
+        where('activityId', '==', activityId),
+        orderBy('createdAt', 'desc')
+      );
+      const snapshot = await getDocs(likesQuery);
+      
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate()
+      })) as SocialLike[];
+    } catch (error) {
+      console.error('Error getting likes for activity:', error);
+      return [];
+    }
+  }
+
+  // Comment Operations
+  static async addComment(activityId: string, userId: string, userName: string, userAvatar: string | undefined, content: string): Promise<void> {
+    try {
+      console.log('[SocialService] Adding comment to activity:', activityId);
+      
+      const commentData = {
+        activityId,
+        userId,
+        userName,
+        userAvatar,
+        content,
+        likes: 0,
+        createdAt: serverTimestamp(),
+        replies: []
+      };
+      
+      await addDoc(collection(db, 'comments'), commentData);
+      
+      // Update activity feed item comments count
+      const activityRef = doc(db, 'activityFeed', activityId);
+      await updateDoc(activityRef, {
+        comments: increment(1)
+      });
+      
+      console.log('[SocialService] Comment added successfully');
+    } catch (error) {
+      console.error('Error adding comment:', error);
+      throw error;
+    }
+  }
+
+  static async getCommentsForActivity(activityId: string): Promise<SocialComment[]> {
+    try {
+      const commentsQuery = query(
+        collection(db, 'comments'),
+        where('activityId', '==', activityId),
+        orderBy('createdAt', 'desc')
+      );
+      const snapshot = await getDocs(commentsQuery);
+      
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate()
+      })) as SocialComment[];
+    } catch (error) {
+      console.error('Error getting comments for activity:', error);
+      return [];
+    }
+  }
+
+  static subscribeToActivityComments(activityId: string, callback: (comments: SocialComment[]) => void) {
+    try {
+      console.log('[SocialService] Setting up comments listener for activity:', activityId);
+      const commentsQuery = query(
+        collection(db, 'comments'),
+        where('activityId', '==', activityId),
+        orderBy('createdAt', 'desc')
+      );
+
+      return onSnapshot(commentsQuery, (snapshot) => {
+        try {
+          const comments = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            createdAt: doc.data().createdAt?.toDate()
+          })) as SocialComment[];
+          console.log('[SocialService] Comments updated for activity', activityId, ':', comments.length, 'comments');
+          callback(comments);
+        } catch (error) {
+          console.error('[SocialService] Error processing comments snapshot:', error);
+          callback([]);
+        }
+      }, (error) => {
+        console.error('[SocialService] Comments listener error:', error);
+        callback([]);
+      });
+    } catch (error) {
+      console.error('[SocialService] Error setting up comments listener:', error);
+      return () => {};
     }
   }
 

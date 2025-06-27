@@ -6,9 +6,15 @@ import { db } from '../../firebase';
 
 interface SocialTestPageProps {
   currentUserId: string;
+  currentUserName: string;
+  currentUserAvatar?: string;
 }
 
-const SocialTestPage: React.FC<SocialTestPageProps> = ({ currentUserId }) => {
+const SocialTestPage: React.FC<SocialTestPageProps> = ({ 
+  currentUserId, 
+  currentUserName,
+  currentUserAvatar 
+}) => {
   const [testResults, setTestResults] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -147,6 +153,70 @@ const SocialTestPage: React.FC<SocialTestPageProps> = ({ currentUserId }) => {
     }
   };
 
+  const testActivityFeedWithLikesAndComments = async () => {
+    if (!currentUserId) {
+      alert('Please log in first');
+      return;
+    }
+
+    try {
+      console.log('[SocialTestPage] Testing activity feed with likes and comments');
+      
+      // Create a test activity feed item
+      await SocialService.createActivityFeedItem({
+        userId: currentUserId,
+        type: 'project_created',
+        title: 'Test Project Created',
+        description: 'This is a test activity to verify like and comment functionality',
+        likes: 0,
+        comments: 0,
+        createdAt: new Date(),
+        isPublic: true
+      });
+      
+      console.log('[SocialTestPage] Test activity created successfully');
+      alert('Test activity created! Check the activity feed to test likes and comments.');
+      
+    } catch (error) {
+      console.error('[SocialTestPage] Error creating test activity:', error);
+      alert('Error creating test activity: ' + error);
+    }
+  };
+
+  const testLikeAndCommentFunctionality = async () => {
+    if (!currentUserId) {
+      alert('Please log in first');
+      return;
+    }
+
+    try {
+      console.log('[SocialTestPage] Testing like and comment functionality');
+      
+      // Get the first activity from the feed
+      const activities = await SocialService.getActivityFeed(currentUserId, 1);
+      if (activities.length === 0) {
+        alert('No activities found. Create an activity first.');
+        return;
+      }
+      
+      const activity = activities[0];
+      
+      // Test liking the activity
+      await SocialService.likeActivity(activity.id, currentUserId, currentUserName);
+      console.log('[SocialTestPage] Activity liked successfully');
+      
+      // Test adding a comment
+      await SocialService.addComment(activity.id, currentUserId, currentUserName, currentUserAvatar, 'This is a test comment!');
+      console.log('[SocialTestPage] Comment added successfully');
+      
+      alert('Like and comment functionality tested successfully! Check the activity feed.');
+      
+    } catch (error) {
+      console.error('[SocialTestPage] Error testing like and comment functionality:', error);
+      alert('Error testing like and comment functionality: ' + error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -181,6 +251,22 @@ const SocialTestPage: React.FC<SocialTestPageProps> = ({ currentUserId }) => {
               className="px-6 py-3 bg-orange-600 text-white font-light tracking-wide rounded-lg hover:bg-orange-700 transition-all duration-300 disabled:opacity-50"
             >
               Test Follow Request + Notification
+            </button>
+            
+            <button
+              onClick={testActivityFeedWithLikesAndComments}
+              disabled={loading}
+              className="px-6 py-3 bg-green-600 text-white font-light tracking-wide rounded-lg hover:bg-green-700 transition-all duration-300 disabled:opacity-50"
+            >
+              Create Test Activity
+            </button>
+            
+            <button
+              onClick={testLikeAndCommentFunctionality}
+              disabled={loading}
+              className="px-6 py-3 bg-indigo-600 text-white font-light tracking-wide rounded-lg hover:bg-indigo-700 transition-all duration-300 disabled:opacity-50"
+            >
+              Test Likes & Comments
             </button>
           </div>
 

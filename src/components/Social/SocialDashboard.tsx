@@ -5,17 +5,23 @@ import { FollowRequest, SocialNotification, ActivityFeedItem, Follow } from '../
 import { CrewProfile } from '../../types/CrewProfile';
 import { SocialService } from '../../utilities/socialService';
 import QuickMessage from './QuickMessage';
+import FollowButton from './FollowButton';
+import ActivityFeed from './ActivityFeed';
 
 interface SocialDashboardProps {
   currentUserId: string;
-  currentUser: any;
+  currentUserName: string;
+  currentUserAvatar?: string;
 }
 
-const SocialDashboard: React.FC<SocialDashboardProps> = ({ currentUserId, currentUser }) => {
-  const [activeTab, setActiveTab] = useState<'feed' | 'followers' | 'following' | 'requests' | 'notifications' | 'discover'>('feed');
+const SocialDashboard: React.FC<SocialDashboardProps> = ({ 
+  currentUserId, 
+  currentUserName,
+  currentUserAvatar 
+}) => {
+  const [activeTab, setActiveTab] = useState<'activity' | 'followers' | 'following' | 'requests' | 'notifications' | 'discover'>('activity');
   const [followRequests, setFollowRequests] = useState<FollowRequest[]>([]);
   const [notifications, setNotifications] = useState<SocialNotification[]>([]);
-  const [activityFeed, setActivityFeed] = useState<ActivityFeedItem[]>([]);
   const [followers, setFollowers] = useState<Follow[]>([]);
   const [following, setFollowing] = useState<Follow[]>([]);
   const [crewProfiles, setCrewProfiles] = useState<CrewProfile[]>([]);
@@ -30,7 +36,6 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({ currentUserId, curren
   useEffect(() => {
     let unsubscribeFollowRequests: (() => void) | undefined;
     let unsubscribeNotifications: (() => void) | undefined;
-    let unsubscribeActivityFeed: (() => void) | undefined;
     let unsubscribeFollowers: (() => void) | undefined;
     let unsubscribeFollowing: (() => void) | undefined;
 
@@ -119,22 +124,9 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({ currentUserId, curren
 
   const loadActivityFeed = async () => {
     try {
-      const feedQuery = query(
-        collection(db, 'activityFeed'),
-        where('isPublic', '==', true),
-        orderBy('createdAt', 'desc')
-      );
-
-      const unsubscribe = onSnapshot(feedQuery, (snapshot) => {
-        const feedData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          createdAt: doc.data().createdAt?.toDate()
-        })) as ActivityFeedItem[];
-        setActivityFeed(feedData);
-      });
-
-      return unsubscribe;
+      console.log('[SocialDashboard] Loading activity feed...');
+      // Activity feed is now handled by the ActivityFeed component
+      // No need to load it here as the component handles its own data
     } catch (error) {
       console.error('Error loading activity feed:', error);
     }
@@ -218,27 +210,17 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({ currentUserId, curren
   };
 
   const renderActivityFeed = () => (
-    <div className="space-y-6">
-      {activityFeed.map((item) => (
-        <div key={item.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
-              <span className="text-lg font-medium text-gray-600">
-                {item.title?.charAt(0) || '?'}
-              </span>
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-light text-gray-900 mb-2">
-                <span className="font-medium">{item.title}</span>
-              </p>
-              <p className="text-sm font-light text-gray-600 mb-2">{item.description}</p>
-              <p className="text-xs font-light text-gray-500">
-                {item.createdAt?.toLocaleDateString()}
-              </p>
-            </div>
-          </div>
-        </div>
-      ))}
+    <div>
+      <div className="mb-6">
+        <h2 className="text-2xl font-light text-gray-900 tracking-wide mb-2">Activity Feed</h2>
+        <p className="text-gray-600 font-light">See what's happening in your network</p>
+      </div>
+      
+      <ActivityFeed 
+        currentUserId={currentUserId}
+        currentUserName={currentUserName}
+        currentUserAvatar={currentUserAvatar}
+      />
     </div>
   );
 
@@ -458,7 +440,7 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({ currentUserId, curren
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-2 mb-8">
           <div className="flex space-x-1">
             {[
-              { id: 'feed', label: 'Activity Feed', count: null },
+              { id: 'activity', label: 'Activity Feed', count: null },
               { id: 'followers', label: 'Followers', count: followers.length },
               { id: 'following', label: 'Following', count: following.length },
               { id: 'requests', label: 'Requests', count: followRequests.length },
@@ -486,7 +468,7 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({ currentUserId, curren
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
-          {activeTab === 'feed' && renderActivityFeed()}
+          {activeTab === 'activity' && renderActivityFeed()}
           {activeTab === 'followers' && renderFollowers()}
           {activeTab === 'following' && renderFollowing()}
           {activeTab === 'requests' && renderFollowRequests()}
@@ -537,66 +519,6 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({ currentUserId, curren
       </div>
     </div>
   );
-};
-
-// Follow Button Component
-interface FollowButtonProps {
-  currentUserId: string;
-  targetUserId: string;
-  onFollowRequest: () => void;
-}
-
-const FollowButton: React.FC<FollowButtonProps> = ({ currentUserId, targetUserId, onFollowRequest }) => {
-  const [followStatus, setFollowStatus] = useState<'none' | 'pending' | 'following' | 'blocked'>('none');
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    const checkStatus = async () => {
-      const status = await SocialService.getFollowStatus(currentUserId, targetUserId);
-      setFollowStatus(status);
-    };
-    checkStatus();
-  }, [currentUserId, targetUserId]);
-
-  const handleUnfollow = async () => {
-    try {
-      setLoading(true);
-      await SocialService.unfollow(currentUserId, targetUserId);
-      setFollowStatus('none');
-    } catch (error) {
-      console.error('Error unfollowing:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  switch (followStatus) {
-    case 'following':
-      return (
-        <button
-          onClick={handleUnfollow}
-          disabled={loading}
-          className="px-4 py-2 bg-red-600 text-white font-light tracking-wide rounded-lg hover:bg-red-700 transition-all duration-300 hover:scale-105 text-sm disabled:opacity-50"
-        >
-          {loading ? 'Unfollowing...' : 'Unfollow'}
-        </button>
-      );
-    case 'pending':
-      return (
-        <span className="px-4 py-2 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full tracking-wider">
-          Request Sent
-        </span>
-      );
-    default:
-      return (
-        <button
-          onClick={onFollowRequest}
-          className="px-4 py-2 bg-gray-900 text-white font-light tracking-wide rounded-lg hover:bg-gray-800 transition-all duration-300 hover:scale-105 text-sm"
-        >
-          Follow
-        </button>
-      );
-  }
 };
 
 export default SocialDashboard;
