@@ -48,10 +48,12 @@ const FollowButton: React.FC<FollowButtonProps> = ({
 
     try {
       setLoading(true);
+      console.log('[FollowButton] Sending follow request from', currentUserId, 'to', targetUserId);
       await SocialService.sendFollowRequest(currentUserId, targetUserId);
+      console.log('[FollowButton] Follow request sent successfully');
       setFollowStatus('pending');
     } catch (error) {
-      console.error('Error sending follow request:', error);
+      console.error('[FollowButton] Error sending follow request:', error);
     } finally {
       setLoading(false);
     }

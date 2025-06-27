@@ -20,15 +20,19 @@ export class SocialService {
   // Follow Request Operations
   static async sendFollowRequest(fromUserId: string, toUserId: string, message?: string): Promise<void> {
     try {
+      console.log('[SocialService] Sending follow request:', { fromUserId, toUserId, message });
+      
       // Check if request already exists
       const existingRequest = await this.getFollowRequest(fromUserId, toUserId);
       if (existingRequest) {
+        console.log('[SocialService] Follow request already exists');
         throw new Error('Follow request already exists');
       }
 
       // Check if already following
       const existingFollow = await this.getFollow(fromUserId, toUserId);
       if (existingFollow) {
+        console.log('[SocialService] Already following this user');
         throw new Error('Already following this user');
       }
 
@@ -41,9 +45,12 @@ export class SocialService {
         updatedAt: serverTimestamp()
       };
 
+      console.log('[SocialService] Creating follow request with data:', requestData);
       await addDoc(collection(db, 'followRequests'), requestData);
+      console.log('[SocialService] Follow request created successfully');
 
       // Create notification for the target user
+      console.log('[SocialService] Creating notification for user:', toUserId);
       await this.createNotification({
         userId: toUserId,
         type: 'follow_request',
@@ -54,6 +61,7 @@ export class SocialService {
         createdAt: new Date(),
         actionUrl: `/social/requests`
       });
+      console.log('[SocialService] Notification created successfully');
 
     } catch (error) {
       console.error('Error sending follow request:', error);
@@ -194,88 +202,151 @@ export class SocialService {
 
   // Real-time Listeners
   static subscribeToFollowRequests(userId: string, callback: (requests: FollowRequest[]) => void) {
-    const requestsQuery = query(
-      collection(db, 'followRequests'),
-      where('toUserId', '==', userId),
-      where('status', '==', 'pending'),
-      orderBy('createdAt', 'desc')
-    );
+    try {
+      console.log('[SocialService] Setting up follow requests listener for user:', userId);
+      const requestsQuery = query(
+        collection(db, 'followRequests'),
+        where('toUserId', '==', userId),
+        where('status', '==', 'pending'),
+        orderBy('createdAt', 'desc')
+      );
 
-    return onSnapshot(requestsQuery, (snapshot) => {
-      const requests = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate(),
-        updatedAt: doc.data().updatedAt?.toDate()
-      })) as FollowRequest[];
-      callback(requests);
-    });
+      return onSnapshot(requestsQuery, (snapshot) => {
+        try {
+          const requests = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            createdAt: doc.data().createdAt?.toDate(),
+            updatedAt: doc.data().updatedAt?.toDate()
+          })) as FollowRequest[];
+          console.log('[SocialService] Follow requests updated:', requests.length);
+          callback(requests);
+        } catch (error) {
+          console.error('[SocialService] Error processing follow requests snapshot:', error);
+          callback([]);
+        }
+      }, (error) => {
+        console.error('[SocialService] Follow requests listener error:', error);
+        callback([]);
+      });
+    } catch (error) {
+      console.error('[SocialService] Error setting up follow requests listener:', error);
+      return () => {};
+    }
   }
 
   static subscribeToFollowers(userId: string, callback: (follows: Follow[]) => void) {
-    const followersQuery = query(
-      collection(db, 'follows'),
-      where('followingId', '==', userId),
-      where('status', '==', 'active'),
-      orderBy('createdAt', 'desc')
-    );
+    try {
+      console.log('[SocialService] Setting up followers listener for user:', userId);
+      const followersQuery = query(
+        collection(db, 'follows'),
+        where('followingId', '==', userId),
+        where('status', '==', 'active'),
+        orderBy('createdAt', 'desc')
+      );
 
-    return onSnapshot(followersQuery, (snapshot) => {
-      const follows = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate(),
-        lastInteraction: doc.data().lastInteraction?.toDate()
-      })) as Follow[];
-      callback(follows);
-    });
+      return onSnapshot(followersQuery, (snapshot) => {
+        try {
+          const follows = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            createdAt: doc.data().createdAt?.toDate(),
+            lastInteraction: doc.data().lastInteraction?.toDate()
+          })) as Follow[];
+          console.log('[SocialService] Followers updated:', follows.length);
+          callback(follows);
+        } catch (error) {
+          console.error('[SocialService] Error processing followers snapshot:', error);
+          callback([]);
+        }
+      }, (error) => {
+        console.error('[SocialService] Followers listener error:', error);
+        callback([]);
+      });
+    } catch (error) {
+      console.error('[SocialService] Error setting up followers listener:', error);
+      return () => {};
+    }
   }
 
   static subscribeToFollowing(userId: string, callback: (follows: Follow[]) => void) {
-    const followingQuery = query(
-      collection(db, 'follows'),
-      where('followerId', '==', userId),
-      where('status', '==', 'active'),
-      orderBy('createdAt', 'desc')
-    );
+    try {
+      console.log('[SocialService] Setting up following listener for user:', userId);
+      const followingQuery = query(
+        collection(db, 'follows'),
+        where('followerId', '==', userId),
+        where('status', '==', 'active'),
+        orderBy('createdAt', 'desc')
+      );
 
-    return onSnapshot(followingQuery, (snapshot) => {
-      const follows = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate(),
-        lastInteraction: doc.data().lastInteraction?.toDate()
-      })) as Follow[];
-      callback(follows);
-    });
+      return onSnapshot(followingQuery, (snapshot) => {
+        try {
+          const follows = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            createdAt: doc.data().createdAt?.toDate(),
+            lastInteraction: doc.data().lastInteraction?.toDate()
+          })) as Follow[];
+          console.log('[SocialService] Following updated:', follows.length);
+          callback(follows);
+        } catch (error) {
+          console.error('[SocialService] Error processing following snapshot:', error);
+          callback([]);
+        }
+      }, (error) => {
+        console.error('[SocialService] Following listener error:', error);
+        callback([]);
+      });
+    } catch (error) {
+      console.error('[SocialService] Error setting up following listener:', error);
+      return () => {};
+    }
   }
 
   static subscribeToNotifications(userId: string, callback: (notifications: SocialNotification[]) => void) {
-    const notificationsQuery = query(
-      collection(db, 'notifications'),
-      where('userId', '==', userId),
-      orderBy('createdAt', 'desc')
-    );
+    try {
+      console.log('[SocialService] Setting up notifications listener for user:', userId);
+      const notificationsQuery = query(
+        collection(db, 'notifications'),
+        where('userId', '==', userId),
+        orderBy('createdAt', 'desc')
+      );
 
-    return onSnapshot(notificationsQuery, (snapshot) => {
-      const notifications = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate()
-      })) as SocialNotification[];
-      callback(notifications);
-    });
+      return onSnapshot(notificationsQuery, (snapshot) => {
+        try {
+          const notifications = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            createdAt: doc.data().createdAt?.toDate()
+          })) as SocialNotification[];
+          console.log('[SocialService] Notifications updated:', notifications.length);
+          callback(notifications);
+        } catch (error) {
+          console.error('[SocialService] Error processing notifications snapshot:', error);
+          callback([]);
+        }
+      }, (error) => {
+        console.error('[SocialService] Notifications listener error:', error);
+        callback([]);
+      });
+    } catch (error) {
+      console.error('[SocialService] Error setting up notifications listener:', error);
+      return () => {};
+    }
   }
 
   // Notification Operations
   static async createNotification(notification: Omit<SocialNotification, 'id'>): Promise<void> {
     try {
-      await addDoc(collection(db, 'notifications'), {
+      console.log('[SocialService] Creating notification:', notification);
+      const docRef = await addDoc(collection(db, 'notifications'), {
         ...notification,
         createdAt: serverTimestamp()
       });
+      console.log('[SocialService] Notification created with ID:', docRef.id);
     } catch (error) {
       console.error('Error creating notification:', error);
+      throw error;
     }
   }
 

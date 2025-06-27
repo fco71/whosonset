@@ -35,34 +35,78 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({ currentUserId, curren
     let unsubscribeFollowing: (() => void) | undefined;
 
     const setupListeners = async () => {
-      console.log('[SocialDashboard] Setting up listeners for user:', currentUserId);
-      unsubscribeFollowRequests = SocialService.subscribeToFollowRequests(currentUserId, setFollowRequests);
-      unsubscribeNotifications = SocialService.subscribeToNotifications(currentUserId, setNotifications);
-      unsubscribeFollowers = SocialService.subscribeToFollowers(currentUserId, setFollowers);
-      unsubscribeFollowing = SocialService.subscribeToFollowing(currentUserId, setFollowing);
-      await loadActivityFeed();
-      await loadCrewProfiles();
+      try {
+        console.log('[SocialDashboard] Setting up listeners for user:', currentUserId);
+        
+        // Clear any existing listeners first
+        if (unsubscribeFollowRequests) unsubscribeFollowRequests();
+        if (unsubscribeNotifications) unsubscribeNotifications();
+        if (unsubscribeFollowers) unsubscribeFollowers();
+        if (unsubscribeFollowing) unsubscribeFollowing();
+        
+        // Small delay to prevent Firestore assertion errors
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Set up listeners with error handling
+        unsubscribeFollowRequests = SocialService.subscribeToFollowRequests(currentUserId, (requests) => {
+          console.log('[SocialDashboard] Follow requests updated:', requests.length);
+          setFollowRequests(requests);
+        });
+        
+        // Small delay between listeners
+        await new Promise(resolve => setTimeout(resolve, 50));
+        
+        unsubscribeNotifications = SocialService.subscribeToNotifications(currentUserId, (notifications) => {
+          console.log('[SocialDashboard] Notifications updated:', notifications.length);
+          setNotifications(notifications);
+        });
+        
+        await new Promise(resolve => setTimeout(resolve, 50));
+        
+        unsubscribeFollowers = SocialService.subscribeToFollowers(currentUserId, (followers) => {
+          console.log('[SocialDashboard] Followers updated:', followers.length);
+          setFollowers(followers);
+        });
+        
+        await new Promise(resolve => setTimeout(resolve, 50));
+        
+        unsubscribeFollowing = SocialService.subscribeToFollowing(currentUserId, (following) => {
+          console.log('[SocialDashboard] Following updated:', following.length);
+          setFollowing(following);
+        });
+        
+        await loadActivityFeed();
+        await loadCrewProfiles();
+      } catch (error) {
+        console.error('[SocialDashboard] Error setting up listeners:', error);
+      }
     };
 
-    setupListeners();
+    if (currentUserId) {
+      setupListeners();
+    }
 
     return () => {
       console.log('[SocialDashboard] Cleaning up listeners for user:', currentUserId);
-      if (unsubscribeFollowRequests) {
-        unsubscribeFollowRequests();
-        console.log('[SocialDashboard] Unsubscribed follow requests');
-      }
-      if (unsubscribeNotifications) {
-        unsubscribeNotifications();
-        console.log('[SocialDashboard] Unsubscribed notifications');
-      }
-      if (unsubscribeFollowers) {
-        unsubscribeFollowers();
-        console.log('[SocialDashboard] Unsubscribed followers');
-      }
-      if (unsubscribeFollowing) {
-        unsubscribeFollowing();
-        console.log('[SocialDashboard] Unsubscribed following');
+      try {
+        if (unsubscribeFollowRequests) {
+          unsubscribeFollowRequests();
+          console.log('[SocialDashboard] Unsubscribed follow requests');
+        }
+        if (unsubscribeNotifications) {
+          unsubscribeNotifications();
+          console.log('[SocialDashboard] Unsubscribed notifications');
+        }
+        if (unsubscribeFollowers) {
+          unsubscribeFollowers();
+          console.log('[SocialDashboard] Unsubscribed followers');
+        }
+        if (unsubscribeFollowing) {
+          unsubscribeFollowing();
+          console.log('[SocialDashboard] Unsubscribed following');
+        }
+      } catch (error) {
+        console.error('[SocialDashboard] Error cleaning up listeners:', error);
       }
     };
   }, [currentUserId]);

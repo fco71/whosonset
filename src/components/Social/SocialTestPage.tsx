@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { SocialService } from '../../utilities/socialService';
 import runSocialSystemTest from '../../utilities/socialTestData';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '../../firebase';
 
 interface SocialTestPageProps {
   currentUserId: string;
@@ -57,12 +59,91 @@ const SocialTestPage: React.FC<SocialTestPageProps> = ({ currentUserId }) => {
       const count = await SocialService.getFollowersCount(currentUserId);
       addResult(`✅ Followers count: ${count}`);
       
+      // Test 5: Test sending follow request and notification
+      addResult('Testing follow request and notification...');
+      try {
+        await SocialService.sendFollowRequest(currentUserId, 'test-user-1', 'Test follow request');
+        addResult('✅ Follow request sent successfully');
+        
+        // Check if notification was created
+        setTimeout(async () => {
+          const notificationsQuery = query(
+            collection(db, 'notifications'),
+            where('userId', '==', 'test-user-1'),
+            where('type', '==', 'follow_request')
+          );
+          const snapshot = await getDocs(notificationsQuery);
+          if (!snapshot.empty) {
+            addResult(`✅ Notification created: ${snapshot.docs[0].id}`);
+          } else {
+            addResult('❌ No notification found');
+          }
+        }, 2000);
+        
+      } catch (error) {
+        addResult(`❌ Follow request failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+      
       addResult('🎉 All tests completed successfully!');
       
     } catch (error) {
       addResult(`❌ Test failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const testNotificationCreation = async () => {
+    if (!currentUserId) {
+      alert('Please log in first');
+      return;
+    }
+
+    try {
+      console.log('[SocialTestPage] Testing notification creation for user:', currentUserId);
+      
+      // Create a test notification
+      await SocialService.createNotification({
+        userId: currentUserId,
+        type: 'follow_request',
+        title: 'Test Follow Request',
+        message: 'This is a test notification to verify the system is working',
+        relatedUserId: 'test-user-id',
+        isRead: false,
+        createdAt: new Date(),
+        actionUrl: '/social'
+      });
+      
+      console.log('[SocialTestPage] Test notification created successfully');
+      alert('Test notification created! Check your notification bell.');
+      
+    } catch (error) {
+      console.error('[SocialTestPage] Error creating test notification:', error);
+      alert('Error creating test notification: ' + error);
+    }
+  };
+
+  const testFollowRequestWithNotification = async () => {
+    if (!currentUserId) {
+      alert('Please log in first');
+      return;
+    }
+
+    try {
+      console.log('[SocialTestPage] Testing follow request with notification');
+      
+      // Create a test user ID (this would normally be a real user)
+      const testTargetUserId = 'test-target-user-' + Date.now();
+      
+      // Send follow request (this should create a notification)
+      await SocialService.sendFollowRequest(currentUserId, testTargetUserId, 'Test follow request');
+      
+      console.log('[SocialTestPage] Test follow request sent successfully');
+      alert('Test follow request sent! Check the console for logs.');
+      
+    } catch (error) {
+      console.error('[SocialTestPage] Error sending test follow request:', error);
+      alert('Error sending test follow request: ' + error);
     }
   };
 
@@ -82,6 +163,24 @@ const SocialTestPage: React.FC<SocialTestPageProps> = ({ currentUserId }) => {
               className="px-6 py-3 bg-blue-600 text-white font-light tracking-wide rounded-lg hover:bg-blue-700 transition-all duration-300 disabled:opacity-50"
             >
               {loading ? 'Running Tests...' : 'Run Social System Tests'}
+            </button>
+          </div>
+
+          <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <button
+              onClick={testNotificationCreation}
+              disabled={loading}
+              className="px-6 py-3 bg-purple-600 text-white font-light tracking-wide rounded-lg hover:bg-purple-700 transition-all duration-300 disabled:opacity-50"
+            >
+              Test Notification Creation
+            </button>
+            
+            <button
+              onClick={testFollowRequestWithNotification}
+              disabled={loading}
+              className="px-6 py-3 bg-orange-600 text-white font-light tracking-wide rounded-lg hover:bg-orange-700 transition-all duration-300 disabled:opacity-50"
+            >
+              Test Follow Request + Notification
             </button>
           </div>
 
