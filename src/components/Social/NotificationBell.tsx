@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { SocialService } from '../../utilities/socialService';
 import { SocialNotification } from '../../types/Social';
+import { UserUtils, UserProfile } from '../../utilities/userUtils';
 
 interface NotificationBellProps {
   currentUserId: string;
@@ -11,6 +12,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ currentUserId, clas
   const [notifications, setNotifications] = useState<SocialNotification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [userProfiles, setUserProfiles] = useState<Map<string, UserProfile>>(new Map());
 
   useEffect(() => {
     if (!currentUserId) return;
@@ -42,6 +44,35 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ currentUserId, clas
       }
     };
   }, [currentUserId]);
+
+  // Load user profiles for notifications
+  useEffect(() => {
+    const loadUserProfiles = async () => {
+      const userIds = new Set<string>();
+      notifications.forEach(notification => {
+        if (notification.relatedUserId) {
+          userIds.add(notification.relatedUserId);
+        }
+      });
+      
+      const userIdsToLoad = Array.from(userIds).filter(id => !userProfiles.has(id));
+      if (userIdsToLoad.length > 0) {
+        try {
+          const profiles = await UserUtils.getMultipleUserProfiles(userIdsToLoad);
+          setUserProfiles(prev => new Map([...prev, ...profiles]));
+        } catch (error) {
+          console.error('Error loading user profiles for notifications:', error);
+        }
+      }
+    };
+
+    loadUserProfiles();
+  }, [notifications, userProfiles]);
+
+  const getUserDisplayName = (userId: string): string => {
+    const profile = userProfiles.get(userId);
+    return profile?.displayName || `User ${userId.slice(-4)}`;
+  };
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
@@ -154,35 +185,42 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ currentUserId, clas
               </div>
             ) : (
               <div className="divide-y divide-gray-100">
-                {notifications.slice(0, 10).map((notification) => (
-                  <div
-                    key={notification.id}
-                    className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors duration-200 ${
-                      !notification.isRead ? 'bg-blue-50' : ''
-                    }`}
-                    onClick={() => handleMarkAsRead(notification.id)}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="text-2xl flex-shrink-0">
-                        {getNotificationIcon(notification.type)}
+                {notifications.slice(0, 10).map((notification) => {
+                  const relatedUserName = notification.relatedUserId ? getUserDisplayName(notification.relatedUserId) : null;
+                  
+                  return (
+                    <div
+                      key={notification.id}
+                      className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors duration-200 ${
+                        !notification.isRead ? 'bg-blue-50' : ''
+                      }`}
+                      onClick={() => handleMarkAsRead(notification.id)}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="text-2xl flex-shrink-0">
+                          {getNotificationIcon(notification.type)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 mb-1">
+                            {notification.title}
+                            {relatedUserName && (
+                              <span className="text-blue-600 ml-1">from {relatedUserName}</span>
+                            )}
+                          </p>
+                          <p className="text-sm text-gray-600 mb-2">
+                            {notification.message}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {formatTimeAgo(notification.createdAt)}
+                          </p>
+                        </div>
+                        {!notification.isRead && (
+                          <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-2"></div>
+                        )}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 mb-1">
-                          {notification.title}
-                        </p>
-                        <p className="text-sm text-gray-600 mb-2">
-                          {notification.message}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {formatTimeAgo(notification.createdAt)}
-                        </p>
-                      </div>
-                      {!notification.isRead && (
-                        <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-2"></div>
-                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

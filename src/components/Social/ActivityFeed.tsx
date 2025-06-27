@@ -1,6 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { SocialService } from '../../utilities/socialService';
 import { ActivityFeedItem, SocialComment, SocialLike } from '../../types/Social';
+import { useDebounce, useIntersectionObserver, performanceMonitor } from '../../utilities/performanceUtils';
+import { UserUtils, UserProfile } from '../../utilities/userUtils';
+import './ActivityFeed.scss';
 
 interface ActivityFeedProps {
   currentUserId: string;
@@ -9,6 +12,9 @@ interface ActivityFeedProps {
   className?: string;
 }
 
+const ITEMS_PER_PAGE = 20;
+const VIRTUAL_ITEM_HEIGHT = 120; // Estimated height of each activity item
+
 const ActivityFeed: React.FC<ActivityFeedProps> = ({ 
   currentUserId, 
   currentUserName, 
@@ -16,107 +22,256 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
   className = '' 
 }) => {
   const [activities, setActivities] = useState<ActivityFeedItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [lastDoc, setLastDoc] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState<'all' | 'likes' | 'comments' | 'follows'>('all');
   const [commentText, setCommentText] = useState<{ [key: string]: string }>({});
   const [showComments, setShowComments] = useState<{ [key: string]: boolean }>({});
   const [comments, setComments] = useState<{ [key: string]: SocialComment[] }>({});
   const [userLikes, setUserLikes] = useState<{ [key: string]: boolean }>({});
+  
+  // User profiles cache
+  const [userProfiles, setUserProfiles] = useState<Map<string, UserProfile>>(new Map());
 
+  // Performance optimizations
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+  const { elementRef: loadMoreRef, isIntersecting } = useIntersectionObserver({
+    threshold: 0.1,
+    rootMargin: '100px'
+  });
+
+  // Load user profiles for activities
+  const loadUserProfiles = useCallback(async (userIds: string[]) => {
+    try {
+      const profiles = await UserUtils.getMultipleUserProfiles(userIds);
+      setUserProfiles(prev => new Map([...prev, ...profiles]));
+    } catch (error) {
+      console.error('Error loading user profiles:', error);
+    }
+  }, []);
+
+  const getUserDisplayName = useCallback((userId: string): string => {
+    const profile = userProfiles.get(userId);
+    return profile?.displayName || `User ${userId.slice(-4)}`;
+  }, [userProfiles]);
+
+  const getUserAvatar = useCallback((userId: string): string | undefined => {
+    const profile = userProfiles.get(userId);
+    return profile?.avatarUrl;
+  }, [userProfiles]);
+
+  // Load user profiles when activities change
   useEffect(() => {
-    if (!currentUserId) return;
+    const userIds = new Set<string>();
+    activities.forEach(activity => userIds.add(activity.userId));
+    
+    const userIdsToLoad = Array.from(userIds).filter(id => !userProfiles.has(id));
+    if (userIdsToLoad.length > 0) {
+      loadUserProfiles(userIdsToLoad);
+    }
+  }, [activities, userProfiles, loadUserProfiles]);
 
-    let unsubscribeActivities: (() => void) | undefined;
-    let unsubscribeComments: { [key: string]: (() => void) } = {};
+  // Memoized filtered activities
+  const filteredActivities = useMemo(() => {
+    performanceMonitor.start('filterActivities');
+    
+    let filtered = activities;
+    
+    // Apply search filter
+    if (debouncedSearchQuery) {
+      const query = debouncedSearchQuery.toLowerCase();
+      filtered = filtered.filter(activity => 
+        activity.title.toLowerCase().includes(query) ||
+        activity.description.toLowerCase().includes(query)
+      );
+    }
+    
+    // Apply type filter
+    if (filterType !== 'all') {
+      filtered = filtered.filter(activity => activity.type.includes(filterType));
+    }
+    
+    performanceMonitor.end('filterActivities');
+    return filtered;
+  }, [activities, debouncedSearchQuery, filterType]);
 
-    const setupListeners = async () => {
-      try {
-        console.log('[ActivityFeed] Setting up activity feed listener for user:', currentUserId);
-        
-        unsubscribeActivities = SocialService.subscribeToActivityFeed(currentUserId, (items) => {
-          console.log('[ActivityFeed] Activities updated:', items.length);
-          setActivities(items);
-          setLoading(false);
-          
-          // Check user likes for each activity
-          items.forEach(async (item) => {
-            const userLike = await SocialService.getLike(item.id, currentUserId);
-            setUserLikes(prev => ({
-              ...prev,
-              [item.id]: !!userLike
-            }));
-          });
-        });
-      } catch (error) {
-        console.error('[ActivityFeed] Error setting up listeners:', error);
-        setLoading(false);
-      }
-    };
-
-    setupListeners();
-
-    return () => {
-      try {
-        if (unsubscribeActivities) {
-          unsubscribeActivities();
-        }
-        Object.values(unsubscribeComments).forEach(unsubscribe => {
-          if (unsubscribe) unsubscribe();
-        });
-      } catch (error) {
-        console.error('[ActivityFeed] Error cleaning up listeners:', error);
-      }
-    };
+  // Load initial activities
+  useEffect(() => {
+    loadActivities('reset');
   }, [currentUserId]);
 
-  const handleLike = async (activityId: string) => {
+  // Auto-load more when intersection observer triggers
+  useEffect(() => {
+    if (isIntersecting && hasMore && !loading) {
+      loadActivities('next');
+    }
+  }, [isIntersecting, hasMore, loading]);
+
+  const loadActivities = useCallback(async (direction: 'next' | 'reset' = 'reset') => {
+    if (loading) return;
+    
+    performanceMonitor.start('loadActivities');
+    setLoading(true);
+    setError(null);
+
     try {
-      if (userLikes[activityId]) {
-        await SocialService.unlikeActivity(activityId, currentUserId);
-        setUserLikes(prev => ({ ...prev, [activityId]: false }));
+      let newActivities: ActivityFeedItem[];
+
+      if (direction === 'next' && lastDoc) {
+        // Load more activities - for now, just load all since pagination isn't implemented yet
+        newActivities = await SocialService.getActivityFeed(currentUserId, ITEMS_PER_PAGE);
       } else {
-        await SocialService.likeActivity(activityId, currentUserId, currentUserName);
-        setUserLikes(prev => ({ ...prev, [activityId]: true }));
+        // Reset and load initial activities
+        newActivities = await SocialService.getActivityFeed(currentUserId, ITEMS_PER_PAGE);
       }
-    } catch (error) {
-      console.error('Error handling like:', error);
+
+      setActivities(prev => 
+        direction === 'next' ? [...prev, ...newActivities] : newActivities
+      );
+      setLastDoc(newActivities[newActivities.length - 1] || null);
+      setHasMore(newActivities.length === ITEMS_PER_PAGE);
+      
+      performanceMonitor.end('loadActivities');
+    } catch (err) {
+      console.error('Error loading activities:', err);
+      setError('Failed to load activities. Please try again.');
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [currentUserId, lastDoc, loading]);
 
-  const handleComment = async (activityId: string) => {
-    const text = commentText[activityId]?.trim();
-    if (!text) return;
-
+  const handleLike = useCallback(async (activityId: string) => {
     try {
-      await SocialService.addComment(activityId, currentUserId, currentUserName, currentUserAvatar, text);
-      setCommentText(prev => ({ ...prev, [activityId]: '' }));
+      performanceMonitor.start('handleLike');
+      await SocialService.likeActivity(activityId, currentUserId, currentUserName);
+      
+      // Optimistically update the UI
+      setActivities(prev => prev.map(activity => 
+        activity.id === activityId 
+          ? { ...activity, likes: activity.likes + 1 }
+          : activity
+      ));
+      
+      performanceMonitor.end('handleLike');
     } catch (error) {
-      console.error('Error adding comment:', error);
+      console.error('Error liking activity:', error);
     }
-  };
+  }, [currentUserId, currentUserName]);
 
-  const toggleComments = async (activityId: string) => {
-    const newShowComments = !showComments[activityId];
-    setShowComments(prev => ({ ...prev, [activityId]: newShowComments }));
-
-    if (newShowComments && !comments[activityId]) {
-      try {
-        const activityComments = await SocialService.getCommentsForActivity(activityId);
-        setComments(prev => ({ ...prev, [activityId]: activityComments }));
-        
-        // Set up real-time listener for comments
-        const unsubscribe = SocialService.subscribeToActivityComments(activityId, (newComments) => {
-          setComments(prev => ({ ...prev, [activityId]: newComments }));
-        });
-        
-        // Store unsubscribe function (in a real app, you'd manage this better)
-        setTimeout(() => {
-          unsubscribe();
-        }, 30000); // Auto-unsubscribe after 30 seconds
-      } catch (error) {
-        console.error('Error loading comments:', error);
-      }
+  const handleComment = useCallback(async (activityId: string, comment: string) => {
+    if (!comment.trim()) return;
+    
+    try {
+      performanceMonitor.start('handleComment');
+      await SocialService.addComment(activityId, currentUserId, currentUserName, currentUserAvatar, comment);
+      
+      // Optimistically update the UI
+      setActivities(prev => prev.map(activity => 
+        activity.id === activityId 
+          ? { ...activity, comments: activity.comments + 1 }
+          : activity
+      ));
+      
+      performanceMonitor.end('handleComment');
+    } catch (error) {
+      console.error('Error commenting on activity:', error);
     }
-  };
+  }, [currentUserId, currentUserName, currentUserAvatar]);
+
+  const handleShare = useCallback(async (activityId: string) => {
+    try {
+      performanceMonitor.start('handleShare');
+      // Share functionality not implemented yet - just log for now
+      console.log('Sharing activity:', activityId);
+      performanceMonitor.end('handleShare');
+    } catch (error) {
+      console.error('Error sharing activity:', error);
+    }
+  }, [currentUserId]);
+
+  // Memoized activity item component
+  const ActivityItem = useCallback(({ activity }: { activity: ActivityFeedItem }) => {
+    const displayName = getUserDisplayName(activity.userId);
+    const avatarUrl = getUserAvatar(activity.userId);
+    
+    return (
+      <div className="activity-item" key={activity.id}>
+        <div className="activity-header">
+          <div className="user-avatar">
+            {avatarUrl ? (
+              <img 
+                src={avatarUrl} 
+                alt={displayName}
+                loading="lazy"
+                onError={(e) => {
+                  e.currentTarget.src = '/default-avatar.png';
+                }}
+              />
+            ) : (
+              <img 
+                src="/default-avatar.png" 
+                alt={displayName}
+                loading="lazy"
+                onError={(e) => {
+                  e.currentTarget.src = '/default-avatar.png';
+                }}
+              />
+            )}
+          </div>
+          <div className="activity-info">
+            <div className="user-name">{displayName}</div>
+            <div className="activity-time">
+              {new Date(activity.createdAt).toLocaleDateString()}
+            </div>
+          </div>
+          <div className="activity-type-badge">
+            {activity.type.replace('_', ' ')}
+          </div>
+        </div>
+        
+        <div className="activity-content">
+          <h3 className="activity-title">{activity.title}</h3>
+          <p className="activity-description">{activity.description}</p>
+          
+          {activity.imageUrl && (
+            <div className="activity-image">
+              <img 
+                src={activity.imageUrl} 
+                alt="Activity"
+                loading="lazy"
+              />
+            </div>
+          )}
+        </div>
+        
+        <div className="activity-actions">
+          <button
+            onClick={() => handleLike(activity.id)}
+            className="action-button"
+          >
+            <span className="icon">❤️</span>
+            <span className="count">{activity.likes}</span>
+          </button>
+          
+          <button className="action-button">
+            <span className="icon">💬</span>
+            <span className="count">{activity.comments}</span>
+          </button>
+          
+          <button
+            onClick={() => handleShare(activity.id)}
+            className="action-button"
+          >
+            <span className="icon">📤</span>
+            <span>Share</span>
+          </button>
+        </div>
+      </div>
+    );
+  }, [handleLike, handleComment, handleShare, getUserDisplayName, getUserAvatar]);
 
   const getActivityIcon = (type: string) => {
     switch (type) {
@@ -151,127 +306,84 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
     return date.toLocaleDateString();
   };
 
-  if (loading) {
+  if (error) {
     return (
-      <div className={`space-y-4 ${className}`}>
-        {[...Array(3)].map((_, i) => (
-          <div key={i} className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 animate-pulse">
-            <div className="flex items-start space-x-3">
-              <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
-              <div className="flex-1 space-y-2">
-                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-              </div>
-            </div>
-          </div>
-        ))}
+      <div className="activity-feed-error">
+        <div className="error-icon">⚠️</div>
+        <p>{error}</p>
+        <button onClick={() => loadActivities('reset')} className="retry-button">
+          Try Again
+        </button>
       </div>
     );
   }
 
   return (
-    <div className={`space-y-4 ${className}`}>
-      {activities.length === 0 ? (
-        <div className="bg-white rounded-xl p-8 text-center shadow-sm border border-gray-100">
-          <div className="text-4xl mb-4">📢</div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No Activity Yet</h3>
-          <p className="text-gray-600">When you and your connections start sharing projects and updates, they'll appear here.</p>
+    <div className={`activity-feed ${className}`}>
+      {/* Search and Filter Controls */}
+      <div className="activity-controls">
+        <div className="search-container">
+          <input
+            type="text"
+            placeholder="Search activities..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="search-input"
+          />
         </div>
-      ) : (
-        activities.map((activity) => (
-          <div key={activity.id} className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-            {/* Activity Header */}
-            <div className="flex items-start space-x-3 mb-4">
-              <div className="text-2xl flex-shrink-0">
-                {getActivityIcon(activity.type)}
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-medium text-gray-900 mb-1">
-                  {activity.title}
-                </h3>
-                <p className="text-sm text-gray-600 mb-2">
-                  {activity.description}
-                </p>
-                <p className="text-xs text-gray-500">
-                  {formatTimeAgo(activity.createdAt)}
-                </p>
-              </div>
-            </div>
+        
+        <div className="filter-container">
+          <select
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value as any)}
+            className="filter-select"
+          >
+            <option value="all">All Activities</option>
+            <option value="likes">Likes</option>
+            <option value="comments">Comments</option>
+            <option value="follows">Follows</option>
+          </select>
+        </div>
+      </div>
 
-            {/* Activity Actions */}
-            <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-              <div className="flex items-center space-x-4">
-                {/* Like Button */}
-                <button
-                  onClick={() => handleLike(activity.id)}
-                  className={`flex items-center space-x-1 text-sm transition-colors duration-200 ${
-                    userLikes[activity.id] 
-                      ? 'text-red-600 hover:text-red-700' 
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  <span className="text-lg">{userLikes[activity.id] ? '❤️' : '🤍'}</span>
-                  <span>{activity.likes}</span>
-                </button>
-
-                {/* Comment Button */}
-                <button
-                  onClick={() => toggleComments(activity.id)}
-                  className="flex items-center space-x-1 text-sm text-gray-500 hover:text-gray-700 transition-colors duration-200"
-                >
-                  <span>💬</span>
-                  <span>{activity.comments}</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Comments Section */}
-            {showComments[activity.id] && (
-              <div className="mt-4 pt-4 border-t border-gray-100">
-                {/* Add Comment */}
-                <div className="flex space-x-2 mb-4">
-                  <input
-                    type="text"
-                    value={commentText[activity.id] || ''}
-                    onChange={(e) => setCommentText(prev => ({ ...prev, [activity.id]: e.target.value }))}
-                    onKeyPress={(e) => e.key === 'Enter' && handleComment(activity.id)}
-                    placeholder="Add a comment..."
-                    className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                  <button
-                    onClick={() => handleComment(activity.id)}
-                    disabled={!commentText[activity.id]?.trim()}
-                    className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-                  >
-                    Post
-                  </button>
-                </div>
-
-                {/* Comments List */}
-                <div className="space-y-3">
-                  {comments[activity.id]?.map((comment) => (
-                    <div key={comment.id} className="flex space-x-3">
-                      <div className="w-8 h-8 bg-gray-200 rounded-full flex-shrink-0"></div>
-                      <div className="flex-1">
-                        <div className="bg-gray-50 rounded-lg p-3">
-                          <p className="text-sm font-medium text-gray-900 mb-1">
-                            {comment.userName}
-                          </p>
-                          <p className="text-sm text-gray-700">
-                            {comment.content}
-                          </p>
-                        </div>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {formatTimeAgo(comment.createdAt)}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+      {/* Activities List */}
+      <div className="activities-list">
+        {filteredActivities.length === 0 && !loading ? (
+          <div className="empty-state">
+            <div className="empty-icon">📝</div>
+            <h3>No activities found</h3>
+            <p>Try adjusting your search or filters</p>
+          </div>
+        ) : (
+          <>
+            {filteredActivities.map((activity) => (
+              <ActivityItem key={activity.id} activity={activity} />
+            ))}
+            
+            {/* Load More Trigger */}
+            {hasMore && (
+              <div ref={loadMoreRef as React.RefObject<HTMLDivElement>} className="load-more-trigger">
+                {loading && (
+                  <div className="loading-indicator">
+                    <div className="spinner"></div>
+                    <span>Loading more activities...</span>
+                  </div>
+                )}
               </div>
             )}
-          </div>
-        ))
+          </>
+        )}
+      </div>
+
+      {/* Performance Stats (Development Only) */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="performance-stats">
+          <small>
+            Loaded {activities.length} activities | 
+            Filtered: {filteredActivities.length} | 
+            Memory: {Math.round((performance as any).memory?.usedJSHeapSize / 1024 / 1024 || 0)}MB
+          </small>
+        </div>
       )}
     </div>
   );

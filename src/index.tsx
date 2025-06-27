@@ -39,6 +39,7 @@ import GanttChart from './components/GanttChart/GanttChart';
 import SocialDashboard from './components/Social/SocialDashboard';
 import SocialTestPage from './components/Social/SocialTestPage';
 import NotificationBell from './components/Social/NotificationBell';
+import PerformanceMonitor from './components/PerformanceMonitor';
 
 import { AnimatePresence } from 'framer-motion';
 
@@ -141,6 +142,7 @@ const App: React.FC = () => {
                     </Routes>
                 </AnimatePresence>
             </main>
+            <PerformanceMonitor />
         </>
     );
 };

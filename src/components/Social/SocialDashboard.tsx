@@ -4,6 +4,7 @@ import { db } from '../../firebase';
 import { FollowRequest, SocialNotification, ActivityFeedItem, Follow } from '../../types/Social';
 import { CrewProfile } from '../../types/CrewProfile';
 import { SocialService } from '../../utilities/socialService';
+import { UserUtils, UserProfile } from '../../utilities/userUtils';
 import QuickMessage from './QuickMessage';
 import FollowButton from './FollowButton';
 import ActivityFeed from './ActivityFeed';
@@ -32,6 +33,9 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // User profiles cache
+  const [userProfiles, setUserProfiles] = useState<Map<string, UserProfile>>(new Map());
 
   useEffect(() => {
     let unsubscribeFollowRequests: (() => void) | undefined;
@@ -209,6 +213,44 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
     }
   };
 
+  const loadUserProfiles = async (userIds: string[]) => {
+    try {
+      const profiles = await UserUtils.getMultipleUserProfiles(userIds);
+      setUserProfiles(prev => new Map([...prev, ...profiles]));
+    } catch (error) {
+      console.error('Error loading user profiles:', error);
+    }
+  };
+
+  const getUserDisplayName = (userId: string): string => {
+    const profile = userProfiles.get(userId);
+    return profile?.displayName || `User ${userId.slice(-4)}`;
+  };
+
+  const getUserAvatar = (userId: string): string | undefined => {
+    const profile = userProfiles.get(userId);
+    return profile?.avatarUrl;
+  };
+
+  // Load user profiles when followers/following/requests change
+  useEffect(() => {
+    const userIds = new Set<string>();
+    
+    followers.forEach(follow => userIds.add(follow.followerId));
+    following.forEach(follow => userIds.add(follow.followingId));
+    followRequests.forEach(request => userIds.add(request.fromUserId));
+    notifications.forEach(notification => {
+      if (notification.relatedUserId) {
+        userIds.add(notification.relatedUserId);
+      }
+    });
+    
+    const userIdsToLoad = Array.from(userIds).filter(id => !userProfiles.has(id));
+    if (userIdsToLoad.length > 0) {
+      loadUserProfiles(userIdsToLoad);
+    }
+  }, [followers, following, followRequests, notifications]);
+
   const renderActivityFeed = () => (
     <div>
       <div className="mb-6">
@@ -226,126 +268,183 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
 
   const renderFollowers = () => (
     <div className="space-y-6">
-      {followers.map((follow) => (
-        <div key={follow.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-                <span className="text-lg font-medium text-gray-600">
-                  {follow.followerId?.charAt(0) || '?'}
-                </span>
+      {followers.map((follow) => {
+        const displayName = getUserDisplayName(follow.followerId);
+        const avatarUrl = getUserAvatar(follow.followerId);
+        
+        return (
+          <div key={follow.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                {avatarUrl ? (
+                  <img 
+                    src={avatarUrl} 
+                    alt={displayName}
+                    className="w-12 h-12 rounded-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = '/default-avatar.png';
+                    }}
+                  />
+                ) : (
+                  <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
+                    <span className="text-lg font-medium text-gray-600">
+                      {displayName.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                )}
+                <div>
+                  <h4 className="text-sm font-medium text-gray-900">{displayName}</h4>
+                  <p className="text-xs font-light text-gray-500">Following since {follow.createdAt?.toLocaleDateString()}</p>
+                </div>
               </div>
-              <div>
-                <h4 className="text-sm font-medium text-gray-900">{follow.followerId}</h4>
-                <p className="text-xs font-light text-gray-500">Following since {follow.createdAt?.toLocaleDateString()}</p>
-              </div>
+              <QuickMessage 
+                currentUserId={currentUserId}
+                targetUserId={follow.followerId}
+                targetUserName={displayName}
+                className="ml-2"
+              />
             </div>
-            <QuickMessage 
-              currentUserId={currentUserId}
-              targetUserId={follow.followerId}
-              targetUserName={follow.followerId}
-              className="ml-2"
-            />
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 
   const renderFollowing = () => (
     <div className="space-y-6">
-      {following.map((follow) => (
-        <div key={follow.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-                <span className="text-lg font-medium text-gray-600">
-                  {follow.followingId?.charAt(0) || '?'}
-                </span>
+      {following.map((follow) => {
+        const displayName = getUserDisplayName(follow.followingId);
+        const avatarUrl = getUserAvatar(follow.followingId);
+        
+        return (
+          <div key={follow.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                {avatarUrl ? (
+                  <img 
+                    src={avatarUrl} 
+                    alt={displayName}
+                    className="w-12 h-12 rounded-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = '/default-avatar.png';
+                    }}
+                  />
+                ) : (
+                  <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
+                    <span className="text-lg font-medium text-gray-600">
+                      {displayName.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                )}
+                <div>
+                  <h4 className="text-sm font-medium text-gray-900">{displayName}</h4>
+                  <p className="text-xs font-light text-gray-500">Following since {follow.createdAt?.toLocaleDateString()}</p>
+                </div>
               </div>
-              <div>
-                <h4 className="text-sm font-medium text-gray-900">{follow.followingId}</h4>
-                <p className="text-xs font-light text-gray-500">Following since {follow.createdAt?.toLocaleDateString()}</p>
-              </div>
+              <button 
+                onClick={() => unfollowUser(follow.followingId)}
+                disabled={loading}
+                className="px-4 py-2 bg-red-600 text-white font-light tracking-wide rounded-lg hover:bg-red-700 transition-all duration-300 text-sm disabled:opacity-50"
+              >
+                Unfollow
+              </button>
             </div>
-            <button 
-              onClick={() => unfollowUser(follow.followingId)}
-              disabled={loading}
-              className="px-4 py-2 bg-red-600 text-white font-light tracking-wide rounded-lg hover:bg-red-700 transition-all duration-300 text-sm disabled:opacity-50"
-            >
-              Unfollow
-            </button>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 
   const renderFollowRequests = () => (
     <div className="space-y-6">
-      {followRequests.map((request) => (
-        <div key={request.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-                <span className="text-lg font-medium text-gray-600">
-                  {request.fromUserId?.charAt(0) || '?'}
-                </span>
+      {followRequests.map((request) => {
+        const displayName = getUserDisplayName(request.fromUserId);
+        const avatarUrl = getUserAvatar(request.fromUserId);
+        
+        return (
+          <div key={request.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                {avatarUrl ? (
+                  <img 
+                    src={avatarUrl} 
+                    alt={displayName}
+                    className="w-12 h-12 rounded-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = '/default-avatar.png';
+                    }}
+                  />
+                ) : (
+                  <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
+                    <span className="text-lg font-medium text-gray-600">
+                      {displayName.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                )}
+                <div>
+                  <h4 className="text-sm font-medium text-gray-900">{displayName}</h4>
+                  <p className="text-xs font-light text-gray-500">{request.message}</p>
+                </div>
               </div>
-              <div>
-                <h4 className="text-sm font-medium text-gray-900">{request.fromUserId}</h4>
-                <p className="text-xs font-light text-gray-500">{request.message}</p>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => respondToFollowRequest(request.id, 'accepted')}
+                  disabled={loading}
+                  className="px-4 py-2 bg-green-600 text-white font-light tracking-wide rounded-lg hover:bg-green-700 transition-all duration-300 text-sm disabled:opacity-50"
+                >
+                  Accept
+                </button>
+                <button 
+                  onClick={() => respondToFollowRequest(request.id, 'rejected')}
+                  disabled={loading}
+                  className="px-4 py-2 bg-red-600 text-white font-light tracking-wide rounded-lg hover:bg-red-700 transition-all duration-300 text-sm disabled:opacity-50"
+                >
+                  Decline
+                </button>
               </div>
-            </div>
-            <div className="flex gap-2">
-              <button 
-                onClick={() => respondToFollowRequest(request.id, 'accepted')}
-                disabled={loading}
-                className="px-4 py-2 bg-green-600 text-white font-light tracking-wide rounded-lg hover:bg-green-700 transition-all duration-300 text-sm disabled:opacity-50"
-              >
-                Accept
-              </button>
-              <button 
-                onClick={() => respondToFollowRequest(request.id, 'rejected')}
-                disabled={loading}
-                className="px-4 py-2 bg-red-600 text-white font-light tracking-wide rounded-lg hover:bg-red-700 transition-all duration-300 text-sm disabled:opacity-50"
-              >
-                Decline
-              </button>
             </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 
   const renderNotifications = () => (
     <div className="space-y-6">
-      {notifications.map((notification) => (
-        <div 
-          key={notification.id} 
-          className={`bg-white rounded-xl shadow-sm border border-gray-100 p-6 cursor-pointer transition-all duration-300 ${!notification.isRead ? 'border-blue-200 bg-blue-50' : ''}`}
-          onClick={() => markNotificationAsRead(notification.id)}
-        >
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
-              <span className="text-lg font-medium text-gray-600">
-                {notification.title?.charAt(0) || '?'}
-              </span>
+      {notifications.map((notification) => {
+        const relatedUserName = notification.relatedUserId ? getUserDisplayName(notification.relatedUserId) : null;
+        
+        return (
+          <div 
+            key={notification.id} 
+            className={`bg-white rounded-xl shadow-sm border border-gray-100 p-6 cursor-pointer transition-all duration-300 ${!notification.isRead ? 'border-blue-200 bg-blue-50' : ''}`}
+            onClick={() => markNotificationAsRead(notification.id)}
+          >
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-lg font-medium text-gray-600">
+                  {notification.title?.charAt(0) || '?'}
+                </span>
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-900 mb-1">
+                  {notification.title}
+                  {relatedUserName && (
+                    <span className="text-blue-600 ml-1">from {relatedUserName}</span>
+                  )}
+                </p>
+                <p className="text-sm font-light text-gray-600 mb-2">{notification.message}</p>
+                <p className="text-xs font-light text-gray-500">
+                  {notification.createdAt?.toLocaleDateString()}
+                </p>
+              </div>
+              {!notification.isRead && (
+                <div className="w-3 h-3 bg-blue-500 rounded-full flex-shrink-0"></div>
+              )}
             </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-gray-900 mb-1">{notification.title}</p>
-              <p className="text-sm font-light text-gray-600 mb-2">{notification.message}</p>
-              <p className="text-xs font-light text-gray-500">
-                {notification.createdAt?.toLocaleDateString()}
-              </p>
-            </div>
-            {!notification.isRead && (
-              <div className="w-3 h-3 bg-blue-500 rounded-full flex-shrink-0"></div>
-            )}
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 
