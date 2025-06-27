@@ -89,11 +89,9 @@ const App: React.FC = () => {
                             <>
                                 <li><Link to="/projects/add" className="nav-link">Add Project</Link></li>
                                 <li><Link to="/crew" className="nav-link">Crew Directory</Link></li>
-                                <li><Link to="/social" className="nav-link">Network</Link></li>
                                 <li><Link to="/collections" className="nav-link">My Collections</Link></li>
                                 <li><Link to="/chat" className="nav-link">Messages</Link></li>
-                                <li><Link to="/availability" className="nav-link">Availability</Link></li>
-                                <li><Link to="/edit-profile" className="nav-link">Edit Profile</Link></li>
+                                <li><Link to="/edit-profile" className="nav-link">Resume Builder</Link></li>
                                 <li>
                                     <button
                                         onClick={userSignOut}

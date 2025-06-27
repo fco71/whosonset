@@ -48,7 +48,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
   return (
     <div className="flex flex-col gap-2">
       <select
-        className="border rounded p-2"
+        className="location-dropdown"
         value={selectedCountry}
         onChange={e => onCountryChange(e.target.value)}
         disabled={loading}
@@ -59,7 +59,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
         ))}
       </select>
       <select
-        className="border rounded p-2"
+        className="location-dropdown"
         value={selectedCity}
         onChange={e => onCityChange(e.target.value)}
         disabled={!selectedCountry || loading}
