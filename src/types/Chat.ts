@@ -39,6 +39,7 @@ export interface DirectMessage {
   isRead: boolean;
   messageType: 'text' | 'image' | 'file' | 'project_invite';
   relatedProjectId?: string;
+  reactions?: MessageReaction[];
 }
 
 export interface ChatNotification {

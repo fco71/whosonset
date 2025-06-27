@@ -1,464 +1,428 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, doc, serverTimestamp, where, enableNetwork, disableNetwork } from 'firebase/firestore';
-import { db, auth, handleFirestoreError } from '../../firebase';
-import { ChatMessage, ChatRoom, ChatCallout, ChatPresence } from '../../types/Chat';
+import { MessagingService } from '../../utilities/messagingService';
+import { DirectMessage, ChatSettings, MessageReaction } from '../../types/Chat';
+import { SocialService } from '../../utilities/socialService';
 import './ChatInterface.scss';
 
 interface ChatInterfaceProps {
   currentUserId: string;
-  currentUser: any;
+  currentUserName: string;
+  currentUserAvatar?: string;
 }
 
-const ChatInterface: React.FC<ChatInterfaceProps> = ({ currentUserId, currentUser }) => {
-  const [rooms, setRooms] = useState<ChatRoom[]>([]);
-  const [currentRoom, setCurrentRoom] = useState<ChatRoom | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [newMessage, setNewMessage] = useState('');
-  const [callouts, setCallouts] = useState<ChatCallout[]>([]);
-  const [activeTab, setActiveTab] = useState<'chats' | 'callouts' | 'projects'>('chats');
-  const [filterDepartment, setFilterDepartment] = useState<string>('all');
-  const [showCalloutForm, setShowCalloutForm] = useState(false);
-  const [presence, setPresence] = useState<ChatPresence[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [isTyping, setIsTyping] = useState(false);
+const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
+  currentUserId, 
+  currentUserName,
+  currentUserAvatar 
+}) => {
+  const [selectedUser, setSelectedUser] = useState<string | null>(null);
+  const [messages, setMessages] = useState<DirectMessage[]>([]);
+  const [conversations, setConversations] = useState<{ userId: string; userName: string; lastMessage?: string; unreadCount: number }[]>([]);
+  const [messageText, setMessageText] = useState('');
+  const [loading, setLoading] = useState(false);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
+  const [isTyping, setIsTyping] = useState(false);
+  const [chatSettings, setChatSettings] = useState<ChatSettings | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout>();
 
-  const departments = [
-    'Camera', 'Sound', 'Lighting', 'Art', 'Costume', 'Makeup', 'Hair', 
-    'Production', 'Directing', 'Editing', 'VFX', 'Stunts', 'Transport'
-  ];
-
-  // Initialize Firestore connection
   useEffect(() => {
-    let unsubscribeRooms: (() => void) | undefined;
-    let unsubscribeCallouts: (() => void) | undefined;
-    const listenerId = Math.random().toString(36).substr(2, 9);
-    console.log(`[Chat] Setting up chatRooms and callouts listeners (id=${listenerId})`);
-
-    const initializeFirestore = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        await enableNetwork(db);
-        // Set up listeners and store unsubscribe functions
-        unsubscribeRooms = await loadChatRooms(listenerId);
-        unsubscribeCallouts = await loadCallouts(listenerId);
-        setIsLoading(false);
-      } catch (err) {
-        console.error('Error initializing Firestore:', err);
-        setError('Failed to connect to chat service. Please refresh the page.');
-        setIsLoading(false);
-      }
-    };
-
-    if (currentUserId) {
-      initializeFirestore();
-    }
-
-    return () => {
-      console.log(`[Chat] Cleaning up chatRooms and callouts listeners (id=${listenerId})`);
-      if (unsubscribeRooms) unsubscribeRooms();
-      if (unsubscribeCallouts) unsubscribeCallouts();
-    };
+    loadConversations();
+    loadChatSettings();
   }, [currentUserId]);
 
-  const loadChatRooms = async (listenerId?: string) => {
-    try {
-      const roomsQuery = query(
-        collection(db, 'chatRooms'),
-        where('participants', 'array-contains', currentUserId),
-        orderBy('updatedAt', 'desc')
-      );
-      console.log(`[Chat] Setting up chatRooms onSnapshot (id=${listenerId})`);
-      const unsubscribeRooms = onSnapshot(roomsQuery, 
-        (snapshot) => {
-          const roomsData = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          })) as ChatRoom[];
-          setRooms(roomsData);
-        },
-        (error) => {
-          console.error('Error loading chat rooms:', error);
-          handleFirestoreError(error);
-        }
-      );
-      return () => {
-        console.log(`[Chat] Unsubscribing chatRooms onSnapshot (id=${listenerId})`);
-        unsubscribeRooms();
-      };
-    } catch (error) {
-      console.error('Error setting up chat rooms listener:', error);
-      handleFirestoreError(error);
-      return () => {};
-    }
-  };
-
-  const loadCallouts = async (listenerId?: string) => {
-    try {
-      const calloutsQuery = query(
-        collection(db, 'callouts'),
-        orderBy('createdAt', 'desc')
-      );
-      console.log(`[Chat] Setting up callouts onSnapshot (id=${listenerId})`);
-      const unsubscribeCallouts = onSnapshot(calloutsQuery, 
-        (snapshot) => {
-          const calloutsData = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          })) as ChatCallout[];
-          setCallouts(calloutsData);
-        },
-        (error) => {
-          console.error('Error loading callouts:', error);
-          handleFirestoreError(error);
-        }
-      );
-      return () => {
-        console.log(`[Chat] Unsubscribing callouts onSnapshot (id=${listenerId})`);
-        unsubscribeCallouts();
-      };
-    } catch (error) {
-      console.error('Error setting up callouts listener:', error);
-      handleFirestoreError(error);
-      return () => {};
-    }
-  };
-
   useEffect(() => {
-    if (currentRoom) {
-      let unsubscribe: (() => void) | undefined;
-      const listenerId = Math.random().toString(36).substr(2, 9);
-      console.log(`[Chat] Setting up messages listener for room ${currentRoom.id} (id=${listenerId})`);
-      const loadMessages = async () => {
-        try {
-          const messagesQuery = query(
-            collection(db, `chatRooms/${currentRoom.id}/messages`),
-            orderBy('timestamp', 'asc')
-          );
-          unsubscribe = onSnapshot(messagesQuery, 
-            (snapshot) => {
-              const messagesData = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-              })) as ChatMessage[];
-              setMessages(messagesData);
-            },
-            (error) => {
-              console.error('Error loading messages:', error);
-              handleFirestoreError(error);
-            }
-          );
-        } catch (error) {
-          console.error('Error setting up messages listener:', error);
-          handleFirestoreError(error);
-        }
-      };
-      loadMessages();
-      return () => {
-        console.log(`[Chat] Cleaning up messages listener for room ${currentRoom.id} (id=${listenerId})`);
-        if (unsubscribe) unsubscribe();
-      };
+    if (selectedUser) {
+      loadMessages(selectedUser);
+      markConversationAsRead(selectedUser);
+      setupTypingListener(selectedUser);
     }
-  }, [currentRoom]);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  }, [selectedUser]);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  const sendMessage = async () => {
-    if (!newMessage.trim() || !currentRoom) return;
+  const loadConversations = async () => {
+    try {
+      setLoading(true);
+      const participants = await MessagingService.getConversationParticipants(currentUserId);
+      
+      const conversationData = await Promise.all(
+        participants.map(async (userId) => {
+          const messages = await MessagingService.getDirectMessages(currentUserId, userId, 1);
+          const lastMessage = messages.length > 0 ? messages[messages.length - 1] : undefined;
+          const unreadCount = await getUnreadCount(userId);
+          
+          // Get user name (you might want to fetch from user profiles)
+          const userName = `User ${userId.slice(-4)}`; // Placeholder
+          
+          return {
+            userId,
+            userName,
+            lastMessage: lastMessage?.content,
+            unreadCount
+          };
+        })
+      );
+      
+      setConversations(conversationData);
+    } catch (error) {
+      console.error('Error loading conversations:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const messageData: Omit<ChatMessage, 'id'> = {
-      chatRoomId: currentRoom.id,
-      senderId: currentUserId,
-      content: newMessage,
-      timestamp: new Date(),
-      messageType: 'text',
-      isRead: false
-    };
+  const loadMessages = async (otherUserId: string) => {
+    try {
+      const messageList = await MessagingService.getDirectMessages(currentUserId, otherUserId);
+      setMessages(messageList);
+    } catch (error) {
+      console.error('Error loading messages:', error);
+    }
+  };
+
+  const loadChatSettings = async () => {
+    try {
+      const settings = await MessagingService.getChatSettings(currentUserId);
+      setChatSettings(settings);
+    } catch (error) {
+      console.error('Error loading chat settings:', error);
+    }
+  };
+
+  const getUnreadCount = async (otherUserId: string): Promise<number> => {
+    try {
+      const messages = await MessagingService.getDirectMessages(currentUserId, otherUserId);
+      return messages.filter(msg => !msg.isRead && msg.senderId === otherUserId).length;
+    } catch (error) {
+      return 0;
+    }
+  };
+
+  const sendMessage = async () => {
+    if (!messageText.trim() || !selectedUser) return;
 
     try {
-      await addDoc(collection(db, `chatRooms/${currentRoom.id}/messages`), messageData);
-      setNewMessage('');
+      setLoading(true);
+      await MessagingService.sendDirectMessage(currentUserId, selectedUser, messageText.trim());
+      setMessageText('');
+      setIsTyping(false);
+      MessagingService.setTypingStatus(currentUserId, selectedUser, false);
     } catch (error) {
       console.error('Error sending message:', error);
-      handleFirestoreError(error);
+      alert('Failed to send message. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const createCallout = async (calloutData: Partial<ChatCallout>) => {
-    const newCallout: Omit<ChatCallout, 'id'> = {
-      ...calloutData,
-      requiredSkills: calloutData.requiredSkills ? 
-        (Array.isArray(calloutData.requiredSkills) ? calloutData.requiredSkills : [calloutData.requiredSkills]) : 
-        [],
-      createdBy: currentUserId,
-      createdAt: new Date(),
-      responses: [],
-      status: 'open'
-    } as Omit<ChatCallout, 'id'>;
-
+  const markConversationAsRead = async (otherUserId: string) => {
     try {
-      await addDoc(collection(db, 'callouts'), newCallout);
-      setShowCalloutForm(false);
+      await MessagingService.markConversationAsRead(currentUserId, otherUserId);
+      // Refresh conversations to update unread counts
+      loadConversations();
     } catch (error) {
-      console.error('Error creating callout:', error);
-      handleFirestoreError(error);
+      console.error('Error marking conversation as read:', error);
     }
   };
 
-  const respondToCallout = async (calloutId: string, response: any) => {
-    const calloutRef = doc(db, 'callouts', calloutId);
-    const callout = callouts.find(c => c.id === calloutId);
-    
-    if (!callout) return;
+  const setupTypingListener = (otherUserId: string) => {
+    const unsubscribe = MessagingService.subscribeToTypingIndicators(currentUserId, (users) => {
+      setTypingUsers(users.filter(user => user !== currentUserId));
+    });
 
-    const newResponse = {
-      id: Date.now().toString(),
-      userId: currentUserId,
-      userName: currentUser.displayName || 'Unknown User',
-      userAvatar: currentUser.photoURL,
-      ...response,
-      status: 'pending',
-      timestamp: new Date()
-    };
+    return unsubscribe;
+  };
 
-    const updatedResponses = [...callout.responses, newResponse];
+  const handleTyping = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setMessageText(e.target.value);
     
+    if (!isTyping) {
+      setIsTyping(true);
+      MessagingService.setTypingStatus(currentUserId, selectedUser!, true);
+    }
+
+    // Clear existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // Set new timeout
+    typingTimeoutRef.current = setTimeout(() => {
+      setIsTyping(false);
+      MessagingService.setTypingStatus(currentUserId, selectedUser!, false);
+    }, 2000);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const addReaction = async (messageId: string, emoji: string) => {
     try {
-      await updateDoc(calloutRef, { responses: updatedResponses });
+      await MessagingService.addMessageReaction(messageId, currentUserId, currentUserName, emoji);
     } catch (error) {
-      console.error('Error responding to callout:', error);
-      handleFirestoreError(error);
+      console.error('Error adding reaction:', error);
     }
   };
 
-  const getUrgencyColor = (urgency: string) => {
-    switch (urgency) {
-      case 'urgent': return '#ff4444';
-      case 'high': return '#ff8800';
-      case 'medium': return '#ffbb33';
-      case 'low': return '#00C851';
-      default: return '#666';
-    }
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'online': return '🟢';
-      case 'away': return '🟡';
-      case 'busy': return '🔴';
-      case 'on-set': return '🎬';
-      case 'in-meeting': return '💼';
-      default: return '⚫';
-    }
+  const getReactionCount = (reactions: MessageReaction[] = [], emoji: string) => {
+    return reactions.filter(r => r.emoji === emoji).length;
   };
 
-  if (isLoading) {
-    return (
-      <div className="chat-interface">
-        <div className="loading-container">
-          <div className="loading-spinner"></div>
-          <p>Connecting to chat service...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="chat-interface">
-        <div className="error-container">
-          <div className="error-icon">⚠️</div>
-          <h3>Connection Error</h3>
-          <p>{error}</p>
-          <button 
-            className="retry-btn"
-            onClick={() => window.location.reload()}
-          >
-            Retry Connection
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const hasUserReacted = (reactions: MessageReaction[] = [], emoji: string) => {
+    return reactions.some(r => r.userId === currentUserId && r.emoji === emoji);
+  };
 
   return (
     <div className="chat-interface">
-      <div className="p-8 text-center">
-        <h2 className="text-2xl font-light text-gray-900 mb-4">Chat Interface</h2>
-        <p className="text-gray-600 mb-4">
-          Chat interface is temporarily disabled while we focus on testing the social system.
-        </p>
-        <p className="text-sm text-gray-500">
-          Please test the social features at <a href="/social" className="text-blue-600 hover:underline">/social</a>
-        </p>
+      <div className="chat-container">
+        {/* Sidebar */}
+        <div className="chat-sidebar">
+          <div className="sidebar-header">
+            <h2 className="text-xl font-light text-gray-900 tracking-wide">Messages</h2>
+            <button
+              onClick={() => setShowSettings(!showSettings)}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              ⚙️
+            </button>
+          </div>
+
+          {/* Chat Settings */}
+          {showSettings && (
+            <div className="settings-panel">
+              <h3 className="text-sm font-medium text-gray-900 mb-3">Chat Settings</h3>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs text-gray-600">Allow messages from:</label>
+                  <select
+                    value={chatSettings?.allowMessagesFrom || 'everyone'}
+                    onChange={(e) => {
+                      const newSettings: ChatSettings = { 
+                        userId: currentUserId,
+                        allowMessagesFrom: e.target.value as 'followers' | 'everyone' | 'none',
+                        showOnlineStatus: chatSettings?.showOnlineStatus ?? true,
+                        showLastSeen: chatSettings?.showLastSeen ?? true,
+                        autoReply: chatSettings?.autoReply || '',
+                        isAway: chatSettings?.isAway ?? false,
+                        awayMessage: chatSettings?.awayMessage || ''
+                      };
+                      setChatSettings(newSettings);
+                      MessagingService.updateChatSettings(currentUserId, newSettings);
+                    }}
+                    className="w-full text-sm border border-gray-200 rounded px-2 py-1"
+                  >
+                    <option value="everyone">Everyone</option>
+                    <option value="followers">Followers Only</option>
+                    <option value="none">No One</option>
+                  </select>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="showOnline"
+                    checked={chatSettings?.showOnlineStatus || false}
+                    onChange={(e) => {
+                      const newSettings: ChatSettings = { 
+                        userId: currentUserId,
+                        allowMessagesFrom: chatSettings?.allowMessagesFrom || 'everyone',
+                        showOnlineStatus: e.target.checked,
+                        showLastSeen: chatSettings?.showLastSeen ?? true,
+                        autoReply: chatSettings?.autoReply || '',
+                        isAway: chatSettings?.isAway ?? false,
+                        awayMessage: chatSettings?.awayMessage || ''
+                      };
+                      setChatSettings(newSettings);
+                      MessagingService.updateChatSettings(currentUserId, newSettings);
+                    }}
+                  />
+                  <label htmlFor="showOnline" className="text-xs text-gray-600">Show online status</label>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Conversations List */}
+          <div className="conversations-list">
+            {loading ? (
+              <div className="loading-skeleton">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="conversation-skeleton">
+                    <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+                    <div className="flex-1 space-y-2">
+                      <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+                      <div className="h-2 bg-gray-200 rounded w-1/2"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : conversations.length === 0 ? (
+              <div className="empty-state">
+                <div className="text-4xl mb-2">💬</div>
+                <p className="text-sm text-gray-500">No conversations yet</p>
+                <p className="text-xs text-gray-400">Start messaging your connections</p>
+              </div>
+            ) : (
+              conversations.map((conversation) => (
+                <div
+                  key={conversation.userId}
+                  onClick={() => setSelectedUser(conversation.userId)}
+                  className={`conversation-item ${selectedUser === conversation.userId ? 'active' : ''}`}
+                >
+                  <div className="user-avatar">
+                    <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
+                      <span className="text-sm font-medium text-gray-600">
+                        {conversation.userName.charAt(0)}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="conversation-info">
+                    <div className="conversation-header">
+                      <h4 className="user-name">{conversation.userName}</h4>
+                      {conversation.unreadCount > 0 && (
+                        <span className="unread-badge">{conversation.unreadCount}</span>
+                      )}
+                    </div>
+                    {conversation.lastMessage && (
+                      <p className="last-message">{conversation.lastMessage}</p>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Chat Area */}
+        <div className="chat-area">
+          {selectedUser ? (
+            <>
+              {/* Chat Header */}
+              <div className="chat-header">
+                <div className="user-info">
+                  <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                    <span className="text-sm font-medium text-gray-600">
+                      {conversations.find(c => c.userId === selectedUser)?.userName.charAt(0)}
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="user-name">
+                      {conversations.find(c => c.userId === selectedUser)?.userName}
+                    </h3>
+                    {typingUsers.includes(selectedUser) && (
+                      <p className="typing-indicator">typing...</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Messages */}
+              <div className="messages-container">
+                {messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`message ${message.senderId === currentUserId ? 'sent' : 'received'}`}
+                  >
+                    <div className="message-content">
+                      <p className="message-text">{message.content}</p>
+                      <span className="message-time">{formatTime(message.timestamp)}</span>
+                      
+                      {/* Message Reactions */}
+                      {message.reactions && message.reactions.length > 0 && (
+                        <div className="message-reactions">
+                          {['👍', '❤️', '😊', '🎉'].map((emoji) => {
+                            const count = getReactionCount(message.reactions, emoji);
+                            if (count === 0) return null;
+                            
+                            return (
+                              <button
+                                key={emoji}
+                                onClick={() => addReaction(message.id, emoji)}
+                                className={`reaction-button ${hasUserReacted(message.reactions, emoji) ? 'reacted' : ''}`}
+                              >
+                                <span className="emoji">{emoji}</span>
+                                <span className="count">{count}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Reaction Buttons */}
+                    <div className="reaction-buttons">
+                      {['👍', '❤️', '😊', '🎉'].map((emoji) => (
+                        <button
+                          key={emoji}
+                          onClick={() => addReaction(message.id, emoji)}
+                          className="reaction-option"
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                
+                {/* Typing Indicator */}
+                {typingUsers.includes(selectedUser) && (
+                  <div className="typing-indicator-message">
+                    <div className="typing-dots">
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                    </div>
+                  </div>
+                )}
+                
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Message Input */}
+              <div className="message-input">
+                <input
+                  type="text"
+                  value={messageText}
+                  onChange={handleTyping}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Type a message..."
+                  disabled={loading}
+                  className="message-input-field"
+                />
+                <button
+                  onClick={sendMessage}
+                  disabled={!messageText.trim() || loading}
+                  className="send-button"
+                >
+                  {loading ? 'Sending...' : 'Send'}
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="no-conversation">
+              <div className="text-6xl mb-4">💬</div>
+              <h3 className="text-xl font-light text-gray-900 mb-2">Select a conversation</h3>
+              <p className="text-gray-600">Choose a contact to start messaging</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
-  );
-};
-
-// Callout Form Component
-const CalloutForm: React.FC<{
-  onSubmit: (data: Partial<ChatCallout>) => void;
-  onCancel: () => void;
-}> = ({ onSubmit, onCancel }) => {
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    type: 'crew' as const,
-    urgency: 'medium' as const,
-    department: '',
-    location: '',
-    requiredSkills: '',
-    budget: { min: 0, max: 0, currency: 'USD' }
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const submitData = {
-      ...formData,
-      requiredSkills: formData.requiredSkills ? formData.requiredSkills.split(',').map(s => s.trim()) : []
-    };
-    onSubmit(submitData);
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="callout-form-content">
-      <div className="form-group">
-        <label>Title</label>
-        <input
-          type="text"
-          value={formData.title}
-          onChange={(e) => setFormData({...formData, title: e.target.value})}
-          required
-        />
-      </div>
-      
-      <div className="form-group">
-        <label>Description</label>
-        <textarea
-          value={formData.description}
-          onChange={(e) => setFormData({...formData, description: e.target.value})}
-          required
-        />
-      </div>
-      
-      <div className="form-row">
-        <div className="form-group">
-          <label>Type</label>
-          <select
-            value={formData.type}
-            onChange={(e) => setFormData({...formData, type: e.target.value as any})}
-          >
-            <option value="crew">Crew</option>
-            <option value="equipment">Equipment</option>
-            <option value="location">Location</option>
-            <option value="schedule">Schedule</option>
-            <option value="emergency">Emergency</option>
-          </select>
-        </div>
-        
-        <div className="form-group">
-          <label>Urgency</label>
-          <select
-            value={formData.urgency}
-            onChange={(e) => setFormData({...formData, urgency: e.target.value as any})}
-          >
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
-            <option value="urgent">Urgent</option>
-          </select>
-        </div>
-      </div>
-      
-      <div className="form-row">
-        <div className="form-group">
-          <label>Department</label>
-          <select
-            value={formData.department}
-            onChange={(e) => setFormData({...formData, department: e.target.value})}
-          >
-            <option value="">Select Department</option>
-            <option value="Camera">Camera</option>
-            <option value="Sound">Sound</option>
-            <option value="Lighting">Lighting</option>
-            <option value="Art">Art</option>
-            <option value="Costume">Costume</option>
-            <option value="Makeup">Makeup</option>
-            <option value="Hair">Hair</option>
-            <option value="Production">Production</option>
-            <option value="Directing">Directing</option>
-            <option value="Editing">Editing</option>
-            <option value="VFX">VFX</option>
-            <option value="Stunts">Stunts</option>
-            <option value="Transport">Transport</option>
-          </select>
-        </div>
-        
-        <div className="form-group">
-          <label>Location</label>
-          <input
-            type="text"
-            value={formData.location}
-            onChange={(e) => setFormData({...formData, location: e.target.value})}
-          />
-        </div>
-      </div>
-      
-      <div className="form-group">
-        <label>Required Skills</label>
-        <input
-          type="text"
-          value={formData.requiredSkills}
-          onChange={(e) => setFormData({...formData, requiredSkills: e.target.value})}
-          placeholder="e.g., Steadicam, RED Camera, etc."
-        />
-      </div>
-      
-      <div className="form-row">
-        <div className="form-group">
-          <label>Budget Min</label>
-          <input
-            type="number"
-            value={formData.budget.min}
-            onChange={(e) => setFormData({
-              ...formData, 
-              budget: {...formData.budget, min: parseInt(e.target.value)}
-            })}
-          />
-        </div>
-        
-        <div className="form-group">
-          <label>Budget Max</label>
-          <input
-            type="number"
-            value={formData.budget.max}
-            onChange={(e) => setFormData({
-              ...formData, 
-              budget: {...formData.budget, max: parseInt(e.target.value)}
-            })}
-          />
-        </div>
-      </div>
-      
-      <div className="form-actions">
-        <button type="button" onClick={onCancel} className="cancel-btn">
-          Cancel
-        </button>
-        <button type="submit" className="submit-btn">
-          Create Callout
-        </button>
-      </div>
-    </form>
   );
 };
 
