@@ -176,13 +176,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ currentUserId, currentUse
     if (!newMessage.trim() || !currentRoom) return;
 
     const messageData: Omit<ChatMessage, 'id'> = {
+      chatRoomId: currentRoom.id,
       senderId: currentUserId,
-      senderName: currentUser.displayName || 'Unknown User',
-      senderAvatar: currentUser.photoURL,
       content: newMessage,
       timestamp: new Date(),
       messageType: 'text',
-      readBy: [currentUserId]
+      isRead: false
     };
 
     try {
@@ -293,236 +292,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ currentUserId, currentUse
 
   return (
     <div className="chat-interface">
-      <div className="chat-sidebar">
-        <div className="chat-tabs">
-          <button 
-            className={`tab ${activeTab === 'chats' ? 'active' : ''}`}
-            onClick={() => setActiveTab('chats')}
-          >
-            💬 Chats
-          </button>
-          <button 
-            className={`tab ${activeTab === 'callouts' ? 'active' : ''}`}
-            onClick={() => setActiveTab('callouts')}
-          >
-            📢 Callouts
-          </button>
-          <button 
-            className={`tab ${activeTab === 'projects' ? 'active' : ''}`}
-            onClick={() => setActiveTab('projects')}
-          >
-            🎬 Projects
-          </button>
-        </div>
-
-        {activeTab === 'chats' && (
-          <div className="chat-rooms">
-            <div className="rooms-header">
-              <h3>Your Conversations</h3>
-              <button className="new-chat-btn">+ New Chat</button>
-            </div>
-            
-            <div className="rooms-list">
-              {rooms.map(room => (
-                <div 
-                  key={room.id} 
-                  className={`room-item ${currentRoom?.id === room.id ? 'active' : ''}`}
-                  onClick={() => setCurrentRoom(room)}
-                >
-                  <div className="room-avatar">
-                    <img src={room.avatarUrl || '/default-avatar.png'} alt="" />
-                    <div className="online-indicator"></div>
-                  </div>
-                  <div className="room-info">
-                    <h4>{room.name}</h4>
-                    <p>{room.lastMessage}</p>
-                  </div>
-                  <div className="room-meta">
-                    <span className="message-time">
-                      {room.updatedAt?.toLocaleTimeString()}
-                    </span>
-                    {room.unreadCount > 0 && (
-                      <span className="unread-badge">{room.unreadCount}</span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'callouts' && (
-          <div className="callouts-section">
-            <div className="callouts-header">
-              <h3>Industry Callouts</h3>
-              <button 
-                className="new-callout-btn"
-                onClick={() => setShowCalloutForm(true)}
-              >
-                + New Callout
-              </button>
-            </div>
-
-            <div className="department-filter">
-              <select 
-                value={filterDepartment} 
-                onChange={(e) => setFilterDepartment(e.target.value)}
-              >
-                <option value="all">All Departments</option>
-                {departments.map(dept => (
-                  <option key={dept} value={dept}>{dept}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="callouts-list">
-              {callouts
-                .filter(callout => filterDepartment === 'all' || callout.department === filterDepartment)
-                .map(callout => (
-                  <div key={callout.id} className="callout-item">
-                    <div className="callout-header">
-                      <h4>{callout.title}</h4>
-                      <span 
-                        className="urgency-badge"
-                        style={{ backgroundColor: getUrgencyColor(callout.urgency) }}
-                      >
-                        {callout.urgency}
-                      </span>
-                    </div>
-                    <p>{callout.description}</p>
-                    <div className="callout-meta">
-                      <span>📅 {callout.startDate?.toLocaleDateString()}</span>
-                      <span>📍 {callout.location}</span>
-                      <span>💰 ${callout.rate}</span>
-                    </div>
-                    <div className="callout-actions">
-                      <button 
-                        className="respond-btn"
-                        onClick={() => respondToCallout(callout.id, { interest: 'interested' })}
-                      >
-                        Respond
-                      </button>
-                      <button className="details-btn">Details</button>
-                    </div>
-                  </div>
-                ))}
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'projects' && (
-          <div className="projects-section">
-            <h3>Project Collaborations</h3>
-            <p>Project collaboration features coming soon...</p>
-          </div>
-        )}
+      <div className="p-8 text-center">
+        <h2 className="text-2xl font-light text-gray-900 mb-4">Chat Interface</h2>
+        <p className="text-gray-600 mb-4">
+          Chat interface is temporarily disabled while we focus on testing the social system.
+        </p>
+        <p className="text-sm text-gray-500">
+          Please test the social features at <a href="/social" className="text-blue-600 hover:underline">/social</a>
+        </p>
       </div>
-
-      <div className="chat-main">
-        {currentRoom ? (
-          <>
-            <div className="chat-header">
-              <div className="chat-info">
-                <img src={currentRoom.avatarUrl || '/default-avatar.png'} alt="" />
-                <div>
-                  <h3>{currentRoom.name}</h3>
-                  <span className="status">
-                    {getStatusIcon('online')} Online
-                  </span>
-                </div>
-              </div>
-              <div className="chat-actions">
-                <button className="action-btn">📞</button>
-                <button className="action-btn">📹</button>
-                <button className="action-btn">⚙️</button>
-              </div>
-            </div>
-
-            <div className="messages-container">
-              {messages.map(message => (
-                <div 
-                  key={message.id} 
-                  className={`message ${message.senderId === currentUserId ? 'own' : 'other'}`}
-                >
-                  <div className="message-avatar">
-                    <img src={message.senderAvatar || '/default-avatar.png'} alt="" />
-                    <span className="status-indicator">
-                      {getStatusIcon('online')}
-                    </span>
-                  </div>
-                  <div className="message-content">
-                    <div className="message-header">
-                      <span className="sender-name">{message.senderName}</span>
-                      <span className="message-time">
-                        {message.timestamp.toLocaleTimeString()}
-                      </span>
-                    </div>
-                    <div className="message-text">{message.content}</div>
-                    {message.attachments && message.attachments.length > 0 && (
-                      <div className="message-attachments">
-                        {message.attachments.map(attachment => (
-                          <div key={attachment.id} className="attachment">
-                            {attachment.type === 'image' && (
-                              <img src={attachment.url} alt={attachment.name} />
-                            )}
-                            {attachment.type === 'document' && (
-                              <div className="document-attachment">
-                                📄 {attachment.name}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-              <div ref={messagesEndRef} />
-            </div>
-
-            <div className="message-input">
-              <div className="input-actions">
-                <button className="action-btn">📎</button>
-                <button className="action-btn">😊</button>
-                <button className="action-btn">📷</button>
-              </div>
-              <input
-                type="text"
-                placeholder="Type your message..."
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-              />
-              <button 
-                className="send-btn"
-                onClick={sendMessage}
-                disabled={!newMessage.trim()}
-              >
-                ➤
-              </button>
-            </div>
-          </>
-        ) : (
-          <div className="no-chat-selected">
-            <div className="welcome-message">
-              <h2>🎬 Welcome to Who's On Set Chat</h2>
-              <p>Select a conversation to start messaging with your film industry connections.</p>
-              <div className="quick-actions">
-                <button className="action-btn">Start New Chat</button>
-                <button className="action-btn">Browse Callouts</button>
-                <button className="action-btn">Find Collaborators</button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {showCalloutForm && (
-        <CalloutForm 
-          onSubmit={createCallout}
-          onCancel={() => setShowCalloutForm(false)}
-        />
-      )}
     </div>
   );
 };

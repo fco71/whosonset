@@ -1,21 +1,63 @@
-export interface ChatMessage {
+export interface Message {
   id: string;
   senderId: string;
-  senderName: string;
-  senderAvatar?: string;
+  receiverId: string;
   content: string;
   timestamp: Date;
-  messageType: 'text' | 'file' | 'callout' | 'schedule' | 'script' | 'location' | 'equipment';
-  attachments?: ChatAttachment[];
-  reactions?: MessageReaction[];
-  isEdited?: boolean;
-  editedAt?: Date;
-  replyTo?: string;
-  mentions?: string[];
-  projectId?: string;
-  department?: string;
-  priority?: 'low' | 'medium' | 'high' | 'urgent';
-  readBy?: string[];
+  isRead: boolean;
+  messageType: 'text' | 'image' | 'file' | 'project_invite';
+  relatedProjectId?: string;
+}
+
+export interface ChatRoom {
+  id: string;
+  participants: string[];
+  lastMessage?: Message;
+  lastActivity: Date;
+  isGroupChat: boolean;
+  groupName?: string;
+  groupAvatar?: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  chatRoomId: string;
+  senderId: string;
+  content: string;
+  timestamp: Date;
+  isRead: boolean;
+  messageType: 'text' | 'image' | 'file' | 'project_invite';
+  relatedProjectId?: string;
+}
+
+export interface DirectMessage {
+  id: string;
+  senderId: string;
+  receiverId: string;
+  content: string;
+  timestamp: Date;
+  isRead: boolean;
+  messageType: 'text' | 'image' | 'file' | 'project_invite';
+  relatedProjectId?: string;
+}
+
+export interface ChatNotification {
+  id: string;
+  userId: string;
+  senderId: string;
+  messageId: string;
+  isRead: boolean;
+  timestamp: Date;
+}
+
+export interface ChatSettings {
+  userId: string;
+  allowMessagesFrom: 'followers' | 'everyone' | 'none';
+  showOnlineStatus: boolean;
+  showLastSeen: boolean;
+  autoReply?: string;
+  isAway: boolean;
+  awayMessage?: string;
 }
 
 export interface ChatAttachment {
@@ -32,24 +74,6 @@ export interface MessageReaction {
   userName: string;
   emoji: string;
   timestamp: Date;
-}
-
-export interface ChatRoom {
-  id: string;
-  name: string;
-  type: 'direct' | 'project' | 'department' | 'crew' | 'location' | 'production';
-  participants: string[];
-  projectId?: string;
-  department?: string;
-  location?: string;
-  avatarUrl?: string;
-  lastMessage?: string;
-  unreadCount: number;
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-  settings: ChatRoomSettings;
-  pinnedMessages?: string[];
 }
 
 export interface ChatRoomSettings {
@@ -103,18 +127,6 @@ export interface CalloutResponse {
   portfolio?: string[];
   status: 'pending' | 'accepted' | 'rejected' | 'withdrawn';
   timestamp: Date;
-}
-
-export interface ChatNotification {
-  id: string;
-  userId: string;
-  type: 'message' | 'callout' | 'mention' | 'project' | 'schedule' | 'emergency';
-  title: string;
-  message: string;
-  data?: any;
-  isRead: boolean;
-  createdAt: Date;
-  expiresAt?: Date;
 }
 
 export interface ChatPresence {

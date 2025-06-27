@@ -4,6 +4,7 @@ import { db } from '../../firebase';
 import { FollowRequest, SocialNotification, ActivityFeedItem, Follow } from '../../types/Social';
 import { CrewProfile } from '../../types/CrewProfile';
 import { SocialService } from '../../utilities/socialService';
+import QuickMessage from './QuickMessage';
 
 interface SocialDashboardProps {
   currentUserId: string;
@@ -34,6 +35,7 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({ currentUserId, curren
     let unsubscribeFollowing: (() => void) | undefined;
 
     const setupListeners = async () => {
+      console.log('[SocialDashboard] Setting up listeners for user:', currentUserId);
       unsubscribeFollowRequests = SocialService.subscribeToFollowRequests(currentUserId, setFollowRequests);
       unsubscribeNotifications = SocialService.subscribeToNotifications(currentUserId, setNotifications);
       unsubscribeFollowers = SocialService.subscribeToFollowers(currentUserId, setFollowers);
@@ -45,10 +47,23 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({ currentUserId, curren
     setupListeners();
 
     return () => {
-      if (unsubscribeFollowRequests) unsubscribeFollowRequests();
-      if (unsubscribeNotifications) unsubscribeNotifications();
-      if (unsubscribeFollowers) unsubscribeFollowers();
-      if (unsubscribeFollowing) unsubscribeFollowing();
+      console.log('[SocialDashboard] Cleaning up listeners for user:', currentUserId);
+      if (unsubscribeFollowRequests) {
+        unsubscribeFollowRequests();
+        console.log('[SocialDashboard] Unsubscribed follow requests');
+      }
+      if (unsubscribeNotifications) {
+        unsubscribeNotifications();
+        console.log('[SocialDashboard] Unsubscribed notifications');
+      }
+      if (unsubscribeFollowers) {
+        unsubscribeFollowers();
+        console.log('[SocialDashboard] Unsubscribed followers');
+      }
+      if (unsubscribeFollowing) {
+        unsubscribeFollowing();
+        console.log('[SocialDashboard] Unsubscribed following');
+      }
     };
   }, [currentUserId]);
 
@@ -199,9 +214,12 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({ currentUserId, curren
                 <p className="text-xs font-light text-gray-500">Following since {follow.createdAt?.toLocaleDateString()}</p>
               </div>
             </div>
-            <button className="px-4 py-2 bg-gray-100 text-gray-700 font-light tracking-wide rounded-lg hover:bg-gray-200 transition-all duration-300 text-sm">
-              Message
-            </button>
+            <QuickMessage 
+              currentUserId={currentUserId}
+              targetUserId={follow.followerId}
+              targetUserName={follow.followerId}
+              className="ml-2"
+            />
           </div>
         </div>
       ))}

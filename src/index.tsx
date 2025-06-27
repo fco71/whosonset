@@ -37,6 +37,8 @@ import ProjectDashboard from './pages/ProjectManagement/ProjectDashboard';
 import AvailabilityCalendar from './components/Availability/AvailabilityCalendar';
 import GanttChart from './components/GanttChart/GanttChart';
 import SocialDashboard from './components/Social/SocialDashboard';
+import SocialTestPage from './components/Social/SocialTestPage';
+import NotificationBell from './components/Social/NotificationBell';
 
 import { AnimatePresence } from 'framer-motion';
 
@@ -89,8 +91,10 @@ const App: React.FC = () => {
                             <>
                                 <li><Link to="/projects/add" className="nav-link">Add Project</Link></li>
                                 <li><Link to="/crew" className="nav-link">Crew Directory</Link></li>
+                                <li><Link to="/social" className="nav-link">Social Hub</Link></li>
                                 <li><Link to="/collections" className="nav-link">My Collections</Link></li>
                                 <li><Link to="/chat" className="nav-link">Messages</Link></li>
+                                <li><NotificationBell currentUserId={authUser?.uid || ''} /></li>
                                 <li><Link to="/edit-profile" className="nav-link">Resume Builder</Link></li>
                                 <li>
                                     <button
@@ -116,6 +120,7 @@ const App: React.FC = () => {
                         <Route path="/projects/:projectId/manage" element={<PrivateRoute><ProjectDashboardWrapper /></PrivateRoute>} />
                         <Route path="/crew" element={<ProducerView />} />
                         <Route path="/social" element={<PrivateRoute><SocialDashboard currentUserId={authUser?.uid || ''} currentUser={authUser} /></PrivateRoute>} />
+                        <Route path="/social/test" element={<PrivateRoute><SocialTestPage currentUserId={authUser?.uid || ''} /></PrivateRoute>} />
                         <Route path="/collections" element={<PrivateRoute><CollectionsHubPage /></PrivateRoute>} />
                         <Route path="/saved-crew" element={<PrivateRoute><SavedCrewProfilesPage /></PrivateRoute>} />
                         <Route path="/saved-projects" element={<PrivateRoute><SavedProjectsPage /></PrivateRoute>} />

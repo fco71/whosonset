@@ -41,7 +41,7 @@
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "followerId",
+          "fieldPath": "followingId",
           "order": "ASCENDING"
         },
         {
@@ -59,7 +59,7 @@
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "followingId",
+          "fieldPath": "followerId",
           "order": "ASCENDING"
         },
         {
@@ -78,10 +78,6 @@
       "fields": [
         {
           "fieldPath": "userId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "isRead",
           "order": "ASCENDING"
         },
         {
