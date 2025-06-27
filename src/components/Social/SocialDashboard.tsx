@@ -24,11 +24,27 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({ currentUserId, curren
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
-    loadFriendRequests();
-    loadNotifications();
-    loadActivityFeed();
-    loadConnections();
-    loadCrewProfiles();
+    let unsubscribeFriendRequests: (() => void) | undefined;
+    let unsubscribeNotifications: (() => void) | undefined;
+    let unsubscribeActivityFeed: (() => void) | undefined;
+    let unsubscribeConnections: (() => void) | undefined;
+
+    const setupListeners = async () => {
+      unsubscribeFriendRequests = await loadFriendRequests();
+      unsubscribeNotifications = await loadNotifications();
+      unsubscribeActivityFeed = await loadActivityFeed();
+      unsubscribeConnections = await loadConnections();
+      loadCrewProfiles(); // This one does not use onSnapshot
+    };
+
+    setupListeners();
+
+    return () => {
+      if (unsubscribeFriendRequests) unsubscribeFriendRequests();
+      if (unsubscribeNotifications) unsubscribeNotifications();
+      if (unsubscribeActivityFeed) unsubscribeActivityFeed();
+      if (unsubscribeConnections) unsubscribeConnections();
+    };
   }, [currentUserId]);
 
   useEffect(() => {

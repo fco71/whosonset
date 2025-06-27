@@ -34,18 +34,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ currentUserId, currentUse
   useEffect(() => {
     let unsubscribeRooms: (() => void) | undefined;
     let unsubscribeCallouts: (() => void) | undefined;
+    const listenerId = Math.random().toString(36).substr(2, 9);
+    console.log(`[Chat] Setting up chatRooms and callouts listeners (id=${listenerId})`);
 
     const initializeFirestore = async () => {
       try {
         setIsLoading(true);
         setError(null);
-        
         await enableNetwork(db);
-        
         // Set up listeners and store unsubscribe functions
-        unsubscribeRooms = await loadChatRooms();
-        unsubscribeCallouts = await loadCallouts();
-        
+        unsubscribeRooms = await loadChatRooms(listenerId);
+        unsubscribeCallouts = await loadCallouts(listenerId);
         setIsLoading(false);
       } catch (err) {
         console.error('Error initializing Firestore:', err);
@@ -59,20 +58,20 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ currentUserId, currentUse
     }
 
     return () => {
-      // Cleanup listeners
+      console.log(`[Chat] Cleaning up chatRooms and callouts listeners (id=${listenerId})`);
       if (unsubscribeRooms) unsubscribeRooms();
       if (unsubscribeCallouts) unsubscribeCallouts();
     };
   }, [currentUserId]);
 
-  const loadChatRooms = async () => {
+  const loadChatRooms = async (listenerId?: string) => {
     try {
       const roomsQuery = query(
         collection(db, 'chatRooms'),
         where('participants', 'array-contains', currentUserId),
         orderBy('updatedAt', 'desc')
       );
-
+      console.log(`[Chat] Setting up chatRooms onSnapshot (id=${listenerId})`);
       const unsubscribeRooms = onSnapshot(roomsQuery, 
         (snapshot) => {
           const roomsData = snapshot.docs.map(doc => ({
@@ -86,8 +85,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ currentUserId, currentUse
           handleFirestoreError(error);
         }
       );
-
-      return unsubscribeRooms;
+      return () => {
+        console.log(`[Chat] Unsubscribing chatRooms onSnapshot (id=${listenerId})`);
+        unsubscribeRooms();
+      };
     } catch (error) {
       console.error('Error setting up chat rooms listener:', error);
       handleFirestoreError(error);
@@ -95,13 +96,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ currentUserId, currentUse
     }
   };
 
-  const loadCallouts = async () => {
+  const loadCallouts = async (listenerId?: string) => {
     try {
       const calloutsQuery = query(
         collection(db, 'callouts'),
         orderBy('createdAt', 'desc')
       );
-
+      console.log(`[Chat] Setting up callouts onSnapshot (id=${listenerId})`);
       const unsubscribeCallouts = onSnapshot(calloutsQuery, 
         (snapshot) => {
           const calloutsData = snapshot.docs.map(doc => ({
@@ -115,8 +116,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ currentUserId, currentUse
           handleFirestoreError(error);
         }
       );
-
-      return unsubscribeCallouts;
+      return () => {
+        console.log(`[Chat] Unsubscribing callouts onSnapshot (id=${listenerId})`);
+        unsubscribeCallouts();
+      };
     } catch (error) {
       console.error('Error setting up callouts listener:', error);
       handleFirestoreError(error);
@@ -126,14 +129,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ currentUserId, currentUse
 
   useEffect(() => {
     if (currentRoom) {
+      let unsubscribe: (() => void) | undefined;
+      const listenerId = Math.random().toString(36).substr(2, 9);
+      console.log(`[Chat] Setting up messages listener for room ${currentRoom.id} (id=${listenerId})`);
       const loadMessages = async () => {
         try {
           const messagesQuery = query(
             collection(db, `chatRooms/${currentRoom.id}/messages`),
             orderBy('timestamp', 'asc')
           );
-
-          const unsubscribe = onSnapshot(messagesQuery, 
+          unsubscribe = onSnapshot(messagesQuery, 
             (snapshot) => {
               const messagesData = snapshot.docs.map(doc => ({
                 id: doc.id,
@@ -146,15 +151,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ currentUserId, currentUse
               handleFirestoreError(error);
             }
           );
-
-          return unsubscribe;
         } catch (error) {
           console.error('Error setting up messages listener:', error);
           handleFirestoreError(error);
         }
       };
-
       loadMessages();
+      return () => {
+        console.log(`[Chat] Cleaning up messages listener for room ${currentRoom.id} (id=${listenerId})`);
+        if (unsubscribe) unsubscribe();
+      };
     }
   }, [currentRoom]);
 
