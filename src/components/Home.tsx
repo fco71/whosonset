@@ -143,7 +143,7 @@ const Home: React.FC = () => {
                                         productionCompany={project.productionCompany}
                                         country={project.country}
                                         status={project.status}
-                                        logline={project.logline}
+                                        summary={project.synopsis}
                                         coverImageUrl={project.coverImageUrl}
                                         showDetails={false}
                                         onBookmark={user ? handleBookmark : undefined}

@@ -11,7 +11,7 @@ interface Project {
   productionCompany?: string;
   country?: string;
   status: string;
-  logline?: string;
+  synopsis?: string;
   director?: string;
   producer?: string;
   genres?: string[];
@@ -52,7 +52,7 @@ const FavoritesPage: React.FC = () => {
         productionCompany: fav.projectData?.productionCompany,
         status: fav.projectData?.status || 'Unknown',
         coverImageUrl: fav.projectData?.coverImageUrl,
-        logline: '', // We don't store logline in favorites, would need to fetch from projects collection
+        synopsis: '', // We don't store synopsis in favorites, would need to fetch from projects collection
       }));
       
       setProjects(projectData);
@@ -168,7 +168,7 @@ const FavoritesPage: React.FC = () => {
                       productionCompany={project.productionCompany}
                       country={project.country}
                       status={project.status}
-                      logline={project.logline}
+                      summary={project.synopsis}
                       coverImageUrl={project.coverImageUrl}
                       showDetails={false}
                       onBookmark={handleBookmark}

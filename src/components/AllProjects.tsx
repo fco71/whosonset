@@ -21,7 +21,7 @@ interface Project {
   projectName: string;
   productionCompany: string;
   status: string;
-  logline: string;
+  synopsis: string;
   director?: string;
   producer?: string;
   coverImageUrl?: string;
@@ -271,14 +271,11 @@ const AllProjects: React.FC = () => {
             </div>
 
             {/* Reset Button */}
-            <div className="animate-slide-up-filter-delay-3">
-              <label className="block text-xs font-medium text-gray-700 mb-3 uppercase tracking-wider">
-                Actions
-              </label>
+            <div className="animate-slide-up-filter-delay-3 flex items-end h-full">
               {(searchQuery || statusFilter) && (
                 <button
                   onClick={resetFilters}
-                  className="w-full p-4 bg-gray-100 text-gray-700 font-light tracking-wide rounded-lg hover:bg-gray-200 transition-all duration-300 hover:scale-[1.02]"
+                  className="w-full h-[56px] p-4 bg-gray-100 text-gray-700 font-light tracking-wide rounded-lg hover:bg-gray-200 transition-all duration-300 hover:scale-[1.02] flex items-center justify-center"
                 >
                   Reset Filters
                 </button>
@@ -328,7 +325,7 @@ const AllProjects: React.FC = () => {
                     projectName={project.projectName}
                     productionCompany={project.productionCompany}
                     status={project.status}
-                    logline={project.logline}
+                    summary={project.synopsis}
                     director={project.director}
                     producer={project.producer}
                     coverImageUrl={project.coverImageUrl}

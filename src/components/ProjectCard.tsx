@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from "react";
-import { Link } from "react-router-dom";
+import React from "react";
+import { useNavigate } from "react-router-dom";
 
 interface ProjectCardProps {
   id: string;
@@ -7,14 +7,14 @@ interface ProjectCardProps {
   productionCompany?: string;
   country?: string;
   status: string;
-  logline?: string;
+  summary?: string;
   director?: string;
   producer?: string;
   genres?: string[];
   coverImageUrl?: string;
   startDate?: string;
   endDate?: string;
-  showDetails?: boolean; // For All Projects page to show more details
+  showDetails?: boolean;
   onBookmark?: (projectId: string, isBookmarked: boolean) => void;
   isBookmarked?: boolean;
 }
@@ -25,7 +25,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
   productionCompany,
   country,
   status,
-  logline,
+  summary,
   director,
   producer,
   genres,
@@ -36,7 +36,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
   onBookmark,
   isBookmarked = false,
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const navigate = useNavigate();
 
   const getStatusBadgeColor = (rawStatus: string) => {
     switch (rawStatus.toLowerCase()) {
@@ -72,11 +72,18 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
   };
 
   const handleCardClick = () => {
-    setIsExpanded(!isExpanded);
+    navigate(`/projects/${id}`);
   };
 
   return (
-    <div className="group bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden h-96 flex flex-col animate-card-entrance hover:scale-[1.02] relative">
+    <div
+      className="group bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden h-96 flex flex-col animate-card-entrance hover:scale-[1.02] relative cursor-pointer"
+      onClick={handleCardClick}
+      tabIndex={0}
+      role="button"
+      aria-label={`View details for ${projectName}`}
+      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') handleCardClick(); }}
+    >
       {/* Bookmark Button */}
       {onBookmark && (
         <button
@@ -124,9 +131,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
       <div className="p-6 flex-1 flex flex-col">
         {/* Project Name */}
         <h3 className="text-xl font-light text-gray-900 mb-3 tracking-wide group-hover:text-gray-700 transition-colors">
-          <Link to={`/projects/${id}`} className="hover:underline">
-            {projectName}
-          </Link>
+          {projectName}
         </h3>
 
         {/* Company & Location */}
@@ -152,37 +157,10 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
           </div>
         )}
 
-        {/* Logline with Fade Effect */}
-        {logline && (
-          <div className="relative mb-4 flex-1">
-            <div
-              className={`text-gray-600 leading-relaxed transition-all duration-300 ${
-                isExpanded ? '' : 'line-clamp-3'
-              }`}
-              style={{ minHeight: '3.6em' }}
-            >
-              {logline}
-            </div>
-            {!isExpanded && (
-              <>
-                <div className="absolute bottom-0 right-0 left-0 h-8 pointer-events-none" style={{background: 'linear-gradient(to top, #fff 80%, rgba(255,255,255,0))'}} />
-                <button
-                  onClick={handleCardClick}
-                  className="absolute bottom-0 right-2 z-10 text-blue-600 hover:text-blue-800 font-medium text-sm transition-colors bg-white/80 px-2 py-1 rounded pointer-events-auto"
-                  style={{transform: 'translateY(50%)'}}
-                >
-                  ...more
-                </button>
-              </>
-            )}
-            {isExpanded && (
-              <button
-                onClick={handleCardClick}
-                className="text-blue-600 hover:text-blue-800 font-medium text-sm transition-colors mt-2"
-              >
-                Show less
-              </button>
-            )}
+        {/* Summary (single field) */}
+        {summary && (
+          <div className="mb-4 flex-1 text-gray-600 leading-relaxed line-clamp-3">
+            {summary}
           </div>
         )}
 
