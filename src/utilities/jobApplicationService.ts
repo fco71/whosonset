@@ -12,7 +12,7 @@ import {
   deleteDoc,
   writeBatch,
   getDoc,
-  increment,
+  increment as firestoreIncrement,
   limit,
   startAfter
 } from 'firebase/firestore';
@@ -153,7 +153,7 @@ export class JobApplicationService {
       // Update job posting application count
       const jobRef = doc(db, 'jobPostings', application.jobId);
       await updateDoc(jobRef, {
-        applicationsCount: increment(1)
+        applicationsCount: firestoreIncrement(1)
       });
 
       // Create notification for the job poster
@@ -373,7 +373,7 @@ export class JobApplicationService {
   static async trackJobView(jobId: string, userId?: string): Promise<void> {
     try {
       await updateDoc(doc(db, 'jobPostings', jobId), {
-        views: increment(1)
+        views: firestoreIncrement(1)
       });
 
       if (userId) {
@@ -445,5 +445,220 @@ export class JobApplicationService {
       console.error('Error setting up messages listener:', error);
       return () => {};
     }
+  }
+
+  // AI-powered job matching algorithm
+  static async getJobRecommendations(userId: string, userProfile: any): Promise<JobRecommendation[]> {
+    try {
+      // Get all active job postings
+      const jobsQuery = query(
+        collection(db, 'jobPostings'),
+        where('status', '==', 'active'),
+        orderBy('postedAt', 'desc'),
+        limit(100)
+      );
+
+      const snapshot = await getDocs(jobsQuery);
+      const jobs = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as JobPosting));
+
+      // Calculate match scores for each job
+      const recommendations = jobs.map(job => {
+        const score = this.calculateJobMatchScore(job, userProfile);
+        return {
+          jobId: job.id,
+          score,
+          reasons: this.getMatchReasons(job, userProfile),
+          matchPercentage: Math.round(score * 100),
+          skillsMatched: this.getMatchedSkills(job, userProfile),
+          skillsMissing: this.getMissingSkills(job, userProfile)
+        } as JobRecommendation;
+      });
+
+      // Sort by score and return top recommendations
+      return recommendations
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 20);
+    } catch (error) {
+      console.error('Error getting job recommendations:', error);
+      return [];
+    }
+  }
+
+  // Calculate job match score (0-1)
+  private static calculateJobMatchScore(job: JobPosting, userProfile: any): number {
+    let score = 0;
+    let totalWeight = 0;
+
+    // Experience level match (30% weight)
+    const experienceWeight = 0.3;
+    const experienceScore = this.calculateExperienceMatch(job.experienceLevel, userProfile.experienceLevel);
+    score += experienceScore * experienceWeight;
+    totalWeight += experienceWeight;
+
+    // Skills match (25% weight)
+    const skillsWeight = 0.25;
+    const skillsScore = this.calculateSkillsMatch(job.requirements, userProfile.skills || []);
+    score += skillsScore * skillsWeight;
+    totalWeight += skillsWeight;
+
+    // Location match (20% weight)
+    const locationWeight = 0.2;
+    const locationScore = this.calculateLocationMatch(job.location, userProfile.location, job.isRemote);
+    score += locationScore * locationWeight;
+    totalWeight += locationWeight;
+
+    // Salary expectations (15% weight)
+    const salaryWeight = 0.15;
+    const salaryScore = this.calculateSalaryMatch(job.salary, userProfile.expectedSalary);
+    score += salaryScore * salaryWeight;
+    totalWeight += salaryWeight;
+
+    // Contract type preference (10% weight)
+    const contractWeight = 0.1;
+    const contractScore = this.calculateContractMatch(job.contractType, userProfile.preferredContractType);
+    score += contractScore * contractWeight;
+    totalWeight += contractWeight;
+
+    return score / totalWeight;
+  }
+
+  private static calculateExperienceMatch(jobLevel: string, userLevel: string): number {
+    const levels = ['entry', 'mid', 'senior', 'executive'];
+    const jobIndex = levels.indexOf(jobLevel);
+    const userIndex = levels.indexOf(userLevel);
+
+    if (jobIndex === -1 || userIndex === -1) return 0.5;
+
+    // Perfect match
+    if (jobIndex === userIndex) return 1.0;
+    
+    // User is slightly overqualified (still good match)
+    if (userIndex === jobIndex + 1) return 0.8;
+    
+    // User is underqualified
+    if (userIndex < jobIndex) return 0.3;
+    
+    // User is overqualified
+    return 0.6;
+  }
+
+  private static calculateSkillsMatch(requiredSkills: string[], userSkills: string[]): number {
+    if (!requiredSkills || requiredSkills.length === 0) return 1.0;
+    if (!userSkills || userSkills.length === 0) return 0.0;
+
+    const matchedSkills = requiredSkills.filter(skill => 
+      userSkills.some(userSkill => 
+        userSkill.toLowerCase().includes(skill.toLowerCase()) ||
+        skill.toLowerCase().includes(userSkill.toLowerCase())
+      )
+    );
+
+    return matchedSkills.length / requiredSkills.length;
+  }
+
+  private static calculateLocationMatch(jobLocation: string, userLocation: string, isRemote: boolean): number {
+    if (isRemote) return 1.0;
+    if (!userLocation) return 0.5;
+
+    const jobLoc = jobLocation.toLowerCase();
+    const userLoc = userLocation.toLowerCase();
+
+    // Exact match
+    if (jobLoc === userLoc) return 1.0;
+    
+    // Same city/region
+    if (jobLoc.includes(userLoc) || userLoc.includes(jobLoc)) return 0.8;
+    
+    // Same country
+    const jobCountry = jobLoc.split(',').pop()?.trim();
+    const userCountry = userLoc.split(',').pop()?.trim();
+    if (jobCountry === userCountry) return 0.6;
+
+    return 0.2;
+  }
+
+  private static calculateSalaryMatch(jobSalary: any, userExpectedSalary: number): number {
+    if (!jobSalary || !userExpectedSalary) return 0.5;
+
+    const jobMin = jobSalary.min;
+    const jobMax = jobSalary.max;
+    const jobAvg = (jobMin + jobMax) / 2;
+
+    // Perfect match if user's expectation is within the range
+    if (userExpectedSalary >= jobMin && userExpectedSalary <= jobMax) return 1.0;
+    
+    // Close match (within 20%)
+    const tolerance = jobAvg * 0.2;
+    if (Math.abs(userExpectedSalary - jobAvg) <= tolerance) return 0.8;
+    
+    // User expects more (might still be interested)
+    if (userExpectedSalary > jobMax) return 0.4;
+    
+    // User expects less (good for employer)
+    return 0.9;
+  }
+
+  private static calculateContractMatch(jobContract: string, userPreferred: string): number {
+    if (!userPreferred) return 0.5;
+    return jobContract === userPreferred ? 1.0 : 0.3;
+  }
+
+  private static getMatchReasons(job: JobPosting, userProfile: any): string[] {
+    const reasons = [];
+
+    // Experience level
+    if (job.experienceLevel === userProfile.experienceLevel) {
+      reasons.push('Perfect experience level match');
+    }
+
+    // Skills
+    const skillsMatch = this.calculateSkillsMatch(job.requirements, userProfile.skills || []);
+    if (skillsMatch > 0.8) {
+      reasons.push('Strong skills alignment');
+    } else if (skillsMatch > 0.5) {
+      reasons.push('Good skills overlap');
+    }
+
+    // Location
+    if (job.isRemote) {
+      reasons.push('Remote work available');
+    } else if (job.location === userProfile.location) {
+      reasons.push('Local opportunity');
+    }
+
+    // Salary
+    if (job.salary && userProfile.expectedSalary) {
+      const jobAvg = (job.salary.min + job.salary.max) / 2;
+      if (userProfile.expectedSalary >= job.salary.min && userProfile.expectedSalary <= job.salary.max) {
+        reasons.push('Salary expectations aligned');
+      }
+    }
+
+    return reasons;
+  }
+
+  private static getMatchedSkills(job: JobPosting, userSkills: string[]): string[] {
+    if (!job.requirements || !userSkills) return [];
+    
+    return job.requirements.filter(skill => 
+      userSkills.some(userSkill => 
+        userSkill.toLowerCase().includes(skill.toLowerCase()) ||
+        skill.toLowerCase().includes(userSkill.toLowerCase())
+      )
+    );
+  }
+
+  private static getMissingSkills(job: JobPosting, userSkills: string[]): string[] {
+    if (!job.requirements || !userSkills) return job.requirements || [];
+    
+    return job.requirements.filter(skill => 
+      !userSkills.some(userSkill => 
+        userSkill.toLowerCase().includes(skill.toLowerCase()) ||
+        skill.toLowerCase().includes(userSkill.toLowerCase())
+      )
+    );
   }
 } 

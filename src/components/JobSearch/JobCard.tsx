@@ -1,28 +1,76 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { JobPosting } from '../../types/JobApplication';
 
 interface JobCardProps {
-  job: JobPosting;
+  job: JobPosting & { matchScore?: number };
+  onApply?: (jobId: string) => void;
+  onSave?: (jobId: string) => void;
+  showMatchScore?: boolean;
 }
 
-const JobCard: React.FC<JobCardProps> = ({ job }) => {
-  const formatDate = (timestamp: any) => {
-    if (!timestamp) return '';
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 1) return 'Today';
-    if (diffDays === 2) return 'Yesterday';
-    if (diffDays <= 7) return `${diffDays - 1} days ago`;
-    return date.toLocaleDateString();
+const JobCard: React.FC<JobCardProps> = ({ 
+  job, 
+  onApply, 
+  onSave, 
+  showMatchScore = false 
+}) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+
+  const formatSalary = (salary: any) => {
+    if (!salary) return 'Salary not specified';
+    const { min, max, currency = 'USD' } = salary;
+    if (min === max) {
+      return `${currency} ${min.toLocaleString()}`;
+    }
+    return `${currency} ${min.toLocaleString()} - ${max.toLocaleString()}`;
   };
 
-  const formatSalary = (salary?: { min: number; max: number; currency: string }) => {
-    if (!salary) return 'Salary not specified';
-    return `${salary.currency}${salary.min.toLocaleString()} - ${salary.currency}${salary.max.toLocaleString()}`;
+  const formatDate = (date: any) => {
+    if (!date) return 'N/A';
+    const dateObj = date?.toDate ? date.toDate() : new Date(date);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - dateObj.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 1) return '1 day ago';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+    return dateObj.toLocaleDateString();
+  };
+
+  const getMatchScoreColor = (score: number) => {
+    if (score >= 0.8) return 'text-green-600 bg-green-100';
+    if (score >= 0.6) return 'text-blue-600 bg-blue-100';
+    if (score >= 0.4) return 'text-yellow-600 bg-yellow-100';
+    return 'text-gray-600 bg-gray-100';
+  };
+
+  const getExperienceLevelColor = (level: string) => {
+    switch (level) {
+      case 'entry': return 'bg-blue-100 text-blue-800';
+      case 'mid': return 'bg-green-100 text-green-800';
+      case 'senior': return 'bg-purple-100 text-purple-800';
+      case 'executive': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getContractTypeColor = (type: string) => {
+    switch (type) {
+      case 'full_time': return 'bg-green-100 text-green-800';
+      case 'part_time': return 'bg-blue-100 text-blue-800';
+      case 'contract': return 'bg-purple-100 text-purple-800';
+      case 'freelance': return 'bg-orange-100 text-orange-800';
+      case 'internship': return 'bg-yellow-100 text-yellow-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const handleSave = () => {
+    setIsSaved(!isSaved);
+    onSave?.(job.id);
   };
 
   return (
