@@ -8,10 +8,12 @@ import {
   startAfter,
   QueryDocumentSnapshot,
   DocumentData,
+  where,
 } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { Link } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
+import ProjectCard from './ProjectCard';
 
 interface Project {
   id: string;
@@ -290,61 +292,18 @@ const AllProjects: React.FC = () => {
                   className="animate-card-entrance"
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
-                  <Link
-                    to={`/projects/${project.id}`}
-                    className="group bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden block hover:scale-[1.02]"
-                  >
-                    <div className="h-48 bg-gray-100 flex items-center justify-center overflow-hidden">
-                      <img
-                        src={project.coverImageUrl || '/movie-production-avatar.svg'}
-                        alt={project.projectName}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/movie-production-avatar.svg';
-                        }}
-                      />
-                    </div>
-                    <div className="p-6">
-                      <h2 className="text-xl font-light text-gray-900 mb-3 tracking-wide group-hover:text-gray-700 transition-colors">
-                        {highlightMatch(project.projectName, debouncedQuery)}
-                      </h2>
-                      <p className="text-sm font-medium text-gray-500 mb-3 tracking-wider uppercase">
-                        {project.productionCompany ? highlightMatch(project.productionCompany, debouncedQuery) : 'N/A'}
-                      </p>
-                      {project.director && (
-                        <p className="text-sm text-gray-600 mb-1">
-                          <span className="font-medium">Director:</span> {project.director}
-                        </p>
-                      )}
-                      {project.producer && (
-                        <p className="text-sm text-gray-600 mb-3">
-                          <span className="font-medium">Producer:</span> {project.producer}
-                        </p>
-                      )}
-                      <p className="text-gray-600 leading-relaxed line-clamp-3 mb-4">
-                        {project.logline}
-                      </p>
-                      {project.genres && project.genres.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mb-4">
-                          {project.genres.map((genre, index) => (
-                            <span
-                              key={index}
-                              className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full font-medium"
-                            >
-                              {genre}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                      <span
-                        className={`inline-block px-3 py-1 text-sm font-medium rounded-full tracking-wider ${getStatusBadgeColor(
-                          project.status
-                        )}`}
-                      >
-                        {formatStatus(project.status)}
-                      </span>
-                    </div>
-                  </Link>
+                  <ProjectCard
+                    id={project.id}
+                    projectName={project.projectName}
+                    productionCompany={project.productionCompany}
+                    status={project.status}
+                    logline={project.logline}
+                    director={project.director}
+                    producer={project.producer}
+                    coverImageUrl={project.coverImageUrl}
+                    genres={project.genres}
+                    showDetails={true}
+                  />
                 </div>
               ))}
             </div>
