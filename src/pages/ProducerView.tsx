@@ -182,6 +182,17 @@ const ProducerView: React.FC = () => {
     if (filterName === 'country') {
       setFilters(prev => ({ ...prev, city: '' }));
     }
+
+    // Instantly update appliedFilters for dropdowns, not for searchQuery
+    if (["department", "jobTitle", "country", "availability"].includes(filterName)) {
+      setAppliedFilters(prev => ({
+        ...prev,
+        [filterName]: value,
+        // Reset dependent filters in appliedFilters as well
+        ...(filterName === 'department' ? { jobTitle: '' } : {}),
+        ...(filterName === 'country' ? { city: '' } : {})
+      }));
+    }
   };
 
   const handleSearch = () => {
@@ -242,14 +253,10 @@ const ProducerView: React.FC = () => {
       {/* Filters Section */}
       <div className="bg-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-8 py-12">
-          <div className="flex items-center justify-between mb-8 animate-fade-in">
-            <h3 className="text-2xl font-light text-gray-900 tracking-wide">Refine Search</h3>
-            <button
-              onClick={clearFilters}
-              className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-all duration-300 tracking-wide uppercase hover:scale-105"
-            >
-              Clear All
-            </button>
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 animate-fade-in gap-4">
+            <div className="flex items-center gap-4 w-full md:w-auto">
+              <h3 className="text-2xl font-light text-gray-900 tracking-wide">Refine Search</h3>
+            </div>
           </div>
 
           {/* Search Box on Top */}
@@ -277,7 +284,7 @@ const ProducerView: React.FC = () => {
           </div>
 
           {/* Filters Row Below Search */}
-          <div className="flex flex-col gap-4 md:flex-row md:gap-6 animate-fade-in-delay">
+          <div className="flex flex-col md:flex-row md:items-end gap-4 md:gap-6 animate-fade-in-delay">
             {/* Department Filter */}
             <div className="flex-1 min-w-[180px]">
               <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
@@ -352,6 +359,17 @@ const ProducerView: React.FC = () => {
                 <option value="unavailable">Unavailable</option>
               </select>
             </div>
+          </div>
+          {/* Reset link below filters */}
+          <div className="flex justify-end mt-2">
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="text-gray-500 hover:underline text-sm font-medium bg-transparent border-none p-0 m-0 cursor-pointer"
+              style={{ minWidth: 0 }}
+            >
+              Reset
+            </button>
           </div>
         </div>
       </div>
