@@ -9,6 +9,11 @@ import QuickMessage from './QuickMessage';
 import FollowButton from './FollowButton';
 import ActivityFeed from './ActivityFeed';
 import ChatInterface from '../Chat/ChatInterface';
+import { SocialAnalytics } from './SocialAnalytics';
+import { AdvancedMessaging } from './AdvancedMessaging';
+import NotificationBell from './NotificationBell';
+import { performanceMonitor } from '../../utilities/performanceUtils';
+import './SocialDashboard.scss';
 
 interface SocialDashboardProps {
   currentUserId: string;
@@ -21,7 +26,7 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
   currentUserName,
   currentUserAvatar 
 }) => {
-  const [activeTab, setActiveTab] = useState<'activity' | 'followers' | 'following' | 'requests' | 'notifications' | 'discover' | 'messages'>('activity');
+  const [activeTab, setActiveTab] = useState<'feed' | 'analytics' | 'messaging'>('feed');
   const [followRequests, setFollowRequests] = useState<FollowRequest[]>([]);
   const [notifications, setNotifications] = useState<SocialNotification[]>([]);
   const [followers, setFollowers] = useState<Follow[]>([]);
@@ -32,7 +37,7 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [requestMessage, setRequestMessage] = useState('');
   const [unreadCount, setUnreadCount] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
   // User profiles cache
@@ -506,118 +511,156 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
     </div>
   );
 
+  if (loading) {
+    return (
+      <div className="social-dashboard">
+        <div className="loading-skeleton">
+          <div className="skeleton-header"></div>
+          <div className="skeleton-content">
+            <div className="skeleton-tab"></div>
+            <div className="skeleton-card"></div>
+            <div className="skeleton-card"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="social-dashboard">
+        <div className="error-message">
+          {error}
+          <button onClick={() => window.location.reload()}>Retry</button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-light text-gray-900 tracking-wide mb-2">Social Hub</h1>
-          <p className="text-gray-600 font-light">Connect with film professionals and stay updated</p>
-        </div>
-
-        {/* Help Banner */}
-        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <div className="flex items-start gap-3">
-            <div className="text-blue-600 text-lg">💡</div>
-            <div className="flex-1">
-              <h4 className="text-sm font-medium text-blue-900 mb-1">How to connect with professionals:</h4>
-              <ul className="text-sm text-blue-800 space-y-1">
-                <li>• Go to <strong>Discover</strong> tab to find professionals</li>
-                <li>• Click <strong>Follow</strong> to send a connection request</li>
-                <li>• Check <strong>Requests</strong> tab to approve incoming requests</li>
-                <li>• Use <strong>Messages</strong> tab to chat with your connections</li>
-              </ul>
-            </div>
+    <div className="social-dashboard">
+      <div className="dashboard-header">
+        <h1>Social Hub</h1>
+        <div className="header-actions">
+          <NotificationBell currentUserId={currentUserId} />
+          <div className="stats">
+            <span>{followers.length} Followers</span>
+            <span>{following.length} Following</span>
+            {followRequests.length > 0 && (
+              <span className="requests-badge">{followRequests.length} Requests</span>
+            )}
           </div>
         </div>
+      </div>
 
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-red-800 text-sm">{error}</p>
+      <div className="dashboard-tabs">
+        <button
+          className={`tab ${activeTab === 'feed' ? 'active' : ''}`}
+          onClick={() => setActiveTab('feed')}
+        >
+          📰 Activity Feed
+        </button>
+        <button
+          className={`tab ${activeTab === 'analytics' ? 'active' : ''}`}
+          onClick={() => setActiveTab('analytics')}
+        >
+          📊 Analytics
+        </button>
+        <button
+          className={`tab ${activeTab === 'messaging' ? 'active' : ''}`}
+          onClick={() => setActiveTab('messaging')}
+        >
+          💬 Messaging
+        </button>
+      </div>
+
+      <div className="dashboard-content">
+        {activeTab === 'feed' && (
+          <div className="feed-section">
+            <ActivityFeed currentUserId={currentUserId} currentUserName="Current User" />
+          </div>
+        )}
+
+        {activeTab === 'analytics' && (
+          <div className="analytics-section">
+            <SocialAnalytics userId={currentUserId} />
           </div>
         )}
 
-        {/* Navigation Tabs */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-2 mb-8">
-          <div className="flex space-x-1">
-            {[
-              { id: 'activity', label: 'Activity Feed', count: null },
-              { id: 'followers', label: 'Followers', count: followers.length },
-              { id: 'following', label: 'Following', count: following.length },
-              { id: 'requests', label: 'Requests', count: followRequests.length },
-              { id: 'notifications', label: 'Notifications', count: unreadCount },
-              { id: 'discover', label: 'Discover', count: null },
-              { id: 'messages', label: 'Messages', count: null }
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`flex-1 px-4 py-3 text-sm font-light tracking-wide rounded-lg transition-all duration-300 ${
-                  activeTab === tab.id
-                    ? 'bg-gray-900 text-white'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                {tab.label}
-                {tab.count !== null && tab.count > 0 && (
-                  <span className="ml-2 px-2 py-1 bg-gray-200 text-gray-700 text-xs rounded-full">
-                    {tab.count}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
-          {activeTab === 'activity' && renderActivityFeed()}
-          {activeTab === 'followers' && renderFollowers()}
-          {activeTab === 'following' && renderFollowing()}
-          {activeTab === 'requests' && renderFollowRequests()}
-          {activeTab === 'notifications' && renderNotifications()}
-          {activeTab === 'discover' && renderDiscover()}
-          {activeTab === 'messages' && <ChatInterface currentUserId={currentUserId} currentUserName={currentUserName} currentUserAvatar={currentUserAvatar} />}
-        </div>
-
-        {/* Follow Request Modal */}
-        {showRequestModal && selectedProfile && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full mx-4">
-              <h3 className="text-xl font-light text-gray-900 mb-4 tracking-wide">
-                Send Follow Request
-              </h3>
-              <p className="text-sm font-light text-gray-600 mb-4">
-                Send a message to {selectedProfile.name} along with your follow request.
-              </p>
-              <textarea
-                value={requestMessage}
-                onChange={(e) => setRequestMessage(e.target.value)}
-                placeholder="Write a brief message..."
-                className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02] resize-none mb-6"
-                rows={4}
-              />
-              <div className="flex gap-3">
-                <button
-                  onClick={() => sendFollowRequest(selectedProfile.uid, requestMessage)}
-                  disabled={loading}
-                  className="flex-1 px-4 py-2 bg-gray-900 text-white font-light tracking-wide rounded-lg hover:bg-gray-800 transition-all duration-300 text-sm disabled:opacity-50"
-                >
-                  {loading ? 'Sending...' : 'Send Request'}
-                </button>
-                <button
-                  onClick={() => {
-                    setShowRequestModal(false);
-                    setRequestMessage('');
-                    setSelectedProfile(null);
-                  }}
-                  disabled={loading}
-                  className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 font-light tracking-wide rounded-lg hover:bg-gray-200 transition-all duration-300 text-sm disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
+        {activeTab === 'messaging' && (
+          <div className="messaging-section">
+            <AdvancedMessaging
+              currentUserId={currentUserId}
+              recipientId="recipient123"
+              recipientName="John Doe"
+              recipientAvatar="https://via.placeholder.com/48"
+            />
           </div>
         )}
+      </div>
+
+      <div className="dashboard-sidebar">
+        <div className="sidebar-section">
+          <h3>Quick Actions</h3>
+          <div className="quick-actions">
+            <button className="action-btn">📝 Create Post</button>
+            <button className="action-btn">👥 Find People</button>
+            <button className="action-btn">📅 Events</button>
+            <button className="action-btn">🏆 Achievements</button>
+          </div>
+        </div>
+
+        <div className="sidebar-section">
+          <h3>Recent Connections</h3>
+          <div className="connections-list">
+            {followers.slice(0, 5).map((follower) => {
+              const profile = userProfiles.get(follower.followerId);
+              return (
+                <div key={follower.id} className="connection-item">
+                  <div className="connection-avatar">
+                    {profile?.avatarUrl ? (
+                      <img src={profile.avatarUrl} alt={profile.displayName} />
+                    ) : (
+                      <div className="avatar-placeholder">
+                        {profile?.displayName?.[0] || 'U'}
+                      </div>
+                    )}
+                  </div>
+                  <div className="connection-info">
+                    <span className="connection-name">
+                      {profile?.displayName || 'Unknown User'}
+                    </span>
+                    <span className="connection-status">Recently followed you</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="sidebar-section">
+          <h3>Follow Requests</h3>
+          {followRequests.length > 0 ? (
+            <div className="requests-list">
+              {followRequests.slice(0, 3).map((request) => (
+                <div key={request.id} className="request-item">
+                  <div className="request-info">
+                    <span className="request-name">User {request.fromUserId.slice(-4)}</span>
+                    <span className="request-message">{request.message}</span>
+                  </div>
+                  <div className="request-actions">
+                    <FollowButton
+                      currentUserId={currentUserId}
+                      targetUserId={request.fromUserId}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="no-requests">No pending requests</p>
+          )}
+        </div>
       </div>
     </div>
   );

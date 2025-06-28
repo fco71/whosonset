@@ -267,7 +267,7 @@ export class SocialService {
               status: data.status || 'active',
               createdAt: data.createdAt?.toDate() || new Date(),
               lastInteraction: data.lastInteraction?.toDate()
-            };
+            } as Follow;
           });
           console.log('[SocialService] Followers updated:', follows.length);
           callback(follows);
@@ -306,7 +306,7 @@ export class SocialService {
               status: data.status || 'active',
               createdAt: data.createdAt?.toDate() || new Date(),
               lastInteraction: data.lastInteraction?.toDate()
-            };
+            } as Follow;
           });
           console.log('[SocialService] Following updated:', follows.length);
           callback(follows);
