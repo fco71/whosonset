@@ -140,6 +140,57 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ currentUserId, clas
     return date.toLocaleDateString();
   };
 
+  const handleNotificationClick = async (notification: SocialNotification) => {
+    try {
+      // Mark as read first
+      await handleMarkAsRead(notification.id);
+      
+      // Navigate based on notification type
+      switch (notification.type) {
+        case 'follow_request':
+          // Navigate to social page to see follow requests
+          window.location.href = '/social';
+          break;
+        case 'follow_accepted':
+          // Navigate to the user's profile who accepted
+          if (notification.relatedUserId) {
+            window.location.href = `/resume/${notification.relatedUserId}`;
+          }
+          break;
+        case 'project_invite':
+          // Navigate to project management
+          if (notification.relatedProjectId) {
+            window.location.href = `/projects/${notification.relatedProjectId}/manage`;
+          }
+          break;
+        case 'message':
+          // Navigate to messaging
+          window.location.href = '/social';
+          break;
+        case 'mention':
+          // Navigate to social page for mentions
+          window.location.href = '/social';
+          break;
+        case 'like':
+        case 'comment':
+          // Navigate to social page for likes/comments
+          window.location.href = '/social';
+          break;
+        case 'project_update':
+          // Navigate to project
+          if (notification.relatedProjectId) {
+            window.location.href = `/projects/${notification.relatedProjectId}`;
+          }
+          break;
+        default:
+          // Default to social page
+          window.location.href = '/social';
+      }
+    } catch (error) {
+      console.error('Error handling notification click:', error);
+    }
+  };
+
   return (
     <div className={`relative ${className}`}>
       {/* Notification Bell Button */}
@@ -194,7 +245,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ currentUserId, clas
                       className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors duration-200 ${
                         !notification.isRead ? 'bg-blue-50' : ''
                       }`}
-                      onClick={() => handleMarkAsRead(notification.id)}
+                      onClick={() => handleNotificationClick(notification)}
                     >
                       <div className="flex items-start gap-3">
                         <div className="text-2xl flex-shrink-0">

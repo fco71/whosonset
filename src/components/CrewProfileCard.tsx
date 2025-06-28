@@ -5,6 +5,7 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../firebase';
 import { FaDownload, FaBookmark, FaRegBookmark } from 'react-icons/fa';
 import { LegacyCrewProfile } from '../types/CrewProfile';
+import FollowButton from './Social/FollowButton';
 
 interface CrewProfileCardProps {
   profile: LegacyCrewProfile;
@@ -94,6 +95,16 @@ const CrewProfileCard: React.FC<CrewProfileCardProps> = ({ profile }) => {
             )}
           </button>
         </div>
+
+        {/* Follow Button - Consistent placement */}
+        {user && user.uid !== profile.id && (
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            <FollowButton 
+              currentUserId={user.uid}
+              targetUserId={profile.id}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

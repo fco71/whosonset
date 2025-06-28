@@ -134,39 +134,45 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
             <ActivityFeed currentUserId={currentUserId} currentUserName={currentUserName} />
           )}
           {activeTab === 'analytics' && (
-            <div className="analytics-placeholder">
-              <h3>Social Analytics</h3>
-              <p>Analytics dashboard coming soon...</p>
-              <div className="analytics-stats">
-                <div className="stat">
-                  <h4>Followers</h4>
-                  <p>{followers.length}</p>
-                </div>
-                <div className="stat">
-                  <h4>Following</h4>
-                  <p>{following.length}</p>
-                </div>
-                <div className="stat">
-                  <h4>Notifications</h4>
-                  <p>{notifications.length}</p>
-                </div>
-              </div>
+            <div className="analytics-section">
+              <SocialAnalytics 
+                userId={currentUserId}
+              />
             </div>
           )}
           {activeTab === 'messaging' && (
-            <div className="messaging-placeholder">
-              <h3>Advanced Messaging</h3>
-              <p>Messaging interface coming soon...</p>
+            <div className="messaging-section">
+              <ChatInterface 
+                currentUserId={currentUserId}
+                currentUserName={currentUserName}
+              />
             </div>
           )}
         </div>
 
         <div className="sidebar">
           <div className="user-info-card">
-            <h3>User Info</h3>
-            <p><strong>ID:</strong> {currentUserId}</p>
-            <p><strong>Name:</strong> {currentUserName}</p>
-            <p><strong>Avatar:</strong> {currentUserAvatar ? 'Set' : 'None'}</p>
+            <div className="user-avatar-section">
+              <img 
+                src={currentUserAvatar || '/default-avatar.png'} 
+                alt={currentUserName}
+                className="user-avatar"
+              />
+              <div className="user-details">
+                <h3>{currentUserName}</h3>
+                <p className="user-id">@{currentUserId.slice(-8)}</p>
+              </div>
+            </div>
+            <div className="user-stats">
+              <div className="stat">
+                <span className="stat-number">{followers.length}</span>
+                <span className="stat-label">Followers</span>
+              </div>
+              <div className="stat">
+                <span className="stat-number">{following.length}</span>
+                <span className="stat-label">Following</span>
+              </div>
+            </div>
           </div>
 
           <div className="follow-requests-card">
@@ -175,7 +181,14 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
               <div className="requests-list">
                 {followRequests.map(request => (
                   <div key={request.id} className="request-item">
-                    <span>{request.fromUserId || 'Unknown User'}</span>
+                    <div className="request-user-info">
+                      <img 
+                        src="/default-avatar.png" 
+                        alt="User"
+                        className="request-avatar"
+                      />
+                      <span className="request-username">{request.fromUserId ? `User ${request.fromUserId.slice(-4)}` : 'Unknown User'}</span>
+                    </div>
                     <div className="request-actions">
                       <button 
                         className="accept-btn"

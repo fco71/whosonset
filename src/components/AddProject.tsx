@@ -86,65 +86,72 @@ const AddProject: React.FC = () => {
   if (error) return <p>Error: {error.message}</p>;
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-10">
-      <h2 className="text-3xl font-bold mb-8 text-center">Add New Project</h2>
-      <form onSubmit={handleSubmit} className="space-y-8 bg-white p-8 shadow-md rounded-lg">
-        <ProjectForm
-          projectName={projectName}
-          setProjectName={setProjectName}
-          country={country}
-          setCountry={setCountry}
-          productionCompany={productionCompany}
-          setProductionCompany={setProductionCompany}
-          status={status}
-          setStatus={setStatus}
-          logline={logline}
-          setLogline={setLogline}
-          synopsis={synopsis}
-          setSynopsis={setSynopsis}
-          startDate={startDate}
-          setStartDate={setStartDate}
-          endDate={endDate}
-          setEndDate={setEndDate}
-          location={location}
-          setLocation={setLocation}
-          genre={genre}
-          setGenre={setGenre}
-          director={director}
-          setDirector={setDirector}
-          producer={producer}
-          setProducer={setProducer}
-          coverImageUrl={coverImageUrl}
-          setCoverImageUrl={setCoverImageUrl}
-          // Removed posterImageUrl and setPosterImageUrl props
-          projectWebsite={projectWebsite}
-          setProjectWebsite={setProjectWebsite}
-          productionBudget={productionBudget}
-          setProductionBudget={setProductionBudget}
-          productionCompanyContact={productionCompanyContact}
-          setProductionCompanyContact={setProductionCompanyContact}
-          isVerified={isVerified}
-          setIsVerified={setIsVerified}
-          handleCoverImageUploaded={handleCoverImageUploaded}
-          // Removed handlePosterImageUploaded prop
-        />
-
-        <div className="flex flex-col sm:flex-row justify-end gap-4 pt-6">
-          <button
-            type="button"
-            onClick={handleCancel}
-            className="w-full sm:w-auto px-6 py-2 text-white bg-gray-500 hover:bg-gray-600 rounded-md transition"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
-          >
-            Add Project
-          </button>
+    <div className="flex flex-col items-center min-h-screen bg-gray-100 pt-10">
+      <div className="w-full max-w-6xl mb-4 px-4">
+        <div className="project-builder-banner bg-white bg-opacity-95 shadow-md rounded-xl p-3 flex flex-col items-center text-center">
+          <h1 className="text-xl font-medium text-gray-800 tracking-wide mb-1">Add New Project</h1>
+          <p className="text-gray-600 text-sm leading-snug">Create and showcase your film industry project. Add details, team members, and share with the community.</p>
         </div>
-      </form>
+      </div>
+      <div className="w-full max-w-6xl px-4">
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+          <form onSubmit={handleSubmit} className="p-8">
+            <ProjectForm
+              projectName={projectName}
+              setProjectName={setProjectName}
+              country={country}
+              setCountry={setCountry}
+              productionCompany={productionCompany}
+              setProductionCompany={setProductionCompany}
+              status={status}
+              setStatus={setStatus}
+              logline={logline}
+              setLogline={setLogline}
+              synopsis={synopsis}
+              setSynopsis={setSynopsis}
+              startDate={startDate}
+              setStartDate={setStartDate}
+              endDate={endDate}
+              setEndDate={setEndDate}
+              location={location}
+              setLocation={setLocation}
+              genre={genre}
+              setGenre={setGenre}
+              director={director}
+              setDirector={setDirector}
+              producer={producer}
+              setProducer={setProducer}
+              coverImageUrl={coverImageUrl}
+              setCoverImageUrl={setCoverImageUrl}
+              projectWebsite={projectWebsite}
+              setProjectWebsite={setProjectWebsite}
+              productionBudget={productionBudget}
+              setProductionBudget={setProductionBudget}
+              productionCompanyContact={productionCompanyContact}
+              setProductionCompanyContact={setProductionCompanyContact}
+              isVerified={isVerified}
+              setIsVerified={setIsVerified}
+              handleCoverImageUploaded={handleCoverImageUploaded}
+            />
+
+            <div className="flex flex-col sm:flex-row justify-end gap-4 pt-6 border-t border-gray-200">
+              <button
+                type="button"
+                onClick={handleCancel}
+                className="w-full sm:w-auto px-6 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-300 font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="w-full sm:w-auto px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-300 font-medium"
+              >
+                Add Project
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
   );
 };

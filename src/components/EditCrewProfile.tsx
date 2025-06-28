@@ -184,11 +184,11 @@ const EditCrewProfile: React.FC = () => {
             residences: data.residences || [{ country: '', city: '' }],
             projects: data.projects || [{ projectName: '', role: '', description: '' }],
             education: data.education || [],
-            contactInfo: data.contactInfo || {
-              email: '',
-              phone: '',
-              website: '',
-              instagram: '',
+            contactInfo: {
+              email: user.email || data.contactInfo?.email || '', // Use auth email as primary
+              phone: data.contactInfo?.phone || '',
+              website: data.contactInfo?.website || '',
+              instagram: data.contactInfo?.instagram || '',
             },
             otherInfo: data.otherInfo || '',
             isPublished: data.isPublished || false,
@@ -340,12 +340,22 @@ const EditCrewProfile: React.FC = () => {
     try {
       const docRef = doc(db, 'crewProfiles', user.uid);
       console.log("DEBUG: Saving to document:", docRef.path);
-      await setDoc(docRef, {
+      
+      // Ensure email is included in the saved data
+      const dataToSave = {
         ...form,
-        languages: form.languages || [],
         uid: user.uid,
+        email: user.email || form.contactInfo?.email || '', // Use auth email as primary, fallback to contact info
+        contactInfo: {
+          ...form.contactInfo,
+          email: user.email || form.contactInfo?.email || '', // Ensure email is in contact info
+        },
+        languages: form.languages || [],
         isPublished, // Save publish state
-      }, { merge: true });
+        updatedAt: new Date()
+      };
+      
+      await setDoc(docRef, dataToSave, { merge: true });
       console.log("DEBUG: Save successful!");
       setMessage('Profile saved!');
     } catch(error) { // Added error logging
@@ -359,17 +369,17 @@ const EditCrewProfile: React.FC = () => {
   // --- JSX / HTML (no changes) ---
   return (
     <div className="flex flex-col items-center min-h-screen bg-gray-100 pt-10">
-      <div className="w-full max-w-xl mb-4 px-2">
+      <div className="w-full max-w-6xl mb-4 px-4">
         <div className="resume-builder-banner bg-white bg-opacity-95 shadow-md rounded-xl p-3 flex flex-col items-center text-center">
           <h1 className="text-xl font-medium text-gray-800 tracking-wide mb-1">Resume Builder</h1>
           <p className="text-gray-600 text-sm leading-snug">Easily create, update, and download your professional film industry resume. Showcase your experience, skills, and projects to producers and collaborators.</p>
         </div>
       </div>
-      <div className="w-full max-w-xl px-2">
+      <div className="w-full max-w-6xl px-4">
         <div className="bg-white">
           {/* Hero Section */}
           <div className="bg-gradient-to-br from-gray-50 to-white border-b border-gray-100">
-            <div className="max-w-3xl mx-auto px-4 py-8">
+            <div className="max-w-6xl mx-auto px-4 py-8">
               <div className="text-center mb-6 animate-fade-in">
                 <h1 className="text-3xl font-light text-gray-900 mb-2 tracking-tight animate-slide-up">
                   Edit
@@ -386,7 +396,7 @@ const EditCrewProfile: React.FC = () => {
 
           {/* Form Section */}
           <div className="bg-gray-50">
-            <div className="max-w-4xl mx-auto px-8 py-16">
+            <div className="max-w-6xl mx-auto px-8 py-16">
               <div className="bg-white rounded-xl shadow-sm p-8 animate-fade-in">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-8">

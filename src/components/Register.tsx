@@ -196,13 +196,18 @@ const Register: React.FC = () => {
     setError(null);
 
     try {
+      console.log('Starting registration process for:', form.email);
+      
       // Step 1: Create user in Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, form.email, form.password);
       const firebaseUser = userCredential.user;
       const userId = firebaseUser.uid;
       
-      // Step 2 (Optional but good): Update Auth profile display name
+      console.log('Firebase Auth user created with ID:', userId);
+      
+      // Step 2: Update Auth profile display name
       await updateProfile(firebaseUser, { displayName: form.name });
+      console.log('Firebase Auth profile updated with display name');
 
       // Step 3: Upload profile image if selected
       let uploadedImageUrl = '';
@@ -210,41 +215,71 @@ const Register: React.FC = () => {
         const storageRef = ref(storage, `profileImages/${userId}`);
         await uploadBytes(storageRef, imageFile);
         uploadedImageUrl = await getDownloadURL(storageRef);
+        console.log('Profile image uploaded:', uploadedImageUrl);
       }
 
       // Step 4: Create document in 'users' collection
-      await setDoc(doc(db, 'users', userId), {
+      const userData = {
         uid: userId,
-        email: firebaseUser.email,
+        email: form.email, // Use form email to ensure consistency
         displayName: form.name,
         photoURL: uploadedImageUrl,
         roles: ['user'],
         user_type: form.userType,
-      });
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      await setDoc(doc(db, 'users', userId), userData);
+      console.log('User document created in users collection');
 
-      // Step 5: Create detailed profile in 'crewProfiles' if they are Crew
-      if (form.userType === 'Crew') {
-        await setDoc(doc(db, "crewProfiles", userId), {
-          uid: userId,
-          name: form.name,
-          bio: form.bio,
-          profileImageUrl: uploadedImageUrl,
-          jobTitles: form.jobTitles.filter(j => j.department && j.title),
-          residences: form.residences.filter(r => r.country && r.city),
-          projects: form.projects.filter(p => p.projectName && p.role),
-          education: form.education.filter(edu => edu.trim()),
-          contactInfo: form.contactInfo,
-          otherInfo: form.otherInfo,
-          availability: form.availability,
-        });
-      }
+      // Step 5: Create detailed profile in 'crewProfiles' collection
+      const crewProfileData = {
+        uid: userId,
+        email: form.email, // Ensure email is saved in crew profile
+        name: form.name,
+        bio: form.bio || '',
+        profileImageUrl: uploadedImageUrl,
+        jobTitles: form.jobTitles.filter(j => j.department && j.title),
+        residences: form.residences.filter(r => r.country && r.city),
+        projects: form.projects.filter(p => p.projectName && p.role),
+        education: form.education.filter(edu => edu.trim()),
+        contactInfo: {
+          email: form.email, // Set email in contact info
+          phone: form.contactInfo?.phone || '',
+          website: form.contactInfo?.website || '',
+          instagram: form.contactInfo?.instagram || '',
+        },
+        otherInfo: form.otherInfo || '',
+        availability: form.availability || 'available',
+        isPublished: false, // Start as private
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      await setDoc(doc(db, "crewProfiles", userId), crewProfileData);
+      console.log('Crew profile document created');
 
       console.log('User registered and profile created successfully!');
       navigate('/'); // Redirect to homepage after successful registration
 
     } catch (err: any) {
       console.error('Error registering user:', err);
-      setError(err.message.replace('Firebase: ', ''));
+      
+      // Provide more specific error messages
+      let errorMessage = 'Registration failed. Please try again.';
+      
+      if (err.code === 'auth/email-already-in-use') {
+        errorMessage = 'This email is already registered. Please use a different email or try logging in.';
+      } else if (err.code === 'auth/weak-password') {
+        errorMessage = 'Password is too weak. Please choose a stronger password.';
+      } else if (err.code === 'auth/invalid-email') {
+        errorMessage = 'Please enter a valid email address.';
+      } else if (err.message) {
+        errorMessage = err.message.replace('Firebase: ', '');
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
