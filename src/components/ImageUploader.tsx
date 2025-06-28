@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
 import {
   getStorage,
   ref,
@@ -36,6 +36,18 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [cropping, setCropping] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  // ESC key to cancel crop modal
+  useEffect(() => {
+    if (!showCrop) return;
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleCropCancel();
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [showCrop]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -197,7 +209,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
       {/* Cropper Modal */}
       {showCrop && imageSrc && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col overflow-hidden">
             {/* Header */}
             <div className="p-6 border-b border-gray-200">
               <h3 className="heading-card text-center">
@@ -209,29 +221,32 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
             </div>
 
             {/* Cropper Container */}
-            <div className="relative w-full h-96 bg-gray-100">
-              <Cropper
-                image={imageSrc}
-                crop={crop}
-                zoom={zoom}
-                aspect={aspectRatio}
-                onCropChange={setCrop}
-                onZoomChange={setZoom}
-                onCropComplete={onCropComplete}
-                cropShape="rect"
-                showGrid={true}
-                style={{
-                  containerStyle: {
-                    width: '100%',
-                    height: '100%',
-                    backgroundColor: '#f3f4f6'
-                  }
-                }}
-              />
+            <div className="relative flex-1 min-h-[240px] max-h-[45vh] bg-gray-100 overflow-auto flex items-center justify-center">
+              <div className="w-full h-full max-w-full max-h-full">
+                <Cropper
+                  image={imageSrc}
+                  crop={crop}
+                  zoom={zoom}
+                  aspect={aspectRatio}
+                  onCropChange={setCrop}
+                  onZoomChange={setZoom}
+                  onCropComplete={onCropComplete}
+                  cropShape="rect"
+                  showGrid={true}
+                  style={{
+                    containerStyle: {
+                      width: '100%',
+                      height: '100%',
+                      backgroundColor: '#f3f4f6',
+                      maxHeight: '45vh',
+                    }
+                  }}
+                />
+              </div>
             </div>
 
-            {/* Controls */}
-            <div className="p-6 border-t border-gray-200">
+            {/* Controls pinned to bottom */}
+            <div className="p-6 border-t border-gray-200 bg-white sticky bottom-0">
               {/* Zoom Control */}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
