@@ -46,24 +46,42 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
   // Optimized user profile loading with batching and debouncing
   const loadUserProfiles = useCallback(async (userIds: string[]) => {
     try {
-      performanceMonitor.start('loadUserProfiles');
-      const profiles = await UserUtils.getMultipleUserProfiles(userIds);
-      setUserProfiles(prev => new Map([...prev, ...profiles]));
-      performanceMonitor.end('loadUserProfiles');
+      // Filter out users that are already loaded or being loaded
+      const uniqueUserIds = userIds.filter(id => !userProfiles.has(id));
+      
+      if (uniqueUserIds.length === 0) {
+        return; // No new profiles to load
+      }
+
+      console.log(`[ActivityFeed] Loading ${uniqueUserIds.length} user profiles`);
+      
+      await performanceMonitor.measureAsync('loadUserProfiles', async () => {
+        const profiles = await UserUtils.getMultipleUserProfiles(uniqueUserIds);
+        setUserProfiles(prev => new Map([...prev, ...profiles]));
+      });
     } catch (error) {
       console.error('Error loading user profiles:', error);
     }
-  }, []);
+  }, [userProfiles]);
 
-  // Debounced version of loadUserProfiles
+  // Debounced version of loadUserProfiles with longer delay for better batching
   const debouncedLoadUserProfiles = useCallback(
     (() => {
       let timeoutId: NodeJS.Timeout;
+      let pendingUserIds: Set<string> = new Set();
+      
       return (userIds: string[]) => {
+        // Add new user IDs to pending set
+        userIds.forEach(id => pendingUserIds.add(id));
+        
         clearTimeout(timeoutId);
         timeoutId = setTimeout(() => {
-          loadUserProfiles(userIds);
-        }, 300);
+          const idsToLoad = Array.from(pendingUserIds);
+          pendingUserIds.clear();
+          if (idsToLoad.length > 0) {
+            loadUserProfiles(idsToLoad);
+          }
+        }, 500); // Increased delay for better batching
       };
     })(),
     [loadUserProfiles]
@@ -79,23 +97,31 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
     return profile?.avatarUrl;
   }, [userProfiles]);
 
-  // Load user profiles when activities change, but with better batching
+  // Optimized user profile loading with better batching
   useEffect(() => {
-    const userIds = new Set<string>();
+    if (!activities.length) return;
     
-    // Collect all unique user IDs from activities
-    activities.forEach(activity => {
-      userIds.add(activity.userId);
-    });
-    
-    const userIdsToLoad = Array.from(userIds).filter(id => !userProfiles.has(id));
+    // Extract unique user IDs that we don't have profiles for
+    const userIdsToLoad = activities
+      .map(activity => activity.userId)
+      .filter(userId => userId && !userProfiles.has(userId))
+      .filter((userId, index, array) => array.indexOf(userId) === index) // Remove duplicates
+      .slice(0, 10); // Limit to 10 at a time to avoid overwhelming the system
     
     if (userIdsToLoad.length > 0) {
-      debouncedLoadUserProfiles(userIdsToLoad);
+      // Only load if we have a reasonable number of profiles to load
+      // or if we have many activities but few profiles
+      const shouldLoad = userIdsToLoad.length >= 3 || 
+                        (activities.length > 15 && userProfiles.size < 5);
+      
+      if (shouldLoad) {
+        console.log('[ActivityFeed] Loading profiles for', userIdsToLoad.length, 'users');
+        debouncedLoadUserProfiles(userIdsToLoad);
+      }
     }
   }, [activities, userProfiles, debouncedLoadUserProfiles]);
 
-  // Memoized filtered activities
+  // Memoized filtered activities with pagination for better performance
   const filteredActivities = useMemo(() => {
     performanceMonitor.start('filterActivities');
     
@@ -115,8 +141,12 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
       filtered = filtered.filter(activity => activity.type.includes(filterType));
     }
     
+    // Limit the number of activities to render for better performance
+    // We'll load more as needed through pagination
+    const limitedActivities = filtered.slice(0, 50);
+    
     performanceMonitor.end('filterActivities');
-    return filtered;
+    return limitedActivities;
   }, [activities, debouncedSearchQuery, filterType]);
 
   // Load initial activities with better performance
@@ -124,18 +154,32 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
     const loadInitialActivities = async () => {
       if (!currentUserId) return;
       
-      performanceMonitor.start('loadActivities');
+      // Don't reload if we already have activities and they're recent (within 2 minutes)
+      if (activities.length > 0 && !loading) {
+        const lastActivityTime = activities[0]?.createdAt;
+        if (lastActivityTime && Date.now() - lastActivityTime.getTime() < 2 * 60 * 1000) {
+          console.log('[ActivityFeed] Using existing activities (recent, within 2 minutes)');
+          return;
+        }
+      }
+      
       setLoading(true);
       setError(null);
 
       try {
-        const newActivities = await SocialService.getActivityFeed(currentUserId, ITEMS_PER_PAGE);
+        console.log('[ActivityFeed] Starting to load activities...');
+        // Use the improved async performance monitoring
+        const newActivities = await performanceMonitor.measureAsync('loadActivities', async () => {
+          console.log('[ActivityFeed] Executing activity feed query...');
+          return await SocialService.getActivityFeed(currentUserId, ITEMS_PER_PAGE);
+        });
+        
+        console.log('[ActivityFeed] Successfully loaded', newActivities.length, 'activities');
         setActivities(newActivities);
         setLastDoc(newActivities[newActivities.length - 1] || null);
         setHasMore(newActivities.length === ITEMS_PER_PAGE);
-        performanceMonitor.end('loadActivities');
       } catch (err) {
-        console.error('Error loading activities:', err);
+        console.error('[ActivityFeed] Error loading activities:', err);
         setError('Failed to load activities. Please try again.');
       } finally {
         setLoading(false);
@@ -143,40 +187,54 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
     };
 
     loadInitialActivities();
-  }, [currentUserId]);
+  }, [currentUserId]); // Removed activities and loading from dependencies to prevent loops
 
-  // Optimized load more function
+  // Optimized load more function with better error handling
   const loadMoreActivities = useCallback(async () => {
-    if (loading || !hasMore || !lastDoc) return;
+    if (loading || !hasMore || !lastDoc || !currentUserId) return;
     
-    performanceMonitor.start('loadMoreActivities');
     setLoading(true);
 
     try {
-      const newActivities = await SocialService.getActivityFeed(currentUserId, ITEMS_PER_PAGE);
-      setActivities(prev => [...prev, ...newActivities]);
-      setLastDoc(newActivities[newActivities.length - 1] || null);
-      setHasMore(newActivities.length === ITEMS_PER_PAGE);
-      performanceMonitor.end('loadMoreActivities');
+      const newActivities = await performanceMonitor.measureAsync('loadMoreActivities', async () => {
+        return await SocialService.getActivityFeed(currentUserId, ITEMS_PER_PAGE);
+      });
+      
+      // Deduplicate activities to prevent duplicates
+      const existingIds = new Set(activities.map(a => a.id));
+      const uniqueNewActivities = newActivities.filter((activity: ActivityFeedItem) => !existingIds.has(activity.id));
+      
+      if (uniqueNewActivities.length > 0) {
+        setActivities(prev => [...prev, ...uniqueNewActivities]);
+        setLastDoc(uniqueNewActivities[uniqueNewActivities.length - 1] || lastDoc);
+        setHasMore(uniqueNewActivities.length === ITEMS_PER_PAGE);
+      } else {
+        setHasMore(false);
+      }
     } catch (err) {
       console.error('Error loading more activities:', err);
       setError('Failed to load more activities. Please try again.');
     } finally {
       setLoading(false);
     }
-  }, [currentUserId, lastDoc, loading, hasMore]);
+  }, [currentUserId, lastDoc, loading, hasMore, activities]);
 
-  // Auto-load more when intersection observer triggers
+  // Auto-load more when intersection observer triggers (with debouncing)
   useEffect(() => {
     if (isIntersecting && hasMore && !loading) {
-      loadMoreActivities();
+      const timeoutId = setTimeout(() => {
+        loadMoreActivities();
+      }, 100); // Small delay to prevent rapid successive calls
+      
+      return () => clearTimeout(timeoutId);
     }
   }, [isIntersecting, hasMore, loading, loadMoreActivities]);
 
   const handleLike = useCallback(async (activityId: string) => {
     try {
-      performanceMonitor.start('handleLike');
-      await SocialService.likeActivity(activityId, currentUserId, currentUserName);
+      await performanceMonitor.measureAsync('handleLike', async () => {
+        await SocialService.likeActivity(activityId, currentUserId, currentUserName);
+      });
       
       // Optimistically update the UI
       setActivities(prev => prev.map(activity => 
@@ -184,8 +242,6 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
           ? { ...activity, likes: activity.likes + 1 }
           : activity
       ));
-      
-      performanceMonitor.end('handleLike');
     } catch (error) {
       console.error('Error liking activity:', error);
     }
@@ -195,8 +251,9 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
     if (!comment.trim()) return;
     
     try {
-      performanceMonitor.start('handleComment');
-      await SocialService.addComment(activityId, currentUserId, currentUserName, currentUserAvatar, comment);
+      await performanceMonitor.measureAsync('handleComment', async () => {
+        await SocialService.addComment(activityId, currentUserId, currentUserName, currentUserAvatar, comment);
+      });
       
       // Optimistically update the UI
       setActivities(prev => prev.map(activity => 
@@ -204,8 +261,6 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
           ? { ...activity, comments: activity.comments + 1 }
           : activity
       ));
-      
-      performanceMonitor.end('handleComment');
     } catch (error) {
       console.error('Error commenting on activity:', error);
     }
@@ -213,10 +268,10 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
 
   const handleShare = useCallback(async (activityId: string) => {
     try {
-      performanceMonitor.start('handleShare');
-      // Share functionality not implemented yet - just log for now
-      console.log('Sharing activity:', activityId);
-      performanceMonitor.end('handleShare');
+      await performanceMonitor.measureAsync('handleShare', async () => {
+        // Share functionality not implemented yet - just log for now
+        console.log('Sharing activity:', activityId);
+      });
     } catch (error) {
       console.error('Error sharing activity:', error);
     }
@@ -303,6 +358,37 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
     );
   }), [getUserDisplayName, getUserAvatar, handleLike, handleShare]);
 
+  // Loading skeleton component for better perceived performance
+  const ActivitySkeleton = useMemo(() => () => (
+    <div className="activity-item skeleton">
+      <div className="activity-header">
+        <div className="user-avatar skeleton-avatar"></div>
+        <div className="activity-info">
+          <div className="user-name skeleton-text"></div>
+          <div className="activity-time skeleton-text-small"></div>
+        </div>
+        <div className="activity-type-badge skeleton-badge"></div>
+      </div>
+      <div className="activity-content">
+        <div className="activity-title skeleton-text"></div>
+        <div className="activity-description skeleton-text"></div>
+        <div className="activity-description skeleton-text-short"></div>
+      </div>
+      <div className="activity-actions">
+        <div className="action-button skeleton-button"></div>
+        <div className="action-button skeleton-button"></div>
+        <div className="action-button skeleton-button"></div>
+      </div>
+    </div>
+  ), []);
+
+  // Render loading skeletons
+  const renderLoadingSkeletons = () => {
+    return Array.from({ length: 3 }, (_, index) => (
+      <ActivitySkeleton key={`skeleton-${index}`} />
+    ));
+  };
+
   const getActivityIcon = (type: string) => {
     switch (type) {
       case 'project_created':
@@ -378,7 +464,10 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
 
       {/* Activities List */}
       <div className="activities-list">
-        {filteredActivities.length === 0 && !loading ? (
+        {loading && activities.length === 0 ? (
+          // Show skeletons during initial load
+          renderLoadingSkeletons()
+        ) : filteredActivities.length === 0 && !loading ? (
           <div className="empty-state">
             <div className="empty-icon">📝</div>
             <h3>No activities found</h3>

@@ -106,13 +106,22 @@ export class UserUtils {
         return profiles;
       }
 
-      // Batch fetch uncached profiles
-      const batchSize = 10; // Firestore batch limit
+      console.log(`[UserUtils] Loading ${uncachedIds.length} uncached profiles`);
+
+      // Optimize batch loading with better chunking and parallel processing
+      const batchSize = 20; // Increased batch size for better performance
+      const chunks = [];
+      
       for (let i = 0; i < uncachedIds.length; i += batchSize) {
-        const batch = uncachedIds.slice(i, i + batchSize);
+        chunks.push(uncachedIds.slice(i, i + batchSize));
+      }
+
+      // Process chunks in parallel for better performance
+      const chunkPromises = chunks.map(async (chunk) => {
+        const chunkProfiles = new Map<string, UserProfile>();
         
-        // Try users collection first
-        const userPromises = batch.map(async (userId) => {
+        // Try users collection first for the entire chunk
+        const userPromises = chunk.map(async (userId) => {
           try {
             const userDoc = await getDoc(doc(db, 'users', userId));
             if (userDoc.exists()) {
@@ -142,54 +151,69 @@ export class UserUtils {
         const userResults = await Promise.all(userPromises);
         userResults.forEach(result => {
           if (result) {
-            profiles.set(result.userId, result.profile);
+            chunkProfiles.set(result.userId, result.profile);
           }
         });
 
         // For users not found in users collection, try crewProfiles
-        const notFoundIds = batch.filter(userId => !profiles.has(userId));
-        const crewPromises = notFoundIds.map(async (userId) => {
-          try {
-            const crewDoc = await getDoc(doc(db, 'crewProfiles', userId));
-            if (crewDoc.exists()) {
-              const crewData = crewDoc.data();
-              const profile: UserProfile = {
-                id: userId,
-                displayName: crewData.name || crewData.firstName || `Crew Member ${userId.slice(-4)}`,
-                firstName: crewData.firstName,
-                lastName: crewData.lastName,
-                email: crewData.email,
-                avatarUrl: crewData.avatarUrl,
-                bio: crewData.bio,
-                location: crewData.location,
-                jobTitle: crewData.jobTitle,
-                company: crewData.company
-              };
-              this.userCache.set(userId, profile);
-              return { userId, profile };
+        const notFoundIds = chunk.filter(userId => !chunkProfiles.has(userId));
+        if (notFoundIds.length > 0) {
+          const crewPromises = notFoundIds.map(async (userId) => {
+            try {
+              const crewDoc = await getDoc(doc(db, 'crewProfiles', userId));
+              if (crewDoc.exists()) {
+                const crewData = crewDoc.data();
+                const profile: UserProfile = {
+                  id: userId,
+                  displayName: crewData.name || crewData.firstName || `Crew Member ${userId.slice(-4)}`,
+                  firstName: crewData.firstName,
+                  lastName: crewData.lastName,
+                  email: crewData.email,
+                  avatarUrl: crewData.avatarUrl,
+                  bio: crewData.bio,
+                  location: crewData.location,
+                  jobTitle: crewData.jobTitle,
+                  company: crewData.company
+                };
+                this.userCache.set(userId, profile);
+                return { userId, profile };
+              }
+              return null;
+            } catch (error) {
+              console.error(`Error fetching crew profile ${userId}:`, error);
+              return null;
             }
-            return null;
-          } catch (error) {
-            console.error(`Error fetching crew profile ${userId}:`, error);
-            return null;
-          }
-        });
+          });
 
-        const crewResults = await Promise.all(crewPromises);
-        crewResults.forEach(result => {
-          if (result) {
-            profiles.set(result.userId, result.profile);
-          }
-        });
+          const crewResults = await Promise.all(crewPromises);
+          crewResults.forEach(result => {
+            if (result) {
+              chunkProfiles.set(result.userId, result.profile);
+            }
+          });
+        }
 
         // Cache null for users not found
-        batch.forEach(userId => {
-          if (!profiles.has(userId)) {
+        chunk.forEach(userId => {
+          if (!chunkProfiles.has(userId)) {
             this.userCache.set(userId, null);
           }
         });
-      }
 
+        return chunkProfiles;
+      });
+
+      // Wait for all chunks to complete
+      const chunkResults = await Promise.all(chunkPromises);
+      
+      // Merge all chunk results
+      chunkResults.forEach(chunkProfiles => {
+        chunkProfiles.forEach((profile, userId) => {
+          profiles.set(userId, profile);
+        });
+      });
+
+      console.log(`[UserUtils] Successfully loaded ${profiles.size} profiles`);
       return profiles;
     } catch (error) {
       console.error('Error fetching multiple user profiles:', error);
@@ -203,5 +227,54 @@ export class UserUtils {
 
   static clearUserFromCache(userId: string): void {
     this.userCache.delete(userId);
+  }
+
+  // Cache warming strategy for better performance
+  static async warmCache(userIds: string[]): Promise<void> {
+    try {
+      console.log(`[UserUtils] Warming cache for ${userIds.length} users`);
+      await this.getMultipleUserProfiles(userIds);
+    } catch (error) {
+      console.error('Error warming cache:', error);
+    }
+  }
+
+  // Get cache statistics for debugging
+  static getCacheStats(): { size: number; hitRate: number } {
+    return {
+      size: this.userCache.size,
+      hitRate: 0 // Could be calculated if we track hits/misses
+    };
+  }
+
+  // Preload profiles for common users (e.g., current user's connections)
+  static async preloadCommonProfiles(currentUserId: string, connectionIds: string[]): Promise<void> {
+    try {
+      const profilesToPreload = connectionIds.filter(id => !this.userCache.has(id));
+      if (profilesToPreload.length > 0) {
+        console.log(`[UserUtils] Preloading ${profilesToPreload.length} common profiles`);
+        await this.getMultipleUserProfiles(profilesToPreload);
+      }
+    } catch (error) {
+      console.error('Error preloading common profiles:', error);
+    }
+  }
+
+  // Cache management methods
+  static clearUserCache() {
+    console.log('[UserUtils] Clearing user cache');
+    this.userCache.clear();
+  }
+
+  static warmUserCache(userIds: string[]) {
+    console.log('[UserUtils] Warming cache for', userIds.length, 'users');
+    // This could be used to preload user profiles in the background
+    // For now, just log the intention
+    userIds.forEach(userId => {
+      if (!this.userCache.has(userId)) {
+        // Could implement background loading here
+        console.log('[UserUtils] Would preload user:', userId);
+      }
+    });
   }
 } 

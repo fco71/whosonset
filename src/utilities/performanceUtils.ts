@@ -220,36 +220,91 @@ export const performanceMonitor = {
   marks: new Map<string, number>(),
 
   start(label: string) {
-    this.marks.set(label, performance.now());
+    try {
+      // Clear any existing mark to prevent conflicts
+      this.marks.delete(label);
+      this.marks.set(label, performance.now());
+    } catch (error) {
+      console.warn(`Failed to start performance mark "${label}":`, error);
+    }
   },
 
   end(label: string): number {
-    const startTime = this.marks.get(label);
-    if (!startTime) {
-      console.warn(`Performance mark "${label}" not found`);
+    try {
+      const startTime = this.marks.get(label);
+      if (!startTime) {
+        console.warn(`Performance mark "${label}" not found - it may have been cleared or never started. Available marks:`, Array.from(this.marks.keys()));
+        return 0;
+      }
+
+      const duration = performance.now() - startTime;
+      this.marks.delete(label);
+      
+      // Log slow operations
+      if (duration > 100) {
+        console.warn(`Slow operation detected: ${label} took ${duration.toFixed(2)}ms`);
+      }
+      
+      return duration;
+    } catch (error) {
+      console.warn(`Failed to end performance mark "${label}":`, error);
       return 0;
     }
+  },
 
-    const duration = performance.now() - startTime;
-    this.marks.delete(label);
-    
-    if (duration > 100) {
-      console.warn(`Slow operation detected: ${label} took ${duration.toFixed(2)}ms`);
+  endIfExists(label: string): number {
+    if (!this.marks.has(label)) {
+      return 0;
     }
-    
-    return duration;
+    return this.end(label);
   },
 
   measure(label: string, fn: () => any) {
-    this.start(label);
-    const result = fn();
-    this.end(label);
-    return result;
+    try {
+      this.start(label);
+      const result = fn();
+      this.end(label);
+      return result;
+    } catch (error) {
+      console.warn(`Failed to measure "${label}":`, error);
+      return fn();
+    }
+  },
+
+  async measureAsync(label: string, fn: () => Promise<any>) {
+    let markStarted = false;
+    try {
+      this.start(label);
+      markStarted = true;
+      const result = await fn();
+      this.endIfExists(label);
+      return result;
+    } catch (error) {
+      console.warn(`Failed to measure async "${label}":`, error);
+      // Only end the mark if it was successfully started
+      if (markStarted) {
+        this.endIfExists(label);
+      }
+      // Re-throw the error to maintain the original behavior
+      throw error;
+    }
   },
 
   clear() {
     this.marks.clear();
   },
+
+  // Check if a mark exists without removing it
+  hasMark(label: string): boolean {
+    return this.marks.has(label);
+  },
+
+  // Get current duration without ending the mark
+  getCurrentDuration(label: string): number {
+    const startTime = this.marks.get(label);
+    if (!startTime) return 0;
+    return performance.now() - startTime;
+  }
 };
 
 // Bundle size optimization helpers

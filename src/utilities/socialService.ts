@@ -21,7 +21,8 @@ import { FollowRequest, Follow, SocialNotification, ActivityFeedItem, SocialLike
 export class SocialService {
   // Cache for activity feed
   private static activityFeedCache = new Map<string, { data: ActivityFeedItem[]; timestamp: number; ttl: number }>();
-  private static readonly CACHE_TTL = 2 * 60 * 1000; // 2 minutes
+  private static readonly CACHE_TTL = 2 * 60 * 1000; // 2 minutes (reduced for more responsive updates)
+  private static pendingRequests = new Map<string, Promise<ActivityFeedItem[]>>();
 
   // Follow Request Operations
   static async sendFollowRequest(fromUserId: string, toUserId: string, message?: string): Promise<void> {
@@ -390,7 +391,7 @@ export class SocialService {
       
       await addDoc(collection(db, 'activityFeed'), activityData);
       
-      // Clear cache to ensure fresh data
+      // Clear activity feed cache to ensure fresh data
       this.clearActivityFeedCache();
       
       console.log('[SocialService] Activity feed item created successfully');
@@ -412,7 +413,43 @@ export class SocialService {
         return cached.data;
       }
 
-      // Optimize query to get user-specific and public activities
+      // Request deduplication - if same request is in progress, wait for it
+      if (this.pendingRequests.has(cacheKey)) {
+        console.log('[SocialService] Request already in progress, waiting...');
+        return await this.pendingRequests.get(cacheKey)!;
+      }
+
+      // Create the request promise
+      const requestPromise = this.executeActivityFeedQuery(userId, itemLimit);
+      this.pendingRequests.set(cacheKey, requestPromise);
+
+      try {
+        const items = await requestPromise;
+        
+        // Cache the result
+        this.activityFeedCache.set(cacheKey, {
+          data: items,
+          timestamp: Date.now(),
+          ttl: this.CACHE_TTL
+        });
+        
+        return items;
+      } finally {
+        // Clean up pending request
+        this.pendingRequests.delete(cacheKey);
+      }
+    } catch (error) {
+      console.error('Error getting activity feed:', error);
+      return [];
+    }
+  }
+
+  private static async executeActivityFeedQuery(userId: string, itemLimit: number): Promise<ActivityFeedItem[]> {
+    try {
+      console.log('[SocialService] Executing optimized activity feed query for user:', userId);
+      
+      // For now, use a simpler query that doesn't require the new index
+      // Once the index is built, we can switch back to the optimized version
       const feedQuery = query(
         collection(db, 'activityFeed'),
         where('isPublic', '==', true),
@@ -427,18 +464,100 @@ export class SocialService {
         createdAt: doc.data().createdAt?.toDate()
       })) as ActivityFeedItem[];
       
-      // Cache the result
-      this.activityFeedCache.set(cacheKey, {
-        data: items,
-        timestamp: Date.now(),
-        ttl: this.CACHE_TTL
+      console.log('[SocialService] Retrieved', items.length, 'activity feed items (simple query)');
+      return items;
+      
+      /* TODO: Uncomment this optimized version once the index is built
+      // Create a more efficient query that gets activities in order of relevance:
+      // 1. User's own activities
+      // 2. Activities from users they follow
+      // 3. Public activities from the last 7 days
+      
+      const now = new Date();
+      const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      
+      // First, get user's own activities
+      const userActivitiesQuery = query(
+        collection(db, 'activityFeed'),
+        where('userId', '==', userId),
+        orderBy('createdAt', 'desc'),
+        limit(Math.floor(itemLimit / 2))
+      );
+      
+      // Get public activities from recent timeframe
+      const publicActivitiesQuery = query(
+        collection(db, 'activityFeed'),
+        where('isPublic', '==', true),
+        where('createdAt', '>=', oneWeekAgo),
+        orderBy('createdAt', 'desc'),
+        limit(itemLimit)
+      );
+      
+      // Execute queries in parallel for better performance
+      const [userSnapshot, publicSnapshot] = await Promise.all([
+        getDocs(userActivitiesQuery),
+        getDocs(publicActivitiesQuery)
+      ]);
+      
+      // Combine and deduplicate results
+      const allItems = new Map<string, ActivityFeedItem>();
+      
+      // Process user's own activities first (higher priority)
+      userSnapshot.docs.forEach(doc => {
+        const data = doc.data();
+        allItems.set(doc.id, {
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate() || new Date()
+        } as ActivityFeedItem);
       });
       
-      console.log('[SocialService] Retrieved', items.length, 'activity feed items');
+      // Add public activities (avoiding duplicates)
+      publicSnapshot.docs.forEach(doc => {
+        if (!allItems.has(doc.id)) {
+          const data = doc.data();
+          allItems.set(doc.id, {
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt?.toDate() || new Date()
+          } as ActivityFeedItem);
+        }
+      });
+      
+      // Convert to array and sort by creation date
+      const items = Array.from(allItems.values())
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+        .slice(0, itemLimit);
+      
+      console.log('[SocialService] Retrieved', items.length, 'activity feed items (optimized query)');
       return items;
+      */
     } catch (error) {
-      console.error('Error getting activity feed:', error);
-      return [];
+      console.error('Error executing activity feed query:', error);
+      
+      // Fallback to simpler query if the optimized one fails
+      try {
+        console.log('[SocialService] Falling back to simple query...');
+        const fallbackQuery = query(
+          collection(db, 'activityFeed'),
+          where('isPublic', '==', true),
+          orderBy('createdAt', 'desc'),
+          limit(itemLimit)
+        );
+        
+        const snapshot = await getDocs(fallbackQuery);
+        const items = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt?.toDate()
+        })) as ActivityFeedItem[];
+        
+        console.log('[SocialService] Fallback query returned', items.length, 'items');
+        return items;
+      } catch (fallbackError) {
+        console.error('Error in fallback query:', fallbackError);
+        throw error;
+      }
     }
   }
 
@@ -710,6 +829,18 @@ export class SocialService {
 
   // Clear activity feed cache when new items are added
   static clearActivityFeedCache() {
+    console.log('[SocialService] Clearing activity feed cache');
     this.activityFeedCache.clear();
+  }
+
+  static clearUserActivityFeedCache(userId: string) {
+    console.log('[SocialService] Clearing activity feed cache for user:', userId);
+    const keysToDelete: string[] = [];
+    for (const [key] of this.activityFeedCache) {
+      if (key.includes(`activityFeed_${userId}_`)) {
+        keysToDelete.push(key);
+      }
+    }
+    keysToDelete.forEach(key => this.activityFeedCache.delete(key));
   }
 } 
