@@ -57,6 +57,13 @@ const App: React.FC = () => {
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
+            console.log('[App] Auth state changed:', {
+                uid: user?.uid,
+                displayName: user?.displayName,
+                email: user?.email,
+                photoURL: user?.photoURL,
+                providerData: user?.providerData
+            });
             setAuthUser(user || null);
         });
         return () => unsubscribe();
@@ -118,7 +125,7 @@ const App: React.FC = () => {
                         <Route path="/projects/add" element={<PrivateRoute><AddProject /></PrivateRoute>} />
                         <Route path="/projects/:projectId/manage" element={<PrivateRoute><ProjectDashboardWrapper /></PrivateRoute>} />
                         <Route path="/crew" element={<ProducerView />} />
-                        <Route path="/social" element={<PrivateRoute><SocialDashboard currentUserId={authUser?.uid || ''} currentUserName={authUser?.displayName || authUser?.email || 'User'} currentUserAvatar={authUser?.photoURL} /></PrivateRoute>} />
+                        <Route path="/social" element={<PrivateRoute><SocialDashboard currentUserId={authUser?.uid || ''} currentUserName={authUser?.displayName || authUser?.email || `User ${authUser?.uid?.slice(-4) || 'Unknown'}`} currentUserAvatar={authUser?.photoURL} /></PrivateRoute>} />
                         <Route path="/social/test" element={<PrivateRoute><SocialTestPage currentUserId={authUser?.uid || ''} currentUserName={authUser?.displayName || authUser?.email || 'User'} currentUserAvatar={authUser?.photoURL} /></PrivateRoute>} />
                         <Route path="/collections" element={<PrivateRoute><CollectionsHubPage /></PrivateRoute>} />
                         <Route path="/saved-crew" element={<PrivateRoute><SavedCrewProfilesPage /></PrivateRoute>} />

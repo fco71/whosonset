@@ -17,6 +17,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { FollowRequest, Follow, SocialNotification, ActivityFeedItem, SocialLike, SocialComment } from '../types/Social';
+import { CrewProfile } from '../types/CrewProfile';
 
 export class SocialService {
   // Cache for activity feed
@@ -262,8 +263,8 @@ export class SocialService {
             const data = doc.data();
             return {
               id: doc.id,
-              followerId: data.followerId,
-              followingId: data.followingId,
+              followerId: data.followerId || '',
+              followingId: data.followingId || '',
               status: data.status || 'active',
               createdAt: data.createdAt?.toDate() || new Date(),
               lastInteraction: data.lastInteraction?.toDate()
@@ -301,8 +302,8 @@ export class SocialService {
             const data = doc.data();
             return {
               id: doc.id,
-              followerId: data.followerId,
-              followingId: data.followingId,
+              followerId: data.followerId || '',
+              followingId: data.followingId || '',
               status: data.status || 'active',
               createdAt: data.createdAt?.toDate() || new Date(),
               lastInteraction: data.lastInteraction?.toDate()
@@ -794,5 +795,30 @@ export class SocialService {
   static clearAllActivityFeedCache() {
     console.log('[SocialService] Clearing all activity feed cache');
     this.activityFeedCache.clear();
+    this.pendingRequests.clear();
+  }
+
+  // Crew Profile Operations
+  static async getCrewProfiles(): Promise<CrewProfile[]> {
+    try {
+      console.log('[SocialService] Fetching crew profiles');
+      const profilesQuery = query(
+        collection(db, 'crewProfiles'),
+        where('isPublished', '==', true),
+        orderBy('name')
+      );
+      
+      const snapshot = await getDocs(profilesQuery);
+      const profiles = snapshot.docs.map(doc => ({
+        ...doc.data(),
+        uid: doc.id
+      })) as CrewProfile[];
+      
+      console.log('[SocialService] Fetched crew profiles:', profiles.length);
+      return profiles;
+    } catch (error) {
+      console.error('[SocialService] Error fetching crew profiles:', error);
+      return [];
+    }
   }
 } 
