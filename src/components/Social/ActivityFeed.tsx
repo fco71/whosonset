@@ -43,15 +43,31 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
     rootMargin: '100px'
   });
 
-  // Load user profiles for activities
+  // Optimized user profile loading with batching and debouncing
   const loadUserProfiles = useCallback(async (userIds: string[]) => {
     try {
+      performanceMonitor.start('loadUserProfiles');
       const profiles = await UserUtils.getMultipleUserProfiles(userIds);
       setUserProfiles(prev => new Map([...prev, ...profiles]));
+      performanceMonitor.end('loadUserProfiles');
     } catch (error) {
       console.error('Error loading user profiles:', error);
     }
   }, []);
+
+  // Debounced version of loadUserProfiles
+  const debouncedLoadUserProfiles = useCallback(
+    (() => {
+      let timeoutId: NodeJS.Timeout;
+      return (userIds: string[]) => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+          loadUserProfiles(userIds);
+        }, 300);
+      };
+    })(),
+    [loadUserProfiles]
+  );
 
   const getUserDisplayName = useCallback((userId: string): string => {
     const profile = userProfiles.get(userId);
@@ -63,16 +79,21 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
     return profile?.avatarUrl;
   }, [userProfiles]);
 
-  // Load user profiles when activities change
+  // Load user profiles when activities change, but with better batching
   useEffect(() => {
     const userIds = new Set<string>();
-    activities.forEach(activity => userIds.add(activity.userId));
+    
+    // Collect all unique user IDs from activities
+    activities.forEach(activity => {
+      userIds.add(activity.userId);
+    });
     
     const userIdsToLoad = Array.from(userIds).filter(id => !userProfiles.has(id));
+    
     if (userIdsToLoad.length > 0) {
-      loadUserProfiles(userIdsToLoad);
+      debouncedLoadUserProfiles(userIdsToLoad);
     }
-  }, [activities, userProfiles, loadUserProfiles]);
+  }, [activities, userProfiles, debouncedLoadUserProfiles]);
 
   // Memoized filtered activities
   const filteredActivities = useMemo(() => {
@@ -98,50 +119,59 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
     return filtered;
   }, [activities, debouncedSearchQuery, filterType]);
 
-  // Load initial activities
+  // Load initial activities with better performance
   useEffect(() => {
-    loadActivities('reset');
+    const loadInitialActivities = async () => {
+      if (!currentUserId) return;
+      
+      performanceMonitor.start('loadActivities');
+      setLoading(true);
+      setError(null);
+
+      try {
+        const newActivities = await SocialService.getActivityFeed(currentUserId, ITEMS_PER_PAGE);
+        setActivities(newActivities);
+        setLastDoc(newActivities[newActivities.length - 1] || null);
+        setHasMore(newActivities.length === ITEMS_PER_PAGE);
+        performanceMonitor.end('loadActivities');
+      } catch (err) {
+        console.error('Error loading activities:', err);
+        setError('Failed to load activities. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadInitialActivities();
   }, [currentUserId]);
+
+  // Optimized load more function
+  const loadMoreActivities = useCallback(async () => {
+    if (loading || !hasMore || !lastDoc) return;
+    
+    performanceMonitor.start('loadMoreActivities');
+    setLoading(true);
+
+    try {
+      const newActivities = await SocialService.getActivityFeed(currentUserId, ITEMS_PER_PAGE);
+      setActivities(prev => [...prev, ...newActivities]);
+      setLastDoc(newActivities[newActivities.length - 1] || null);
+      setHasMore(newActivities.length === ITEMS_PER_PAGE);
+      performanceMonitor.end('loadMoreActivities');
+    } catch (err) {
+      console.error('Error loading more activities:', err);
+      setError('Failed to load more activities. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }, [currentUserId, lastDoc, loading, hasMore]);
 
   // Auto-load more when intersection observer triggers
   useEffect(() => {
     if (isIntersecting && hasMore && !loading) {
-      loadActivities('next');
+      loadMoreActivities();
     }
-  }, [isIntersecting, hasMore, loading]);
-
-  const loadActivities = useCallback(async (direction: 'next' | 'reset' = 'reset') => {
-    if (loading) return;
-    
-    performanceMonitor.start('loadActivities');
-    setLoading(true);
-    setError(null);
-
-    try {
-      let newActivities: ActivityFeedItem[];
-
-      if (direction === 'next' && lastDoc) {
-        // Load more activities - for now, just load all since pagination isn't implemented yet
-        newActivities = await SocialService.getActivityFeed(currentUserId, ITEMS_PER_PAGE);
-      } else {
-        // Reset and load initial activities
-        newActivities = await SocialService.getActivityFeed(currentUserId, ITEMS_PER_PAGE);
-      }
-
-      setActivities(prev => 
-        direction === 'next' ? [...prev, ...newActivities] : newActivities
-      );
-      setLastDoc(newActivities[newActivities.length - 1] || null);
-      setHasMore(newActivities.length === ITEMS_PER_PAGE);
-      
-      performanceMonitor.end('loadActivities');
-    } catch (err) {
-      console.error('Error loading activities:', err);
-      setError('Failed to load activities. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  }, [currentUserId, lastDoc, loading]);
+  }, [isIntersecting, hasMore, loading, loadMoreActivities]);
 
   const handleLike = useCallback(async (activityId: string) => {
     try {
@@ -192,8 +222,8 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
     }
   }, [currentUserId]);
 
-  // Memoized activity item component
-  const ActivityItem = useCallback(({ activity }: { activity: ActivityFeedItem }) => {
+  // Memoized activity item component for better performance
+  const ActivityItem = useMemo(() => React.memo(({ activity }: { activity: ActivityFeedItem }) => {
     const displayName = getUserDisplayName(activity.userId);
     const avatarUrl = getUserAvatar(activity.userId);
     
@@ -271,7 +301,7 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
         </div>
       </div>
     );
-  }, [handleLike, handleComment, handleShare, getUserDisplayName, getUserAvatar]);
+  }), [getUserDisplayName, getUserAvatar, handleLike, handleShare]);
 
   const getActivityIcon = (type: string) => {
     switch (type) {
@@ -311,7 +341,7 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
       <div className="activity-feed-error">
         <div className="error-icon">⚠️</div>
         <p>{error}</p>
-        <button onClick={() => loadActivities('reset')} className="retry-button">
+        <button onClick={() => loadMoreActivities()} className="retry-button">
           Try Again
         </button>
       </div>

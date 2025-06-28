@@ -19,6 +19,10 @@ import { db } from '../firebase';
 import { FollowRequest, Follow, SocialNotification, ActivityFeedItem, SocialLike, SocialComment } from '../types/Social';
 
 export class SocialService {
+  // Cache for activity feed
+  private static activityFeedCache = new Map<string, { data: ActivityFeedItem[]; timestamp: number; ttl: number }>();
+  private static readonly CACHE_TTL = 2 * 60 * 1000; // 2 minutes
+
   // Follow Request Operations
   static async sendFollowRequest(fromUserId: string, toUserId: string, message?: string): Promise<void> {
     try {
@@ -174,12 +178,15 @@ export class SocialService {
       
       if (!snapshot.empty) {
         const doc = snapshot.docs[0];
+        const data = doc.data();
         return {
           id: doc.id,
-          ...doc.data(),
-          createdAt: doc.data().createdAt?.toDate(),
-          lastInteraction: doc.data().lastInteraction?.toDate()
-        } as Follow;
+          followerId: data.followerId,
+          followingId: data.followingId,
+          status: data.status || 'active',
+          createdAt: data.createdAt?.toDate() || new Date(),
+          lastInteraction: data.lastInteraction?.toDate()
+        };
       }
       return null;
     } catch (error) {
@@ -249,12 +256,17 @@ export class SocialService {
 
       return onSnapshot(followersQuery, (snapshot) => {
         try {
-          const follows = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            createdAt: doc.data().createdAt?.toDate(),
-            lastInteraction: doc.data().lastInteraction?.toDate()
-          })) as Follow[];
+          const follows = snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              followerId: data.followerId,
+              followingId: data.followingId,
+              status: data.status || 'active',
+              createdAt: data.createdAt?.toDate() || new Date(),
+              lastInteraction: data.lastInteraction?.toDate()
+            };
+          });
           console.log('[SocialService] Followers updated:', follows.length);
           callback(follows);
         } catch (error) {
@@ -283,12 +295,17 @@ export class SocialService {
 
       return onSnapshot(followingQuery, (snapshot) => {
         try {
-          const follows = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            createdAt: doc.data().createdAt?.toDate(),
-            lastInteraction: doc.data().lastInteraction?.toDate()
-          })) as Follow[];
+          const follows = snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              followerId: data.followerId,
+              followingId: data.followingId,
+              status: data.status || 'active',
+              createdAt: data.createdAt?.toDate() || new Date(),
+              lastInteraction: data.lastInteraction?.toDate()
+            };
+          });
           console.log('[SocialService] Following updated:', follows.length);
           callback(follows);
         } catch (error) {
@@ -365,10 +382,17 @@ export class SocialService {
   static async createActivityFeedItem(item: Omit<ActivityFeedItem, 'id'>): Promise<void> {
     try {
       console.log('[SocialService] Creating activity feed item:', item);
-      await addDoc(collection(db, 'activityFeed'), {
+      
+      const activityData = {
         ...item,
         createdAt: serverTimestamp()
-      });
+      };
+      
+      await addDoc(collection(db, 'activityFeed'), activityData);
+      
+      // Clear cache to ensure fresh data
+      this.clearActivityFeedCache();
+      
       console.log('[SocialService] Activity feed item created successfully');
     } catch (error) {
       console.error('Error creating activity feed item:', error);
@@ -379,6 +403,16 @@ export class SocialService {
   static async getActivityFeed(userId: string, itemLimit: number = 20): Promise<ActivityFeedItem[]> {
     try {
       console.log('[SocialService] Getting activity feed for user:', userId);
+      
+      // Check cache first
+      const cacheKey = `activityFeed_${userId}_${itemLimit}`;
+      const cached = this.activityFeedCache.get(cacheKey);
+      if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
+        console.log('[SocialService] Returning cached activity feed');
+        return cached.data;
+      }
+
+      // Optimize query to get user-specific and public activities
       const feedQuery = query(
         collection(db, 'activityFeed'),
         where('isPublic', '==', true),
@@ -392,6 +426,13 @@ export class SocialService {
         ...doc.data(),
         createdAt: doc.data().createdAt?.toDate()
       })) as ActivityFeedItem[];
+      
+      // Cache the result
+      this.activityFeedCache.set(cacheKey, {
+        data: items,
+        timestamp: Date.now(),
+        ttl: this.CACHE_TTL
+      });
       
       console.log('[SocialService] Retrieved', items.length, 'activity feed items');
       return items;
@@ -665,5 +706,10 @@ export class SocialService {
       console.error('Error getting following count:', error);
       return 0;
     }
+  }
+
+  // Clear activity feed cache when new items are added
+  static clearActivityFeedCache() {
+    this.activityFeedCache.clear();
   }
 } 

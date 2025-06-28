@@ -575,7 +575,7 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
           {activeTab === 'requests' && renderFollowRequests()}
           {activeTab === 'notifications' && renderNotifications()}
           {activeTab === 'discover' && renderDiscover()}
-          {activeTab === 'messages' && <ChatInterface currentUserId={currentUserId} currentUserName={currentUserName} />}
+          {activeTab === 'messages' && <ChatInterface currentUserId={currentUserId} currentUserName={currentUserName} currentUserAvatar={currentUserAvatar} />}
         </div>
 
         {/* Follow Request Modal */}

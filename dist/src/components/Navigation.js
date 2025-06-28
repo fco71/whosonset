@@ -1,7 +1,0 @@
-import { jsx as _jsx, Fragment as _Fragment, jsxs as _jsxs } from "react/jsx-runtime";
-import { Link } from 'react-router-dom';
-import '../styles/Navigation.scss';
-const Navigation = ({ authUser, userSignOut }) => {
-    return (_jsx("nav", { className: "navigation", children: _jsxs("ul", { className: "navigation-list", children: [_jsx("li", { className: "navigation-item", children: _jsx(Link, { to: "/", className: "navigation-link", children: "Home" }) }), _jsx("li", { className: "navigation-item", children: _jsx(Link, { to: "/projects", className: "navigation-link", children: "Projects" }) }), authUser && (_jsx("li", { className: "navigation-item", children: _jsx(Link, { to: "/crew", className: "navigation-link", children: "Crew" }) })), !authUser ? (_jsxs(_Fragment, { children: [_jsx("li", { className: "navigation-item", children: _jsx(Link, { to: "/login", className: "navigation-link", children: "Login" }) }), _jsx("li", { className: "navigation-item", children: _jsx(Link, { to: "/register", className: "navigation-link", children: "Register" }) })] })) : (_jsxs(_Fragment, { children: [_jsx("li", { className: "navigation-item", children: _jsx(Link, { to: "/projects/add", className: "navigation-link", children: "Add Project" }) }), _jsx("li", { className: "navigation-item", children: _jsx("button", { onClick: userSignOut, className: "navigation-button", children: "Sign Out" }) })] }))] }) }));
-};
-export default Navigation;

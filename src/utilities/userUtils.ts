@@ -86,18 +86,115 @@ export class UserUtils {
   }
 
   static async getMultipleUserProfiles(userIds: string[]): Promise<Map<string, UserProfile>> {
-    const profiles = new Map<string, UserProfile>();
-    
-    await Promise.all(
-      userIds.map(async (userId) => {
-        const profile = await this.getUserProfile(userId);
-        if (profile) {
-          profiles.set(userId, profile);
+    try {
+      const profiles = new Map<string, UserProfile>();
+      const uncachedIds: string[] = [];
+
+      // Check cache first
+      userIds.forEach(userId => {
+        if (this.userCache.has(userId)) {
+          const cached = this.userCache.get(userId);
+          if (cached) {
+            profiles.set(userId, cached);
+          }
+        } else {
+          uncachedIds.push(userId);
         }
-      })
-    );
-    
-    return profiles;
+      });
+
+      if (uncachedIds.length === 0) {
+        return profiles;
+      }
+
+      // Batch fetch uncached profiles
+      const batchSize = 10; // Firestore batch limit
+      for (let i = 0; i < uncachedIds.length; i += batchSize) {
+        const batch = uncachedIds.slice(i, i + batchSize);
+        
+        // Try users collection first
+        const userPromises = batch.map(async (userId) => {
+          try {
+            const userDoc = await getDoc(doc(db, 'users', userId));
+            if (userDoc.exists()) {
+              const userData = userDoc.data();
+              const profile: UserProfile = {
+                id: userId,
+                displayName: userData.displayName || userData.firstName || userData.email?.split('@')[0],
+                firstName: userData.firstName,
+                lastName: userData.lastName,
+                email: userData.email,
+                avatarUrl: userData.avatarUrl,
+                bio: userData.bio,
+                location: userData.location,
+                jobTitle: userData.jobTitle,
+                company: userData.company
+              };
+              this.userCache.set(userId, profile);
+              return { userId, profile };
+            }
+            return null;
+          } catch (error) {
+            console.error(`Error fetching user ${userId}:`, error);
+            return null;
+          }
+        });
+
+        const userResults = await Promise.all(userPromises);
+        userResults.forEach(result => {
+          if (result) {
+            profiles.set(result.userId, result.profile);
+          }
+        });
+
+        // For users not found in users collection, try crewProfiles
+        const notFoundIds = batch.filter(userId => !profiles.has(userId));
+        const crewPromises = notFoundIds.map(async (userId) => {
+          try {
+            const crewDoc = await getDoc(doc(db, 'crewProfiles', userId));
+            if (crewDoc.exists()) {
+              const crewData = crewDoc.data();
+              const profile: UserProfile = {
+                id: userId,
+                displayName: crewData.name || crewData.firstName || `Crew Member ${userId.slice(-4)}`,
+                firstName: crewData.firstName,
+                lastName: crewData.lastName,
+                email: crewData.email,
+                avatarUrl: crewData.avatarUrl,
+                bio: crewData.bio,
+                location: crewData.location,
+                jobTitle: crewData.jobTitle,
+                company: crewData.company
+              };
+              this.userCache.set(userId, profile);
+              return { userId, profile };
+            }
+            return null;
+          } catch (error) {
+            console.error(`Error fetching crew profile ${userId}:`, error);
+            return null;
+          }
+        });
+
+        const crewResults = await Promise.all(crewPromises);
+        crewResults.forEach(result => {
+          if (result) {
+            profiles.set(result.userId, result.profile);
+          }
+        });
+
+        // Cache null for users not found
+        batch.forEach(userId => {
+          if (!profiles.has(userId)) {
+            this.userCache.set(userId, null);
+          }
+        });
+      }
+
+      return profiles;
+    } catch (error) {
+      console.error('Error fetching multiple user profiles:', error);
+      return new Map();
+    }
   }
 
   static clearCache(): void {
