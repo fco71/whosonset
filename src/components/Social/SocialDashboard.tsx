@@ -37,6 +37,7 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProfile, setSelectedProfile] = useState<CrewProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [followingProfiles, setFollowingProfiles] = useState<Record<string, UserProfile | null>>({});
 
   // Real-time listeners
   useEffect(() => {
@@ -74,6 +75,21 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
       unsubscribeFollowing();
     };
   }, [currentUserId]);
+
+  useEffect(() => {
+    // Fetch profiles for all following users
+    const fetchProfiles = async () => {
+      const ids = following.map(f => f.followingId);
+      if (ids.length === 0) return;
+      const profilesMap = await UserUtils.getMultipleUserProfiles(ids);
+      const profiles: Record<string, UserProfile | null> = {};
+      ids.forEach(id => {
+        profiles[id] = profilesMap.get(id) || null;
+      });
+      setFollowingProfiles(profiles);
+    };
+    fetchProfiles();
+  }, [following]);
 
   const filteredProfiles = crewProfiles.filter(profile =>
     profile.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -219,12 +235,28 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
           <div className="following-tab">
             <h3>Following ({following.length})</h3>
             <div className="following-list">
-              {following.map(follow => (
-                <div key={follow.id} className="following-item">
-                  <img src="/default-avatar.png" alt="User" className="following-avatar" />
-                  <span className="following-name">User {follow.followingId.slice(-4)}</span>
-                </div>
-              ))}
+              {following.map(follow => {
+                const profile = followingProfiles[follow.followingId];
+                return (
+                  <div key={follow.id} className="following-item">
+                    <img
+                      src={profile?.avatarUrl || "/default-avatar.png"}
+                      alt={profile?.displayName || 'User'}
+                      className="following-avatar"
+                      onError={e => (e.currentTarget.src = "/default-avatar.png")}
+                    />
+                    <span className="following-name">
+                      {profile?.displayName || `User ${follow.followingId.slice(-4)}`}
+                    </span>
+                    <QuickMessage
+                      currentUserId={currentUserId}
+                      targetUserId={follow.followingId}
+                      targetUserName={profile?.displayName || `User ${follow.followingId.slice(-4)}`}
+                      className="ml-2"
+                    />
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

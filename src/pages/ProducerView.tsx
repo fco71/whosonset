@@ -252,40 +252,41 @@ const ProducerView: React.FC = () => {
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 animate-fade-in-delay">
-            {/* Search Box */}
-            <div className="animate-slide-up-filter">
-              <label className="block text-xs font-medium text-gray-700 mb-3 uppercase tracking-wider">
-                Search
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={filters.searchQuery || ''}
-                  onChange={(e) => handleFilterChange('searchQuery', e.target.value)}
-                  placeholder="Search by name, role, or skills..."
-                  className="flex-1 p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
-                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                />
-                <button
-                  onClick={handleSearch}
-                  disabled={isSearching}
-                  className="px-6 py-4 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSearching ? '🔍' : 'Search'}
-                </button>
-              </div>
+          {/* Search Box on Top */}
+          <div className="w-full mb-6 animate-fade-in-delay">
+            <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
+              Search
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={filters.searchQuery || ''}
+                onChange={(e) => handleFilterChange('searchQuery', e.target.value)}
+                placeholder="Search by name, role, or skills..."
+                className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02] h-12"
+                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+              />
+              <button
+                onClick={handleSearch}
+                disabled={isSearching}
+                className="px-6 h-12 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSearching ? '🔍' : 'Search'}
+              </button>
             </div>
+          </div>
 
+          {/* Filters Row Below Search */}
+          <div className="flex flex-col gap-4 md:flex-row md:gap-6 animate-fade-in-delay">
             {/* Department Filter */}
-            <div className="animate-slide-up-filter-delay-1">
-              <label className="block text-xs font-medium text-gray-700 mb-3 uppercase tracking-wider">
+            <div className="flex-1 min-w-[180px]">
+              <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
                 Department
               </label>
               <select
                 value={filters.department}
                 onChange={(e) => handleFilterChange('department', e.target.value)}
-                className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
+                className="w-full p-3 h-11 text-base bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light leading-tight transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
               >
                 <option value="">All Departments</option>
                 {departments.map(dept => (
@@ -297,14 +298,14 @@ const ProducerView: React.FC = () => {
             </div>
 
             {/* Job Title Filter */}
-            <div className="animate-slide-up-filter-delay-2">
-              <label className="block text-xs font-medium text-gray-700 mb-3 uppercase tracking-wider">
+            <div className="flex-1 min-w-[160px]">
+              <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
                 Role
               </label>
               <select
                 value={filters.jobTitle}
                 onChange={(e) => handleFilterChange('jobTitle', e.target.value)}
-                className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
+                className="w-full p-3 h-11 text-base bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light leading-tight transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
                 disabled={!filters.department}
               >
                 <option value="">All Roles</option>
@@ -317,14 +318,14 @@ const ProducerView: React.FC = () => {
             </div>
 
             {/* Country Filter */}
-            <div className="animate-slide-up-filter-delay-3">
-              <label className="block text-xs font-medium text-gray-700 mb-3 uppercase tracking-wider">
+            <div className="flex-1 min-w-[160px]">
+              <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
                 Country
               </label>
               <select
                 value={filters.country}
                 onChange={(e) => handleFilterChange('country', e.target.value)}
-                className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
+                className="w-full p-3 h-11 text-base bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light leading-tight transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
               >
                 <option value="">All Countries</option>
                 {countries.map(country => (
@@ -336,14 +337,14 @@ const ProducerView: React.FC = () => {
             </div>
 
             {/* Availability Filter */}
-            <div className="animate-slide-up-filter-delay-4">
-              <label className="block text-xs font-medium text-gray-700 mb-3 uppercase tracking-wider">
+            <div className="flex-1 min-w-[140px]">
+              <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
                 Availability
               </label>
               <select
                 value={filters.availability}
                 onChange={(e) => handleFilterChange('availability', e.target.value)}
-                className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
+                className="w-full p-3 h-11 text-base bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light leading-tight transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
               >
                 <option value="">All Status</option>
                 <option value="available">Available</option>
