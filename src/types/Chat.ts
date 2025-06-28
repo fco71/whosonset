@@ -40,6 +40,7 @@ export interface DirectMessage {
   messageType: 'text' | 'image' | 'file' | 'project_invite';
   relatedProjectId?: string;
   reactions?: MessageReaction[];
+  status?: 'sending' | 'sent' | 'delivered' | 'read' | 'failed';
 }
 
 export interface ChatNotification {

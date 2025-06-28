@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { MessagingService } from '../../utilities/messagingService';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { MessagingService, ConversationSummary } from '../../utilities/messagingService';
 import { DirectMessage, ChatSettings, MessageReaction } from '../../types/Chat';
 import { SocialService } from '../../utilities/socialService';
 import './ChatInterface.scss';
@@ -15,134 +15,181 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   currentUserName,
   currentUserAvatar 
 }) => {
+  // State
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [messages, setMessages] = useState<DirectMessage[]>([]);
-  const [conversations, setConversations] = useState<{ userId: string; userName: string; lastMessage?: string; unreadCount: number }[]>([]);
+  const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [messageText, setMessageText] = useState('');
   const [loading, setLoading] = useState(false);
+  const [sending, setSending] = useState(false);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [chatSettings, setChatSettings] = useState<ChatSettings | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
+  const conversationListenerRef = useRef<(() => void) | null>(null);
+  const messageListenerRef = useRef<(() => void) | null>(null);
+  const typingListenerRef = useRef<(() => void) | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
+  // Memoized values
+  const filteredConversations = useMemo(() => {
+    if (!searchQuery.trim()) return conversations;
+    return conversations.filter(conv => 
+      conv.userName.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [conversations, searchQuery]);
+
+  const selectedConversation = useMemo(() => 
+    conversations.find(c => c.userId === selectedUser), 
+    [conversations, selectedUser]
+  );
+
+  // Initialize chat
   useEffect(() => {
-    loadConversations();
-    loadChatSettings();
+    initializeChat();
+    return () => cleanup();
   }, [currentUserId]);
 
+  // Handle conversation selection
   useEffect(() => {
     if (selectedUser) {
-      loadMessages(selectedUser);
+      loadConversation(selectedUser);
       markConversationAsRead(selectedUser);
       setupTypingListener(selectedUser);
+      focusInput();
     }
   }, [selectedUser]);
 
+  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  const loadConversations = async () => {
+  // Initialize chat system
+  const initializeChat = async () => {
     try {
       setLoading(true);
-      const participants = await MessagingService.getConversationParticipants(currentUserId);
-      
-      const conversationData = await Promise.all(
-        participants.map(async (userId) => {
-          const messages = await MessagingService.getDirectMessages(currentUserId, userId, 1);
-          const lastMessage = messages.length > 0 ? messages[messages.length - 1] : undefined;
-          const unreadCount = await getUnreadCount(userId);
-          
-          // Get user name (you might want to fetch from user profiles)
-          const userName = `User ${userId.slice(-4)}`; // Placeholder
-          
-          return {
-            userId,
-            userName,
-            lastMessage: lastMessage?.content,
-            unreadCount
-          };
-        })
-      );
-      
-      setConversations(conversationData);
+      setError(null);
+
+      // Load chat settings
+      const settings = await MessagingService.getChatSettings(currentUserId);
+      setChatSettings(settings);
+
+      // Setup real-time listeners
+      setupConversationListener();
     } catch (error) {
-      console.error('Error loading conversations:', error);
+      console.error('Error initializing chat:', error);
+      setError('Failed to initialize chat. Please refresh the page.');
     } finally {
       setLoading(false);
     }
   };
 
-  const loadMessages = async (otherUserId: string) => {
-    try {
-      const messageList = await MessagingService.getDirectMessages(currentUserId, otherUserId);
-      setMessages(messageList);
-    } catch (error) {
-      console.error('Error loading messages:', error);
+  // Setup real-time conversation listener
+  const setupConversationListener = () => {
+    if (conversationListenerRef.current) {
+      conversationListenerRef.current();
     }
+
+    conversationListenerRef.current = MessagingService.subscribeToConversations(
+      currentUserId,
+      (conversations) => {
+        setConversations(conversations);
+      }
+    );
   };
 
-  const loadChatSettings = async () => {
-    try {
-      const settings = await MessagingService.getChatSettings(currentUserId);
-      setChatSettings(settings);
-    } catch (error) {
-      console.error('Error loading chat settings:', error);
+  // Load conversation messages
+  const loadConversation = (otherUserId: string) => {
+    // Clean up existing message listener
+    if (messageListenerRef.current) {
+      messageListenerRef.current();
     }
+
+    // Setup real-time message listener
+    messageListenerRef.current = MessagingService.subscribeToConversation(
+      currentUserId,
+      otherUserId,
+      (messages) => {
+        setMessages(messages);
+      }
+    );
   };
 
-  const getUnreadCount = async (otherUserId: string): Promise<number> => {
-    try {
-      const messages = await MessagingService.getDirectMessages(currentUserId, otherUserId);
-      return messages.filter(msg => !msg.isRead && msg.senderId === otherUserId).length;
-    } catch (error) {
-      return 0;
+  // Setup typing indicator listener
+  const setupTypingListener = (otherUserId: string) => {
+    if (typingListenerRef.current) {
+      typingListenerRef.current();
     }
+
+    typingListenerRef.current = MessagingService.subscribeToTypingIndicators(
+      currentUserId,
+      (users) => {
+        setTypingUsers(users.filter(user => user !== currentUserId));
+      }
+    );
   };
 
+  // Send message
   const sendMessage = async () => {
-    if (!messageText.trim() || !selectedUser) return;
+    if (!messageText.trim() || !selectedUser || sending) return;
+
+    const messageContent = messageText.trim();
+    setMessageText('');
+    setIsTyping(false);
+    setSending(true);
 
     try {
-      setLoading(true);
-      await MessagingService.sendDirectMessage(currentUserId, selectedUser, messageText.trim());
-      setMessageText('');
-      setIsTyping(false);
+      // Optimistically add message to UI
+      const optimisticMessage: DirectMessage = {
+        id: `temp_${Date.now()}`,
+        senderId: currentUserId,
+        receiverId: selectedUser,
+        content: messageContent,
+        timestamp: new Date(),
+        isRead: false,
+        messageType: 'text',
+        status: 'sending'
+      };
+
+      setMessages(prev => [...prev, optimisticMessage]);
+
+      // Send actual message
+      await MessagingService.sendDirectMessage(currentUserId, selectedUser, messageContent);
+      
+      // Update optimistic message status
+      setMessages(prev => prev.map(msg => 
+        msg.id === optimisticMessage.id 
+          ? { ...msg, status: 'sent' as any }
+          : msg
+      ));
+
+      // Stop typing indicator
       MessagingService.setTypingStatus(currentUserId, selectedUser, false);
     } catch (error) {
       console.error('Error sending message:', error);
-      alert('Failed to send message. Please try again.');
+      setError('Failed to send message. Please try again.');
+      
+      // Remove optimistic message on error
+      setMessages(prev => prev.filter(msg => msg.id !== `temp_${Date.now()}`));
     } finally {
-      setLoading(false);
+      setSending(false);
     }
   };
 
-  const markConversationAsRead = async (otherUserId: string) => {
-    try {
-      await MessagingService.markConversationAsRead(currentUserId, otherUserId);
-      // Refresh conversations to update unread counts
-      loadConversations();
-    } catch (error) {
-      console.error('Error marking conversation as read:', error);
-    }
-  };
-
-  const setupTypingListener = (otherUserId: string) => {
-    const unsubscribe = MessagingService.subscribeToTypingIndicators(currentUserId, (users) => {
-      setTypingUsers(users.filter(user => user !== currentUserId));
-    });
-
-    return unsubscribe;
-  };
-
-  const handleTyping = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle typing
+  const handleTyping = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setMessageText(e.target.value);
     
-    if (!isTyping) {
+    if (!isTyping && selectedUser) {
       setIsTyping(true);
-      MessagingService.setTypingStatus(currentUserId, selectedUser!, true);
+      MessagingService.setTypingStatus(currentUserId, selectedUser, true);
     }
 
     // Clear existing timeout
@@ -153,10 +200,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     // Set new timeout
     typingTimeoutRef.current = setTimeout(() => {
       setIsTyping(false);
-      MessagingService.setTypingStatus(currentUserId, selectedUser!, false);
+      if (selectedUser) {
+        MessagingService.setTypingStatus(currentUserId, selectedUser, false);
+      }
     }, 2000);
-  };
+  }, [isTyping, selectedUser, currentUserId]);
 
+  // Handle key press
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -164,20 +214,48 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   };
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  // Mark conversation as read
+  const markConversationAsRead = async (otherUserId: string) => {
+    try {
+      await MessagingService.markConversationAsRead(currentUserId, otherUserId);
+    } catch (error) {
+      console.error('Error marking conversation as read:', error);
+    }
   };
 
+  // Add reaction to message
   const addReaction = async (messageId: string, emoji: string) => {
     try {
       await MessagingService.addMessageReaction(messageId, currentUserId, currentUserName, emoji);
     } catch (error) {
       console.error('Error adding reaction:', error);
+      setError('Failed to add reaction. Please try again.');
     }
   };
 
+  // Utility functions
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const focusInput = () => {
+    setTimeout(() => inputRef.current?.focus(), 100);
+  };
+
   const formatTime = (date: Date) => {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    
+    if (days === 0) {
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else if (days === 1) {
+      return 'Yesterday';
+    } else if (days < 7) {
+      return date.toLocaleDateString([], { weekday: 'short' });
+    } else {
+      return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    }
   };
 
   const getReactionCount = (reactions: MessageReaction[] = [], emoji: string) => {
@@ -188,6 +266,28 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     return reactions.some(r => r.userId === currentUserId && r.emoji === emoji);
   };
 
+  // Cleanup
+  const cleanup = () => {
+    if (conversationListenerRef.current) conversationListenerRef.current();
+    if (messageListenerRef.current) messageListenerRef.current();
+    if (typingListenerRef.current) typingListenerRef.current();
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    MessagingService.cleanup();
+  };
+
+  if (loading) {
+    return (
+      <div className="chat-interface">
+        <div className="chat-container">
+          <div className="loading-state">
+            <div className="loading-spinner"></div>
+            <p>Loading conversations...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="chat-interface">
       <div className="chat-container">
@@ -197,10 +297,22 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             <h2 className="text-xl font-light text-gray-900 tracking-wide">Messages</h2>
             <button
               onClick={() => setShowSettings(!showSettings)}
-              className="text-gray-500 hover:text-gray-700"
+              className="settings-button"
+              title="Chat Settings"
             >
               ⚙️
             </button>
+          </div>
+
+          {/* Search */}
+          <div className="search-container">
+            <input
+              type="text"
+              placeholder="Search conversations..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="search-input"
+            />
           </div>
 
           {/* Chat Settings */}
@@ -259,48 +371,56 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
           {/* Conversations List */}
           <div className="conversations-list">
-            {loading ? (
-              <div className="loading-skeleton">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="conversation-skeleton">
-                    <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
-                    <div className="flex-1 space-y-2">
-                      <div className="h-3 bg-gray-200 rounded w-3/4"></div>
-                      <div className="h-2 bg-gray-200 rounded w-1/2"></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : conversations.length === 0 ? (
+            {filteredConversations.length === 0 ? (
               <div className="empty-state">
                 <div className="text-4xl mb-2">💬</div>
-                <p className="text-sm text-gray-500">No conversations yet</p>
-                <p className="text-xs text-gray-400">Start messaging your connections</p>
+                <p className="text-sm text-gray-500">
+                  {searchQuery ? 'No conversations found' : 'No conversations yet'}
+                </p>
+                <p className="text-xs text-gray-400">
+                  {searchQuery ? 'Try a different search term' : 'Start messaging your connections'}
+                </p>
               </div>
             ) : (
-              conversations.map((conversation) => (
+              filteredConversations.map((conversation) => (
                 <div
                   key={conversation.userId}
                   onClick={() => setSelectedUser(conversation.userId)}
                   className={`conversation-item ${selectedUser === conversation.userId ? 'active' : ''}`}
                 >
                   <div className="user-avatar">
-                    <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
-                      <span className="text-sm font-medium text-gray-600">
-                        {conversation.userName.charAt(0)}
-                      </span>
-                    </div>
+                    {conversation.userAvatar ? (
+                      <img 
+                        src={conversation.userAvatar} 
+                        alt={conversation.userName}
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
+                        <span className="text-sm font-medium text-gray-600">
+                          {conversation.userName.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                    {conversation.isOnline && (
+                      <div className="online-indicator"></div>
+                    )}
                   </div>
                   <div className="conversation-info">
                     <div className="conversation-header">
                       <h4 className="user-name">{conversation.userName}</h4>
+                      {conversation.lastMessageTime && (
+                        <span className="message-time">{formatTime(conversation.lastMessageTime)}</span>
+                      )}
+                    </div>
+                    <div className="conversation-preview">
+                      {conversation.lastMessage && (
+                        <p className="last-message">{conversation.lastMessage}</p>
+                      )}
                       {conversation.unreadCount > 0 && (
                         <span className="unread-badge">{conversation.unreadCount}</span>
                       )}
                     </div>
-                    {conversation.lastMessage && (
-                      <p className="last-message">{conversation.lastMessage}</p>
-                    )}
                   </div>
                 </div>
               ))
@@ -310,20 +430,33 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
         {/* Chat Area */}
         <div className="chat-area">
+          {error && (
+            <div className="error-banner">
+              <span>{error}</span>
+              <button onClick={() => setError(null)}>×</button>
+            </div>
+          )}
+
           {selectedUser ? (
             <>
               {/* Chat Header */}
               <div className="chat-header">
                 <div className="user-info">
-                  <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-                    <span className="text-sm font-medium text-gray-600">
-                      {conversations.find(c => c.userId === selectedUser)?.userName.charAt(0)}
-                    </span>
-                  </div>
+                  {selectedConversation?.userAvatar ? (
+                    <img 
+                      src={selectedConversation.userAvatar} 
+                      alt={selectedConversation.userName}
+                      className="w-8 h-8 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                      <span className="text-sm font-medium text-gray-600">
+                        {selectedConversation?.userName.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
                   <div>
-                    <h3 className="user-name">
-                      {conversations.find(c => c.userId === selectedUser)?.userName}
-                    </h3>
+                    <h3 className="user-name">{selectedConversation?.userName}</h3>
                     {typingUsers.includes(selectedUser) && (
                       <p className="typing-indicator">typing...</p>
                     )}
@@ -340,7 +473,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                   >
                     <div className="message-content">
                       <p className="message-text">{message.content}</p>
-                      <span className="message-time">{formatTime(message.timestamp)}</span>
+                      <div className="message-meta">
+                        <span className="message-time">{formatTime(message.timestamp)}</span>
+                        {message.senderId === currentUserId && (
+                          <span className="message-status">
+                            {message.status === 'sending' && '⏳'}
+                            {message.status === 'sent' && '✓'}
+                            {message.status === 'delivered' && '✓✓'}
+                            {message.status === 'read' && '✓✓'}
+                          </span>
+                        )}
+                      </div>
                       
                       {/* Message Reactions */}
                       {message.reactions && message.reactions.length > 0 && (
@@ -396,20 +539,21 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               {/* Message Input */}
               <div className="message-input">
                 <input
+                  ref={inputRef}
                   type="text"
                   value={messageText}
                   onChange={handleTyping}
                   onKeyPress={handleKeyPress}
                   placeholder="Type a message..."
-                  disabled={loading}
+                  disabled={sending}
                   className="message-input-field"
                 />
                 <button
                   onClick={sendMessage}
-                  disabled={!messageText.trim() || loading}
+                  disabled={!messageText.trim() || sending}
                   className="send-button"
                 >
-                  {loading ? 'Sending...' : 'Send'}
+                  {sending ? 'Sending...' : 'Send'}
                 </button>
               </div>
             </>

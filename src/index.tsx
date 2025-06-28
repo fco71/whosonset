@@ -42,6 +42,7 @@ import NotificationBell from './components/Social/NotificationBell';
 import PerformanceMonitor from './components/PerformanceMonitor';
 import PostJobPage from './pages/PostJobPage';
 import MyProjectsPage from './pages/MyProjectsPage';
+import ChatTestPage from './components/Chat/ChatTestPage';
 
 import { AnimatePresence } from 'framer-motion';
 
@@ -104,6 +105,7 @@ const App: React.FC = () => {
                                 <li><Link to="/social" className="nav-link">Social Hub</Link></li>
                                 <li><Link to="/collections" className="nav-link">My Collections</Link></li>
                                 <li><Link to="/favorites" className="nav-link">Favorites</Link></li>
+                                <li><Link to="/chat-test" className="nav-link">💬 Chat Demo</Link></li>
                                 <li><NotificationBell currentUserId={authUser?.uid || ''} /></li>
                                 <li><Link to="/edit-profile" className="nav-link">Resume Builder</Link></li>
                                 <li>
@@ -150,6 +152,7 @@ const App: React.FC = () => {
                         <Route path="/register" element={<Register />} />
                         <Route path="/post-job" element={<PostJobPage />} />
                         <Route path="/my-projects" element={<MyProjectsPage />} />
+                        <Route path="/chat-test" element={<ChatTestPage />} />
                     </Routes>
                 </AnimatePresence>
             </main>
