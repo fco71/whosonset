@@ -33,6 +33,12 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                         >
                             Projects
                         </Link>
+                        <Link 
+                            to="/my-projects" 
+                            className="text-sm font-light text-gray-600 hover:text-gray-900 transition-colors duration-300 tracking-wide"
+                        >
+                            My Projects
+                        </Link>
                         {authUser && (
                             <Link 
                                 to="/crew" 

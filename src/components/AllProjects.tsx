@@ -26,6 +26,8 @@ interface Project {
   producer?: string;
   coverImageUrl?: string;
   genres?: string[];
+  country?: string;
+  productionLocations?: Array<{ country: string; city?: string }>;
 }
 
 const PROJECTS_PER_PAGE = 48;
@@ -305,6 +307,8 @@ const AllProjects: React.FC = () => {
                       id={project.id}
                       projectName={project.projectName}
                       productionCompany={project.productionCompany}
+                      country={project.country}
+                      productionLocations={project.productionLocations}
                       status={project.status}
                       summary={project.synopsis}
                       director={project.director}

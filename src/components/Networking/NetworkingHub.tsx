@@ -403,7 +403,12 @@ const NetworkingHub: React.FC<NetworkingHubProps> = ({ currentUserId, currentUse
                 </div>
                 <p className="project-description">{project.logline}</p>
                 <div className="project-meta">
-                  <span>📍 {project.location}</span>
+                  <span>📍 {project.productionLocations && project.productionLocations.length > 0 
+                    ? project.productionLocations[0].city 
+                      ? `${project.productionLocations[0].city}, ${project.productionLocations[0].country}`
+                      : project.productionLocations[0].country
+                    : 'Location not specified'
+                  }</span>
                   <span>📅 {project.startDate}</span>
                   <span>💰 {project.productionBudget}</span>
                 </div>

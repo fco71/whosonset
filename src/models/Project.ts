@@ -2,14 +2,13 @@
 export interface Project {
     id: string;
     projectName: string;
-    country: string;
+    productionLocations: ProductionLocation[];
     productionCompany: string;
     status: 'development' | 'pre_production' | 'production' | 'post_production' | 'completed' | 'cancelled';
     logline: string;
     synopsis: string;
     startDate: string;
     endDate: string;
-    location: string;
     genre: string;
     director: string;
     producer: string;
@@ -17,7 +16,6 @@ export interface Project {
     projectWebsite: string;
     productionBudget: string;
     productionCompanyContact: string;
-    isVerified: boolean;
     owner_uid: string;
     createdAt?: any; // serverTimestamp
     genres?: string[];
@@ -45,6 +43,11 @@ export interface Project {
     priority: 'low' | 'medium' | 'high' | 'urgent';
     lastUpdated: any;
     updateCount: number;
+}
+
+export interface ProductionLocation {
+    country: string;
+    city?: string;
 }
 
 export interface ProjectHierarchy {

@@ -4,8 +4,6 @@ import ImageUploader from './ImageUploader';
 interface ProjectFormProps {
   projectName: string;
   setProjectName: (value: string) => void;
-  country: string;
-  setCountry: (value: string) => void;
   productionCompany: string;
   setProductionCompany: (value: string) => void;
   status: string;
@@ -18,8 +16,6 @@ interface ProjectFormProps {
   setStartDate: (value: string) => void;
   endDate: string;
   setEndDate: (value: string) => void;
-  location: string;
-  setLocation: (value: string) => void;
   genre: string;
   setGenre: (value: string) => void;
   director: string;
@@ -28,17 +24,13 @@ interface ProjectFormProps {
   setProducer: (value: string) => void;
   coverImageUrl: string;
   setCoverImageUrl: (value: string) => void;
-  // Removed posterImageUrl and setPosterImageUrl from props
   projectWebsite: string;
   setProjectWebsite: (value: string) => void;
   productionBudget: string;
   setProductionBudget: (value: string) => void;
   productionCompanyContact: string;
   setProductionCompanyContact: (value: string) => void;
-  isVerified: boolean;
-  setIsVerified: (value: boolean) => void;
   handleCoverImageUploaded: (url: string) => void;
-  // Removed handlePosterImageUploaded from props
 }
 
 const SectionHeader = ({ title }: { title: string }) => (
@@ -53,7 +45,6 @@ const ProjectForm: React.FC<ProjectFormProps> = (props) => {
 
       <SectionHeader title="General Info" />
       <Input label="Project Name" value={props.projectName} onChange={props.setProjectName} />
-      <Input label="Country" value={props.country} onChange={props.setCountry} />
       <Input label="Production Company" value={props.productionCompany} onChange={props.setProductionCompany} />
       <Select
         label="Status"
@@ -72,7 +63,6 @@ const ProjectForm: React.FC<ProjectFormProps> = (props) => {
       <SectionHeader title="Schedule" />
       <Input label="Start Date" type="date" value={props.startDate} onChange={props.setStartDate} />
       <Input label="End Date" type="date" value={props.endDate} onChange={props.setEndDate} />
-      <Input label="Location" value={props.location} onChange={props.setLocation} />
 
       <SectionHeader title="Images" />
       <div className="md:col-span-2 space-y-4">
@@ -80,25 +70,12 @@ const ProjectForm: React.FC<ProjectFormProps> = (props) => {
           <label className="block text-sm font-medium text-gray-700 mb-1">Cover Image</label>
           <ImageUploader onImageUploaded={props.handleCoverImageUploaded} />
         </div>
-        {/* Removed Poster Image uploader */}
       </div>
 
       <SectionHeader title="Contact & Website" />
       <Input label="Project Website" value={props.projectWebsite} onChange={props.setProjectWebsite} />
       <Input label="Production Budget" value={props.productionBudget} onChange={props.setProductionBudget} />
       <Input label="Company Contact" value={props.productionCompanyContact} onChange={props.setProductionCompanyContact} />
-
-      <SectionHeader title="Verification" />
-      <div className="flex items-center space-x-2 md:col-span-2 mt-2">
-        <input
-          id="isVerified"
-          type="checkbox"
-          checked={props.isVerified}
-          onChange={(e) => props.setIsVerified(e.target.checked)}
-          className="h-4 w-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
-        />
-        <label htmlFor="isVerified" className="text-sm text-gray-700">Is Verified</label>
-      </div>
     </div>
   );
 };

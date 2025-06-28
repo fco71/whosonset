@@ -9,7 +9,8 @@ import { FavoritesService } from '../utilities/favoritesService';
 interface Project {
     id: string;
     projectName: string;
-    country: string;
+    country?: string;
+    productionLocations?: Array<{ country: string; city?: string }>;
     productionCompany: string;
     status: string;
     logline: string;
@@ -142,6 +143,7 @@ const Home: React.FC = () => {
                                         projectName={project.projectName}
                                         productionCompany={project.productionCompany}
                                         country={project.country}
+                                        productionLocations={project.productionLocations}
                                         status={project.status}
                                         summary={project.synopsis}
                                         coverImageUrl={project.coverImageUrl}

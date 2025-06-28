@@ -6,6 +6,7 @@ interface ProjectCardProps {
   projectName: string;
   productionCompany?: string;
   country?: string;
+  productionLocations?: Array<{ country: string; city?: string }>;
   status: string;
   summary?: string;
   director?: string;
@@ -24,6 +25,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
   projectName,
   productionCompany,
   country,
+  productionLocations,
   status,
   summary,
   director,
@@ -37,6 +39,15 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
   isBookmarked = false,
 }) => {
   const navigate = useNavigate();
+
+  // Get the primary location (first from productionLocations or fallback to country)
+  const getPrimaryLocation = () => {
+    if (productionLocations && productionLocations.length > 0) {
+      const location = productionLocations[0];
+      return location.city ? `${location.city}, ${location.country}` : location.country;
+    }
+    return country;
+  };
 
   const getStatusBadgeColor = (rawStatus: string) => {
     switch (rawStatus.toLowerCase()) {
@@ -74,6 +85,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
   const handleCardClick = () => {
     navigate(`/projects/${id}`);
   };
+
+  const primaryLocation = getPrimaryLocation();
 
   return (
     <div
@@ -135,9 +148,9 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
         </h3>
 
         {/* Company & Location */}
-        {(productionCompany || country) && (
+        {(productionCompany || primaryLocation) && (
           <p className="body-small mb-3">
-            {productionCompany && country ? `${productionCompany} • ${country}` : productionCompany || country}
+            {productionCompany && primaryLocation ? `${productionCompany} • ${primaryLocation}` : productionCompany || primaryLocation}
           </p>
         )}
 

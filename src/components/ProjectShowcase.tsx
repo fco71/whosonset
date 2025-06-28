@@ -8,7 +8,10 @@ type Project = {
   country?: string;
   startDate?: string;
   endDate?: string;
-  location?: string;
+  productionLocations?: Array<{
+    country: string;
+    city?: string;
+  }>;
   logline?: string;
   synopsis?: string;
   coverImageUrl?: string; // Changed from posterImageUrl to coverImageUrl
@@ -59,7 +62,12 @@ const ProjectShowcase: React.FC<Props> = ({ project, userId, onEditClick }) => {
           <Field label="Country" value={project.country} />
           <Field label="Start Date" value={project.startDate} />
           <Field label="End Date" value={project.endDate} />
-          <Field label="Location" value={project.location} />
+          <Field label="Location" value={project.productionLocations && project.productionLocations.length > 0 
+            ? project.productionLocations[0].city 
+              ? `${project.productionLocations[0].city}, ${project.productionLocations[0].country}`
+              : project.productionLocations[0].country
+            : 'Location not specified'
+          } />
         </div>
       </div>
 

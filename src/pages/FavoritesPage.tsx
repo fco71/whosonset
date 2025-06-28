@@ -10,6 +10,7 @@ interface Project {
   projectName: string;
   productionCompany?: string;
   country?: string;
+  productionLocations?: Array<{ country: string; city?: string }>;
   status: string;
   synopsis?: string;
   director?: string;
@@ -167,10 +168,14 @@ const FavoritesPage: React.FC = () => {
                       projectName={project.projectName}
                       productionCompany={project.productionCompany}
                       country={project.country}
+                      productionLocations={project.productionLocations}
                       status={project.status}
                       summary={project.synopsis}
+                      director={project.director}
+                      producer={project.producer}
                       coverImageUrl={project.coverImageUrl}
-                      showDetails={false}
+                      genres={project.genres}
+                      showDetails={true}
                       onBookmark={handleBookmark}
                       isBookmarked={true}
                     />

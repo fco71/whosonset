@@ -146,7 +146,12 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ projectId }) => {
                   {project.productionCompany}
                 </span>
                 <span className="text-sm font-light text-gray-600">
-                  {project.location}
+                  {project.productionLocations && project.productionLocations.length > 0 
+                    ? project.productionLocations[0].city 
+                      ? `${project.productionLocations[0].city}, ${project.productionLocations[0].country}`
+                      : project.productionLocations[0].country
+                    : 'Location not specified'
+                  }
                 </span>
               </div>
             </div>

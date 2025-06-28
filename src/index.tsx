@@ -41,6 +41,7 @@ import SocialTestPage from './components/Social/SocialTestPage';
 import NotificationBell from './components/Social/NotificationBell';
 import PerformanceMonitor from './components/PerformanceMonitor';
 import PostJobPage from './pages/PostJobPage';
+import MyProjectsPage from './pages/MyProjectsPage';
 
 import { AnimatePresence } from 'framer-motion';
 
@@ -148,6 +149,7 @@ const App: React.FC = () => {
                         <Route path="/login" element={<Login />} />
                         <Route path="/register" element={<Register />} />
                         <Route path="/post-job" element={<PostJobPage />} />
+                        <Route path="/my-projects" element={<MyProjectsPage />} />
                     </Routes>
                 </AnimatePresence>
             </main>

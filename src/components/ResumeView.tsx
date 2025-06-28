@@ -78,6 +78,13 @@ const ResumeView: React.FC<ResumeViewProps> = ({ profile }) => {
     color: '#666',
     margin: '2mm 0 0 0',
     fontStyle: 'italic',
+    maxHeight: '40px', // About 2 lines at 11pt
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    display: '-webkit-box',
+    WebkitLineClamp: 2,
+    WebkitBoxOrient: 'vertical',
+    whiteSpace: 'normal',
   };
 
   const sectionStyle: React.CSSProperties = {

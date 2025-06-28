@@ -19,7 +19,10 @@ logline: string;
 synopsis: string;
 startDate: string;
 endDate: string;
-location: string;
+productionLocations?: Array<{
+  country: string;
+  city?: string;
+}>;
 genre: string;
 director: string;
 producer: string;
@@ -83,7 +86,7 @@ const ProjectDetail: React.FC = () => {
                             synopsis: firestoreData.synopsis || '',
                             startDate: firestoreData.startDate || '',
                             endDate: firestoreData.endDate || '',
-                            location: firestoreData.location || '',
+                            productionLocations: firestoreData.productionLocations || [],
                             genre: firestoreData.genre || '',
                             director: firestoreData.director || '',
                             producer: firestoreData.producer || '',
@@ -395,7 +398,6 @@ const ProjectDetail: React.FC = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div><label htmlFor="startDate" className="block text-sm font-medium">Start Date</label><input type="date" id="startDate" name="startDate" value={formState.startDate || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" /></div>
                             <div><label htmlFor="endDate" className="block text-sm font-medium">End Date</label><input type="date" id="endDate" name="endDate" value={formState.endDate || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" /></div>
-                            <div><label htmlFor="location" className="block text-sm font-medium">Location</label><input type="text" id="location" name="location" value={formState.location || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" /></div>
                             <div><label htmlFor="genres" className="block text-sm font-medium">Genres (comma-separated)</label><input type="text" id="genres" name="genres" value={(Array.isArray(formState.genres) ? formState.genres.join(', ') : formState.genre) || ''} onChange={handleGenresChange} className="mt-1 w-full border rounded px-3 py-2" placeholder="e.g., Action, Comedy" /></div>
                         </div>
                     </div>
