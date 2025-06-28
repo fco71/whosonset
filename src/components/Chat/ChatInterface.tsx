@@ -242,7 +242,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     setTimeout(() => inputRef.current?.focus(), 100);
   };
 
-  const formatTime = (date: Date) => {
+  const formatTime = (date: Date | undefined | null) => {
+    // Handle undefined, null, or invalid dates
+    if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
+      return '';
+    }
+    
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));

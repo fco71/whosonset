@@ -3,102 +3,109 @@ import ChatInterface from './ChatInterface';
 import { MessagingService } from '../../utilities/messagingService';
 import { DirectMessage } from '../../types/Chat';
 
-const ChatTestPage: React.FC = () => {
-  const [currentUser, setCurrentUser] = useState({
-    id: 'test-user-1',
+// Mock user data for demo
+const DEMO_USERS = {
+  'demo-user-1': {
+    id: 'demo-user-1',
     name: 'John Producer',
     avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face'
-  });
+  },
+  'demo-user-2': {
+    id: 'demo-user-2',
+    name: 'Sarah Director',
+    avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face'
+  },
+  'demo-user-3': {
+    id: 'demo-user-3',
+    name: 'Mike Cinematographer',
+    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face'
+  },
+  'demo-user-4': {
+    id: 'demo-user-4',
+    name: 'Emma Production Designer',
+    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face'
+  }
+};
 
-  const [testUsers] = useState([
-    {
-      id: 'test-user-2',
-      name: 'Sarah Director',
-      avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face'
-    },
-    {
-      id: 'test-user-3',
-      name: 'Mike Cinematographer',
-      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face'
-    },
-    {
-      id: 'test-user-4',
-      name: 'Emma Production Designer',
-      avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face'
-    }
-  ]);
-
+const ChatTestPage: React.FC = () => {
+  const [currentUser, setCurrentUser] = useState(DEMO_USERS['demo-user-1']);
   const [showChat, setShowChat] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Create sample conversations
+  // Create sample data when component mounts
   useEffect(() => {
-    const createSampleData = async () => {
-      try {
-        // Create sample messages for each test user
-        const sampleMessages = [
-          {
-            senderId: 'test-user-2',
-            receiverId: 'test-user-1',
-            content: 'Hey John! I loved the script you sent. When can we discuss the project?',
-            timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000) // 2 hours ago
-          },
-          {
-            senderId: 'test-user-1',
-            receiverId: 'test-user-2',
-            content: 'Thanks Sarah! How about tomorrow at 3 PM? I have some ideas for the visual style.',
-            timestamp: new Date(Date.now() - 1.5 * 60 * 60 * 1000) // 1.5 hours ago
-          },
-          {
-            senderId: 'test-user-2',
-            receiverId: 'test-user-1',
-            content: 'Perfect! I\'ll bring my mood board. Looking forward to it! 🎬',
-            timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000) // 1 hour ago
-          },
-          {
-            senderId: 'test-user-3',
-            receiverId: 'test-user-1',
-            content: 'John, I\'m available for the cinematography role. What\'s the budget range?',
-            timestamp: new Date(Date.now() - 30 * 60 * 1000) // 30 minutes ago
-          },
-          {
-            senderId: 'test-user-1',
-            receiverId: 'test-user-3',
-            content: 'Hi Mike! Budget is $50-75k. Are you interested?',
-            timestamp: new Date(Date.now() - 15 * 60 * 1000) // 15 minutes ago
-          },
-          {
-            senderId: 'test-user-4',
-            receiverId: 'test-user-1',
-            content: 'Just finished the production design concept. Should I send it over?',
-            timestamp: new Date(Date.now() - 5 * 60 * 1000) // 5 minutes ago
-          }
-        ];
-
-        // Send sample messages
-        for (const message of sampleMessages) {
-          try {
-            await MessagingService.sendDirectMessage(
-              message.senderId,
-              message.receiverId,
-              message.content
-            );
-          } catch (error) {
-            console.log('Sample message already exists or error:', error);
-          }
-        }
-
-        console.log('Sample chat data created successfully!');
-      } catch (error) {
-        console.error('Error creating sample data:', error);
-      }
-    };
-
     createSampleData();
   }, []);
 
+  const createSampleData = async () => {
+    setIsLoading(true);
+    try {
+      console.log('Creating sample chat data...');
+      
+      // Create sample messages
+      const sampleMessages = [
+        {
+          senderId: 'demo-user-2',
+          receiverId: 'demo-user-1',
+          content: 'Hey John! I loved the script you sent. When can we discuss the project?',
+          timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000)
+        },
+        {
+          senderId: 'demo-user-1',
+          receiverId: 'demo-user-2',
+          content: 'Thanks Sarah! How about tomorrow at 3 PM? I have some ideas for the visual style.',
+          timestamp: new Date(Date.now() - 1.5 * 60 * 60 * 1000)
+        },
+        {
+          senderId: 'demo-user-2',
+          receiverId: 'demo-user-1',
+          content: 'Perfect! I\'ll bring my mood board. Looking forward to it! 🎬',
+          timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000)
+        },
+        {
+          senderId: 'demo-user-3',
+          receiverId: 'demo-user-1',
+          content: 'John, I\'m available for the cinematography role. What\'s the budget range?',
+          timestamp: new Date(Date.now() - 30 * 60 * 1000)
+        },
+        {
+          senderId: 'demo-user-1',
+          receiverId: 'demo-user-3',
+          content: 'Hi Mike! Budget is $50-75k. Are you interested?',
+          timestamp: new Date(Date.now() - 15 * 60 * 1000)
+        },
+        {
+          senderId: 'demo-user-4',
+          receiverId: 'demo-user-1',
+          content: 'Just finished the production design concept. Should I send it over?',
+          timestamp: new Date(Date.now() - 5 * 60 * 1000)
+        }
+      ];
+
+      // Send each message to Firebase
+      for (const message of sampleMessages) {
+        try {
+          await MessagingService.sendDirectMessage(
+            message.senderId,
+            message.receiverId,
+            message.content
+          );
+          console.log(`Created message: ${message.content.substring(0, 30)}...`);
+        } catch (error) {
+          console.log('Message might already exist:', error);
+        }
+      }
+
+      console.log('✅ Sample chat data created successfully!');
+    } catch (error) {
+      console.error('❌ Error creating sample data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleUserSwitch = (userId: string) => {
-    const user = testUsers.find(u => u.id === userId) || currentUser;
-    setCurrentUser(user);
+    setCurrentUser(DEMO_USERS[userId as keyof typeof DEMO_USERS]);
   };
 
   if (!showChat) {
@@ -113,9 +120,9 @@ const ChatTestPage: React.FC = () => {
           </p>
           
           <div className="space-y-4 mb-8">
-            <h3 className="font-semibold text-gray-800">Test Users:</h3>
+            <h3 className="font-semibold text-gray-800">Choose Your Demo User:</h3>
             <div className="space-y-2">
-              {testUsers.map(user => (
+              {Object.values(DEMO_USERS).map(user => (
                 <button
                   key={user.id}
                   onClick={() => handleUserSwitch(user.id)}
@@ -141,9 +148,10 @@ const ChatTestPage: React.FC = () => {
 
           <button
             onClick={() => setShowChat(true)}
-            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-3 px-6 rounded-xl hover:from-blue-700 hover:to-indigo-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
+            disabled={isLoading}
+            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-3 px-6 rounded-xl hover:from-blue-700 hover:to-indigo-700 transform hover:scale-105 transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            🚀 Launch Chat Interface
+            {isLoading ? '🔄 Creating Sample Data...' : '🚀 Launch Chat Interface'}
           </button>
 
           <div className="mt-6 text-sm text-gray-500">
@@ -159,6 +167,15 @@ const ChatTestPage: React.FC = () => {
               <li>• Chat settings & permissions</li>
             </ul>
           </div>
+
+          {isLoading && (
+            <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                <span className="text-sm text-blue-700">Setting up demo data...</span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );

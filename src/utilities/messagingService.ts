@@ -62,18 +62,22 @@ export class MessagingService {
         throw new Error('Cannot send message to this user. They may not allow messages from non-followers.');
       }
 
-      // Create message data
-      const messageData = {
+      // Create message data, filtering out undefined values
+      const messageData: any = {
         senderId,
         receiverId,
         content,
         messageType,
-        relatedProjectId,
         timestamp: serverTimestamp(),
         isRead: false,
         reactions: [],
         status: 'sent'
       };
+
+      // Only add relatedProjectId if it's defined
+      if (relatedProjectId) {
+        messageData.relatedProjectId = relatedProjectId;
+      }
 
       // Add to Firestore
       const docRef = await addDoc(collection(db, 'directMessages'), messageData);
@@ -147,20 +151,45 @@ export class MessagingService {
         return cachedMessages.slice(-limitCount);
       }
       
+      // Use a simpler approach: get all messages and filter in memory
+      // This avoids the composite index requirement
       const messagesQuery = query(
         collection(db, 'directMessages'),
-        where('senderId', 'in', [userId1, userId2]),
-        where('receiverId', 'in', [userId1, userId2]),
         orderBy('timestamp', 'desc'),
-        limit(limitCount)
+        limit(200) // Limit to recent messages for performance
       );
       
       const snapshot = await getDocs(messagesQuery);
-      const messages = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        timestamp: doc.data().timestamp?.toDate()
-      })) as DirectMessage[];
+      
+      // Filter messages for this conversation in memory
+      const conversationMessages = snapshot.docs.filter(doc => {
+        const data = doc.data();
+        return (data.senderId === userId1 && data.receiverId === userId2) ||
+               (data.senderId === userId2 && data.receiverId === userId1);
+      });
+      
+      const messages = conversationMessages.map(doc => {
+        const data = doc.data();
+        let timestamp: Date | undefined;
+        
+        if (data.timestamp) {
+          if (data.timestamp instanceof Date) {
+            timestamp = data.timestamp;
+          } else if (typeof data.timestamp === 'object' && 'toDate' in data.timestamp) {
+            // Firestore timestamp
+            timestamp = (data.timestamp as any).toDate();
+          } else if (typeof data.timestamp === 'number') {
+            // Unix timestamp
+            timestamp = new Date(data.timestamp);
+          }
+        }
+        
+        return {
+          id: doc.id,
+          ...data,
+          timestamp
+        };
+      }) as DirectMessage[];
       
       // Cache the messages
       this.messageCache.set(cacheKey, messages.reverse());
@@ -190,20 +219,45 @@ export class MessagingService {
         this.listeners.get(listenerKey)!();
       }
       
+      // Use a simpler approach: get all messages and filter in memory
+      // This avoids the composite index requirement
       const messagesQuery = query(
         collection(db, 'directMessages'),
-        where('senderId', 'in', [userId1, userId2]),
-        where('receiverId', 'in', [userId1, userId2]),
-        orderBy('timestamp', 'asc')
+        orderBy('timestamp', 'asc'),
+        limit(200) // Limit to recent messages for performance
       );
 
       const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
         try {
-          const messages = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            timestamp: doc.data().timestamp?.toDate()
-          })) as DirectMessage[];
+          // Filter messages for this conversation in memory
+          const conversationMessages = snapshot.docs.filter(doc => {
+            const data = doc.data();
+            return (data.senderId === userId1 && data.receiverId === userId2) ||
+                   (data.senderId === userId2 && data.receiverId === userId1);
+          });
+
+          const messages = conversationMessages.map(doc => {
+            const data = doc.data();
+            let timestamp: Date | undefined;
+            
+            if (data.timestamp) {
+              if (data.timestamp instanceof Date) {
+                timestamp = data.timestamp;
+              } else if (typeof data.timestamp === 'object' && 'toDate' in data.timestamp) {
+                // Firestore timestamp
+                timestamp = (data.timestamp as any).toDate();
+              } else if (typeof data.timestamp === 'number') {
+                // Unix timestamp
+                timestamp = new Date(data.timestamp);
+              }
+            }
+            
+            return {
+              id: doc.id,
+              ...data,
+              timestamp
+            };
+          }) as DirectMessage[];
           
           console.log('[MessagingService] Conversation updated:', messages.length, 'messages');
           
@@ -243,33 +297,31 @@ export class MessagingService {
         this.listeners.get(listenerKey)!();
       }
 
-      // Get all messages where user is sender or receiver
+      // Use a simpler approach: get all messages and filter in memory
+      // This avoids the composite index requirement
       const messagesQuery = query(
         collection(db, 'directMessages'),
-        where('senderId', '==', userId),
-        orderBy('timestamp', 'desc')
+        orderBy('timestamp', 'desc'),
+        limit(100) // Limit to recent messages for performance
       );
 
       const unsubscribe = onSnapshot(messagesQuery, async (snapshot) => {
         try {
-          // Get unique conversation participants
-          const participants = new Set<string>();
-          snapshot.docs.forEach(doc => {
+          // Filter messages for this user in memory
+          const userMessages = snapshot.docs.filter(doc => {
             const data = doc.data();
-            participants.add(data.receiverId);
+            return data.senderId === userId || data.receiverId === userId;
           });
 
-          // Get conversations where user is receiver
-          const receivedMessagesQuery = query(
-            collection(db, 'directMessages'),
-            where('receiverId', '==', userId),
-            orderBy('timestamp', 'desc')
-          );
-
-          const receivedSnapshot = await getDocs(receivedMessagesQuery);
-          receivedSnapshot.docs.forEach(doc => {
+          // Get unique conversation participants
+          const participants = new Set<string>();
+          userMessages.forEach(doc => {
             const data = doc.data();
-            participants.add(data.senderId);
+            if (data.senderId === userId) {
+              participants.add(data.receiverId);
+            } else {
+              participants.add(data.senderId);
+            }
           });
 
           // Build conversation summaries
@@ -282,12 +334,26 @@ export class MessagingService {
               // Get user profile
               const userProfile = await this.getUserProfile(participantId);
               
+              // Ensure timestamp is properly converted
+              let lastMessageTime: Date | undefined;
+              if (lastMessage?.timestamp) {
+                if (lastMessage.timestamp instanceof Date) {
+                  lastMessageTime = lastMessage.timestamp;
+                } else if (typeof lastMessage.timestamp === 'object' && 'toDate' in lastMessage.timestamp) {
+                  // Firestore timestamp
+                  lastMessageTime = (lastMessage.timestamp as any).toDate();
+                } else if (typeof lastMessage.timestamp === 'number') {
+                  // Unix timestamp
+                  lastMessageTime = new Date(lastMessage.timestamp);
+                }
+              }
+              
               return {
                 userId: participantId,
                 userName: userProfile?.displayName || `User ${participantId.slice(-4)}`,
                 userAvatar: userProfile?.avatarUrl,
                 lastMessage: lastMessage?.content,
-                lastMessageTime: lastMessage?.timestamp,
+                lastMessageTime,
                 unreadCount,
                 isOnline: false, // TODO: Implement presence
                 lastSeen: undefined
@@ -473,16 +539,21 @@ export class MessagingService {
       );
       const settingsSnapshot = await getDocs(settingsQuery);
       
+      // Filter out undefined values from settings
+      const cleanSettings = Object.fromEntries(
+        Object.entries(settings).filter(([_, value]) => value !== undefined)
+      );
+      
       if (settingsSnapshot.empty) {
         // Create new settings
         await addDoc(collection(db, 'chatSettings'), {
           userId,
-          ...settings
+          ...cleanSettings
         });
       } else {
         // Update existing settings
         const settingsRef = doc(db, 'chatSettings', settingsSnapshot.docs[0].id);
-        await updateDoc(settingsRef, settings);
+        await updateDoc(settingsRef, cleanSettings);
       }
     } catch (error) {
       console.error('Error updating chat settings:', error);
