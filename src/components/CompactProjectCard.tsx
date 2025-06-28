@@ -33,8 +33,12 @@ const CompactProjectCard: React.FC<CompactProjectCardProps> = ({
               style={{ display: 'block' }}
             />
           ) : (
-            <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500 italic text-sm">
-              No Image
+            <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+              <img
+                src="/movie-production-avatar.svg"
+                alt="Movie Production"
+                className="w-16 h-16 opacity-60"
+              />
             </div>
           )}
         </div>
@@ -53,7 +57,7 @@ const CompactProjectCard: React.FC<CompactProjectCardProps> = ({
               <span className="mr-4"><strong>Company:</strong> {productionCompany}</span>
             </div>
             <p className="text-gray-700 italic line-clamp-2">
-              “{logline}”
+              "{logline}"
             </p>
           </div>
         </div>

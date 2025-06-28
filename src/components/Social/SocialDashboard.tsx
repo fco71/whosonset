@@ -649,9 +649,10 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
                     <span className="request-message">{request.message}</span>
                   </div>
                   <div className="request-actions">
-                    <FollowButton
+                    <QuickMessage
                       currentUserId={currentUserId}
                       targetUserId={request.fromUserId}
+                      targetUserName={`User ${request.fromUserId.slice(-4)}`}
                     />
                   </div>
                 </div>

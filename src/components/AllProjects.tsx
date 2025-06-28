@@ -296,11 +296,11 @@ const AllProjects: React.FC = () => {
                   >
                     <div className="h-48 bg-gray-100 flex items-center justify-center overflow-hidden">
                       <img
-                        src={project.coverImageUrl || '/my-icon.png'}
+                        src={project.coverImageUrl || '/movie-production-avatar.svg'}
                         alt={project.projectName}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/my-icon.png';
+                          (e.target as HTMLImageElement).src = '/movie-production-avatar.svg';
                         }}
                       />
                     </div>
