@@ -104,7 +104,7 @@ const CollectionsPage: React.FC = () => {
                 {savedCrew.slice(0, 3).map((profile) => (
                   <div key={profile.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
                     <img
-                      src={profile.avatarUrl || '/default-avatar.png'}
+                      src={profile.avatarUrl || '/bust-avatar.svg'}
                       alt={profile.name}
                       className="w-12 h-12 rounded-full object-cover"
                     />

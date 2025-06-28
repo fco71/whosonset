@@ -283,7 +283,7 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
                     alt={displayName}
                     className="w-12 h-12 rounded-full object-cover"
                     onError={(e) => {
-                      e.currentTarget.src = '/default-avatar.png';
+                      e.currentTarget.src = '/bust-avatar.svg';
                     }}
                   />
                 ) : (
@@ -327,7 +327,7 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
                     alt={displayName}
                     className="w-12 h-12 rounded-full object-cover"
                     onError={(e) => {
-                      e.currentTarget.src = '/default-avatar.png';
+                      e.currentTarget.src = '/bust-avatar.svg';
                     }}
                   />
                 ) : (
@@ -372,7 +372,7 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
                     alt={displayName}
                     className="w-12 h-12 rounded-full object-cover"
                     onError={(e) => {
-                      e.currentTarget.src = '/default-avatar.png';
+                      e.currentTarget.src = '/bust-avatar.svg';
                     }}
                   />
                 ) : (

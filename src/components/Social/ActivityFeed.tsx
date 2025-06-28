@@ -207,16 +207,16 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
                 alt={displayName}
                 loading="lazy"
                 onError={(e) => {
-                  e.currentTarget.src = '/default-avatar.png';
+                  e.currentTarget.src = '/bust-avatar.svg';
                 }}
               />
             ) : (
               <img 
-                src="/default-avatar.png" 
+                src="/bust-avatar.svg" 
                 alt={displayName}
                 loading="lazy"
                 onError={(e) => {
-                  e.currentTarget.src = '/default-avatar.png';
+                  e.currentTarget.src = '/bust-avatar.svg';
                 }}
               />
             )}

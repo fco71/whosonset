@@ -48,7 +48,7 @@ const CrewProfileCard: React.FC<CrewProfileCardProps> = ({ profile }) => {
       {/* Profile Image */}
       <div className="h-48 bg-gray-100 flex items-center justify-center overflow-hidden">
         <img
-          src={profile.avatarUrl || '/default-avatar.png'}
+          src={profile.avatarUrl || '/bust-avatar.svg'}
           alt={profile.name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />

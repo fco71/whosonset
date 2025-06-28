@@ -276,7 +276,7 @@ const NetworkingHub: React.FC<NetworkingHubProps> = ({ currentUserId, currentUse
               <div key={profile.uid} className="crew-card">
                 <div className="crew-header">
                   <div className="crew-avatar">
-                    <img src={profile.profileImageUrl || '/default-avatar.png'} alt="" />
+                    <img src={profile.profileImageUrl || '/bust-avatar.svg'} alt="" />
                     <div className="online-indicator"></div>
                   </div>
                   <div className="crew-info">
@@ -347,7 +347,7 @@ const NetworkingHub: React.FC<NetworkingHubProps> = ({ currentUserId, currentUse
               return (
                 <div key={connection.id} className="connection-item">
                   <div className="connection-avatar">
-                    <img src={connectedProfile.profileImageUrl || '/default-avatar.png'} alt="" />
+                    <img src={connectedProfile.profileImageUrl || '/bust-avatar.svg'} alt="" />
                   </div>
                   <div className="connection-info">
                     <h4>{connectedProfile.name}</h4>
@@ -465,7 +465,7 @@ const NetworkingHub: React.FC<NetworkingHubProps> = ({ currentUserId, currentUse
           <div className="modal-content">
             <h3>Connect with {selectedProfile.name}</h3>
             <div className="profile-preview">
-              <img src={selectedProfile.profileImageUrl || '/default-avatar.png'} alt="" />
+              <img src={selectedProfile.profileImageUrl || '/bust-avatar.svg'} alt="" />
               <div>
                 <h4>{selectedProfile.name}</h4>
                 <p>{selectedProfile.jobTitles?.[0]?.title}</p>
