@@ -2,6 +2,8 @@ export interface FollowRequest {
   id: string;
   fromUserId: string;
   toUserId: string;
+  fromUserName?: string;
+  toUserName?: string;
   status: 'pending' | 'accepted' | 'rejected';
   message?: string;
   createdAt: Date;

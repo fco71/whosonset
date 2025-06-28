@@ -3,6 +3,7 @@ export interface User {
   uid: string;
   email: string | null;
   displayName: string | null;
+  username: string;
   photoURL: string | null;
   roles: string[];
   country: string;

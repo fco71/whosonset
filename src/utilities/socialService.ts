@@ -18,6 +18,7 @@ import {
 import { db } from '../firebase';
 import { FollowRequest, Follow, SocialNotification, ActivityFeedItem, SocialLike, SocialComment } from '../types/Social';
 import { CrewProfile } from '../types/CrewProfile';
+import { UserUtils } from './userUtils';
 
 export class SocialService {
   // Cache for activity feed
@@ -45,9 +46,15 @@ export class SocialService {
         throw new Error('Already following this user');
       }
 
+      // Get user names for display
+      const fromUserName = await UserUtils.getUserDisplayName(fromUserId);
+      const toUserName = await UserUtils.getUserDisplayName(toUserId);
+
       const requestData = {
         fromUserId,
         toUserId,
+        fromUserName,
+        toUserName,
         status: 'pending' as const,
         message: message || '',
         createdAt: serverTimestamp(),
@@ -64,7 +71,7 @@ export class SocialService {
         userId: toUserId,
         type: 'follow_request',
         title: 'New Follow Request',
-        message: `Someone wants to follow you`,
+        message: `${fromUserName} wants to follow you`,
         relatedUserId: fromUserId,
         isRead: false,
         createdAt: new Date(),
@@ -184,8 +191,8 @@ export class SocialService {
         const data = doc.data();
         return {
           id: doc.id,
-          followerId: data.followerId,
-          followingId: data.followingId,
+          followerId: data.followerId || followerId,
+          followingId: data.followingId || followingId,
           status: data.status || 'active',
           createdAt: data.createdAt?.toDate() || new Date(),
           lastInteraction: data.lastInteraction?.toDate()

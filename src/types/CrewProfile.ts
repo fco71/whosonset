@@ -5,6 +5,7 @@ import { ProjectEntry } from './ProjectEntry';
 export interface CrewProfile {
   uid: string;
   name: string;
+  username: string;
   bio?: string;
   profileImageUrl?: string;
   jobTitles: JobTitleEntry[];

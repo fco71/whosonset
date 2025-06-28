@@ -160,7 +160,7 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
               />
               <div className="user-details">
                 <h3>{currentUserName}</h3>
-                <p className="user-id">@{currentUserId.slice(-8)}</p>
+                <p className="user-handle">@{currentUserId.slice(-8)}</p>
               </div>
             </div>
             <div className="user-stats">
@@ -187,7 +187,14 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
                         alt="User"
                         className="request-avatar"
                       />
-                      <span className="request-username">{request.fromUserId ? `User ${request.fromUserId.slice(-4)}` : 'Unknown User'}</span>
+                      <div className="request-user-details">
+                        <span className="request-username">
+                          {request.fromUserName || `User ${request.fromUserId.slice(-4)}`}
+                        </span>
+                        <span className="request-handle">
+                          @{request.fromUserId.slice(-8)}
+                        </span>
+                      </div>
                     </div>
                     <div className="request-actions">
                       <button 
@@ -202,6 +209,12 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
                       >
                         Reject
                       </button>
+                      <QuickMessage 
+                        currentUserId={currentUserId}
+                        targetUserId={request.fromUserId}
+                        targetUserName={request.fromUserName || `User ${request.fromUserId.slice(-4)}`}
+                        className="ml-auto"
+                      />
                     </div>
                   </div>
                 ))}

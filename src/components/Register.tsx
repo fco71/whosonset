@@ -23,6 +23,7 @@ interface FormData {
   email: string;
   password: string;
   name: string; // This will be used for both displayName and the profile name
+  username: string; // New username field for screen handle
   bio: string;
   profileImageUrl: string;
   jobTitles: JobTitleEntry[];
@@ -51,6 +52,7 @@ const Register: React.FC = () => {
     email: '',
     password: '',
     name: '',
+    username: '',
     bio: '',
     profileImageUrl: '',
     jobTitles: [{ department: '', title: '', subcategories: [] }],
@@ -188,10 +190,18 @@ const Register: React.FC = () => {
   // --- The new handleSubmit that performs all registration steps ---
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.email || !form.password || !form.name) {
-      setError("Please fill out email, password, and your name.");
+    if (!form.email || !form.password || !form.name || !form.username) {
+      setError("Please fill out email, password, name, and username.");
       return;
     }
+    
+    // Validate username format
+    const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
+    if (!usernameRegex.test(form.username)) {
+      setError("Username must be 3-20 characters long and contain only letters, numbers, and underscores.");
+      return;
+    }
+    
     setLoading(true);
     setError(null);
 
@@ -223,6 +233,7 @@ const Register: React.FC = () => {
         uid: userId,
         email: form.email, // Use form email to ensure consistency
         displayName: form.name,
+        username: form.username,
         photoURL: uploadedImageUrl,
         roles: ['user'],
         user_type: form.userType,
@@ -238,6 +249,7 @@ const Register: React.FC = () => {
         uid: userId,
         email: form.email, // Ensure email is saved in crew profile
         name: form.name,
+        username: form.username,
         bio: form.bio || '',
         profileImageUrl: uploadedImageUrl,
         jobTitles: form.jobTitles.filter(j => j.department && j.title),
@@ -362,6 +374,24 @@ const Register: React.FC = () => {
                 placeholder="Enter your full name"
                 disabled={loading}
               />
+            </div>
+
+            <div>
+              <label htmlFor="username" className="block text-xs font-medium text-gray-700 mb-3 uppercase tracking-wider">
+                Username
+              </label>
+              <input
+                type="text"
+                id="username"
+                name="username"
+                value={form.username}
+                onChange={handleChange}
+                required
+                className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
+                placeholder="Choose a username (3-20 characters)"
+                disabled={loading}
+              />
+              <p className="text-xs text-gray-500 mt-1">This will be your screen handle (e.g., @franciscovaldez)</p>
             </div>
 
             <div className="pt-4 border-t border-gray-100">

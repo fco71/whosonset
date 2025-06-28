@@ -124,14 +124,14 @@
 
           .user-details {
             h3 {
-              font-size: 18px;
+              font-size: 16px;
               font-weight: 600;
               color: #1f2937;
               margin: 0 0 4px 0;
             }
 
-            .user-id {
-              font-size: 14px;
+            .user-handle {
+              font-size: 13px;
               color: #6b7280;
               margin: 0;
             }
@@ -204,10 +204,21 @@
                 object-fit: cover;
               }
 
-              .request-username {
-                font-size: 14px;
-                font-weight: 500;
-                color: #374151;
+              .request-user-details {
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+
+                .request-username {
+                  font-size: 14px;
+                  font-weight: 600;
+                  color: #374151;
+                }
+
+                .request-handle {
+                  font-size: 12px;
+                  color: #6b7280;
+                }
               }
             }
 
