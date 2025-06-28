@@ -29,6 +29,7 @@ import ProducerView from './pages/ProducerView';
 import SavedCrewProfilesPage from './pages/SavedCrewProfilesPage';
 import SavedProjectsPage from './pages/SavedProjectsPage';
 import CollectionsHubPage from './pages/CollectionsHubPage';
+import FavoritesPage from './pages/FavoritesPage';
 
 // New components
 import JobSearchPage from './components/JobSearch/JobSearchPage';
@@ -101,6 +102,7 @@ const App: React.FC = () => {
                                 <li><Link to="/crew" className="nav-link">Crew Directory</Link></li>
                                 <li><Link to="/social" className="nav-link">Social Hub</Link></li>
                                 <li><Link to="/collections" className="nav-link">My Collections</Link></li>
+                                <li><Link to="/favorites" className="nav-link">Favorites</Link></li>
                                 <li><NotificationBell currentUserId={authUser?.uid || ''} /></li>
                                 <li><Link to="/edit-profile" className="nav-link">Resume Builder</Link></li>
                                 <li>
@@ -129,6 +131,7 @@ const App: React.FC = () => {
                         <Route path="/social" element={<PrivateRoute><SocialDashboard currentUserId={authUser?.uid || ''} currentUserName={authUser?.displayName || authUser?.email || `User ${authUser?.uid?.slice(-4) || 'Unknown'}`} currentUserAvatar={authUser?.photoURL} /></PrivateRoute>} />
                         <Route path="/social/test" element={<PrivateRoute><SocialTestPage currentUserId={authUser?.uid || ''} currentUserName={authUser?.displayName || authUser?.email || 'User'} currentUserAvatar={authUser?.photoURL} /></PrivateRoute>} />
                         <Route path="/collections" element={<PrivateRoute><CollectionsHubPage /></PrivateRoute>} />
+                        <Route path="/favorites" element={<PrivateRoute><FavoritesPage /></PrivateRoute>} />
                         <Route path="/saved-crew" element={<PrivateRoute><SavedCrewProfilesPage /></PrivateRoute>} />
                         <Route path="/saved-projects" element={<PrivateRoute><SavedProjectsPage /></PrivateRoute>} />
                         <Route path="/edit-profile" element={<PrivateRoute><EditCrewProfile /></PrivateRoute>} />

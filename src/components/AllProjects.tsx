@@ -14,6 +14,7 @@ import { db, auth } from '../firebase';
 import { Link } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
 import ProjectCard from './ProjectCard';
+import { FavoritesService } from '../utilities/favoritesService';
 
 interface Project {
   id: string;
@@ -59,11 +60,17 @@ const AllProjects: React.FC = () => {
   const [sortBy, setSortBy] = useState('newest');
   const [authUser, setAuthUser] = useState<any>(null);
   const [pageNumber, setPageNumber] = useState(1);
+  const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
 
   const isInitialLoad = useRef(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => setAuthUser(user));
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setAuthUser(user);
+      if (user) {
+        loadFavorites();
+      }
+    });
     return () => unsubscribe();
   }, []);
 
@@ -145,6 +152,30 @@ const AllProjects: React.FC = () => {
         part
       )
     );
+  };
+
+  const loadFavorites = async () => {
+    try {
+      const favoriteIds = await FavoritesService.getFavoriteProjectIds();
+      setFavoriteIds(favoriteIds);
+    } catch (error) {
+      console.error('Error loading favorites:', error);
+    }
+  };
+
+  const handleBookmark = async (projectId: string, isBookmarked: boolean) => {
+    try {
+      const project = projects.find(p => p.id === projectId);
+      if (isBookmarked) {
+        await FavoritesService.removeFromFavorites(projectId);
+        setFavoriteIds(prev => prev.filter(id => id !== projectId));
+      } else {
+        await FavoritesService.addToFavorites(projectId, project);
+        setFavoriteIds(prev => [...prev, projectId]);
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+    }
   };
 
   if (loading) {
@@ -303,6 +334,8 @@ const AllProjects: React.FC = () => {
                     coverImageUrl={project.coverImageUrl}
                     genres={project.genres}
                     showDetails={true}
+                    onBookmark={authUser ? handleBookmark : undefined}
+                    isBookmarked={favoriteIds.includes(project.id)}
                   />
                 </div>
               ))}

@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { db } from '../firebase';
+import { db, auth } from '../firebase';
 import { collection, getDocs, orderBy, limit, query } from 'firebase/firestore';
 import { Link } from 'react-router-dom';
+import { onAuthStateChanged } from 'firebase/auth';
 import ProjectCard from './ProjectCard';
+import { FavoritesService } from '../utilities/favoritesService';
 
 interface Project {
     id: string;
@@ -19,6 +21,43 @@ interface Project {
 const Home: React.FC = () => {
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
+    const [user, setUser] = useState<any>(null);
+    const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
+
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            setUser(user);
+            if (user) {
+                loadFavorites();
+            }
+        });
+
+        return () => unsubscribe();
+    }, []);
+
+    const loadFavorites = async () => {
+        try {
+            const favoriteIds = await FavoritesService.getFavoriteProjectIds();
+            setFavoriteIds(favoriteIds);
+        } catch (error) {
+            console.error('Error loading favorites:', error);
+        }
+    };
+
+    const handleBookmark = async (projectId: string, isBookmarked: boolean) => {
+        try {
+            const project = projects.find(p => p.id === projectId);
+            if (isBookmarked) {
+                await FavoritesService.removeFromFavorites(projectId);
+                setFavoriteIds(prev => prev.filter(id => id !== projectId));
+            } else {
+                await FavoritesService.addToFavorites(projectId, project);
+                setFavoriteIds(prev => [...prev, projectId]);
+            }
+        } catch (error) {
+            console.error('Error toggling favorite:', error);
+        }
+    };
 
     useEffect(() => {
         const fetchProjects = async () => {
@@ -107,6 +146,8 @@ const Home: React.FC = () => {
                                         logline={project.logline}
                                         coverImageUrl={project.coverImageUrl}
                                         showDetails={false}
+                                        onBookmark={user ? handleBookmark : undefined}
+                                        isBookmarked={favoriteIds.includes(project.id)}
                                     />
                                 </div>
                             ))}
