@@ -620,7 +620,7 @@ export class MessagingService {
       if (userDoc.exists()) {
         const userData = userDoc.data();
         return {
-          displayName: userData.displayName || userData.firstName || `User ${userId.slice(-4)}`,
+          displayName: userData.displayName || userData.firstName || userData.lastName || `User ${userId.slice(-4)}`,
           avatarUrl: userData.avatarUrl,
           role: userData.role,
           company: userData.company,
@@ -633,7 +633,7 @@ export class MessagingService {
       if (crewDoc.exists()) {
         const crewData = crewDoc.data();
         return {
-          displayName: crewData.name || crewData.firstName || `Crew Member ${userId.slice(-4)}`,
+          displayName: crewData.name || crewData.firstName || crewData.lastName || `Crew Member ${userId.slice(-4)}`,
           avatarUrl: crewData.avatarUrl,
           role: crewData.role,
           company: crewData.company,
@@ -641,10 +641,23 @@ export class MessagingService {
         };
       }
 
-      return null;
+      // If no user data found, return a more user-friendly fallback
+      return {
+        displayName: `Unknown User`,
+        avatarUrl: undefined,
+        role: undefined,
+        company: undefined,
+        location: undefined
+      };
     } catch (error) {
       console.error('Error getting user profile:', error);
-      return null;
+      return {
+        displayName: `Unknown User`,
+        avatarUrl: undefined,
+        role: undefined,
+        company: undefined,
+        location: undefined
+      };
     }
   }
 

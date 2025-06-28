@@ -3,17 +3,21 @@ import { MessagingService, ConversationSummary } from '../../utilities/messaging
 import { DirectMessage, ChatSettings, MessageReaction } from '../../types/Chat';
 import { SocialService } from '../../utilities/socialService';
 import './ChatInterface.scss';
+import { collection, getDocs, where, limit, query as firestoreQuery } from 'firebase/firestore';
+import { db } from '../../firebase';
 
 interface ChatInterfaceProps {
   currentUserId: string;
   currentUserName: string;
   currentUserAvatar?: string;
+  demoUsers?: Record<string, any>; // fallback demo users
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
   currentUserId, 
   currentUserName,
-  currentUserAvatar 
+  currentUserAvatar,
+  demoUsers = {}
 }) => {
   // State
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
@@ -31,6 +35,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [showNewChat, setShowNewChat] = useState(false);
   const [showUserProfile, setShowUserProfile] = useState(false);
   const [profileUser, setProfileUser] = useState<ConversationSummary | null>(null);
+  const [newChatSearchQuery, setNewChatSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -283,6 +290,133 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     MessagingService.cleanup();
   };
 
+  // Search for users to start new chat
+  const searchUsers = async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      // Search in users collection
+      const usersQuery = firestoreQuery(
+        collection(db, 'users'),
+        where('displayName', '>=', query),
+        where('displayName', '<=', query + '\uf8ff'),
+        limit(10)
+      );
+      
+      // Search in crewProfiles collection
+      const crewQuery = firestoreQuery(
+        collection(db, 'crewProfiles'),
+        where('name', '>=', query),
+        where('name', '<=', query + '\uf8ff'),
+        limit(10)
+      );
+
+      const [usersSnapshot, crewSnapshot] = await Promise.all([
+        getDocs(usersQuery),
+        getDocs(crewQuery)
+      ]);
+
+      const results: Array<{
+        id: string;
+        name: string;
+        avatar?: string;
+        role?: string;
+        company?: string;
+        location?: string;
+        type: 'user' | 'crew';
+      }> = [];
+
+      // Add users
+      usersSnapshot.docs.forEach(doc => {
+        const data = doc.data() as any;
+        if (doc.id !== currentUserId) { // Don't show current user
+          results.push({
+            id: doc.id,
+            name: data.displayName || data.firstName || `User ${doc.id.slice(-4)}`,
+            avatar: data.avatarUrl,
+            role: data.role,
+            company: data.company,
+            location: data.location,
+            type: 'user'
+          });
+        }
+      });
+
+      // Add crew members
+      crewSnapshot.docs.forEach(doc => {
+        const data = doc.data() as any;
+        if (doc.id !== currentUserId) { // Don't show current user
+          results.push({
+            id: doc.id,
+            name: data.name || data.firstName || `Crew ${doc.id.slice(-4)}`,
+            avatar: data.avatarUrl,
+            role: data.role,
+            company: data.company,
+            location: data.location,
+            type: 'crew'
+          });
+        }
+      });
+
+      // Remove duplicates and limit results
+      const uniqueResults = results.filter((result, index, self) => 
+        index === self.findIndex(r => r.id === result.id)
+      ).slice(0, 10);
+
+      setSearchResults(uniqueResults);
+    } catch (error) {
+      console.error('Error searching users:', error);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Start new conversation
+  const startNewConversation = async (userId: string, userName: string) => {
+    setSelectedUser(userId);
+    setShowNewChat(false);
+    setNewChatSearchQuery('');
+    setSearchResults([]);
+    
+    // Focus on the chat input
+    setTimeout(() => {
+      focusInput();
+    }, 100);
+  };
+
+  // Handle new chat search input
+  const handleNewChatSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setNewChatSearchQuery(query);
+    
+    // Debounce search
+    if (query.trim()) {
+      setTimeout(() => searchUsers(query), 300);
+    } else {
+      setSearchResults([]);
+    }
+  };
+
+  // Helper to get user info for conversations/messages
+  const getUserInfo = (userId: string) => {
+    // Try to find in conversations (from Firestore)
+    const conv = conversations.find(c => c.userId === userId);
+    if (conv && conv.userName && conv.userAvatar) {
+      return { name: conv.userName, avatar: conv.userAvatar };
+    }
+    // Try demo users
+    if (demoUsers[userId]) {
+      return { name: demoUsers[userId].displayName, avatar: demoUsers[userId].avatar };
+    }
+    // Fallback
+    return { name: 'Unknown User', avatar: undefined };
+  };
+
   if (loading) {
     return (
       <div className="chat-interface">
@@ -309,7 +443,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 className="new-chat-button"
                 title="New Chat"
               >
-                ✨
+                ➕
               </button>
               <button
                 onClick={() => setShowSettings(!showSettings)}
@@ -325,12 +459,68 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           {showNewChat && (
             <div className="new-chat-section">
               <h3 className="text-sm font-medium text-gray-900 mb-3">Start New Chat</h3>
-              <div className="space-y-2">
-                <input
-                  type="text"
-                  placeholder="Search users to chat with..."
-                  className="w-full text-sm border border-gray-200 rounded px-3 py-2"
-                />
+              <div className="space-y-3">
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search users to chat with..."
+                    value={newChatSearchQuery}
+                    onChange={handleNewChatSearch}
+                    className="w-full text-sm border border-gray-200 rounded px-3 py-2"
+                  />
+                  {isSearching && (
+                    <div className="absolute right-3 top-2.5">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                    </div>
+                  )}
+                </div>
+                
+                {searchResults.length > 0 && (
+                  <div className="search-results max-h-48 overflow-y-auto space-y-2">
+                    {searchResults.map((user) => (
+                      <div
+                        key={user.id}
+                        className="flex items-center space-x-3 p-2 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 cursor-pointer transition-all"
+                        onClick={() => startNewConversation(user.id, user.name)}
+                      >
+                        <div className="flex-shrink-0">
+                          {user.avatar ? (
+                            <img
+                              src={user.avatar}
+                              alt={user.name}
+                              className="w-8 h-8 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                              <span className="text-xs font-medium text-gray-600">
+                                {user.name.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-medium text-gray-900 truncate">{user.name}</h4>
+                          {user.role && (
+                            <p className="text-xs text-gray-600 truncate">{user.role}</p>
+                          )}
+                          {user.company && (
+                            <p className="text-xs text-gray-500 truncate">{user.company}</p>
+                          )}
+                        </div>
+                        <div className="flex-shrink-0">
+                          <span className="text-xs text-blue-600">💬</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {newChatSearchQuery && searchResults.length === 0 && !isSearching && (
+                  <div className="text-xs text-gray-500 text-center py-2">
+                    No users found. Try a different search term.
+                  </div>
+                )}
+                
                 <div className="text-xs text-gray-500">
                   Find users by name, role, or company
                 </div>
@@ -416,62 +606,65 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 </p>
               </div>
             ) : (
-              filteredConversations.map((conversation) => (
-                <div
-                  key={conversation.userId}
-                  className={`conversation-item ${selectedUser === conversation.userId ? 'active' : ''}`}
-                >
-                  <div 
-                    className="conversation-content"
-                    onClick={() => setSelectedUser(conversation.userId)}
+              filteredConversations.map((conversation) => {
+                const { name, avatar } = getUserInfo(conversation.userId);
+                return (
+                  <div
+                    key={conversation.userId}
+                    className={`conversation-item ${selectedUser === conversation.userId ? 'active' : ''}`}
                   >
-                    <div className="user-avatar">
-                      {conversation.userAvatar ? (
-                        <img 
-                          src={conversation.userAvatar} 
-                          alt={conversation.userName}
-                          className="w-10 h-10 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
-                          <span className="text-sm font-medium text-gray-600">
-                            {conversation.userName.charAt(0).toUpperCase()}
-                          </span>
+                    <div 
+                      className="conversation-content"
+                      onClick={() => setSelectedUser(conversation.userId)}
+                    >
+                      <div className="user-avatar">
+                        {avatar ? (
+                          <img 
+                            src={avatar} 
+                            alt={name}
+                            className="w-10 h-10 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
+                            <span className="text-sm font-medium text-gray-600">
+                              {name.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                        )}
+                        {conversation.isOnline && (
+                          <div className="online-indicator"></div>
+                        )}
+                      </div>
+                      <div className="conversation-info">
+                        <div className="conversation-header">
+                          <h4 className="user-name">{name}</h4>
+                          {conversation.lastMessageTime && (
+                            <span className="message-time">{formatTime(conversation.lastMessageTime)}</span>
+                          )}
                         </div>
-                      )}
-                      {conversation.isOnline && (
-                        <div className="online-indicator"></div>
-                      )}
-                    </div>
-                    <div className="conversation-info">
-                      <div className="conversation-header">
-                        <h4 className="user-name">{conversation.userName}</h4>
-                        {conversation.lastMessageTime && (
-                          <span className="message-time">{formatTime(conversation.lastMessageTime)}</span>
-                        )}
-                      </div>
-                      <div className="conversation-preview">
-                        {conversation.lastMessage && (
-                          <p className="last-message">{conversation.lastMessage}</p>
-                        )}
-                        {conversation.unreadCount > 0 && (
-                          <span className="unread-badge">{conversation.unreadCount}</span>
-                        )}
+                        <div className="conversation-preview">
+                          {conversation.lastMessage && (
+                            <p className="last-message">{conversation.lastMessage}</p>
+                          )}
+                          {conversation.unreadCount > 0 && (
+                            <span className="unread-badge">{conversation.unreadCount}</span>
+                          )}
+                        </div>
                       </div>
                     </div>
+                    <button
+                      onClick={() => {
+                        setProfileUser(conversation);
+                        setShowUserProfile(true);
+                      }}
+                      className="profile-button"
+                      title="View Profile"
+                    >
+                      👤
+                    </button>
                   </div>
-                  <button
-                    onClick={() => {
-                      setProfileUser(conversation);
-                      setShowUserProfile(true);
-                    }}
-                    className="profile-button"
-                    title="View Profile"
-                  >
-                    👤
-                  </button>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>
@@ -490,21 +683,21 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               {/* Chat Header */}
               <div className="chat-header">
                 <div className="user-info">
-                  {selectedConversation?.userAvatar ? (
+                  {selectedUser ? (
                     <img 
-                      src={selectedConversation.userAvatar} 
-                      alt={selectedConversation.userName}
+                      src={selectedUser ? getUserInfo(selectedUser).avatar : ''} 
+                      alt={selectedUser ? getUserInfo(selectedUser).name : ''}
                       className="w-8 h-8 rounded-full object-cover"
                     />
                   ) : (
                     <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
                       <span className="text-sm font-medium text-gray-600">
-                        {selectedConversation?.userName.charAt(0).toUpperCase()}
+                        {selectedUser ? getUserInfo(selectedUser).name.charAt(0).toUpperCase() : ''}
                       </span>
                     </div>
                   )}
                   <div>
-                    <h3 className="user-name">{selectedConversation?.userName}</h3>
+                    <h3 className="user-name">{selectedUser ? getUserInfo(selectedUser).name : ''}</h3>
                     {typingUsers.includes(selectedUser) && (
                       <p className="typing-indicator">typing...</p>
                     )}

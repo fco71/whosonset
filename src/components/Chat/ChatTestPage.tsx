@@ -213,7 +213,11 @@ const ChatTestPage: React.FC = () => {
           <div className="grid md:grid-cols-2 gap-8">
             {/* Current User Selection */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-800">Current User:</h3>
+              <h3 className="text-lg font-semibold text-gray-800">Test Different Users:</h3>
+              <p className="text-sm text-gray-600 mb-3">
+                Switch between demo users to test the chat from different perspectives. 
+                This simulates how different users would see the chat interface.
+              </p>
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6">
                 <div className="flex items-center space-x-4">
                   <div className="relative">
@@ -264,13 +268,17 @@ const ChatTestPage: React.FC = () => {
 
             {/* User Search & Selection */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-800">Find & Connect:</h3>
+              <h3 className="text-lg font-semibold text-gray-800">Demo User Selection:</h3>
+              <p className="text-sm text-gray-600 mb-3">
+                Select demo users to create sample conversations. In the actual chat interface, 
+                you can search for real users using the ➕ "New Chat" button.
+              </p>
               
               <div className="space-y-3">
                 <div className="relative">
                   <input
                     type="text"
-                    placeholder="Search users by name, role, or company..."
+                    placeholder="Search demo users by name, role, or company..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -321,7 +329,7 @@ const ChatTestPage: React.FC = () => {
                 {selectedUsers.length > 0 && (
                   <div className="bg-blue-50 rounded-lg p-3">
                     <p className="text-sm text-blue-800">
-                      Selected {selectedUsers.length} user{selectedUsers.length > 1 ? 's' : ''} for connection
+                      Selected {selectedUsers.length} demo user{selectedUsers.length > 1 ? 's' : ''} for sample conversations
                     </p>
                   </div>
                 )}
@@ -384,6 +392,7 @@ const ChatTestPage: React.FC = () => {
         currentUserId={currentUser.id}
         currentUserName={currentUser.displayName}
         currentUserAvatar={currentUser.avatar}
+        demoUsers={DEMO_USERS}
       />
     </div>
   );
