@@ -32,7 +32,8 @@ const ProducerView: React.FC = () => {
     jobTitle: '',
     country: '',
     city: '',
-    availability: ''
+    availability: '',
+    searchQuery: ''
   });
 
   // Fetch departments and countries
@@ -96,6 +97,23 @@ const ProducerView: React.FC = () => {
         })) as CrewProfile[];
 
         // Client-side filtering for complex fields
+        // Filter by search query
+        if (filters.searchQuery) {
+          const query = filters.searchQuery.toLowerCase();
+          results = results.filter(profile =>
+            profile.name.toLowerCase().includes(query) ||
+            profile.jobTitles?.some(job => 
+              job.title.toLowerCase().includes(query) ||
+              job.department.toLowerCase().includes(query)
+            ) ||
+            profile.bio?.toLowerCase().includes(query) ||
+            profile.projects?.some(project => 
+              project.projectName.toLowerCase().includes(query) ||
+              project.role.toLowerCase().includes(query)
+            )
+          );
+        }
+
         // Filter by department
         if (filters.department) {
           results = results.filter(profile =>
@@ -161,7 +179,8 @@ const ProducerView: React.FC = () => {
       jobTitle: '',
       country: '',
       city: '',
-      availability: ''
+      availability: '',
+      searchQuery: ''
     });
   };
 
@@ -215,8 +234,22 @@ const ProducerView: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 animate-fade-in-delay">
-            {/* Department Filter */}
+            {/* Search Box */}
             <div className="animate-slide-up-filter">
+              <label className="block text-xs font-medium text-gray-700 mb-3 uppercase tracking-wider">
+                Search
+              </label>
+              <input
+                type="text"
+                value={filters.searchQuery || ''}
+                onChange={(e) => handleFilterChange('searchQuery', e.target.value)}
+                placeholder="Search by name, role, or skills..."
+                className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
+              />
+            </div>
+
+            {/* Department Filter */}
+            <div className="animate-slide-up-filter-delay-1">
               <label className="block text-xs font-medium text-gray-700 mb-3 uppercase tracking-wider">
                 Department
               </label>
@@ -235,7 +268,7 @@ const ProducerView: React.FC = () => {
             </div>
 
             {/* Job Title Filter */}
-            <div className="animate-slide-up-filter-delay-1">
+            <div className="animate-slide-up-filter-delay-2">
               <label className="block text-xs font-medium text-gray-700 mb-3 uppercase tracking-wider">
                 Role
               </label>
@@ -255,7 +288,7 @@ const ProducerView: React.FC = () => {
             </div>
 
             {/* Country Filter */}
-            <div className="animate-slide-up-filter-delay-2">
+            <div className="animate-slide-up-filter-delay-3">
               <label className="block text-xs font-medium text-gray-700 mb-3 uppercase tracking-wider">
                 Country
               </label>
@@ -271,28 +304,6 @@ const ProducerView: React.FC = () => {
                   </option>
                 ))}
               </select>
-            </div>
-
-            {/* City Filter */}
-            <div className="animate-slide-up-filter-delay-3">
-              <label className="block text-xs font-medium text-gray-700 mb-3 uppercase tracking-wider">
-                City
-              </label>
-              <input
-                type="text"
-                value={filters.city}
-                onChange={(e) => handleFilterChange('city', e.target.value)}
-                placeholder="Enter city name"
-                className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
-                list="cities-list"
-              />
-              {filters.country && (
-                <datalist id="cities-list">
-                  {getAvailableCities().map(city => (
-                    <option key={city} value={city} />
-                  ))}
-                </datalist>
-              )}
             </div>
 
             {/* Availability Filter */}

@@ -96,6 +96,18 @@ const CrewProfileCard: React.FC<CrewProfileCardProps> = ({ profile }) => {
           </button>
         </div>
 
+        {/* View Profile Link */}
+        <div className="mt-4 pt-4 border-t border-gray-100">
+          <a
+            href={`/resume/${profile.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm font-medium text-gray-900 hover:text-black transition-all duration-300 tracking-wide group-hover:underline group-hover:scale-105 block text-center"
+          >
+            View Profile →
+          </a>
+        </div>
+
         {/* Follow Button - Consistent placement */}
         {user && user.uid !== profile.id && (
           <div className="mt-4 pt-4 border-t border-gray-100">

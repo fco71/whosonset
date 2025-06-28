@@ -119,6 +119,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
         y >= cropArea.y && y <= cropArea.y + cropArea.height) {
       setIsDragging(true);
       setDragStart({ x: x - cropArea.x, y: y - cropArea.y });
+      e.preventDefault();
     }
   }, [cropArea, cropEnabled]);
 
@@ -136,11 +137,21 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
     const newY = Math.max(0, Math.min(canvas.height - cropArea.height, y - dragStart.y));
 
     setCropArea(prev => ({ ...prev, x: newX, y: newY }));
+    e.preventDefault();
   }, [isDragging, cropArea, dragStart, cropEnabled]);
 
-  const handleMouseUp = useCallback(() => {
-    setIsDragging(false);
-  }, []);
+  const handleMouseUp = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (isDragging) {
+      setIsDragging(false);
+      e.preventDefault();
+    }
+  }, [isDragging]);
+
+  const handleMouseLeave = useCallback(() => {
+    if (isDragging) {
+      setIsDragging(false);
+    }
+  }, [isDragging]);
 
   const handleCropResize = useCallback((direction: string, delta: number) => {
     if (!cropEnabled) return;
@@ -274,7 +285,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
               onMouseDown={handleMouseDown}
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseUp}
+              onMouseLeave={handleMouseLeave}
             />
             {cropArea.width > 0 && (
               <div

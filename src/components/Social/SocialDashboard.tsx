@@ -28,7 +28,7 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
 }) => {
   console.log('[SocialDashboard] Component rendered with props:', { currentUserId, currentUserName, currentUserAvatar });
   
-  const [activeTab, setActiveTab] = useState<'feed' | 'analytics' | 'messaging'>('feed');
+  const [activeTab, setActiveTab] = useState<'overview' | 'followers' | 'following' | 'requests' | 'notifications' | 'members' | 'messaging'>('overview');
   const [followRequests, setFollowRequests] = useState<FollowRequest[]>([]);
   const [notifications, setNotifications] = useState<SocialNotification[]>([]);
   const [followers, setFollowers] = useState<Follow[]>([]);
@@ -80,6 +80,30 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
     profile.jobTitles.some(job => job.title.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
+  const handleTabChange = (tab: 'overview' | 'followers' | 'following' | 'requests' | 'notifications' | 'members' | 'messaging') => {
+    setActiveTab(tab);
+  };
+
+  const handleNotificationClick = (notification: SocialNotification) => {
+    // Mark notification as read
+    SocialService.markNotificationAsRead(notification.id);
+    
+    // Navigate based on notification type
+    switch (notification.type) {
+      case 'follow_request':
+        setActiveTab('requests');
+        break;
+      case 'follow_accepted':
+        setActiveTab('followers');
+        break;
+      case 'message':
+        setActiveTab('messaging');
+        break;
+      default:
+        setActiveTab('notifications');
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="social-dashboard">
@@ -107,157 +131,215 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
         </div>
       </div>
 
-      <div className="dashboard-tabs">
+      <div className="tabs">
         <button
-          className={`tab ${activeTab === 'feed' ? 'active' : ''}`}
-          onClick={() => setActiveTab('feed')}
+          className={`tab ${activeTab === 'overview' ? 'active' : ''}`}
+          onClick={() => handleTabChange('overview')}
         >
           📰 Activity Feed
         </button>
         <button
-          className={`tab ${activeTab === 'analytics' ? 'active' : ''}`}
-          onClick={() => setActiveTab('analytics')}
+          className={`tab ${activeTab === 'followers' ? 'active' : ''}`}
+          onClick={() => handleTabChange('followers')}
         >
-          📊 Analytics
+          👥 Followers
+        </button>
+        <button
+          className={`tab ${activeTab === 'following' ? 'active' : ''}`}
+          onClick={() => handleTabChange('following')}
+        >
+          👤 Following
+        </button>
+        <button
+          className={`tab ${activeTab === 'requests' ? 'active' : ''}`}
+          onClick={() => handleTabChange('requests')}
+        >
+          📨 Requests
+        </button>
+        <button
+          className={`tab ${activeTab === 'notifications' ? 'active' : ''}`}
+          onClick={() => handleTabChange('notifications')}
+        >
+          🔔 Notifications
+        </button>
+        <button
+          className={`tab ${activeTab === 'members' ? 'active' : ''}`}
+          onClick={() => handleTabChange('members')}
+        >
+          👥 Members
         </button>
         <button
           className={`tab ${activeTab === 'messaging' ? 'active' : ''}`}
-          onClick={() => setActiveTab('messaging')}
+          onClick={() => handleTabChange('messaging')}
         >
           💬 Messaging
         </button>
       </div>
 
       <div className="dashboard-content">
-        <div className="main-content">
-          {activeTab === 'feed' && (
-            <ActivityFeed currentUserId={currentUserId} currentUserName={currentUserName} />
-          )}
-          {activeTab === 'analytics' && (
-            <div className="analytics-section">
-              <SocialAnalytics 
-                userId={currentUserId}
-              />
-            </div>
-          )}
-          {activeTab === 'messaging' && (
-            <div className="messaging-section">
-              <ChatInterface 
-                currentUserId={currentUserId}
-                currentUserName={currentUserName}
-              />
-            </div>
-          )}
-        </div>
-
-        <div className="sidebar">
-          <div className="user-info-card">
-            <div className="user-avatar-section">
-              <img 
-                src={currentUserAvatar || '/default-avatar.png'} 
-                alt={currentUserName}
-                className="user-avatar"
-              />
-              <div className="user-details">
-                <h3>{currentUserName}</h3>
-                <p className="user-handle">@{currentUserId.slice(-8)}</p>
-              </div>
-            </div>
-            <div className="user-stats">
-              <div className="stat">
-                <span className="stat-number">{followers.length}</span>
-                <span className="stat-label">Followers</span>
-              </div>
-              <div className="stat">
-                <span className="stat-number">{following.length}</span>
-                <span className="stat-label">Following</span>
-              </div>
+        {activeTab === 'overview' && (
+          <div className="overview-tab">
+            <ActivityFeed 
+              currentUserId={currentUserId}
+              currentUserName={currentUserName}
+              currentUserAvatar={currentUserAvatar}
+            />
+          </div>
+        )}
+        
+        {activeTab === 'followers' && (
+          <div className="followers-tab">
+            <h3>Followers ({followers.length})</h3>
+            <div className="followers-list">
+              {followers.map(follow => (
+                <div key={follow.id} className="follower-item">
+                  <img src="/default-avatar.png" alt="User" className="follower-avatar" />
+                  <span className="follower-name">User {follow.followerId.slice(-4)}</span>
+                </div>
+              ))}
             </div>
           </div>
-
-          <div className="follow-requests-card">
-            <h3>Follow Requests ({followRequests.length})</h3>
-            {followRequests.length > 0 ? (
-              <div className="requests-list">
-                {followRequests.map(request => (
-                  <div key={request.id} className="request-item">
-                    <div className="request-user-info">
-                      <img 
-                        src="/default-avatar.png" 
-                        alt="User"
-                        className="request-avatar"
-                      />
-                      <div className="request-user-details">
-                        <span className="request-username">
-                          {request.fromUserName || `User ${request.fromUserId.slice(-4)}`}
-                        </span>
-                        <span className="request-handle">
-                          @{request.fromUserId.slice(-8)}
-                        </span>
+        )}
+        
+        {activeTab === 'following' && (
+          <div className="following-tab">
+            <h3>Following ({following.length})</h3>
+            <div className="following-list">
+              {following.map(follow => (
+                <div key={follow.id} className="following-item">
+                  <img src="/default-avatar.png" alt="User" className="following-avatar" />
+                  <span className="following-name">User {follow.followingId.slice(-4)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {activeTab === 'requests' && (
+          <div className="requests-tab">
+            <div className="follow-requests-card">
+              <h3>Follow Requests ({followRequests.length})</h3>
+              {followRequests.length > 0 ? (
+                <div className="requests-list">
+                  {followRequests.map(request => (
+                    <div key={request.id} className="request-item">
+                      <div className="request-user-info">
+                        <img 
+                          src="/default-avatar.png" 
+                          alt="User"
+                          className="request-avatar"
+                        />
+                        <div className="request-user-details">
+                          <span className="request-username">
+                            {request.fromUserName || `User ${request.fromUserId.slice(-4)}`}
+                          </span>
+                          <span className="request-handle">
+                            @{request.fromUserId.slice(-8)}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="request-actions">
+                        <button 
+                          onClick={() => SocialService.respondToFollowRequest(request.id, 'accepted')}
+                          className="accept-btn"
+                        >
+                          Accept
+                        </button>
+                        <button 
+                          onClick={() => SocialService.respondToFollowRequest(request.id, 'rejected')}
+                          className="reject-btn"
+                        >
+                          Reject
+                        </button>
+                        <QuickMessage 
+                          currentUserId={currentUserId}
+                          targetUserId={request.fromUserId}
+                          targetUserName={request.fromUserName || `User ${request.fromUserId.slice(-4)}`}
+                          className="ml-auto"
+                        />
                       </div>
                     </div>
-                    <div className="request-actions">
-                      <button 
-                        className="accept-btn"
-                        onClick={() => SocialService.respondToFollowRequest(request.id, 'accepted')}
-                      >
-                        Accept
-                      </button>
-                      <button 
-                        className="reject-btn"
-                        onClick={() => SocialService.respondToFollowRequest(request.id, 'rejected')}
-                      >
-                        Reject
-                      </button>
-                      <QuickMessage 
-                        currentUserId={currentUserId}
-                        targetUserId={request.fromUserId}
-                        targetUserName={request.fromUserName || `User ${request.fromUserId.slice(-4)}`}
-                        className="ml-auto"
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p>No pending requests</p>
-            )}
+                  ))}
+                </div>
+              ) : (
+                <p>No pending follow requests</p>
+              )}
+            </div>
           </div>
-
-          <div className="members-card">
-            <h3>Members ({filteredProfiles.length})</h3>
-            <input
-              type="text"
-              placeholder="Search members..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="search-input"
-            />
-            <div className="members-list">
-              {filteredProfiles.map(profile => (
-                <div key={profile.uid} className="member-item">
-                  <div className="member-info">
-                    <img 
-                      src={profile.profileImageUrl || '/default-avatar.png'} 
-                      alt={profile.name}
-                      className="member-avatar"
-                    />
-                    <div>
-                      <h4>{profile.name}</h4>
-                      <p>{profile.jobTitles.map(job => job.title).join(', ')}</p>
-                    </div>
-                  </div>
-                  <div className="member-actions">
-                    <FollowButton 
-                      currentUserId={currentUserId}
-                      targetUserId={profile.uid}
-                    />
+        )}
+        
+        {activeTab === 'notifications' && (
+          <div className="notifications-tab">
+            <h3>Notifications ({notifications.length})</h3>
+            <div className="notifications-list">
+              {notifications.map(notification => (
+                <div 
+                  key={notification.id} 
+                  className={`notification-item ${!notification.isRead ? 'unread' : ''}`}
+                  onClick={() => handleNotificationClick(notification)}
+                >
+                  <span className="notification-icon">
+                    {notification.type === 'follow_request' ? '👤' : 
+                     notification.type === 'message' ? '💬' : '🔔'}
+                  </span>
+                  <div className="notification-content">
+                    <p className="notification-title">{notification.title}</p>
+                    <p className="notification-message">{notification.message}</p>
+                    <span className="notification-time">
+                      {new Date(notification.createdAt).toLocaleDateString()}
+                    </span>
                   </div>
                 </div>
               ))}
             </div>
           </div>
-        </div>
+        )}
+        
+        {activeTab === 'members' && (
+          <div className="members-tab">
+            <div className="search-container">
+              <input
+                type="text"
+                placeholder="Search members..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="search-input"
+              />
+            </div>
+            <div className="members-list">
+              {filteredProfiles.map(profile => (
+                <div key={profile.uid} className="member-item">
+                  <img 
+                    src={profile.profileImageUrl || "/default-avatar.png"} 
+                    alt={profile.name}
+                    className="member-avatar"
+                  />
+                  <div className="member-info">
+                    <span className="member-name">{profile.name}</span>
+                    <span className="member-role">
+                      {profile.jobTitles?.[0]?.title || 'Crew Member'}
+                    </span>
+                  </div>
+                  <FollowButton 
+                    currentUserId={currentUserId}
+                    targetUserId={profile.uid}
+                    className="ml-auto"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {activeTab === 'messaging' && (
+          <div className="messaging-tab">
+            <ChatInterface 
+              currentUserId={currentUserId}
+              currentUserName={currentUserName}
+              currentUserAvatar={currentUserAvatar}
+            />
+          </div>
+        )}
       </div>
 
       {/* Debug Information */}

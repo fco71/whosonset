@@ -4,6 +4,7 @@ import { db } from '../../firebase';
 import { JobPosting, JobSearchFilter } from '../../types/JobApplication';
 import JobSearchFilters from './JobSearchFilters';
 import JobCard from './JobCard';
+import { Link } from 'react-router-dom';
 
 const JobSearchPage: React.FC = () => {
   const [jobs, setJobs] = useState<JobPosting[]>([]);
@@ -175,6 +176,17 @@ const JobSearchPage: React.FC = () => {
           <p className="text-xl font-light text-gray-600 max-w-2xl mx-auto leading-relaxed animate-slide-up-delay">
             Find your next opportunity in the film industry. Browse through available positions and connect with production teams.
           </p>
+          <div className="mt-8 animate-slide-up-delay">
+            <Link 
+              to="/post-job" 
+              className="inline-flex items-center px-8 py-4 bg-gray-900 text-white font-light tracking-wide rounded-lg hover:bg-gray-800 transition-all duration-300 hover:scale-105"
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              Post a Job
+            </Link>
+          </div>
         </div>
 
         {/* Search Header */}

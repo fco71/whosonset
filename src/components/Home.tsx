@@ -95,11 +95,11 @@ const Home: React.FC = () => {
                             {projects.map((project, index) => (
                                 <div 
                                     key={project.id}
-                                    className="group bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden animate-card-entrance hover:scale-[1.02]"
+                                    className="group bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden animate-card-entrance hover:scale-[1.02] h-96 flex flex-col"
                                     style={{ animationDelay: `${index * 0.1}s` }}
                                 >
                                     {project.coverImageUrl && (
-                                        <div className="h-48 overflow-hidden">
+                                        <div className="h-48 overflow-hidden flex-shrink-0">
                                             <img 
                                                 src={project.coverImageUrl} 
                                                 alt={project.projectName} 
@@ -107,26 +107,28 @@ const Home: React.FC = () => {
                                             />
                                         </div>
                                     )}
-                                    <div className="p-6">
-                                        <h3 className="text-xl font-light text-gray-900 mb-3 tracking-wide group-hover:text-gray-700 transition-colors">
+                                    <div className="p-6 flex-1 flex flex-col">
+                                        <h3 className="text-xl font-light text-gray-900 mb-3 tracking-wide group-hover:text-gray-700 transition-colors line-clamp-2">
                                             <Link to={`/projects/${project.id}`} className="hover:underline">
                                                 {project.projectName}
                                             </Link>
                                         </h3>
-                                        <p className="text-sm font-medium text-gray-500 mb-3 tracking-wider uppercase">
+                                        <p className="text-sm font-medium text-gray-500 mb-3 tracking-wider uppercase line-clamp-1">
                                             {project.productionCompany} • {project.country}
                                         </p>
-                                        <p className="text-gray-600 leading-relaxed line-clamp-3 mb-4">
+                                        <p className="text-gray-600 leading-relaxed line-clamp-3 mb-4 flex-1">
                                             {project.logline}
                                         </p>
-                                        <span className={`inline-block px-3 py-1 text-sm font-medium rounded-full tracking-wider ${
-                                            project.status === 'In Production' ? 'bg-green-100 text-green-800' :
-                                            project.status === 'Pre-Production' ? 'bg-blue-100 text-blue-800' :
-                                            project.status === 'Post-Production' ? 'bg-purple-100 text-purple-800' :
-                                            'bg-gray-100 text-gray-800'
-                                        }`}>
-                                            {project.status}
-                                        </span>
+                                        <div className="mt-auto">
+                                            <span className={`inline-block px-3 py-1 text-sm font-medium rounded-full tracking-wider ${
+                                                project.status === 'In Production' ? 'bg-green-100 text-green-800' :
+                                                project.status === 'Pre-Production' ? 'bg-blue-100 text-blue-800' :
+                                                project.status === 'Post-Production' ? 'bg-purple-100 text-purple-800' :
+                                                'bg-gray-100 text-gray-800'
+                                            }`}>
+                                                {project.status}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                             ))}
