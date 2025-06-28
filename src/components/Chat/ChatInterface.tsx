@@ -28,6 +28,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [showSettings, setShowSettings] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showNewChat, setShowNewChat] = useState(false);
+  const [showUserProfile, setShowUserProfile] = useState(false);
+  const [profileUser, setProfileUser] = useState<ConversationSummary | null>(null);
 
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -300,14 +303,40 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         <div className="chat-sidebar">
           <div className="sidebar-header">
             <h2 className="text-xl font-light text-gray-900 tracking-wide">Messages</h2>
-            <button
-              onClick={() => setShowSettings(!showSettings)}
-              className="settings-button"
-              title="Chat Settings"
-            >
-              ⚙️
-            </button>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setShowNewChat(!showNewChat)}
+                className="new-chat-button"
+                title="New Chat"
+              >
+                ✨
+              </button>
+              <button
+                onClick={() => setShowSettings(!showSettings)}
+                className="settings-button"
+                title="Chat Settings"
+              >
+                ⚙️
+              </button>
+            </div>
           </div>
+
+          {/* New Chat Section */}
+          {showNewChat && (
+            <div className="new-chat-section">
+              <h3 className="text-sm font-medium text-gray-900 mb-3">Start New Chat</h3>
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  placeholder="Search users to chat with..."
+                  className="w-full text-sm border border-gray-200 rounded px-3 py-2"
+                />
+                <div className="text-xs text-gray-500">
+                  Find users by name, role, or company
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Search */}
           <div className="search-container">
@@ -390,43 +419,57 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               filteredConversations.map((conversation) => (
                 <div
                   key={conversation.userId}
-                  onClick={() => setSelectedUser(conversation.userId)}
                   className={`conversation-item ${selectedUser === conversation.userId ? 'active' : ''}`}
                 >
-                  <div className="user-avatar">
-                    {conversation.userAvatar ? (
-                      <img 
-                        src={conversation.userAvatar} 
-                        alt={conversation.userName}
-                        className="w-10 h-10 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-medium text-gray-600">
-                          {conversation.userName.charAt(0).toUpperCase()}
-                        </span>
+                  <div 
+                    className="conversation-content"
+                    onClick={() => setSelectedUser(conversation.userId)}
+                  >
+                    <div className="user-avatar">
+                      {conversation.userAvatar ? (
+                        <img 
+                          src={conversation.userAvatar} 
+                          alt={conversation.userName}
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
+                          <span className="text-sm font-medium text-gray-600">
+                            {conversation.userName.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                      )}
+                      {conversation.isOnline && (
+                        <div className="online-indicator"></div>
+                      )}
+                    </div>
+                    <div className="conversation-info">
+                      <div className="conversation-header">
+                        <h4 className="user-name">{conversation.userName}</h4>
+                        {conversation.lastMessageTime && (
+                          <span className="message-time">{formatTime(conversation.lastMessageTime)}</span>
+                        )}
                       </div>
-                    )}
-                    {conversation.isOnline && (
-                      <div className="online-indicator"></div>
-                    )}
-                  </div>
-                  <div className="conversation-info">
-                    <div className="conversation-header">
-                      <h4 className="user-name">{conversation.userName}</h4>
-                      {conversation.lastMessageTime && (
-                        <span className="message-time">{formatTime(conversation.lastMessageTime)}</span>
-                      )}
-                    </div>
-                    <div className="conversation-preview">
-                      {conversation.lastMessage && (
-                        <p className="last-message">{conversation.lastMessage}</p>
-                      )}
-                      {conversation.unreadCount > 0 && (
-                        <span className="unread-badge">{conversation.unreadCount}</span>
-                      )}
+                      <div className="conversation-preview">
+                        {conversation.lastMessage && (
+                          <p className="last-message">{conversation.lastMessage}</p>
+                        )}
+                        {conversation.unreadCount > 0 && (
+                          <span className="unread-badge">{conversation.unreadCount}</span>
+                        )}
+                      </div>
                     </div>
                   </div>
+                  <button
+                    onClick={() => {
+                      setProfileUser(conversation);
+                      setShowUserProfile(true);
+                    }}
+                    className="profile-button"
+                    title="View Profile"
+                  >
+                    👤
+                  </button>
                 </div>
               ))
             )}
@@ -571,6 +614,70 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           )}
         </div>
       </div>
+
+      {/* User Profile Modal */}
+      {showUserProfile && profileUser && (
+        <div className="profile-modal-overlay" onClick={() => setShowUserProfile(false)}>
+          <div className="profile-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="profile-header">
+              <h3 className="text-lg font-semibold text-gray-900">User Profile</h3>
+              <button
+                onClick={() => setShowUserProfile(false)}
+                className="close-button"
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="profile-content">
+              <div className="profile-avatar-section">
+                {profileUser.userAvatar ? (
+                  <img 
+                    src={profileUser.userAvatar} 
+                    alt={profileUser.userName}
+                    className="w-20 h-20 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-20 h-20 bg-gray-300 rounded-full flex items-center justify-center">
+                    <span className="text-2xl font-medium text-gray-600">
+                      {profileUser.userName.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                )}
+                <div className="profile-status">
+                  {profileUser.isOnline ? (
+                    <span className="online-status">🟢 Online</span>
+                  ) : (
+                    <span className="offline-status">⚫ Offline</span>
+                  )}
+                </div>
+              </div>
+              
+              <div className="profile-info">
+                <h4 className="profile-name">{profileUser.userName}</h4>
+                <p className="profile-role">{profileUser.userRole || 'Film Industry Professional'}</p>
+                <p className="profile-location">Location: {profileUser.userLocation || 'Not specified'}</p>
+                <p className="profile-company">Company: {profileUser.userCompany || 'Not specified'}</p>
+              </div>
+              
+              <div className="profile-actions">
+                <button
+                  onClick={() => {
+                    setSelectedUser(profileUser.userId);
+                    setShowUserProfile(false);
+                  }}
+                  className="start-chat-button"
+                >
+                  💬 Start Chat
+                </button>
+                <button className="view-full-profile-button">
+                  👁️ View Full Profile
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

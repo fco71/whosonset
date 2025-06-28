@@ -25,6 +25,9 @@ export interface ConversationSummary {
   userId: string;
   userName: string;
   userAvatar?: string;
+  userRole?: string;
+  userCompany?: string;
+  userLocation?: string;
   lastMessage?: string;
   lastMessageTime?: Date;
   unreadCount: number;
@@ -352,6 +355,9 @@ export class MessagingService {
                 userId: participantId,
                 userName: userProfile?.displayName || `User ${participantId.slice(-4)}`,
                 userAvatar: userProfile?.avatarUrl,
+                userRole: userProfile?.role,
+                userCompany: userProfile?.company,
+                userLocation: userProfile?.location,
                 lastMessage: lastMessage?.content,
                 lastMessageTime,
                 unreadCount,
@@ -615,7 +621,10 @@ export class MessagingService {
         const userData = userDoc.data();
         return {
           displayName: userData.displayName || userData.firstName || `User ${userId.slice(-4)}`,
-          avatarUrl: userData.avatarUrl
+          avatarUrl: userData.avatarUrl,
+          role: userData.role,
+          company: userData.company,
+          location: userData.location
         };
       }
 
@@ -625,7 +634,10 @@ export class MessagingService {
         const crewData = crewDoc.data();
         return {
           displayName: crewData.name || crewData.firstName || `Crew Member ${userId.slice(-4)}`,
-          avatarUrl: crewData.avatarUrl
+          avatarUrl: crewData.avatarUrl,
+          role: crewData.role,
+          company: crewData.company,
+          location: crewData.location
         };
       }
 
