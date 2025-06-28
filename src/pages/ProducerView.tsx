@@ -36,6 +36,17 @@ const ProducerView: React.FC = () => {
     searchQuery: ''
   });
 
+  const [appliedFilters, setAppliedFilters] = useState({
+    department: '',
+    jobTitle: '',
+    country: '',
+    city: '',
+    availability: '',
+    searchQuery: ''
+  });
+
+  const [isSearching, setIsSearching] = useState(false);
+
   // Fetch departments and countries
   useEffect(() => {
     const fetchLookupData = async () => {
@@ -86,8 +97,8 @@ const ProducerView: React.FC = () => {
         );
 
         // Add availability filter to Firestore query if specified
-        if (filters.availability) {
-          q = query(q, where('availability', '==', filters.availability));
+        if (appliedFilters.availability) {
+          q = query(q, where('availability', '==', appliedFilters.availability));
         }
 
         const snapshot = await getDocs(q);
@@ -98,8 +109,8 @@ const ProducerView: React.FC = () => {
 
         // Client-side filtering for complex fields
         // Filter by search query
-        if (filters.searchQuery) {
-          const query = filters.searchQuery.toLowerCase();
+        if (appliedFilters.searchQuery) {
+          const query = appliedFilters.searchQuery.toLowerCase();
           results = results.filter(profile =>
             profile.name.toLowerCase().includes(query) ||
             profile.jobTitles?.some(job => 
@@ -115,31 +126,31 @@ const ProducerView: React.FC = () => {
         }
 
         // Filter by department
-        if (filters.department) {
+        if (appliedFilters.department) {
           results = results.filter(profile =>
-            profile.jobTitles?.some(job => job.department === filters.department)
+            profile.jobTitles?.some(job => job.department === appliedFilters.department)
           );
         }
 
         // Filter by job title
-        if (filters.jobTitle) {
+        if (appliedFilters.jobTitle) {
           results = results.filter(profile =>
-            profile.jobTitles?.some(job => job.title === filters.jobTitle)
+            profile.jobTitles?.some(job => job.title === appliedFilters.jobTitle)
           );
         }
 
         // Filter by country
-        if (filters.country) {
+        if (appliedFilters.country) {
           results = results.filter(profile =>
-            profile.residences?.some(residence => residence.country === filters.country)
+            profile.residences?.some(residence => residence.country === appliedFilters.country)
           );
         }
 
         // Filter by city (case-insensitive partial match)
-        if (filters.city) {
+        if (appliedFilters.city) {
           results = results.filter(profile =>
             profile.residences?.some(residence => 
-              residence.city.toLowerCase().includes(filters.city.toLowerCase())
+              residence.city.toLowerCase().includes(appliedFilters.city.toLowerCase())
             )
           );
         }
@@ -156,7 +167,7 @@ const ProducerView: React.FC = () => {
     };
 
     fetchCrewProfiles();
-  }, [filters]); // Re-run when filters change
+  }, [appliedFilters]); // Re-run when appliedFilters change
 
   const handleFilterChange = (filterName: string, value: string) => {
     setFilters(prev => ({
@@ -173,15 +184,23 @@ const ProducerView: React.FC = () => {
     }
   };
 
+  const handleSearch = () => {
+    setIsSearching(true);
+    setAppliedFilters(filters);
+    setTimeout(() => setIsSearching(false), 500);
+  };
+
   const clearFilters = () => {
-    setFilters({
+    const emptyFilters = {
       department: '',
       jobTitle: '',
       country: '',
       city: '',
       availability: '',
       searchQuery: ''
-    });
+    };
+    setFilters(emptyFilters);
+    setAppliedFilters(emptyFilters);
   };
 
   const getAvailableJobTitles = () => {
@@ -201,7 +220,7 @@ const ProducerView: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
       <div className="bg-gradient-to-br from-gray-50 to-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-8 py-24">
@@ -239,13 +258,23 @@ const ProducerView: React.FC = () => {
               <label className="block text-xs font-medium text-gray-700 mb-3 uppercase tracking-wider">
                 Search
               </label>
-              <input
-                type="text"
-                value={filters.searchQuery || ''}
-                onChange={(e) => handleFilterChange('searchQuery', e.target.value)}
-                placeholder="Search by name, role, or skills..."
-                className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
-              />
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={filters.searchQuery || ''}
+                  onChange={(e) => handleFilterChange('searchQuery', e.target.value)}
+                  placeholder="Search by name, role, or skills..."
+                  className="flex-1 p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
+                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                />
+                <button
+                  onClick={handleSearch}
+                  disabled={isSearching}
+                  className="px-6 py-4 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSearching ? '🔍' : 'Search'}
+                </button>
+              </div>
             </div>
 
             {/* Department Filter */}
@@ -334,7 +363,7 @@ const ProducerView: React.FC = () => {
               <h3 className="text-3xl font-light text-gray-900 tracking-wide">
                 {filteredProfiles.length} {filteredProfiles.length === 1 ? 'Talent' : 'Talents'} Found
               </h3>
-              {Object.values(filters).some(f => f) && (
+              {Object.values(appliedFilters).some(f => f) && (
                 <div className="text-sm font-light text-gray-500 tracking-wide">
                   Showing filtered results
                 </div>

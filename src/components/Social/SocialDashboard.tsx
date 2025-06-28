@@ -104,6 +104,20 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
     }
   };
 
+  const handleFollowRequestResponse = async (requestId: string, response: 'accepted' | 'rejected') => {
+    try {
+      await SocialService.respondToFollowRequest(requestId, response);
+      // Remove the request from the list after response
+      setFollowRequests(prev => prev.filter(req => req.id !== requestId));
+      // Mark related notifications as read
+      setNotifications(prev => prev.filter(notif => 
+        !(notif.type === 'follow_request' && notif.relatedEventId === requestId)
+      ));
+    } catch (error) {
+      console.error('Error responding to follow request:', error);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="social-dashboard">
@@ -240,13 +254,13 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
                       </div>
                       <div className="request-actions">
                         <button 
-                          onClick={() => SocialService.respondToFollowRequest(request.id, 'accepted')}
+                          onClick={() => handleFollowRequestResponse(request.id, 'accepted')}
                           className="accept-btn"
                         >
                           Accept
                         </button>
                         <button 
-                          onClick={() => SocialService.respondToFollowRequest(request.id, 'rejected')}
+                          onClick={() => handleFollowRequestResponse(request.id, 'rejected')}
                           className="reject-btn"
                         >
                           Reject
@@ -297,34 +311,66 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
         
         {activeTab === 'members' && (
           <div className="members-tab">
-            <div className="search-container">
-              <input
-                type="text"
-                placeholder="Search members..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="search-input"
-              />
+            <div className="members-header">
+              <h3>Crew Directory ({filteredProfiles.length})</h3>
+              <div className="search-container">
+                <input
+                  type="text"
+                  placeholder="Search crew members..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="search-input"
+                />
+              </div>
             </div>
-            <div className="members-list">
-              {filteredProfiles.map(profile => (
-                <div key={profile.uid} className="member-item">
-                  <img 
-                    src={profile.profileImageUrl || "/default-avatar.png"} 
-                    alt={profile.name}
-                    className="member-avatar"
-                  />
-                  <div className="member-info">
-                    <span className="member-name">{profile.name}</span>
-                    <span className="member-role">
-                      {profile.jobTitles?.[0]?.title || 'Crew Member'}
-                    </span>
+            <div className="members-grid">
+              {filteredProfiles.map((profile, index) => (
+                <div key={profile.uid} className="member-card">
+                  <div className="member-avatar">
+                    <img 
+                      src={profile.profileImageUrl || "/default-avatar.png"} 
+                      alt={profile.name}
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = "/default-avatar.png";
+                      }}
+                    />
+                    <button 
+                      className="bookmark-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // TODO: Implement bookmark functionality
+                        console.log('Bookmark clicked for:', profile.name);
+                      }}
+                      title="Add to favorites"
+                    >
+                      📖
+                    </button>
                   </div>
-                  <FollowButton 
-                    currentUserId={currentUserId}
-                    targetUserId={profile.uid}
-                    className="ml-auto"
-                  />
+                  <div className="member-info">
+                    <h4>{profile.name}</h4>
+                    <p className="member-title">
+                      {profile.jobTitles?.[0]?.title || 'Professional'}
+                    </p>
+                    <p className="member-location">
+                      {profile.residences?.[0]?.city}, {profile.residences?.[0]?.country}
+                    </p>
+                  </div>
+                  <div className="member-actions">
+                    <FollowButton 
+                      currentUserId={currentUserId}
+                      targetUserId={profile.uid}
+                    />
+                    <button 
+                      className="message-btn"
+                      onClick={() => {
+                        setSelectedProfile(profile);
+                        setActiveTab('messaging');
+                      }}
+                    >
+                      💬
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -333,11 +379,14 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
         
         {activeTab === 'messaging' && (
           <div className="messaging-tab">
-            <ChatInterface 
-              currentUserId={currentUserId}
-              currentUserName={currentUserName}
-              currentUserAvatar={currentUserAvatar}
-            />
+            <h3>Direct Messages</h3>
+            <div className="messaging-container">
+              <ChatInterface 
+                currentUserId={currentUserId}
+                currentUserName={currentUserName}
+                currentUserAvatar={currentUserAvatar}
+              />
+            </div>
           </div>
         )}
       </div>

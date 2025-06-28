@@ -86,16 +86,21 @@ const AddProject: React.FC = () => {
   if (error) return <p>Error: {error.message}</p>;
 
   return (
-    <div className="flex flex-col items-center min-h-screen bg-gray-100 pt-10">
-      <div className="w-full max-w-6xl mb-4 px-4">
-        <div className="project-builder-banner bg-white bg-opacity-95 shadow-md rounded-xl p-3 flex flex-col items-center text-center">
-          <h1 className="text-xl font-medium text-gray-800 tracking-wide mb-1">Add New Project</h1>
-          <p className="text-gray-600 text-sm leading-snug">Create and showcase your film industry project. Add details, team members, and share with the community.</p>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-4xl mx-auto px-8 py-16">
+        {/* Header */}
+        <div className="text-center mb-12 animate-fade-in">
+          <h1 className="text-4xl font-light text-gray-900 mb-4 tracking-tight animate-slide-up">
+            Add New Project
+          </h1>
+          <p className="text-xl font-light text-gray-600 max-w-2xl mx-auto leading-relaxed animate-slide-up-delay">
+            Create and showcase your film industry project. Add details, team members, and share with the community.
+          </p>
         </div>
-      </div>
-      <div className="w-full max-w-6xl px-4">
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          <form onSubmit={handleSubmit} className="p-8">
+
+        {/* Form */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 animate-slide-up-delay">
+          <form onSubmit={handleSubmit} className="space-y-8">
             <ProjectForm
               projectName={projectName}
               setProjectName={setProjectName}
@@ -144,7 +149,7 @@ const AddProject: React.FC = () => {
               </button>
               <button
                 type="submit"
-                className="w-full sm:w-auto px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-300 font-medium"
+                className="w-full sm:w-auto px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-all duration-300 font-medium"
               >
                 Add Project
               </button>

@@ -98,15 +98,27 @@ const Home: React.FC = () => {
                                     className="group bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden animate-card-entrance hover:scale-[1.02] h-96 flex flex-col"
                                     style={{ animationDelay: `${index * 0.1}s` }}
                                 >
-                                    {project.coverImageUrl && (
-                                        <div className="h-48 overflow-hidden flex-shrink-0">
+                                    <div className="h-48 overflow-hidden flex-shrink-0">
+                                        {project.coverImageUrl ? (
                                             <img 
                                                 src={project.coverImageUrl} 
                                                 alt={project.projectName} 
                                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                onError={(e) => {
+                                                    const target = e.target as HTMLImageElement;
+                                                    target.src = "/movie-production-avatar.svg";
+                                                }}
                                             />
-                                        </div>
-                                    )}
+                                        ) : (
+                                            <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                                                <img 
+                                                    src="/movie-production-avatar.svg" 
+                                                    alt="Movie Production" 
+                                                    className="w-16 h-16 opacity-50"
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
                                     <div className="p-6 flex-1 flex flex-col">
                                         <h3 className="text-xl font-light text-gray-900 mb-3 tracking-wide group-hover:text-gray-700 transition-colors line-clamp-2">
                                             <Link to={`/projects/${project.id}`} className="hover:underline">
