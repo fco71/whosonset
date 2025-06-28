@@ -4,11 +4,11 @@ import { collection, getDocs } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import CrewProfileCard from '../components/CrewProfileCard';
-import { LegacyCrewProfile } from '../types/CrewProfile';
+import { CrewProfile } from '../types/CrewProfile';
 
 const SavedCrewProfilesPage: React.FC = () => {
   const [user] = useAuthState(auth);
-  const [savedProfiles, setSavedProfiles] = useState<LegacyCrewProfile[]>([]);
+  const [savedProfiles, setSavedProfiles] = useState<CrewProfile[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,9 +19,9 @@ const SavedCrewProfilesPage: React.FC = () => {
         const savedProfilesRef = collection(db, `collections/${user.uid}/savedCrew`);
         const querySnapshot = await getDocs(savedProfilesRef);
         const profiles = querySnapshot.docs.map(doc => ({
-          id: doc.id,
+          uid: doc.id,
           ...doc.data()
-        })) as LegacyCrewProfile[];
+        })) as CrewProfile[];
         
         setSavedProfiles(profiles);
       } catch (error) {
@@ -111,7 +111,7 @@ const SavedCrewProfilesPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
             {savedProfiles.map((profile, index) => (
               <div
-                key={profile.id}
+                key={profile.uid}
                 className="animate-card-entrance"
                 style={{ animationDelay: `${index * 100}ms` }}
               >

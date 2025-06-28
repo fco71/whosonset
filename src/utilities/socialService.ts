@@ -196,7 +196,7 @@ export class SocialService {
           status: data.status || 'active',
           createdAt: data.createdAt?.toDate() || new Date(),
           lastInteraction: data.lastInteraction?.toDate()
-        };
+        } as Follow;
       }
       return null;
     } catch (error) {
