@@ -21,8 +21,9 @@ import { FollowRequest, Follow, SocialNotification, ActivityFeedItem, SocialLike
 export class SocialService {
   // Cache for activity feed
   private static activityFeedCache = new Map<string, { data: ActivityFeedItem[]; timestamp: number; ttl: number }>();
-  private static readonly CACHE_TTL = 2 * 60 * 1000; // 2 minutes (reduced for more responsive updates)
+  private static readonly CACHE_TTL = 3 * 60 * 1000; // 3 minutes (increased for better caching)
   private static pendingRequests = new Map<string, Promise<ActivityFeedItem[]>>();
+  private static readonly MAX_CACHE_SIZE = 30; // Reduced cache size for better memory management
 
   // Follow Request Operations
   static async sendFollowRequest(fromUserId: string, toUserId: string, message?: string): Promise<void> {
@@ -409,7 +410,7 @@ export class SocialService {
       const cacheKey = `activityFeed_${userId}_${itemLimit}`;
       const cached = this.activityFeedCache.get(cacheKey);
       if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
-        console.log('[SocialService] Returning cached activity feed');
+        console.log('[SocialService] Returning cached activity feed (cache hit)');
         return cached.data;
       }
 
@@ -426,12 +427,20 @@ export class SocialService {
       try {
         const items = await requestPromise;
         
-        // Cache the result
+        // Cache the result with size management
         this.activityFeedCache.set(cacheKey, {
           data: items,
           timestamp: Date.now(),
           ttl: this.CACHE_TTL
         });
+        
+        // Clean up cache if it gets too large (remove oldest entries)
+        if (this.activityFeedCache.size > this.MAX_CACHE_SIZE) {
+          const entries = Array.from(this.activityFeedCache.entries());
+          entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
+          const toDelete = entries.slice(0, entries.length - this.MAX_CACHE_SIZE + 5);
+          toDelete.forEach(([key]) => this.activityFeedCache.delete(key));
+        }
         
         return items;
       } finally {
@@ -448,11 +457,15 @@ export class SocialService {
     try {
       console.log('[SocialService] Executing optimized activity feed query for user:', userId);
       
-      // For now, use a simpler query that doesn't require the new index
-      // Once the index is built, we can switch back to the optimized version
+      // Use a single, efficient query with better performance
+      // Focus on recent public activities for better performance
+      const now = new Date();
+      const twoDaysAgo = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000); // Reduced to 2 days
+      
       const feedQuery = query(
         collection(db, 'activityFeed'),
         where('isPublic', '==', true),
+        where('createdAt', '>=', twoDaysAgo),
         orderBy('createdAt', 'desc'),
         limit(itemLimit)
       );
@@ -464,78 +477,12 @@ export class SocialService {
         createdAt: doc.data().createdAt?.toDate()
       })) as ActivityFeedItem[];
       
-      console.log('[SocialService] Retrieved', items.length, 'activity feed items (simple query)');
+      console.log('[SocialService] Retrieved', items.length, 'activity feed items (optimized single query)');
       return items;
-      
-      /* TODO: Uncomment this optimized version once the index is built
-      // Create a more efficient query that gets activities in order of relevance:
-      // 1. User's own activities
-      // 2. Activities from users they follow
-      // 3. Public activities from the last 7 days
-      
-      const now = new Date();
-      const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      
-      // First, get user's own activities
-      const userActivitiesQuery = query(
-        collection(db, 'activityFeed'),
-        where('userId', '==', userId),
-        orderBy('createdAt', 'desc'),
-        limit(Math.floor(itemLimit / 2))
-      );
-      
-      // Get public activities from recent timeframe
-      const publicActivitiesQuery = query(
-        collection(db, 'activityFeed'),
-        where('isPublic', '==', true),
-        where('createdAt', '>=', oneWeekAgo),
-        orderBy('createdAt', 'desc'),
-        limit(itemLimit)
-      );
-      
-      // Execute queries in parallel for better performance
-      const [userSnapshot, publicSnapshot] = await Promise.all([
-        getDocs(userActivitiesQuery),
-        getDocs(publicActivitiesQuery)
-      ]);
-      
-      // Combine and deduplicate results
-      const allItems = new Map<string, ActivityFeedItem>();
-      
-      // Process user's own activities first (higher priority)
-      userSnapshot.docs.forEach(doc => {
-        const data = doc.data();
-        allItems.set(doc.id, {
-          id: doc.id,
-          ...data,
-          createdAt: data.createdAt?.toDate() || new Date()
-        } as ActivityFeedItem);
-      });
-      
-      // Add public activities (avoiding duplicates)
-      publicSnapshot.docs.forEach(doc => {
-        if (!allItems.has(doc.id)) {
-          const data = doc.data();
-          allItems.set(doc.id, {
-            id: doc.id,
-            ...data,
-            createdAt: data.createdAt?.toDate() || new Date()
-          } as ActivityFeedItem);
-        }
-      });
-      
-      // Convert to array and sort by creation date
-      const items = Array.from(allItems.values())
-        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-        .slice(0, itemLimit);
-      
-      console.log('[SocialService] Retrieved', items.length, 'activity feed items (optimized query)');
-      return items;
-      */
     } catch (error) {
       console.error('Error executing activity feed query:', error);
       
-      // Fallback to simpler query if the optimized one fails
+      // Fallback to simplest query if the optimized one fails
       try {
         console.log('[SocialService] Falling back to simple query...');
         const fallbackQuery = query(
@@ -842,5 +789,10 @@ export class SocialService {
       }
     }
     keysToDelete.forEach(key => this.activityFeedCache.delete(key));
+  }
+
+  static clearAllActivityFeedCache() {
+    console.log('[SocialService] Clearing all activity feed cache');
+    this.activityFeedCache.clear();
   }
 } 

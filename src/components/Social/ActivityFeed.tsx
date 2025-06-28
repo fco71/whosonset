@@ -12,7 +12,7 @@ interface ActivityFeedProps {
   className?: string;
 }
 
-const ITEMS_PER_PAGE = 20;
+const ITEMS_PER_PAGE = 10;
 const VIRTUAL_ITEM_HEIGHT = 120; // Estimated height of each activity item
 
 const ActivityFeed: React.FC<ActivityFeedProps> = ({ 
@@ -154,11 +154,11 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
     const loadInitialActivities = async () => {
       if (!currentUserId) return;
       
-      // Don't reload if we already have activities and they're recent (within 2 minutes)
+      // Don't reload if we already have activities and they're recent (within 3 minutes)
       if (activities.length > 0 && !loading) {
         const lastActivityTime = activities[0]?.createdAt;
-        if (lastActivityTime && Date.now() - lastActivityTime.getTime() < 2 * 60 * 1000) {
-          console.log('[ActivityFeed] Using existing activities (recent, within 2 minutes)');
+        if (lastActivityTime && Date.now() - lastActivityTime.getTime() < 3 * 60 * 1000) {
+          console.log('[ActivityFeed] Using existing activities (recent, within 3 minutes)');
           return;
         }
       }
