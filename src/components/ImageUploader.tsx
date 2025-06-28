@@ -7,6 +7,8 @@ import {
 } from 'firebase/storage';
 import { app } from '../firebase';
 import './ImageUploader.scss';
+import Cropper, { Area } from 'react-easy-crop';
+import getCroppedImg from './getCroppedImg'; // We'll create this helper
 
 interface ImageUploaderProps {
   onImageUploaded: (url: string) => void;
@@ -42,6 +44,10 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
   const [cropArea, setCropArea] = useState<CropArea>({ x: 0, y: 0, width: 0, height: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<CropArea | null>(null);
+  const [cropping, setCropping] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -265,85 +271,98 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
     setCropArea({ x: 0, y: 0, width: 0, height: 0 });
   };
 
+  const onCropComplete = useCallback((croppedArea: Area, croppedAreaPixels: Area) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
+
+  const showCropper = !!imageSrc && cropEnabled;
+
+  const handleCropSave = async () => {
+    if (!imageSrc || !croppedAreaPixels) return;
+    setCropping(true);
+    try {
+      const croppedBlob = await getCroppedImg(imageSrc, croppedAreaPixels);
+      const croppedFile = new File([croppedBlob], imageName || 'cropped.jpg', { type: croppedBlob.type });
+      await uploadImage(croppedFile);
+      setShowCrop(false);
+      setImageSrc(null);
+      setFile(null);
+    } catch (err) {
+      console.error('Crop failed:', err);
+    } finally {
+      setCropping(false);
+    }
+  };
+
   return (
     <div className="image-uploader">
       <input
         type="file"
         accept="image/*"
-        onChange={handleFileChange}
         ref={fileInputRef}
-        className="file-input"
+        onChange={handleFileChange}
+        style={{ display: 'none' }}
       />
-
-      {showCrop && imageSrc ? (
-        <div className="crop-container">
-          <h4>Crop Image</h4>
-          <div className="crop-canvas-wrapper">
-            <canvas
-              ref={canvasRef}
-              className="crop-canvas"
-              onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseLeave}
-            />
-            {cropArea.width > 0 && (
-              <div
-                className="crop-overlay"
-                style={{
-                  left: cropArea.x,
-                  top: cropArea.y,
-                  width: cropArea.width,
-                  height: cropArea.height
-                }}
+      <button
+        type="button"
+        onClick={() => fileInputRef.current?.click()}
+        className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-all duration-300 font-medium"
+      >
+        {imageSrc ? 'Change Image' : 'Upload Image'}
+      </button>
+      {showCropper && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+          <div className="bg-white rounded-xl shadow-lg p-6 flex flex-col items-center max-w-full w-[90vw] max-h-[90vh]">
+            <div className="relative w-[80vw] max-w-[480px] h-[40vw] max-h-[360px] bg-gray-200 rounded-lg overflow-hidden flex items-center justify-center">
+              <Cropper
+                image={imageSrc || undefined}
+                crop={crop}
+                zoom={zoom}
+                aspect={aspectRatio || 16 / 9}
+                onCropChange={setCrop}
+                onZoomChange={setZoom}
+                onCropComplete={onCropComplete}
+                cropShape="rect"
+                showGrid={true}
+                style={{ containerStyle: { width: '100%', height: '100%' } }}
+              />
+            </div>
+            <div className="flex flex-col md:flex-row items-center gap-4 mt-6 w-full">
+              <input
+                type="range"
+                min={1}
+                max={3}
+                step={0.01}
+                value={zoom}
+                onChange={(e) => setZoom(Number(e.target.value))}
+                className="w-full md:w-48"
+              />
+              <button
+                type="button"
+                onClick={handleCropSave}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-300 font-medium"
+                disabled={cropping}
               >
-                <div className="crop-handle nw" onMouseDown={() => handleCropResize('nw', -10)} />
-                <div className="crop-handle ne" onMouseDown={() => handleCropResize('ne', 10)} />
-                <div className="crop-handle sw" onMouseDown={() => handleCropResize('sw', -10)} />
-                <div className="crop-handle se" onMouseDown={() => handleCropResize('se', 10)} />
-              </div>
-            )}
-          </div>
-          <div className="crop-actions">
-            <button onClick={applyCrop} className="crop-btn apply">
-              Apply Crop
-            </button>
-            <button onClick={cancelCrop} className="crop-btn cancel">
-              Cancel
-            </button>
+                {cropping ? 'Saving...' : 'Save Crop'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowCrop(false)}
+                className="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition-all duration-300 font-medium"
+                disabled={cropping}
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
-      ) : (
-        <div className="upload-preview">
-          {uploading ? (
-            <div className="upload-progress">
-              <div className="progress-bar">
-                <div 
-                  className="progress-fill" 
-                  style={{ width: `${uploadProgress}%` }}
-                />
-              </div>
-              <p>Uploading... {uploadProgress}%</p>
-            </div>
-          ) : imageName ? (
-            <>
-              <p className="selected-file">Selected: {imageName}</p>
-              {imageSrc && (
-                <img
-                  src={imageSrc}
-                  alt="Preview"
-                  className="image-preview"
-                  onLoad={handleImageLoad}
-                  onError={(e) => {
-                    console.warn('Preview failed to load:', e);
-                    e.currentTarget.style.display = 'none';
-                  }}
-                />
-              )}
-            </>
-          ) : (
-            <p className="no-image">No image selected</p>
-          )}
+      )}
+      {uploading && (
+        <div className="mt-2 text-sm text-gray-600">Uploading... {uploadProgress}%</div>
+      )}
+      {imageName && (
+        <div className="mt-4">
+          <img src={imageSrc || undefined} alt="Cover Preview" className="rounded-lg shadow-md max-h-48" />
         </div>
       )}
     </div>
