@@ -6,236 +6,118 @@ import {
   getDownloadURL,
 } from 'firebase/storage';
 import { app } from '../firebase';
-import './ImageUploader.scss';
 import Cropper, { Area } from 'react-easy-crop';
-import getCroppedImg from './getCroppedImg'; // We'll create this helper
+import getCroppedImg from './getCroppedImg';
 
 interface ImageUploaderProps {
   onImageUploaded: (url: string) => void;
-  aspectRatio?: number; // Optional aspect ratio for cropping
+  aspectRatio?: number;
   maxWidth?: number;
   maxHeight?: number;
   cropEnabled?: boolean;
-}
-
-interface CropArea {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  placeholder?: string;
 }
 
 const ImageUploader: React.FC<ImageUploaderProps> = ({ 
   onImageUploaded, 
-  aspectRatio,
+  aspectRatio = 16 / 9,
   maxWidth = 800,
   maxHeight = 600,
-  cropEnabled = true
+  cropEnabled = true,
+  placeholder = "Upload Image"
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
-  const [imageName, setImageName] = useState<string | null>(null);
-  const [file, setFile] = useState<File | null>(null);
   const [imageSrc, setImageSrc] = useState<string | null>(null);
-  const [objectURLToRevoke, setObjectURLToRevoke] = useState<string | null>(null);
   const [showCrop, setShowCrop] = useState(false);
-  const [cropArea, setCropArea] = useState<CropArea>({ x: 0, y: 0, width: 0, height: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState<CropArea | null>(null);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [cropping, setCropping] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
 
     if (!selectedFile) {
-      setFile(null);
       setImageSrc(null);
-      setImageName(null);
+      setPreviewUrl(null);
       return;
     }
 
-    setFile(selectedFile);
-    setImageName(selectedFile.name);
-
-    // Clean up previous object URL
-    if (objectURLToRevoke) {
-      URL.revokeObjectURL(objectURLToRevoke);
+    // Validate file type
+    if (!selectedFile.type.startsWith('image/')) {
+      alert('Please select an image file');
+      return;
     }
 
-    // Safely create object URL
-    try {
-      const objectURL = URL.createObjectURL(selectedFile);
-      setImageSrc(objectURL);
-      setObjectURLToRevoke(objectURL);
-      
-      if (cropEnabled) {
-        setShowCrop(true);
-        // Initialize crop area when image loads
-        const img = new Image();
-        img.onload = () => {
-          const canvas = canvasRef.current;
-          if (canvas) {
-            const ctx = canvas.getContext('2d');
-            if (ctx) {
-              // Set canvas size
-              const maxCanvasSize = 600;
-              const scale = Math.min(maxCanvasSize / img.width, maxCanvasSize / img.height);
-              canvas.width = img.width * scale;
-              canvas.height = img.height * scale;
-              
-              // Draw image
-              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-              
-              // Initialize crop area
-              const cropSize = Math.min(canvas.width, canvas.height) * 0.8;
-              setCropArea({
-                x: (canvas.width - cropSize) / 2,
-                y: (canvas.height - cropSize) / 2,
-                width: cropSize,
-                height: cropSize
-              });
-            }
-          }
-        };
-        img.src = objectURL;
-      }
-    } catch (err) {
-      console.error('Failed to create preview URL:', err);
-      setImageSrc(null);
+    // Validate file size (5MB limit)
+    if (selectedFile.size > 5 * 1024 * 1024) {
+      alert('File size must be less than 5MB');
+      return;
+    }
+
+    const objectURL = URL.createObjectURL(selectedFile);
+    setImageSrc(objectURL);
+    
+    if (cropEnabled) {
+      setShowCrop(true);
+    } else {
+      // If cropping is disabled, upload directly
+      uploadImage(selectedFile);
     }
   };
 
-  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!cropEnabled) return;
+  const onCropComplete = useCallback((croppedArea: Area, croppedAreaPixels: Area) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
+
+  const handleCropSave = async () => {
+    if (!imageSrc || !croppedAreaPixels) return;
     
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    // Check if click is within crop area
-    if (x >= cropArea.x && x <= cropArea.x + cropArea.width &&
-        y >= cropArea.y && y <= cropArea.y + cropArea.height) {
-      setIsDragging(true);
-      setDragStart({ x: x - cropArea.x, y: y - cropArea.y });
-      e.preventDefault();
-    }
-  }, [cropArea, cropEnabled]);
-
-  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDragging || !cropEnabled) return;
-
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    const newX = Math.max(0, Math.min(canvas.width - cropArea.width, x - dragStart.x));
-    const newY = Math.max(0, Math.min(canvas.height - cropArea.height, y - dragStart.y));
-
-    setCropArea(prev => ({ ...prev, x: newX, y: newY }));
-    e.preventDefault();
-  }, [isDragging, cropArea, dragStart, cropEnabled]);
-
-  const handleMouseUp = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (isDragging) {
-      setIsDragging(false);
-      e.preventDefault();
-    }
-  }, [isDragging]);
-
-  const handleMouseLeave = useCallback(() => {
-    if (isDragging) {
-      setIsDragging(false);
-    }
-  }, [isDragging]);
-
-  const handleCropResize = useCallback((direction: string, delta: number) => {
-    if (!cropEnabled) return;
-
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const newCropArea = { ...cropArea };
-    const minSize = 50;
-
-    switch (direction) {
-      case 'nw':
-        newCropArea.x = Math.max(0, newCropArea.x + delta);
-        newCropArea.y = Math.max(0, newCropArea.y + delta);
-        newCropArea.width = Math.max(minSize, newCropArea.width - delta);
-        newCropArea.height = Math.max(minSize, newCropArea.height - delta);
-        break;
-      case 'ne':
-        newCropArea.y = Math.max(0, newCropArea.y + delta);
-        newCropArea.width = Math.max(minSize, newCropArea.width + delta);
-        newCropArea.height = Math.max(minSize, newCropArea.height - delta);
-        break;
-      case 'sw':
-        newCropArea.x = Math.max(0, newCropArea.x + delta);
-        newCropArea.width = Math.max(minSize, newCropArea.width - delta);
-        newCropArea.height = Math.max(minSize, newCropArea.height + delta);
-        break;
-      case 'se':
-        newCropArea.width = Math.max(minSize, newCropArea.width + delta);
-        newCropArea.height = Math.max(minSize, newCropArea.height + delta);
-        break;
-    }
-
-    // Ensure crop area stays within canvas bounds
-    newCropArea.x = Math.min(newCropArea.x, canvas.width - newCropArea.width);
-    newCropArea.y = Math.min(newCropArea.y, canvas.height - newCropArea.height);
-
-    setCropArea(newCropArea);
-  }, [cropArea, cropEnabled]);
-
-  const applyCrop = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || !file) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Create a new canvas for the cropped image
-    const croppedCanvas = document.createElement('canvas');
-    const croppedCtx = croppedCanvas.getContext('2d');
-    if (!croppedCtx) return;
-
-    croppedCanvas.width = cropArea.width;
-    croppedCanvas.height = cropArea.height;
-
-    // Draw the cropped portion
-    croppedCtx.drawImage(
-      canvas,
-      cropArea.x, cropArea.y, cropArea.width, cropArea.height,
-      0, 0, cropArea.width, cropArea.height
-    );
-
-    // Convert to blob and upload
-    croppedCanvas.toBlob(async (blob) => {
-      if (!blob) return;
-
-      const croppedFile = new File([blob], file.name, { type: file.type });
+    setCropping(true);
+    try {
+      const croppedBlob = await getCroppedImg(imageSrc, croppedAreaPixels);
+      const croppedFile = new File([croppedBlob], 'cropped-image.jpg', { type: croppedBlob.type });
+      
+      // Create preview URL for the cropped image
+      const previewURL = URL.createObjectURL(croppedBlob);
+      setPreviewUrl(previewURL);
+      
       await uploadImage(croppedFile);
       setShowCrop(false);
-    }, file.type);
-  }, [cropArea, file]);
+      setImageSrc(null);
+    } catch (err) {
+      console.error('Crop failed:', err);
+      alert('Failed to crop image. Please try again.');
+    } finally {
+      setCropping(false);
+    }
+  };
+
+  const handleCropCancel = () => {
+    setShowCrop(false);
+    setImageSrc(null);
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+    setCroppedAreaPixels(null);
+    
+    // Clean up object URL
+    if (imageSrc) {
+      URL.revokeObjectURL(imageSrc);
+    }
+  };
 
   const uploadImage = async (imageFile: File) => {
     const storage = getStorage(app);
-    const storageRef = ref(storage, `project-images/${imageFile.name}`);
+    const timestamp = Date.now();
+    const fileName = `image-${timestamp}-${Math.random().toString(36).substring(2)}.jpg`;
+    const storageRef = ref(storage, `uploads/${fileName}`);
     const uploadTask = uploadBytesResumable(storageRef, imageFile);
 
     setUploading(true);
+    setUploadProgress(0);
 
     uploadTask.on(
       'state_changed',
@@ -248,54 +130,26 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
       (error) => {
         console.error('Upload error:', error);
         setUploading(false);
+        setUploadProgress(null);
+        alert('Upload failed. Please try again.');
       },
       () => {
         getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
           onImageUploaded(downloadURL);
           setUploading(false);
+          setUploadProgress(null);
         });
       }
     );
   };
 
-  const handleImageLoad = () => {
-    // Safe to revoke after image loaded
-    if (objectURLToRevoke) {
-      URL.revokeObjectURL(objectURLToRevoke);
-      setObjectURLToRevoke(null);
-    }
-  };
-
-  const cancelCrop = () => {
-    setShowCrop(false);
-    setCropArea({ x: 0, y: 0, width: 0, height: 0 });
-  };
-
-  const onCropComplete = useCallback((croppedArea: Area, croppedAreaPixels: Area) => {
-    setCroppedAreaPixels(croppedAreaPixels);
-  }, []);
-
-  const showCropper = !!imageSrc && cropEnabled;
-
-  const handleCropSave = async () => {
-    if (!imageSrc || !croppedAreaPixels) return;
-    setCropping(true);
-    try {
-      const croppedBlob = await getCroppedImg(imageSrc, croppedAreaPixels);
-      const croppedFile = new File([croppedBlob], imageName || 'cropped.jpg', { type: croppedBlob.type });
-      await uploadImage(croppedFile);
-      setShowCrop(false);
-      setImageSrc(null);
-      setFile(null);
-    } catch (err) {
-      console.error('Crop failed:', err);
-    } finally {
-      setCropping(false);
-    }
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
   };
 
   return (
     <div className="image-uploader">
+      {/* Hidden file input */}
       <input
         type="file"
         accept="image/*"
@@ -303,66 +157,118 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
         onChange={handleFileChange}
         style={{ display: 'none' }}
       />
+
+      {/* Upload button */}
       <button
         type="button"
-        onClick={() => fileInputRef.current?.click()}
-        className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-all duration-300 font-medium"
+        onClick={handleUploadClick}
+        disabled={uploading}
+        className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {imageSrc ? 'Change Image' : 'Upload Image'}
+        {uploading ? 'Uploading...' : placeholder}
       </button>
-      {showCropper && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
-          <div className="bg-white rounded-xl shadow-lg p-6 flex flex-col items-center max-w-full w-[90vw] max-h-[90vh]">
-            <div className="relative w-[80vw] max-w-[480px] h-[40vw] max-h-[360px] bg-gray-200 rounded-lg overflow-hidden flex items-center justify-center">
+
+      {/* Upload progress */}
+      {uploading && uploadProgress !== null && (
+        <div className="mt-4">
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div 
+              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${uploadProgress}%` }}
+            ></div>
+          </div>
+          <p className="text-sm text-gray-600 mt-2 text-center">
+            Uploading... {uploadProgress}%
+          </p>
+        </div>
+      )}
+
+      {/* Image preview */}
+      {previewUrl && !showCrop && (
+        <div className="mt-4">
+          <img 
+            src={previewUrl} 
+            alt="Preview" 
+            className="rounded-lg shadow-md max-h-48 w-auto object-cover"
+          />
+        </div>
+      )}
+
+      {/* Cropper Modal */}
+      {showCrop && imageSrc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            {/* Header */}
+            <div className="p-6 border-b border-gray-200">
+              <h3 className="heading-card text-center">
+                Crop Image
+              </h3>
+              <p className="body-medium text-center text-gray-600 mt-2">
+                Adjust the crop area and zoom to get the perfect image
+              </p>
+            </div>
+
+            {/* Cropper Container */}
+            <div className="relative w-full h-96 bg-gray-100">
               <Cropper
-                image={imageSrc || undefined}
+                image={imageSrc}
                 crop={crop}
                 zoom={zoom}
-                aspect={aspectRatio || 16 / 9}
+                aspect={aspectRatio}
                 onCropChange={setCrop}
                 onZoomChange={setZoom}
                 onCropComplete={onCropComplete}
                 cropShape="rect"
                 showGrid={true}
-                style={{ containerStyle: { width: '100%', height: '100%' } }}
+                style={{
+                  containerStyle: {
+                    width: '100%',
+                    height: '100%',
+                    backgroundColor: '#f3f4f6'
+                  }
+                }}
               />
             </div>
-            <div className="flex flex-col md:flex-row items-center gap-4 mt-6 w-full">
-              <input
-                type="range"
-                min={1}
-                max={3}
-                step={0.01}
-                value={zoom}
-                onChange={(e) => setZoom(Number(e.target.value))}
-                className="w-full md:w-48"
-              />
-              <button
-                type="button"
-                onClick={handleCropSave}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-300 font-medium"
-                disabled={cropping}
-              >
-                {cropping ? 'Saving...' : 'Save Crop'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowCrop(false)}
-                className="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition-all duration-300 font-medium"
-                disabled={cropping}
-              >
-                Cancel
-              </button>
+
+            {/* Controls */}
+            <div className="p-6 border-t border-gray-200">
+              {/* Zoom Control */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Zoom: {Math.round(zoom * 100)}%
+                </label>
+                <input
+                  type="range"
+                  min={1}
+                  max={3}
+                  step={0.01}
+                  value={zoom}
+                  onChange={(e) => setZoom(Number(e.target.value))}
+                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <button
+                  type="button"
+                  onClick={handleCropSave}
+                  disabled={cropping}
+                  className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {cropping ? 'Saving...' : 'Save Crop'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCropCancel}
+                  disabled={cropping}
+                  className="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-      {uploading && (
-        <div className="mt-2 text-sm text-gray-600">Uploading... {uploadProgress}%</div>
-      )}
-      {imageName && (
-        <div className="mt-4">
-          <img src={imageSrc || undefined} alt="Cover Preview" className="rounded-lg shadow-md max-h-48" />
         </div>
       )}
     </div>

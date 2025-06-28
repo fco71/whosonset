@@ -42,14 +42,14 @@ interface ProjectFormProps {
 }
 
 const SectionHeader = ({ title }: { title: string }) => (
-  <h3 className="col-span-full text-xl font-semibold text-white border-b border-gray-700 pb-2 mb-4 mt-8">
+  <h3 className="col-span-full text-xl font-semibold text-gray-900 border-b border-gray-200 pb-2 mb-4 mt-8">
     {title}
   </h3>
 );
 
 const ProjectForm: React.FC<ProjectFormProps> = (props) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 p-6 bg-gray-800 rounded-xl border border-gray-700">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
 
       <SectionHeader title="General Info" />
       <Input label="Project Name" value={props.projectName} onChange={props.setProjectName} />
@@ -77,7 +77,7 @@ const ProjectForm: React.FC<ProjectFormProps> = (props) => {
       <SectionHeader title="Images" />
       <div className="md:col-span-2 space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1">Cover Image</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Cover Image</label>
           <ImageUploader onImageUploaded={props.handleCoverImageUploaded} />
         </div>
         {/* Removed Poster Image uploader */}
@@ -95,9 +95,9 @@ const ProjectForm: React.FC<ProjectFormProps> = (props) => {
           type="checkbox"
           checked={props.isVerified}
           onChange={(e) => props.setIsVerified(e.target.checked)}
-          className="h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded"
+          className="h-4 w-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
         />
-        <label htmlFor="isVerified" className="text-sm text-gray-300">Is Verified</label>
+        <label htmlFor="isVerified" className="text-sm text-gray-700">Is Verified</label>
       </div>
     </div>
   );
@@ -116,12 +116,12 @@ const Input = ({
   type?: string;
 }) => (
   <div>
-    <label className="block text-sm font-medium text-gray-300 mb-1">{label}</label>
+    <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
     <input
       type={type}
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full bg-gray-900 text-white border border-gray-600 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
+      className="w-full bg-white text-gray-900 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
     />
   </div>
 );
@@ -137,12 +137,12 @@ const Textarea = ({
   onChange: (val: string) => void;
 }) => (
   <div className="md:col-span-2">
-    <label className="block text-sm font-medium text-gray-300 mb-1">{label}</label>
+    <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
     <textarea
       value={value}
       onChange={(e) => onChange(e.target.value)}
       rows={4}
-      className="w-full bg-gray-900 text-white border border-gray-600 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
+      className="w-full bg-white text-gray-900 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
     />
   </div>
 );
@@ -160,11 +160,11 @@ const Select = ({
   options: string[];
 }) => (
   <div>
-    <label className="block text-sm font-medium text-gray-300 mb-1">{label}</label>
+    <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full bg-gray-900 text-white border border-gray-600 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
+      className="w-full bg-white text-gray-900 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
     >
       {options.map((opt) => (
         <option key={opt} value={opt}>{opt}</option>

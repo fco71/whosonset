@@ -86,75 +86,81 @@ const AddProject: React.FC = () => {
   if (error) return <p>Error: {error.message}</p>;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-8 py-16">
-        {/* Header */}
-        <div className="text-center mb-12 animate-fade-in">
-          <h1 className="text-4xl font-light text-gray-900 mb-4 tracking-tight animate-slide-up">
-            Add New Project
-          </h1>
-          <p className="text-xl font-light text-gray-600 max-w-2xl mx-auto leading-relaxed animate-slide-up-delay">
-            Create and showcase your film industry project. Add details, team members, and share with the community.
-          </p>
+    <div className="min-h-screen bg-white">
+      {/* Hero Section */}
+      <div className="section-gradient border-b border-gray-100">
+        <div className="container-base section-padding-large">
+          <div className="text-center mb-16 animate-fade">
+            <h1 className="heading-primary mb-6 animate-slide">
+              Add New Project
+            </h1>
+            <p className="body-large max-w-2xl mx-auto animate-slide">
+              Create and showcase your film industry project. Add details, team members, and share with the community.
+            </p>
+          </div>
         </div>
+      </div>
 
-        {/* Form */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 animate-slide-up-delay">
-          <form onSubmit={handleSubmit} className="space-y-8">
-            <ProjectForm
-              projectName={projectName}
-              setProjectName={setProjectName}
-              country={country}
-              setCountry={setCountry}
-              productionCompany={productionCompany}
-              setProductionCompany={setProductionCompany}
-              status={status}
-              setStatus={setStatus}
-              logline={logline}
-              setLogline={setLogline}
-              synopsis={synopsis}
-              setSynopsis={setSynopsis}
-              startDate={startDate}
-              setStartDate={setStartDate}
-              endDate={endDate}
-              setEndDate={setEndDate}
-              location={location}
-              setLocation={setLocation}
-              genre={genre}
-              setGenre={setGenre}
-              director={director}
-              setDirector={setDirector}
-              producer={producer}
-              setProducer={setProducer}
-              coverImageUrl={coverImageUrl}
-              setCoverImageUrl={setCoverImageUrl}
-              projectWebsite={projectWebsite}
-              setProjectWebsite={setProjectWebsite}
-              productionBudget={productionBudget}
-              setProductionBudget={setProductionBudget}
-              productionCompanyContact={productionCompanyContact}
-              setProductionCompanyContact={setProductionCompanyContact}
-              isVerified={isVerified}
-              setIsVerified={setIsVerified}
-              handleCoverImageUploaded={handleCoverImageUploaded}
-            />
+      {/* Form Section */}
+      <div className="section-light">
+        <div className="container-narrow section-padding">
+          <div className="card-base p-8 animate-fade">
+            <form onSubmit={handleSubmit} className="space-y-8">
+              <ProjectForm
+                projectName={projectName}
+                setProjectName={setProjectName}
+                country={country}
+                setCountry={setCountry}
+                productionCompany={productionCompany}
+                setProductionCompany={setProductionCompany}
+                status={status}
+                setStatus={setStatus}
+                logline={logline}
+                setLogline={setLogline}
+                synopsis={synopsis}
+                setSynopsis={setSynopsis}
+                startDate={startDate}
+                setStartDate={setStartDate}
+                endDate={endDate}
+                setEndDate={setEndDate}
+                location={location}
+                setLocation={setLocation}
+                genre={genre}
+                setGenre={setGenre}
+                director={director}
+                setDirector={setDirector}
+                producer={producer}
+                setProducer={setProducer}
+                coverImageUrl={coverImageUrl}
+                setCoverImageUrl={setCoverImageUrl}
+                projectWebsite={projectWebsite}
+                setProjectWebsite={setProjectWebsite}
+                productionBudget={productionBudget}
+                setProductionBudget={setProductionBudget}
+                productionCompanyContact={productionCompanyContact}
+                setProductionCompanyContact={setProductionCompanyContact}
+                isVerified={isVerified}
+                setIsVerified={setIsVerified}
+                handleCoverImageUploaded={handleCoverImageUploaded}
+              />
 
-            <div className="flex flex-col sm:flex-row justify-end gap-4 pt-6 border-t border-gray-200">
-              <button
-                type="button"
-                onClick={handleCancel}
-                className="w-full sm:w-auto px-6 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-300 font-medium"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="w-full sm:w-auto px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-all duration-300 font-medium"
-              >
-                Add Project
-              </button>
-            </div>
-          </form>
+              <div className="flex flex-col sm:flex-row justify-end gap-4 pt-6 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={handleCancel}
+                  className="btn-secondary"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary"
+                >
+                  Add Project
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </div>

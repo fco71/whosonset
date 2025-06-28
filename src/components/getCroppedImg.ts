@@ -3,7 +3,7 @@
 
 import { Area } from 'react-easy-crop';
 
-export default async function getCroppedImg(imageSrc: string, crop: Area): Promise<Blob> {
+const getCroppedImg = async (imageSrc: string, crop: Area): Promise<Blob> => {
   return new Promise((resolve, reject) => {
     const image = new window.Image();
     image.crossOrigin = 'anonymous';
@@ -32,4 +32,6 @@ export default async function getCroppedImg(imageSrc: string, crop: Area): Promi
     };
     image.onerror = (err) => reject(err);
   });
-} 
+};
+
+export default getCroppedImg; 

@@ -77,19 +77,19 @@ const FavoritesPage: React.FC = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-8 py-16">
+      <div className="min-h-screen section-gray">
+        <div className="container-base section-padding">
           <div className="text-center">
             <div className="text-6xl mb-6">🔐</div>
-            <h2 className="text-2xl font-light text-gray-900 mb-4 tracking-wide">
+            <h2 className="heading-card mb-4">
               Sign in to view your favorites
             </h2>
-            <p className="text-lg font-light text-gray-600 max-w-md mx-auto leading-relaxed mb-8">
+            <p className="body-medium max-w-md mx-auto mb-8">
               Create an account or sign in to save and view your favorite projects
             </p>
             <Link 
               to="/login" 
-              className="inline-block px-8 py-4 bg-gray-900 text-white font-light tracking-wide rounded-lg hover:bg-gray-800 transition-all duration-300 hover:scale-105"
+              className="btn-primary"
             >
               Sign In
             </Link>
@@ -101,11 +101,11 @@ const FavoritesPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-8 py-16">
+      <div className="min-h-screen section-gray">
+        <div className="container-base section-padding">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
-            <p className="text-lg font-light text-gray-600">Loading your favorites...</p>
+            <p className="body-medium">Loading your favorites...</p>
           </div>
         </div>
       </div>
@@ -113,16 +113,16 @@ const FavoritesPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <div className="bg-gradient-to-br from-gray-50 to-white border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-8 py-24">
+      <div className="section-gradient border-b border-gray-100">
+        <div className="container-base section-padding-large">
           <div className="text-center mb-16">
             <div className="text-6xl mb-6">❤️</div>
-            <h1 className="text-4xl font-light text-gray-900 mb-4 tracking-wide">
+            <h1 className="heading-secondary mb-4">
               Your Favorite Projects
             </h1>
-            <p className="text-lg font-light text-gray-600 max-w-2xl mx-auto leading-relaxed">
+            <p className="body-medium max-w-2xl mx-auto">
               All the projects you've bookmarked for easy access
             </p>
           </div>
@@ -130,33 +130,33 @@ const FavoritesPage: React.FC = () => {
       </div>
 
       {/* Favorites Section */}
-      <div className="bg-gray-50">
-        <div className="max-w-7xl mx-auto px-8 py-16">
+      <div className="section-gray">
+        <div className="container-base section-padding">
           {favorites.length === 0 ? (
-            <div className="text-center py-24 animate-fade-in">
+            <div className="text-center py-24 animate-fade">
               <div className="text-8xl mb-8 opacity-20 animate-bounce-slow">💔</div>
-              <h3 className="text-2xl font-light text-gray-900 mb-4 tracking-wide">
+              <h3 className="heading-card mb-4">
                 No favorites yet
               </h3>
-              <p className="text-lg font-light text-gray-500 max-w-md mx-auto leading-relaxed mb-8">
+              <p className="body-medium max-w-md mx-auto mb-8">
                 Start exploring projects and bookmark the ones you like
               </p>
               <Link 
                 to="/projects" 
-                className="inline-block px-8 py-4 bg-gray-900 text-white font-light tracking-wide rounded-lg hover:bg-gray-800 transition-all duration-300 hover:scale-105"
+                className="btn-primary"
               >
                 Explore Projects
               </Link>
             </div>
           ) : (
             <>
-              <div className="mb-12 animate-fade-in">
-                <h3 className="text-3xl font-light text-gray-900 tracking-wide">
+              <div className="mb-12 animate-fade">
+                <h3 className="heading-tertiary">
                   {favorites.length} {favorites.length === 1 ? 'Favorite' : 'Favorites'}
                 </h3>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <div className="grid-cards">
                 {projects.map((project, index) => (
                   <div 
                     key={project.id}

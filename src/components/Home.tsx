@@ -86,23 +86,23 @@ const Home: React.FC = () => {
     return (
         <div className="min-h-screen bg-white">
             {/* Hero Section */}
-            <div className="bg-gradient-to-br from-gray-50 to-white border-b border-gray-100">
-                <div className="max-w-7xl mx-auto px-8 py-24">
-                    <div className="text-center mb-16 animate-fade-in">
-                        <h1 className="text-6xl font-light text-gray-900 mb-6 tracking-tight animate-slide-up">
+            <div className="section-gradient border-b border-gray-100">
+                <div className="container-base section-padding-large">
+                    <div className="text-center mb-16 animate-fade">
+                        <h1 className="heading-primary mb-6 animate-slide">
                             whosonset
                         </h1>
-                        <h2 className="text-4xl font-light text-gray-600 mb-8 tracking-wide animate-slide-up-delay">
+                        <h2 className="heading-secondary mb-8 animate-slide">
                             Film Industry Hub
                         </h2>
-                        <p className="text-xl font-light text-gray-500 max-w-2xl mx-auto leading-relaxed animate-slide-up-delay-2">
+                        <p className="body-large max-w-2xl mx-auto animate-slide">
                             Discover the latest movie productions and the talented crews behind them. 
                             Connect with industry professionals and explore creative opportunities.
                         </p>
-                        <div className="mt-12 animate-slide-up-delay-2">
+                        <div className="mt-12 animate-slide">
                             <Link 
                                 to="/projects" 
-                                className="inline-block px-8 py-4 bg-gray-900 text-white font-light tracking-wide rounded-lg hover:bg-gray-800 transition-all duration-300 hover:scale-105"
+                                className="btn-primary"
                             >
                                 Explore Projects
                             </Link>
@@ -112,26 +112,26 @@ const Home: React.FC = () => {
             </div>
 
             {/* Recent Projects Section */}
-            <div className="bg-gray-50">
-                <div className="max-w-7xl mx-auto px-8 py-16">
-                    <div className="mb-12 animate-fade-in">
-                        <h3 className="text-3xl font-light text-gray-900 tracking-wide">
+            <div className="section-gray">
+                <div className="container-base section-padding">
+                    <div className="mb-12 animate-fade">
+                        <h3 className="heading-tertiary">
                             Recent Projects
                         </h3>
                     </div>
 
                     {projects.length === 0 ? (
-                        <div className="text-center py-24 animate-fade-in">
+                        <div className="text-center py-24 animate-fade">
                             <div className="text-8xl mb-8 opacity-20 animate-bounce-slow">🎬</div>
-                            <h3 className="text-2xl font-light text-gray-900 mb-4 tracking-wide">
+                            <h3 className="heading-card mb-4">
                                 No projects yet
                             </h3>
-                            <p className="text-lg font-light text-gray-500 max-w-md mx-auto leading-relaxed">
+                            <p className="body-medium max-w-md mx-auto">
                                 Be the first to add a project to the platform
                             </p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        <div className="grid-cards">
                             {projects.map((project, index) => (
                                 <div 
                                     key={project.id}
@@ -155,10 +155,10 @@ const Home: React.FC = () => {
                     )}
 
                     {projects.length > 0 && (
-                        <div className="text-center mt-12 animate-fade-in-delay">
+                        <div className="text-center mt-12 animate-fade">
                             <Link 
                                 to="/projects" 
-                                className="inline-block px-6 py-3 text-gray-600 font-light tracking-wide hover:text-gray-900 transition-all duration-300 hover:scale-105"
+                                className="btn-secondary"
                             >
                                 View All Projects →
                             </Link>
@@ -168,52 +168,49 @@ const Home: React.FC = () => {
             </div>
 
             {/* Social Features Promotion Section */}
-            <div className="bg-white border-b border-gray-100">
-                <div className="max-w-7xl mx-auto px-8 py-16">
-                    <div className="text-center mb-12 animate-fade-in">
+            <div className="section-light border-b border-gray-100">
+                <div className="container-base section-padding">
+                    <div className="text-center mb-12 animate-fade">
                         <div className="text-6xl mb-6">🤝</div>
-                        <h3 className="text-3xl font-light text-gray-900 tracking-wide mb-4">
+                        <h3 className="heading-tertiary mb-4">
                             Connect with Industry Professionals
                         </h3>
-                        <p className="text-lg font-light text-gray-600 max-w-2xl mx-auto leading-relaxed">
+                        <p className="body-medium max-w-2xl mx-auto">
                             Build your network, discover talented crew members, and stay updated with industry activities
                         </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+                    <div className="grid-features mb-12">
                         <div className="text-center p-6 rounded-xl bg-gray-50 hover:bg-gray-100 transition-all duration-300">
                             <div className="text-4xl mb-4">👥</div>
-                            <h4 className="text-xl font-light text-gray-900 mb-3 tracking-wide">Follow & Connect</h4>
-                            <p className="text-gray-600 font-light leading-relaxed">
+                            <h4 className="heading-card mb-3">Follow & Connect</h4>
+                            <p className="body-medium">
                                 Send follow requests to professionals you admire and build meaningful connections
                             </p>
                         </div>
                         <div className="text-center p-6 rounded-xl bg-gray-50 hover:bg-gray-100 transition-all duration-300">
                             <div className="text-4xl mb-4">💬</div>
-                            <h4 className="text-xl font-light text-gray-900 mb-3 tracking-wide">Direct Messaging</h4>
-                            <p className="text-gray-600 font-light leading-relaxed">
+                            <h4 className="heading-card mb-3">Direct Messaging</h4>
+                            <p className="body-medium">
                                 Message your followers directly to discuss projects, opportunities, and collaborations
                             </p>
                         </div>
                         <div className="text-center p-6 rounded-xl bg-gray-50 hover:bg-gray-100 transition-all duration-300">
                             <div className="text-4xl mb-4">📢</div>
-                            <h4 className="text-xl font-light text-gray-900 mb-3 tracking-wide">Activity Feed</h4>
-                            <p className="text-gray-600 font-light leading-relaxed">
-                                Stay updated with industry news, project updates, and professional achievements
+                            <h4 className="heading-card mb-3">Activity Feed</h4>
+                            <p className="body-medium">
+                                Stay updated with the latest activities and announcements from your network
                             </p>
                         </div>
                     </div>
 
-                    <div className="text-center animate-fade-in-delay">
+                    <div className="text-center animate-fade">
                         <Link 
                             to="/social" 
-                            className="inline-block px-8 py-4 bg-gray-900 text-white font-light tracking-wide rounded-lg hover:bg-gray-800 transition-all duration-300 hover:scale-105"
+                            className="btn-primary"
                         >
-                            Explore Social Hub
+                            Join the Community
                         </Link>
-                        <p className="text-sm text-gray-500 mt-4 font-light">
-                            Discover professionals • Send follow requests • Build your network
-                        </p>
                     </div>
                 </div>
             </div>

@@ -42,21 +42,21 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
     switch (rawStatus.toLowerCase()) {
       case 'in production':
       case 'production':
-        return 'bg-green-100 text-green-800';
+        return 'badge-success';
       case 'pre-production':
       case 'pre_production':
-        return 'bg-blue-100 text-blue-800';
+        return 'badge-info';
       case 'post-production':
       case 'post_production':
-        return 'bg-purple-100 text-purple-800';
+        return 'badge-purple';
       case 'development':
-        return 'bg-orange-100 text-orange-800';
+        return 'badge-orange';
       case 'completed':
-        return 'bg-green-100 text-green-800';
+        return 'badge-success';
       case 'cancelled':
-        return 'bg-red-100 text-red-800';
+        return 'badge-error';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'badge-gray';
     }
   };
 
@@ -77,7 +77,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
 
   return (
     <div
-      className="group bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden h-96 flex flex-col animate-card-entrance hover:scale-[1.02] relative cursor-pointer"
+      className="group card-base card-hover h-96 flex flex-col animate-entrance relative cursor-pointer"
       onClick={handleCardClick}
       tabIndex={0}
       role="button"
@@ -106,12 +106,12 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
       )}
 
       {/* Image Section - Fixed Height */}
-      <div className="h-48 overflow-hidden flex-shrink-0">
+      <div className="h-48 card-image-container">
         {coverImageUrl ? (
           <img
             src={coverImageUrl}
             alt={projectName}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            className="card-image"
             onError={(e) => {
               (e.target as HTMLImageElement).src = '/movie-production-avatar.svg';
             }}
@@ -128,15 +128,15 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
       </div>
 
       {/* Content Section - Flexible Height */}
-      <div className="p-6 flex-1 flex flex-col">
+      <div className="card-padding flex-1 flex flex-col">
         {/* Project Name */}
-        <h3 className="text-xl font-light text-gray-900 mb-3 tracking-wide group-hover:text-gray-700 transition-colors">
+        <h3 className="heading-card mb-3 group-hover:text-gray-700 transition-colors">
           {projectName}
         </h3>
 
         {/* Company & Location */}
         {(productionCompany || country) && (
-          <p className="text-sm font-medium text-gray-500 mb-3 tracking-wider uppercase">
+          <p className="body-small mb-3">
             {productionCompany && country ? `${productionCompany} • ${country}` : productionCompany || country}
           </p>
         )}
@@ -145,12 +145,12 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
         {showDetails && (director || producer) && (
           <div className="space-y-1 mb-3">
             {director && (
-              <p className="text-sm text-gray-600">
+              <p className="meta-text">
                 <span className="font-medium">Director:</span> {director}
               </p>
             )}
             {producer && (
-              <p className="text-sm text-gray-600">
+              <p className="meta-text">
                 <span className="font-medium">Producer:</span> {producer}
               </p>
             )}
@@ -170,13 +170,13 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
             {genres.slice(0, 3).map((genre, index) => (
               <span
                 key={index}
-                className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full font-medium"
+                className="badge-base badge-gray"
               >
                 {genre}
               </span>
             ))}
             {genres.length > 3 && (
-              <span className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full font-medium">
+              <span className="badge-base badge-gray">
                 +{genres.length - 3}
               </span>
             )}
@@ -185,7 +185,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
 
         {/* Bottom Section - Status Badge */}
         <div className="mt-auto">
-          <span className={`inline-block px-3 py-1 text-sm font-medium rounded-full tracking-wider ${getStatusBadgeColor(status)}`}>
+          <span className={`badge-base ${getStatusBadgeColor(status)}`}>
             {formatStatus(status)}
           </span>
         </div>

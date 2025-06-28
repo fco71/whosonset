@@ -3,6 +3,166 @@
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
 
+/* ===== DESIGN SYSTEM ===== */
+/* 
+  Consistent design tokens for the entire application
+  These ensure visual harmony across all components
+*/
+
+/* Card Design System */
+.card-base {
+  @apply bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden;
+}
+
+.card-hover {
+  @apply hover:scale-[1.02] group-hover:scale-[1.02];
+}
+
+.card-padding {
+  @apply p-6;
+}
+
+.card-image-container {
+  @apply relative overflow-hidden flex-shrink-0;
+}
+
+.card-image {
+  @apply w-full h-full object-cover group-hover:scale-105 transition-transform duration-500;
+}
+
+/* Section Background System */
+.section-light {
+  @apply bg-white;
+}
+
+.section-gray {
+  @apply bg-gray-50;
+}
+
+.section-gradient {
+  @apply bg-gradient-to-br from-gray-50 to-white;
+}
+
+/* Container System */
+.container-base {
+  @apply max-w-7xl mx-auto px-8;
+}
+
+.container-narrow {
+  @apply max-w-4xl mx-auto px-8;
+}
+
+.section-padding {
+  @apply py-16;
+}
+
+.section-padding-large {
+  @apply py-24;
+}
+
+/* Typography System */
+.heading-primary {
+  @apply text-6xl font-light text-gray-900 tracking-tight;
+}
+
+.heading-secondary {
+  @apply text-4xl font-light text-gray-600 tracking-wide;
+}
+
+.heading-tertiary {
+  @apply text-3xl font-light text-gray-900 tracking-wide;
+}
+
+.heading-card {
+  @apply text-xl font-light text-gray-900 tracking-wide;
+}
+
+.body-large {
+  @apply text-xl font-light text-gray-500 leading-relaxed;
+}
+
+.body-medium {
+  @apply text-lg font-light text-gray-600 leading-relaxed;
+}
+
+.body-small {
+  @apply text-sm font-medium text-gray-500 tracking-wider uppercase;
+}
+
+.meta-text {
+  @apply text-sm text-gray-600;
+}
+
+/* Badge System */
+.badge-base {
+  @apply inline-block px-3 py-1 text-sm font-medium rounded-full tracking-wider;
+}
+
+.badge-success {
+  @apply bg-green-100 text-green-800;
+}
+
+.badge-warning {
+  @apply bg-yellow-100 text-yellow-800;
+}
+
+.badge-error {
+  @apply bg-red-100 text-red-800;
+}
+
+.badge-info {
+  @apply bg-blue-100 text-blue-800;
+}
+
+.badge-purple {
+  @apply bg-purple-100 text-purple-800;
+}
+
+.badge-orange {
+  @apply bg-orange-100 text-orange-800;
+}
+
+.badge-gray {
+  @apply bg-gray-100 text-gray-800;
+}
+
+/* Button System */
+.btn-primary {
+  @apply inline-block px-8 py-4 bg-gray-900 text-white font-light tracking-wide rounded-lg hover:bg-gray-800 transition-all duration-300 hover:scale-105;
+}
+
+.btn-secondary {
+  @apply inline-block px-6 py-3 text-gray-600 font-light tracking-wide hover:text-gray-900 transition-all duration-300 hover:scale-105;
+}
+
+.btn-card {
+  @apply inline-flex items-center px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-all duration-300 hover:scale-105;
+}
+
+/* Grid System */
+.grid-cards {
+  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8;
+}
+
+.grid-features {
+  @apply grid grid-cols-1 md:grid-cols-3 gap-8;
+}
+
+/* Animation System */
+.animate-entrance {
+  @apply animate-card-entrance;
+}
+
+.animate-fade {
+  @apply animate-fade-in;
+}
+
+.animate-slide {
+  @apply animate-slide-up;
+}
+
+/* ===== END DESIGN SYSTEM ===== */
+
 /* Base styles */
 * {
   box-sizing: border-box;
@@ -418,3 +578,55 @@ select::-webkit-scrollbar-thumb:hover {
 .stagger-6 { animation-delay: 0.6s; }
 .stagger-7 { animation-delay: 0.7s; }
 .stagger-8 { animation-delay: 0.8s; }
+
+/* Custom Slider Styles for Image Cropper */
+.slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.slider::-webkit-slider-track {
+  background: #e5e7eb;
+  height: 8px;
+  border-radius: 4px;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  background: #3b82f6;
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.slider::-webkit-slider-thumb:hover {
+  background: #2563eb;
+  transform: scale(1.1);
+}
+
+.slider::-moz-range-track {
+  background: #e5e7eb;
+  height: 8px;
+  border-radius: 4px;
+  border: none;
+}
+
+.slider::-moz-range-thumb {
+  background: #3b82f6;
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.slider::-moz-range-thumb:hover {
+  background: #2563eb;
+}

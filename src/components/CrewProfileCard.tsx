@@ -55,13 +55,13 @@ const CrewProfileCard: React.FC<CrewProfileCardProps> = ({
   const getAvailabilityColor = (availability: string) => {
     switch (availability.toLowerCase()) {
       case 'available':
-        return 'bg-green-100 text-green-800';
+        return 'badge-success';
       case 'soon':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'badge-warning';
       case 'unavailable':
-        return 'bg-red-100 text-red-800';
+        return 'badge-error';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'badge-gray';
     }
   };
 
@@ -71,14 +71,14 @@ const CrewProfileCard: React.FC<CrewProfileCardProps> = ({
 
   return (
     <div 
-      className={`group bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden animate-card-entrance hover:scale-[1.02] ${isFiltering ? 'opacity-50 scale-95' : 'opacity-100 scale-100'}`}
+      className={`group card-base card-hover animate-entrance ${isFiltering ? 'opacity-50 scale-95' : 'opacity-100 scale-100'}`}
       style={{ animationDelay: `${index * 0.1}s` }}
     >
-      <div className="relative h-48 overflow-hidden flex-shrink-0">
+      <div className="h-48 card-image-container">
         <img 
           src={profile.profileImageUrl || "/default-avatar.png"} 
           alt={profile.name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          className="card-image"
           onError={(e) => {
             const target = e.target as HTMLImageElement;
             target.src = "/default-avatar.png";
@@ -112,27 +112,27 @@ const CrewProfileCard: React.FC<CrewProfileCardProps> = ({
         {/* Availability Badge */}
         {profile.availability && (
           <div className="absolute bottom-3 left-3">
-            <span className={`inline-block px-3 py-1 text-xs font-medium rounded-full tracking-wider ${getAvailabilityColor(profile.availability)}`}>
+            <span className={`badge-base ${getAvailabilityColor(profile.availability)}`}>
               {profile.availability}
             </span>
           </div>
         )}
       </div>
 
-      <div className="p-6">
+      <div className="card-padding">
         <div className="mb-4">
-          <h3 className="text-xl font-light text-gray-900 mb-2 tracking-wide group-hover:text-gray-700 transition-colors">
+          <h3 className="heading-card mb-2 group-hover:text-gray-700 transition-colors">
             {profile.name}
           </h3>
-          <p className="text-lg font-medium text-gray-600 mb-1 tracking-wide">
+          <p className="body-medium mb-1">
             {primaryJobTitle}
           </p>
-          <p className="text-sm text-gray-500 tracking-wider uppercase">
+          <p className="body-small">
             {profile.jobTitles?.[0]?.department || 'Film & TV'}
           </p>
         </div>
 
-        <div className="flex items-center mb-4 text-sm text-gray-600">
+        <div className="flex items-center mb-4 meta-text">
           <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -151,13 +151,13 @@ const CrewProfileCard: React.FC<CrewProfileCardProps> = ({
             {profile.languages.slice(0, 3).map((language, index) => (
               <span
                 key={index}
-                className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full font-medium"
+                className="badge-base badge-gray"
               >
                 {language}
               </span>
             ))}
             {profile.languages.length > 3 && (
-              <span className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full font-medium">
+              <span className="badge-base badge-gray">
                 +{profile.languages.length - 3} more
               </span>
             )}
@@ -167,7 +167,7 @@ const CrewProfileCard: React.FC<CrewProfileCardProps> = ({
         <div className="flex justify-between items-center">
           <Link
             to={`/crew/${profile.uid}`}
-            className="text-sm font-medium text-gray-900 hover:text-gray-700 transition-colors tracking-wide"
+            className="meta-text font-medium text-gray-900 hover:text-gray-700 transition-colors"
           >
             View Profile →
           </Link>
@@ -175,7 +175,7 @@ const CrewProfileCard: React.FC<CrewProfileCardProps> = ({
           {user && currentUserId && currentUserId !== profile.uid && (
             <Link
               to={`/social?tab=messaging&user=${profile.uid}`}
-              className="inline-flex items-center px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-all duration-300 hover:scale-105"
+              className="btn-card"
             >
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
