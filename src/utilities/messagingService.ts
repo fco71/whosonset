@@ -213,8 +213,6 @@ export class MessagingService {
     callback: (messages: DirectMessage[]) => void
   ): () => void {
     try {
-      console.log('[MessagingService] Setting up conversation listener between', userId1, 'and', userId2);
-      
       const listenerKey = `conversation_${userId1}_${userId2}`;
       
       // Clean up existing listener
@@ -259,8 +257,6 @@ export class MessagingService {
               timestamp
             };
           }) as DirectMessage[];
-          
-          console.log('[MessagingService] Conversation updated:', messages.length, 'messages');
           
           // Update cache
           const cacheKey = `${userId1}_${userId2}`;
@@ -434,8 +430,6 @@ export class MessagingService {
 
   static async addMessageReaction(messageId: string, userId: string, userName: string, emoji: string): Promise<void> {
     try {
-      console.log('[MessagingService] Adding reaction to message:', messageId, 'emoji:', emoji);
-      
       const messageRef = doc(db, 'directMessages', messageId);
       const messageDoc = await getDoc(messageRef);
       
@@ -465,7 +459,6 @@ export class MessagingService {
       }
       
       await updateDoc(messageRef, { reactions });
-      console.log('[MessagingService] Reaction updated successfully');
     } catch (error) {
       console.error('Error adding message reaction:', error);
       throw error;
