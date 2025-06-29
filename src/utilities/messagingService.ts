@@ -53,7 +53,7 @@ export class MessagingService {
     senderId: string, 
     receiverId: string, 
     content: string, 
-    messageType: 'text' | 'image' | 'file' | 'project_invite' = 'text', 
+    messageType: 'text' | 'image' | 'file' | 'voice' | 'project_invite' = 'text', 
     relatedProjectId?: string
   ): Promise<string> {
     try {

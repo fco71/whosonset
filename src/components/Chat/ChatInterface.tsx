@@ -6,23 +6,32 @@ import './ChatInterface.scss';
 import { collection, getDocs, where, limit, query as firestoreQuery } from 'firebase/firestore';
 import { db } from '../../firebase';
 
-// Create a completely independent message input component
+// Create a completely independent message input component with rich features
 const MessageInput = React.forwardRef<{
-  setSendCallback: (callback: (message: string) => void) => void;
+  setSendCallback: (callback: (message: string, type?: string, file?: File) => void) => void;
   setCurrentUser: (userId: string) => void;
   setSelectedUser: (userId: string | null) => void;
   setSendingState: (isSending: boolean) => void;
 }, {}>((props, ref) => {
   const inputRef = useRef<HTMLInputElement>(null);
-  const sendCallbackRef = useRef<((message: string) => void) | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const voiceRecorderRef = useRef<HTMLButtonElement>(null);
+  const sendCallbackRef = useRef<((message: string, type?: string, file?: File) => void) | null>(null);
   const currentUserIdRef = useRef<string>('');
   const selectedUserRef = useRef<string | null>(null);
   const sendingRef = useRef<boolean>(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isTypingRef = useRef<boolean>(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [dragOver, setDragOver] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordingChunksRef = useRef<Blob[]>([]);
+  const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   // Expose methods to parent component
-  const setSendCallback = useCallback((callback: (message: string) => void) => {
+  const setSendCallback = useCallback((callback: (message: string, type?: string, file?: File) => void) => {
     sendCallbackRef.current = callback;
   }, []);
   
@@ -48,6 +57,108 @@ const MessageInput = React.forwardRef<{
     setSelectedUser,
     setSendingState
   }), [setSendCallback, setCurrentUser, setSelectedUser, setSendingState]);
+
+  // Emoji picker
+  const emojis = ['😀', '😂', '😍', '🤔', '👍', '❤️', '🎉', '🔥', '💯', '👏', '🙏', '😎', '🤝', '💪', '🚀', '⭐'];
+  
+  const addEmoji = useCallback((emoji: string) => {
+    if (inputRef.current) {
+      const start = inputRef.current.selectionStart || 0;
+      const end = inputRef.current.selectionEnd || 0;
+      const value = inputRef.current.value;
+      const newValue = value.substring(0, start) + emoji + value.substring(end);
+      inputRef.current.value = newValue;
+      inputRef.current.selectionStart = inputRef.current.selectionEnd = start + emoji.length;
+      inputRef.current.focus();
+    }
+    setShowEmojiPicker(false);
+  }, []);
+
+  // File handling
+  const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && sendCallbackRef.current) {
+      sendCallbackRef.current('', 'file', file);
+      event.target.value = '';
+    }
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0 && sendCallbackRef.current) {
+      sendCallbackRef.current('', 'file', files[0]);
+    }
+  }, []);
+
+  // Voice recording
+  const startRecording = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      recordingChunksRef.current = [];
+      
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          recordingChunksRef.current.push(event.data);
+        }
+      };
+      
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(recordingChunksRef.current, { type: 'audio/wav' });
+        const audioFile = new File([audioBlob], 'voice-message.wav', { type: 'audio/wav' });
+        if (sendCallbackRef.current) {
+          sendCallbackRef.current('', 'voice', audioFile);
+        }
+        stream.getTracks().forEach(track => track.stop());
+      };
+      
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingTime(0);
+      
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+      
+    } catch (error) {
+      console.error('Error starting recording:', error);
+    }
+  }, []);
+
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+      }
+    }
+  }, [isRecording]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+      }
+      if (mediaRecorderRef.current && isRecording) {
+        mediaRecorderRef.current.stop();
+      }
+    };
+  }, [isRecording]);
   
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (!isTypingRef.current && selectedUserRef.current) {
@@ -80,7 +191,7 @@ const MessageInput = React.forwardRef<{
     
     // Send the message via callback
     if (sendCallbackRef.current) {
-      sendCallbackRef.current(messageContent);
+      sendCallbackRef.current(messageContent, 'text');
     }
   }, []);
 
@@ -91,23 +202,108 @@ const MessageInput = React.forwardRef<{
     }
   }, [handleSend]);
 
+  const formatRecordingTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   return (
-    <div className="message-input">
-      <input
-        ref={inputRef}
-        type="text"
-        onChange={handleInputChange}
-        onKeyPress={handleKeyPress}
-        placeholder="Type a message..."
-        className="message-input-field"
-      />
-      <button
-        onClick={handleSend}
-        disabled={sendingRef.current}
-        className="send-button"
-      >
-        {sendingRef.current ? 'Sending...' : 'Send'}
-      </button>
+    <div className={`message-input ${dragOver ? 'drag-over' : ''}`} 
+         onDragOver={handleDragOver} 
+         onDragLeave={handleDragLeave} 
+         onDrop={handleDrop}>
+      
+      {/* Drag overlay */}
+      {dragOver && (
+        <div className="drag-overlay">
+          <div className="drag-message">
+            <span>📎 Drop file to send</span>
+          </div>
+        </div>
+      )}
+
+      {/* Emoji picker */}
+      {showEmojiPicker && (
+        <div className="emoji-picker">
+          {emojis.map((emoji, index) => (
+            <button
+              key={index}
+              onClick={() => addEmoji(emoji)}
+              className="emoji-button"
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Input toolbar */}
+      <div className="input-toolbar">
+        <button
+          onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+          className="toolbar-button emoji-button"
+          title="Add emoji"
+        >
+          😀
+        </button>
+        
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          className="toolbar-button"
+          title="Attach file"
+        >
+          📎
+        </button>
+        
+        <input
+          ref={fileInputRef}
+          type="file"
+          onChange={handleFileSelect}
+          style={{ display: 'none' }}
+          accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt"
+        />
+        
+        <button
+          ref={voiceRecorderRef}
+          onClick={isRecording ? stopRecording : startRecording}
+          className={`toolbar-button voice-button ${isRecording ? 'recording' : ''}`}
+          title={isRecording ? 'Stop recording' : 'Record voice message'}
+        >
+          {isRecording ? '⏹️' : '🎤'}
+        </button>
+      </div>
+
+      {/* Recording indicator */}
+      {isRecording && (
+        <div className="recording-indicator">
+          <div className="recording-dot"></div>
+          <span>Recording... {formatRecordingTime(recordingTime)}</span>
+          <button onClick={stopRecording} className="stop-recording">
+            Stop
+          </button>
+        </div>
+      )}
+
+      {/* Main input */}
+      <div className="input-container">
+        <input
+          ref={inputRef}
+          type="text"
+          onChange={handleInputChange}
+          onKeyPress={handleKeyPress}
+          placeholder="Type a message..."
+          className="message-input-field"
+          disabled={sendingRef.current}
+        />
+        <button
+          onClick={handleSend}
+          disabled={sendingRef.current}
+          className="send-button"
+        >
+          {sendingRef.current ? 'Sending...' : 'Send'}
+        </button>
+      </div>
     </div>
   );
 });
@@ -159,7 +355,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const messageListenerRef = useRef<(() => void) | null>(null);
   const typingListenerRef = useRef<(() => void) | null>(null);
   const messageInputRef = useRef<{
-    setSendCallback: (callback: (message: string) => void) => void;
+    setSendCallback: (callback: (message: string, type?: string, file?: File) => void) => void;
     setCurrentUser: (userId: string) => void;
     setSelectedUser: (userId: string | null) => void;
     setSendingState: (isSending: boolean) => void;
@@ -480,28 +676,53 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   };
 
   // Send message function - memoized with useCallback
-  const sendMessage = useCallback(async (messageContent: string) => {
+  const sendMessage = useCallback(async (messageContent: string, messageType: string = 'text', file?: File) => {
     if (!selectedUser || sending) return;
 
     setSending(true);
 
     try {
+      let content = messageContent;
+      let type = messageType as 'text' | 'image' | 'file' | 'voice' | 'project_invite';
+
+      // Handle file uploads
+      if (file) {
+        if (file.type.startsWith('image/')) {
+          type = 'image';
+          content = `📷 ${file.name}`;
+        } else if (file.type.startsWith('audio/') || file.type.startsWith('video/')) {
+          type = file.type.startsWith('audio/') ? 'voice' : 'file';
+          content = `${file.type.startsWith('audio/') ? '🎤' : '🎥'} ${file.name}`;
+        } else {
+          type = 'file';
+          content = `📎 ${file.name}`;
+        }
+        
+        // TODO: Upload file to Firebase Storage and get URL
+        // For now, we'll just send the file name
+        console.log('File to upload:', file.name, file.type, file.size);
+      }
+
       // Optimistically add message to UI
       const optimisticMessage: DirectMessage = {
         id: `temp_${Date.now()}`,
         senderId: currentUserId,
         receiverId: selectedUser,
-        content: messageContent,
+        content,
         timestamp: new Date(),
         isRead: false,
-        messageType: 'text',
-        status: 'sending'
+        messageType: type,
+        status: 'sending',
+        fileUrl: file ? URL.createObjectURL(file) : undefined,
+        fileName: file?.name,
+        fileSize: file?.size,
+        fileType: file?.type
       };
 
       setMessages(prev => [...prev, optimisticMessage]);
 
       // Send actual message
-      await MessagingService.sendDirectMessage(currentUserId, selectedUser, messageContent);
+      await MessagingService.sendDirectMessage(currentUserId, selectedUser, content, type);
       
       // Update optimistic message status
       setMessages(prev => prev.map(msg => 
@@ -841,7 +1062,72 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     className={`message ${message.senderId === currentUserId ? 'sent' : 'received'}`}
                   >
                     <div className="message-content">
-                      <p className="message-text">{message.content}</p>
+                      {/* Message content based on type */}
+                      {message.messageType === 'image' && message.fileUrl ? (
+                        <div className="message-image">
+                          <img 
+                            src={message.fileUrl} 
+                            alt={message.fileName || 'Image'} 
+                            className="message-image-content"
+                            onClick={() => window.open(message.fileUrl, '_blank')}
+                          />
+                          {message.content && <p className="image-caption">{message.content}</p>}
+                        </div>
+                      ) : message.messageType === 'file' ? (
+                        <div className="message-file">
+                          <div className="file-info">
+                            <div className="file-icon">📎</div>
+                            <div className="file-details">
+                              <div className="file-name">{message.fileName || 'File'}</div>
+                              {message.fileSize && (
+                                <div className="file-size">
+                                  {(message.fileSize / 1024 / 1024).toFixed(1)} MB
+                                </div>
+                              )}
+                            </div>
+                            <button 
+                              className="file-download"
+                              onClick={() => message.fileUrl && window.open(message.fileUrl, '_blank')}
+                            >
+                              📥
+                            </button>
+                          </div>
+                          {message.content && <p className="file-caption">{message.content}</p>}
+                        </div>
+                      ) : message.messageType === 'voice' ? (
+                        <div className="message-voice">
+                          <div className="voice-player">
+                            <button className="play-button">▶️</button>
+                            <div className="voice-waveform">
+                              {message.voiceWaveform ? (
+                                message.voiceWaveform.map((height, index) => (
+                                  <div 
+                                    key={index} 
+                                    className="waveform-bar"
+                                    style={{ height: `${height}%` }}
+                                  />
+                                ))
+                              ) : (
+                                <div className="voice-placeholder">
+                                  {Array.from({ length: 20 }, (_, i) => (
+                                    <div key={i} className="waveform-bar" />
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            <div className="voice-duration">
+                              {message.voiceDuration ? 
+                                `${Math.floor(message.voiceDuration / 60)}:${(message.voiceDuration % 60).toString().padStart(2, '0')}` : 
+                                '0:00'
+                              }
+                            </div>
+                          </div>
+                          {message.content && <p className="voice-caption">{message.content}</p>}
+                        </div>
+                      ) : (
+                        <p className="message-text">{message.content}</p>
+                      )}
+                      
                       <div className="message-meta">
                         <span className="message-time">{formatTime(message.timestamp)}</span>
                         {message.senderId === currentUserId && (
@@ -874,19 +1160,18 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                           })}
                         </div>
                       )}
-                    </div>
-                    
-                    {/* Reaction Buttons */}
-                    <div className="reaction-buttons">
-                      {['👍', '❤️', '😊', '🎉'].map((emoji) => (
-                        <button
-                          key={emoji}
-                          onClick={getReactionHandler(message.id, emoji)}
-                          className="reaction-option"
-                        >
-                          {emoji}
-                        </button>
-                      ))}
+                      {/* Reaction Buttons - moved inside message-content */}
+                      <div className="reaction-buttons">
+                        {['👍', '❤️', '😊', '🎉'].map((emoji) => (
+                          <button
+                            key={emoji}
+                            onClick={getReactionHandler(message.id, emoji)}
+                            className="reaction-option"
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 ))}

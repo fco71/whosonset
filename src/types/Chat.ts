@@ -5,7 +5,7 @@ export interface Message {
   content: string;
   timestamp: Date;
   isRead: boolean;
-  messageType: 'text' | 'image' | 'file' | 'project_invite';
+  messageType: 'text' | 'image' | 'file' | 'voice' | 'project_invite';
   relatedProjectId?: string;
 }
 
@@ -26,7 +26,7 @@ export interface ChatMessage {
   content: string;
   timestamp: Date;
   isRead: boolean;
-  messageType: 'text' | 'image' | 'file' | 'project_invite';
+  messageType: 'text' | 'image' | 'file' | 'voice' | 'project_invite';
   relatedProjectId?: string;
 }
 
@@ -37,10 +37,16 @@ export interface DirectMessage {
   content: string;
   timestamp: Date;
   isRead: boolean;
-  messageType: 'text' | 'image' | 'file' | 'project_invite';
+  messageType: 'text' | 'image' | 'file' | 'voice' | 'project_invite';
   relatedProjectId?: string;
   reactions?: MessageReaction[];
   status?: 'sending' | 'sent' | 'delivered' | 'read' | 'failed';
+  fileUrl?: string;
+  fileName?: string;
+  fileSize?: number;
+  fileType?: string;
+  voiceDuration?: number;
+  voiceWaveform?: number[];
 }
 
 export interface ChatNotification {
