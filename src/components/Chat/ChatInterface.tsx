@@ -6,6 +6,110 @@ import './ChatInterface.scss';
 import { collection, getDocs, where, limit, query as firestoreQuery } from 'firebase/firestore';
 import { db } from '../../firebase';
 
+// Create a completely independent message input component
+const MessageInput = React.forwardRef<{
+  setSendCallback: (callback: (message: string) => void) => void;
+  setCurrentUser: (userId: string) => void;
+  setSelectedUser: (userId: string | null) => void;
+  setSendingState: (isSending: boolean) => void;
+}, {}>((props, ref) => {
+  const [inputValue, setInputValue] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [sending, setSending] = useState(false);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const sendCallbackRef = useRef<((message: string) => void) | null>(null);
+  const currentUserIdRef = useRef<string>('');
+  const selectedUserRef = useRef<string | null>(null);
+  
+  // Expose methods to parent component
+  const setSendCallback = (callback: (message: string) => void) => {
+    sendCallbackRef.current = callback;
+  };
+  
+  const setCurrentUser = (userId: string) => {
+    currentUserIdRef.current = userId;
+  };
+  
+  const setSelectedUser = (userId: string | null) => {
+    selectedUserRef.current = userId;
+  };
+  
+  const setSendingState = (isSending: boolean) => {
+    setSending(isSending);
+  };
+  
+  // Expose these methods to parent
+  React.useImperativeHandle(ref, () => ({
+    setSendCallback,
+    setCurrentUser,
+    setSelectedUser,
+    setSendingState
+  }));
+  
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInputValue(e.target.value);
+    
+    if (!isTyping && selectedUserRef.current) {
+      setIsTyping(true);
+      MessagingService.setTypingStatus(currentUserIdRef.current, selectedUserRef.current, true);
+    }
+
+    // Clear existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // Set new timeout
+    typingTimeoutRef.current = setTimeout(() => {
+      setIsTyping(false);
+      if (selectedUserRef.current) {
+        MessagingService.setTypingStatus(currentUserIdRef.current, selectedUserRef.current, false);
+      }
+    }, 2000);
+  };
+
+  const handleSend = () => {
+    if (!inputValue.trim() || !selectedUserRef.current || sending) return;
+    
+    const messageContent = inputValue.trim();
+    setInputValue(''); // Clear input
+    
+    // Send the message via callback
+    if (sendCallbackRef.current) {
+      sendCallbackRef.current(messageContent);
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  return (
+    <div className="message-input">
+      <input
+        type="text"
+        value={inputValue}
+        onChange={handleInputChange}
+        onKeyPress={handleKeyPress}
+        placeholder="Type a message..."
+        disabled={sending}
+        className="message-input-field"
+      />
+      <button
+        onClick={handleSend}
+        disabled={!inputValue.trim() || sending}
+        className="send-button"
+      >
+        {sending ? 'Sending...' : 'Send'}
+      </button>
+    </div>
+  );
+});
+
+// Interface for the main component
 interface ChatInterfaceProps {
   currentUserId: string;
   currentUserName: string;
@@ -20,17 +124,21 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   demoUsers = {}
 }) => {
   // State
-  const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [messages, setMessages] = useState<DirectMessage[]>([]);
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
-  const [messageText, setMessageText] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [sending, setSending] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
-  const [isTyping, setIsTyping] = useState(false);
-  const [chatSettings, setChatSettings] = useState<ChatSettings | null>(null);
-  const [showSettings, setShowSettings] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [chatSettings, setChatSettings] = useState<ChatSettings>({
+    userId: currentUserId,
+    allowMessagesFrom: 'everyone',
+    showOnlineStatus: true,
+    showLastSeen: true,
+    isAway: false
+  });
+  const [showSettings, setShowSettings] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showNewChat, setShowNewChat] = useState(false);
   const [showUserProfile, setShowUserProfile] = useState(false);
@@ -41,13 +149,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [isUserTyping, setIsUserTyping] = useState(false); // Track if user is actively typing
 
   // Refs
-  const inputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const conversationListenerRef = useRef<(() => void) | null>(null);
   const messageListenerRef = useRef<(() => void) | null>(null);
   const typingListenerRef = useRef<(() => void) | null>(null);
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const inputValueRef = useRef<string>(''); // Preserve input value across re-renders
+  const messageInputRef = useRef<{
+    setSendCallback: (callback: (message: string) => void) => void;
+    setCurrentUser: (userId: string) => void;
+    setSelectedUser: (userId: string | null) => void;
+    setSendingState: (isSending: boolean) => void;
+  }>(null);
 
   // Memoized values
   const filteredConversations = useMemo(() => {
@@ -65,8 +176,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   // Initialize chat
   useEffect(() => {
     initializeChat();
-    return () => cleanup();
-  }, [currentUserId]);
+    return cleanup;
+  }, []);
 
   // Handle conversation selection
   useEffect(() => {
@@ -79,29 +190,29 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    // Don't auto-scroll if user is actively typing
-    if (!isUserTyping) {
-      scrollToBottom();
-    }
-  }, [messages, isUserTyping]);
+    scrollToBottom();
+  }, [messages]);
 
-  // Restore input value if it gets cleared unexpectedly
+  // Load chat settings
   useEffect(() => {
-    if (inputValueRef.current && !messageText && inputRef.current) {
-      // If ref has a value but state is empty, restore it
-      setMessageText(inputValueRef.current);
-    }
-  }, [messageText]);
+    const loadSettings = async () => {
+      try {
+        const settings = await MessagingService.getChatSettings(currentUserId);
+        if (settings) {
+          setChatSettings(settings);
+        }
+      } catch (error) {
+        console.error('Error loading chat settings:', error);
+      }
+    };
+    loadSettings();
+  }, [currentUserId]);
 
   // Initialize chat system
   const initializeChat = async () => {
     try {
       setLoading(true);
       setError(null);
-
-      // Load chat settings
-      const settings = await MessagingService.getChatSettings(currentUserId);
-      setChatSettings(settings);
 
       // Setup real-time listeners
       setupConversationListener();
@@ -158,91 +269,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     );
   };
 
-  // Send message
-  const sendMessage = async () => {
-    const messageContent = inputValueRef.current?.trim();
-    if (!messageContent || !selectedUser || sending) return;
-
-    // Clear input directly
-    if (inputRef.current) {
-      inputRef.current.value = '';
-    }
-    inputValueRef.current = '';
-    setIsTyping(false);
-    setSending(true);
-
-    try {
-      // Optimistically add message to UI
-      const optimisticMessage: DirectMessage = {
-        id: `temp_${Date.now()}`,
-        senderId: currentUserId,
-        receiverId: selectedUser,
-        content: messageContent,
-        timestamp: new Date(),
-        isRead: false,
-        messageType: 'text',
-        status: 'sending'
-      };
-
-      setMessages(prev => [...prev, optimisticMessage]);
-
-      // Send actual message
-      await MessagingService.sendDirectMessage(currentUserId, selectedUser, messageContent);
-      
-      // Update optimistic message status
-      setMessages(prev => prev.map(msg => 
-        msg.id === optimisticMessage.id 
-          ? { ...msg, status: 'sent' as any }
-          : msg
-      ));
-
-      // Stop typing indicator
-      MessagingService.setTypingStatus(currentUserId, selectedUser, false);
-    } catch (error) {
-      console.error('Error sending message:', error);
-      setError('Failed to send message. Please try again.');
-      
-      // Remove optimistic message on error
-      setMessages(prev => prev.filter(msg => msg.id !== `temp_${Date.now()}`));
-    } finally {
-      setSending(false);
-    }
-  };
-
-  // Handle typing
-  const handleTyping = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    inputValueRef.current = value; // Update ref value only
-    setIsUserTyping(true); // Mark user as actively typing
-    
-    if (!isTyping && selectedUser) {
-      setIsTyping(true);
-      MessagingService.setTypingStatus(currentUserId, selectedUser, true);
-    }
-
-    // Clear existing timeout
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-    }
-
-    // Set new timeout
-    typingTimeoutRef.current = setTimeout(() => {
-      setIsTyping(false);
-      setIsUserTyping(false); // Clear user typing state
-      if (selectedUser) {
-        MessagingService.setTypingStatus(currentUserId, selectedUser, false);
-      }
-    }, 2000);
-  }, [isTyping, selectedUser, currentUserId]);
-
-  // Handle key press
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  };
-
   // Mark conversation as read
   const markConversationAsRead = async (otherUserId: string) => {
     try {
@@ -262,15 +288,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   };
 
-  // Utility functions
-  const scrollToBottom = () => {
+  // Scroll to bottom
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  }, []);
 
-  const focusInput = () => {
-    setTimeout(() => inputRef.current?.focus(), 100);
-  };
-
+  // Utility functions
   const formatTime = (date: Date | undefined | null) => {
     // Handle undefined, null, or invalid dates
     if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
@@ -305,7 +328,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     if (conversationListenerRef.current) conversationListenerRef.current();
     if (messageListenerRef.current) messageListenerRef.current();
     if (typingListenerRef.current) typingListenerRef.current();
-    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     MessagingService.cleanup();
   };
 
@@ -402,10 +424,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     setNewChatSearchQuery('');
     setSearchResults([]);
     
-    // Focus on the chat input
-    setTimeout(() => {
-      focusInput();
-    }, 100);
+    // MessageInput component will handle its own focus
   };
 
   // Handle new chat search input
@@ -435,6 +454,72 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     // Fallback
     return { name: 'Unknown User', avatar: undefined };
   };
+
+  // Send message function - memoized with useCallback
+  const sendMessage = useCallback(async (messageContent: string) => {
+    if (!selectedUser || sending) return;
+
+    setSending(true);
+
+    try {
+      // Optimistically add message to UI
+      const optimisticMessage: DirectMessage = {
+        id: `temp_${Date.now()}`,
+        senderId: currentUserId,
+        receiverId: selectedUser,
+        content: messageContent,
+        timestamp: new Date(),
+        isRead: false,
+        messageType: 'text',
+        status: 'sending'
+      };
+
+      setMessages(prev => [...prev, optimisticMessage]);
+
+      // Send actual message
+      await MessagingService.sendDirectMessage(currentUserId, selectedUser, messageContent);
+      
+      // Update optimistic message status
+      setMessages(prev => prev.map(msg => 
+        msg.id === optimisticMessage.id 
+          ? { ...msg, status: 'sent' as any }
+          : msg
+      ));
+
+      // Stop typing indicator
+      MessagingService.setTypingStatus(currentUserId, selectedUser, false);
+    } catch (error) {
+      console.error('Error sending message:', error);
+      setError('Failed to send message. Please try again.');
+      
+      // Remove optimistic message on error
+      setMessages(prev => prev.filter(msg => msg.id !== `temp_${Date.now()}`));
+    } finally {
+      setSending(false);
+    }
+  }, [selectedUser, sending, currentUserId]);
+
+  // Set up MessageInput communication - moved after sendMessage is defined
+  useEffect(() => {
+    if (messageInputRef.current) {
+      messageInputRef.current.setCurrentUser(currentUserId);
+      messageInputRef.current.setSendCallback(sendMessage);
+    }
+  }, [currentUserId, sendMessage]);
+
+  // Update MessageInput when selectedUser changes
+  useEffect(() => {
+    if (messageInputRef.current) {
+      messageInputRef.current.setSelectedUser(selectedUser);
+    }
+  }, [selectedUser]);
+
+  // Update MessageInput sending state
+  useEffect(() => {
+    if (messageInputRef.current) {
+      messageInputRef.current.setSendingState(sending);
+    }
+  }, [sending]);
 
   if (loading) {
     return (
@@ -797,25 +882,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               </div>
 
               {/* Message Input */}
-              <div className="message-input">
-                <input
-                  ref={inputRef}
-                  type="text"
-                  defaultValue=""
-                  onChange={handleTyping}
-                  onKeyPress={handleKeyPress}
-                  placeholder="Type a message..."
-                  disabled={sending}
-                  className="message-input-field"
-                />
-                <button
-                  onClick={sendMessage}
-                  disabled={!inputValueRef.current?.trim() || sending}
-                  className="send-button"
-                >
-                  {sending ? 'Sending...' : 'Send'}
-                </button>
-              </div>
+              <MessageInput ref={messageInputRef} />
             </>
           ) : (
             <div className="no-conversation">
