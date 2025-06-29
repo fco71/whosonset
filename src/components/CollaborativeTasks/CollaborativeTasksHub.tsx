@@ -29,6 +29,15 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
   const [newComment, setNewComment] = useState('');
   const [users, setUsers] = useState<{[key: string]: {name: string, email: string, avatar?: string}}>({});
 
+  // Add a helper for status options
+  const statusOptions = [
+    { value: 'pending', label: 'Not Started' },
+    { value: 'in_progress', label: 'In Progress' },
+    { value: 'completed', label: 'Completed' },
+    { value: 'cancelled', label: 'Cancelled' },
+    { value: 'overdue', label: 'Overdue' },
+  ];
+
   useEffect(() => {
     if (projectId) {
       loadTasks();
@@ -389,6 +398,10 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
     }
   };
 
+  const handleStatusChange = async (taskId: string, newStatus: string) => {
+    await handleUpdateTask(taskId, { status: newStatus as 'pending' | 'in_progress' | 'completed' | 'cancelled' | 'overdue' });
+  };
+
   if (loading) {
     return (
       <div className="collaborative-tasks-hub">
@@ -633,29 +646,20 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
                         )}
                       </div>
                       <div className="task-quick-actions">
-                        {task.status === 'pending' && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleStartTask(task.id);
-                            }}
-                            className="btn-quick-action btn-start"
-                            title="Start Task"
-                          >
-                            ▶️ Start
-                          </button>
-                        )}
-                        {task.status === 'in_progress' && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleCompleteTask(task.id);
-                            }}
-                            className="btn-quick-action btn-complete"
-                            title="Complete Task"
-                          >
-                            ✅ Complete
-                          </button>
+                        <select
+                          value={task.status}
+                          onChange={e => handleStatusChange(task.id, e.target.value as 'pending' | 'in_progress' | 'completed' | 'cancelled' | 'overdue')}
+                          className={`task-status-dropdown status-${task.status}`}
+                          disabled={task.status === 'completed'}
+                          title="Change task status"
+                          style={{ minWidth: 120, borderRadius: 6, padding: '0.25rem 0.5rem', fontWeight: 500 }}
+                        >
+                          {statusOptions.map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </select>
+                        {task.status === 'completed' && (
+                          <span className="task-status-badge completed" style={{ marginLeft: 8, color: '#10b981', fontWeight: 600 }}>✔ Completed</span>
                         )}
                         <button
                           onClick={(e) => {
@@ -807,21 +811,20 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
 
                         {/* Task Actions */}
                         <div className="task-expanded-actions">
-                          {task.status === 'pending' && (
-                            <button
-                              onClick={() => handleStartTask(task.id)}
-                              className="btn-secondary"
-                            >
-                              Start Task
-                            </button>
-                          )}
-                          {task.status === 'in_progress' && (
-                            <button
-                              onClick={() => handleCompleteTask(task.id)}
-                              className="btn-success"
-                            >
-                              Complete Task
-                            </button>
+                          <select
+                            value={task.status}
+                            onChange={e => handleStatusChange(task.id, e.target.value as 'pending' | 'in_progress' | 'completed' | 'cancelled' | 'overdue')}
+                            className={`task-status-dropdown status-${task.status}`}
+                            disabled={task.status === 'completed'}
+                            title="Change task status"
+                            style={{ minWidth: 120, borderRadius: 6, padding: '0.25rem 0.5rem', fontWeight: 500 }}
+                          >
+                            {statusOptions.map(opt => (
+                              <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            ))}
+                          </select>
+                          {task.status === 'completed' && (
+                            <span className="task-status-badge completed" style={{ marginLeft: 8, color: '#10b981', fontWeight: 600 }}>✔ Completed</span>
                           )}
                           <button
                             onClick={() => handleEditTask(task)}

@@ -100,8 +100,15 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const [isSearchingUsers, setIsSearchingUsers] = useState(false);
   
   // Document and whiteboard creation
-  const [newDocumentName, setNewDocumentName] = useState('');
-  const [newWhiteboardName, setNewWhiteboardName] = useState('');
+  const [newDocumentData, setNewDocumentData] = useState({
+    name: '',
+    type: 'notes',
+    tags: '',
+  });
+  const [newWhiteboardData, setNewWhiteboardData] = useState({
+    name: '',
+    description: '',
+  });
   
   // Settings state
   const [workspaceSettings, setWorkspaceSettings] = useState(newWorkspaceData.settings);
@@ -112,6 +119,8 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     type: 'text',
     isPrivate: false,
   });
+
+  const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
 
   useEffect(() => {
     console.log('CollaborationHub mounted with projectId:', projectId);
@@ -456,89 +465,79 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   };
 
   const handleCreateDocument = () => {
-    try {
-      console.log('Create document clicked');
-      if (!selectedWorkspace) {
-        alert('Please select a workspace first');
-        return;
-      }
+    setShowCreateDocumentModal(true);
+  };
 
-      const documentName = prompt('Enter document name:');
-      if (documentName && documentName.trim()) {
-        const newDocument: CollaborativeDocument = {
-          id: Date.now().toString(),
-          workspaceId: selectedWorkspace.id,
-          title: documentName.trim(),
-          content: `Document: ${documentName.trim()}`,
-          type: 'notes',
-          version: 1,
-          collaborators: [
-            { userId: currentUser?.uid || 'default-user', role: 'editor', isTyping: false, lastActivity: new Date() }
-          ],
-          changes: [],
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          lastEditedBy: currentUser?.uid || 'default-user'
-        };
-
-        setWorkspaces(prev => prev.map(ws => 
-          ws.id === selectedWorkspace.id 
-            ? { ...ws, documents: [...ws.documents, newDocument] }
-            : ws
-        ));
-
-        setSelectedWorkspace(prev => prev ? {
-          ...prev,
-          documents: [...prev.documents, newDocument]
-        } : null);
-
-        alert(`Document "${documentName}" created successfully!`);
-      }
-    } catch (error) {
-      console.error('Error in handleCreateDocument:', error);
-      alert('Failed to create document. Please try again.');
+  const handleDocumentFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedWorkspace) return;
+    if (!newDocumentData.name.trim()) {
+      alert('Please enter a document name');
+      return;
     }
+    const newDocument: CollaborativeDocument = {
+      id: Date.now().toString(),
+      workspaceId: selectedWorkspace.id,
+      title: newDocumentData.name.trim(),
+      content: '',
+      type: newDocumentData.type as any,
+      version: 1,
+      collaborators: [
+        { userId: currentUser?.uid || 'default-user', role: 'editor', isTyping: false, lastActivity: new Date() }
+      ],
+      changes: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      lastEditedBy: currentUser?.uid || 'default-user',
+    };
+    setWorkspaces(prev => prev.map(ws =>
+      ws.id === selectedWorkspace.id
+        ? { ...ws, documents: [...ws.documents, newDocument] }
+        : ws
+    ));
+    setSelectedWorkspace(prev => prev ? {
+      ...prev,
+      documents: [...prev.documents, newDocument]
+    } : null);
+    setShowCreateDocumentModal(false);
+    setNewDocumentData({ name: '', type: 'notes', tags: '' });
+    alert(`Document "${newDocument.title}" created successfully!`);
   };
 
   const handleCreateWhiteboard = () => {
-    try {
-      console.log('Create whiteboard clicked');
-      if (!selectedWorkspace) {
-        alert('Please select a workspace first');
-        return;
-      }
+    setShowCreateWhiteboardModal(true);
+  };
 
-      const whiteboardName = prompt('Enter whiteboard name:');
-      if (whiteboardName && whiteboardName.trim()) {
-        const newWhiteboard: Whiteboard = {
-          id: Date.now().toString(),
-          workspaceId: selectedWorkspace.id,
-          name: whiteboardName.trim(),
-          elements: [],
-          collaborators: [
-            { userId: currentUser?.uid || 'default-user', cursor: { x: 0, y: 0 }, isDrawing: false, lastActivity: new Date() }
-          ],
-          createdAt: new Date(),
-          updatedAt: new Date()
-        };
-
-        setWorkspaces(prev => prev.map(ws => 
-          ws.id === selectedWorkspace.id 
-            ? { ...ws, whiteboards: [...ws.whiteboards, newWhiteboard] }
-            : ws
-        ));
-
-        setSelectedWorkspace(prev => prev ? {
-          ...prev,
-          whiteboards: [...prev.whiteboards, newWhiteboard]
-        } : null);
-
-        alert(`Whiteboard "${whiteboardName}" created successfully!`);
-      }
-    } catch (error) {
-      console.error('Error in handleCreateWhiteboard:', error);
-      alert('Failed to create whiteboard. Please try again.');
+  const handleWhiteboardFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedWorkspace) return;
+    if (!newWhiteboardData.name.trim()) {
+      alert('Please enter a whiteboard name');
+      return;
     }
+    const newWhiteboard: Whiteboard = {
+      id: Date.now().toString(),
+      workspaceId: selectedWorkspace.id,
+      name: newWhiteboardData.name.trim(),
+      elements: [],
+      collaborators: [
+        { userId: currentUser?.uid || 'default-user', cursor: { x: 0, y: 0 }, isDrawing: false, lastActivity: new Date() }
+      ],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    setWorkspaces(prev => prev.map(ws =>
+      ws.id === selectedWorkspace.id
+        ? { ...ws, whiteboards: [...ws.whiteboards, newWhiteboard] }
+        : ws
+    ));
+    setSelectedWorkspace(prev => prev ? {
+      ...prev,
+      whiteboards: [...prev.whiteboards, newWhiteboard]
+    } : null);
+    setShowCreateWhiteboardModal(false);
+    setNewWhiteboardData({ name: '', description: '' });
+    alert(`Whiteboard "${newWhiteboard.name}" created successfully!`);
   };
 
   const handleJoinWorkspace = (workspaceId: string) => {
@@ -953,17 +952,22 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       {/* Video Call Modal */}
       {showVideoCallModal && (
         <div className="modal-overlay">
-          <div className="modal-content">
+          <div className="modal-content" style={{ maxWidth: 400, width: '90%' }}>
             <div className="modal-header">
               <h3>Start Video Call</h3>
               <button onClick={() => setShowVideoCallModal(false)} className="close-btn">×</button>
             </div>
-            <div className="modal-body">
-              <p>Video call functionality is coming soon!</p>
-              <p>This will integrate with your preferred video conferencing platform.</p>
-            </div>
-            <div className="modal-footer">
-              <button onClick={() => setShowVideoCallModal(false)} className="btn-secondary">Close</button>
+            <div className="modal-body" style={{ textAlign: 'center', padding: '2rem 1rem' }}>
+              <div style={{ fontSize: '2.5rem', marginBottom: 16 }}>🎥</div>
+              <h4 style={{ marginBottom: 8 }}>Video Calls Coming Soon</h4>
+              <p style={{ color: '#666', marginBottom: 16 }}>
+                Group video calls and screen sharing will be available in a future update.<br />
+                Integration with Jitsi, Zoom, or Google Meet is planned.
+              </p>
+              <div style={{ color: '#aaa', fontSize: '0.95em', marginBottom: 16 }}>
+                (If you need this feature urgently, let us know!)
+              </div>
+              <button onClick={() => setShowVideoCallModal(false)} className="btn-primary" style={{ marginTop: 8 }}>Close</button>
             </div>
           </div>
         </div>
@@ -981,38 +985,47 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       {selectedWorkspace ? (
         <div className="channels-content">
           <div className="channels-list">
-            <div className="channel-item">
-              <div className="channel-info">
-                <span className="channel-icon">#</span>
-                <span className="channel-name">general</span>
-                <span className="channel-description">General discussion</span>
-              </div>
-              <div className="channel-stats">
-                <span className="online-count">12 online</span>
-              </div>
-            </div>
-            
-            <div className="channel-item">
-              <div className="channel-info">
-                <span className="channel-icon">📢</span>
-                <span className="channel-name">announcements</span>
-                <span className="channel-description">Important updates</span>
-              </div>
-              <div className="channel-stats">
-                <span className="online-count">8 online</span>
-              </div>
-            </div>
-            
-            <div className="channel-item">
-              <div className="channel-info">
-                <span className="channel-icon">🎬</span>
-                <span className="channel-name">production</span>
-                <span className="channel-description">Production discussions</span>
-              </div>
-              <div className="channel-stats">
-                <span className="online-count">15 online</span>
-              </div>
-            </div>
+            {selectedWorkspace.channels.length === 0 ? (
+              <div className="no-channels">No channels yet. Create one to get started!</div>
+            ) : (
+              selectedWorkspace.channels.map((channel) => (
+                <div
+                  key={channel.id}
+                  className={`channel-item${selectedChannelId === channel.id ? ' selected' : ''}`}
+                  onClick={() => setSelectedChannelId(channel.id)}
+                  style={{ cursor: 'pointer', background: selectedChannelId === channel.id ? '#e3f2fd' : 'white', border: selectedChannelId === channel.id ? '1px solid #1976d2' : undefined }}
+                >
+                  <div className="channel-info">
+                    <span className="channel-icon">{channel.type === 'text' ? '#' : channel.type === 'voice' ? '🎤' : channel.type === 'video' ? '🎥' : '📢'}</span>
+                    <span className="channel-name">{channel.name}</span>
+                    <span className="channel-description">{channel.description}</span>
+                  </div>
+                  <div className="channel-stats">
+                    <span className="online-count">{channel.members.length} members</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+          <div className="channel-main-area" style={{ marginTop: '2rem', padding: '2rem', background: '#f9fafb', borderRadius: 8, minHeight: 200 }}>
+            {selectedChannelId ? (
+              (() => {
+                const channel = selectedWorkspace.channels.find(c => c.id === selectedChannelId);
+                if (!channel) return <div>Channel not found.</div>;
+                return (
+                  <div>
+                    <h3 style={{ marginBottom: 8 }}>{channel.type === 'text' ? '#' : channel.type === 'voice' ? '🎤' : channel.type === 'video' ? '🎥' : '📢'} {channel.name}</h3>
+                    <div style={{ color: '#666', marginBottom: 16 }}>{channel.description}</div>
+                    <div style={{ color: '#888', fontStyle: 'italic' }}>
+                      Welcome to <b>{channel.name}</b>!<br />
+                      (Channel chat/messages coming soon.)
+                    </div>
+                  </div>
+                );
+              })()
+            ) : (
+              <div style={{ color: '#888', fontStyle: 'italic' }}>Select a channel to view its details.</div>
+            )}
           </div>
         </div>
       ) : (
@@ -1078,12 +1091,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     <div className="documents-tab">
       <div className="tab-header">
         <h3>Documents</h3>
-        <button 
-          className="btn-primary"
-          onClick={() => setShowCreateDocumentModal(true)}
-        >
-          Create Document
-        </button>
+        <button className="btn-primary" onClick={handleCreateDocument}>Create Document</button>
       </div>
       
       <div className="documents-grid">
@@ -1108,6 +1116,58 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
           </div>
         ))}
       </div>
+
+      {showCreateDocumentModal && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: 400, width: '90%' }}>
+            <div className="modal-header">
+              <h3>Create Document</h3>
+              <button onClick={() => setShowCreateDocumentModal(false)} className="close-btn">×</button>
+            </div>
+            <form className="modal-body" onSubmit={handleDocumentFormSubmit}>
+              <div className="form-group">
+                <label>Document Name *</label>
+                <input
+                  type="text"
+                  value={newDocumentData.name}
+                  onChange={e => setNewDocumentData(prev => ({ ...prev, name: e.target.value }))}
+                  className="form-input"
+                  placeholder="Enter document name"
+                  autoFocus
+                />
+              </div>
+              <div className="form-group">
+                <label>Type</label>
+                <select
+                  value={newDocumentData.type}
+                  onChange={e => setNewDocumentData(prev => ({ ...prev, type: e.target.value }))}
+                  className="form-input"
+                >
+                  <option value="script">Script</option>
+                  <option value="storyboard">Storyboard</option>
+                  <option value="schedule">Schedule</option>
+                  <option value="budget">Budget</option>
+                  <option value="notes">Notes</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Tags (comma separated)</label>
+                <input
+                  type="text"
+                  value={newDocumentData.tags}
+                  onChange={e => setNewDocumentData(prev => ({ ...prev, tags: e.target.value }))}
+                  className="form-input"
+                  placeholder="e.g. draft, scene 1, character"
+                />
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn-secondary" onClick={() => setShowCreateDocumentModal(false)}>Cancel</button>
+                <button type="submit" className="btn-primary">Create</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -1115,12 +1175,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     <div className="whiteboards-tab">
       <div className="tab-header">
         <h3>Whiteboards</h3>
-        <button 
-          className="btn-primary"
-          onClick={() => setShowCreateWhiteboardModal(true)}
-        >
-          Create Whiteboard
-        </button>
+        <button className="btn-primary" onClick={handleCreateWhiteboard}>Create Whiteboard</button>
       </div>
       
       <div className="whiteboards-grid">
@@ -1143,6 +1198,44 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
           </div>
         ))}
       </div>
+
+      {showCreateWhiteboardModal && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: 400, width: '90%' }}>
+            <div className="modal-header">
+              <h3>Create Whiteboard</h3>
+              <button onClick={() => setShowCreateWhiteboardModal(false)} className="close-btn">×</button>
+            </div>
+            <form className="modal-body" onSubmit={handleWhiteboardFormSubmit}>
+              <div className="form-group">
+                <label>Whiteboard Name *</label>
+                <input
+                  type="text"
+                  value={newWhiteboardData.name}
+                  onChange={e => setNewWhiteboardData(prev => ({ ...prev, name: e.target.value }))}
+                  className="form-input"
+                  placeholder="Enter whiteboard name"
+                  autoFocus
+                />
+              </div>
+              <div className="form-group">
+                <label>Description</label>
+                <textarea
+                  value={newWhiteboardData.description}
+                  onChange={e => setNewWhiteboardData(prev => ({ ...prev, description: e.target.value }))}
+                  className="form-input"
+                  placeholder="Describe the purpose or content of this whiteboard (optional)"
+                  rows={2}
+                />
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn-secondary" onClick={() => setShowCreateWhiteboardModal(false)}>Cancel</button>
+                <button type="submit" className="btn-primary">Create</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 
