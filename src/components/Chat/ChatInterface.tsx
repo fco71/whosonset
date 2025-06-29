@@ -13,30 +13,33 @@ const MessageInput = React.forwardRef<{
   setSelectedUser: (userId: string | null) => void;
   setSendingState: (isSending: boolean) => void;
 }, {}>((props, ref) => {
-  const [inputValue, setInputValue] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const [sending, setSending] = useState(false);
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const sendCallbackRef = useRef<((message: string) => void) | null>(null);
   const currentUserIdRef = useRef<string>('');
   const selectedUserRef = useRef<string | null>(null);
+  const sendingRef = useRef<boolean>(false);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isTypingRef = useRef<boolean>(false);
   
   // Expose methods to parent component
-  const setSendCallback = (callback: (message: string) => void) => {
+  const setSendCallback = useCallback((callback: (message: string) => void) => {
     sendCallbackRef.current = callback;
-  };
+  }, []);
   
-  const setCurrentUser = (userId: string) => {
+  const setCurrentUser = useCallback((userId: string) => {
     currentUserIdRef.current = userId;
-  };
+  }, []);
   
-  const setSelectedUser = (userId: string | null) => {
+  const setSelectedUser = useCallback((userId: string | null) => {
     selectedUserRef.current = userId;
-  };
+  }, []);
   
-  const setSendingState = (isSending: boolean) => {
-    setSending(isSending);
-  };
+  const setSendingState = useCallback((isSending: boolean) => {
+    sendingRef.current = isSending;
+    if (inputRef.current) {
+      inputRef.current.disabled = isSending;
+    }
+  }, []);
   
   // Expose these methods to parent
   React.useImperativeHandle(ref, () => ({
@@ -44,13 +47,11 @@ const MessageInput = React.forwardRef<{
     setCurrentUser,
     setSelectedUser,
     setSendingState
-  }));
+  }), [setSendCallback, setCurrentUser, setSelectedUser, setSendingState]);
   
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInputValue(e.target.value);
-    
-    if (!isTyping && selectedUserRef.current) {
-      setIsTyping(true);
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!isTypingRef.current && selectedUserRef.current) {
+      isTypingRef.current = true;
       MessagingService.setTypingStatus(currentUserIdRef.current, selectedUserRef.current, true);
     }
 
@@ -61,53 +62,57 @@ const MessageInput = React.forwardRef<{
 
     // Set new timeout
     typingTimeoutRef.current = setTimeout(() => {
-      setIsTyping(false);
+      isTypingRef.current = false;
       if (selectedUserRef.current) {
         MessagingService.setTypingStatus(currentUserIdRef.current, selectedUserRef.current, false);
       }
     }, 2000);
-  };
+  }, []);
 
-  const handleSend = () => {
-    if (!inputValue.trim() || !selectedUserRef.current || sending) return;
+  const handleSend = useCallback(() => {
+    if (!inputRef.current || !selectedUserRef.current || sendingRef.current) return;
     
-    const messageContent = inputValue.trim();
-    setInputValue(''); // Clear input
+    const messageContent = inputRef.current.value.trim();
+    if (!messageContent) return;
+    
+    // Clear input immediately
+    inputRef.current.value = '';
     
     // Send the message via callback
     if (sendCallbackRef.current) {
       sendCallbackRef.current(messageContent);
     }
-  };
+  }, []);
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
-  };
+  }, [handleSend]);
 
   return (
     <div className="message-input">
       <input
+        ref={inputRef}
         type="text"
-        value={inputValue}
         onChange={handleInputChange}
         onKeyPress={handleKeyPress}
         placeholder="Type a message..."
-        disabled={sending}
         className="message-input-field"
       />
       <button
         onClick={handleSend}
-        disabled={!inputValue.trim() || sending}
+        disabled={sendingRef.current}
         className="send-button"
       >
-        {sending ? 'Sending...' : 'Send'}
+        {sendingRef.current ? 'Sending...' : 'Send'}
       </button>
     </div>
   );
 });
+
+MessageInput.displayName = 'MessageInput';
 
 // Interface for the main component
 interface ChatInterfaceProps {
@@ -278,15 +283,31 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   };
 
-  // Add reaction to message
-  const addReaction = async (messageId: string, emoji: string) => {
+  // Add reaction to message - memoized with useCallback
+  const addReaction = useCallback(async (messageId: string, emoji: string) => {
     try {
       await MessagingService.addMessageReaction(messageId, currentUserId, currentUserName, emoji);
     } catch (error) {
       console.error('Error adding reaction:', error);
       setError('Failed to add reaction. Please try again.');
     }
-  };
+  }, [currentUserId, currentUserName]);
+
+  // Create memoized reaction handlers to prevent re-renders
+  const createReactionHandler = useCallback((messageId: string, emoji: string) => {
+    return () => addReaction(messageId, emoji);
+  }, [addReaction]);
+
+  // Create stable reaction handlers map to prevent re-renders
+  const reactionHandlersRef = useRef<Map<string, () => void>>(new Map());
+  
+  const getReactionHandler = useCallback((messageId: string, emoji: string) => {
+    const key = `${messageId}-${emoji}`;
+    if (!reactionHandlersRef.current.has(key)) {
+      reactionHandlersRef.current.set(key, () => addReaction(messageId, emoji));
+    }
+    return reactionHandlersRef.current.get(key)!;
+  }, [addReaction]);
 
   // Scroll to bottom
   const scrollToBottom = useCallback(() => {
@@ -840,7 +861,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                             return (
                               <button
                                 key={emoji}
-                                onClick={() => addReaction(message.id, emoji)}
+                                onClick={getReactionHandler(message.id, emoji)}
                                 className={`reaction-button ${hasUserReacted(message.reactions, emoji) ? 'reacted' : ''}`}
                               >
                                 <span className="emoji">{emoji}</span>
@@ -857,7 +878,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                       {['👍', '❤️', '😊', '🎉'].map((emoji) => (
                         <button
                           key={emoji}
-                          onClick={() => addReaction(message.id, emoji)}
+                          onClick={getReactionHandler(message.id, emoji)}
                           className="reaction-option"
                         >
                           {emoji}
@@ -882,7 +903,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               </div>
 
               {/* Message Input */}
-              <MessageInput ref={messageInputRef} />
+              <MessageInput key="stable-message-input" ref={messageInputRef} />
             </>
           ) : (
             <div className="no-conversation">
