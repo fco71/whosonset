@@ -632,6 +632,42 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
                           <span className="subtasks-count">{task.subtasks.length} subtasks</span>
                         )}
                       </div>
+                      <div className="task-quick-actions">
+                        {task.status === 'pending' && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStartTask(task.id);
+                            }}
+                            className="btn-quick-action btn-start"
+                            title="Start Task"
+                          >
+                            ▶️ Start
+                          </button>
+                        )}
+                        {task.status === 'in_progress' && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCompleteTask(task.id);
+                            }}
+                            className="btn-quick-action btn-complete"
+                            title="Complete Task"
+                          >
+                            ✅ Complete
+                          </button>
+                        )}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditTask(task);
+                          }}
+                          className="btn-quick-action btn-edit"
+                          title="Edit Task"
+                        >
+                          ✏️ Edit
+                        </button>
+                      </div>
                     </div>
 
                     {/* Expanded Task Details */}

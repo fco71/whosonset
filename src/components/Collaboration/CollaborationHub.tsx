@@ -16,6 +16,19 @@ interface CollaborationHubProps {
   projectId?: string;
 }
 
+// User search interface
+interface UserSearchResult {
+  id: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  role?: string;
+  company?: string;
+}
+
+// Workspace creation step
+type WorkspaceCreationStep = 'details' | 'members' | 'settings';
+
 // Error Boundary Component
 class CollaborationErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -59,9 +72,38 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const [showCreateWorkspaceModal, setShowCreateWorkspaceModal] = useState(false);
   const [showCreateDocumentModal, setShowCreateDocumentModal] = useState(false);
   const [showCreateWhiteboardModal, setShowCreateWhiteboardModal] = useState(false);
-  const [newWorkspaceName, setNewWorkspaceName] = useState('');
+  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showVideoCallModal, setShowVideoCallModal] = useState(false);
+  
+  // Workspace creation state
+  const [workspaceCreationStep, setWorkspaceCreationStep] = useState<WorkspaceCreationStep>('details');
+  const [newWorkspaceData, setNewWorkspaceData] = useState({
+    name: '',
+    description: '',
+    type: 'project' as const,
+    selectedMembers: [] as UserSearchResult[],
+    settings: {
+      allowGuestAccess: false,
+      requireApproval: true,
+      autoArchive: false,
+      retentionDays: 365,
+      maxFileSize: 100 * 1024 * 1024,
+      allowedFileTypes: ['pdf', 'doc', 'docx', 'txt', 'jpg', 'png']
+    }
+  });
+  
+  // User search state
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [userSearchResults, setUserSearchResults] = useState<UserSearchResult[]>([]);
+  const [isSearchingUsers, setIsSearchingUsers] = useState(false);
+  
+  // Document and whiteboard creation
   const [newDocumentName, setNewDocumentName] = useState('');
   const [newWhiteboardName, setNewWhiteboardName] = useState('');
+  
+  // Settings state
+  const [workspaceSettings, setWorkspaceSettings] = useState(newWorkspaceData.settings);
 
   useEffect(() => {
     console.log('CollaborationHub mounted with projectId:', projectId);
@@ -200,20 +242,104 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     }
   };
 
-  const handleCreateWorkspace = () => {
+  // User search functionality
+  const searchUsers = async (query: string) => {
+    if (!query.trim()) {
+      setUserSearchResults([]);
+      return;
+    }
+
+    setIsSearchingUsers(true);
     try {
-      console.log('Create workspace clicked');
-      if (!newWorkspaceName.trim()) {
+      // Mock user search results - in real app, this would query Firestore
+      const mockUsers: UserSearchResult[] = [
+        { id: 'user-1', name: 'John Director', email: 'john@example.com', role: 'Director', company: 'Film Co' },
+        { id: 'user-2', name: 'Sarah Producer', email: 'sarah@example.com', role: 'Producer', company: 'Production Inc' },
+        { id: 'user-3', name: 'Mike DP', email: 'mike@example.com', role: 'DP', company: 'Camera Dept' },
+        { id: 'user-4', name: 'Lisa Editor', email: 'lisa@example.com', role: 'Editor', company: 'Post House' },
+        { id: 'user-5', name: 'Tom Sound', email: 'tom@example.com', role: 'Sound Designer', company: 'Audio Studio' }
+      ];
+
+      const filteredUsers = mockUsers.filter(user =>
+        user.name.toLowerCase().includes(query.toLowerCase()) ||
+        user.email.toLowerCase().includes(query.toLowerCase()) ||
+        user.role?.toLowerCase().includes(query.toLowerCase()) ||
+        user.company?.toLowerCase().includes(query.toLowerCase())
+      );
+
+      setUserSearchResults(filteredUsers);
+    } catch (error) {
+      console.error('Error searching users:', error);
+      setUserSearchResults([]);
+    } finally {
+      setIsSearchingUsers(false);
+    }
+  };
+
+  const handleUserSearchChange = (query: string) => {
+    setUserSearchQuery(query);
+    if (query.trim()) {
+      setTimeout(() => searchUsers(query), 300);
+    } else {
+      setUserSearchResults([]);
+    }
+  };
+
+  const addUserToWorkspace = (user: UserSearchResult) => {
+    if (!selectedWorkspace) return;
+
+    const newMember: WorkspaceMember = {
+      userId: user.id,
+      email: user.email,
+      role: 'member',
+      joinedAt: new Date(),
+      permissions: ['read', 'write'],
+      isOnline: false,
+      lastSeen: new Date()
+    };
+
+    setWorkspaces(prev => prev.map(ws => 
+      ws.id === selectedWorkspace.id 
+        ? { ...ws, members: [...ws.members, newMember] }
+        : ws
+    ));
+
+    setSelectedWorkspace(prev => prev ? {
+      ...prev,
+      members: [...prev.members, newMember]
+    } : null);
+
+    setShowAddMemberModal(false);
+    setUserSearchQuery('');
+    setUserSearchResults([]);
+    alert(`Added ${user.name} to workspace successfully!`);
+  };
+
+  // Workspace creation handlers
+  const handleCreateWorkspaceStep = () => {
+    if (workspaceCreationStep === 'details') {
+      if (!newWorkspaceData.name.trim()) {
         alert('Please enter a workspace name');
         return;
       }
+      setWorkspaceCreationStep('members');
+    } else if (workspaceCreationStep === 'members') {
+      setWorkspaceCreationStep('settings');
+    } else if (workspaceCreationStep === 'settings') {
+      handleCreateWorkspace();
+    }
+  };
+
+  const handleCreateWorkspace = () => {
+    try {
+      console.log('Creating workspace with data:', newWorkspaceData);
       
       const newWorkspace: CollaborationWorkspace = {
         id: Date.now().toString(),
         projectId: projectId || 'default-project',
-        name: newWorkspaceName.trim(),
-        description: `Workspace for ${newWorkspaceName.trim()}`,
-        type: 'project',
+        name: newWorkspaceData.name.trim(),
+        description: newWorkspaceData.description.trim(),
+        type: newWorkspaceData.type,
         members: [
           { 
             userId: currentUser?.uid || 'default-user', 
@@ -222,13 +348,34 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
             permissions: ['read', 'write'], 
             isOnline: true, 
             lastSeen: new Date() 
-          }
+          },
+          ...newWorkspaceData.selectedMembers.map(user => ({
+            userId: user.id,
+            email: user.email,
+            role: 'member' as const,
+            joinedAt: new Date(),
+            permissions: ['read', 'write'],
+            isOnline: false,
+            lastSeen: new Date()
+          }))
         ],
         channels: [],
         documents: [],
         whiteboards: [],
         createdAt: new Date(),
         updatedAt: new Date(),
+        settings: newWorkspaceData.settings
+      };
+
+      setWorkspaces(prev => [...prev, newWorkspace]);
+      setSelectedWorkspace(newWorkspace);
+      
+      // Reset form
+      setNewWorkspaceData({
+        name: '',
+        description: '',
+        type: 'project',
+        selectedMembers: [],
         settings: {
           allowGuestAccess: false,
           requireApproval: true,
@@ -237,17 +384,30 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
           maxFileSize: 100 * 1024 * 1024,
           allowedFileTypes: ['pdf', 'doc', 'docx', 'txt', 'jpg', 'png']
         }
-      };
-
-      setWorkspaces(prev => [...prev, newWorkspace]);
-      setSelectedWorkspace(newWorkspace);
-      setNewWorkspaceName('');
+      });
+      setWorkspaceCreationStep('details');
       setShowCreateWorkspaceModal(false);
-      alert(`Workspace "${newWorkspaceName.trim()}" created successfully!`);
+      alert(`Workspace "${newWorkspaceData.name.trim()}" created successfully!`);
     } catch (error) {
       console.error('Error in handleCreateWorkspace:', error);
       alert('Failed to create workspace. Please try again.');
     }
+  };
+
+  const handleAddMemberToCreation = (user: UserSearchResult) => {
+    if (!newWorkspaceData.selectedMembers.find(m => m.id === user.id)) {
+      setNewWorkspaceData(prev => ({
+        ...prev,
+        selectedMembers: [...prev.selectedMembers, user]
+      }));
+    }
+  };
+
+  const handleRemoveMemberFromCreation = (userId: string) => {
+    setNewWorkspaceData(prev => ({
+      ...prev,
+      selectedMembers: prev.selectedMembers.filter(m => m.id !== userId)
+    }));
   };
 
   const handleCreateChannel = () => {
@@ -295,8 +455,13 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const handleCreateDocument = () => {
     try {
       console.log('Create document clicked');
+      if (!selectedWorkspace) {
+        alert('Please select a workspace first');
+        return;
+      }
+
       const documentName = prompt('Enter document name:');
-      if (documentName && documentName.trim() && selectedWorkspace) {
+      if (documentName && documentName.trim()) {
         const newDocument: CollaborativeDocument = {
           id: Date.now().toString(),
           workspaceId: selectedWorkspace.id,
@@ -325,8 +490,6 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         } : null);
 
         alert(`Document "${documentName}" created successfully!`);
-      } else if (!selectedWorkspace) {
-        alert('Please select a workspace first');
       }
     } catch (error) {
       console.error('Error in handleCreateDocument:', error);
@@ -337,8 +500,13 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const handleCreateWhiteboard = () => {
     try {
       console.log('Create whiteboard clicked');
+      if (!selectedWorkspace) {
+        alert('Please select a workspace first');
+        return;
+      }
+
       const whiteboardName = prompt('Enter whiteboard name:');
-      if (whiteboardName && whiteboardName.trim() && selectedWorkspace) {
+      if (whiteboardName && whiteboardName.trim()) {
         const newWhiteboard: Whiteboard = {
           id: Date.now().toString(),
           workspaceId: selectedWorkspace.id,
@@ -363,8 +531,6 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         } : null);
 
         alert(`Whiteboard "${whiteboardName}" created successfully!`);
-      } else if (!selectedWorkspace) {
-        alert('Please select a workspace first');
       }
     } catch (error) {
       console.error('Error in handleCreateWhiteboard:', error);
@@ -390,55 +556,38 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       console.log('Workspace settings clicked:', workspaceId);
       const workspace = workspaces.find(ws => ws.id === workspaceId);
       if (workspace) {
-        const settingsInfo = `
-Workspace: ${workspace.name}
-Type: ${workspace.type}
-Members: ${workspace.members.length}
-Guest Access: ${workspace.settings.allowGuestAccess ? 'Enabled' : 'Disabled'}
-Approval Required: ${workspace.settings.requireApproval ? 'Yes' : 'No'}
-Auto Archive: ${workspace.settings.autoArchive ? 'Enabled' : 'Disabled'}
-        `.trim();
-        alert(settingsInfo);
+        setWorkspaceSettings(workspace.settings);
+        setShowSettingsModal(true);
       }
     } catch (error) {
       console.error('Error in handleWorkspaceSettings:', error);
     }
   };
 
-  const handleAddWorkspaceMember = (workspaceId: string) => {
-    try {
-      console.log('Add workspace member clicked:', workspaceId);
-      const memberEmail = prompt('Enter member email:');
-      if (memberEmail && memberEmail.trim()) {
-        const newMember: WorkspaceMember = {
-          userId: `user-${Date.now()}`, // In real app, this would be the actual user ID
-          email: memberEmail.trim(),
-          role: 'member',
-          joinedAt: new Date(),
-          permissions: ['read', 'write'],
-          isOnline: false,
-          lastSeen: new Date()
-        };
+  const handleUpdateWorkspaceSettings = () => {
+    if (!selectedWorkspace) return;
 
-        setWorkspaces(prev => prev.map(ws => 
-          ws.id === workspaceId 
-            ? { ...ws, members: [...ws.members, newMember] }
-            : ws
-        ));
+    setWorkspaces(prev => prev.map(ws => 
+      ws.id === selectedWorkspace.id 
+        ? { ...ws, settings: workspaceSettings }
+        : ws
+    ));
 
-        if (selectedWorkspace?.id === workspaceId) {
-          setSelectedWorkspace(prev => prev ? {
-            ...prev,
-            members: [...prev.members, newMember]
-          } : null);
-        }
+    setSelectedWorkspace(prev => prev ? {
+      ...prev,
+      settings: workspaceSettings
+    } : null);
 
-        alert(`Member ${memberEmail} added to workspace successfully!`);
-      }
-    } catch (error) {
-      console.error('Error in handleAddWorkspaceMember:', error);
-      alert('Failed to add member. Please try again.');
+    setShowSettingsModal(false);
+    alert('Workspace settings updated successfully!');
+  };
+
+  const handleStartVideoCall = () => {
+    if (!selectedWorkspace) {
+      alert('Please select a workspace first');
+      return;
     }
+    setShowVideoCallModal(true);
   };
 
   const formatTimeAgo = (date: Date) => {
@@ -496,7 +645,7 @@ Auto Archive: ${workspace.settings.autoArchive ? 'Enabled' : 'Disabled'}
                 className="btn-secondary"
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleAddWorkspaceMember(workspace.id);
+                  setShowAddMemberModal(true);
                 }}
               >
                 Add Member
@@ -515,29 +664,351 @@ Auto Archive: ${workspace.settings.autoArchive ? 'Enabled' : 'Disabled'}
         ))}
       </div>
 
-      {/* Create Workspace Modal */}
+      {/* Create Workspace Modal - 2-Step Process */}
       {showCreateWorkspaceModal && (
         <div className="modal-overlay">
           <div className="modal-content">
             <div className="modal-header">
               <h3>Create New Workspace</h3>
-              <button onClick={() => setShowCreateWorkspaceModal(false)} className="close-btn">×</button>
+              <button onClick={() => {
+                setShowCreateWorkspaceModal(false);
+                setWorkspaceCreationStep('details');
+                setNewWorkspaceData({
+                  name: '',
+                  description: '',
+                  type: 'project',
+                  selectedMembers: [],
+                  settings: {
+                    allowGuestAccess: false,
+                    requireApproval: true,
+                    autoArchive: false,
+                    retentionDays: 365,
+                    maxFileSize: 100 * 1024 * 1024,
+                    allowedFileTypes: ['pdf', 'doc', 'docx', 'txt', 'jpg', 'png']
+                  }
+                });
+              }} className="close-btn">×</button>
+            </div>
+            <div className="modal-body">
+              {/* Step 1: Workspace Details */}
+              {workspaceCreationStep === 'details' && (
+                <div className="step-content">
+                  <h4>Step 1: Workspace Details</h4>
+                  <div className="form-group">
+                    <label>Workspace Name *</label>
+                    <input
+                      type="text"
+                      value={newWorkspaceData.name}
+                      onChange={(e) => setNewWorkspaceData(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="Enter workspace name"
+                      className="form-input"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Description</label>
+                    <textarea
+                      value={newWorkspaceData.description}
+                      onChange={(e) => setNewWorkspaceData(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Enter workspace description"
+                      className="form-input"
+                      rows={3}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Workspace Type</label>
+                    <select
+                      value={newWorkspaceData.type}
+                      onChange={(e) => setNewWorkspaceData(prev => ({ ...prev, type: e.target.value as any }))}
+                      className="form-input"
+                    >
+                      <option value="project">Project</option>
+                      <option value="department">Department</option>
+                      <option value="general">General</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 2: Add Members */}
+              {workspaceCreationStep === 'members' && (
+                <div className="step-content">
+                  <h4>Step 2: Add Members</h4>
+                  <div className="form-group">
+                    <label>Search Users</label>
+                    <input
+                      type="text"
+                      value={userSearchQuery}
+                      onChange={(e) => handleUserSearchChange(e.target.value)}
+                      placeholder="Search by name, email, or role..."
+                      className="form-input"
+                    />
+                    {isSearchingUsers && <div className="searching-indicator">Searching...</div>}
+                  </div>
+                  
+                  {userSearchResults.length > 0 && (
+                    <div className="search-results">
+                      <h5>Search Results</h5>
+                      {userSearchResults.map(user => (
+                        <div key={user.id} className="user-result">
+                          <div className="user-info">
+                            <span className="user-name">{user.name}</span>
+                            <span className="user-email">{user.email}</span>
+                            {user.role && <span className="user-role">{user.role}</span>}
+                          </div>
+                          <button
+                            onClick={() => handleAddMemberToCreation(user)}
+                            className="btn-add-user"
+                            disabled={!!newWorkspaceData.selectedMembers.find(m => m.id === user.id)}
+                          >
+                            {newWorkspaceData.selectedMembers.find(m => m.id === user.id) ? 'Added' : 'Add'}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {newWorkspaceData.selectedMembers.length > 0 && (
+                    <div className="selected-members">
+                      <h5>Selected Members ({newWorkspaceData.selectedMembers.length})</h5>
+                      {newWorkspaceData.selectedMembers.map(user => (
+                        <div key={user.id} className="selected-member">
+                          <span className="member-name">{user.name}</span>
+                          <button
+                            onClick={() => handleRemoveMemberFromCreation(user.id)}
+                            className="btn-remove-member"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Step 3: Settings */}
+              {workspaceCreationStep === 'settings' && (
+                <div className="step-content">
+                  <h4>Step 3: Workspace Settings</h4>
+                  <div className="form-group">
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={newWorkspaceData.settings.allowGuestAccess}
+                        onChange={(e) => setNewWorkspaceData(prev => ({
+                          ...prev,
+                          settings: { ...prev.settings, allowGuestAccess: e.target.checked }
+                        }))}
+                      />
+                      Allow Guest Access
+                    </label>
+                  </div>
+                  <div className="form-group">
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={newWorkspaceData.settings.requireApproval}
+                        onChange={(e) => setNewWorkspaceData(prev => ({
+                          ...prev,
+                          settings: { ...prev.settings, requireApproval: e.target.checked }
+                        }))}
+                      />
+                      Require Approval for New Members
+                    </label>
+                  </div>
+                  <div className="form-group">
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={newWorkspaceData.settings.autoArchive}
+                        onChange={(e) => setNewWorkspaceData(prev => ({
+                          ...prev,
+                          settings: { ...prev.settings, autoArchive: e.target.checked }
+                        }))}
+                      />
+                      Auto-archive Inactive Content
+                    </label>
+                  </div>
+                  <div className="form-group">
+                    <label>Retention Period (days)</label>
+                    <input
+                      type="number"
+                      value={newWorkspaceData.settings.retentionDays}
+                      onChange={(e) => setNewWorkspaceData(prev => ({
+                        ...prev,
+                        settings: { ...prev.settings, retentionDays: parseInt(e.target.value) || 365 }
+                      }))}
+                      className="form-input"
+                      min="30"
+                      max="3650"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button 
+                onClick={() => {
+                  if (workspaceCreationStep === 'details') {
+                    setShowCreateWorkspaceModal(false);
+                    setWorkspaceCreationStep('details');
+                  } else if (workspaceCreationStep === 'members') {
+                    setWorkspaceCreationStep('details');
+                  } else if (workspaceCreationStep === 'settings') {
+                    setWorkspaceCreationStep('members');
+                  }
+                }} 
+                className="btn-secondary"
+              >
+                {workspaceCreationStep === 'details' ? 'Cancel' : 'Back'}
+              </button>
+              <button 
+                onClick={handleCreateWorkspaceStep} 
+                className="btn-primary"
+              >
+                {workspaceCreationStep === 'settings' ? 'Create Workspace' : 'Next'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Member Modal */}
+      {showAddMemberModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>Add Member to Workspace</h3>
+              <button onClick={() => {
+                setShowAddMemberModal(false);
+                setUserSearchQuery('');
+                setUserSearchResults([]);
+              }} className="close-btn">×</button>
             </div>
             <div className="modal-body">
               <div className="form-group">
-                <label>Workspace Name</label>
+                <label>Search Users</label>
                 <input
                   type="text"
-                  value={newWorkspaceName}
-                  onChange={(e) => setNewWorkspaceName(e.target.value)}
-                  placeholder="Enter workspace name"
+                  value={userSearchQuery}
+                  onChange={(e) => handleUserSearchChange(e.target.value)}
+                  placeholder="Search by name, email, or role..."
                   className="form-input"
+                />
+                {isSearchingUsers && <div className="searching-indicator">Searching...</div>}
+              </div>
+              
+              {userSearchResults.length > 0 && (
+                <div className="search-results">
+                  {userSearchResults.map(user => (
+                    <div key={user.id} className="user-result">
+                      <div className="user-info">
+                        <span className="user-name">{user.name}</span>
+                        <span className="user-email">{user.email}</span>
+                        {user.role && <span className="user-role">{user.role}</span>}
+                      </div>
+                      <button
+                        onClick={() => addUserToWorkspace(user)}
+                        className="btn-add-user"
+                      >
+                        Add to Workspace
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Settings Modal */}
+      {showSettingsModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>Workspace Settings</h3>
+              <button onClick={() => setShowSettingsModal(false)} className="close-btn">×</button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={workspaceSettings.allowGuestAccess}
+                    onChange={(e) => setWorkspaceSettings(prev => ({ ...prev, allowGuestAccess: e.target.checked }))}
+                  />
+                  Allow Guest Access
+                </label>
+              </div>
+              <div className="form-group">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={workspaceSettings.requireApproval}
+                    onChange={(e) => setWorkspaceSettings(prev => ({ ...prev, requireApproval: e.target.checked }))}
+                  />
+                  Require Approval for New Members
+                </label>
+              </div>
+              <div className="form-group">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={workspaceSettings.autoArchive}
+                    onChange={(e) => setWorkspaceSettings(prev => ({ ...prev, autoArchive: e.target.checked }))}
+                  />
+                  Auto-archive Inactive Content
+                </label>
+              </div>
+              <div className="form-group">
+                <label>Retention Period (days)</label>
+                <input
+                  type="number"
+                  value={workspaceSettings.retentionDays}
+                  onChange={(e) => setWorkspaceSettings(prev => ({ ...prev, retentionDays: parseInt(e.target.value) || 365 }))}
+                  className="form-input"
+                  min="30"
+                  max="3650"
+                />
+              </div>
+              <div className="form-group">
+                <label>Max File Size (MB)</label>
+                <input
+                  type="number"
+                  value={Math.round(workspaceSettings.maxFileSize / (1024 * 1024))}
+                  onChange={(e) => setWorkspaceSettings(prev => ({ 
+                    ...prev, 
+                    maxFileSize: (parseInt(e.target.value) || 100) * 1024 * 1024 
+                  }))}
+                  className="form-input"
+                  min="1"
+                  max="1000"
                 />
               </div>
             </div>
             <div className="modal-footer">
-              <button onClick={() => setShowCreateWorkspaceModal(false)} className="btn-secondary">Cancel</button>
-              <button onClick={handleCreateWorkspace} className="btn-primary">Create</button>
+              <button onClick={() => setShowSettingsModal(false)} className="btn-secondary">Cancel</button>
+              <button onClick={handleUpdateWorkspaceSettings} className="btn-primary">Save Settings</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Video Call Modal */}
+      {showVideoCallModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>Start Video Call</h3>
+              <button onClick={() => setShowVideoCallModal(false)} className="close-btn">×</button>
+            </div>
+            <div className="modal-body">
+              <p>Video call functionality is coming soon!</p>
+              <p>This will integrate with your preferred video conferencing platform.</p>
+            </div>
+            <div className="modal-footer">
+              <button onClick={() => setShowVideoCallModal(false)} className="btn-secondary">Close</button>
             </div>
           </div>
         </div>
@@ -549,7 +1020,7 @@ Auto Archive: ${workspace.settings.autoArchive ? 'Enabled' : 'Disabled'}
     <div className="channels-tab">
       <div className="channels-header">
         <h2>Channels</h2>
-        <button className="btn-primary" onClick={handleCreateChannel}>Create Channel</button>
+        <button className="btn-primary" onClick={() => setActiveTab('channels')}>Create Channel</button>
       </div>
       
       {selectedWorkspace ? (
@@ -760,7 +1231,7 @@ Auto Archive: ${workspace.settings.autoArchive ? 'Enabled' : 'Disabled'}
         <div className="collaboration-header">
           <h1>Collaboration Hub</h1>
           <div className="header-actions">
-            <button className="btn-primary">Start Video Call</button>
+            <button className="btn-primary" onClick={handleStartVideoCall}>Start Video Call</button>
           </div>
         </div>
 
