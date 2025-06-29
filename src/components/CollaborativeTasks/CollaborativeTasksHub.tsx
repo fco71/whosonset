@@ -21,11 +21,10 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
   const [editingTask, setEditingTask] = useState<CollaborativeTask | null>(null);
   const [filters, setFilters] = useState({
     status: 'all',
-    priority: 'all',
-    category: 'all',
-    assignedTo: 'all'
+    category: 'all'
   });
   const [searchTerm, setSearchTerm] = useState('');
+  const [showCompletedTasks, setShowCompletedTasks] = useState(false);
 
   useEffect(() => {
     if (projectId) {
@@ -198,15 +197,31 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
     setShowTaskDetails(false);
   };
 
+  const handleRestoreTask = async (taskId: string) => {
+    try {
+      const taskRef = doc(db, 'collaborativeTasks', taskId);
+      await updateDoc(taskRef, {
+        status: 'pending',
+        completedAt: null,
+        updatedAt: new Date()
+      });
+    } catch (error) {
+      console.error('Error restoring task:', error);
+      alert('Failed to restore task. Please try again.');
+    }
+  };
+
   const filteredTasks = tasks.filter(task => {
     const matchesStatus = filters.status === 'all' || task.status === filters.status;
-    const matchesPriority = filters.priority === 'all' || task.priority === filters.priority;
     const matchesCategory = filters.category === 'all' || task.category === filters.category;
     const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          task.description.toLowerCase().includes(searchTerm.toLowerCase());
 
-    return matchesStatus && matchesPriority && matchesCategory && matchesSearch;
+    return matchesStatus && matchesCategory && matchesSearch;
   });
+
+  const activeTasks = filteredTasks.filter(task => task.status !== 'completed');
+  const completedTasks = filteredTasks.filter(task => task.status === 'completed');
 
   const getTaskStats = () => {
     const total = tasks.length;
@@ -405,18 +420,6 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
             </select>
 
             <select
-              value={filters.priority}
-              onChange={(e) => setFilters({ ...filters, priority: e.target.value })}
-              className="filter-select"
-            >
-              <option value="all">All Priority</option>
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-              <option value="critical">Critical</option>
-            </select>
-
-            <select
               value={filters.category}
               onChange={(e) => setFilters({ ...filters, category: e.target.value })}
               className="filter-select"
@@ -456,7 +459,7 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
               </div>
             ) : (
               <div className="tasks-grid">
-                {filteredTasks.map(task => (
+                {activeTasks.map(task => (
                   <div key={task.id} className="task-card">
                     <div className="task-header">
                       <h3 className="task-title" onClick={() => {
@@ -512,7 +515,6 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
                         Due: {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No due date'}
                       </span>
                       <span className={`task-status ${task.status}`}>{task.status}</span>
-                      <span className={`task-priority ${task.priority}`}>{task.priority}</span>
                     </div>
                     {task.subtasks && task.subtasks.length > 0 && (
                       <div className="task-subtasks">
@@ -616,16 +618,6 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
                     </span>
                   </div>
                   <div className="info-row">
-                    <span className="info-label">Priority:</span>
-                    <span className={`info-value priority ${selectedTask.priority}`}>
-                      {selectedTask.priority}
-                    </span>
-                  </div>
-                  <div className="info-row">
-                    <span className="info-label">Category:</span>
-                    <span className="info-value">{selectedTask.category}</span>
-                  </div>
-                  <div className="info-row">
                     <span className="info-label">Due Date:</span>
                     <span className="info-value">
                       {selectedTask.dueDate ? new Date(selectedTask.dueDate).toLocaleString() : 'No due date'}
@@ -700,7 +692,6 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
                           </div>
                           <p className="subtask-description">{subtask.description}</p>
                           <div className="subtask-meta">
-                            <span className="subtask-priority">{subtask.priority}</span>
                             <span className="subtask-due">
                               Due: {subtask.dueDate ? new Date(subtask.dueDate).toLocaleDateString() : 'No due date'}
                             </span>
@@ -716,6 +707,60 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Completed Tasks Section */}
+      {completedTasks.length > 0 && (
+        <div className="completed-tasks-section">
+          <div className="section-header">
+            <h3>Completed Tasks ({completedTasks.length})</h3>
+            <button
+              onClick={() => setShowCompletedTasks(!showCompletedTasks)}
+              className="btn-toggle"
+            >
+              {showCompletedTasks ? 'Hide' : 'Show'} Completed
+            </button>
+          </div>
+          
+          {showCompletedTasks && (
+            <div className="completed-tasks-grid">
+              {completedTasks.map(task => (
+                <div key={task.id} className="task-card completed">
+                  <div className="task-header">
+                    <h3 className="task-title completed">{task.title}</h3>
+                    <div className="task-actions">
+                      <button
+                        onClick={() => handleRestoreTask(task.id)}
+                        className="action-btn restore"
+                        title="Restore Task"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteTask(task.id)}
+                        className="action-btn delete"
+                        title="Delete Task"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                  <p className="task-description completed">{task.description}</p>
+                  <div className="task-meta">
+                    <span className="task-completed-date">
+                      Completed: {task.completedAt ? new Date(task.completedAt).toLocaleDateString() : 'Unknown'}
+                    </span>
+                    <span className="task-status completed">Completed</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

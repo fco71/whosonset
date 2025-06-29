@@ -134,6 +134,8 @@ const TaskForm: React.FC<TaskFormProps> = ({ task, onSubmit, onCancel, projectId
       assignedBy: auth.currentUser?.uid || '',
       status: 'assigned',
       subtasks: [],
+      estimatedHours: 0,
+      actualHours: 0,
       notes: ''
     };
     setFormData(prev => ({
@@ -159,44 +161,65 @@ const TaskForm: React.FC<TaskFormProps> = ({ task, onSubmit, onCancel, projectId
   };
 
   const handleAddSubtask = () => {
-    if (subtaskForm.title.trim()) {
-      const newSubtask: TaskSubtask = {
-        id: Date.now().toString(),
-        taskId: task?.id || '',
-        title: subtaskForm.title,
-        description: subtaskForm.description,
-        status: 'pending',
-        priority: subtaskForm.priority,
-        assignedTo: subtaskForm.assignedTo,
-        dueDate: subtaskForm.dueDate,
-        estimatedHours: subtaskForm.estimatedHours,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        attachments: [],
-        dependencies: []
-      };
-
-      setFormData(prev => ({
-        ...prev,
-        subtasks: [...prev.subtasks, newSubtask]
-      }));
-
-      setSubtaskForm({
-        title: '',
-        description: '',
-        priority: 'medium',
-        assignedTo: '',
-        dueDate: '',
-        estimatedHours: 0
-      });
-      setShowSubtaskForm(false);
-    }
+    const newSubtask: TaskSubtask = {
+      id: Date.now().toString(),
+      taskId: task?.id || '',
+      title: '',
+      description: '',
+      status: 'pending',
+      priority: 'medium',
+      assignedTo: '',
+      dueDate: '',
+      estimatedHours: 0,
+      actualHours: 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      notes: '',
+      attachments: [],
+      dependencies: []
+    };
+    setFormData(prev => ({
+      ...prev,
+      subtasks: [...prev.subtasks, newSubtask]
+    }));
   };
 
   const handleRemoveSubtask = (index: number) => {
     setFormData(prev => ({
       ...prev,
       subtasks: prev.subtasks.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleSubtaskChange = (index: number, field: keyof TaskSubtask, value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      subtasks: prev.subtasks.map((subtask, i) => 
+        i === index ? { ...subtask, [field]: value } : subtask
+      )
+    }));
+  };
+
+  const handleCompleteSubtask = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      subtasks: prev.subtasks.map((subtask, i) => 
+        i === index ? { 
+          ...subtask, 
+          status: 'completed',
+          completedAt: new Date(),
+          updatedAt: new Date()
+        } : subtask
+      )
+    }));
+  };
+
+  const handleAssignMemberToSubtask = (subtaskIndex: number, memberId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      subtasks: prev.subtasks.map((subtask, i) => 
+        i === subtaskIndex ? { ...subtask, assignedTo: memberId } : subtask
+      )
     }));
   };
 
@@ -461,31 +484,139 @@ const TaskForm: React.FC<TaskFormProps> = ({ task, onSubmit, onCancel, projectId
             </div>
 
             {formData.subtasks.map((subtask, index) => (
-              <div key={index} className="subtask-item">
+              <div key={index} className={`subtask-item ${subtask.status === 'completed' ? 'completed' : ''}`}>
                 <div className="subtask-header">
-                  <h4>{subtask.title}</h4>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveSubtask(index)}
-                    className="btn-remove-small"
-                  >
-                    ×
-                  </button>
+                  <div className="subtask-title-section">
+                    <input
+                      type="text"
+                      value={subtask.title}
+                      onChange={(e) => handleSubtaskChange(index, 'title', e.target.value)}
+                      placeholder="Enter subtask title"
+                      className="subtask-title-input"
+                    />
+                    <div className="subtask-actions">
+                      {subtask.status !== 'completed' && (
+                        <button
+                          type="button"
+                          onClick={() => handleCompleteSubtask(index)}
+                          className="btn-complete-subtask"
+                          title="Mark as completed"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveSubtask(index)}
+                        className="btn-remove-small"
+                        title="Remove subtask"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <p className="subtask-description">{subtask.description}</p>
-                <div className="subtask-meta">
-                  <span className={`priority-badge priority-${subtask.priority}`}>
-                    {subtask.priority}
-                  </span>
-                  {subtask.assignedTo && (
-                    <span className="assigned-to">
-                      Assigned to: {availableTeamMembers.find(m => m.id === subtask.assignedTo)?.name || subtask.assignedTo}
+                
+                <textarea
+                  value={subtask.description}
+                  onChange={(e) => handleSubtaskChange(index, 'description', e.target.value)}
+                  placeholder="Describe the subtask..."
+                  className="subtask-description-input"
+                  rows={2}
+                />
+                
+                <div className="subtask-controls">
+                  <div className="subtask-row">
+                    <div className="form-group">
+                      <label>Priority</label>
+                      <select
+                        value={subtask.priority}
+                        onChange={(e) => handleSubtaskChange(index, 'priority', e.target.value)}
+                        className="form-select small"
+                      >
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                        <option value="critical">Critical</option>
+                      </select>
+                    </div>
+                    
+                    <div className="form-group">
+                      <label>Assigned To</label>
+                      <select
+                        value={subtask.assignedTo}
+                        onChange={(e) => handleAssignMemberToSubtask(index, e.target.value)}
+                        className="form-select small"
+                      >
+                        <option value="">Select member</option>
+                        {availableTeamMembers.map(teamMember => (
+                          <option key={teamMember.id} value={teamMember.id}>
+                            {teamMember.name} - {teamMember.role}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div className="form-group">
+                      <label>Due Date</label>
+                      <input
+                        type="date"
+                        value={subtask.dueDate}
+                        onChange={(e) => handleSubtaskChange(index, 'dueDate', e.target.value)}
+                        className="form-input small"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="subtask-row">
+                    <div className="form-group">
+                      <label>Est. Hours</label>
+                      <input
+                        type="number"
+                        value={subtask.estimatedHours || 0}
+                        onChange={(e) => handleSubtaskChange(index, 'estimatedHours', parseFloat(e.target.value) || 0)}
+                        className="form-input small"
+                        min="0"
+                        step="0.5"
+                      />
+                    </div>
+                    
+                    <div className="form-group">
+                      <label>Status</label>
+                      <select
+                        value={subtask.status}
+                        onChange={(e) => handleSubtaskChange(index, 'status', e.target.value)}
+                        className="form-select small"
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                        <option value="blocked">Blocked</option>
+                      </select>
+                    </div>
+                    
+                    <div className="form-group">
+                      <label>Notes</label>
+                      <input
+                        type="text"
+                        value={subtask.notes || ''}
+                        onChange={(e) => handleSubtaskChange(index, 'notes', e.target.value)}
+                        placeholder="Add notes..."
+                        className="form-input small"
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                {subtask.assignedTo && (
+                  <div className="subtask-assigned">
+                    <span className="assigned-badge">
+                      👤 {availableTeamMembers.find(m => m.id === subtask.assignedTo)?.name || subtask.assignedTo}
                     </span>
-                  )}
-                  {subtask.dueDate && (
-                    <span className="due-date">Due: {subtask.dueDate}</span>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             ))}
 

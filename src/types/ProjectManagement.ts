@@ -103,6 +103,7 @@ export interface CollaborativeTask {
   createdBy: string;
   createdAt: any;
   updatedAt: any;
+  completedAt?: any;
   assignedTeamMembers: TaskTeamMember[];
   subtasks: TaskSubtask[];
   reminders: TaskReminder[];
