@@ -177,6 +177,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ task, onSubmit, onCancel, projectId
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('TaskForm submitting with data:', formData);
     onSubmit(formData);
   };
 

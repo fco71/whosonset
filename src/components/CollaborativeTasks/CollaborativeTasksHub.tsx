@@ -18,6 +18,7 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
   const [selectedTask, setSelectedTask] = useState<CollaborativeTask | null>(null);
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [showTaskDetails, setShowTaskDetails] = useState(false);
+  const [editingTask, setEditingTask] = useState<CollaborativeTask | null>(null);
   const [filters, setFilters] = useState({
     status: 'all',
     priority: 'all',
@@ -58,6 +59,10 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
 
   const handleCreateTask = async (taskData: Partial<CollaborativeTask>) => {
     try {
+      console.log('Creating task with data:', taskData);
+      console.log('Project ID:', projectId);
+      console.log('Current user:', auth.currentUser?.uid);
+      
       const newTask: Partial<CollaborativeTask> = {
         ...taskData,
         projectId,
@@ -65,19 +70,23 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
         createdAt: new Date(),
         updatedAt: new Date(),
         status: 'pending',
-        assignedTeamMembers: [],
-        subtasks: [],
+        assignedTeamMembers: taskData.assignedTeamMembers || [],
+        subtasks: taskData.subtasks || [],
         reminders: [],
-        tags: [],
+        tags: taskData.tags || [],
         attachments: [],
         comments: [],
         dependencies: []
       };
 
-      await addDoc(collection(db, 'collaborativeTasks'), newTask);
+      console.log('Final task object:', newTask);
+      
+      const docRef = await addDoc(collection(db, 'collaborativeTasks'), newTask);
+      console.log('Task created successfully with ID:', docRef.id);
       setShowTaskForm(false);
     } catch (error) {
       console.error('Error creating task:', error);
+      alert('Failed to create task. Please try again.');
     }
   };
 
@@ -88,19 +97,59 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
         ...updates,
         updatedAt: new Date()
       });
+      setEditingTask(null);
+      setShowTaskForm(false);
     } catch (error) {
       console.error('Error updating task:', error);
+      alert('Failed to update task. Please try again.');
     }
   };
 
   const handleDeleteTask = async (taskId: string) => {
-    try {
-      await deleteDoc(doc(db, 'collaborativeTasks', taskId));
-      setSelectedTask(null);
-      setShowTaskDetails(false);
-    } catch (error) {
-      console.error('Error deleting task:', error);
+    if (window.confirm('Are you sure you want to delete this task?')) {
+      try {
+        await deleteDoc(doc(db, 'collaborativeTasks', taskId));
+        setSelectedTask(null);
+        setShowTaskDetails(false);
+      } catch (error) {
+        console.error('Error deleting task:', error);
+        alert('Failed to delete task. Please try again.');
+      }
     }
+  };
+
+  const handleCompleteTask = async (taskId: string) => {
+    try {
+      const taskRef = doc(db, 'collaborativeTasks', taskId);
+      await updateDoc(taskRef, {
+        status: 'completed',
+        completedAt: new Date(),
+        updatedAt: new Date()
+      });
+    } catch (error) {
+      console.error('Error completing task:', error);
+      alert('Failed to complete task. Please try again.');
+    }
+  };
+
+  const handleStartTask = async (taskId: string) => {
+    try {
+      const taskRef = doc(db, 'collaborativeTasks', taskId);
+      await updateDoc(taskRef, {
+        status: 'in_progress',
+        startedAt: new Date(),
+        updatedAt: new Date()
+      });
+    } catch (error) {
+      console.error('Error starting task:', error);
+      alert('Failed to start task. Please try again.');
+    }
+  };
+
+  const handleEditTask = (task: CollaborativeTask) => {
+    setEditingTask(task);
+    setShowTaskForm(true);
+    setShowTaskDetails(false);
   };
 
   const filteredTasks = tasks.filter(task => {
@@ -147,13 +196,44 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
           </div>
           <div className="header-actions">
             <button
-              onClick={() => setShowTaskForm(true)}
+              onClick={() => {
+                setEditingTask(null);
+                setShowTaskForm(true);
+              }}
               className="btn-primary"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
               Create Task
+            </button>
+            <button
+              onClick={async () => {
+                try {
+                  const testTask = {
+                    title: 'Test Task',
+                    description: 'This is a test task',
+                    priority: 'medium' as const,
+                    category: 'other' as const,
+                    dueDate: new Date(Date.now() + 86400000).toISOString().slice(0, 16),
+                    estimatedHours: 2,
+                    location: 'Test Location',
+                    budget: 100,
+                    notes: 'Test notes',
+                    tags: ['test'],
+                    assignedTeamMembers: [],
+                    subtasks: []
+                  };
+                  console.log('Creating test task:', testTask);
+                  await handleCreateTask(testTask);
+                } catch (error) {
+                  console.error('Test task creation failed:', error);
+                }
+              }}
+              className="btn-secondary"
+              style={{ marginLeft: '10px' }}
+            >
+              Test Create Task
             </button>
           </div>
         </div>
@@ -322,7 +402,10 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
                 <h3 className="empty-title">No tasks found</h3>
                 <p className="empty-description">Create your first task to get started</p>
                 <button
-                  onClick={() => setShowTaskForm(true)}
+                  onClick={() => {
+                    setEditingTask(null);
+                    setShowTaskForm(true);
+                  }}
                   className="btn-primary"
                 >
                   Create Task
@@ -331,19 +414,74 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
             ) : (
               <div className="tasks-grid">
                 {filteredTasks.map(task => (
-                  <div key={task.id} className="task-card" onClick={() => {
-                    setSelectedTask(task);
-                    setShowTaskDetails(true);
-                  }}>
+                  <div key={task.id} className="task-card">
                     <div className="task-header">
-                      <h3 className="task-title">{task.title}</h3>
-                      <span className={`task-priority ${task.priority}`}>{task.priority}</span>
+                      <h3 className="task-title" onClick={() => {
+                        setSelectedTask(task);
+                        setShowTaskDetails(true);
+                      }}>{task.title}</h3>
+                      <div className="task-actions">
+                        {task.status === 'pending' && (
+                          <button
+                            onClick={() => handleStartTask(task.id)}
+                            className="action-btn start"
+                            title="Start Task"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          </button>
+                        )}
+                        {task.status === 'in_progress' && (
+                          <button
+                            onClick={() => handleCompleteTask(task.id)}
+                            className="action-btn complete"
+                            title="Complete Task"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleEditTask(task)}
+                          className="action-btn edit"
+                          title="Edit Task"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => handleDeleteTask(task.id)}
+                          className="action-btn delete"
+                          title="Delete Task"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                     <p className="task-description">{task.description}</p>
                     <div className="task-meta">
                       <span className="task-due-date">Due: {new Date(task.dueDate).toLocaleDateString()}</span>
                       <span className={`task-status ${task.status}`}>{task.status}</span>
+                      <span className={`task-priority ${task.priority}`}>{task.priority}</span>
                     </div>
+                    {task.subtasks && task.subtasks.length > 0 && (
+                      <div className="task-subtasks">
+                        <span className="subtasks-count">{task.subtasks.length} subtasks</span>
+                        <div className="subtasks-progress">
+                          <div 
+                            className="progress-bar"
+                            style={{ 
+                              width: `${(task.subtasks.filter(st => st.status === 'completed').length / task.subtasks.length) * 100}%` 
+                            }}
+                          ></div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -375,8 +513,11 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
         <div className="modal-overlay">
           <div className="modal-content">
             <div className="modal-header">
-              <h2>Create New Task</h2>
-              <button onClick={() => setShowTaskForm(false)} className="modal-close">
+              <h2>{editingTask ? 'Edit Task' : 'Create New Task'}</h2>
+              <button onClick={() => {
+                setShowTaskForm(false);
+                setEditingTask(null);
+              }} className="modal-close">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -384,8 +525,12 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
             </div>
             <div className="modal-body">
               <TaskForm 
-                onSubmit={handleCreateTask}
-                onCancel={() => setShowTaskForm(false)}
+                task={editingTask || undefined}
+                onSubmit={editingTask ? (data) => handleUpdateTask(editingTask.id, data) : handleCreateTask}
+                onCancel={() => {
+                  setShowTaskForm(false);
+                  setEditingTask(null);
+                }}
                 projectId={projectId}
               />
             </div>
@@ -396,20 +541,130 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
       {/* Task Details Modal */}
       {showTaskDetails && selectedTask && (
         <div className="modal-overlay">
-          <div className="modal-content">
+          <div className="modal-content large">
             <div className="modal-header">
               <h2>{selectedTask.title}</h2>
-              <button onClick={() => {
-                setShowTaskDetails(false);
-                setSelectedTask(null);
-              }} className="modal-close">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+              <div className="modal-actions">
+                <button
+                  onClick={() => handleEditTask(selectedTask)}
+                  className="btn-secondary"
+                >
+                  Edit
+                </button>
+                <button onClick={() => {
+                  setShowTaskDetails(false);
+                  setSelectedTask(null);
+                }} className="modal-close">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
             </div>
             <div className="modal-body">
-              <p>Task details coming soon...</p>
+              <div className="task-details">
+                <div className="task-info">
+                  <div className="info-row">
+                    <span className="info-label">Status:</span>
+                    <span className={`info-value status ${selectedTask.status}`}>
+                      {selectedTask.status}
+                    </span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-label">Priority:</span>
+                    <span className={`info-value priority ${selectedTask.priority}`}>
+                      {selectedTask.priority}
+                    </span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-label">Category:</span>
+                    <span className="info-value">{selectedTask.category}</span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-label">Due Date:</span>
+                    <span className="info-value">{new Date(selectedTask.dueDate).toLocaleString()}</span>
+                  </div>
+                  {selectedTask.estimatedHours && selectedTask.estimatedHours > 0 && (
+                    <div className="info-row">
+                      <span className="info-label">Estimated Hours:</span>
+                      <span className="info-value">{selectedTask.estimatedHours}h</span>
+                    </div>
+                  )}
+                  {selectedTask.location && (
+                    <div className="info-row">
+                      <span className="info-label">Location:</span>
+                      <span className="info-value">{selectedTask.location}</span>
+                    </div>
+                  )}
+                  {selectedTask.budget && selectedTask.budget > 0 && (
+                    <div className="info-row">
+                      <span className="info-label">Budget:</span>
+                      <span className="info-value">${selectedTask.budget.toFixed(2)}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="task-description-full">
+                  <h3>Description</h3>
+                  <p>{selectedTask.description}</p>
+                </div>
+
+                {selectedTask.notes && (
+                  <div className="task-notes">
+                    <h3>Notes</h3>
+                    <p>{selectedTask.notes}</p>
+                  </div>
+                )}
+
+                {selectedTask.tags && selectedTask.tags.length > 0 && (
+                  <div className="task-tags">
+                    <h3>Tags</h3>
+                    <div className="tags-list">
+                      {selectedTask.tags.map((tag, index) => (
+                        <span key={index} className="tag">{tag}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {selectedTask.assignedTeamMembers && selectedTask.assignedTeamMembers.length > 0 && (
+                  <div className="task-team">
+                    <h3>Team Members</h3>
+                    <div className="team-members-list">
+                      {selectedTask.assignedTeamMembers.map((member, index) => (
+                        <div key={index} className="team-member">
+                          <span className="member-role">{member.role}</span>
+                          {member.notes && <span className="member-notes">{member.notes}</span>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {selectedTask.subtasks && selectedTask.subtasks.length > 0 && (
+                  <div className="task-subtasks-full">
+                    <h3>Subtasks ({selectedTask.subtasks.filter(st => st.status === 'completed').length}/{selectedTask.subtasks.length} completed)</h3>
+                    <div className="subtasks-list">
+                      {selectedTask.subtasks.map((subtask, index) => (
+                        <div key={subtask.id} className="subtask-item">
+                          <div className="subtask-header">
+                            <h4>{subtask.title}</h4>
+                            <span className={`subtask-status ${subtask.status}`}>{subtask.status}</span>
+                          </div>
+                          <p className="subtask-description">{subtask.description}</p>
+                          <div className="subtask-meta">
+                            <span className="subtask-priority">{subtask.priority}</span>
+                            <span className="subtask-due">Due: {new Date(subtask.dueDate).toLocaleDateString()}</span>
+                            {subtask.estimatedHours && subtask.estimatedHours > 0 && (
+                              <span className="subtask-hours">{subtask.estimatedHours}h</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

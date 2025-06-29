@@ -6,8 +6,7 @@ import {
   CollaborativeDocument,
   Whiteboard,
   Task,
-  VideoCall,
-  Notification
+  VideoCall
 } from '../../types/Collaboration';
 import './CollaborationHub.scss';
 
@@ -15,34 +14,75 @@ interface CollaborationHubProps {
   projectId?: string;
 }
 
+// Error Boundary Component
+class CollaborationErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error?: Error }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('CollaborationHub Error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="error-boundary">
+          <h2>Something went wrong with the Collaboration Hub.</h2>
+          <p>Please refresh the page or try again later.</p>
+          <button onClick={() => window.location.reload()}>Refresh Page</button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const { currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState('workspaces');
   const [workspaces, setWorkspaces] = useState<CollaborationWorkspace[]>([]);
   const [selectedWorkspace, setSelectedWorkspace] = useState<CollaborationWorkspace | null>(null);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (currentUser) {
+    console.log('CollaborationHub mounted with projectId:', projectId);
+    console.log('Current user:', currentUser);
+    
+    try {
       loadWorkspaces();
-      loadNotifications();
+    } catch (err) {
+      console.error('Error in CollaborationHub useEffect:', err);
+      setError('Failed to initialize Collaboration Hub');
     }
   }, [currentUser, projectId]);
 
   const loadWorkspaces = async () => {
     try {
+      console.log('Loading workspaces...');
       setLoading(true);
+      setError(null);
+      
       // Mock data for demonstration
       const mockWorkspaces: CollaborationWorkspace[] = [
         {
           id: '1',
-          projectId: projectId || 'project-1',
+          projectId: projectId || 'default-project',
           name: 'Production Team',
           description: 'Main workspace for production team collaboration',
           type: 'project',
           members: [
-            { userId: currentUser?.uid || '', role: 'admin', joinedAt: new Date(), permissions: ['read', 'write'], isOnline: true, lastSeen: new Date() },
+            { userId: currentUser?.uid || 'default-user', role: 'admin', joinedAt: new Date(), permissions: ['read', 'write'], isOnline: true, lastSeen: new Date() },
             { userId: 'user-2', role: 'member', joinedAt: new Date(), permissions: ['read', 'write'], isOnline: true, lastSeen: new Date() },
             { userId: 'user-3', role: 'member', joinedAt: new Date(), permissions: ['read'], isOnline: false, lastSeen: new Date(Date.now() - 3600000) }
           ],
@@ -62,12 +102,12 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         },
         {
           id: '2',
-          projectId: projectId || 'project-1',
+          projectId: projectId || 'default-project',
           name: 'Camera Department',
           description: 'Camera and lighting team workspace',
           type: 'department',
           members: [
-            { userId: currentUser?.uid || '', role: 'member', joinedAt: new Date(), permissions: ['read', 'write'], isOnline: true, lastSeen: new Date() }
+            { userId: currentUser?.uid || 'default-user', role: 'member', joinedAt: new Date(), permissions: ['read', 'write'], isOnline: true, lastSeen: new Date() }
           ],
           channels: [],
           documents: [],
@@ -84,45 +124,80 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
           }
         }
       ];
+      
+      console.log('Setting workspaces:', mockWorkspaces);
       setWorkspaces(mockWorkspaces);
       if (mockWorkspaces.length > 0) {
         setSelectedWorkspace(mockWorkspaces[0]);
       }
     } catch (error) {
       console.error('Error loading workspaces:', error);
+      setError('Failed to load workspaces');
     } finally {
       setLoading(false);
     }
   };
 
-  const loadNotifications = async () => {
+  const handleCreateWorkspace = () => {
     try {
-      // Mock notifications
-      const mockNotifications: Notification[] = [
-        {
-          id: '1',
-          userId: currentUser?.uid || '',
-          type: 'message',
-          title: 'New message in Production Team',
-          message: 'John Doe mentioned you in a message',
-          isRead: false,
-          createdAt: new Date(Date.now() - 300000),
-          actionUrl: '/collaboration/workspace/1'
-        },
-        {
-          id: '2',
-          userId: currentUser?.uid || '',
-          type: 'task',
-          title: 'Task assigned',
-          message: 'You have been assigned a new task: "Review script changes"',
-          isRead: false,
-          createdAt: new Date(Date.now() - 600000),
-          actionUrl: '/collaboration/tasks'
-        }
-      ];
-      setNotifications(mockNotifications);
+      console.log('Create workspace clicked');
+      alert('Create workspace functionality coming soon!');
     } catch (error) {
-      console.error('Error loading notifications:', error);
+      console.error('Error in handleCreateWorkspace:', error);
+    }
+  };
+
+  const handleCreateChannel = () => {
+    try {
+      console.log('Create channel clicked');
+      alert('Create channel functionality coming soon!');
+    } catch (error) {
+      console.error('Error in handleCreateChannel:', error);
+    }
+  };
+
+  const handleCreateDocument = () => {
+    try {
+      console.log('Create document clicked');
+      alert('Create document functionality coming soon!');
+    } catch (error) {
+      console.error('Error in handleCreateDocument:', error);
+    }
+  };
+
+  const handleCreateWhiteboard = () => {
+    try {
+      console.log('Create whiteboard clicked');
+      alert('Create whiteboard functionality coming soon!');
+    } catch (error) {
+      console.error('Error in handleCreateWhiteboard:', error);
+    }
+  };
+
+  const handleCreateTask = () => {
+    try {
+      console.log('Create task clicked');
+      alert('Create task functionality coming soon!');
+    } catch (error) {
+      console.error('Error in handleCreateTask:', error);
+    }
+  };
+
+  const handleJoinWorkspace = (workspaceId: string) => {
+    try {
+      console.log('Join workspace clicked:', workspaceId);
+      alert(`Joining workspace ${workspaceId} - functionality coming soon!`);
+    } catch (error) {
+      console.error('Error in handleJoinWorkspace:', error);
+    }
+  };
+
+  const handleWorkspaceSettings = (workspaceId: string) => {
+    try {
+      console.log('Workspace settings clicked:', workspaceId);
+      alert(`Workspace settings for ${workspaceId} - functionality coming soon!`);
+    } catch (error) {
+      console.error('Error in handleWorkspaceSettings:', error);
     }
   };
 
@@ -130,7 +205,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     <div className="workspaces-tab">
       <div className="workspaces-header">
         <h2>Workspaces</h2>
-        <button className="btn-primary">Create Workspace</button>
+        <button className="btn-primary" onClick={handleCreateWorkspace}>Create Workspace</button>
       </div>
       
       <div className="workspaces-grid">
@@ -156,8 +231,24 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
               </div>
             </div>
             <div className="workspace-actions">
-              <button className="btn-secondary">Join</button>
-              <button className="btn-secondary">Settings</button>
+              <button 
+                className="btn-secondary"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleJoinWorkspace(workspace.id);
+                }}
+              >
+                Join
+              </button>
+              <button 
+                className="btn-secondary"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleWorkspaceSettings(workspace.id);
+                }}
+              >
+                Settings
+              </button>
             </div>
           </div>
         ))}
@@ -169,7 +260,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     <div className="channels-tab">
       <div className="channels-header">
         <h2>Channels</h2>
-        <button className="btn-primary">Create Channel</button>
+        <button className="btn-primary" onClick={handleCreateChannel}>Create Channel</button>
       </div>
       
       {selectedWorkspace ? (
@@ -221,7 +312,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     <div className="documents-tab">
       <div className="documents-header">
         <h2>Collaborative Documents</h2>
-        <button className="btn-primary">Create Document</button>
+        <button className="btn-primary" onClick={handleCreateDocument}>Create Document</button>
       </div>
       
       <div className="documents-grid">
@@ -232,7 +323,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
             <p>Main screenplay with latest revisions</p>
             <div className="document-meta">
               <span className="document-type">Script</span>
-              <span className="document-collaborators">3 collaborators</span>
+              <span className="document-collaborators">5 collaborators</span>
               <span className="document-updated">Updated 2 hours ago</span>
             </div>
           </div>
@@ -266,7 +357,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     <div className="whiteboards-tab">
       <div className="whiteboards-header">
         <h2>Whiteboards</h2>
-        <button className="btn-primary">Create Whiteboard</button>
+        <button className="btn-primary" onClick={handleCreateWhiteboard}>Create Whiteboard</button>
       </div>
       
       <div className="whiteboards-grid">
@@ -313,7 +404,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     <div className="tasks-tab">
       <div className="tasks-header">
         <h2>Tasks</h2>
-        <button className="btn-primary">Create Task</button>
+        <button className="btn-primary" onClick={handleCreateTask}>Create Task</button>
       </div>
       
       <div className="tasks-list">
@@ -355,19 +446,30 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   );
 
   const renderTabContent = () => {
-    switch (activeTab) {
-      case 'workspaces':
-        return renderWorkspacesTab();
-      case 'channels':
-        return renderChannelsTab();
-      case 'documents':
-        return renderDocumentsTab();
-      case 'whiteboards':
-        return renderWhiteboardsTab();
-      case 'tasks':
-        return renderTasksTab();
-      default:
-        return renderWorkspacesTab();
+    try {
+      console.log('Rendering tab content for:', activeTab);
+      switch (activeTab) {
+        case 'workspaces':
+          return renderWorkspacesTab();
+        case 'channels':
+          return renderChannelsTab();
+        case 'documents':
+          return renderDocumentsTab();
+        case 'whiteboards':
+          return renderWhiteboardsTab();
+        case 'tasks':
+          return renderTasksTab();
+        default:
+          return renderWorkspacesTab();
+      }
+    } catch (error) {
+      console.error('Error rendering tab content:', error);
+      return (
+        <div className="error-content">
+          <h2>Error loading content</h2>
+          <p>Please try refreshing the page.</p>
+        </div>
+      );
     }
   };
 
@@ -379,71 +481,85 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     );
   }
 
+  if (error) {
+    return (
+      <div className="collaboration-hub error">
+        <div className="error-content">
+          <h2>Error</h2>
+          <p>{error}</p>
+          <button onClick={() => window.location.reload()}>Refresh Page</button>
+        </div>
+      </div>
+    );
+  }
+
+  console.log('Rendering CollaborationHub with:', {
+    activeTab,
+    workspacesCount: workspaces.length,
+    selectedWorkspace: selectedWorkspace?.name
+  });
+
   return (
-    <div className="collaboration-hub">
-      <div className="collaboration-header">
-        <h1>Collaboration Hub</h1>
-        <div className="header-actions">
-          <div className="notifications-bell">
-            <span className="notification-icon">🔔</span>
-            {notifications.filter(n => !n.isRead).length > 0 && (
-              <span className="notification-badge">{notifications.filter(n => !n.isRead).length}</span>
-            )}
+    <CollaborationErrorBoundary>
+      <div className="collaboration-hub">
+        <div className="collaboration-header">
+          <h1>Collaboration Hub</h1>
+          <div className="header-actions">
+            <button className="btn-primary">Start Video Call</button>
           </div>
-          <button className="btn-primary">Start Video Call</button>
-        </div>
-      </div>
-
-      <div className="collaboration-content">
-        <div className="collaboration-sidebar">
-          <nav className="collaboration-nav">
-            <button 
-              className={`nav-item ${activeTab === 'workspaces' ? 'active' : ''}`}
-              onClick={() => setActiveTab('workspaces')}
-            >
-              <span className="nav-icon">🏢</span>
-              <span className="nav-label">Workspaces</span>
-            </button>
-            
-            <button 
-              className={`nav-item ${activeTab === 'channels' ? 'active' : ''}`}
-              onClick={() => setActiveTab('channels')}
-            >
-              <span className="nav-icon">💬</span>
-              <span className="nav-label">Channels</span>
-            </button>
-            
-            <button 
-              className={`nav-item ${activeTab === 'documents' ? 'active' : ''}`}
-              onClick={() => setActiveTab('documents')}
-            >
-              <span className="nav-icon">📄</span>
-              <span className="nav-label">Documents</span>
-            </button>
-            
-            <button 
-              className={`nav-item ${activeTab === 'whiteboards' ? 'active' : ''}`}
-              onClick={() => setActiveTab('whiteboards')}
-            >
-              <span className="nav-icon">🖼️</span>
-              <span className="nav-label">Whiteboards</span>
-            </button>
-            
-            <button 
-              className={`nav-item ${activeTab === 'tasks' ? 'active' : ''}`}
-              onClick={() => setActiveTab('tasks')}
-            >
-              <span className="nav-icon">✅</span>
-              <span className="nav-label">Tasks</span>
-            </button>
-          </nav>
         </div>
 
-        <div className="collaboration-main">
-          {renderTabContent()}
+        <div className="collaboration-content">
+          <div className="collaboration-sidebar">
+            <nav className="collaboration-nav">
+              <button 
+                className={`nav-item ${activeTab === 'workspaces' ? 'active' : ''}`}
+                onClick={() => setActiveTab('workspaces')}
+              >
+                <span className="nav-icon">🏢</span>
+                <span className="nav-label">Workspaces</span>
+              </button>
+              
+              <button 
+                className={`nav-item ${activeTab === 'channels' ? 'active' : ''}`}
+                onClick={() => setActiveTab('channels')}
+              >
+                <span className="nav-icon">💬</span>
+                <span className="nav-label">Channels</span>
+              </button>
+              
+              <button 
+                className={`nav-item ${activeTab === 'documents' ? 'active' : ''}`}
+                onClick={() => setActiveTab('documents')}
+              >
+                <span className="nav-icon">📄</span>
+                <span className="nav-label">Documents</span>
+              </button>
+              
+              <button 
+                className={`nav-item ${activeTab === 'whiteboards' ? 'active' : ''}`}
+                onClick={() => setActiveTab('whiteboards')}
+              >
+                <span className="nav-icon">🖼️</span>
+                <span className="nav-label">Whiteboards</span>
+              </button>
+              
+              <button 
+                className={`nav-item ${activeTab === 'tasks' ? 'active' : ''}`}
+                onClick={() => setActiveTab('tasks')}
+              >
+                <span className="nav-icon">✅</span>
+                <span className="nav-label">Tasks</span>
+              </button>
+            </nav>
+          </div>
+
+          <div className="collaboration-main">
+            {renderTabContent()}
+          </div>
         </div>
       </div>
-    </div>
+    </CollaborationErrorBoundary>
   );
 };
 
