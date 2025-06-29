@@ -8,12 +8,13 @@ import ProjectCrewManagement from './ProjectCrewManagement';
 import ProjectBudgetView from './ProjectBudgetView';
 import ProjectTimelineView from './ProjectTimelineView';
 import ProjectDocuments from './ProjectDocuments';
+import CollaborativeTasksHub from '../../components/CollaborativeTasks/CollaborativeTasksHub';
 
 interface ProjectDashboardProps {
   projectId: string;
 }
 
-type TabType = 'overview' | 'crew' | 'budget' | 'timeline' | 'documents';
+type TabType = 'overview' | 'crew' | 'budget' | 'timeline' | 'documents' | 'tasks';
 
 const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ projectId }) => {
   const [project, setProject] = useState<Project | null>(null);
@@ -101,7 +102,8 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ projectId }) => {
     { id: 'crew', label: 'Crew', icon: '👥' },
     { id: 'budget', label: 'Budget', icon: '💰' },
     { id: 'timeline', label: 'Timeline', icon: '📅' },
-    { id: 'documents', label: 'Documents', icon: '📁' }
+    { id: 'documents', label: 'Documents', icon: '📁' },
+    { id: 'tasks', label: 'Tasks', icon: '✅' }
   ];
 
   if (loading) {
@@ -394,6 +396,10 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ projectId }) => {
             documents={documents}
             onDocumentsUpdate={loadProjectData}
           />
+        )}
+
+        {activeTab === 'tasks' && (
+          <CollaborativeTasksHub projectId={projectId} />
         )}
       </div>
     </div>
