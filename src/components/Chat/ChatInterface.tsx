@@ -38,14 +38,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [newChatSearchQuery, setNewChatSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [isUserTyping, setIsUserTyping] = useState(false); // Track if user is actively typing
 
   // Refs
+  const inputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const typingTimeoutRef = useRef<NodeJS.Timeout>();
   const conversationListenerRef = useRef<(() => void) | null>(null);
   const messageListenerRef = useRef<(() => void) | null>(null);
   const typingListenerRef = useRef<(() => void) | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const inputValueRef = useRef<string>(''); // Preserve input value across re-renders
 
   // Memoized values
   const filteredConversations = useMemo(() => {
@@ -72,14 +74,24 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       loadConversation(selectedUser);
       markConversationAsRead(selectedUser);
       setupTypingListener(selectedUser);
-      focusInput();
     }
   }, [selectedUser]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    // Don't auto-scroll if user is actively typing
+    if (!isUserTyping) {
+      scrollToBottom();
+    }
+  }, [messages, isUserTyping]);
+
+  // Restore input value if it gets cleared unexpectedly
+  useEffect(() => {
+    if (inputValueRef.current && !messageText && inputRef.current) {
+      // If ref has a value but state is empty, restore it
+      setMessageText(inputValueRef.current);
+    }
+  }, [messageText]);
 
   // Initialize chat system
   const initializeChat = async () => {
@@ -148,10 +160,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   // Send message
   const sendMessage = async () => {
-    if (!messageText.trim() || !selectedUser || sending) return;
+    const messageContent = inputValueRef.current?.trim();
+    if (!messageContent || !selectedUser || sending) return;
 
-    const messageContent = messageText.trim();
-    setMessageText('');
+    // Clear input directly
+    if (inputRef.current) {
+      inputRef.current.value = '';
+    }
+    inputValueRef.current = '';
     setIsTyping(false);
     setSending(true);
 
@@ -195,7 +211,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   // Handle typing
   const handleTyping = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setMessageText(e.target.value);
+    const value = e.target.value;
+    inputValueRef.current = value; // Update ref value only
+    setIsUserTyping(true); // Mark user as actively typing
     
     if (!isTyping && selectedUser) {
       setIsTyping(true);
@@ -210,6 +228,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     // Set new timeout
     typingTimeoutRef.current = setTimeout(() => {
       setIsTyping(false);
+      setIsUserTyping(false); // Clear user typing state
       if (selectedUser) {
         MessagingService.setTypingStatus(currentUserId, selectedUser, false);
       }
@@ -782,7 +801,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 <input
                   ref={inputRef}
                   type="text"
-                  value={messageText}
+                  defaultValue=""
                   onChange={handleTyping}
                   onKeyPress={handleKeyPress}
                   placeholder="Type a message..."
@@ -791,7 +810,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 />
                 <button
                   onClick={sendMessage}
-                  disabled={!messageText.trim() || sending}
+                  disabled={!inputValueRef.current?.trim() || sending}
                   className="send-button"
                 >
                   {sending ? 'Sending...' : 'Send'}
