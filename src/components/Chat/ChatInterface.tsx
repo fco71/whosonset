@@ -111,11 +111,20 @@ const MessageInput = React.forwardRef<{
   }, []);
 
   // Audio level monitoring
-  const startAudioLevelMonitoring = useCallback((stream: MediaStream) => {
+  const startAudioLevelMonitoring = useCallback(async (stream: MediaStream) => {
     try {
+      console.log('[Audio Level] Starting audio level monitoring...');
+      
       // Create audio context
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       audioContextRef.current = audioContext;
+      
+      // Resume audio context if suspended (required for user interaction)
+      if (audioContext.state === 'suspended') {
+        console.log('[Audio Level] Audio context suspended, resuming...');
+        await audioContext.resume();
+        console.log('[Audio Level] Audio context resumed, state:', audioContext.state);
+      }
       
       // Create analyser node
       const analyser = audioContext.createAnalyser();
@@ -129,6 +138,8 @@ const MessageInput = React.forwardRef<{
       
       // Connect microphone to analyser
       microphone.connect(analyser);
+      
+      console.log('[Audio Level] Audio nodes connected successfully');
       
       // Create data array for frequency analysis
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
@@ -145,7 +156,13 @@ const MessageInput = React.forwardRef<{
         const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
         const normalizedLevel = average / 255; // Normalize to 0-1
         
-        setAudioLevel(normalizedLevel);
+        // Only update if we detect actual audio (not just silence)
+        if (average > 5) { // Threshold to avoid noise
+          setAudioLevel(normalizedLevel);
+          console.log('[Audio Level] Detected audio level:', normalizedLevel.toFixed(3));
+        } else {
+          setAudioLevel(0);
+        }
         
         // Continue monitoring
         animationFrameRef.current = requestAnimationFrame(updateAudioLevel);
@@ -155,7 +172,7 @@ const MessageInput = React.forwardRef<{
       updateAudioLevel();
       
     } catch (error) {
-      console.warn('[Audio Level] Failed to start audio level monitoring:', error);
+      console.error('[Audio Level] Failed to start audio level monitoring:', error);
     }
   }, [isRecording]);
 
@@ -200,8 +217,14 @@ const MessageInput = React.forwardRef<{
           enabled: track.enabled,
           muted: track.muted,
           readyState: track.readyState,
-          settings: track.getSettings()
+          settings: track.getSettings(),
+          constraints: track.getConstraints()
         });
+        
+        // Check if track is actually receiving audio
+        if (track.readyState === 'ended') {
+          console.warn(`[Voice Recording] Audio track ${index} is ended`);
+        }
       });
       
       // Try different MIME types for better compatibility
@@ -229,7 +252,7 @@ const MessageInput = React.forwardRef<{
         }
       };
       
-      mediaRecorder.onstart = () => {
+      mediaRecorder.onstart = async () => {
         console.log('[Voice Recording] Recording started');
         setIsRecording(true);
         setRecordingTime(0);
@@ -237,7 +260,12 @@ const MessageInput = React.forwardRef<{
         setAudioLevel(0);
         
         // Start audio level monitoring
-        startAudioLevelMonitoring(stream);
+        try {
+          await startAudioLevelMonitoring(stream);
+          console.log('[Voice Recording] Audio level monitoring started successfully');
+        } catch (error) {
+          console.error('[Voice Recording] Failed to start audio level monitoring:', error);
+        }
         
         // Start recording timer
         recordingTimerRef.current = setInterval(() => {
@@ -450,6 +478,45 @@ If you don't see the microphone icon, check your browser settings.`;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Test microphone function for debugging
+  const testMicrophone = useCallback(async () => {
+    try {
+      console.log('[Microphone Test] Starting microphone test...');
+      
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false
+        } 
+      });
+      
+      console.log('[Microphone Test] Got test stream:', stream);
+      
+      const audioTracks = stream.getAudioTracks();
+      console.log('[Microphone Test] Audio tracks:', audioTracks);
+      
+      audioTracks.forEach((track, index) => {
+        console.log(`[Microphone Test] Track ${index}:`, {
+          label: track.label,
+          enabled: track.enabled,
+          muted: track.muted,
+          readyState: track.readyState,
+          settings: track.getSettings()
+        });
+      });
+      
+      // Stop the test stream after 2 seconds
+      setTimeout(() => {
+        stream.getTracks().forEach(track => track.stop());
+        console.log('[Microphone Test] Test stream stopped');
+      }, 2000);
+      
+    } catch (error) {
+      console.error('[Microphone Test] Error:', error);
+    }
+  }, []);
+
   return (
     <div className={`message-input ${dragOver ? 'drag-over' : ''}`} 
          onDragOver={handleDragOver} 
@@ -505,6 +572,16 @@ If you don't see the microphone icon, check your browser settings.`;
           style={{ display: 'none' }}
           accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt"
         />
+        
+        {/* Test microphone button for debugging */}
+        <button
+          onClick={testMicrophone}
+          className="toolbar-button test-mic-button"
+          title="Test microphone"
+          style={{ backgroundColor: '#ff6b6b', color: 'white' }}
+        >
+          🎤
+        </button>
         
         <button
           ref={voiceRecorderRef}

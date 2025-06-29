@@ -460,12 +460,20 @@ const ProjectDetail: React.FC = () => {
                         {/* MODIFICATION 2: Conditional Edit/Suggest Button */}
                         <div className="mt-10 text-center"> {/* Ensures buttons are centered */}
                             {user && user.uid === project.owner_uid ? (
-                                <button
-                                    onClick={handleEditClick} // This will set isEditing to true
-                                    className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-md"
-                                >
-                                    Edit Project
-                                </button>
+                                <div className="flex gap-4 justify-center">
+                                    <Link
+                                        to={`/projects/${projectId}/manage`}
+                                        className="px-5 py-2 bg-green-600 hover:bg-green-500 text-white rounded-md transition-colors"
+                                    >
+                                        Manage Project
+                                    </Link>
+                                    <button
+                                        onClick={handleEditClick} // This will set isEditing to true
+                                        className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-md transition-colors"
+                                    >
+                                        Edit Project
+                                    </button>
+                                </div>
                             ) : (
                                 <button
                                     onClick={handleSuggestClick}

@@ -14,6 +14,18 @@ export interface ProjectCrew {
   addedAt: any;
 }
 
+export interface ProjectMilestone {
+  id: string;
+  title: string;
+  description: string;
+  dueDate: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'overdue' | 'delayed';
+  assignedTo?: string;
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  dependencies?: string[];
+  notes?: string;
+}
+
 export interface ProjectTimeline {
   id: string;
   projectId: string;
@@ -26,6 +38,7 @@ export interface ProjectTimeline {
   assignedCrew?: string[]; // Crew member IDs
   budget?: number;
   notes?: string;
+  milestones: ProjectMilestone[];
 }
 
 export interface ProjectBudget {
@@ -55,6 +68,13 @@ export interface ProjectDocument {
   uploadedAt: any;
   description?: string;
   isPublic: boolean; // Whether crew members can see this
+  version: string;
+  createdAt: any;
+  tags: string[];
+  downloadURL: string;
+  title: string;
+  fileSize: number;
+  notes?: string;
 }
 
 export interface ProjectSchedule {

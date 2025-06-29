@@ -33,6 +33,10 @@ import FavoritesPage from './pages/FavoritesPage';
 
 // New components
 import JobSearchPage from './components/JobSearch/JobSearchPage';
+import JobDetailPage from './components/JobSearch/JobDetailPage';
+import JobApplicationForm from './components/JobSearch/JobApplicationForm';
+import ApplicationSuccessPage from './components/JobSearch/ApplicationSuccessPage';
+import JobApplicationDashboard from './components/JobSearch/JobApplicationDashboard';
 import ProjectDashboard from './pages/ProjectManagement/ProjectDashboard';
 import AvailabilityCalendar from './components/Availability/AvailabilityCalendar';
 import GanttChart from './components/GanttChart/GanttChart';
@@ -43,6 +47,10 @@ import PerformanceMonitor from './components/PerformanceMonitor';
 import PostJobPage from './pages/PostJobPage';
 import MyProjectsPage from './pages/MyProjectsPage';
 import ChatTestPage from './components/Chat/ChatTestPage';
+
+// Analytics components
+import AnalyticsDashboard from './components/Analytics/AnalyticsDashboard';
+import ProjectAnalytics from './components/Analytics/ProjectAnalytics';
 
 import { AnimatePresence } from 'framer-motion';
 
@@ -93,6 +101,7 @@ const App: React.FC = () => {
                         <li><Link to="/" className="nav-link">Home</Link></li>
                         <li><Link to="/projects" className="nav-link">All Projects</Link></li>
                         <li><Link to="/jobs" className="nav-link">Job Search</Link></li>
+                        <li><Link to="/applications" className="nav-link">My Applications</Link></li>
                         {!authUser ? (
                             <>
                                 <li><Link to="/login" className="nav-link">Login</Link></li>
@@ -105,6 +114,7 @@ const App: React.FC = () => {
                                 <li><Link to="/social" className="nav-link">Social Hub</Link></li>
                                 <li><Link to="/collections" className="nav-link">My Collections</Link></li>
                                 <li><Link to="/favorites" className="nav-link">Favorites</Link></li>
+                                <li><Link to="/analytics" className="nav-link">📊 Analytics</Link></li>
                                 <li><Link to="/chat-test" className="nav-link">💬 Chat Demo</Link></li>
                                 <li><NotificationBell currentUserId={authUser?.uid || ''} /></li>
                                 <li><Link to="/edit-profile" className="nav-link">Resume Builder</Link></li>
@@ -142,11 +152,17 @@ const App: React.FC = () => {
                         
                         {/* New routes */}
                         <Route path="/jobs" element={<JobSearchPage />} />
-                        <Route path="/jobs/:jobId" element={<div>Job Detail Page (Coming Soon)</div>} />
-                        <Route path="/jobs/:jobId/apply" element={<div>Job Application Page (Coming Soon)</div>} />
+                        <Route path="/jobs/:jobId" element={<JobDetailPage />} />
+                        <Route path="/jobs/:jobId/apply" element={<JobApplicationForm />} />
+                        <Route path="/applications" element={<JobApplicationDashboard />} />
+                        <Route path="/applications/:applicationId/success" element={<ApplicationSuccessPage />} />
                         <Route path="/availability" element={<PrivateRoute><AvailabilityCalendar /></PrivateRoute>} />
                         <Route path="/availability/:userId" element={<AvailabilityCalendar readOnly={true} />} />
                         <Route path="/gantt/:projectId" element={<div>Gantt Chart Page (Coming Soon)</div>} />
+                        
+                        {/* Analytics routes */}
+                        <Route path="/analytics" element={<PrivateRoute><AnalyticsDashboard /></PrivateRoute>} />
+                        <Route path="/analytics/project/:projectId" element={<PrivateRoute><ProjectAnalytics /></PrivateRoute>} />
                         
                         <Route path="/login" element={<Login />} />
                         <Route path="/register" element={<Register />} />

@@ -53,115 +53,86 @@ export interface ActivityFeedItem {
 }
 
 export interface SocialProfile {
+  id: string;
   userId: string;
   displayName: string;
-  profileImageUrl?: string;
-  bio?: string;
-  location?: string;
-  jobTitle?: string;
-  company?: string;
-  website?: string;
-  socialLinks?: {
-    instagram?: string;
-    twitter?: string;
-    linkedin?: string;
-    imdb?: string;
-  };
-  stats: {
-    followers: number;
-    following: number;
-    projects: number;
-    recommendations: number;
-    groups: number;
-    events: number;
-  };
-  isPublic: boolean;
-  lastActive: Date;
-  availability: 'available' | 'busy' | 'away' | 'offline';
-  privacySettings: {
-    requireApprovalForFollows: boolean;
-    showOnlineStatus: boolean;
-    showLastSeen: boolean;
-    allowMessages: boolean;
-    allowMentions: boolean;
-  };
-  // Enhanced profile features
-  skills: Skill[];
-  achievements: Achievement[];
-  endorsements: Endorsement[];
-  recommendations: Recommendation[];
-  badges: Badge[];
-}
-
-export interface Skill {
-  id: string;
-  name: string;
-  category: string;
-  level: 'beginner' | 'intermediate' | 'advanced' | 'expert';
-  endorsements: number;
-  endorsedBy: string[];
-  yearsOfExperience?: number;
-}
-
-export interface Endorsement {
-  id: string;
-  skillId: string;
-  endorsedByUserId: string;
-  endorsedByUserName: string;
-  createdAt: Date;
-}
-
-export interface Achievement {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  category: 'project' | 'social' | 'skill' | 'milestone';
-  earnedAt: Date;
-  relatedProjectId?: string;
-}
-
-export interface Badge {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  category: 'expertise' | 'contribution' | 'leadership' | 'innovation';
-  earnedAt: Date;
-  level: 'bronze' | 'silver' | 'gold' | 'platinum';
-}
-
-export interface Recommendation {
-  id: string;
-  fromUserId: string;
-  fromUserName: string;
-  toUserId: string;
-  content: string;
-  projectContext?: string;
+  bio: string;
+  avatar: string;
+  coverImage?: string;
+  location: string;
+  department: string;
+  experience: 'beginner' | 'intermediate' | 'advanced' | 'expert';
   skills: string[];
-  rating: number;
-  isPublic: boolean;
-  createdAt: Date;
+  portfolio: PortfolioItem[];
+  availability: 'available' | 'busy' | 'unavailable';
+  verified: boolean;
+  followersCount: number;
+  followingCount: number;
+  projectsCount: number;
+  createdAt: any;
+  updatedAt: any;
+}
+
+export interface PortfolioItem {
+  id: string;
+  title: string;
+  description: string;
+  mediaUrl: string;
+  mediaType: 'image' | 'video' | 'document';
+  projectId?: string;
+  tags: string[];
+  featured: boolean;
+  createdAt: any;
+}
+
+export interface SocialConnection {
+  id: string;
+  followerId: string;
+  followingId: string;
+  status: 'pending' | 'accepted' | 'blocked';
+  createdAt: any;
+  updatedAt: any;
+}
+
+export interface SocialPost {
+  id: string;
+  authorId: string;
+  content: string;
+  media?: PostMedia[];
+  projectId?: string;
+  location?: string;
+  tags: string[];
+  visibility: 'public' | 'connections' | 'department' | 'private';
+  likesCount: number;
+  commentsCount: number;
+  sharesCount: number;
+  createdAt: any;
+  updatedAt: any;
+}
+
+export interface PostMedia {
+  id: string;
+  url: string;
+  type: 'image' | 'video' | 'document';
+  caption?: string;
 }
 
 export interface SocialComment {
   id: string;
-  activityId: string;
-  userId: string;
-  userName: string;
-  userAvatar?: string;
+  postId: string;
+  authorId: string;
   content: string;
-  likes: number;
-  createdAt: Date;
-  replies?: SocialComment[];
+  parentCommentId?: string;
+  likesCount: number;
+  createdAt: any;
+  updatedAt: any;
 }
 
 export interface SocialLike {
   id: string;
-  activityId: string;
+  postId: string;
   userId: string;
-  userName: string;
-  createdAt: Date;
+  createdAt: any;
 }
 
 export interface SocialMention {
@@ -205,66 +176,48 @@ export interface GroupPost {
   id: string;
   groupId: string;
   authorId: string;
-  authorName: string;
-  authorAvatar?: string;
   content: string;
-  imageUrl?: string;
-  type: 'text' | 'image' | 'link' | 'poll' | 'event';
-  likes: number;
-  comments: number;
-  shares: number;
-  createdAt: Date;
-  updatedAt: Date;
-  isPinned: boolean;
-  isAnnouncement: boolean;
+  media?: PostMedia[];
+  likesCount: number;
+  commentsCount: number;
+  createdAt: any;
+  updatedAt: any;
 }
 
 export interface SocialEvent {
   id: string;
   title: string;
   description: string;
-  imageUrl?: string;
-  category: 'networking' | 'workshop' | 'screening' | 'conference' | 'meetup' | 'project';
-  startDate: Date;
-  endDate: Date;
   location: string;
-  isOnline: boolean;
-  onlineUrl?: string;
-  createdBy: string;
-  createdByUserName: string;
-  createdAt: Date;
-  updatedAt: Date;
-  // Event features
-  attendees: EventAttendee[];
+  startDate: any;
+  endDate: any;
+  organizerId: string;
+  attendees: string[];
   maxAttendees?: number;
-  isPublic: boolean;
-  registrationRequired: boolean;
+  eventType: 'meetup' | 'workshop' | 'screening' | 'networking' | 'conference';
+  department?: string;
   tags: string[];
-  relatedProjectId?: string;
-  relatedGroupId?: string;
+  coverImage?: string;
+  createdAt: any;
+  updatedAt: any;
 }
 
 export interface EventAttendee {
+  id: string;
+  eventId: string;
   userId: string;
-  userName: string;
-  userAvatar?: string;
-  status: 'attending' | 'maybe' | 'not_attending' | 'waitlist';
-  registeredAt: Date;
-  notes?: string;
+  status: 'attending' | 'maybe' | 'declined';
+  registeredAt: any;
 }
 
 export interface SocialRecommendation {
   id: string;
-  type: 'user' | 'project' | 'group' | 'event' | 'job';
-  targetId: string;
-  targetName: string;
-  targetImageUrl?: string;
-  score: number;
-  reasons: string[];
-  category: string;
-  tags: string[];
-  createdAt: Date;
-  expiresAt?: Date;
+  userId: string;
+  recommendedUserId: string;
+  reason: string;
+  strength: number; // 0-1 score
+  factors: string[]; // ['skills_match', 'location', 'project_history', etc.]
+  createdAt: any;
 }
 
 export interface SocialAnalytics {
@@ -285,9 +238,7 @@ export interface SocialAnalytics {
   achievementsEarned: number;
 }
 
-// Legacy types for backward compatibility
 export interface FriendRequest extends FollowRequest {}
-export interface SocialConnection extends Follow {}
 
 export interface SocialSettings {
   userId: string;
@@ -319,4 +270,80 @@ export interface SocialSettings {
   mutedUsers: string[];
   mutedGroups: string[];
   mutedEvents: string[];
+}
+
+export interface IndustryGroup {
+  id: string;
+  name: string;
+  description: string;
+  avatar: string;
+  coverImage?: string;
+  department: string;
+  visibility: 'public' | 'private' | 'invite_only';
+  membersCount: number;
+  postsCount: number;
+  createdBy: string;
+  createdAt: any;
+  updatedAt: any;
+}
+
+export interface GroupMember {
+  id: string;
+  groupId: string;
+  userId: string;
+  role: 'member' | 'moderator' | 'admin';
+  joinedAt: any;
+}
+
+export interface SocialMessage {
+  id: string;
+  senderId: string;
+  recipientId: string;
+  content: string;
+  media?: PostMedia[];
+  read: boolean;
+  createdAt: any;
+}
+
+export interface SkillEndorsement {
+  id: string;
+  endorserId: string;
+  endorseeId: string;
+  skill: string;
+  projectId?: string;
+  message?: string;
+  createdAt: any;
+}
+
+export interface SocialActivity {
+  id: string;
+  userId: string;
+  type: 'post' | 'comment' | 'like' | 'follow' | 'project_join' | 'skill_endorsement';
+  relatedId?: string;
+  metadata?: any;
+  createdAt: any;
+}
+
+export interface SocialSearchFilter {
+  keywords?: string;
+  department?: string;
+  location?: string;
+  experience?: string;
+  skills?: string[];
+  availability?: string;
+  verified?: boolean;
+  projectHistory?: string[];
+}
+
+export interface SocialFeedItem {
+  id: string;
+  type: 'post' | 'project_update' | 'event' | 'recommendation';
+  content: any;
+  author: SocialProfile;
+  engagement: {
+    likes: number;
+    comments: number;
+    shares: number;
+  };
+  timestamp: any;
 }
