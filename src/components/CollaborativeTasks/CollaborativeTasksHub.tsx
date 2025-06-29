@@ -36,6 +36,13 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
     }
   }, [projectId]);
 
+  // Request notification permission on component mount
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
+
   const loadUsers = async () => {
     try {
       const usersQuery = query(collection(db, 'users'));
@@ -89,72 +96,54 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
 
   const handleCreateTask = async (taskData: Partial<CollaborativeTask>) => {
     try {
-      console.log('=== TASK CREATION DEBUG ===');
-      console.log('Creating task with data:', taskData);
-      console.log('Project ID:', projectId);
-      console.log('Current user:', auth.currentUser?.uid);
-      console.log('Auth state:', auth.currentUser ? 'Authenticated' : 'Not authenticated');
-      
-      if (!auth.currentUser) {
-        console.error('No authenticated user found');
-        alert('You must be logged in to create tasks.');
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        alert('You must be logged in to create tasks');
         return;
       }
-      
-      if (!projectId) {
-        console.error('No project ID provided');
-        alert('Project ID is required to create tasks.');
-        return;
-      }
-      
-      const newTask: Partial<CollaborativeTask> = {
-        ...taskData,
+
+      const newTask: CollaborativeTask = {
+        id: Date.now().toString(),
         projectId,
-        createdBy: auth.currentUser.uid,
+        title: taskData.title || '',
+        description: taskData.description || '',
+        status: 'pending',
+        priority: taskData.priority || 'medium',
+        dueDate: taskData.dueDate || '',
+        createdBy: currentUser.uid,
         createdAt: new Date(),
         updatedAt: new Date(),
-        status: 'pending',
         assignedTeamMembers: taskData.assignedTeamMembers || [],
         subtasks: taskData.subtasks || [],
         reminders: [],
         tags: taskData.tags || [],
         attachments: [],
         comments: [],
-        dependencies: []
+        dependencies: [],
+        estimatedHours: taskData.estimatedHours,
+        category: taskData.category || 'other',
+        location: taskData.location,
+        budget: taskData.budget,
+        notes: taskData.notes
       };
 
-      console.log('Final task object:', newTask);
-      console.log('About to add document to Firestore...');
+      // Add to Firestore
+      await addDoc(collection(db, 'collaborativeTasks'), newTask);
       
-      const docRef = await addDoc(collection(db, 'collaborativeTasks'), newTask);
-      console.log('✅ Task created successfully with ID:', docRef.id);
+      // Send notifications to assigned team members
+      const assignedMemberIds = newTask.assignedTeamMembers
+        .filter(member => member.userId)
+        .map(member => member.userId);
       
+      if (assignedMemberIds.length > 0) {
+        await sendTaskAssignmentNotification(newTask.id, assignedMemberIds);
+      }
+
       setShowTaskForm(false);
-      
-      // Force reload tasks to show the new task
-      console.log('Reloading tasks...');
-      const tasksQuery = query(
-        collection(db, 'collaborativeTasks'),
-        where('projectId', '==', projectId)
-      );
-      
-      const snapshot = await getDocs(tasksQuery);
-      const tasksData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as CollaborativeTask[];
-      
-      console.log('Reloaded tasks:', tasksData);
-      setTasks(tasksData);
-      
+      setEditingTask(null);
     } catch (error) {
-      console.error('❌ Error creating task:', error);
-      console.error('Error details:', {
-        code: (error as any).code,
-        message: (error as any).message,
-        stack: (error as any).stack
-      });
-      alert(`Failed to create task: ${(error as any).message}`);
+      console.error('Error creating task:', error);
+      alert('Failed to create task. Please try again.');
     }
   };
 
@@ -317,30 +306,87 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
 
   const getMemberAvatar = (userId: string) => {
     const user = users[userId];
-    if (!user) return null;
-
-    if (user.avatar) {
-      return <img src={user.avatar} alt={user.name} className="member-avatar" />;
+    if (user?.avatar) {
+      return (
+        <img 
+          src={user.avatar} 
+          alt={user.name || 'User'} 
+          className="member-avatar"
+        />
+      );
     }
-
+    
     // Generate colored bubble with initials
-    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-    const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
-    const colorIndex = userId.charCodeAt(0) % colors.length;
+    const name = user?.name || userId;
+    const initials = name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
+    const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#f97316'];
+    const colorIndex = userId.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0) % colors.length;
     
     return (
-      <div 
-        className="member-bubble" 
-        style={{ backgroundColor: colors[colorIndex] }}
-        title={user.name}
-      >
+      <div className="member-avatar-bubble" style={{ backgroundColor: colors[colorIndex] }}>
         {initials}
       </div>
     );
   };
 
   const getMemberName = (userId: string) => {
-    return users[userId]?.name || 'Unknown User';
+    const user = users[userId];
+    return user?.name || userId;
+  };
+
+  // Notification system for task assignments
+  const sendTaskAssignmentNotification = async (taskId: string, assignedMembers: string[]) => {
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) return;
+
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) return;
+
+      // Create notifications for assigned members
+      const notifications = assignedMembers.map(memberId => ({
+        id: `${taskId}-${memberId}-${Date.now()}`,
+        userId: memberId,
+        type: 'task_assignment',
+        title: 'New Task Assignment',
+        message: `You have been assigned to task: ${task.title}`,
+        taskId: taskId,
+        projectId: projectId,
+        createdAt: new Date(),
+        isRead: false,
+        priority: 'medium'
+      }));
+
+      // Here you would typically save notifications to Firestore
+      console.log('Sending task assignment notifications:', notifications);
+      
+      // Show browser notifications if permission is granted
+      if ('Notification' in window && Notification.permission === 'granted') {
+        notifications.forEach(notification => {
+          new Notification(notification.title, {
+            body: notification.message,
+            icon: '/my-icon.png',
+            badge: '/my-icon.png',
+            tag: notification.id,
+            requireInteraction: false,
+            silent: false
+          });
+        });
+      } else if ('Notification' in window && Notification.permission === 'default') {
+        // Request permission if not granted
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+          notifications.forEach(notification => {
+            new Notification(notification.title, {
+              body: notification.message,
+              icon: '/my-icon.png'
+            });
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error sending task assignment notifications:', error);
+    }
   };
 
   if (loading) {

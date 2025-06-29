@@ -182,6 +182,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ task, onSubmit, onCancel, projectId
       ...prev,
       subtasks: [...prev.subtasks, newSubtask]
     }));
+    setShowSubtaskForm(false);
   };
 
   const handleRemoveSubtask = (index: number) => {
@@ -225,7 +226,20 @@ const TaskForm: React.FC<TaskFormProps> = ({ task, onSubmit, onCancel, projectId
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('TaskForm submitting with data:', formData);
+    
+    // Validate required fields
+    if (!formData.title.trim()) {
+      alert('Please enter a task title');
+      return;
+    }
+
+    // Create notification for assigned team members
+    const assignedMembers = formData.assignedTeamMembers.filter(member => member.userId);
+    if (assignedMembers.length > 0) {
+      // Here you would typically send notifications to assigned members
+      console.log('Notifying assigned members:', assignedMembers);
+    }
+
     onSubmit(formData);
   };
 
@@ -239,14 +253,16 @@ const TaskForm: React.FC<TaskFormProps> = ({ task, onSubmit, onCancel, projectId
     }
   };
 
+  // Handle Escape key to close form
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         onCancel();
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onCancel]);
 
   return (
@@ -476,7 +492,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ task, onSubmit, onCancel, projectId
               <h3>Subtasks</h3>
               <button
                 type="button"
-                onClick={() => setShowSubtaskForm(true)}
+                onClick={handleAddSubtask}
                 className="btn-add"
               >
                 + Add Subtask
@@ -627,101 +643,6 @@ const TaskForm: React.FC<TaskFormProps> = ({ task, onSubmit, onCancel, projectId
               </div>
             )}
           </div>
-
-          {/* Subtask Form Modal */}
-          {showSubtaskForm && (
-            <div className="subtask-modal-overlay">
-              <div className="subtask-modal">
-                <div className="modal-header">
-                  <h3>Add Subtask</h3>
-                  <button onClick={() => setShowSubtaskForm(false)} className="close-btn">×</button>
-                </div>
-                <div className="modal-body">
-                  <div className="form-group">
-                    <label>Subtask Title</label>
-                    <input
-                      type="text"
-                      value={subtaskForm.title}
-                      onChange={(e) => setSubtaskForm(prev => ({ ...prev, title: e.target.value }))}
-                      placeholder="Enter subtask title"
-                      className="form-input"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Description</label>
-                    <textarea
-                      value={subtaskForm.description}
-                      onChange={(e) => setSubtaskForm(prev => ({ ...prev, description: e.target.value }))}
-                      placeholder="Describe the subtask..."
-                      className="form-textarea"
-                      rows={2}
-                    />
-                  </div>
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>Priority</label>
-                      <select
-                        value={subtaskForm.priority}
-                        onChange={(e) => setSubtaskForm(prev => ({ ...prev, priority: e.target.value as any }))}
-                        className="form-select"
-                      >
-                        <option value="low">Low</option>
-                        <option value="medium">Medium</option>
-                        <option value="high">High</option>
-                        <option value="critical">Critical</option>
-                      </select>
-                    </div>
-                    <div className="form-group">
-                      <label>Assigned To</label>
-                      <select
-                        value={subtaskForm.assignedTo}
-                        onChange={(e) => setSubtaskForm(prev => ({ ...prev, assignedTo: e.target.value }))}
-                        className="form-select"
-                      >
-                        <option value="">Select team member</option>
-                        {availableTeamMembers.map(teamMember => (
-                          <option key={teamMember.id} value={teamMember.id}>
-                            {teamMember.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>Due Date</label>
-                      <input
-                        type="date"
-                        value={subtaskForm.dueDate}
-                        onChange={(e) => setSubtaskForm(prev => ({ ...prev, dueDate: e.target.value }))}
-                        className="form-input"
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Estimated Hours</label>
-                      <input
-                        type="number"
-                        value={subtaskForm.estimatedHours}
-                        onChange={(e) => setSubtaskForm(prev => ({ ...prev, estimatedHours: parseFloat(e.target.value) || 0 }))}
-                        placeholder="0"
-                        className="form-input"
-                        min="0"
-                        step="0.5"
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div className="modal-footer">
-                  <button type="button" onClick={() => setShowSubtaskForm(false)} className="btn-secondary">
-                    Cancel
-                  </button>
-                  <button type="button" onClick={handleAddSubtask} className="btn-primary">
-                    Add Subtask
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Notes */}
           <div className="form-section">
