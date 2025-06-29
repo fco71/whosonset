@@ -119,6 +119,7 @@ const App: React.FC = () => {
                             <>
                                 <li><Link to="/edit-profile" className="nav-link">Resume Builder</Link></li>
                                 <li><Link to="/social" className="nav-link">Social</Link></li>
+                                <li><Link to="/collaboration" className="nav-link">🤝 Collaboration</Link></li>
                                 <li><Link to="/analytics" className="nav-link">📊 Analytics</Link></li>
                                 <li><NotificationBell currentUserId={authUser?.uid || ''} /></li>
                                 <li>

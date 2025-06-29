@@ -8,6 +8,7 @@ import {
   Task,
   VideoCall
 } from '../../types/Collaboration';
+import CollaborativeTasksHub from '../CollaborativeTasks/CollaborativeTasksHub';
 import './CollaborationHub.scss';
 
 interface CollaborationHubProps {
@@ -171,15 +172,6 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       alert('Create whiteboard functionality coming soon!');
     } catch (error) {
       console.error('Error in handleCreateWhiteboard:', error);
-    }
-  };
-
-  const handleCreateTask = () => {
-    try {
-      console.log('Create task clicked');
-      alert('Create task functionality coming soon!');
-    } catch (error) {
-      console.error('Error in handleCreateTask:', error);
     }
   };
 
@@ -404,43 +396,11 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     <div className="tasks-tab">
       <div className="tasks-header">
         <h2>Tasks</h2>
-        <button className="btn-primary" onClick={handleCreateTask}>Create Task</button>
+        <p>Manage collaborative tasks and project workflows</p>
       </div>
       
-      <div className="tasks-list">
-        <div className="task-item">
-          <div className="task-priority high"></div>
-          <div className="task-content">
-            <h3>Review script changes</h3>
-            <p>Review and approve the latest script revisions</p>
-            <div className="task-meta">
-              <span className="task-assignee">Assigned to: John Doe</span>
-              <span className="task-due">Due: Tomorrow</span>
-              <span className="task-status pending">Pending</span>
-            </div>
-          </div>
-          <div className="task-actions">
-            <button className="btn-secondary">View</button>
-            <button className="btn-secondary">Complete</button>
-          </div>
-        </div>
-        
-        <div className="task-item">
-          <div className="task-priority medium"></div>
-          <div className="task-content">
-            <h3>Update production schedule</h3>
-            <p>Update the production schedule with new dates</p>
-            <div className="task-meta">
-              <span className="task-assignee">Assigned to: You</span>
-              <span className="task-due">Due: Friday</span>
-              <span className="task-status in-progress">In Progress</span>
-            </div>
-          </div>
-          <div className="task-actions">
-            <button className="btn-secondary">View</button>
-            <button className="btn-secondary">Update</button>
-          </div>
-        </div>
+      <div className="tasks-content">
+        <CollaborativeTasksHub projectId={projectId || 'default-project'} />
       </div>
     </div>
   );
