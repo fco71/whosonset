@@ -11,6 +11,7 @@ import {
 } from '../../types/Collaboration';
 import CollaborativeTasksHub from '../CollaborativeTasks/CollaborativeTasksHub';
 import './CollaborationHub.scss';
+import UserAutocomplete, { UserAutocompleteOption } from './UserAutocomplete';
 
 interface CollaborationHubProps {
   projectId?: string;
@@ -104,6 +105,13 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   
   // Settings state
   const [workspaceSettings, setWorkspaceSettings] = useState(newWorkspaceData.settings);
+
+  const [showCreateChannelModal, setShowCreateChannelModal] = useState(false);
+  const [newChannelData, setNewChannelData] = useState({
+    name: '',
+    type: 'text',
+    isPrivate: false,
+  });
 
   useEffect(() => {
     console.log('CollaborationHub mounted with projectId:', projectId);
@@ -411,45 +419,40 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   };
 
   const handleCreateChannel = () => {
-    try {
-      console.log('Create channel clicked');
-      if (!selectedWorkspace) {
-        alert('Please select a workspace first');
-        return;
-      }
-      
-      const channelName = prompt('Enter channel name:');
-      if (channelName && channelName.trim()) {
-        const newChannel: CollaborationChannel = {
-          id: Date.now().toString(),
-          workspaceId: selectedWorkspace.id,
-          name: channelName.trim(),
-          description: `Channel for ${channelName.trim()}`,
-          type: 'text',
-          members: [currentUser?.uid || 'default-user'],
-          messages: [],
-          isPrivate: false,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        };
+    setShowCreateChannelModal(true);
+  };
 
-        setWorkspaces(prev => prev.map(ws => 
-          ws.id === selectedWorkspace.id 
-            ? { ...ws, channels: [...ws.channels, newChannel] }
-            : ws
-        ));
-
-        setSelectedWorkspace(prev => prev ? {
-          ...prev,
-          channels: [...prev.channels, newChannel]
-        } : null);
-
-        alert(`Channel "${channelName}" created successfully!`);
-      }
-    } catch (error) {
-      console.error('Error in handleCreateChannel:', error);
-      alert('Failed to create channel. Please try again.');
+  const handleChannelFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedWorkspace) return;
+    if (!newChannelData.name.trim()) {
+      alert('Please enter a channel name');
+      return;
     }
+    const newChannel: CollaborationChannel = {
+      id: Date.now().toString(),
+      workspaceId: selectedWorkspace.id,
+      name: newChannelData.name.trim(),
+      description: `Channel for ${newChannelData.name.trim()}`,
+      type: newChannelData.type as any,
+      members: [currentUser?.uid || 'default-user'],
+      messages: [],
+      isPrivate: newChannelData.isPrivate,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    setWorkspaces(prev => prev.map(ws =>
+      ws.id === selectedWorkspace.id
+        ? { ...ws, channels: [...ws.channels, newChannel] }
+        : ws
+    ));
+    setSelectedWorkspace(prev => prev ? {
+      ...prev,
+      channels: [...prev.channels, newChannel]
+    } : null);
+    setShowCreateChannelModal(false);
+    setNewChannelData({ name: '', type: 'text', isPrivate: false });
+    alert(`Channel "${newChannel.name}" created successfully!`);
   };
 
   const handleCreateDocument = () => {
@@ -735,54 +738,15 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                   <h4>Step 2: Add Members</h4>
                   <div className="form-group">
                     <label>Search Users</label>
-                    <input
-                      type="text"
-                      value={userSearchQuery}
-                      onChange={(e) => handleUserSearchChange(e.target.value)}
+                    <UserAutocomplete
+                      value={newWorkspaceData.selectedMembers}
+                      onChange={(users) => setNewWorkspaceData(prev => ({ ...prev, selectedMembers: users }))}
+                      onSearch={handleUserSearchChange}
+                      options={userSearchResults}
+                      loading={isSearchingUsers}
                       placeholder="Search by name, email, or role..."
-                      className="form-input"
                     />
-                    {isSearchingUsers && <div className="searching-indicator">Searching...</div>}
                   </div>
-                  
-                  {userSearchResults.length > 0 && (
-                    <div className="search-results">
-                      <h5>Search Results</h5>
-                      {userSearchResults.map(user => (
-                        <div key={user.id} className="user-result">
-                          <div className="user-info">
-                            <span className="user-name">{user.name}</span>
-                            <span className="user-email">{user.email}</span>
-                            {user.role && <span className="user-role">{user.role}</span>}
-                          </div>
-                          <button
-                            onClick={() => handleAddMemberToCreation(user)}
-                            className="btn-add-user"
-                            disabled={!!newWorkspaceData.selectedMembers.find(m => m.id === user.id)}
-                          >
-                            {newWorkspaceData.selectedMembers.find(m => m.id === user.id) ? 'Added' : 'Add'}
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {newWorkspaceData.selectedMembers.length > 0 && (
-                    <div className="selected-members">
-                      <h5>Selected Members ({newWorkspaceData.selectedMembers.length})</h5>
-                      {newWorkspaceData.selectedMembers.map(user => (
-                        <div key={user.id} className="selected-member">
-                          <span className="member-name">{user.name}</span>
-                          <button
-                            onClick={() => handleRemoveMemberFromCreation(user.id)}
-                            className="btn-remove-member"
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
               )}
 
@@ -888,35 +852,26 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
             <div className="modal-body">
               <div className="form-group">
                 <label>Search Users</label>
-                <input
-                  type="text"
-                  value={userSearchQuery}
-                  onChange={(e) => handleUserSearchChange(e.target.value)}
+                <UserAutocomplete
+                  value={selectedWorkspace ? selectedWorkspace.members.map(m => ({
+                    id: m.userId,
+                    name: m.email || m.userId,
+                    email: m.email || '',
+                    avatar: '',
+                    role: m.role,
+                    company: ''
+                  })) : []}
+                  onChange={(users) => {
+                    // Only add new users
+                    const newUsers = users.filter(u => !(selectedWorkspace && selectedWorkspace.members.some(m => m.userId === u.id)));
+                    newUsers.forEach(user => addUserToWorkspace(user));
+                  }}
+                  onSearch={handleUserSearchChange}
+                  options={userSearchResults}
+                  loading={isSearchingUsers}
                   placeholder="Search by name, email, or role..."
-                  className="form-input"
                 />
-                {isSearchingUsers && <div className="searching-indicator">Searching...</div>}
               </div>
-              
-              {userSearchResults.length > 0 && (
-                <div className="search-results">
-                  {userSearchResults.map(user => (
-                    <div key={user.id} className="user-result">
-                      <div className="user-info">
-                        <span className="user-name">{user.name}</span>
-                        <span className="user-email">{user.email}</span>
-                        {user.role && <span className="user-role">{user.role}</span>}
-                      </div>
-                      <button
-                        onClick={() => addUserToWorkspace(user)}
-                        className="btn-add-user"
-                      >
-                        Add to Workspace
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -1020,7 +975,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     <div className="channels-tab">
       <div className="channels-header">
         <h2>Channels</h2>
-        <button className="btn-primary" onClick={() => setActiveTab('channels')}>Create Channel</button>
+        <button className="btn-primary" onClick={handleCreateChannel}>Create Channel</button>
       </div>
       
       {selectedWorkspace ? (
@@ -1063,6 +1018,57 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       ) : (
         <div className="no-workspace-selected">
           <p>Please select a workspace to view channels</p>
+        </div>
+      )}
+
+      {showCreateChannelModal && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: 400, width: '90%' }}>
+            <div className="modal-header">
+              <h3>Create Channel</h3>
+              <button onClick={() => setShowCreateChannelModal(false)} className="close-btn">×</button>
+            </div>
+            <form className="modal-body" onSubmit={handleChannelFormSubmit}>
+              <div className="form-group">
+                <label>Channel Name *</label>
+                <input
+                  type="text"
+                  value={newChannelData.name}
+                  onChange={e => setNewChannelData(prev => ({ ...prev, name: e.target.value }))}
+                  className="form-input"
+                  placeholder="Enter channel name"
+                  autoFocus
+                />
+              </div>
+              <div className="form-group">
+                <label>Type</label>
+                <select
+                  value={newChannelData.type}
+                  onChange={e => setNewChannelData(prev => ({ ...prev, type: e.target.value }))}
+                  className="form-input"
+                >
+                  <option value="text">Text</option>
+                  <option value="voice">Voice</option>
+                  <option value="video">Video</option>
+                  <option value="announcement">Announcement</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={newChannelData.isPrivate}
+                    onChange={e => setNewChannelData(prev => ({ ...prev, isPrivate: e.target.checked }))}
+                  />
+                  Private Channel
+                </label>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn-secondary" onClick={() => setShowCreateChannelModal(false)}>Cancel</button>
+                <button type="submit" className="btn-primary">Create</button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>
