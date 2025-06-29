@@ -25,12 +25,35 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [showCompletedTasks, setShowCompletedTasks] = useState(false);
+  const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
+  const [newComment, setNewComment] = useState('');
+  const [users, setUsers] = useState<{[key: string]: {name: string, email: string, avatar?: string}}>({});
 
   useEffect(() => {
     if (projectId) {
       loadTasks();
+      loadUsers();
     }
   }, [projectId]);
+
+  const loadUsers = async () => {
+    try {
+      const usersQuery = query(collection(db, 'users'));
+      const snapshot = await getDocs(usersQuery);
+      const usersData: {[key: string]: {name: string, email: string, avatar?: string}} = {};
+      snapshot.docs.forEach(doc => {
+        const userData = doc.data();
+        usersData[doc.id] = {
+          name: userData.displayName || userData.email || 'Unknown User',
+          email: userData.email || '',
+          avatar: userData.photoURL || undefined
+        };
+      });
+      setUsers(usersData);
+    } catch (error) {
+      console.error('Error loading users:', error);
+    }
+  };
 
   const loadTasks = () => {
     setLoading(true);
@@ -156,6 +179,7 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
         await deleteDoc(doc(db, 'collaborativeTasks', taskId));
         setSelectedTask(null);
         setShowTaskDetails(false);
+        setExpandedTaskId(null);
       } catch (error) {
         console.error('Error deleting task:', error);
         alert('Failed to delete task. Please try again.');
@@ -195,6 +219,7 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
     setEditingTask(task);
     setShowTaskForm(true);
     setShowTaskDetails(false);
+    setExpandedTaskId(null);
   };
 
   const handleRestoreTask = async (taskId: string) => {
@@ -211,38 +236,120 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
     }
   };
 
-  const filteredTasks = tasks.filter(task => {
-    const matchesStatus = filters.status === 'all' || task.status === filters.status;
-    const matchesCategory = filters.category === 'all' || task.category === filters.category;
-    const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         task.description.toLowerCase().includes(searchTerm.toLowerCase());
+  const handleAddComment = async (taskId: string) => {
+    if (!newComment.trim() || !auth.currentUser) return;
 
-    return matchesStatus && matchesCategory && matchesSearch;
-  });
+    try {
+      const taskRef = doc(db, 'collaborativeTasks', taskId);
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) return;
 
-  const activeTasks = filteredTasks.filter(task => task.status !== 'completed');
-  const completedTasks = filteredTasks.filter(task => task.status === 'completed');
+      const comment: TaskComment = {
+        id: Date.now().toString(),
+        taskId,
+        userId: auth.currentUser.uid,
+        content: newComment.trim(),
+        type: 'comment',
+        createdAt: new Date(),
+        isEdited: false,
+        mentions: []
+      };
+
+      const updatedComments = [...(task.comments || []), comment];
+      await updateDoc(taskRef, {
+        comments: updatedComments,
+        updatedAt: new Date()
+      });
+
+      setNewComment('');
+    } catch (error) {
+      console.error('Error adding comment:', error);
+      alert('Failed to add comment. Please try again.');
+    }
+  };
+
+  const toggleTaskExpansion = (taskId: string) => {
+    setExpandedTaskId(expandedTaskId === taskId ? null : taskId);
+  };
 
   const getTaskStats = () => {
     const total = tasks.length;
-    const completed = tasks.filter(t => t.status === 'completed').length;
-    const overdue = tasks.filter(t => {
-      if (!t.dueDate || t.status === 'completed') return false;
-      const dueDate = new Date(t.dueDate);
-      const today = new Date();
-      return dueDate < today;
+    const completed = tasks.filter(task => task.status === 'completed').length;
+    const inProgress = tasks.filter(task => task.status === 'in_progress').length;
+    const overdue = tasks.filter(task => {
+      if (task.status === 'completed' || !task.dueDate) return false;
+      return new Date(task.dueDate) < new Date();
     }).length;
-    const inProgress = tasks.filter(t => t.status === 'in_progress').length;
 
-    return { total, completed, overdue, inProgress };
+    return { total, completed, inProgress, overdue };
   };
 
+  const getFilteredTasks = () => {
+    let filtered = tasks;
+
+    // Filter by status
+    if (filters.status !== 'all') {
+      filtered = filtered.filter(task => task.status === filters.status);
+    }
+
+    // Filter by category
+    if (filters.category !== 'all') {
+      filtered = filtered.filter(task => task.category === filters.category);
+    }
+
+    // Filter by search term
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(task =>
+        task.title.toLowerCase().includes(term) ||
+        task.description.toLowerCase().includes(term) ||
+        task.tags.some(tag => tag.toLowerCase().includes(term))
+      );
+    }
+
+    return filtered;
+  };
+
+  const filteredTasks = getFilteredTasks();
+  const activeTasks = filteredTasks.filter(task => task.status !== 'completed');
+  const completedTasks = filteredTasks.filter(task => task.status === 'completed');
   const stats = getTaskStats();
+
+  const getMemberAvatar = (userId: string) => {
+    const user = users[userId];
+    if (!user) return null;
+
+    if (user.avatar) {
+      return <img src={user.avatar} alt={user.name} className="member-avatar" />;
+    }
+
+    // Generate colored bubble with initials
+    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
+    const colorIndex = userId.charCodeAt(0) % colors.length;
+    
+    return (
+      <div 
+        className="member-bubble" 
+        style={{ backgroundColor: colors[colorIndex] }}
+        title={user.name}
+      >
+        {initials}
+      </div>
+    );
+  };
+
+  const getMemberName = (userId: string) => {
+    return users[userId]?.name || 'Unknown User';
+  };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      <div className="collaborative-tasks-hub">
+        <div className="loading-state">
+          <div className="loading-spinner"></div>
+          <p>Loading tasks...</p>
+        </div>
       </div>
     );
   }
@@ -268,30 +375,6 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
               Create Task
-            </button>
-            
-            {/* Debug button for testing task creation */}
-            <button
-              onClick={() => {
-                console.log('=== TEST TASK CREATION ===');
-                const testTask = {
-                  title: 'Test Task ' + Date.now(),
-                  description: 'This is a test task created for debugging',
-                  priority: 'medium' as const,
-                  category: 'other' as const,
-                  dueDate: '',
-                  estimatedHours: 2,
-                  location: 'Test Location',
-                  budget: 100,
-                  tags: ['test', 'debug'],
-                  assignedTeamMembers: [],
-                  subtasks: []
-                };
-                handleCreateTask(testTask);
-              }}
-              className="btn-secondary ml-2"
-            >
-              Test Create Task
             </button>
           </div>
         </div>
@@ -392,46 +475,48 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
         </div>
 
         <div className="controls-right">
-          <div className="search-box">
-            <svg className="w-5 h-5 search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search tasks..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="search-input"
-            />
-          </div>
+          <div className="search-container">
+            <div className="search-box">
+              <svg className="w-5 h-5 search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                placeholder="Search tasks..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="search-input"
+              />
+            </div>
 
-          <div className="filters">
-            <select
-              value={filters.status}
-              onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-              className="filter-select"
-            >
-              <option value="all">All Status</option>
-              <option value="pending">Pending</option>
-              <option value="in_progress">In Progress</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
-              <option value="overdue">Overdue</option>
-            </select>
+            <div className="filters">
+              <select
+                value={filters.status}
+                onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+                className="filter-select"
+              >
+                <option value="all">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="in_progress">In Progress</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+                <option value="overdue">Overdue</option>
+              </select>
 
-            <select
-              value={filters.category}
-              onChange={(e) => setFilters({ ...filters, category: e.target.value })}
-              className="filter-select"
-            >
-              <option value="all">All Categories</option>
-              <option value="pre_production">Pre-Production</option>
-              <option value="production">Production</option>
-              <option value="post_production">Post-Production</option>
-              <option value="marketing">Marketing</option>
-              <option value="distribution">Distribution</option>
-              <option value="other">Other</option>
-            </select>
+              <select
+                value={filters.category}
+                onChange={(e) => setFilters({ ...filters, category: e.target.value })}
+                className="filter-select"
+              >
+                <option value="all">All Categories</option>
+                <option value="pre_production">Pre-Production</option>
+                <option value="production">Production</option>
+                <option value="post_production">Post-Production</option>
+                <option value="marketing">Marketing</option>
+                <option value="distribution">Distribution</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
@@ -440,7 +525,7 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
       <div className="tasks-content">
         {viewMode === 'list' && (
           <div className="tasks-list">
-            {filteredTasks.length === 0 ? (
+            {activeTasks.length === 0 ? (
               <div className="empty-state">
                 <svg className="w-16 h-16 empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -460,72 +545,214 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
             ) : (
               <div className="tasks-grid">
                 {activeTasks.map(task => (
-                  <div key={task.id} className="task-card">
-                    <div className="task-header">
-                      <h3 className="task-title" onClick={() => {
-                        setSelectedTask(task);
-                        setShowTaskDetails(true);
-                      }}>{task.title}</h3>
+                  <div key={task.id} className={`task-card ${expandedTaskId === task.id ? 'expanded' : ''}`}>
+                    <div className="task-header" onClick={() => toggleTaskExpansion(task.id)}>
+                      <div className="task-title-section">
+                        <h3 className="task-title">{task.title}</h3>
+                        <div className="task-members">
+                          {task.assignedTeamMembers && task.assignedTeamMembers.length > 0 ? (
+                            <div className="members-avatars">
+                              {task.assignedTeamMembers.slice(0, 3).map((member, index) => (
+                                <div key={member.userId} className="member-avatar-container" title={getMemberName(member.userId)}>
+                                  {getMemberAvatar(member.userId)}
+                                </div>
+                              ))}
+                              {task.assignedTeamMembers.length > 3 && (
+                                <div className="member-count" title={`${task.assignedTeamMembers.length - 3} more members`}>
+                                  +{task.assignedTeamMembers.length - 3}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="no-members">No members assigned</span>
+                          )}
+                        </div>
+                      </div>
                       <div className="task-actions">
-                        {task.status === 'pending' && (
-                          <button
-                            onClick={() => handleStartTask(task.id)}
-                            className="action-btn start"
-                            title="Start Task"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                          </button>
-                        )}
-                        {task.status === 'in_progress' && (
-                          <button
-                            onClick={() => handleCompleteTask(task.id)}
-                            className="action-btn complete"
-                            title="Complete Task"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
-                          </button>
-                        )}
-                        <button
-                          onClick={() => handleEditTask(task)}
-                          className="action-btn edit"
-                          title="Edit Task"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => handleDeleteTask(task.id)}
-                          className="action-btn delete"
-                          title="Delete Task"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
+                        <span className={`task-status ${task.status}`}>{task.status}</span>
+                        <svg className={`expand-icon ${expandedTaskId === task.id ? 'expanded' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
                       </div>
                     </div>
-                    <p className="task-description">{task.description}</p>
-                    <div className="task-meta">
-                      <span className="task-due-date">
-                        Due: {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No due date'}
-                      </span>
-                      <span className={`task-status ${task.status}`}>{task.status}</span>
+                    
+                    <div className="task-preview">
+                      <p className="task-description">{task.description}</p>
+                      <div className="task-meta">
+                        <span className="task-due-date">
+                          Due: {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No due date'}
+                        </span>
+                        {task.subtasks && task.subtasks.length > 0 && (
+                          <span className="subtasks-count">{task.subtasks.length} subtasks</span>
+                        )}
+                      </div>
                     </div>
-                    {task.subtasks && task.subtasks.length > 0 && (
-                      <div className="task-subtasks">
-                        <span className="subtasks-count">{task.subtasks.length} subtasks</span>
-                        <div className="subtasks-progress">
-                          <div 
-                            className="progress-bar"
-                            style={{ 
-                              width: `${(task.subtasks.filter(st => st.status === 'completed').length / task.subtasks.length) * 100}%` 
-                            }}
-                          ></div>
+
+                    {/* Expanded Task Details */}
+                    {expandedTaskId === task.id && (
+                      <div className="task-expanded-details">
+                        <div className="task-details-section">
+                          <div className="task-info-grid">
+                            <div className="info-item">
+                              <span className="info-label">Priority:</span>
+                              <span className={`info-value priority ${task.priority}`}>{task.priority}</span>
+                            </div>
+                            <div className="info-item">
+                              <span className="info-label">Category:</span>
+                              <span className="info-value">{task.category}</span>
+                            </div>
+                            {task.estimatedHours && (
+                              <div className="info-item">
+                                <span className="info-label">Estimated Hours:</span>
+                                <span className="info-value">{task.estimatedHours}h</span>
+                              </div>
+                            )}
+                            {task.location && (
+                              <div className="info-item">
+                                <span className="info-label">Location:</span>
+                                <span className="info-value">{task.location}</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {task.notes && (
+                            <div className="task-notes">
+                              <h4>Notes</h4>
+                              <p>{task.notes}</p>
+                            </div>
+                          )}
+
+                          {task.tags && task.tags.length > 0 && (
+                            <div className="task-tags">
+                              <h4>Tags</h4>
+                              <div className="tags-list">
+                                {task.tags.map((tag, index) => (
+                                  <span key={index} className="tag">{tag}</span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {task.assignedTeamMembers && task.assignedTeamMembers.length > 0 && (
+                            <div className="task-team">
+                              <h4>Team Members</h4>
+                              <div className="team-members-list">
+                                {task.assignedTeamMembers.map((member, index) => (
+                                  <div key={member.userId} className="team-member-item">
+                                    <div className="member-info">
+                                      {getMemberAvatar(member.userId)}
+                                      <div className="member-details">
+                                        <span className="member-name">{getMemberName(member.userId)}</span>
+                                        <span className="member-role">{member.role}</span>
+                                      </div>
+                                    </div>
+                                    {member.notes && <span className="member-notes">{member.notes}</span>}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {task.subtasks && task.subtasks.length > 0 && (
+                            <div className="task-subtasks">
+                              <h4>Subtasks ({task.subtasks.filter(st => st.status === 'completed').length}/{task.subtasks.length} completed)</h4>
+                              <div className="subtasks-list">
+                                {task.subtasks.map((subtask, index) => (
+                                  <div key={subtask.id} className="subtask-item">
+                                    <div className="subtask-header">
+                                      <h5>{subtask.title}</h5>
+                                      <span className={`subtask-status ${subtask.status}`}>{subtask.status}</span>
+                                    </div>
+                                    <p className="subtask-description">{subtask.description}</p>
+                                    <div className="subtask-meta">
+                                      <span className="subtask-due">
+                                        Due: {subtask.dueDate ? new Date(subtask.dueDate).toLocaleDateString() : 'No due date'}
+                                      </span>
+                                      {subtask.estimatedHours && (
+                                        <span className="subtask-hours">{subtask.estimatedHours}h</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Comments Section */}
+                        <div className="task-comments-section">
+                          <h4>Comments</h4>
+                          <div className="comments-list">
+                            {task.comments && task.comments.length > 0 ? (
+                              task.comments.map((comment, index) => (
+                                <div key={comment.id} className="comment-item">
+                                  <div className="comment-header">
+                                    <div className="comment-author">
+                                      {getMemberAvatar(comment.userId)}
+                                      <span className="author-name">{getMemberName(comment.userId)}</span>
+                                    </div>
+                                    <span className="comment-date">
+                                      {new Date(comment.createdAt).toLocaleString()}
+                                    </span>
+                                  </div>
+                                  <p className="comment-content">{comment.content}</p>
+                                </div>
+                              ))
+                            ) : (
+                              <p className="no-comments">No comments yet. Be the first to add one!</p>
+                            )}
+                          </div>
+                          
+                          <div className="add-comment">
+                            <textarea
+                              placeholder="Add a comment..."
+                              value={newComment}
+                              onChange={(e) => setNewComment(e.target.value)}
+                              className="comment-input"
+                              rows={3}
+                            />
+                            <div className="comment-actions">
+                              <button
+                                onClick={() => handleAddComment(task.id)}
+                                disabled={!newComment.trim()}
+                                className="btn-primary"
+                              >
+                                Add Comment
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Task Actions */}
+                        <div className="task-expanded-actions">
+                          {task.status === 'pending' && (
+                            <button
+                              onClick={() => handleStartTask(task.id)}
+                              className="btn-secondary"
+                            >
+                              Start Task
+                            </button>
+                          )}
+                          {task.status === 'in_progress' && (
+                            <button
+                              onClick={() => handleCompleteTask(task.id)}
+                              className="btn-success"
+                            >
+                              Complete Task
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleEditTask(task)}
+                            className="btn-secondary"
+                          >
+                            Edit Task
+                          </button>
+                          <button
+                            onClick={() => handleDeleteTask(task.id)}
+                            className="btn-danger"
+                          >
+                            Delete Task
+                          </button>
                         </div>
                       </div>
                     )}
@@ -580,131 +807,6 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
                 }}
                 projectId={projectId}
               />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Task Details Modal */}
-      {showTaskDetails && selectedTask && (
-        <div className="modal-overlay">
-          <div className="modal-content large">
-            <div className="modal-header">
-              <h2>{selectedTask.title}</h2>
-              <div className="modal-actions">
-                <button
-                  onClick={() => handleEditTask(selectedTask)}
-                  className="btn-secondary"
-                >
-                  Edit
-                </button>
-                <button onClick={() => {
-                  setShowTaskDetails(false);
-                  setSelectedTask(null);
-                }} className="modal-close">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-            <div className="modal-body">
-              <div className="task-details">
-                <div className="task-info">
-                  <div className="info-row">
-                    <span className="info-label">Status:</span>
-                    <span className={`info-value status ${selectedTask.status}`}>
-                      {selectedTask.status}
-                    </span>
-                  </div>
-                  <div className="info-row">
-                    <span className="info-label">Due Date:</span>
-                    <span className="info-value">
-                      {selectedTask.dueDate ? new Date(selectedTask.dueDate).toLocaleString() : 'No due date'}
-                    </span>
-                  </div>
-                  {selectedTask.estimatedHours && selectedTask.estimatedHours > 0 && (
-                    <div className="info-row">
-                      <span className="info-label">Estimated Hours:</span>
-                      <span className="info-value">{selectedTask.estimatedHours}h</span>
-                    </div>
-                  )}
-                  {selectedTask.location && (
-                    <div className="info-row">
-                      <span className="info-label">Location:</span>
-                      <span className="info-value">{selectedTask.location}</span>
-                    </div>
-                  )}
-                  {selectedTask.budget && selectedTask.budget > 0 && (
-                    <div className="info-row">
-                      <span className="info-label">Budget:</span>
-                      <span className="info-value">${selectedTask.budget.toFixed(2)}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="task-description-full">
-                  <h3>Description</h3>
-                  <p>{selectedTask.description}</p>
-                </div>
-
-                {selectedTask.notes && (
-                  <div className="task-notes">
-                    <h3>Notes</h3>
-                    <p>{selectedTask.notes}</p>
-                  </div>
-                )}
-
-                {selectedTask.tags && selectedTask.tags.length > 0 && (
-                  <div className="task-tags">
-                    <h3>Tags</h3>
-                    <div className="tags-list">
-                      {selectedTask.tags.map((tag, index) => (
-                        <span key={index} className="tag">{tag}</span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {selectedTask.assignedTeamMembers && selectedTask.assignedTeamMembers.length > 0 && (
-                  <div className="task-team">
-                    <h3>Team Members</h3>
-                    <div className="team-members-list">
-                      {selectedTask.assignedTeamMembers.map((member, index) => (
-                        <div key={index} className="team-member">
-                          <span className="member-role">{member.role}</span>
-                          {member.notes && <span className="member-notes">{member.notes}</span>}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {selectedTask.subtasks && selectedTask.subtasks.length > 0 && (
-                  <div className="task-subtasks-full">
-                    <h3>Subtasks ({selectedTask.subtasks.filter(st => st.status === 'completed').length}/{selectedTask.subtasks.length} completed)</h3>
-                    <div className="subtasks-list">
-                      {selectedTask.subtasks.map((subtask, index) => (
-                        <div key={subtask.id} className="subtask-item">
-                          <div className="subtask-header">
-                            <h4>{subtask.title}</h4>
-                            <span className={`subtask-status ${subtask.status}`}>{subtask.status}</span>
-                          </div>
-                          <p className="subtask-description">{subtask.description}</p>
-                          <div className="subtask-meta">
-                            <span className="subtask-due">
-                              Due: {subtask.dueDate ? new Date(subtask.dueDate).toLocaleDateString() : 'No due date'}
-                            </span>
-                            {subtask.estimatedHours && subtask.estimatedHours > 0 && (
-                              <span className="subtask-hours">{subtask.estimatedHours}h</span>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
             </div>
           </div>
         </div>
