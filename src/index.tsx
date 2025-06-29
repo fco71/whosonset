@@ -12,6 +12,7 @@ import {
 } from 'react-router-dom';
 import { auth } from './firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { AuthProvider } from './contexts/AuthContext';
 
 import ProjectList from './components/ProjectList';
 import RegisterForm from './components/RegisterForm';
@@ -116,6 +117,7 @@ const App: React.FC = () => {
                             </>
                         ) : (
                             <>
+                                <li><Link to="/edit-profile" className="nav-link">Resume Builder</Link></li>
                                 <li><Link to="/social" className="nav-link">Social</Link></li>
                                 <li><Link to="/analytics" className="nav-link">📊 Analytics</Link></li>
                                 <li><NotificationBell currentUserId={authUser?.uid || ''} /></li>
@@ -177,7 +179,9 @@ const App: React.FC = () => {
 
 const RootWithRouter = () => (
     <Router>
-        <App />
+        <AuthProvider>
+            <App />
+        </AuthProvider>
     </Router>
 );
 

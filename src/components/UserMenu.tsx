@@ -62,13 +62,6 @@ const UserMenu: React.FC<UserMenuProps> = ({ authUser, userSignOut }) => {
                         >
                             ➕ Add Project
                         </Link>
-                        <Link
-                            to="/edit-profile"
-                            className="block px-2 py-1 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors"
-                            onClick={() => setIsOpen(false)}
-                        >
-                            📝 Edit Profile
-                        </Link>
                     </div>
 
                     {/* My Stuff */}
