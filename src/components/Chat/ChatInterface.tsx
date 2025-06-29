@@ -25,11 +25,18 @@ const MessageInput = React.forwardRef<{
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
+  const [recordingError, setRecordingError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [audioLevel, setAudioLevel] = useState(0);
+  const [recordedAudioFile, setRecordedAudioFile] = useState<File | null>(null);
+  
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordingChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const [recordingError, setRecordingError] = useState<string | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const microphoneRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
   
   // Expose methods to parent component
   const setSendCallback = useCallback((callback: (message: string, type?: string, file?: File) => void) => {
@@ -103,6 +110,55 @@ const MessageInput = React.forwardRef<{
     }
   }, []);
 
+  // Audio level monitoring
+  const startAudioLevelMonitoring = useCallback((stream: MediaStream) => {
+    try {
+      // Create audio context
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      audioContextRef.current = audioContext;
+      
+      // Create analyser node
+      const analyser = audioContext.createAnalyser();
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.8;
+      analyserRef.current = analyser;
+      
+      // Create microphone source
+      const microphone = audioContext.createMediaStreamSource(stream);
+      microphoneRef.current = microphone;
+      
+      // Connect microphone to analyser
+      microphone.connect(analyser);
+      
+      // Create data array for frequency analysis
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      
+      // Function to update audio level
+      const updateAudioLevel = () => {
+        if (!analyserRef.current || !isRecording) {
+          return;
+        }
+        
+        analyserRef.current.getByteFrequencyData(dataArray);
+        
+        // Calculate average volume level
+        const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
+        const normalizedLevel = average / 255; // Normalize to 0-1
+        
+        setAudioLevel(normalizedLevel);
+        
+        // Continue monitoring
+        animationFrameRef.current = requestAnimationFrame(updateAudioLevel);
+      };
+      
+      // Start monitoring
+      updateAudioLevel();
+      
+    } catch (error) {
+      console.warn('[Audio Level] Failed to start audio level monitoring:', error);
+    }
+  }, [isRecording]);
+
   // Voice recording
   const startRecording = useCallback(async () => {
     try {
@@ -117,10 +173,52 @@ const MessageInput = React.forwardRef<{
         throw new Error('MediaRecorder is not supported in this browser');
       }
       
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      console.log('[Voice Recording] Got audio stream:', stream);
+      // Request audio with better constraints for voice recording
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: 44100,
+          channelCount: 1
+        } 
+      });
       
-      const mediaRecorder = new MediaRecorder(stream);
+      console.log('[Voice Recording] Got audio stream:', stream);
+      console.log('[Voice Recording] Audio tracks:', stream.getAudioTracks());
+      
+      // Check if we have audio tracks
+      const audioTracks = stream.getAudioTracks();
+      if (audioTracks.length === 0) {
+        throw new Error('No audio input device found. Please check your microphone.');
+      }
+      
+      // Log audio track details
+      audioTracks.forEach((track, index) => {
+        console.log(`[Voice Recording] Audio track ${index}:`, {
+          label: track.label,
+          enabled: track.enabled,
+          muted: track.muted,
+          readyState: track.readyState,
+          settings: track.getSettings()
+        });
+      });
+      
+      // Try different MIME types for better compatibility
+      let mimeType = 'audio/webm;codecs=opus';
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = 'audio/webm';
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+          mimeType = 'audio/mp4';
+          if (!MediaRecorder.isTypeSupported(mimeType)) {
+            mimeType = '';
+          }
+        }
+      }
+      
+      console.log('[Voice Recording] Using MIME type:', mimeType);
+      
+      const mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
       mediaRecorderRef.current = mediaRecorder;
       recordingChunksRef.current = [];
       
@@ -136,6 +234,10 @@ const MessageInput = React.forwardRef<{
         setIsRecording(true);
         setRecordingTime(0);
         setRecordingError(null);
+        setAudioLevel(0);
+        
+        // Start audio level monitoring
+        startAudioLevelMonitoring(stream);
         
         // Start recording timer
         recordingTimerRef.current = setInterval(() => {
@@ -153,64 +255,111 @@ const MessageInput = React.forwardRef<{
           clearInterval(recordingTimerRef.current);
         }
         
+        // Stop all tracks
+        stream.getTracks().forEach(track => {
+          console.log('[Voice Recording] Stopping track:', track.kind, track.label);
+          track.stop();
+        });
+        
+        // Don't automatically send - let user decide
         if (recordingChunksRef.current.length > 0) {
-          const audioBlob = new Blob(recordingChunksRef.current, { type: 'audio/wav' });
+          const totalSize = recordingChunksRef.current.reduce((sum, chunk) => sum + chunk.size, 0);
+          console.log('[Voice Recording] Total recorded size:', totalSize, 'bytes');
+          
+          if (totalSize < 100) {
+            console.warn('[Voice Recording] Recording seems too small, may not have captured audio');
+            setRecordingError('No audio detected. Please check your microphone and try again.');
+            return;
+          }
+          
+          // Store the recording for user to send or cancel
+          const audioBlob = new Blob(recordingChunksRef.current, { type: mimeType || 'audio/webm' });
           console.log('[Voice Recording] Created audio blob:', audioBlob.size, 'bytes');
           
           // Create a file from the blob
-          const audioFile = new File([audioBlob], 'voice-message.wav', { type: 'audio/wav' });
-          console.log('[Voice Recording] Created audio file:', audioFile.name, audioFile.size);
+          const audioFile = new File([audioBlob], `voice-message-${Date.now()}.webm`, { 
+            type: mimeType || 'audio/webm' 
+          });
           
-          // Send the voice message via callback
-          if (sendCallbackRef.current) {
-            console.log('[Voice Recording] Sending voice message...');
-            sendCallbackRef.current('🎤 Voice Message', 'voice', audioFile);
-          } else {
-            console.error('[Voice Recording] No send callback available');
-          }
+          console.log('[Voice Recording] Created audio file:', audioFile.name, audioFile.size, 'bytes');
+          
+          // Store the file for user to send or cancel
+          setRecordedAudioFile(audioFile);
+        } else {
+          console.warn('[Voice Recording] No recording chunks available');
+          setRecordingError('Recording failed. Please try again.');
         }
-        
-        // Stop all tracks to release microphone
-        stream.getTracks().forEach(track => track.stop());
       };
       
       mediaRecorder.onerror = (event) => {
         console.error('[Voice Recording] MediaRecorder error:', event);
+        setRecordingError('Recording error occurred. Please try again.');
         setIsRecording(false);
         setRecordingTime(0);
-        setRecordingError('Recording failed due to a technical error. Please try again.');
+        
+        if (recordingTimerRef.current) {
+          clearInterval(recordingTimerRef.current);
+        }
+        
+        // Stop all tracks
         stream.getTracks().forEach(track => track.stop());
       };
       
-      mediaRecorder.start();
+      // Start recording with 1-second timeslice for better data handling
+      mediaRecorder.start(1000);
       
     } catch (error) {
       console.error('[Voice Recording] Error starting recording:', error);
+      
+      let errorMessage = 'Failed to start recording. ';
+      
+      if (error instanceof Error) {
+        if (error.name === 'NotAllowedError') {
+          errorMessage = `Microphone access denied. Please follow these steps:
+
+1. Click the microphone icon in your browser's address bar
+2. Select "Allow" for microphone access
+3. Refresh the page and try again
+
+If you don't see the microphone icon, check your browser settings.`;
+        } else if (error.name === 'NotFoundError') {
+          errorMessage = 'No microphone found. Please connect a microphone and try again.';
+        } else if (error.name === 'NotReadableError') {
+          errorMessage = 'Microphone is already in use by another application. Please close other apps using the microphone and try again.';
+        } else {
+          errorMessage += error.message;
+        }
+      }
+      
+      setRecordingError(errorMessage);
       setIsRecording(false);
       setRecordingTime(0);
-      
-      // Provide specific guidance based on error type
-      if (error instanceof Error) {
-        if (error.name === 'NotAllowedError' || error.message.includes('permission')) {
-          setRecordingError(
-            'Microphone access denied. Please follow these steps:\n\n' +
-            '1. Click the microphone icon in your browser\'s address bar\n' +
-            '2. Select "Allow" for microphone access\n' +
-            '3. Refresh the page and try again\n\n' +
-            'If you don\'t see the microphone icon, check your browser settings.'
-          );
-        } else if (error.name === 'NotFoundError') {
-          setRecordingError('No microphone found. Please connect a microphone and try again.');
-        } else if (error.name === 'NotSupportedError') {
-          setRecordingError('Voice recording is not supported in this browser. Please use Chrome, Firefox, or Safari.');
-        } else {
-          setRecordingError(`Recording failed: ${error.message}. Please try again.`);
-        }
-      } else {
-        setRecordingError('Recording failed due to an unknown error. Please try again.');
-      }
     }
-  }, [sendCallbackRef]);
+  }, [startAudioLevelMonitoring]);
+
+  const stopAudioLevelMonitoring = useCallback(() => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    
+    if (microphoneRef.current) {
+      microphoneRef.current.disconnect();
+      microphoneRef.current = null;
+    }
+    
+    if (analyserRef.current) {
+      analyserRef.current.disconnect();
+      analyserRef.current = null;
+    }
+    
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+    
+    setAudioLevel(0);
+  }, []);
 
   const stopRecording = useCallback(() => {
     console.log('[Voice Recording] Stopping recording...');
@@ -220,11 +369,26 @@ const MessageInput = React.forwardRef<{
       if (recordingTimerRef.current) {
         clearInterval(recordingTimerRef.current);
       }
+      // Stop audio level monitoring
+      stopAudioLevelMonitoring();
       console.log('[Voice Recording] Recording stopped successfully');
     } else {
       console.log('[Voice Recording] No active recording to stop');
     }
-  }, [isRecording]);
+  }, [isRecording, stopAudioLevelMonitoring]);
+
+  const sendRecordedAudio = useCallback(() => {
+    if (recordedAudioFile && sendCallbackRef.current) {
+      console.log('[Voice Recording] Sending recorded audio:', recordedAudioFile.name);
+      sendCallbackRef.current('🎤 Voice Message', 'voice', recordedAudioFile);
+      setRecordedAudioFile(null);
+    }
+  }, [recordedAudioFile]);
+
+  const cancelRecordedAudio = useCallback(() => {
+    console.log('[Voice Recording] Canceling recorded audio');
+    setRecordedAudioFile(null);
+  }, []);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -364,6 +528,15 @@ const MessageInput = React.forwardRef<{
         <div className="recording-indicator">
           <div className="recording-dot"></div>
           <span>Recording... {formatRecordingTime(recordingTime)}</span>
+          
+          {/* Audio level indicator */}
+          <div className="audio-level-meter">
+            <div 
+              className="audio-level-bar" 
+              style={{ width: `${Math.min(audioLevel * 100, 100)}%` }}
+            ></div>
+          </div>
+          
           <button onClick={stopRecording} className="stop-recording">
             Stop
           </button>
@@ -375,7 +548,7 @@ const MessageInput = React.forwardRef<{
         <div className="recording-error">
           <div className="error-icon">⚠️</div>
           <div className="error-message">
-            {recordingError.split('\n').map((line, index) => (
+            {recordingError.split('\n').map((line: string, index: number) => (
               <div key={index}>{line}</div>
             ))}
           </div>
@@ -386,6 +559,35 @@ const MessageInput = React.forwardRef<{
           >
             ×
           </button>
+        </div>
+      )}
+
+      {/* Recorded audio review */}
+      {recordedAudioFile && (
+        <div className="recorded-audio-review">
+          <div className="audio-info">
+            <div className="audio-icon">🎤</div>
+            <div className="audio-details">
+              <div className="audio-name">Voice Message</div>
+              <div className="audio-size">{(recordedAudioFile.size / 1024).toFixed(1)} KB</div>
+            </div>
+          </div>
+          <div className="audio-actions">
+            <button 
+              onClick={sendRecordedAudio} 
+              className="send-audio-btn"
+              title="Send voice message"
+            >
+              📤 Send
+            </button>
+            <button 
+              onClick={cancelRecordedAudio} 
+              className="cancel-audio-btn"
+              title="Cancel and delete recording"
+            >
+              ❌ Cancel
+            </button>
+          </div>
         </div>
       )}
 
