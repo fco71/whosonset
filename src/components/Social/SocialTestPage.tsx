@@ -3,6 +3,7 @@ import { SocialService } from '../../utilities/socialService';
 import runSocialSystemTest from '../../utilities/socialTestData';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase';
+import { toast } from 'react-hot-toast';
 
 interface SocialTestPageProps {
   currentUserId: string;
@@ -101,7 +102,7 @@ const SocialTestPage: React.FC<SocialTestPageProps> = ({
 
   const testNotificationCreation = async () => {
     if (!currentUserId) {
-      alert('Please log in first');
+      toast.error('Please log in first');
       return;
     }
 
@@ -121,17 +122,17 @@ const SocialTestPage: React.FC<SocialTestPageProps> = ({
       });
       
       console.log('[SocialTestPage] Test notification created successfully');
-      alert('Test notification created! Check your notification bell.');
+      toast.success('Test notification created! Check your notification bell.');
       
     } catch (error) {
       console.error('[SocialTestPage] Error creating test notification:', error);
-      alert('Error creating test notification: ' + error);
+      toast.error('Error creating test notification: ' + error);
     }
   };
 
   const testFollowRequestWithNotification = async () => {
     if (!currentUserId) {
-      alert('Please log in first');
+      toast.error('Please log in first');
       return;
     }
 
@@ -145,17 +146,17 @@ const SocialTestPage: React.FC<SocialTestPageProps> = ({
       await SocialService.sendFollowRequest(currentUserId, testTargetUserId, 'Test follow request');
       
       console.log('[SocialTestPage] Test follow request sent successfully');
-      alert('Test follow request sent! Check the console for logs.');
+      toast.success('Test follow request sent! Check the console for logs.');
       
     } catch (error) {
       console.error('[SocialTestPage] Error sending test follow request:', error);
-      alert('Error sending test follow request: ' + error);
+      toast.error('Error sending test follow request: ' + error);
     }
   };
 
   const testActivityFeedWithLikesAndComments = async () => {
     if (!currentUserId) {
-      alert('Please log in first');
+      toast.error('Please log in first');
       return;
     }
 
@@ -175,17 +176,17 @@ const SocialTestPage: React.FC<SocialTestPageProps> = ({
       });
       
       console.log('[SocialTestPage] Test activity created successfully');
-      alert('Test activity created! Check the activity feed to test likes and comments.');
+      toast.success('Test activity created! Check the activity feed to test likes and comments.');
       
     } catch (error) {
       console.error('[SocialTestPage] Error creating test activity:', error);
-      alert('Error creating test activity: ' + error);
+      toast.error('Error creating test activity: ' + error);
     }
   };
 
   const testLikeAndCommentFunctionality = async () => {
     if (!currentUserId) {
-      alert('Please log in first');
+      toast.error('Please log in first');
       return;
     }
 
@@ -195,7 +196,7 @@ const SocialTestPage: React.FC<SocialTestPageProps> = ({
       // Get the first activity from the feed
       const activities = await SocialService.getActivityFeed(currentUserId, 1);
       if (activities.length === 0) {
-        alert('No activities found. Create an activity first.');
+        toast.error('No activities found. Create an activity first.');
         return;
       }
       
@@ -209,11 +210,11 @@ const SocialTestPage: React.FC<SocialTestPageProps> = ({
       await SocialService.addComment(activity.id, currentUserId, currentUserName, currentUserAvatar, 'This is a test comment!');
       console.log('[SocialTestPage] Comment added successfully');
       
-      alert('Like and comment functionality tested successfully! Check the activity feed.');
+      toast.success('Like and comment functionality tested successfully! Check the activity feed.');
       
     } catch (error) {
       console.error('[SocialTestPage] Error testing like and comment functionality:', error);
-      alert('Error testing like and comment functionality: ' + error);
+      toast.error('Error testing like and comment functionality: ' + error);
     }
   };
 

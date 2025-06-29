@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
   getStorage,
   ref,
@@ -6,7 +6,9 @@ import {
   getDownloadURL,
 } from 'firebase/storage';
 import { app } from '../firebase';
-import Cropper, { Area } from 'react-easy-crop';
+import { Crop, PixelCrop } from 'react-image-crop';
+import 'react-image-crop/dist/ReactCrop.css';
+import ReactCrop from 'react-image-crop';
 import getCroppedImg from './getCroppedImg';
 
 interface ImageUploaderProps {
@@ -26,16 +28,25 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
   cropEnabled = true,
   placeholder = "Upload Image"
 }) => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [showCrop, setShowCrop] = useState(false);
+  const [crop, setCrop] = useState<Crop>({ unit: '%', x: 0, y: 0, width: 100, height: 100 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<PixelCrop | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
-  const [imageSrc, setImageSrc] = useState<string | null>(null);
-  const [showCrop, setShowCrop] = useState(false);
-  const [crop, setCrop] = useState({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(1);
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [cropping, setCropping] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
+  
+  // Track blob URLs with refs to avoid premature revocation
+  const currentImageBlobRef = useRef<string | null>(null);
+  const currentPreviewBlobRef = useRef<string | null>(null);
+
+  // Track previous preview URL for safe revocation
+  const previousPreviewUrlRef = useRef<string | null>(null);
 
   // ESC key to cancel crop modal
   useEffect(() => {
@@ -49,30 +60,36 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
     return () => window.removeEventListener('keydown', handleEsc);
   }, [showCrop]);
 
-  // Cleanup blob URLs when component unmounts or when URLs change
+  // Cleanup blob URLs when component unmounts
   useEffect(() => {
     return () => {
-      // Clean up imageSrc blob URL
-      if (imageSrc && imageSrc.startsWith('blob:')) {
-        URL.revokeObjectURL(imageSrc);
+      if (currentImageBlobRef.current) {
+        URL.revokeObjectURL(currentImageBlobRef.current);
       }
-      // Clean up previewUrl blob URL
-      if (previewUrl && previewUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(previewUrl);
+      if (currentPreviewBlobRef.current) {
+        URL.revokeObjectURL(currentPreviewBlobRef.current);
       }
     };
-  }, [imageSrc, previewUrl]);
+  }, []);
+
+  const revokeBlobUrl = (blobUrl: string | null) => {
+    if (blobUrl && blobUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(blobUrl);
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
 
     if (!selectedFile) {
       // Clean up existing blob URLs
-      if (imageSrc && imageSrc.startsWith('blob:')) {
-        URL.revokeObjectURL(imageSrc);
+      if (currentImageBlobRef.current) {
+        revokeBlobUrl(currentImageBlobRef.current);
+        currentImageBlobRef.current = null;
       }
-      if (previewUrl && previewUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(previewUrl);
+      if (currentPreviewBlobRef.current) {
+        revokeBlobUrl(currentPreviewBlobRef.current);
+        currentPreviewBlobRef.current = null;
       }
       setImageSrc(null);
       setPreviewUrl(null);
@@ -92,14 +109,15 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
     }
 
     // Clean up existing blob URLs before creating new ones
-    if (imageSrc && imageSrc.startsWith('blob:')) {
-      URL.revokeObjectURL(imageSrc);
+    if (currentImageBlobRef.current) {
+      revokeBlobUrl(currentImageBlobRef.current);
     }
-    if (previewUrl && previewUrl.startsWith('blob:')) {
-      URL.revokeObjectURL(previewUrl);
+    if (currentPreviewBlobRef.current) {
+      revokeBlobUrl(currentPreviewBlobRef.current);
     }
 
     const objectURL = URL.createObjectURL(selectedFile);
+    currentImageBlobRef.current = objectURL;
     setImageSrc(objectURL);
     
     if (cropEnabled) {
@@ -110,8 +128,8 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
     }
   };
 
-  const onCropComplete = useCallback((croppedArea: Area, croppedAreaPixels: Area) => {
-    setCroppedAreaPixels(croppedAreaPixels);
+  const onCropComplete = useCallback((crop: PixelCrop, percentageCrop: Crop) => {
+    setCroppedAreaPixels(crop);
   }, []);
 
   const handleCropSave = async () => {
@@ -124,14 +142,16 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
       
       // Create preview URL for the cropped image
       const previewURL = URL.createObjectURL(croppedBlob);
+      currentPreviewBlobRef.current = previewURL;
       setPreviewUrl(previewURL);
       
       await uploadImage(croppedFile);
       setShowCrop(false);
       
       // Clean up the original imageSrc blob URL after successful upload
-      if (imageSrc && imageSrc.startsWith('blob:')) {
-        URL.revokeObjectURL(imageSrc);
+      if (currentImageBlobRef.current) {
+        revokeBlobUrl(currentImageBlobRef.current);
+        currentImageBlobRef.current = null;
       }
       setImageSrc(null);
     } catch (err) {
@@ -146,16 +166,18 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
     setShowCrop(false);
     
     // Clean up object URLs
-    if (imageSrc && imageSrc.startsWith('blob:')) {
-      URL.revokeObjectURL(imageSrc);
+    if (currentImageBlobRef.current) {
+      revokeBlobUrl(currentImageBlobRef.current);
+      currentImageBlobRef.current = null;
     }
-    if (previewUrl && previewUrl.startsWith('blob:')) {
-      URL.revokeObjectURL(previewUrl);
+    if (currentPreviewBlobRef.current) {
+      revokeBlobUrl(currentPreviewBlobRef.current);
+      currentPreviewBlobRef.current = null;
     }
     
     setImageSrc(null);
     setPreviewUrl(null);
-    setCrop({ x: 0, y: 0 });
+    setCrop({ unit: '%', x: 0, y: 0, width: 100, height: 100 });
     setZoom(1);
     setCroppedAreaPixels(null);
   };
@@ -189,6 +211,18 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
           onImageUploaded(downloadURL);
           setUploading(false);
           setUploadProgress(null);
+          
+          // Clean up blob URLs after successful upload
+          if (currentImageBlobRef.current) {
+            revokeBlobUrl(currentImageBlobRef.current);
+            currentImageBlobRef.current = null;
+          }
+          if (currentPreviewBlobRef.current) {
+            revokeBlobUrl(currentPreviewBlobRef.current);
+            currentPreviewBlobRef.current = null;
+          }
+          setImageSrc(null);
+          setPreviewUrl(null);
         });
       }
     );
@@ -237,90 +271,76 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
       {/* Image preview */}
       {previewUrl && !showCrop && (
         <div className="mt-4">
-          <img 
-            src={previewUrl} 
-            alt="Preview" 
-            className="rounded-lg shadow-md max-h-48 w-auto object-cover"
+          <img
+            src={previewUrl}
+            alt="Preview"
+            className="max-w-full h-auto rounded shadow"
+            style={{ maxWidth: `${maxWidth}px`, maxHeight: `${maxHeight}px` }}
+            onLoad={() => {
+              // Only revoke the previous blob URL after the new one is loaded
+              if (previousPreviewUrlRef.current && previousPreviewUrlRef.current !== previewUrl && previousPreviewUrlRef.current.startsWith('blob:')) {
+                URL.revokeObjectURL(previousPreviewUrlRef.current);
+              }
+              previousPreviewUrlRef.current = previewUrl;
+            }}
           />
         </div>
       )}
 
-      {/* Cropper Modal */}
+      {/* Crop modal */}
       {showCrop && imageSrc && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col overflow-hidden">
-            {/* Header */}
-            <div className="p-6 border-b border-gray-200">
-              <h3 className="heading-card text-center">
-                Crop Image
-              </h3>
-              <p className="body-medium text-center text-gray-600 mt-2">
-                Adjust the crop area and zoom to get the perfect image
-              </p>
-            </div>
-
-            {/* Cropper Container */}
-            <div className="relative flex-1 min-h-[240px] max-h-[45vh] bg-gray-100 overflow-auto flex items-center justify-center">
-              <div className="w-full h-full max-w-full max-h-full">
-                <Cropper
-                  image={imageSrc}
-                  crop={crop}
-                  zoom={zoom}
-                  aspect={aspectRatio}
-                  onCropChange={setCrop}
-                  onZoomChange={setZoom}
-                  onCropComplete={onCropComplete}
-                  cropShape="rect"
-                  showGrid={true}
-                  style={{
-                    containerStyle: {
-                      width: '100%',
-                      height: '100%',
-                      backgroundColor: '#f3f4f6',
-                      maxHeight: '45vh',
-                    }
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Controls pinned to bottom */}
-            <div className="p-6 border-t border-gray-200 bg-white sticky bottom-0">
-              {/* Zoom Control */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Zoom: {Math.round(zoom * 100)}%
-                </label>
-                <input
-                  type="range"
-                  min={1}
-                  max={3}
-                  step={0.01}
-                  value={zoom}
-                  onChange={(e) => setZoom(Number(e.target.value))}
-                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-                />
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-4 rounded-lg max-w-4xl max-h-[90vh] overflow-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Crop Image</h3>
+              <div className="flex gap-2">
                 <button
-                  type="button"
-                  onClick={handleCropSave}
-                  disabled={cropping}
-                  className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {cropping ? 'Saving...' : 'Save Crop'}
-                </button>
-                <button
-                  type="button"
                   onClick={handleCropCancel}
+                  className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600"
                   disabled={cropping}
-                  className="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
+                <button
+                  onClick={handleCropSave}
+                  className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                  disabled={cropping}
+                >
+                  {cropping ? 'Saving...' : 'Save Crop'}
+                </button>
               </div>
+            </div>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-2">Zoom: {zoom.toFixed(2)}x</label>
+              <input
+                type="range"
+                min="1"
+                max="3"
+                step="0.1"
+                value={zoom}
+                onChange={(e) => setZoom(Number(e.target.value))}
+                className="w-full"
+              />
+            </div>
+
+            <div className="flex justify-center">
+              <ReactCrop
+                crop={crop}
+                onChange={(c) => setCrop(c)}
+                onComplete={onCropComplete}
+                aspect={aspectRatio}
+                minWidth={100}
+                minHeight={100}
+              >
+                <img
+                  ref={imageRef}
+                  src={imageSrc}
+                  alt="Crop"
+                  style={{ transform: `scale(${zoom})` }}
+                  className="max-w-full h-auto"
+                />
+              </ReactCrop>
             </div>
           </div>
         </div>

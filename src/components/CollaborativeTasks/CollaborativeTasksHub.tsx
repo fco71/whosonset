@@ -4,6 +4,7 @@ import { db, auth } from '../../firebase';
 import { CollaborativeTask, TaskSubtask, TaskTeamMember, TaskReminder, TaskComment } from '../../types/ProjectManagement';
 import TaskForm from './TaskForm';
 import './CollaborativeTasksHub.scss';
+import { toast } from 'react-hot-toast';
 
 interface CollaborativeTasksHubProps {
   projectId: string;
@@ -107,7 +108,7 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
     try {
       const currentUser = auth.currentUser;
       if (!currentUser) {
-        alert('You must be logged in to create tasks');
+        toast.error('You must be logged in to create tasks');
         return;
       }
 
@@ -152,7 +153,7 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
       setEditingTask(null);
     } catch (error) {
       console.error('Error creating task:', error);
-      alert('Failed to create task. Please try again.');
+      toast.error('Failed to create task. Please try again.');
     }
   };
 
@@ -167,7 +168,7 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
       setShowTaskForm(false);
     } catch (error) {
       console.error('Error updating task:', error);
-      alert('Failed to update task. Please try again.');
+      toast.error('Failed to update task. Please try again.');
     }
   };
 
@@ -180,7 +181,7 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
         setExpandedTaskId(null);
       } catch (error) {
         console.error('Error deleting task:', error);
-        alert('Failed to delete task. Please try again.');
+        toast.error('Failed to delete task. Please try again.');
       }
     }
   };
@@ -195,7 +196,7 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
       });
     } catch (error) {
       console.error('Error completing task:', error);
-      alert('Failed to complete task. Please try again.');
+      toast.error('Failed to complete task. Please try again.');
     }
   };
 
@@ -209,7 +210,7 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
       });
     } catch (error) {
       console.error('Error starting task:', error);
-      alert('Failed to start task. Please try again.');
+      toast.error('Failed to start task. Please try again.');
     }
   };
 
@@ -230,7 +231,7 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
       });
     } catch (error) {
       console.error('Error restoring task:', error);
-      alert('Failed to restore task. Please try again.');
+      toast.error('Failed to restore task. Please try again.');
     }
   };
 
@@ -262,7 +263,7 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
       setNewComment('');
     } catch (error) {
       console.error('Error adding comment:', error);
-      alert('Failed to add comment. Please try again.');
+      toast.error('Failed to add comment. Please try again.');
     }
   };
 

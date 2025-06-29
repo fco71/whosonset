@@ -36,6 +36,11 @@ module.exports = {
         use: ['style-loader', 'css-loader', 'postcss-loader'],
       },
       {
+        test: /\.css$/i,
+        include: path.resolve(__dirname, 'node_modules'),
+        use: ['style-loader', 'css-loader'],
+      },
+      {
         test: /\.s[ac]ss$/i,
         include: path.resolve(__dirname, 'src'),
         use: [

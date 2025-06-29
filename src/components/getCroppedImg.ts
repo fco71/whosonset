@@ -1,9 +1,9 @@
 // getCroppedImg.ts
-// Helper for react-easy-crop to crop an image and return a Blob
+// Helper for react-image-crop to crop an image and return a Blob
 
-import { Area } from 'react-easy-crop';
+import { PixelCrop } from 'react-image-crop';
 
-const getCroppedImg = async (imageSrc: string, crop: Area): Promise<Blob> => {
+const getCroppedImg = async (imageSrc: string, crop: PixelCrop): Promise<Blob> => {
   return new Promise((resolve, reject) => {
     const image = new window.Image();
     image.crossOrigin = 'anonymous';

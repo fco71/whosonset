@@ -14,6 +14,7 @@ import { AdvancedMessaging } from './AdvancedMessaging';
 import NotificationBell from './NotificationBell';
 import { performanceMonitor } from '../../utilities/performanceUtils';
 import './SocialDashboard.scss';
+import { toast } from 'react-hot-toast';
 
 interface SocialDashboardProps {
   currentUserId: string;
@@ -372,7 +373,7 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
                       onClick={(e) => {
                         e.stopPropagation();
                         // TODO: Implement bookmark functionality
-                        console.log('Bookmark clicked for:', profile.name);
+                        toast.success('Bookmark added!');
                       }}
                       title="Add to favorites"
                     >

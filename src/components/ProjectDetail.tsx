@@ -1,10 +1,11 @@
 // src/components/ProjectDetail.tsx
-import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { db, auth, storage } from '../firebase';
 import { doc, getDoc, updateDoc, collection, query, orderBy, startAfter, limit, getDocs, QueryDocumentSnapshot } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 import ProjectShowcase from '../components/ProjectShowcase';
 // import LoadingSpinner from '../components/LoadingSpinner';
@@ -49,18 +50,24 @@ const LoadingSpinner: React.FC = () => <div className="text-white text-center mt
 
 const ProjectDetail: React.FC = () => {
     const { projectId } = useParams<{ projectId: string }>();
+    const { currentUser } = useAuth();
+    const navigate = useNavigate();
+    
     const [project, setProject] = useState<Project | null>(null);
-    const [loading, setLoading] = useState<boolean>(true);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [isEditing, setIsEditing] = useState<boolean>(false);
+    const [isEditing, setIsEditing] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
     const [coverImage, setCoverImage] = useState<File | null>(null);
-    // Removed posterImage state
+    const [coverImageBlobUrl, setCoverImageBlobUrl] = useState<string | null>(null);
+    
+    // Track blob URL with ref for proper cleanup
+    const coverImageBlobRef = useRef<string | null>(null);
+    
     const [reviews, setReviews] = useState<Review[]>([]);
     const [lastVisibleReview, setLastVisibleReview] = useState<QueryDocumentSnapshot | null>(null);
     const [prevReviewPages, setPrevReviewPages] = useState<QueryDocumentSnapshot[]>([]);
     const [loadingReviews, setLoadingReviews] = useState(false);
-    const user = auth.currentUser;
 
     const [formState, setFormState] = useState<Partial<Project>>({});
 
@@ -188,17 +195,49 @@ const ProjectDetail: React.FC = () => {
 
     const handleCancelClick = () => {
         setIsEditing(false);
-        if (project) setFormState({ ...project });
-        setCoverImage(null); // Removed setPosterImage
-        setError(null);
+        setCoverImage(null);
+        // Clean up blob URL when canceling
+        if (coverImageBlobRef.current) {
+            URL.revokeObjectURL(coverImageBlobRef.current);
+            coverImageBlobRef.current = null;
+        }
+        setCoverImageBlobUrl(null);
+        setFormState(prevState => ({
+            ...prevState,
+            projectName: project?.projectName || '',
+            country: project?.country || '',
+            productionCompany: project?.productionCompany || '',
+            status: project?.status || 'Pre-Production',
+            logline: project?.logline || '',
+            synopsis: project?.synopsis || '',
+            startDate: project?.startDate || '',
+            endDate: project?.endDate || '',
+            genres: project?.genres || [],
+            genre: project?.genre || '',
+            director: project?.director || '',
+            producer: project?.producer || '',
+            coverImageUrl: project?.coverImageUrl || '',
+            projectWebsite: project?.projectWebsite || '',
+            productionBudget: project?.productionBudget || '',
+            productionCompanyContact: project?.productionCompanyContact || ''
+        }));
     };
 
     const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) setCoverImage(e.target.files[0]);
-        else setCoverImage(null);
+        const file = e.target.files?.[0];
+        if (file) {
+            // Clean up previous blob URL
+            if (coverImageBlobRef.current) {
+                URL.revokeObjectURL(coverImageBlobRef.current);
+            }
+            
+            // Create new blob URL
+            const blobUrl = URL.createObjectURL(file);
+            coverImageBlobRef.current = blobUrl;
+            setCoverImageBlobUrl(blobUrl);
+            setCoverImage(file);
+        }
     };
-
-    // Removed handlePosterImageChange
 
     const deleteOldImage = async (url: string) => {
         if (!url || !url.startsWith("https://firebasestorage.googleapis.com/")) return;
@@ -308,6 +347,12 @@ const ProjectDetail: React.FC = () => {
             setFormState(prev => ({...prev, ...writableData, coverImageUrl: newCoverImageUrl})); // Removed posterImageUrl from here
 
             setCoverImage(null); // Removed setPosterImage
+            // Clean up blob URL after successful save
+            if (coverImageBlobRef.current) {
+                URL.revokeObjectURL(coverImageBlobRef.current);
+                coverImageBlobRef.current = null;
+            }
+            setCoverImageBlobUrl(null);
             setIsEditing(false); setSaveSuccess(true);
             setTimeout(() => setSaveSuccess(false), 3000);
         } catch (saveError) {
@@ -365,6 +410,15 @@ const ProjectDetail: React.FC = () => {
         </section>
     );
 
+    // Cleanup blob URL when component unmounts or when coverImage changes
+    useEffect(() => {
+        return () => {
+            if (coverImageBlobRef.current) {
+                URL.revokeObjectURL(coverImageBlobRef.current);
+            }
+        };
+    }, []);
+
     return (
         <div className="min-h-screen bg-gray-900 p-6">
             <Link to="/" className="inline-block mb-6 text-blue-500 hover:text-blue-400 transition-colors">
@@ -411,7 +465,7 @@ const ProjectDetail: React.FC = () => {
                     <div>
                         <h3 className="text-xl font-semibold mb-4 border-b pb-1">Media</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-                            <div><label htmlFor="coverImage" className="block text-sm font-medium">Cover Image</label><input type="file" id="coverImage" accept="image/*" onChange={handleCoverImageChange} className="mt-1" />{coverImage ? <img src={URL.createObjectURL(coverImage)} alt="New Cover Preview" className="w-36 h-auto mt-2 rounded shadow object-cover" /> : formState.coverImageUrl ? <img src={formState.coverImageUrl} alt="Current Cover" className="w-36 h-auto mt-2 rounded shadow object-cover" /> : null}</div>
+                            <div><label htmlFor="coverImage" className="block text-sm font-medium">Cover Image</label><input type="file" id="coverImage" accept="image/*" onChange={handleCoverImageChange} className="mt-1" />{coverImageBlobUrl ? <img src={coverImageBlobUrl} alt="New Cover Preview" className="w-36 h-auto mt-2 rounded shadow object-cover" /> : formState.coverImageUrl ? <img src={formState.coverImageUrl} alt="Current Cover" className="w-36 h-auto mt-2 rounded shadow object-cover" /> : null}</div>
                             {/* Removed Poster Image input */}
                         </div>
                     </div>
@@ -450,7 +504,7 @@ const ProjectDetail: React.FC = () => {
 
                         <ProjectShowcase
                             project={project}
-                            userId={user?.uid}
+                            userId={currentUser?.uid}
                             // Pass onEditClick if ProjectShowcase itself renders an edit button for the owner.
                             // If the edit button is handled *only* below, this prop might not be needed by ProjectShowcase.
                             onEditClick={handleEditClick}
@@ -459,7 +513,7 @@ const ProjectDetail: React.FC = () => {
 
                         {/* MODIFICATION 2: Conditional Edit/Suggest Button */}
                         <div className="mt-10 text-center"> {/* Ensures buttons are centered */}
-                            {user && user.uid === project.owner_uid ? (
+                            {currentUser && currentUser.uid === project.owner_uid ? (
                                 <div className="flex gap-4 justify-center">
                                     <Link
                                         to={`/projects/${projectId}/manage`}

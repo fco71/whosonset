@@ -11,6 +11,7 @@ import { JobTitleEntry } from '../types/JobTitleEntry';
 import { JOB_SUBCATEGORIES } from '../types/JobSubcategories';
 import { Residence, ContactInfo } from '../types/CrewProfile';
 import LocationSelector from './LocationSelector';
+import { toast } from 'react-hot-toast';
 
 // --- Interfaces to define the shape of your data ---
 interface JobDepartment {
@@ -273,6 +274,7 @@ const Register: React.FC = () => {
       console.log('Crew profile document created');
 
       console.log('User registered and profile created successfully!');
+      toast.success('Registration successful!');
       navigate('/'); // Redirect to homepage after successful registration
 
     } catch (err: any) {
@@ -292,6 +294,7 @@ const Register: React.FC = () => {
       }
       
       setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

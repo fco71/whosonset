@@ -12,6 +12,7 @@ import {
 import CollaborativeTasksHub from '../CollaborativeTasks/CollaborativeTasksHub';
 import './CollaborationHub.scss';
 import UserAutocomplete, { UserAutocompleteOption } from './UserAutocomplete';
+import { toast } from 'react-hot-toast';
 
 interface CollaborationHubProps {
   projectId?: string;
@@ -329,14 +330,14 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     setShowAddMemberModal(false);
     setUserSearchQuery('');
     setUserSearchResults([]);
-    alert(`Added ${user.name} to workspace successfully!`);
+    toast.success(`Added ${user.name} to workspace successfully!`);
   };
 
   // Workspace creation handlers
   const handleCreateWorkspaceStep = () => {
     if (workspaceCreationStep === 'details') {
       if (!newWorkspaceData.name.trim()) {
-        alert('Please enter a workspace name');
+        toast.error('Please enter a workspace name');
         return;
       }
       setWorkspaceCreationStep('members');
@@ -404,10 +405,10 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       });
       setWorkspaceCreationStep('details');
       setShowCreateWorkspaceModal(false);
-      alert(`Workspace "${newWorkspaceData.name.trim()}" created successfully!`);
+      toast.success(`Workspace "${newWorkspaceData.name.trim()}" created successfully!`);
     } catch (error) {
       console.error('Error in handleCreateWorkspace:', error);
-      alert('Failed to create workspace. Please try again.');
+      toast.error('Failed to create workspace. Please try again.');
     }
   };
 
@@ -435,7 +436,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     e.preventDefault();
     if (!selectedWorkspace) return;
     if (!newChannelData.name.trim()) {
-      alert('Please enter a channel name');
+      toast.error('Please enter a channel name');
       return;
     }
     const newChannel: CollaborationChannel = {
@@ -461,7 +462,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     } : null);
     setShowCreateChannelModal(false);
     setNewChannelData({ name: '', type: 'text', isPrivate: false });
-    alert(`Channel "${newChannel.name}" created successfully!`);
+    toast.success(`Channel "${newChannel.name}" created successfully!`);
   };
 
   const handleCreateDocument = () => {
@@ -472,7 +473,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     e.preventDefault();
     if (!selectedWorkspace) return;
     if (!newDocumentData.name.trim()) {
-      alert('Please enter a document name');
+      toast.error('Please enter a document name');
       return;
     }
     const newDocument: CollaborativeDocument = {
@@ -501,7 +502,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     } : null);
     setShowCreateDocumentModal(false);
     setNewDocumentData({ name: '', type: 'notes', tags: '' });
-    alert(`Document "${newDocument.title}" created successfully!`);
+    toast.success(`Document "${newDocument.title}" created successfully!`);
   };
 
   const handleCreateWhiteboard = () => {
@@ -512,7 +513,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     e.preventDefault();
     if (!selectedWorkspace) return;
     if (!newWhiteboardData.name.trim()) {
-      alert('Please enter a whiteboard name');
+      toast.error('Please enter a whiteboard name');
       return;
     }
     const newWhiteboard: Whiteboard = {
@@ -537,7 +538,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     } : null);
     setShowCreateWhiteboardModal(false);
     setNewWhiteboardData({ name: '', description: '' });
-    alert(`Whiteboard "${newWhiteboard.name}" created successfully!`);
+    toast.success(`Whiteboard "${newWhiteboard.name}" created successfully!`);
   };
 
   const handleJoinWorkspace = (workspaceId: string) => {
@@ -546,7 +547,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       const workspace = workspaces.find(ws => ws.id === workspaceId);
       if (workspace) {
         setSelectedWorkspace(workspace);
-        alert(`Successfully joined workspace: ${workspace.name}`);
+        toast.success(`Successfully joined workspace: ${workspace.name}`);
       }
     } catch (error) {
       console.error('Error in handleJoinWorkspace:', error);
@@ -581,12 +582,12 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     } : null);
 
     setShowSettingsModal(false);
-    alert('Workspace settings updated successfully!');
+    toast.success('Workspace settings updated successfully!');
   };
 
   const handleStartVideoCall = () => {
     if (!selectedWorkspace) {
-      alert('Please select a workspace first');
+      toast.error('Please select a workspace first');
       return;
     }
     setShowVideoCallModal(true);
