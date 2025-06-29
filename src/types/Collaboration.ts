@@ -15,6 +15,7 @@ export interface CollaborationWorkspace {
 
 export interface WorkspaceMember {
   userId: string;
+  email?: string;
   role: 'owner' | 'admin' | 'member' | 'viewer';
   joinedAt: any;
   permissions: string[];

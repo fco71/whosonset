@@ -165,9 +165,11 @@
       display: flex;
       gap: 1rem;
       align-items: center;
+      flex-wrap: wrap;
 
       .search-box {
         position: relative;
+        min-width: 200px;
 
         .search-icon {
           position: absolute;
@@ -175,13 +177,16 @@
           top: 50%;
           transform: translateY(-50%);
           color: #64748b;
+          z-index: 1;
         }
 
         .search-input {
           padding: 0.5rem 0.75rem 0.5rem 2.5rem;
           border: 1px solid #e2e8f0;
           border-radius: 0.5rem;
-          width: 250px;
+          width: 100%;
+          min-width: 200px;
+          max-width: 300px;
           font-size: 0.875rem;
 
           &:focus {
@@ -195,6 +200,7 @@
       .filters {
         display: flex;
         gap: 0.5rem;
+        flex-wrap: wrap;
 
         .filter-select {
           padding: 0.5rem;
@@ -202,6 +208,8 @@
           border-radius: 0.5rem;
           font-size: 0.875rem;
           background: white;
+          min-width: 120px;
+          max-width: 150px;
 
           &:focus {
             outline: none;

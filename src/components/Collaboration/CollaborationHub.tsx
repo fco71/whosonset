@@ -6,7 +6,8 @@ import {
   CollaborativeDocument,
   Whiteboard,
   Task,
-  VideoCall
+  VideoCall,
+  WorkspaceMember
 } from '../../types/Collaboration';
 import CollaborativeTasksHub from '../CollaborativeTasks/CollaborativeTasksHub';
 import './CollaborationHub.scss';
@@ -202,43 +203,47 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const handleCreateWorkspace = () => {
     try {
       console.log('Create workspace clicked');
-      const workspaceName = prompt('Enter workspace name:');
-      if (workspaceName && workspaceName.trim()) {
-        const newWorkspace: CollaborationWorkspace = {
-          id: Date.now().toString(),
-          projectId: projectId || 'default-project',
-          name: workspaceName.trim(),
-          description: `Workspace for ${workspaceName.trim()}`,
-          type: 'project',
-          members: [
-            { 
-              userId: currentUser?.uid || 'default-user', 
-              role: 'admin', 
-              joinedAt: new Date(), 
-              permissions: ['read', 'write'], 
-              isOnline: true, 
-              lastSeen: new Date() 
-            }
-          ],
-          channels: [],
-          documents: [],
-          whiteboards: [],
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          settings: {
-            allowGuestAccess: false,
-            requireApproval: true,
-            autoArchive: false,
-            retentionDays: 365,
-            maxFileSize: 100 * 1024 * 1024,
-            allowedFileTypes: ['pdf', 'doc', 'docx', 'txt', 'jpg', 'png']
-          }
-        };
-
-        setWorkspaces(prev => [...prev, newWorkspace]);
-        setSelectedWorkspace(newWorkspace);
-        alert(`Workspace "${workspaceName}" created successfully!`);
+      if (!newWorkspaceName.trim()) {
+        alert('Please enter a workspace name');
+        return;
       }
+      
+      const newWorkspace: CollaborationWorkspace = {
+        id: Date.now().toString(),
+        projectId: projectId || 'default-project',
+        name: newWorkspaceName.trim(),
+        description: `Workspace for ${newWorkspaceName.trim()}`,
+        type: 'project',
+        members: [
+          { 
+            userId: currentUser?.uid || 'default-user', 
+            role: 'admin', 
+            joinedAt: new Date(), 
+            permissions: ['read', 'write'], 
+            isOnline: true, 
+            lastSeen: new Date() 
+          }
+        ],
+        channels: [],
+        documents: [],
+        whiteboards: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        settings: {
+          allowGuestAccess: false,
+          requireApproval: true,
+          autoArchive: false,
+          retentionDays: 365,
+          maxFileSize: 100 * 1024 * 1024,
+          allowedFileTypes: ['pdf', 'doc', 'docx', 'txt', 'jpg', 'png']
+        }
+      };
+
+      setWorkspaces(prev => [...prev, newWorkspace]);
+      setSelectedWorkspace(newWorkspace);
+      setNewWorkspaceName('');
+      setShowCreateWorkspaceModal(false);
+      alert(`Workspace "${newWorkspaceName.trim()}" created successfully!`);
     } catch (error) {
       console.error('Error in handleCreateWorkspace:', error);
       alert('Failed to create workspace. Please try again.');
@@ -248,12 +253,42 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const handleCreateChannel = () => {
     try {
       console.log('Create channel clicked');
+      if (!selectedWorkspace) {
+        alert('Please select a workspace first');
+        return;
+      }
+      
       const channelName = prompt('Enter channel name:');
       if (channelName && channelName.trim()) {
-        alert(`Channel "${channelName}" creation functionality will be implemented soon!`);
+        const newChannel: CollaborationChannel = {
+          id: Date.now().toString(),
+          workspaceId: selectedWorkspace.id,
+          name: channelName.trim(),
+          description: `Channel for ${channelName.trim()}`,
+          type: 'text',
+          members: [currentUser?.uid || 'default-user'],
+          messages: [],
+          isPrivate: false,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+
+        setWorkspaces(prev => prev.map(ws => 
+          ws.id === selectedWorkspace.id 
+            ? { ...ws, channels: [...ws.channels, newChannel] }
+            : ws
+        ));
+
+        setSelectedWorkspace(prev => prev ? {
+          ...prev,
+          channels: [...prev.channels, newChannel]
+        } : null);
+
+        alert(`Channel "${channelName}" created successfully!`);
       }
     } catch (error) {
       console.error('Error in handleCreateChannel:', error);
+      alert('Failed to create channel. Please try again.');
     }
   };
 
@@ -370,6 +405,42 @@ Auto Archive: ${workspace.settings.autoArchive ? 'Enabled' : 'Disabled'}
     }
   };
 
+  const handleAddWorkspaceMember = (workspaceId: string) => {
+    try {
+      console.log('Add workspace member clicked:', workspaceId);
+      const memberEmail = prompt('Enter member email:');
+      if (memberEmail && memberEmail.trim()) {
+        const newMember: WorkspaceMember = {
+          userId: `user-${Date.now()}`, // In real app, this would be the actual user ID
+          email: memberEmail.trim(),
+          role: 'member',
+          joinedAt: new Date(),
+          permissions: ['read', 'write'],
+          isOnline: false,
+          lastSeen: new Date()
+        };
+
+        setWorkspaces(prev => prev.map(ws => 
+          ws.id === workspaceId 
+            ? { ...ws, members: [...ws.members, newMember] }
+            : ws
+        ));
+
+        if (selectedWorkspace?.id === workspaceId) {
+          setSelectedWorkspace(prev => prev ? {
+            ...prev,
+            members: [...prev.members, newMember]
+          } : null);
+        }
+
+        alert(`Member ${memberEmail} added to workspace successfully!`);
+      }
+    } catch (error) {
+      console.error('Error in handleAddWorkspaceMember:', error);
+      alert('Failed to add member. Please try again.');
+    }
+  };
+
   const formatTimeAgo = (date: Date) => {
     const now = new Date();
     const diff = now.getTime() - date.getTime();
@@ -425,6 +496,15 @@ Auto Archive: ${workspace.settings.autoArchive ? 'Enabled' : 'Disabled'}
                 className="btn-secondary"
                 onClick={(e) => {
                   e.stopPropagation();
+                  handleAddWorkspaceMember(workspace.id);
+                }}
+              >
+                Add Member
+              </button>
+              <button 
+                className="btn-secondary"
+                onClick={(e) => {
+                  e.stopPropagation();
                   handleWorkspaceSettings(workspace.id);
                 }}
               >
@@ -469,7 +549,7 @@ Auto Archive: ${workspace.settings.autoArchive ? 'Enabled' : 'Disabled'}
     <div className="channels-tab">
       <div className="channels-header">
         <h2>Channels</h2>
-        <button className="btn-primary" onClick={() => alert('Channel creation coming soon!')}>Create Channel</button>
+        <button className="btn-primary" onClick={handleCreateChannel}>Create Channel</button>
       </div>
       
       {selectedWorkspace ? (
@@ -519,88 +599,73 @@ Auto Archive: ${workspace.settings.autoArchive ? 'Enabled' : 'Disabled'}
 
   const renderDocumentsTab = () => (
     <div className="documents-tab">
-      <div className="documents-header">
-        <h2>Collaborative Documents</h2>
-        <button className="btn-primary" onClick={handleCreateDocument}>Create Document</button>
+      <div className="tab-header">
+        <h3>Documents</h3>
+        <button 
+          className="btn-primary"
+          onClick={() => setShowCreateDocumentModal(true)}
+        >
+          Create Document
+        </button>
       </div>
       
-      {selectedWorkspace ? (
-        <div className="documents-grid">
-          {selectedWorkspace.documents.length > 0 ? (
-            selectedWorkspace.documents.map(document => (
-              <div key={document.id} className="document-card">
-                <div className="document-icon">📄</div>
-                <div className="document-info">
-                  <h3>{document.title}</h3>
-                  <p>{document.content}</p>
-                  <div className="document-meta">
-                    <span className="document-type">{document.type}</span>
-                    <span className="document-collaborators">{document.collaborators.length} collaborators</span>
-                    <span className="document-updated">Updated {formatTimeAgo(document.updatedAt)}</span>
-                  </div>
-                </div>
-                <div className="document-actions">
-                  <button className="btn-secondary">Open</button>
-                  <button className="btn-secondary">Share</button>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="no-documents">
-              <p>No documents in this workspace yet.</p>
-              <p>Create your first document to get started!</p>
+      <div className="documents-grid">
+        {selectedWorkspace?.documents.map((doc) => (
+          <div key={doc.id} className="document-card">
+            <div className="document-header">
+              <h4>{doc.title}</h4>
+              <span className="document-type">{doc.type}</span>
             </div>
-          )}
-        </div>
-      ) : (
-        <div className="no-workspace-selected">
-          <p>Please select a workspace to view documents</p>
-        </div>
-      )}
+            <div className="document-content">
+              <p>{doc.content.substring(0, 100)}...</p>
+            </div>
+            <div className="document-footer">
+              <div className="collaborators">
+                <span>Collaborators: {doc.collaborators.length}</span>
+              </div>
+              <div className="document-meta">
+                <span>v{doc.version}</span>
+                <span>{formatTimeAgo(doc.updatedAt)}</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 
   const renderWhiteboardsTab = () => (
     <div className="whiteboards-tab">
-      <div className="whiteboards-header">
-        <h2>Whiteboards</h2>
-        <button className="btn-primary" onClick={handleCreateWhiteboard}>Create Whiteboard</button>
+      <div className="tab-header">
+        <h3>Whiteboards</h3>
+        <button 
+          className="btn-primary"
+          onClick={() => setShowCreateWhiteboardModal(true)}
+        >
+          Create Whiteboard
+        </button>
       </div>
       
-      {selectedWorkspace ? (
-        <div className="whiteboards-grid">
-          {selectedWorkspace.whiteboards.length > 0 ? (
-            selectedWorkspace.whiteboards.map(whiteboard => (
-              <div key={whiteboard.id} className="whiteboard-card">
-                <div className="whiteboard-preview">
-                  <div className="preview-placeholder">{whiteboard.name}</div>
-                </div>
-                <div className="whiteboard-info">
-                  <h3>{whiteboard.name}</h3>
-                  <p>Whiteboard with {whiteboard.elements.length} elements</p>
-                  <div className="whiteboard-meta">
-                    <span className="whiteboard-collaborators">{whiteboard.collaborators.length} collaborators</span>
-                    <span className="whiteboard-updated">Updated {formatTimeAgo(whiteboard.updatedAt)}</span>
-                  </div>
-                </div>
-                <div className="whiteboard-actions">
-                  <button className="btn-secondary">Open</button>
-                  <button className="btn-secondary">Export</button>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="no-whiteboards">
-              <p>No whiteboards in this workspace yet.</p>
-              <p>Create your first whiteboard to get started!</p>
+      <div className="whiteboards-grid">
+        {selectedWorkspace?.whiteboards.map((wb) => (
+          <div key={wb.id} className="whiteboard-card">
+            <div className="whiteboard-header">
+              <h4>{wb.name}</h4>
             </div>
-          )}
-        </div>
-      ) : (
-        <div className="no-workspace-selected">
-          <p>Please select a workspace to view whiteboards</p>
-        </div>
-      )}
+            <div className="whiteboard-content">
+              <p>Elements: {wb.elements.length}</p>
+            </div>
+            <div className="whiteboard-footer">
+              <div className="collaborators">
+                <span>Collaborators: {wb.collaborators.length}</span>
+              </div>
+              <div className="whiteboard-meta">
+                <span>{formatTimeAgo(wb.updatedAt)}</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 
@@ -613,6 +678,22 @@ Auto Archive: ${workspace.settings.autoArchive ? 'Enabled' : 'Disabled'}
       
       <div className="tasks-content">
         <CollaborativeTasksHub projectId={projectId || 'default-project'} />
+      </div>
+    </div>
+  );
+
+  const renderHelpSection = () => (
+    <div className="help-section">
+      <h3>What's the difference?</h3>
+      <div className="help-grid">
+        <div className="help-item">
+          <h4>📄 Documents</h4>
+          <p>Text-based collaborative editing for scripts, storyboards, schedules, budgets, and notes. Multiple users can edit simultaneously with real-time updates.</p>
+        </div>
+        <div className="help-item">
+          <h4>🎨 Whiteboards</h4>
+          <p>Visual collaboration tools for brainstorming, storyboarding, and creative planning. Draw, add shapes, and collaborate visually in real-time.</p>
+        </div>
       </div>
     </div>
   );
@@ -631,6 +712,8 @@ Auto Archive: ${workspace.settings.autoArchive ? 'Enabled' : 'Disabled'}
           return renderWhiteboardsTab();
         case 'tasks':
           return renderTasksTab();
+        case 'help':
+          return renderHelpSection();
         default:
           return renderWorkspacesTab();
       }
@@ -722,6 +805,14 @@ Auto Archive: ${workspace.settings.autoArchive ? 'Enabled' : 'Disabled'}
               >
                 <span className="nav-icon">✅</span>
                 <span className="nav-label">Tasks</span>
+              </button>
+              
+              <button 
+                className={`nav-item ${activeTab === 'help' ? 'active' : ''}`}
+                onClick={() => setActiveTab('help')}
+              >
+                <span className="nav-icon">❓</span>
+                <span className="nav-label">Help</span>
               </button>
             </nav>
           </div>

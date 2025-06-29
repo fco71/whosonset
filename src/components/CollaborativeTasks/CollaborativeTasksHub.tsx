@@ -37,8 +37,7 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
     setLoading(true);
     const tasksQuery = query(
       collection(db, 'collaborativeTasks'),
-      where('projectId', '==', projectId),
-      orderBy('dueDate', 'asc')
+      where('projectId', '==', projectId)
     );
 
     const unsubscribe = onSnapshot(tasksQuery, (snapshot) => {
@@ -47,6 +46,15 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
         ...doc.data()
       })) as CollaborativeTask[];
       
+      // Sort tasks in memory to handle optional dueDate
+      tasksData.sort((a, b) => {
+        if (!a.dueDate && !b.dueDate) return 0;
+        if (!a.dueDate) return 1;
+        if (!b.dueDate) return -1;
+        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+      });
+      
+      console.log('Loaded tasks:', tasksData);
       setTasks(tasksData);
       setLoading(false);
     }, (error) => {
@@ -59,14 +67,28 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
 
   const handleCreateTask = async (taskData: Partial<CollaborativeTask>) => {
     try {
+      console.log('=== TASK CREATION DEBUG ===');
       console.log('Creating task with data:', taskData);
       console.log('Project ID:', projectId);
       console.log('Current user:', auth.currentUser?.uid);
+      console.log('Auth state:', auth.currentUser ? 'Authenticated' : 'Not authenticated');
+      
+      if (!auth.currentUser) {
+        console.error('No authenticated user found');
+        alert('You must be logged in to create tasks.');
+        return;
+      }
+      
+      if (!projectId) {
+        console.error('No project ID provided');
+        alert('Project ID is required to create tasks.');
+        return;
+      }
       
       const newTask: Partial<CollaborativeTask> = {
         ...taskData,
         projectId,
-        createdBy: auth.currentUser?.uid || '',
+        createdBy: auth.currentUser.uid,
         createdAt: new Date(),
         updatedAt: new Date(),
         status: 'pending',
@@ -80,13 +102,37 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
       };
 
       console.log('Final task object:', newTask);
+      console.log('About to add document to Firestore...');
       
       const docRef = await addDoc(collection(db, 'collaborativeTasks'), newTask);
-      console.log('Task created successfully with ID:', docRef.id);
+      console.log('✅ Task created successfully with ID:', docRef.id);
+      
       setShowTaskForm(false);
+      
+      // Force reload tasks to show the new task
+      console.log('Reloading tasks...');
+      const tasksQuery = query(
+        collection(db, 'collaborativeTasks'),
+        where('projectId', '==', projectId)
+      );
+      
+      const snapshot = await getDocs(tasksQuery);
+      const tasksData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as CollaborativeTask[];
+      
+      console.log('Reloaded tasks:', tasksData);
+      setTasks(tasksData);
+      
     } catch (error) {
-      console.error('Error creating task:', error);
-      alert('Failed to create task. Please try again.');
+      console.error('❌ Error creating task:', error);
+      console.error('Error details:', {
+        code: (error as any).code,
+        message: (error as any).message,
+        stack: (error as any).stack
+      });
+      alert(`Failed to create task: ${(error as any).message}`);
     }
   };
 
@@ -166,9 +212,10 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
     const total = tasks.length;
     const completed = tasks.filter(t => t.status === 'completed').length;
     const overdue = tasks.filter(t => {
+      if (!t.dueDate || t.status === 'completed') return false;
       const dueDate = new Date(t.dueDate);
       const today = new Date();
-      return t.status !== 'completed' && dueDate < today;
+      return dueDate < today;
     }).length;
     const inProgress = tasks.filter(t => t.status === 'in_progress').length;
 
@@ -207,31 +254,27 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
               </svg>
               Create Task
             </button>
+            
+            {/* Debug button for testing task creation */}
             <button
-              onClick={async () => {
-                try {
-                  const testTask = {
-                    title: 'Test Task',
-                    description: 'This is a test task',
-                    priority: 'medium' as const,
-                    category: 'other' as const,
-                    dueDate: new Date(Date.now() + 86400000).toISOString().slice(0, 16),
-                    estimatedHours: 2,
-                    location: 'Test Location',
-                    budget: 100,
-                    notes: 'Test notes',
-                    tags: ['test'],
-                    assignedTeamMembers: [],
-                    subtasks: []
-                  };
-                  console.log('Creating test task:', testTask);
-                  await handleCreateTask(testTask);
-                } catch (error) {
-                  console.error('Test task creation failed:', error);
-                }
+              onClick={() => {
+                console.log('=== TEST TASK CREATION ===');
+                const testTask = {
+                  title: 'Test Task ' + Date.now(),
+                  description: 'This is a test task created for debugging',
+                  priority: 'medium' as const,
+                  category: 'other' as const,
+                  dueDate: '',
+                  estimatedHours: 2,
+                  location: 'Test Location',
+                  budget: 100,
+                  tags: ['test', 'debug'],
+                  assignedTeamMembers: [],
+                  subtasks: []
+                };
+                handleCreateTask(testTask);
               }}
-              className="btn-secondary"
-              style={{ marginLeft: '10px' }}
+              className="btn-secondary ml-2"
             >
               Test Create Task
             </button>
@@ -465,7 +508,9 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
                     </div>
                     <p className="task-description">{task.description}</p>
                     <div className="task-meta">
-                      <span className="task-due-date">Due: {new Date(task.dueDate).toLocaleDateString()}</span>
+                      <span className="task-due-date">
+                        Due: {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No due date'}
+                      </span>
                       <span className={`task-status ${task.status}`}>{task.status}</span>
                       <span className={`task-priority ${task.priority}`}>{task.priority}</span>
                     </div>
@@ -582,7 +627,9 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
                   </div>
                   <div className="info-row">
                     <span className="info-label">Due Date:</span>
-                    <span className="info-value">{new Date(selectedTask.dueDate).toLocaleString()}</span>
+                    <span className="info-value">
+                      {selectedTask.dueDate ? new Date(selectedTask.dueDate).toLocaleString() : 'No due date'}
+                    </span>
                   </div>
                   {selectedTask.estimatedHours && selectedTask.estimatedHours > 0 && (
                     <div className="info-row">
@@ -654,7 +701,9 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
                           <p className="subtask-description">{subtask.description}</p>
                           <div className="subtask-meta">
                             <span className="subtask-priority">{subtask.priority}</span>
-                            <span className="subtask-due">Due: {new Date(subtask.dueDate).toLocaleDateString()}</span>
+                            <span className="subtask-due">
+                              Due: {subtask.dueDate ? new Date(subtask.dueDate).toLocaleDateString() : 'No due date'}
+                            </span>
                             {subtask.estimatedHours && subtask.estimatedHours > 0 && (
                               <span className="subtask-hours">{subtask.estimatedHours}h</span>
                             )}

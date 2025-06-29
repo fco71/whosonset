@@ -811,8 +811,7 @@ export class SocialService {
       console.log('[SocialService] Fetching crew profiles');
       const profilesQuery = query(
         collection(db, 'crewProfiles'),
-        where('isPublished', '==', true),
-        orderBy('name')
+        where('isPublished', '==', true)
       );
       
       const snapshot = await getDocs(profilesQuery);
@@ -820,6 +819,9 @@ export class SocialService {
         ...doc.data(),
         uid: doc.id
       })) as CrewProfile[];
+      
+      // Sort in memory instead of using orderBy to avoid index requirement
+      profiles.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
       
       console.log('[SocialService] Fetched crew profiles:', profiles.length);
       return profiles;

@@ -216,6 +216,16 @@ const TaskForm: React.FC<TaskFormProps> = ({ task, onSubmit, onCancel, projectId
     }
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onCancel();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onCancel]);
+
   return (
     <div className="task-form-overlay">
       <div className="task-form-modal">
@@ -295,13 +305,12 @@ const TaskForm: React.FC<TaskFormProps> = ({ task, onSubmit, onCancel, projectId
 
             <div className="form-row">
               <div className="form-group">
-                <label>Due Date *</label>
+                <label>Due Date</label>
                 <input
                   type="date"
                   value={formData.dueDate}
                   onChange={(e) => handleInputChange('dueDate', e.target.value)}
                   className="form-input"
-                  required
                 />
               </div>
 
