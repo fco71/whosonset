@@ -264,7 +264,7 @@ const NetworkingHub: React.FC = () => {
         </div>
       </div>
       <div className="profile-skills">
-        {profile.skills.slice(0, 3).map(skill => (
+        {profile.skills.slice(0, 3).map((skill: string) => (
           <span key={skill} className="skill-tag">{skill}</span>
         ))}
       </div>

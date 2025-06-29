@@ -40,12 +40,26 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                             My Projects
                         </Link>
                         {authUser && (
-                            <Link 
-                                to="/crew" 
-                                className="text-sm font-light text-gray-600 hover:text-gray-900 transition-colors duration-300 tracking-wide"
-                            >
-                                Crew
-                            </Link>
+                            <>
+                                <Link 
+                                    to="/crew" 
+                                    className="text-sm font-light text-gray-600 hover:text-gray-900 transition-colors duration-300 tracking-wide"
+                                >
+                                    Crew
+                                </Link>
+                                <Link 
+                                    to="/collaboration" 
+                                    className="text-sm font-light text-gray-600 hover:text-gray-900 transition-colors duration-300 tracking-wide"
+                                >
+                                    Collaboration
+                                </Link>
+                                <Link 
+                                    to="/video-conference" 
+                                    className="text-sm font-light text-gray-600 hover:text-gray-900 transition-colors duration-300 tracking-wide"
+                                >
+                                    Video Calls
+                                </Link>
+                            </>
                         )}
                     </div>
 

@@ -12,7 +12,7 @@ interface ProjectDocumentsProps {
 
 interface DocumentFormData {
   title: string;
-  description: string;
+  description?: string;
   category: 'script' | 'contract' | 'schedule' | 'budget' | 'call_sheet' | 'other';
   version: string;
   tags: string[];
@@ -116,12 +116,12 @@ const ProjectDocuments: React.FC<ProjectDocumentsProps> = ({
   const handleEdit = (document: ProjectDocument) => {
     setEditingDocument(document.id);
     setFormData({
-      title: document.title || '',
-      description: document.description || '',
-      category: document.category || '',
-      version: document.version || '',
-      tags: document.tags || [],
-      notes: document.notes || ''
+      title: document.title ?? '',
+      description: document.description ?? '',
+      category: document.category ?? 'other',
+      version: document.version ?? '',
+      tags: document.tags ?? [],
+      notes: document.notes ?? ''
     });
     setIsAddingDocument(true);
   };

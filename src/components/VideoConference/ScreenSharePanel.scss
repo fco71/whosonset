@@ -1,0 +1,354 @@
+.screen-share-panel {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  border-radius: 0.75rem;
+  overflow: hidden;
+
+  &.fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 9999;
+    border-radius: 0;
+  }
+
+  .screen-share-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+
+    .screen-share-video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: #000;
+    }
+
+    .annotation-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 10;
+
+      &.drawing-enabled {
+        pointer-events: all;
+        cursor: crosshair;
+      }
+    }
+  }
+
+  .screen-share-controls {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    right: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(10px);
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    z-index: 20;
+
+    .control-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+
+      .sharer-name {
+        font-weight: 600;
+        color: white;
+        font-size: 0.9rem;
+      }
+
+      .share-type {
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.7);
+        text-transform: capitalize;
+      }
+    }
+
+    .control-actions {
+      display: flex;
+      gap: 0.5rem;
+
+      .control-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: none;
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.2);
+          transform: scale(1.05);
+        }
+
+        &.stop-btn {
+          background: #ef4444;
+
+          &:hover {
+            background: #dc2626;
+          }
+        }
+      }
+    }
+  }
+
+  .annotation-tools {
+    position: absolute;
+    bottom: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 1rem;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    z-index: 20;
+
+    .tool-group {
+      display: flex;
+      gap: 0.25rem;
+      align-items: center;
+
+      .tool-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: none;
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+        font-size: 1.1rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.2);
+          transform: scale(1.05);
+        }
+
+        &.active {
+          background: #3b82f6;
+        }
+      }
+
+      .color-picker {
+        width: 40px;
+        height: 40px;
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+        background: none;
+
+        &::-webkit-color-swatch-wrapper {
+          padding: 0;
+        }
+
+        &::-webkit-color-swatch {
+          border: none;
+          border-radius: 50%;
+        }
+      }
+
+      .thickness-slider {
+        width: 80px;
+        height: 4px;
+        border-radius: 2px;
+        background: rgba(255, 255, 255, 0.2);
+        outline: none;
+        cursor: pointer;
+
+        &::-webkit-slider-thumb {
+          appearance: none;
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          background: white;
+          cursor: pointer;
+        }
+
+        &::-moz-range-thumb {
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          background: white;
+          cursor: pointer;
+          border: none;
+        }
+      }
+    }
+  }
+
+  .annotation-list {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 250px;
+    max-height: 300px;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    z-index: 20;
+    overflow-y: auto;
+
+    h4 {
+      margin: 0 0 0.75rem 0;
+      color: white;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .annotations {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+
+      .annotation-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 0.25rem;
+        font-size: 0.8rem;
+
+        .annotation-type {
+          color: white;
+          font-weight: 500;
+          text-transform: capitalize;
+        }
+
+        .annotation-time {
+          color: rgba(255, 255, 255, 0.7);
+          font-size: 0.75rem;
+        }
+      }
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .screen-share-panel {
+    .screen-share-controls {
+      top: 0.5rem;
+      left: 0.5rem;
+      right: 0.5rem;
+      padding: 0.5rem 0.75rem;
+
+      .control-info {
+        .sharer-name {
+          font-size: 0.8rem;
+        }
+
+        .share-type {
+          font-size: 0.7rem;
+        }
+      }
+
+      .control-actions {
+        gap: 0.25rem;
+
+        .control-btn {
+          width: 32px;
+          height: 32px;
+          font-size: 0.9rem;
+        }
+      }
+    }
+
+    .annotation-tools {
+      bottom: 0.5rem;
+      left: 0.5rem;
+      right: 0.5rem;
+      transform: none;
+      justify-content: space-between;
+      padding: 0.5rem;
+
+      .tool-group {
+        gap: 0.25rem;
+
+        .tool-btn {
+          width: 36px;
+          height: 36px;
+          font-size: 1rem;
+        }
+
+        .thickness-slider {
+          width: 60px;
+        }
+      }
+    }
+
+    .annotation-list {
+      top: 0.5rem;
+      right: 0.5rem;
+      width: 200px;
+      max-height: 250px;
+      padding: 0.75rem;
+
+      h4 {
+        font-size: 0.8rem;
+      }
+
+      .annotations {
+        .annotation-item {
+          padding: 0.4rem;
+          font-size: 0.75rem;
+
+          .annotation-time {
+            font-size: 0.7rem;
+          }
+        }
+      }
+    }
+  }
+}
+
+// Animation classes
+.fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+} 

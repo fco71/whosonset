@@ -89,7 +89,7 @@ export interface SocialConnection {
   id: string;
   followerId: string;
   followingId: string;
-  status: 'pending' | 'accepted' | 'blocked';
+  status: 'active' | 'inactive' | 'blocked' | 'pending';
   createdAt: any;
   updatedAt: any;
 }

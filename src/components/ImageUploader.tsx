@@ -49,10 +49,31 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
     return () => window.removeEventListener('keydown', handleEsc);
   }, [showCrop]);
 
+  // Cleanup blob URLs when component unmounts or when URLs change
+  useEffect(() => {
+    return () => {
+      // Clean up imageSrc blob URL
+      if (imageSrc && imageSrc.startsWith('blob:')) {
+        URL.revokeObjectURL(imageSrc);
+      }
+      // Clean up previewUrl blob URL
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [imageSrc, previewUrl]);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
 
     if (!selectedFile) {
+      // Clean up existing blob URLs
+      if (imageSrc && imageSrc.startsWith('blob:')) {
+        URL.revokeObjectURL(imageSrc);
+      }
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl);
+      }
       setImageSrc(null);
       setPreviewUrl(null);
       return;
@@ -68,6 +89,14 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
     if (selectedFile.size > 5 * 1024 * 1024) {
       alert('File size must be less than 5MB');
       return;
+    }
+
+    // Clean up existing blob URLs before creating new ones
+    if (imageSrc && imageSrc.startsWith('blob:')) {
+      URL.revokeObjectURL(imageSrc);
+    }
+    if (previewUrl && previewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(previewUrl);
     }
 
     const objectURL = URL.createObjectURL(selectedFile);
@@ -99,6 +128,11 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
       
       await uploadImage(croppedFile);
       setShowCrop(false);
+      
+      // Clean up the original imageSrc blob URL after successful upload
+      if (imageSrc && imageSrc.startsWith('blob:')) {
+        URL.revokeObjectURL(imageSrc);
+      }
       setImageSrc(null);
     } catch (err) {
       console.error('Crop failed:', err);
@@ -110,15 +144,20 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
 
   const handleCropCancel = () => {
     setShowCrop(false);
+    
+    // Clean up object URLs
+    if (imageSrc && imageSrc.startsWith('blob:')) {
+      URL.revokeObjectURL(imageSrc);
+    }
+    if (previewUrl && previewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    
     setImageSrc(null);
+    setPreviewUrl(null);
     setCrop({ x: 0, y: 0 });
     setZoom(1);
     setCroppedAreaPixels(null);
-    
-    // Clean up object URL
-    if (imageSrc) {
-      URL.revokeObjectURL(imageSrc);
-    }
   };
 
   const uploadImage = async (imageFile: File) => {

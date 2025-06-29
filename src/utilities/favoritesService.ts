@@ -91,7 +91,8 @@ export class FavoritesService {
     const favoritesQuery = query(
       collection(db, this.COLLECTION_NAME),
       where('userId', '==', user.uid),
-      orderBy('addedAt', 'desc')
+      orderBy('addedAt', 'asc'),
+      orderBy('__name__', 'asc')
     );
 
     const snapshot = await getDocs(favoritesQuery);

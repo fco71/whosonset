@@ -47,10 +47,17 @@ import PerformanceMonitor from './components/PerformanceMonitor';
 import PostJobPage from './pages/PostJobPage';
 import MyProjectsPage from './pages/MyProjectsPage';
 import ChatTestPage from './components/Chat/ChatTestPage';
+import UserMenu from './components/UserMenu';
 
 // Analytics components
 import AnalyticsDashboard from './components/Analytics/AnalyticsDashboard';
 import ProjectAnalytics from './components/Analytics/ProjectAnalytics';
+
+// Collaboration components
+import CollaborationHub from './components/Collaboration/CollaborationHub';
+
+// Video Conference components
+import VideoConferenceHub from './components/VideoConference/VideoConferenceHub';
 
 import { AnimatePresence } from 'framer-motion';
 
@@ -99,9 +106,9 @@ const App: React.FC = () => {
                     </div>
                     <ul className="flex gap-5 flex-wrap items-center">
                         <li><Link to="/" className="nav-link">Home</Link></li>
-                        <li><Link to="/projects" className="nav-link">All Projects</Link></li>
-                        <li><Link to="/jobs" className="nav-link">Job Search</Link></li>
-                        <li><Link to="/applications" className="nav-link">My Applications</Link></li>
+                        <li><Link to="/projects" className="nav-link">Projects</Link></li>
+                        <li><Link to="/jobs" className="nav-link">Jobs</Link></li>
+                        <li><Link to="/crew" className="nav-link">Crew</Link></li>
                         {!authUser ? (
                             <>
                                 <li><Link to="/login" className="nav-link">Login</Link></li>
@@ -109,22 +116,11 @@ const App: React.FC = () => {
                             </>
                         ) : (
                             <>
-                                <li><Link to="/projects/add" className="nav-link">Add Project</Link></li>
-                                <li><Link to="/crew" className="nav-link">Crew Directory</Link></li>
-                                <li><Link to="/social" className="nav-link">Social Hub</Link></li>
-                                <li><Link to="/collections" className="nav-link">My Collections</Link></li>
-                                <li><Link to="/favorites" className="nav-link">Favorites</Link></li>
+                                <li><Link to="/social" className="nav-link">Social</Link></li>
                                 <li><Link to="/analytics" className="nav-link">📊 Analytics</Link></li>
-                                <li><Link to="/chat-test" className="nav-link">💬 Chat Demo</Link></li>
                                 <li><NotificationBell currentUserId={authUser?.uid || ''} /></li>
-                                <li><Link to="/edit-profile" className="nav-link">Resume Builder</Link></li>
                                 <li>
-                                    <button
-                                        onClick={userSignOut}
-                                        className="text-xs px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 transition"
-                                    >
-                                        Sign Out
-                                    </button>
+                                    <UserMenu authUser={authUser} userSignOut={userSignOut} />
                                 </li>
                             </>
                         )}
@@ -143,6 +139,8 @@ const App: React.FC = () => {
                         <Route path="/crew" element={<ProducerView />} />
                         <Route path="/social" element={<PrivateRoute><SocialDashboard currentUserId={authUser?.uid || ''} currentUserName={authUser?.displayName || authUser?.email || `User ${authUser?.uid?.slice(-4) || 'Unknown'}`} currentUserAvatar={authUser?.photoURL} /></PrivateRoute>} />
                         <Route path="/social/test" element={<PrivateRoute><SocialTestPage currentUserId={authUser?.uid || ''} currentUserName={authUser?.displayName || authUser?.email || 'User'} currentUserAvatar={authUser?.photoURL} /></PrivateRoute>} />
+                        <Route path="/collaboration" element={<PrivateRoute><CollaborationHub /></PrivateRoute>} />
+                        <Route path="/video-conference" element={<PrivateRoute><VideoConferenceHub /></PrivateRoute>} />
                         <Route path="/collections" element={<PrivateRoute><CollectionsHubPage /></PrivateRoute>} />
                         <Route path="/favorites" element={<PrivateRoute><FavoritesPage /></PrivateRoute>} />
                         <Route path="/saved-crew" element={<PrivateRoute><SavedCrewProfilesPage /></PrivateRoute>} />
@@ -193,5 +191,5 @@ if (rootElement) {
         </React.StrictMode>
     );
 } else {
-    console.error("Could not find root element!");
+    console.error('Root element not found');
 }
