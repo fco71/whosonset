@@ -116,10 +116,10 @@ const ProjectDocuments: React.FC<ProjectDocumentsProps> = ({
   const handleEdit = (document: ProjectDocument) => {
     setEditingDocument(document.id);
     setFormData({
-      title: document.title,
+      title: document.title || '',
       description: document.description || '',
-      category: document.category,
-      version: document.version,
+      category: document.category || '',
+      version: document.version || '',
       tags: document.tags || [],
       notes: document.notes || ''
     });

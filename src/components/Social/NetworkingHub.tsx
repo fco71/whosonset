@@ -232,8 +232,8 @@ const NetworkingHub: React.FC = () => {
         <p>{item.content.content}</p>
         {item.content.tags && (
           <div className="tags">
-            {item.content.tags.map(tag => (
-              <span key={tag} className="tag">#{tag}</span>
+            {item.content.tags.map((tag: string, idx: number) => (
+              <span key={idx} className="tag">#{tag}</span>
             ))}
           </div>
         )}
@@ -315,8 +315,8 @@ const NetworkingHub: React.FC = () => {
         {event.maxAttendees && <span>Max: {event.maxAttendees}</span>}
       </div>
       <div className="event-tags">
-        {event.tags.map(tag => (
-          <span key={tag} className="tag">#{tag}</span>
+        {event.tags.map((tag: string, idx: number) => (
+          <span key={idx} className="tag">#{tag}</span>
         ))}
       </div>
       <div className="event-actions">
