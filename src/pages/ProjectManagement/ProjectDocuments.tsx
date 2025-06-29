@@ -117,7 +117,7 @@ const ProjectDocuments: React.FC<ProjectDocumentsProps> = ({
     setEditingDocument(document.id);
     setFormData({
       title: document.title,
-      description: document.description,
+      description: document.description || '',
       category: document.category,
       version: document.version,
       tags: document.tags || [],

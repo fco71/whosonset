@@ -14,7 +14,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   type = 'user', 
   projectId 
 }) => {
-  const { user } = useAuth();
+  const { currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
   const [analytics, setAnalytics] = useState<UserAnalytics | ProjectAnalytics | PlatformAnalytics | null>(null);
   const [insights, setInsights] = useState<AnalyticsInsight[]>([]);
@@ -22,11 +22,11 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   const [dateRange, setDateRange] = useState('30d'); // 7d, 30d, 90d, 1y
 
   useEffect(() => {
-    if (user) {
+    if (currentUser) {
       loadAnalytics();
       loadInsights();
     }
-  }, [user, type, projectId, dateRange]);
+  }, [currentUser, type, projectId, dateRange]);
 
   const loadAnalytics = async () => {
     try {
@@ -80,9 +80,9 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   };
 
   const generateMockAnalytics = () => {
-    if (type === 'user' && user) {
+    if (type === 'user' && currentUser) {
       return {
-        userId: user.uid,
+        userId: currentUser.uid,
         profileViews: 1250,
         profileViewsHistory: Array.from({ length: 30 }, (_, i) => ({
           date: new Date(Date.now() - (29 - i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
