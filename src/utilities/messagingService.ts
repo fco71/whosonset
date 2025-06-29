@@ -222,12 +222,10 @@ export class MessagingService {
         this.listeners.get(listenerKey)!();
       }
       
-      // Use a simpler approach: get all messages and filter in memory
-      // This avoids the composite index requirement
+      // Get all messages for this conversation without limit to ensure reactions don't cause messages to disappear
       const messagesQuery = query(
         collection(db, 'directMessages'),
-        orderBy('timestamp', 'asc'),
-        limit(200) // Limit to recent messages for performance
+        orderBy('timestamp', 'asc')
       );
 
       const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {

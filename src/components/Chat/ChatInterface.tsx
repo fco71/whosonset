@@ -245,19 +245,26 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   // Load conversation messages
   const loadConversation = (otherUserId: string) => {
+    console.log('[ChatInterface] Loading conversation with:', otherUserId);
+    
     // Clean up existing message listener
     if (messageListenerRef.current) {
       messageListenerRef.current();
     }
 
-    // Setup real-time message listener
+    // Set up message listener
     messageListenerRef.current = MessagingService.subscribeToConversation(
       currentUserId,
       otherUserId,
       (messages) => {
+        console.log('[ChatInterface] Messages updated:', messages.length, 'messages');
+        console.log('[ChatInterface] Messages:', messages.map(m => ({ id: m.id, content: m.content, reactions: m.reactions?.length || 0 })));
         setMessages(messages);
       }
     );
+
+    // Set up typing listener
+    setupTypingListener(otherUserId);
   };
 
   // Setup typing indicator listener
@@ -285,13 +292,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   // Add reaction to message - memoized with useCallback
   const addReaction = useCallback(async (messageId: string, emoji: string) => {
+    console.log('[ChatInterface] Adding reaction:', messageId, emoji);
+    console.log('[ChatInterface] Current messages before reaction:', messages.length);
+    
     try {
       await MessagingService.addMessageReaction(messageId, currentUserId, currentUserName, emoji);
+      console.log('[ChatInterface] Reaction added successfully');
     } catch (error) {
       console.error('Error adding reaction:', error);
       setError('Failed to add reaction. Please try again.');
     }
-  }, [currentUserId, currentUserName]);
+  }, [currentUserId, currentUserName, messages.length]);
 
   // Create memoized reaction handlers to prevent re-renders
   const createReactionHandler = useCallback((messageId: string, emoji: string) => {
