@@ -29,6 +29,7 @@ const MessageInput = React.forwardRef<{
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordingChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [recordingError, setRecordingError] = useState<string | null>(null);
   
   // Expose methods to parent component
   const setSendCallback = useCallback((callback: (message: string, type?: string, file?: File) => void) => {
@@ -105,46 +106,123 @@ const MessageInput = React.forwardRef<{
   // Voice recording
   const startRecording = useCallback(async () => {
     try {
+      console.log('[Voice Recording] Starting recording...');
+      
+      // Check if MediaRecorder is supported
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Media recording is not supported in this browser');
+      }
+      
+      if (!window.MediaRecorder) {
+        throw new Error('MediaRecorder is not supported in this browser');
+      }
+      
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log('[Voice Recording] Got audio stream:', stream);
+      
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       recordingChunksRef.current = [];
       
       mediaRecorder.ondataavailable = (event) => {
+        console.log('[Voice Recording] Data available:', event.data.size, 'bytes');
         if (event.data.size > 0) {
           recordingChunksRef.current.push(event.data);
         }
       };
       
+      mediaRecorder.onstart = () => {
+        console.log('[Voice Recording] Recording started');
+        setIsRecording(true);
+        setRecordingTime(0);
+        setRecordingError(null);
+        
+        // Start recording timer
+        recordingTimerRef.current = setInterval(() => {
+          setRecordingTime(prev => prev + 1);
+        }, 1000);
+      };
+      
       mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(recordingChunksRef.current, { type: 'audio/wav' });
-        const audioFile = new File([audioBlob], 'voice-message.wav', { type: 'audio/wav' });
-        if (sendCallbackRef.current) {
-          sendCallbackRef.current('', 'voice', audioFile);
+        console.log('[Voice Recording] Recording stopped');
+        setIsRecording(false);
+        setRecordingTime(0);
+        
+        // Clear recording timer
+        if (recordingTimerRef.current) {
+          clearInterval(recordingTimerRef.current);
         }
+        
+        if (recordingChunksRef.current.length > 0) {
+          const audioBlob = new Blob(recordingChunksRef.current, { type: 'audio/wav' });
+          console.log('[Voice Recording] Created audio blob:', audioBlob.size, 'bytes');
+          
+          // Create a file from the blob
+          const audioFile = new File([audioBlob], 'voice-message.wav', { type: 'audio/wav' });
+          console.log('[Voice Recording] Created audio file:', audioFile.name, audioFile.size);
+          
+          // Send the voice message via callback
+          if (sendCallbackRef.current) {
+            console.log('[Voice Recording] Sending voice message...');
+            sendCallbackRef.current('🎤 Voice Message', 'voice', audioFile);
+          } else {
+            console.error('[Voice Recording] No send callback available');
+          }
+        }
+        
+        // Stop all tracks to release microphone
+        stream.getTracks().forEach(track => track.stop());
+      };
+      
+      mediaRecorder.onerror = (event) => {
+        console.error('[Voice Recording] MediaRecorder error:', event);
+        setIsRecording(false);
+        setRecordingTime(0);
+        setRecordingError('Recording failed due to a technical error. Please try again.');
         stream.getTracks().forEach(track => track.stop());
       };
       
       mediaRecorder.start();
-      setIsRecording(true);
-      setRecordingTime(0);
-      
-      recordingTimerRef.current = setInterval(() => {
-        setRecordingTime(prev => prev + 1);
-      }, 1000);
       
     } catch (error) {
-      console.error('Error starting recording:', error);
+      console.error('[Voice Recording] Error starting recording:', error);
+      setIsRecording(false);
+      setRecordingTime(0);
+      
+      // Provide specific guidance based on error type
+      if (error instanceof Error) {
+        if (error.name === 'NotAllowedError' || error.message.includes('permission')) {
+          setRecordingError(
+            'Microphone access denied. Please follow these steps:\n\n' +
+            '1. Click the microphone icon in your browser\'s address bar\n' +
+            '2. Select "Allow" for microphone access\n' +
+            '3. Refresh the page and try again\n\n' +
+            'If you don\'t see the microphone icon, check your browser settings.'
+          );
+        } else if (error.name === 'NotFoundError') {
+          setRecordingError('No microphone found. Please connect a microphone and try again.');
+        } else if (error.name === 'NotSupportedError') {
+          setRecordingError('Voice recording is not supported in this browser. Please use Chrome, Firefox, or Safari.');
+        } else {
+          setRecordingError(`Recording failed: ${error.message}. Please try again.`);
+        }
+      } else {
+        setRecordingError('Recording failed due to an unknown error. Please try again.');
+      }
     }
-  }, []);
+  }, [sendCallbackRef]);
 
   const stopRecording = useCallback(() => {
+    console.log('[Voice Recording] Stopping recording...');
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
       if (recordingTimerRef.current) {
         clearInterval(recordingTimerRef.current);
       }
+      console.log('[Voice Recording] Recording stopped successfully');
+    } else {
+      console.log('[Voice Recording] No active recording to stop');
     }
   }, [isRecording]);
 
@@ -288,6 +366,25 @@ const MessageInput = React.forwardRef<{
           <span>Recording... {formatRecordingTime(recordingTime)}</span>
           <button onClick={stopRecording} className="stop-recording">
             Stop
+          </button>
+        </div>
+      )}
+
+      {/* Recording error */}
+      {recordingError && (
+        <div className="recording-error">
+          <div className="error-icon">⚠️</div>
+          <div className="error-message">
+            {recordingError.split('\n').map((line, index) => (
+              <div key={index}>{line}</div>
+            ))}
+          </div>
+          <button 
+            onClick={() => setRecordingError(null)} 
+            className="error-close"
+            title="Close error message"
+          >
+            ×
           </button>
         </div>
       )}
@@ -686,6 +783,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const sendMessage = useCallback(async (messageContent: string, messageType: string = 'text', file?: File) => {
     if (!selectedUser || sending) return;
 
+    console.log('[SendMessage] Starting to send message:', { messageContent, messageType, file: file?.name, fileType: file?.type });
+
     setSending(true);
 
     try {
@@ -694,12 +793,18 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       // Handle file uploads
       if (file) {
+        console.log('[SendMessage] Processing file:', file.name, file.type, file.size);
+        
         if (file.type.startsWith('image/')) {
           type = 'image';
           content = `📷 ${file.name}`;
-        } else if (file.type.startsWith('audio/') || file.type.startsWith('video/')) {
-          type = file.type.startsWith('audio/') ? 'voice' : 'file';
-          content = `${file.type.startsWith('audio/') ? '🎤' : '🎥'} ${file.name}`;
+        } else if (file.type.startsWith('audio/')) {
+          type = 'voice';
+          content = `🎤 Voice Message (${(file.size / 1024).toFixed(1)} KB)`;
+          console.log('[SendMessage] Detected voice message:', content);
+        } else if (file.type.startsWith('video/')) {
+          type = 'file';
+          content = `🎥 ${file.name}`;
         } else {
           type = 'file';
           content = `📎 ${file.name}`;
@@ -707,8 +812,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         
         // TODO: Upload file to Firebase Storage and get URL
         // For now, we'll just send the file name
-        console.log('File to upload:', file.name, file.type, file.size);
+        console.log('[SendMessage] File to upload:', file.name, file.type, file.size);
       }
+
+      console.log('[SendMessage] Final message data:', { content, type });
 
       // Optimistically add message to UI
       const optimisticMessage: DirectMessage = {
@@ -729,6 +836,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       setMessages(prev => [...prev, optimisticMessage]);
 
       // Send actual message
+      console.log('[SendMessage] Calling MessagingService.sendDirectMessage with:', { currentUserId, selectedUser, content, type });
       await MessagingService.sendDirectMessage(currentUserId, selectedUser, content, type);
       
       // Update optimistic message status
@@ -741,7 +849,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       // Stop typing indicator
       MessagingService.setTypingStatus(currentUserId, selectedUser, false);
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('[SendMessage] Error sending message:', error);
       setError('Failed to send message. Please try again.');
       
       // Remove optimistic message on error
