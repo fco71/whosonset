@@ -14,7 +14,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   type = 'user', 
   projectId 
 }) => {
-  const { currentUser, userProfile } = useAuth();
+  const { currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
   const [analytics, setAnalytics] = useState<UserAnalytics | ProjectAnalytics | PlatformAnalytics | null>(null);
   const [insights, setInsights] = useState<AnalyticsInsight[]>([]);
