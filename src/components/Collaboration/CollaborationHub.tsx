@@ -55,6 +55,12 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const [selectedWorkspace, setSelectedWorkspace] = useState<CollaborationWorkspace | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showCreateWorkspaceModal, setShowCreateWorkspaceModal] = useState(false);
+  const [showCreateDocumentModal, setShowCreateDocumentModal] = useState(false);
+  const [showCreateWhiteboardModal, setShowCreateWhiteboardModal] = useState(false);
+  const [newWorkspaceName, setNewWorkspaceName] = useState('');
+  const [newDocumentName, setNewDocumentName] = useState('');
+  const [newWhiteboardName, setNewWhiteboardName] = useState('');
 
   useEffect(() => {
     console.log('CollaborationHub mounted with projectId:', projectId);
@@ -88,8 +94,62 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
             { userId: 'user-3', role: 'member', joinedAt: new Date(), permissions: ['read'], isOnline: false, lastSeen: new Date(Date.now() - 3600000) }
           ],
           channels: [],
-          documents: [],
-          whiteboards: [],
+          documents: [
+            {
+              id: 'doc-1',
+              workspaceId: '1',
+              title: 'Script Draft v2.1',
+              content: 'Main screenplay with latest revisions',
+              type: 'script',
+              version: 2,
+              collaborators: [
+                { userId: currentUser?.uid || 'default-user', role: 'editor', isTyping: false, lastActivity: new Date() }
+              ],
+              changes: [],
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              lastEditedBy: currentUser?.uid || 'default-user'
+            },
+            {
+              id: 'doc-2',
+              workspaceId: '1',
+              title: 'Production Schedule',
+              content: 'Detailed shooting schedule',
+              type: 'schedule',
+              version: 1,
+              collaborators: [
+                { userId: currentUser?.uid || 'default-user', role: 'editor', isTyping: false, lastActivity: new Date() }
+              ],
+              changes: [],
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              lastEditedBy: currentUser?.uid || 'default-user'
+            }
+          ],
+          whiteboards: [
+            {
+              id: 'wb-1',
+              workspaceId: '1',
+              name: 'Storyboard v1',
+              elements: [],
+              collaborators: [
+                { userId: currentUser?.uid || 'default-user', cursor: { x: 0, y: 0 }, isDrawing: false, lastActivity: new Date() }
+              ],
+              createdAt: new Date(),
+              updatedAt: new Date()
+            },
+            {
+              id: 'wb-2',
+              workspaceId: '1',
+              name: 'Set Layout',
+              elements: [],
+              collaborators: [
+                { userId: currentUser?.uid || 'default-user', cursor: { x: 0, y: 0 }, isDrawing: false, lastActivity: new Date() }
+              ],
+              createdAt: new Date(),
+              updatedAt: new Date()
+            }
+          ],
           createdAt: new Date(),
           updatedAt: new Date(),
           settings: {
@@ -142,16 +202,56 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const handleCreateWorkspace = () => {
     try {
       console.log('Create workspace clicked');
-      alert('Create workspace functionality coming soon!');
+      const workspaceName = prompt('Enter workspace name:');
+      if (workspaceName && workspaceName.trim()) {
+        const newWorkspace: CollaborationWorkspace = {
+          id: Date.now().toString(),
+          projectId: projectId || 'default-project',
+          name: workspaceName.trim(),
+          description: `Workspace for ${workspaceName.trim()}`,
+          type: 'project',
+          members: [
+            { 
+              userId: currentUser?.uid || 'default-user', 
+              role: 'admin', 
+              joinedAt: new Date(), 
+              permissions: ['read', 'write'], 
+              isOnline: true, 
+              lastSeen: new Date() 
+            }
+          ],
+          channels: [],
+          documents: [],
+          whiteboards: [],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          settings: {
+            allowGuestAccess: false,
+            requireApproval: true,
+            autoArchive: false,
+            retentionDays: 365,
+            maxFileSize: 100 * 1024 * 1024,
+            allowedFileTypes: ['pdf', 'doc', 'docx', 'txt', 'jpg', 'png']
+          }
+        };
+
+        setWorkspaces(prev => [...prev, newWorkspace]);
+        setSelectedWorkspace(newWorkspace);
+        alert(`Workspace "${workspaceName}" created successfully!`);
+      }
     } catch (error) {
       console.error('Error in handleCreateWorkspace:', error);
+      alert('Failed to create workspace. Please try again.');
     }
   };
 
   const handleCreateChannel = () => {
     try {
       console.log('Create channel clicked');
-      alert('Create channel functionality coming soon!');
+      const channelName = prompt('Enter channel name:');
+      if (channelName && channelName.trim()) {
+        alert(`Channel "${channelName}" creation functionality will be implemented soon!`);
+      }
     } catch (error) {
       console.error('Error in handleCreateChannel:', error);
     }
@@ -160,25 +260,91 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const handleCreateDocument = () => {
     try {
       console.log('Create document clicked');
-      alert('Create document functionality coming soon!');
+      const documentName = prompt('Enter document name:');
+      if (documentName && documentName.trim() && selectedWorkspace) {
+        const newDocument: CollaborativeDocument = {
+          id: Date.now().toString(),
+          workspaceId: selectedWorkspace.id,
+          title: documentName.trim(),
+          content: `Document: ${documentName.trim()}`,
+          type: 'notes',
+          version: 1,
+          collaborators: [
+            { userId: currentUser?.uid || 'default-user', role: 'editor', isTyping: false, lastActivity: new Date() }
+          ],
+          changes: [],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          lastEditedBy: currentUser?.uid || 'default-user'
+        };
+
+        setWorkspaces(prev => prev.map(ws => 
+          ws.id === selectedWorkspace.id 
+            ? { ...ws, documents: [...ws.documents, newDocument] }
+            : ws
+        ));
+
+        setSelectedWorkspace(prev => prev ? {
+          ...prev,
+          documents: [...prev.documents, newDocument]
+        } : null);
+
+        alert(`Document "${documentName}" created successfully!`);
+      } else if (!selectedWorkspace) {
+        alert('Please select a workspace first');
+      }
     } catch (error) {
       console.error('Error in handleCreateDocument:', error);
+      alert('Failed to create document. Please try again.');
     }
   };
 
   const handleCreateWhiteboard = () => {
     try {
       console.log('Create whiteboard clicked');
-      alert('Create whiteboard functionality coming soon!');
+      const whiteboardName = prompt('Enter whiteboard name:');
+      if (whiteboardName && whiteboardName.trim() && selectedWorkspace) {
+        const newWhiteboard: Whiteboard = {
+          id: Date.now().toString(),
+          workspaceId: selectedWorkspace.id,
+          name: whiteboardName.trim(),
+          elements: [],
+          collaborators: [
+            { userId: currentUser?.uid || 'default-user', cursor: { x: 0, y: 0 }, isDrawing: false, lastActivity: new Date() }
+          ],
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+
+        setWorkspaces(prev => prev.map(ws => 
+          ws.id === selectedWorkspace.id 
+            ? { ...ws, whiteboards: [...ws.whiteboards, newWhiteboard] }
+            : ws
+        ));
+
+        setSelectedWorkspace(prev => prev ? {
+          ...prev,
+          whiteboards: [...prev.whiteboards, newWhiteboard]
+        } : null);
+
+        alert(`Whiteboard "${whiteboardName}" created successfully!`);
+      } else if (!selectedWorkspace) {
+        alert('Please select a workspace first');
+      }
     } catch (error) {
       console.error('Error in handleCreateWhiteboard:', error);
+      alert('Failed to create whiteboard. Please try again.');
     }
   };
 
   const handleJoinWorkspace = (workspaceId: string) => {
     try {
       console.log('Join workspace clicked:', workspaceId);
-      alert(`Joining workspace ${workspaceId} - functionality coming soon!`);
+      const workspace = workspaces.find(ws => ws.id === workspaceId);
+      if (workspace) {
+        setSelectedWorkspace(workspace);
+        alert(`Successfully joined workspace: ${workspace.name}`);
+      }
     } catch (error) {
       console.error('Error in handleJoinWorkspace:', error);
     }
@@ -187,17 +353,40 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const handleWorkspaceSettings = (workspaceId: string) => {
     try {
       console.log('Workspace settings clicked:', workspaceId);
-      alert(`Workspace settings for ${workspaceId} - functionality coming soon!`);
+      const workspace = workspaces.find(ws => ws.id === workspaceId);
+      if (workspace) {
+        const settingsInfo = `
+Workspace: ${workspace.name}
+Type: ${workspace.type}
+Members: ${workspace.members.length}
+Guest Access: ${workspace.settings.allowGuestAccess ? 'Enabled' : 'Disabled'}
+Approval Required: ${workspace.settings.requireApproval ? 'Yes' : 'No'}
+Auto Archive: ${workspace.settings.autoArchive ? 'Enabled' : 'Disabled'}
+        `.trim();
+        alert(settingsInfo);
+      }
     } catch (error) {
       console.error('Error in handleWorkspaceSettings:', error);
     }
+  };
+
+  const formatTimeAgo = (date: Date) => {
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    return `${days}d ago`;
   };
 
   const renderWorkspacesTab = () => (
     <div className="workspaces-tab">
       <div className="workspaces-header">
         <h2>Workspaces</h2>
-        <button className="btn-primary" onClick={handleCreateWorkspace}>Create Workspace</button>
+        <button className="btn-primary" onClick={() => setShowCreateWorkspaceModal(true)}>Create Workspace</button>
       </div>
       
       <div className="workspaces-grid">
@@ -245,6 +434,34 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
           </div>
         ))}
       </div>
+
+      {/* Create Workspace Modal */}
+      {showCreateWorkspaceModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>Create New Workspace</h3>
+              <button onClick={() => setShowCreateWorkspaceModal(false)} className="close-btn">×</button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label>Workspace Name</label>
+                <input
+                  type="text"
+                  value={newWorkspaceName}
+                  onChange={(e) => setNewWorkspaceName(e.target.value)}
+                  placeholder="Enter workspace name"
+                  className="form-input"
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button onClick={() => setShowCreateWorkspaceModal(false)} className="btn-secondary">Cancel</button>
+              <button onClick={handleCreateWorkspace} className="btn-primary">Create</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -252,7 +469,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     <div className="channels-tab">
       <div className="channels-header">
         <h2>Channels</h2>
-        <button className="btn-primary" onClick={handleCreateChannel}>Create Channel</button>
+        <button className="btn-primary" onClick={() => alert('Channel creation coming soon!')}>Create Channel</button>
       </div>
       
       {selectedWorkspace ? (
@@ -307,41 +524,39 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         <button className="btn-primary" onClick={handleCreateDocument}>Create Document</button>
       </div>
       
-      <div className="documents-grid">
-        <div className="document-card">
-          <div className="document-icon">📄</div>
-          <div className="document-info">
-            <h3>Script Draft v2.1</h3>
-            <p>Main screenplay with latest revisions</p>
-            <div className="document-meta">
-              <span className="document-type">Script</span>
-              <span className="document-collaborators">5 collaborators</span>
-              <span className="document-updated">Updated 2 hours ago</span>
+      {selectedWorkspace ? (
+        <div className="documents-grid">
+          {selectedWorkspace.documents.length > 0 ? (
+            selectedWorkspace.documents.map(document => (
+              <div key={document.id} className="document-card">
+                <div className="document-icon">📄</div>
+                <div className="document-info">
+                  <h3>{document.title}</h3>
+                  <p>{document.content}</p>
+                  <div className="document-meta">
+                    <span className="document-type">{document.type}</span>
+                    <span className="document-collaborators">{document.collaborators.length} collaborators</span>
+                    <span className="document-updated">Updated {formatTimeAgo(document.updatedAt)}</span>
+                  </div>
+                </div>
+                <div className="document-actions">
+                  <button className="btn-secondary">Open</button>
+                  <button className="btn-secondary">Share</button>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="no-documents">
+              <p>No documents in this workspace yet.</p>
+              <p>Create your first document to get started!</p>
             </div>
-          </div>
-          <div className="document-actions">
-            <button className="btn-secondary">Open</button>
-            <button className="btn-secondary">Share</button>
-          </div>
+          )}
         </div>
-        
-        <div className="document-card">
-          <div className="document-icon">📋</div>
-          <div className="document-info">
-            <h3>Production Schedule</h3>
-            <p>Detailed shooting schedule</p>
-            <div className="document-meta">
-              <span className="document-type">Schedule</span>
-              <span className="document-collaborators">5 collaborators</span>
-              <span className="document-updated">Updated 1 day ago</span>
-            </div>
-          </div>
-          <div className="document-actions">
-            <button className="btn-secondary">Open</button>
-            <button className="btn-secondary">Share</button>
-          </div>
+      ) : (
+        <div className="no-workspace-selected">
+          <p>Please select a workspace to view documents</p>
         </div>
-      </div>
+      )}
     </div>
   );
 
@@ -352,43 +567,40 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         <button className="btn-primary" onClick={handleCreateWhiteboard}>Create Whiteboard</button>
       </div>
       
-      <div className="whiteboards-grid">
-        <div className="whiteboard-card">
-          <div className="whiteboard-preview">
-            <div className="preview-placeholder">Storyboard Layout</div>
-          </div>
-          <div className="whiteboard-info">
-            <h3>Storyboard v1</h3>
-            <p>Scene breakdown and shot planning</p>
-            <div className="whiteboard-meta">
-              <span className="whiteboard-collaborators">4 collaborators</span>
-              <span className="whiteboard-updated">Updated 3 hours ago</span>
+      {selectedWorkspace ? (
+        <div className="whiteboards-grid">
+          {selectedWorkspace.whiteboards.length > 0 ? (
+            selectedWorkspace.whiteboards.map(whiteboard => (
+              <div key={whiteboard.id} className="whiteboard-card">
+                <div className="whiteboard-preview">
+                  <div className="preview-placeholder">{whiteboard.name}</div>
+                </div>
+                <div className="whiteboard-info">
+                  <h3>{whiteboard.name}</h3>
+                  <p>Whiteboard with {whiteboard.elements.length} elements</p>
+                  <div className="whiteboard-meta">
+                    <span className="whiteboard-collaborators">{whiteboard.collaborators.length} collaborators</span>
+                    <span className="whiteboard-updated">Updated {formatTimeAgo(whiteboard.updatedAt)}</span>
+                  </div>
+                </div>
+                <div className="whiteboard-actions">
+                  <button className="btn-secondary">Open</button>
+                  <button className="btn-secondary">Export</button>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="no-whiteboards">
+              <p>No whiteboards in this workspace yet.</p>
+              <p>Create your first whiteboard to get started!</p>
             </div>
-          </div>
-          <div className="whiteboard-actions">
-            <button className="btn-secondary">Open</button>
-            <button className="btn-secondary">Export</button>
-          </div>
+          )}
         </div>
-        
-        <div className="whiteboard-card">
-          <div className="whiteboard-preview">
-            <div className="preview-placeholder">Set Design</div>
-          </div>
-          <div className="whiteboard-info">
-            <h3>Set Layout</h3>
-            <p>Production design and set planning</p>
-            <div className="whiteboard-meta">
-              <span className="whiteboard-collaborators">2 collaborators</span>
-              <span className="whiteboard-updated">Updated 1 day ago</span>
-            </div>
-          </div>
-          <div className="whiteboard-actions">
-            <button className="btn-secondary">Open</button>
-            <button className="btn-secondary">Export</button>
-          </div>
+      ) : (
+        <div className="no-workspace-selected">
+          <p>Please select a workspace to view whiteboards</p>
         </div>
-      </div>
+      )}
     </div>
   );
 

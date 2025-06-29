@@ -408,7 +408,7 @@ If you don't see the microphone icon, check your browser settings.`;
   const sendRecordedAudio = useCallback(() => {
     if (recordedAudioFile && sendCallbackRef.current) {
       console.log('[Voice Recording] Sending recorded audio:', recordedAudioFile.name);
-      sendCallbackRef.current('🎤 Voice Message', 'voice', recordedAudioFile);
+      sendCallbackRef.current('Voice Message', 'voice', recordedAudioFile);
       setRecordedAudioFile(null);
     }
   }, [recordedAudioFile]);
@@ -578,9 +578,11 @@ If you don't see the microphone icon, check your browser settings.`;
           onClick={testMicrophone}
           className="toolbar-button test-mic-button"
           title="Test microphone"
-          style={{ backgroundColor: '#ff6b6b', color: 'white' }}
         >
-          🎤
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+            <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+          </svg>
         </button>
         
         <button
@@ -643,7 +645,12 @@ If you don't see the microphone icon, check your browser settings.`;
       {recordedAudioFile && (
         <div className="recorded-audio-review">
           <div className="audio-info">
-            <div className="audio-icon">🎤</div>
+            <div className="audio-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+              </svg>
+            </div>
             <div className="audio-details">
               <div className="audio-name">Voice Message</div>
               <div className="audio-size">{(recordedAudioFile.size / 1024).toFixed(1)} KB</div>
@@ -1079,7 +1086,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           content = `📷 ${file.name}`;
         } else if (file.type.startsWith('audio/')) {
           type = 'voice';
-          content = `🎤 Voice Message (${(file.size / 1024).toFixed(1)} KB)`;
+          content = `Voice Message (${(file.size / 1024).toFixed(1)} KB)`;
           console.log('[SendMessage] Detected voice message:', content);
         } else if (file.type.startsWith('video/')) {
           type = 'file';
