@@ -38,7 +38,7 @@ interface UserSearchResult {
 type WorkspaceCreationStep = 'details' | 'members' | 'settings';
 
 // Define TabType at the top of the file
-type TabType = 'workspaces' | 'channels' | 'documents' | 'whiteboards' | 'tasks' | 'screenplays' | 'myScreenplays';
+type TabType = 'workspaces' | 'channels' | 'documents' | 'whiteboards' | 'tasks' | 'screenplays';
 
 // Error Boundary Component
 class CollaborationErrorBoundary extends React.Component<

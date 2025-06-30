@@ -109,6 +109,13 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   const [sortBy, setSortBy] = useState<'time' | 'page' | 'type' | 'user'>('time');
   const [showUserCursors, setShowUserCursors] = useState(true);
   const [autoSync, setAutoSync] = useState(true);
+  const [annotationPopup, setAnnotationPopup] = useState<{
+    pageNumber: number;
+    x: number;
+    y: number;
+  } | null>(null);
+  const [annotationInput, setAnnotationInput] = useState('');
+  const [activeThread, setActiveThread] = useState<Annotation | null>(null);
   
   const viewerRef = useRef<HTMLDivElement>(null);
   const pdfContainerRef = useRef<HTMLDivElement>(null);
@@ -664,18 +671,121 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                     }
                     error={<div>Failed to load PDF document.</div>}
                   >
-                    <div className="pdf-scrollable-container">
-                      {Array.from({ length: numPages || 1 }, (_, index) => (
-                        <div key={index + 1} className="pdf-page">
-                          <Page 
-                            pageNumber={index + 1} 
-                            scale={scale}
-                            renderTextLayer={true}
-                            renderAnnotationLayer={true}
-                          />
-                        </div>
-                      ))}
-                    </div>
+                    {typeof numPages === 'number' && numPages > 0 ? (
+                      <div className="pdf-scrollable-container" style={{ maxHeight: '70vh', overflowY: 'auto', position: 'relative' }}>
+                        {Array.from({ length: numPages }, (_, index) => (
+                          <div
+                            key={index + 1}
+                            className="pdf-page"
+                            style={{ position: 'relative', marginBottom: 24 }}
+                            onClick={e => {
+                              if ((e.target as HTMLElement).classList.contains('pdf-page')) {
+                                const rect = (e.target as HTMLElement).getBoundingClientRect();
+                                const x = (e.clientX - rect.left) / scale;
+                                const y = (e.clientY - rect.top) / scale;
+                                setAnnotationPopup({ pageNumber: index + 1, x, y });
+                                setAnnotationInput('');
+                              }
+                            }}
+                          >
+                            <Page 
+                              pageNumber={index + 1} 
+                              scale={scale}
+                              renderTextLayer={true}
+                              renderAnnotationLayer={true}
+                            />
+                            {/* Render annotation overlays for this page */}
+                            {showOverlays && filteredAnnotations.filter(a => a.pageNumber === index + 1).map(annotation => (
+                              <div
+                                key={`annotation-${annotation.id}`}
+                                className={`annotation-overlay ${selectedElement === annotation.id ? 'selected' : ''} ${annotation.resolved ? 'resolved' : ''}`}
+                                style={{
+                                  position: 'absolute',
+                                  left: annotation.position.x * scale,
+                                  top: annotation.position.y * scale,
+                                  width: annotation.position.width * scale,
+                                  height: annotation.position.height * scale,
+                                  border: `2px solid ${annotation.priority ? priorityColors[annotation.priority] : '#3B82F6'}`,
+                                  backgroundColor: `${annotation.priority ? priorityColors[annotation.priority] : '#3B82F6'}20`,
+                                  cursor: 'pointer',
+                                  zIndex: 5
+                                }}
+                                data-element-id={annotation.id}
+                                onClick={e => {
+                                  e.stopPropagation();
+                                  setActiveThread(annotation);
+                                }}
+                                title={`Annotation by ${annotation.userName}: ${annotation.annotation}`}
+                              >
+                                <div className="overlay-icon">💬</div>
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+                        {/* Annotation input popup */}
+                        {annotationPopup && (
+                          <div
+                            className="annotation-popup"
+                            style={{
+                              position: 'absolute',
+                              left: annotationPopup.x * scale,
+                              top: annotationPopup.y * scale,
+                              zIndex: 20,
+                              background: '#fff',
+                              border: '1px solid #ccc',
+                              borderRadius: 8,
+                              padding: 12,
+                              boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+                            }}
+                          >
+                            <textarea
+                              value={annotationInput}
+                              onChange={e => setAnnotationInput(e.target.value)}
+                              placeholder="Add annotation..."
+                              style={{ width: 200, height: 60 }}
+                              autoFocus
+                            />
+                            <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
+                              <button
+                                onClick={async () => {
+                                  if (annotationInput.trim()) {
+                                    await addAnnotation({
+                                      x: annotationPopup.x,
+                                      y: annotationPopup.y,
+                                      width: 80 / scale,
+                                      height: 40 / scale
+                                    });
+                                    setAnnotationPopup(null);
+                                    setAnnotationInput('');
+                                  }
+                                }}
+                                className="btn-primary"
+                              >
+                                Add
+                              </button>
+                              <button onClick={() => setAnnotationPopup(null)} className="btn-secondary">Cancel</button>
+                            </div>
+                          </div>
+                        )}
+                        {/* Annotation thread popup */}
+                        {activeThread && (
+                          <div className="annotation-thread-popup" style={{ position: 'fixed', right: 40, top: 100, zIndex: 30, background: '#fff', border: '1px solid #ccc', borderRadius: 8, padding: 16, width: 320, boxShadow: '0 2px 12px rgba(0,0,0,0.18)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <div><b>{activeThread.userName}</b> <span style={{ color: '#888', fontSize: 12 }}>{formatTimeAgo(activeThread.timestamp)}</span></div>
+                              <button onClick={() => setActiveThread(null)} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer' }}>×</button>
+                            </div>
+                            <div style={{ margin: '12px 0' }}>{activeThread.annotation}</div>
+                            <div style={{ fontSize: 13, color: '#666', marginBottom: 8 }}>Threaded replies (coming soon)</div>
+                            {/* TODO: Render replies, add reply input */}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="loading-container">
+                        <div className="loading-spinner"></div>
+                        <p>Loading PDF pages...</p>
+                      </div>
+                    )}
                   </Document>
 
                   {/* Drawing Canvas Overlay */}

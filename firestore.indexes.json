@@ -345,6 +345,15 @@
           "order": "DESCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "screenplayAnnotations",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "screenplayId", "order": "ASCENDING" },
+        { "fieldPath": "timestamp", "order": "ASCENDING" },
+        { "fieldPath": "__name__", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
