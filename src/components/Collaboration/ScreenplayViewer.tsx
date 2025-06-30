@@ -116,6 +116,9 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   } | null>(null);
   const [annotationInput, setAnnotationInput] = useState('');
   const [activeThread, setActiveThread] = useState<Annotation | null>(null);
+  const [showAnnotationSidebar, setShowAnnotationSidebar] = useState(false);
+  const [activeAnnotation, setActiveAnnotation] = useState<Annotation | null>(null);
+  const [newReply, setNewReply] = useState('');
   
   const viewerRef = useRef<HTMLDivElement>(null);
   const pdfContainerRef = useRef<HTMLDivElement>(null);
@@ -560,6 +563,62 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         return filtered;
     }
   }, [tags, filterType, searchQuery, sortBy]);
+
+  const handleAddTag = () => {
+    if (!newTag.trim()) return;
+
+    try {
+      const tagData = {
+        screenplayId: screenplay.id,
+        userId: currentUser?.uid || 'unknown',
+        userName: currentUser?.displayName || 'Anonymous',
+        userAvatar: currentUser?.photoURL || '',
+        tagType: selectedTagType,
+        content: newTag.trim(),
+        timestamp: new Date(),
+        projectId: projectId,
+        pageNumber: 1,
+        position: { x: 0, y: 0, width: 0, height: 0 },
+        color: tagColors[selectedTagType],
+        resolved: false
+      };
+
+      addTag(tagData.position);
+      setNewTag('');
+      setDrawingMode(null);
+      toast.success('Tag added successfully!');
+    } catch (error) {
+      console.error('Error adding tag:', error);
+      toast.error('Failed to add tag');
+    }
+  };
+
+  const handleRemoveTag = (tag: string) => {
+    // Implement the logic to remove a tag from the activeAnnotation
+    console.log('Removing tag:', tag);
+  };
+
+  const handleAddReply = () => {
+    if (!newReply.trim()) return;
+
+    try {
+      const replyData = {
+        screenplayId: screenplay.id,
+        userId: currentUser?.uid || 'unknown',
+        userName: currentUser?.displayName || 'Anonymous',
+        userAvatar: currentUser?.photoURL || '',
+        content: newReply.trim(),
+        timestamp: new Date()
+      };
+
+      // Implement the logic to add a reply to the activeAnnotation
+      console.log('Adding reply:', replyData);
+      setNewReply('');
+    } catch (error) {
+      console.error('Error adding reply:', error);
+      toast.error('Failed to add reply');
+    }
+  };
 
   return (
     <div className="screenplay-viewer-overlay">
@@ -1041,6 +1100,35 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
               {drawingMode === 'annotation' ? '💬' : '🏷️'} 
               Click and drag to create a {drawingMode === 'annotation' ? 'annotation' : 'tag'} area
             </p>
+          </div>
+        )}
+
+        {/* Sidebar/popup for annotation thread and tags */}
+        {showAnnotationSidebar && activeThread && (
+          <div className="annotation-sidebar">
+            <button className="close-btn" onClick={() => setShowAnnotationSidebar(false)}>×</button>
+            <h4>Annotation</h4>
+            <div className="annotation-main-text">{activeThread.annotation}</div>
+            <div className="annotation-tags">
+              {activeThread.replies?.map((reply, idx) => (
+                <span key={idx} className="tag-chip">{reply.content} <button onClick={() => handleRemoveTag(reply.content)}>×</button></span>
+              ))}
+              <input
+                type="text"
+                placeholder="Add reply..."
+                value={newReply}
+                onChange={e => setNewReply(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleAddReply()}
+              />
+              <button onClick={handleAddReply}>Reply</button>
+            </div>
+            <div className="annotation-thread">
+              {activeThread.replies?.map((reply, idx) => (
+                <div key={idx} className="annotation-reply">
+                  <span className="reply-author">{reply.userName}:</span> {reply.content}
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
