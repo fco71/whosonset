@@ -38,7 +38,7 @@ interface UserSearchResult {
 type WorkspaceCreationStep = 'details' | 'members' | 'settings';
 
 // Define TabType at the top of the file
-type TabType = 'workspaces' | 'channels' | 'documents' | 'whiteboards' | 'tasks' | 'screenplays' | 'help';
+type TabType = 'workspaces' | 'channels' | 'documents' | 'whiteboards' | 'tasks' | 'screenplays' | 'myScreenplays';
 
 // Error Boundary Component
 class CollaborationErrorBoundary extends React.Component<
@@ -86,7 +86,6 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showVideoCallModal, setShowVideoCallModal] = useState(false);
-  const [showCommentModal, setShowCommentModal] = useState(false);
   const [showScreenplayViewer, setShowScreenplayViewer] = useState(false);
   
   // Workspace creation state
@@ -146,16 +145,16 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   } | null>(null);
   
   // Screenplay collaboration state
-  const [screenplayComments, setScreenplayComments] = useState<{
+  const [screenplayAnnotations, setScreenplayAnnotations] = useState<{
     id: string;
     userId: string;
     userName: string;
-    comment: string;
+    annotation: string;
     timestamp: Date;
     page?: string;
     scene?: string;
   }[]>([]);
-  const [newComment, setNewComment] = useState('');
+  const [newAnnotation, setNewAnnotation] = useState('');
 
   const [teamMembers, setTeamMembers] = useState<{
     id: string;
@@ -704,57 +703,57 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     }
   };
 
-  const addComment = async () => {
-    if (!newComment.trim() || !uploadedScreenplay) return;
+  const addAnnotation = async () => {
+    if (!newAnnotation.trim() || !uploadedScreenplay) return;
 
     try {
-      const commentData = {
+      const annotationData = {
         screenplayId: uploadedScreenplay.id,
         userId: currentUser?.uid || 'unknown',
         userName: currentUser?.displayName || 'Anonymous',
-        comment: newComment.trim(),
+        annotation: newAnnotation.trim(),
         timestamp: new Date(),
         projectId: projectId || 'default-project'
       };
 
-      await addDoc(collection(db, 'screenplayComments'), commentData);
+      await addDoc(collection(db, 'screenplayAnnotations'), annotationData);
       
       // Add to local state
-      setScreenplayComments(prev => [...prev, {
+      setScreenplayAnnotations(prev => [...prev, {
         id: Date.now().toString(),
         userId: currentUser?.uid || 'unknown',
         userName: currentUser?.displayName || 'Anonymous',
-        comment: newComment.trim(),
+        annotation: newAnnotation.trim(),
         timestamp: new Date()
       }]);
       
-      setNewComment('');
-      setShowCommentModal(false);
-      toast.success('Comment added successfully!');
+      setNewAnnotation('');
+      setShowScreenplayViewer(true);
+      toast.success('Annotation added successfully!');
     } catch (error) {
-      console.error('Error adding comment:', error);
-      toast.error('Failed to add comment');
+      console.error('Error adding annotation:', error);
+      toast.error('Failed to add annotation');
     }
   };
 
-  const loadComments = async () => {
+  const loadAnnotations = async () => {
     if (!uploadedScreenplay) return;
 
     try {
       const q = query(
-        collection(db, 'screenplayComments'),
+        collection(db, 'screenplayAnnotations'),
         where('screenplayId', '==', uploadedScreenplay.id),
         orderBy('timestamp', 'desc')
       );
       const querySnapshot = await getDocs(q);
-      const comments = querySnapshot.docs.map(doc => ({
+      const annotations = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as any[];
       
-      setScreenplayComments(comments);
+      setScreenplayAnnotations(annotations);
     } catch (error) {
-      console.error('Error loading comments:', error);
+      console.error('Error loading annotations:', error);
     }
   };
 
@@ -778,7 +777,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     toast.success('Generating screenplay breakdown report...');
     
     // In a real implementation, you might want to:
-    // 1. Collect all comments and tags
+    // 1. Collect all annotations and tags
     // 2. Generate a PDF report
     // 3. Include breakdown elements
     // 4. Add analytics and insights
@@ -1450,12 +1449,12 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
               </label>
               <input
                 type="file"
-                accept=".fdx,.pdf,.doc,.docx"
+                accept=".pdf"
                 className="w-full bg-white text-gray-900 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                 onChange={handleScreenplayUpload}
               />
               <p className="text-sm text-gray-500 mt-1">
-                Supported formats: Final Draft (.fdx), PDF (.pdf), Word (.doc, .docx)
+                Supported formats: PDF (.pdf)
               </p>
             </div>
             {screenplayFile && (
@@ -1516,16 +1515,10 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                 View Screenplay
               </button>
               <button 
-                onClick={() => setShowCommentModal(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
-              >
-                Add Comment
-              </button>
-              <button 
-                onClick={loadComments}
+                onClick={loadAnnotations}
                 className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
               >
-                View Comments ({screenplayComments.length})
+                View Annotations ({screenplayAnnotations.length})
               </button>
             </div>
           </div>
@@ -1553,24 +1546,24 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
               </div>
             </div>
 
-            {/* Comments Section */}
+            {/* Annotations Section */}
             <div>
-              <h4 className="font-medium text-gray-900 mb-3">Recent Comments</h4>
+              <h4 className="font-medium text-gray-900 mb-3">Recent Annotations</h4>
               <div className="space-y-3 max-h-64 overflow-y-auto">
-                {screenplayComments.length > 0 ? (
-                  screenplayComments.slice(0, 5).map((comment) => (
-                    <div key={comment.id} className="p-3 bg-gray-50 rounded-lg">
+                {screenplayAnnotations.length > 0 ? (
+                  screenplayAnnotations.slice(0, 5).map((annotation) => (
+                    <div key={annotation.id} className="p-3 bg-gray-50 rounded-lg">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium text-gray-900">{comment.userName}</span>
+                        <span className="font-medium text-gray-900">{annotation.userName}</span>
                         <span className="text-xs text-gray-500">
-                          {formatTimeAgo(comment.timestamp)}
+                          {formatTimeAgo(annotation.timestamp)}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-700">{comment.comment}</p>
+                      <p className="text-sm text-gray-700">{annotation.annotation}</p>
                     </div>
                   ))
                 ) : (
-                  <p className="text-gray-500 text-sm">No comments yet. Be the first to comment!</p>
+                  <p className="text-gray-500 text-sm">No annotations yet. Be the first to annotate!</p>
                 )}
               </div>
             </div>
@@ -1596,61 +1589,6 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
           )}
         </div>
       </div>
-
-      {/* Comment Modal */}
-      {showCommentModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h3>Add Comment</h3>
-              <button onClick={() => setShowCommentModal(false)} className="close-btn">×</button>
-            </div>
-            <div className="modal-body">
-              <div className="form-group">
-                <label>Your Comment</label>
-                <textarea
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="Add your comment about the screenplay..."
-                  className="form-input"
-                  rows={4}
-                />
-              </div>
-              <div className="flex gap-2 mt-4">
-                <button
-                  onClick={addComment}
-                  disabled={!newComment.trim()}
-                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg transition-colors"
-                >
-                  Add Comment
-                </button>
-                <button
-                  onClick={() => setShowCommentModal(false)}
-                  className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
-  const renderHelpSection = () => (
-    <div className="help-section">
-      <h3>What's the difference?</h3>
-      <div className="help-grid">
-        <div className="help-item">
-          <h4>📄 Documents</h4>
-          <p>Text-based collaborative editing for scripts, storyboards, schedules, budgets, and notes. Multiple users can edit simultaneously with real-time updates.</p>
-        </div>
-        <div className="help-item">
-          <h4>🎨 Whiteboards</h4>
-          <p>Visual collaboration tools for brainstorming, storyboarding, and creative planning. Draw, add shapes, and collaborate visually in real-time.</p>
-        </div>
-      </div>
     </div>
   );
 
@@ -1670,8 +1608,6 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
           return renderTasksTab();
         case 'screenplays':
           return renderScreenplaysTab();
-        case 'help':
-          return renderHelpSection();
         default:
           return renderWorkspacesTab();
       }
@@ -1771,14 +1707,6 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
               >
                 <span className="nav-icon">📄</span>
                 <span className="nav-label">Screenplays</span>
-              </button>
-              
-              <button 
-                className={`nav-item ${activeTab === 'help' ? 'active' : ''}`}
-                onClick={() => setActiveTab('help')}
-              >
-                <span className="nav-icon">❓</span>
-                <span className="nav-label">Help</span>
               </button>
             </nav>
           </div>

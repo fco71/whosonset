@@ -20,12 +20,12 @@ interface ScreenplayViewerProps {
   onGenerateReport?: () => void;
 }
 
-interface Comment {
+interface Annotation {
   id: string;
   userId: string;
   userName: string;
   userAvatar?: string;
-  comment: string;
+  annotation: string;
   timestamp: Date;
   pageNumber: number;
   position: {
@@ -87,12 +87,11 @@ interface ScreenplaySession {
 
 const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, projectId, onClose, onGenerateReport }) => {
   const { currentUser } = useAuth();
-  const [comments, setComments] = useState<Comment[]>([]);
+  const [annotations, setAnnotations] = useState<Annotation[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
-  const [newComment, setNewComment] = useState('');
+  const [newAnnotation, setNewAnnotation] = useState('');
   const [newTag, setNewTag] = useState('');
   const [selectedTagType, setSelectedTagType] = useState<Tag['tagType']>('character');
-  const [currentPage, setCurrentPage] = useState(1);
   const [numPages, setNumPages] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -100,12 +99,12 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   const [showOverlays, setShowOverlays] = useState(true);
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [drawingMode, setDrawingMode] = useState<'comment' | 'tag' | null>(null);
+  const [drawingMode, setDrawingMode] = useState<'annotation' | 'tag' | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [session, setSession] = useState<ScreenplaySession | null>(null);
   const [activeUsers, setActiveUsers] = useState<ScreenplaySession['activeUsers']>([]);
   const [viewMode, setViewMode] = useState<'single' | 'split' | 'fullscreen'>('single');
-  const [filterType, setFilterType] = useState<'all' | 'comments' | 'tags' | 'resolved'>('all');
+  const [filterType, setFilterType] = useState<'all' | 'annotations' | 'tags' | 'resolved'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'time' | 'page' | 'type' | 'user'>('time');
   const [showUserCursors, setShowUserCursors] = useState(true);
@@ -172,7 +171,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       setLoading(false);
     }
     initializeSession();
-    loadComments();
+    loadAnnotations();
     loadTags();
     startRealTimeSync();
   }, [screenplay.id]);
@@ -202,20 +201,20 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   };
 
   const startRealTimeSync = () => {
-    // Real-time comments sync
-    const commentsQuery = query(
-      collection(db, 'screenplayComments'),
+    // Real-time annotations sync
+    const annotationsQuery = query(
+      collection(db, 'screenplayAnnotations'),
       where('screenplayId', '==', screenplay.id),
       orderBy('timestamp', 'desc')
     );
 
-    const commentsUnsubscribe = onSnapshot(commentsQuery, (snapshot) => {
-      const commentsData = snapshot.docs.map(doc => ({
+    const annotationsUnsubscribe = onSnapshot(annotationsQuery, (snapshot) => {
+      const annotationsData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
         timestamp: doc.data().timestamp.toDate()
-      })) as Comment[];
-      setComments(commentsData);
+      })) as Annotation[];
+      setAnnotations(annotationsData);
     });
 
     // Real-time tags sync
@@ -245,36 +244,36 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       });
 
       return () => {
-        commentsUnsubscribe();
+        annotationsUnsubscribe();
         tagsUnsubscribe();
         sessionUnsubscribe();
       };
     }
 
     return () => {
-      commentsUnsubscribe();
+      annotationsUnsubscribe();
       tagsUnsubscribe();
     };
   };
 
-  const loadComments = async () => {
+  const loadAnnotations = async () => {
     try {
-      console.log('[DEBUG] Querying screenplayComments with screenplayId:', screenplay.id);
+      console.log('[DEBUG] Querying screenplayAnnotations with screenplayId:', screenplay.id);
       const q = query(
-        collection(db, 'screenplayComments'),
+        collection(db, 'screenplayAnnotations'),
         where('screenplayId', '==', screenplay.id),
         orderBy('timestamp', 'desc')
       );
       const querySnapshot = await getDocs(q);
-      const commentsData = querySnapshot.docs.map(doc => ({
+      const annotationsData = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
         timestamp: doc.data().timestamp.toDate()
-      })) as Comment[];
-      setComments(commentsData);
-      console.log('[DEBUG] Loaded comments:', commentsData);
+      })) as Annotation[];
+      setAnnotations(annotationsData);
+      console.log('[DEBUG] Loaded annotations:', annotationsData);
     } catch (error) {
-      console.error('[DEBUG] Error loading comments:', error);
+      console.error('[DEBUG] Error loading annotations:', error);
     }
   };
 
@@ -299,32 +298,32 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     }
   };
 
-  const addComment = async (position: { x: number; y: number; width: number; height: number }) => {
-    if (!newComment.trim()) return;
+  const addAnnotation = async (position: { x: number; y: number; width: number; height: number }) => {
+    if (!newAnnotation.trim()) return;
 
     try {
-      const commentData = {
+      const annotationData = {
         screenplayId: screenplay.id,
         userId: currentUser?.uid || 'unknown',
         userName: currentUser?.displayName || 'Anonymous',
         userAvatar: currentUser?.photoURL || '',
-        comment: newComment.trim(),
+        annotation: newAnnotation.trim(),
         timestamp: new Date(),
         projectId: projectId,
-        pageNumber: currentPage,
+        pageNumber: 1,
         position,
         replies: [],
         resolved: false,
         priority: 'medium' as const
       };
 
-      await addDoc(collection(db, 'screenplayComments'), commentData);
-      setNewComment('');
+      await addDoc(collection(db, 'screenplayAnnotations'), annotationData);
+      setNewAnnotation('');
       setDrawingMode(null);
-      toast.success('Comment added successfully!');
+      toast.success('Annotation added successfully!');
     } catch (error) {
-      console.error('Error adding comment:', error);
-      toast.error('Failed to add comment');
+      console.error('Error adding annotation:', error);
+      toast.error('Failed to add annotation');
     }
   };
 
@@ -341,7 +340,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         content: newTag.trim(),
         timestamp: new Date(),
         projectId: projectId,
-        pageNumber: currentPage,
+        pageNumber: 1,
         position,
         color: tagColors[selectedTagType],
         resolved: false
@@ -379,7 +378,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       const ctx = drawingCanvasRef.current.getContext('2d');
       if (ctx) {
         ctx.clearRect(0, 0, drawingCanvasRef.current.width, drawingCanvasRef.current.height);
-        ctx.strokeStyle = drawingMode === 'comment' ? '#3B82F6' : tagColors[selectedTagType];
+        ctx.strokeStyle = drawingMode === 'annotation' ? '#3B82F6' : tagColors[selectedTagType];
         ctx.lineWidth = 2;
         ctx.setLineDash([5, 5]);
         ctx.strokeRect(
@@ -407,8 +406,8 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       height: Math.abs(y - mousePosition.y)
     };
 
-    if (drawingMode === 'comment') {
-      addComment(position);
+    if (drawingMode === 'annotation') {
+      addAnnotation(position);
     } else if (drawingMode === 'tag') {
       addTag(position);
     }
@@ -422,8 +421,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     }
   };
 
-  const navigateToElement = (element: Comment | Tag) => {
-    setCurrentPage(element.pageNumber);
+  const navigateToElement = (element: Annotation | Tag) => {
     setSelectedElement(element.id);
     
     // Scroll to the element position
@@ -440,17 +438,17 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     setTimeout(() => setSelectedElement(null), 3000);
   };
 
-  const toggleElementResolved = async (elementId: string, type: 'comment' | 'tag') => {
+  const toggleElementResolved = async (elementId: string, type: 'annotation' | 'tag') => {
     try {
-      const collectionName = type === 'comment' ? 'screenplayComments' : 'screenplayTags';
+      const collectionName = type === 'annotation' ? 'screenplayAnnotations' : 'screenplayTags';
       const elementRef = doc(db, collectionName, elementId);
-      const element = type === 'comment' 
-        ? comments.find(c => c.id === elementId)
+      const element = type === 'annotation' 
+        ? annotations.find(c => c.id === elementId)
         : tags.find(t => t.id === elementId);
       
       if (element) {
         await updateDoc(elementRef, { resolved: !element.resolved });
-        toast.success(`${type === 'comment' ? 'Comment' : 'Tag'} ${element.resolved ? 'reopened' : 'resolved'}!`);
+        toast.success(`${type === 'annotation' ? 'Annotation' : 'Tag'} ${element.resolved ? 'reopened' : 'resolved'}!`);
       }
     } catch (error) {
       console.error(`Error toggling ${type}:`, error);
@@ -458,11 +456,11 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     }
   };
 
-  const deleteElement = async (elementId: string, type: 'comment' | 'tag') => {
+  const deleteElement = async (elementId: string, type: 'annotation' | 'tag') => {
     try {
-      const collectionName = type === 'comment' ? 'screenplayComments' : 'screenplayTags';
+      const collectionName = type === 'annotation' ? 'screenplayAnnotations' : 'screenplayTags';
       await deleteDoc(doc(db, collectionName, elementId));
-      toast.success(`${type === 'comment' ? 'Comment' : 'Tag'} deleted successfully!`);
+      toast.success(`${type === 'annotation' ? 'Annotation' : 'Tag'} deleted successfully!`);
     } catch (error) {
       console.error(`Error deleting ${type}:`, error);
       toast.error(`Failed to delete ${type}`);
@@ -493,20 +491,20 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     return `${days}d ago`;
   };
 
-  const filteredComments = useMemo(() => {
-    let filtered = comments;
+  const filteredAnnotations = useMemo(() => {
+    let filtered = annotations;
     
-    if (filterType === 'comments') {
-      filtered = comments;
+    if (filterType === 'annotations') {
+      filtered = annotations;
     } else if (filterType === 'tags') {
       filtered = [];
     } else if (filterType === 'resolved') {
-      filtered = comments.filter(c => c.resolved);
+      filtered = annotations.filter(c => c.resolved);
     }
 
     if (searchQuery) {
       filtered = filtered.filter(c => 
-        c.comment.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.annotation.toLowerCase().includes(searchQuery.toLowerCase()) ||
         c.userName.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
@@ -521,12 +519,12 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       default:
         return filtered;
     }
-  }, [comments, filterType, searchQuery, sortBy]);
+  }, [annotations, filterType, searchQuery, sortBy]);
 
   const filteredTags = useMemo(() => {
     let filtered = tags;
     
-    if (filterType === 'comments') {
+    if (filterType === 'annotations') {
       filtered = [];
     } else if (filterType === 'tags') {
       filtered = tags;
@@ -556,16 +554,6 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     }
   }, [tags, filterType, searchQuery, sortBy]);
 
-  const pageComments = useMemo(() => 
-    comments.filter(c => c.pageNumber === currentPage), 
-    [comments, currentPage]
-  );
-
-  const pageTags = useMemo(() => 
-    tags.filter(t => t.pageNumber === currentPage), 
-    [tags, currentPage]
-  );
-
   return (
     <div className="screenplay-viewer-overlay">
       <div className={`screenplay-viewer ${viewMode}`}>
@@ -575,7 +563,6 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
             <h2>{screenplay.name}</h2>
             <div className="file-info">
               <span className="file-type">{screenplay.type}</span>
-              <span className="page-info">Page {currentPage} of {numPages}</span>
             </div>
           </div>
           
@@ -620,10 +607,10 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
             
             <div className="drawing-controls">
               <button
-                onClick={() => setDrawingMode(drawingMode === 'comment' ? null : 'comment')}
-                className={`draw-btn ${drawingMode === 'comment' ? 'active' : ''}`}
+                onClick={() => setDrawingMode(drawingMode === 'annotation' ? null : 'annotation')}
+                className={`draw-btn ${drawingMode === 'annotation' ? 'active' : ''}`}
               >
-                💬 Comment
+                💬 Annotation
               </button>
               <button
                 onClick={() => setDrawingMode(drawingMode === 'tag' ? null : 'tag')}
@@ -647,26 +634,6 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
           {/* PDF Viewer Panel */}
           <div className={`pdf-panel ${viewMode}`}>
             <div className="pdf-controls">
-              <div className="navigation-controls">
-                <button 
-                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                  disabled={currentPage <= 1}
-                  className="nav-btn"
-                >
-                  ◀ Previous
-                </button>
-                <span className="page-display">
-                  {currentPage} / {numPages}
-                </span>
-                <button 
-                  onClick={() => setCurrentPage(prev => Math.min(numPages || 1, prev + 1))}
-                  disabled={currentPage >= (numPages || 1)}
-                  className="nav-btn"
-                >
-                  Next ▶
-                </button>
-              </div>
-              
               <div className="zoom-controls">
                 <button onClick={() => setScale(prev => Math.max(0.5, prev - 0.2))}>🔍-</button>
                 <span className="zoom-level">{Math.round(scale * 100)}%</span>
@@ -697,12 +664,18 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                     }
                     error={<div>Failed to load PDF document.</div>}
                   >
-                    <Page 
-                      pageNumber={currentPage} 
-                      scale={scale}
-                      renderTextLayer={true}
-                      renderAnnotationLayer={true}
-                    />
+                    <div className="pdf-scrollable-container">
+                      {Array.from({ length: numPages || 1 }, (_, index) => (
+                        <div key={index + 1} className="pdf-page">
+                          <Page 
+                            pageNumber={index + 1} 
+                            scale={scale}
+                            renderTextLayer={true}
+                            renderAnnotationLayer={true}
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </Document>
 
                   {/* Drawing Canvas Overlay */}
@@ -721,32 +694,32 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                   {/* Visual Overlays */}
                   {showOverlays && (
                     <>
-                      {/* Comment Overlays */}
-                      {pageComments.map(comment => (
+                      {/* Annotation Overlays */}
+                      {filteredAnnotations.map(annotation => (
                         <div
-                          key={`comment-${comment.id}`}
-                          className={`comment-overlay ${selectedElement === comment.id ? 'selected' : ''} ${comment.resolved ? 'resolved' : ''}`}
+                          key={`annotation-${annotation.id}`}
+                          className={`annotation-overlay ${selectedElement === annotation.id ? 'selected' : ''} ${annotation.resolved ? 'resolved' : ''}`}
                           style={{
                             position: 'absolute',
-                            left: comment.position.x * scale,
-                            top: comment.position.y * scale,
-                            width: comment.position.width * scale,
-                            height: comment.position.height * scale,
-                            border: `2px solid ${comment.priority ? priorityColors[comment.priority] : '#3B82F6'}`,
-                            backgroundColor: `${comment.priority ? priorityColors[comment.priority] : '#3B82F6'}20`,
+                            left: annotation.position.x * scale,
+                            top: annotation.position.y * scale,
+                            width: annotation.position.width * scale,
+                            height: annotation.position.height * scale,
+                            border: `2px solid ${annotation.priority ? priorityColors[annotation.priority] : '#3B82F6'}`,
+                            backgroundColor: `${annotation.priority ? priorityColors[annotation.priority] : '#3B82F6'}20`,
                             cursor: 'pointer',
                             zIndex: 5
                           }}
-                          data-element-id={comment.id}
-                          onClick={() => navigateToElement(comment)}
-                          title={`Comment by ${comment.userName}: ${comment.comment}`}
+                          data-element-id={annotation.id}
+                          onClick={() => navigateToElement(annotation)}
+                          title={`Annotation by ${annotation.userName}: ${annotation.annotation}`}
                         >
                           <div className="overlay-icon">💬</div>
                         </div>
                       ))}
 
                       {/* Tag Overlays */}
-                      {pageTags.map(tag => (
+                      {filteredTags.map(tag => (
                         <div
                           key={`tag-${tag.id}`}
                           className={`tag-overlay ${selectedElement === tag.id ? 'selected' : ''} ${tag.resolved ? 'resolved' : ''}`}
@@ -813,7 +786,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                 <div className="panel-controls">
                   <select value={filterType} onChange={(e) => setFilterType(e.target.value as any)}>
                     <option value="all">All</option>
-                    <option value="comments">Comments</option>
+                    <option value="annotations">Annotations</option>
                     <option value="tags">Tags</option>
                     <option value="resolved">Resolved</option>
                   </select>
@@ -849,46 +822,44 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                         </div>
                         <div className="user-info">
                           <span className="user-name">{user.userName}</span>
-                          <span className="user-page">Page {user.currentPage}</span>
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                {/* Comments List */}
-                <div className="comments-section">
-                  <h4>💬 Comments ({filteredComments.length})</h4>
-                  <div className="comments-list">
-                    {filteredComments.map(comment => (
-                      <div key={comment.id} className={`comment-item ${comment.resolved ? 'resolved' : ''}`}>
-                        <div className="comment-header">
-                          <div className="comment-author">
-                            {comment.userAvatar ? (
-                              <img src={comment.userAvatar} alt={comment.userName} />
+                {/* Annotations List */}
+                <div className="annotations-section">
+                  <h4>💬 Annotations ({filteredAnnotations.length})</h4>
+                  <div className="annotations-list">
+                    {filteredAnnotations.map(annotation => (
+                      <div key={annotation.id} className={`annotation-item ${annotation.resolved ? 'resolved' : ''}`}>
+                        <div className="annotation-header">
+                          <div className="annotation-author">
+                            {annotation.userAvatar ? (
+                              <img src={annotation.userAvatar} alt={annotation.userName} />
                             ) : (
-                              <div className="avatar-placeholder">{comment.userName.charAt(0)}</div>
+                              <div className="avatar-placeholder">{annotation.userName.charAt(0)}</div>
                             )}
-                            <span>{comment.userName}</span>
+                            <span>{annotation.userName}</span>
                           </div>
-                          <div className="comment-meta">
-                            <span className="comment-time">{formatTimeAgo(comment.timestamp)}</span>
-                            <span className="comment-page">Page {comment.pageNumber}</span>
+                          <div className="annotation-meta">
+                            <span className="annotation-time">{formatTimeAgo(annotation.timestamp)}</span>
                           </div>
                         </div>
-                        <div className="comment-content">{comment.comment}</div>
-                        <div className="comment-actions">
-                          <button onClick={() => navigateToElement(comment)} className="action-btn">
+                        <div className="annotation-content">{annotation.annotation}</div>
+                        <div className="annotation-actions">
+                          <button onClick={() => navigateToElement(annotation)} className="action-btn">
                             📍 Go to
                           </button>
                           <button 
-                            onClick={() => toggleElementResolved(comment.id, 'comment')}
-                            className={`action-btn ${comment.resolved ? 'resolved' : ''}`}
+                            onClick={() => toggleElementResolved(annotation.id, 'annotation')}
+                            className={`action-btn ${annotation.resolved ? 'resolved' : ''}`}
                           >
-                            {comment.resolved ? '🔄 Reopen' : '✅ Resolve'}
+                            {annotation.resolved ? '🔄 Reopen' : '✅ Resolve'}
                           </button>
                           <button 
-                            onClick={() => deleteElement(comment.id, 'comment')}
+                            onClick={() => deleteElement(annotation.id, 'annotation')}
                             className="action-btn delete"
                           >
                             🗑️ Delete
@@ -916,7 +887,6 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                           </div>
                           <div className="tag-meta">
                             <span className="tag-time">{formatTimeAgo(tag.timestamp)}</span>
-                            <span className="tag-page">Page {tag.pageNumber}</span>
                           </div>
                         </div>
                         <div className="tag-content">
@@ -958,8 +928,8 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         {drawingMode && (
           <div className="drawing-instructions">
             <p>
-              {drawingMode === 'comment' ? '💬' : '🏷️'} 
-              Click and drag to create a {drawingMode === 'comment' ? 'comment' : 'tag'} area
+              {drawingMode === 'annotation' ? '💬' : '🏷️'} 
+              Click and drag to create a {drawingMode === 'annotation' ? 'annotation' : 'tag'} area
             </p>
           </div>
         )}
