@@ -740,112 +740,63 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                   >
                     {typeof numPages === 'number' && numPages > 0 ? (
                       <div className="pdf-scrollable-container" style={{ maxHeight: '70vh', overflowY: 'auto', position: 'relative' }}>
-                        {Array.from({ length: numPages }, (_, index) => (
-                          <div
-                            key={index + 1}
-                            className="pdf-page"
-                            style={{ position: 'relative', marginBottom: 24 }}
-                            onClick={e => {
-                              if ((e.target as HTMLElement).classList.contains('pdf-page')) {
-                                const rect = (e.target as HTMLElement).getBoundingClientRect();
-                                const x = (e.clientX - rect.left) / scale;
-                                const y = (e.clientY - rect.top) / scale;
-                                setAnnotationPopup({ pageNumber: index + 1, x, y });
-                                setAnnotationInput('');
-                              }
-                            }}
-                          >
-                            <Page 
-                              pageNumber={index + 1} 
-                              scale={scale}
-                              renderTextLayer={true}
-                              renderAnnotationLayer={true}
-                            />
-                            {/* Render annotation overlays for this page */}
-                            {showOverlays && filteredAnnotations.filter(a => a.pageNumber === index + 1).map(annotation => (
-                              <div
-                                key={`annotation-${annotation.id}`}
-                                className={`annotation-overlay ${selectedElement === annotation.id ? 'selected' : ''} ${annotation.resolved ? 'resolved' : ''}`}
-                                style={{
-                                  position: 'absolute',
-                                  left: annotation.position.x * scale,
-                                  top: annotation.position.y * scale,
-                                  width: annotation.position.width * scale,
-                                  height: annotation.position.height * scale,
-                                  border: `2px solid ${annotation.priority ? priorityColors[annotation.priority] : '#3B82F6'}`,
-                                  backgroundColor: `${annotation.priority ? priorityColors[annotation.priority] : '#3B82F6'}20`,
-                                  cursor: 'pointer',
-                                  zIndex: 5
-                                }}
-                                data-element-id={annotation.id}
-                                onClick={e => {
-                                  e.stopPropagation();
-                                  setActiveThread(annotation);
-                                }}
-                                title={`Annotation by ${annotation.userName}: ${annotation.annotation}`}
-                              >
-                                <div className="overlay-icon">💬</div>
-                              </div>
-                            ))}
-                          </div>
-                        ))}
-                        {/* Annotation input popup */}
-                        {annotationPopup && (
-                          <div
-                            className="annotation-popup"
-                            style={{
-                              position: 'absolute',
-                              left: annotationPopup.x * scale,
-                              top: annotationPopup.y * scale,
-                              zIndex: 20,
-                              background: '#fff',
-                              border: '1px solid #ccc',
-                              borderRadius: 8,
-                              padding: 12,
-                              boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
-                            }}
-                          >
-                            <textarea
-                              value={annotationInput}
-                              onChange={e => setAnnotationInput(e.target.value)}
-                              placeholder="Add annotation..."
-                              style={{ width: 200, height: 60 }}
-                              autoFocus
-                            />
-                            <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
-                              <button
-                                onClick={async () => {
-                                  if (annotationInput.trim()) {
-                                    await addAnnotation({
-                                      x: annotationPopup.x,
-                                      y: annotationPopup.y,
-                                      width: 80 / scale,
-                                      height: 40 / scale
-                                    });
-                                    setAnnotationPopup(null);
-                                    setAnnotationInput('');
-                                  }
-                                }}
-                                className="btn-primary"
-                              >
-                                Add
-                              </button>
-                              <button onClick={() => setAnnotationPopup(null)} className="btn-secondary">Cancel</button>
+                        {Array.from(new Array(numPages), (el, index) => {
+                          const pageNumber = index + 1;
+                          // Additional safety checks
+                          if (!numPages || numPages <= 0 || pageNumber <= 0 || pageNumber > numPages) {
+                            return null;
+                          }
+                          
+                          return (
+                            <div key={`page_${pageNumber}`} className="page-container">
+                              <Page
+                                pageNumber={pageNumber}
+                                scale={scale}
+                                onLoadSuccess={() => console.log(`Page ${pageNumber} loaded successfully`)}
+                                onLoadError={(error: Error) => console.error(`Error loading page ${pageNumber}:`, error)}
+                                error={(error: Error) => (
+                                  <div className="page-error">
+                                    <p>Error loading page {pageNumber}</p>
+                                    <small>{error.message}</small>
+                                  </div>
+                                )}
+                                loading={() => (
+                                  <div className="page-loading">
+                                    <p>Loading page {pageNumber}...</p>
+                                  </div>
+                                )}
+                              />
+                              {/* Annotation markers for this page */}
+                              {annotations
+                                .filter(annotation => annotation.pageNumber === pageNumber)
+                                .map((annotation) => (
+                                  <div
+                                    key={annotation.id}
+                                    className="annotation-marker"
+                                    style={{
+                                      position: 'absolute',
+                                      left: `${annotation.position.x * 100}%`,
+                                      top: `${annotation.position.y * 100}%`,
+                                      transform: 'translate(-50%, -50%)',
+                                      zIndex: 10,
+                                      cursor: 'pointer',
+                                    }}
+                                    onClick={e => {
+                                      e.stopPropagation();
+                                      setActiveAnnotation(annotation);
+                                      setShowAnnotationPanel(true);
+                                    }}
+                                  >
+                                    <span className="annotation-dot" />
+                                    <div className="annotation-tooltip">
+                                      <div className="author">{annotation.userName || 'User'}</div>
+                                      <div className="preview">{annotation.annotation.slice(0, 40)}...</div>
+                                    </div>
+                                  </div>
+                                ))}
                             </div>
-                          </div>
-                        )}
-                        {/* Annotation thread popup */}
-                        {activeThread && (
-                          <div className="annotation-thread-popup" style={{ position: 'fixed', right: 40, top: 100, zIndex: 30, background: '#fff', border: '1px solid #ccc', borderRadius: 8, padding: 16, width: 320, boxShadow: '0 2px 12px rgba(0,0,0,0.18)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <div><b>{activeThread.userName}</b> <span style={{ color: '#888', fontSize: 12 }}>{formatTimeAgo(toDate(activeThread.timestamp))}</span></div>
-                              <button onClick={() => setActiveThread(null)} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer' }}>×</button>
-                            </div>
-                            <div style={{ margin: '12px 0' }}>{activeThread.annotation}</div>
-                            <div style={{ fontSize: 13, color: '#666', marginBottom: 8 }}>Threaded replies (coming soon)</div>
-                            {/* TODO: Render replies, add reply input */}
-                          </div>
-                        )}
+                          );
+                        })}
                       </div>
                     ) : (
                       <div className="loading-container">

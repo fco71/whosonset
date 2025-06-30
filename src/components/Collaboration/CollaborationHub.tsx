@@ -87,6 +87,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showVideoCallModal, setShowVideoCallModal] = useState(false);
   const [showScreenplayViewer, setShowScreenplayViewer] = useState(false);
+  const [showScreenplayModal, setShowScreenplayModal] = useState(false);
   
   // Workspace creation state
   const [workspaceCreationStep, setWorkspaceCreationStep] = useState<WorkspaceCreationStep>('details');
@@ -816,6 +817,47 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     }
   }
 
+  const handleDeleteScreenplay = async (screenplayId: string) => {
+    if (window.confirm('Are you sure you want to delete this screenplay?')) {
+      try {
+        await deleteDoc(doc(db, 'screenplays', screenplayId));
+        toast.success('Screenplay deleted successfully');
+        // Refresh the screenplays list
+        loadUserScreenplays();
+      } catch (error) {
+        console.error('Error deleting screenplay:', error);
+        toast.error('Failed to delete screenplay');
+      }
+    }
+  };
+
+  const loadUserScreenplays = async () => {
+    if (!currentUser) return;
+    
+    try {
+      const screenplaysRef = collection(db, 'screenplays');
+      // Query 1: uploadedBy == currentUser.uid
+      const q1 = query(screenplaysRef, where('uploadedBy', '==', currentUser.uid));
+      const snap1 = await getDocs(q1);
+      // Query 2: teamMembers array-contains currentUser.uid
+      const q2 = query(screenplaysRef, where('teamMembers', 'array-contains', currentUser.uid));
+      const snap2 = await getDocs(q2);
+      // Merge and deduplicate
+      const allScreenplays = [...snap1.docs, ...snap2.docs];
+      const uniqueScreenplays = Array.from(
+        new Map(allScreenplays.map(doc => [doc.id, { id: doc.id, ...doc.data() }])).values()
+      );
+      setUserScreenplays(uniqueScreenplays);
+    } catch (err) {
+      console.error('Error fetching user screenplays:', err);
+    }
+  };
+
+  const openScreenplayViewer = (screenplay: any) => {
+    setSelectedScreenplayId(screenplay.id);
+    setShowScreenplayModal(true);
+  };
+
   const renderWorkspacesTab = () => (
     <div className="workspaces-tab">
       <div className="workspaces-header">
@@ -1542,7 +1584,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
             </div>
             <div className="flex gap-3">
               <button 
-                onClick={() => setShowScreenplayViewer(true)}
+                onClick={() => openScreenplayViewer(uploadedScreenplay)}
                 className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
               >
                 View Screenplay
@@ -1623,38 +1665,67 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         </div>
 
         {/* Screenplay Selector */}
-        <div className="screenplay-selector-container">
-          <h3>Your Screenplays</h3>
-          <button className="upload-screenplay-btn" onClick={handleUploadScreenplay}>Upload New Screenplay</button>
+        <div className="screenplay-selector">
+          <div className="selector-header">
+            <h3>Screenplays</h3>
+            <button 
+              className="upload-btn"
+              onClick={() => document.getElementById('screenplay-upload')?.click()}
+            >
+              <span>📄</span> Upload Screenplay
+            </button>
+          </div>
+          
+          <input
+            id="screenplay-upload"
+            type="file"
+            accept=".pdf"
+            onChange={handleScreenplayUpload}
+            style={{ display: 'none' }}
+          />
+          
           {userScreenplays.length === 0 ? (
-            <div>No screenplays found. Upload one to get started.</div>
+            <div className="empty-state">
+              <div className="empty-icon">📄</div>
+              <h4>No screenplays uploaded yet</h4>
+              <p>Upload a PDF screenplay to start collaborating with your team.</p>
+              <button 
+                className="upload-btn primary"
+                onClick={() => document.getElementById('screenplay-upload')?.click()}
+              >
+                Upload Your First Screenplay
+              </button>
+            </div>
           ) : (
-            <div className="screenplay-card-list">
-              {userScreenplays.map(sp => (
-                <div
-                  key={sp.id}
-                  className={`screenplay-card${selectedScreenplayId === sp.id ? ' selected' : ''}`}
-                  onClick={() => setSelectedScreenplayId(sp.id)}
-                >
-                  <div className="pdf-icon">📄</div>
-                  <div className="screenplay-info">
-                    <div className="screenplay-title">{sp.name}</div>
-                    <div className="screenplay-meta">
-                      <span className="owner">{sp.uploadedByName || 'Owner'}</span>
-                      <span className="date">{sp.uploadedAt ? new Date(sp.uploadedAt.seconds * 1000).toLocaleDateString() : ''}</span>
+            <div className="screenplay-grid">
+              {userScreenplays.map((screenplay) => (
+                <div key={screenplay.id} className="screenplay-card">
+                  <div className="card-thumbnail">
+                    <span className="pdf-icon">📄</span>
+                  </div>
+                  <div className="card-content">
+                    <h4 className="screenplay-name">{screenplay.name}</h4>
+                    <p className="upload-date">
+                      Uploaded {screenplay.uploadedAt ? new Date(screenplay.uploadedAt.seconds * 1000).toLocaleDateString() : 'Unknown'}
+                    </p>
+                    <div className="card-actions">
+                      <button 
+                        className="open-btn"
+                        onClick={() => openScreenplayViewer(screenplay)}
+                      >
+                        Open Viewer
+                      </button>
+                      <button 
+                        className="delete-btn"
+                        onClick={() => handleDeleteScreenplay(screenplay.id)}
+                      >
+                        Delete
+                      </button>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
-          )}
-          {selectedScreenplayId && (
-            <ScreenplayViewer
-              screenplay={userScreenplays.find(sp => sp.id === selectedScreenplayId)}
-              projectId={projectId || 'default-project'}
-              onClose={() => setSelectedScreenplayId(null)}
-              onGenerateReport={handleGenerateReport}
-            />
           )}
         </div>
       </div>
@@ -1798,6 +1869,37 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
             onClose={() => setShowScreenplayViewer(false)}
             onGenerateReport={handleGenerateReport}
           />
+        )}
+
+        {/* Full-Screen Screenplay Modal */}
+        {showScreenplayModal && selectedScreenplayId && (
+          <div className="screenplay-modal-overlay">
+            <div className="screenplay-modal">
+              <div className="modal-header">
+                <h2>{userScreenplays.find(s => s.id === selectedScreenplayId)?.name}</h2>
+                <button 
+                  className="close-btn"
+                  onClick={() => {
+                    setShowScreenplayModal(false);
+                    setSelectedScreenplayId(null);
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+              <div className="modal-content">
+                <ScreenplayViewer
+                  screenplay={userScreenplays.find(s => s.id === selectedScreenplayId)}
+                  projectId={projectId || 'default-project'}
+                  onClose={() => {
+                    setShowScreenplayModal(false);
+                    setSelectedScreenplayId(null);
+                  }}
+                  onGenerateReport={handleGenerateReport}
+                />
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </CollaborationErrorBoundary>

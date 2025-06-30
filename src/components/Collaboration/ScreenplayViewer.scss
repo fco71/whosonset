@@ -999,4 +999,46 @@
       }
     }
   }
+}
+
+// Page Error and Loading States
+.page-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #dc2626;
+  text-align: center;
+  
+  p {
+    margin: 0 0 8px 0;
+    font-weight: 600;
+  }
+  
+  small {
+    opacity: 0.8;
+    font-size: 0.9rem;
+  }
+}
+
+.page-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+  color: #0369a1;
+  text-align: center;
+  
+  p {
+    margin: 0;
+    font-weight: 500;
+  }
 } 

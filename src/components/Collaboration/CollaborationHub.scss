@@ -1076,4 +1076,230 @@
       transform: translateY(-2px);
     }
   }
+}
+
+// Screenplay Selector Styles
+.screenplay-selector {
+  padding: 20px;
+  
+  .selector-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    
+    h3 {
+      margin: 0;
+      font-size: 1.5rem;
+      color: #333;
+    }
+    
+    .upload-btn {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.95rem;
+      transition: background 0.2s;
+      
+      &:hover {
+        background: #1e40af;
+      }
+      
+      span {
+        font-size: 1.1rem;
+      }
+    }
+  }
+  
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    
+    .empty-icon {
+      font-size: 4rem;
+      margin-bottom: 20px;
+      opacity: 0.6;
+    }
+    
+    h4 {
+      margin: 0 0 10px 0;
+      color: #333;
+      font-size: 1.3rem;
+    }
+    
+    p {
+      margin: 0 0 30px 0;
+      color: #666;
+      font-size: 1rem;
+    }
+    
+    .upload-btn.primary {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background 0.2s;
+      
+      &:hover {
+        background: #1e40af;
+      }
+    }
+  }
+  
+  .screenplay-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    
+    .screenplay-card {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 20px;
+      transition: all 0.2s;
+      cursor: pointer;
+      
+      &:hover {
+        border-color: #2563eb;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+        transform: translateY(-2px);
+      }
+      
+      .card-thumbnail {
+        text-align: center;
+        margin-bottom: 15px;
+        
+        .pdf-icon {
+          font-size: 3rem;
+          opacity: 0.7;
+        }
+      }
+      
+      .card-content {
+        .screenplay-name {
+          margin: 0 0 8px 0;
+          font-size: 1.1rem;
+          font-weight: 600;
+          color: #333;
+        }
+        
+        .upload-date {
+          margin: 0 0 15px 0;
+          font-size: 0.9rem;
+          color: #666;
+        }
+        
+        .card-actions {
+          display: flex;
+          gap: 10px;
+          
+          .open-btn {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            flex: 1;
+            transition: background 0.2s;
+            
+            &:hover {
+              background: #1e40af;
+            }
+          }
+          
+          .delete-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.2s;
+            
+            &:hover {
+              background: #dc2626;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// Screenplay Modal Styles
+.screenplay-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  .screenplay-modal {
+    background: white;
+    border-radius: 12px;
+    width: 95vw;
+    height: 95vh;
+    max-width: 1400px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px;
+      border-bottom: 1px solid #e5e7eb;
+      background: #f9fafb;
+      
+      h2 {
+        margin: 0;
+        font-size: 1.3rem;
+        color: #333;
+      }
+      
+      .close-btn {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        color: #666;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 4px;
+        transition: background 0.2s;
+        
+        &:hover {
+          background: #e5e7eb;
+          color: #333;
+        }
+      }
+    }
+    
+    .modal-content {
+      flex: 1;
+      overflow: hidden;
+      
+      // Make the ScreenplayViewer fill the modal
+      > div {
+        height: 100%;
+      }
+    }
+  }
 } 
