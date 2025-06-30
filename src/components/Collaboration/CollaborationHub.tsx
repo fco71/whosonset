@@ -37,7 +37,7 @@ interface UserSearchResult {
 // Workspace creation step
 type WorkspaceCreationStep = 'details' | 'members' | 'settings';
 
-// Add this type above the component
+// Define TabType at the top of the file
 type TabType = 'workspaces' | 'channels' | 'documents' | 'whiteboards' | 'tasks' | 'screenplays' | 'help';
 
 // Error Boundary Component
@@ -1657,7 +1657,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const renderTabContent = () => {
     try {
       console.log('Rendering tab content for:', activeTab);
-      switch (activeTab) {
+      switch (activeTab as TabType) {
         case 'workspaces':
           return renderWorkspacesTab();
         case 'channels':
