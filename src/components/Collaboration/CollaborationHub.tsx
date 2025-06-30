@@ -807,6 +807,15 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     // 4. Add analytics and insights
   };
 
+  function handleUploadScreenplay() {
+    if (typeof uploadScreenplay === 'function') {
+      uploadScreenplay();
+    } else {
+      // TODO: Implement upload logic or open upload modal
+      alert('Upload functionality not yet implemented.');
+    }
+  }
+
   const renderWorkspacesTab = () => (
     <div className="workspaces-tab">
       <div className="workspaces-header">
@@ -1615,20 +1624,29 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 
         {/* Screenplay Selector */}
         <div className="screenplay-selector-container">
-          <h3>Select a Screenplay</h3>
+          <h3>Your Screenplays</h3>
+          <button className="upload-screenplay-btn" onClick={handleUploadScreenplay}>Upload New Screenplay</button>
           {userScreenplays.length === 0 ? (
             <div>No screenplays found. Upload one to get started.</div>
           ) : (
-            <select
-              value={selectedScreenplayId || ''}
-              onChange={e => setSelectedScreenplayId(e.target.value)}
-              style={{ marginBottom: 16 }}
-            >
-              <option value="" disabled>Select a screenplay...</option>
+            <div className="screenplay-card-list">
               {userScreenplays.map(sp => (
-                <option key={sp.id} value={sp.id}>{sp.name}</option>
+                <div
+                  key={sp.id}
+                  className={`screenplay-card${selectedScreenplayId === sp.id ? ' selected' : ''}`}
+                  onClick={() => setSelectedScreenplayId(sp.id)}
+                >
+                  <div className="pdf-icon">📄</div>
+                  <div className="screenplay-info">
+                    <div className="screenplay-title">{sp.name}</div>
+                    <div className="screenplay-meta">
+                      <span className="owner">{sp.uploadedByName || 'Owner'}</span>
+                      <span className="date">{sp.uploadedAt ? new Date(sp.uploadedAt.seconds * 1000).toLocaleDateString() : ''}</span>
+                    </div>
+                  </div>
+                </div>
               ))}
-            </select>
+            </div>
           )}
           {selectedScreenplayId && (
             <ScreenplayViewer

@@ -26,7 +26,7 @@ interface Annotation {
   userName: string;
   userAvatar?: string;
   annotation: string;
-  timestamp: Date;
+  timestamp: Date | { seconds: number };
   pageNumber: number;
   position: {
     x: number;
@@ -46,7 +46,7 @@ interface Reply {
   userName: string;
   userAvatar?: string;
   content: string;
-  timestamp: Date;
+  timestamp: Date | { seconds: number };
 }
 
 interface Tag {
@@ -85,6 +85,11 @@ interface ScreenplaySession {
   updatedAt: Date;
 }
 
+// Helper to normalize Date or { seconds: number } to Date
+function toDate(val: Date | { seconds: number }): Date {
+  return val instanceof Date ? val : new Date(val.seconds * 1000);
+}
+
 const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, projectId, onClose, onGenerateReport }) => {
   const { currentUser } = useAuth();
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
@@ -119,6 +124,9 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   const [showAnnotationSidebar, setShowAnnotationSidebar] = useState(false);
   const [activeAnnotation, setActiveAnnotation] = useState<Annotation | null>(null);
   const [newReply, setNewReply] = useState('');
+  const [showAnnotationPanel, setShowAnnotationPanel] = useState(false);
+  const [panelX, setPanelX] = useState(0);
+  const [panelY, setPanelY] = useState(0);
   
   const viewerRef = useRef<HTMLDivElement>(null);
   const pdfContainerRef = useRef<HTMLDivElement>(null);
@@ -222,7 +230,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       const annotationsData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
-        timestamp: doc.data().timestamp.toDate()
+        timestamp: toDate(doc.data().timestamp)
       })) as Annotation[];
       setAnnotations(annotationsData);
     });
@@ -238,7 +246,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       const tagsData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
-        timestamp: doc.data().timestamp.toDate()
+        timestamp: toDate(doc.data().timestamp)
       })) as Tag[];
       setTags(tagsData);
     });
@@ -278,7 +286,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       const annotationsData = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
-        timestamp: doc.data().timestamp.toDate()
+        timestamp: toDate(doc.data().timestamp)
       })) as Annotation[];
       setAnnotations(annotationsData);
       console.log('[DEBUG] Loaded annotations:', annotationsData);
@@ -299,7 +307,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       const tagsData = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
-        timestamp: doc.data().timestamp.toDate()
+        timestamp: toDate(doc.data().timestamp)
       })) as Tag[];
       setTags(tagsData);
       console.log('[DEBUG] Loaded tags:', tagsData);
@@ -491,7 +499,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
 
   const formatTimeAgo = (date: Date) => {
     const now = new Date();
-    const diff = now.getTime() - date.getTime();
+    const diff = now.getTime() - toDate(date).getTime();
     const minutes = Math.floor(diff / 60000);
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
@@ -521,7 +529,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
 
     switch (sortBy) {
       case 'time':
-        return filtered.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+        return filtered.sort((a, b) => toDate(b.timestamp).getTime() - toDate(a.timestamp).getTime());
       case 'page':
         return filtered.sort((a, b) => a.pageNumber - b.pageNumber);
       case 'user':
@@ -552,7 +560,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
 
     switch (sortBy) {
       case 'time':
-        return filtered.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+        return filtered.sort((a, b) => toDate(b.timestamp).getTime() - toDate(a.timestamp).getTime());
       case 'page':
         return filtered.sort((a, b) => a.pageNumber - b.pageNumber);
       case 'type':
@@ -830,7 +838,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                         {activeThread && (
                           <div className="annotation-thread-popup" style={{ position: 'fixed', right: 40, top: 100, zIndex: 30, background: '#fff', border: '1px solid #ccc', borderRadius: 8, padding: 16, width: 320, boxShadow: '0 2px 12px rgba(0,0,0,0.18)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <div><b>{activeThread.userName}</b> <span style={{ color: '#888', fontSize: 12 }}>{formatTimeAgo(activeThread.timestamp)}</span></div>
+                              <div><b>{activeThread.userName}</b> <span style={{ color: '#888', fontSize: 12 }}>{formatTimeAgo(toDate(activeThread.timestamp))}</span></div>
                               <button onClick={() => setActiveThread(null)} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer' }}>×</button>
                             </div>
                             <div style={{ margin: '12px 0' }}>{activeThread.annotation}</div>
@@ -1013,7 +1021,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                             <span>{annotation.userName}</span>
                           </div>
                           <div className="annotation-meta">
-                            <span className="annotation-time">{formatTimeAgo(annotation.timestamp)}</span>
+                            <span className="annotation-time">{formatTimeAgo(toDate(annotation.timestamp))}</span>
                           </div>
                         </div>
                         <div className="annotation-content">{annotation.annotation}</div>
@@ -1055,7 +1063,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                             <span>{tag.userName}</span>
                           </div>
                           <div className="tag-meta">
-                            <span className="tag-time">{formatTimeAgo(tag.timestamp)}</span>
+                            <span className="tag-time">{formatTimeAgo(toDate(tag.timestamp))}</span>
                           </div>
                         </div>
                         <div className="tag-content">
@@ -1128,6 +1136,39 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                   <span className="reply-author">{reply.userName}:</span> {reply.content}
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Floating annotation thread panel */}
+        {showAnnotationPanel && activeAnnotation && (
+          <div className="annotation-panel" style={{ left: panelX, top: panelY }}>
+            <div className="panel-header">
+              <span className="author-avatar">{activeAnnotation.userAvatar ? <img src={activeAnnotation.userAvatar} alt="avatar" /> : '👤'}</span>
+              <span className="author-name">{activeAnnotation.userName || 'User'}</span>
+              <span className="timestamp">{
+                activeAnnotation?.timestamp
+                  ? (activeAnnotation.timestamp instanceof Date
+                      ? activeAnnotation.timestamp.toLocaleString()
+                      : typeof activeAnnotation.timestamp === 'object' && 'seconds' in activeAnnotation.timestamp
+                        ? new Date(activeAnnotation.timestamp.seconds * 1000).toLocaleString()
+                        : '')
+                  : ''
+              }</span>
+              <button className="close-btn" onClick={() => setShowAnnotationPanel(false)}>×</button>
+            </div>
+            <div className="panel-tags">
+              {activeAnnotation.replies?.map(reply => (
+                <span key={reply.id} className="tag-chip">{reply.content} <button onClick={() => handleRemoveTag(reply.content)}>×</button></span>
+              ))}
+              <input
+                type="text"
+                placeholder="Add reply..."
+                value={newReply}
+                onChange={e => setNewReply(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleAddReply()}
+              />
+              <button onClick={handleAddReply}>Reply</button>
             </div>
           </div>
         )}
