@@ -15,6 +15,10 @@ import BreakdownReports from '../BreakdownReports';
 import './CollaborationHub.scss';
 import UserAutocomplete, { UserAutocompleteOption } from './UserAutocomplete';
 import { toast } from 'react-hot-toast';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { collection, addDoc, query, where, orderBy, getDocs, onSnapshot, updateDoc, doc, deleteDoc } from 'firebase/firestore';
+import { db, storage } from '../../firebase';
+import ScreenplayViewer from './ScreenplayViewer';
 
 interface CollaborationHubProps {
   projectId?: string;
@@ -68,7 +72,7 @@ class CollaborationErrorBoundary extends React.Component<
 
 const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const { currentUser } = useAuth();
-  const [activeTab, setActiveTab] = useState('workspaces');
+  const [activeTab, setActiveTab] = useState<'workspaces' | 'channels' | 'documents' | 'whiteboards' | 'tasks' | 'screenplays' | 'help'>('workspaces');
   const [workspaces, setWorkspaces] = useState<CollaborationWorkspace[]>([]);
   const [selectedWorkspace, setSelectedWorkspace] = useState<CollaborationWorkspace | null>(null);
   const [loading, setLoading] = useState(true);
@@ -79,6 +83,8 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showVideoCallModal, setShowVideoCallModal] = useState(false);
+  const [showCommentModal, setShowCommentModal] = useState(false);
+  const [showScreenplayViewer, setShowScreenplayViewer] = useState(false);
   
   // Workspace creation state
   const [workspaceCreationStep, setWorkspaceCreationStep] = useState<WorkspaceCreationStep>('details');
@@ -130,10 +136,30 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const [screenplayUrl, setScreenplayUrl] = useState('');
   const [uploadingScreenplay, setUploadingScreenplay] = useState(false);
   const [uploadedScreenplay, setUploadedScreenplay] = useState<{
+    id: string;
     name: string;
     url: string;
     type: string;
   } | null>(null);
+  
+  // Screenplay collaboration state
+  const [screenplayComments, setScreenplayComments] = useState<{
+    id: string;
+    userId: string;
+    userName: string;
+    comment: string;
+    timestamp: Date;
+    page?: string;
+    scene?: string;
+  }[]>([]);
+  const [newComment, setNewComment] = useState('');
+
+  const [teamMembers, setTeamMembers] = useState<{
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+  }[]>([]);
 
   useEffect(() => {
     console.log('CollaborationHub mounted with projectId:', projectId);
@@ -141,6 +167,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     
     try {
       loadWorkspaces();
+      loadTeamMembers();
     } catch (err) {
       console.error('Error in CollaborationHub useEffect:', err);
       setError('Failed to initialize Collaboration Hub');
@@ -620,24 +647,111 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 
     setUploadingScreenplay(true);
     try {
-      // In a real app, you would upload to Firebase Storage here
-      // For now, we'll simulate the upload
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate upload time
+      // Upload to Firebase Storage
+      const storageRef = ref(storage, `screenplays/${Date.now()}_${screenplayFile.name}`);
+      const snapshot = await uploadBytes(storageRef, screenplayFile);
+      const downloadURL = await getDownloadURL(snapshot.ref);
+      
+      // Save screenplay metadata to Firestore
+      const screenplayData = {
+        name: screenplayFile.name,
+        url: downloadURL,
+        type: screenplayFile.type,
+        projectId: projectId || 'default-project',
+        uploadedBy: currentUser?.uid || 'unknown',
+        uploadedAt: new Date(),
+        teamMembers: teamMembers.map(member => member.id)
+      };
+      
+      const docRef = await addDoc(collection(db, 'screenplays'), screenplayData);
       
       const uploadedFile = {
+        id: docRef.id,
         name: screenplayFile.name,
-        url: URL.createObjectURL(screenplayFile), // In real app, this would be the Firebase Storage URL
+        url: downloadURL,
         type: screenplayFile.type
       };
       
       setUploadedScreenplay(uploadedFile);
       setScreenplayFile(null);
       toast.success(`${screenplayFile.name} uploaded successfully!`);
+      
+      // Load team members for this project
+      loadTeamMembers();
     } catch (error) {
       console.error('Error uploading screenplay:', error);
       toast.error('Failed to upload screenplay');
     } finally {
       setUploadingScreenplay(false);
+    }
+  };
+
+  const loadTeamMembers = async () => {
+    try {
+      // Mock team members for demonstration
+      const mockTeamMembers = [
+        { id: 'user-1', name: 'John Director', email: 'john@example.com', role: 'Director' },
+        { id: 'user-2', name: 'Sarah Producer', email: 'sarah@example.com', role: 'Producer' },
+        { id: 'user-3', name: 'Mike DP', email: 'mike@example.com', role: 'DP' },
+        { id: currentUser?.uid || 'current-user', name: currentUser?.displayName || 'You', email: currentUser?.email || '', role: 'Team Member' }
+      ];
+      setTeamMembers(mockTeamMembers);
+    } catch (error) {
+      console.error('Error loading team members:', error);
+    }
+  };
+
+  const addComment = async () => {
+    if (!newComment.trim() || !uploadedScreenplay) return;
+
+    try {
+      const commentData = {
+        screenplayId: uploadedScreenplay.id,
+        userId: currentUser?.uid || 'unknown',
+        userName: currentUser?.displayName || 'Anonymous',
+        comment: newComment.trim(),
+        timestamp: new Date(),
+        projectId: projectId || 'default-project'
+      };
+
+      await addDoc(collection(db, 'screenplayComments'), commentData);
+      
+      // Add to local state
+      setScreenplayComments(prev => [...prev, {
+        id: Date.now().toString(),
+        userId: currentUser?.uid || 'unknown',
+        userName: currentUser?.displayName || 'Anonymous',
+        comment: newComment.trim(),
+        timestamp: new Date()
+      }]);
+      
+      setNewComment('');
+      setShowCommentModal(false);
+      toast.success('Comment added successfully!');
+    } catch (error) {
+      console.error('Error adding comment:', error);
+      toast.error('Failed to add comment');
+    }
+  };
+
+  const loadComments = async () => {
+    if (!uploadedScreenplay) return;
+
+    try {
+      const q = query(
+        collection(db, 'screenplayComments'),
+        where('screenplayId', '==', uploadedScreenplay.id),
+        orderBy('timestamp', 'desc')
+      );
+      const querySnapshot = await getDocs(q);
+      const comments = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as any[];
+      
+      setScreenplayComments(comments);
+    } catch (error) {
+      console.error('Error loading comments:', error);
     }
   };
 
@@ -1305,7 +1419,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     <div className="screenplays-tab">
       <div className="screenplays-header">
         <h2>Screenplays</h2>
-        <p>Upload and manage screenplay breakdowns</p>
+        <p>Upload and collaborate on screenplay breakdowns</p>
       </div>
       
       <div className="screenplays-content">
@@ -1378,15 +1492,73 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
               </button>
             </div>
             <div className="flex gap-3">
-              <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors">
+              <button 
+                onClick={() => setShowScreenplayViewer(true)}
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
+              >
                 View Screenplay
               </button>
-              <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
-                Add Comments
+              <button 
+                onClick={() => setShowCommentModal(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+              >
+                Add Comment
+              </button>
+              <button 
+                onClick={loadComments}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
+              >
+                View Comments ({screenplayComments.length})
               </button>
             </div>
           </div>
         )}
+
+        {/* Team Collaboration Section */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Team Collaboration</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Team Members */}
+            <div>
+              <h4 className="font-medium text-gray-900 mb-3">Team Members</h4>
+              <div className="space-y-2">
+                {teamMembers.map((member) => (
+                  <div key={member.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                    <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                      {member.name.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">{member.name}</p>
+                      <p className="text-sm text-gray-600">{member.role}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Comments Section */}
+            <div>
+              <h4 className="font-medium text-gray-900 mb-3">Recent Comments</h4>
+              <div className="space-y-3 max-h-64 overflow-y-auto">
+                {screenplayComments.length > 0 ? (
+                  screenplayComments.slice(0, 5).map((comment) => (
+                    <div key={comment.id} className="p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-medium text-gray-900">{comment.userName}</span>
+                        <span className="text-xs text-gray-500">
+                          {formatTimeAgo(comment.timestamp)}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-700">{comment.comment}</p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-500 text-sm">No comments yet. Be the first to comment!</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Screenplay Breakdown Section */}
         <div className="bg-white rounded-lg shadow-md p-6">
@@ -1407,6 +1579,45 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
           )}
         </div>
       </div>
+
+      {/* Comment Modal */}
+      {showCommentModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>Add Comment</h3>
+              <button onClick={() => setShowCommentModal(false)} className="close-btn">×</button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label>Your Comment</label>
+                <textarea
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  placeholder="Add your comment about the screenplay..."
+                  className="form-input"
+                  rows={4}
+                />
+              </div>
+              <div className="flex gap-2 mt-4">
+                <button
+                  onClick={addComment}
+                  disabled={!newComment.trim()}
+                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg transition-colors"
+                >
+                  Add Comment
+                </button>
+                <button
+                  onClick={() => setShowCommentModal(false)}
+                  className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -1559,6 +1770,15 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
             {renderTabContent()}
           </div>
         </div>
+
+        {/* Screenplay Viewer Modal */}
+        {showScreenplayViewer && uploadedScreenplay && (
+          <ScreenplayViewer
+            screenplay={uploadedScreenplay}
+            projectId={projectId || 'default-project'}
+            onClose={() => setShowScreenplayViewer(false)}
+          />
+        )}
       </div>
     </CollaborationErrorBoundary>
   );

@@ -36,6 +36,7 @@ const ScreenplayBreakdown: React.FC<ScreenplayBreakdownProps> = ({
     tags: [] as string[]
   });
   const [newTag, setNewTag] = useState('');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     loadBreakdownElements();
@@ -43,50 +44,70 @@ const ScreenplayBreakdown: React.FC<ScreenplayBreakdownProps> = ({
 
   const loadBreakdownElements = async () => {
     try {
-      const q = query(
-        collection(db, 'breakdownElements'),
-        where('documentId', '==', document?.id)
-      );
+      setLoading(true);
+      
+      let q;
+      
+      if (document?.id) {
+        // Query by document ID if available
+        q = query(
+          collection(db, 'breakdownElements'),
+          where('documentId', '==', document.id)
+        );
+      } else if (projectId) {
+        // Query by project ID if no document
+        q = query(
+          collection(db, 'breakdownElements'),
+          where('projectId', '==', projectId)
+        );
+      } else {
+        // No document or project ID available
+        setBreakdownElements([]);
+        setLoading(false);
+        return;
+      }
+      
       const querySnapshot = await getDocs(q);
       const elements = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as BreakdownElement[];
+      
       setBreakdownElements(elements);
     } catch (error) {
       console.error('Error loading breakdown elements:', error);
-      toast.error('Failed to load breakdown elements');
+      toast.error('Failed to load breakdown data');
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth.currentUser) return;
-
+    
     try {
       const elementData = {
         ...formData,
-        documentId: document?.id,
-        pageNumber: formData.pageNumber ? parseInt(formData.pageNumber) : undefined,
-        lineNumber: formData.lineNumber ? parseInt(formData.lineNumber) : undefined,
-        estimatedCost: formData.estimatedCost ? parseFloat(formData.estimatedCost) : undefined,
-        createdBy: auth.currentUser.uid,
+        documentId: document?.id || null,
+        projectId: projectId || 'default-project',
         createdAt: new Date(),
         updatedAt: new Date()
       };
 
       if (editingElement) {
+        // Update existing element
         await updateDoc(doc(db, 'breakdownElements', editingElement), {
           ...elementData,
           updatedAt: new Date()
         });
-        setEditingElement(null);
-        toast.success('Breakdown element updated');
+        toast.success('Element updated successfully!');
       } else {
+        // Add new element
         await addDoc(collection(db, 'breakdownElements'), elementData);
-        toast.success('Breakdown element added');
+        toast.success('Element added successfully!');
       }
 
+      // Reset form
       setFormData({
         elementType: 'prop' as 'prop' | 'cast' | 'location' | 'costume' | 'vehicle' | 'equipment' | 'sound' | 'effect',
         name: '',
@@ -103,11 +124,14 @@ const ScreenplayBreakdown: React.FC<ScreenplayBreakdownProps> = ({
         tags: []
       });
       setIsAddingElement(false);
+      setEditingElement(null);
       loadBreakdownElements();
-      onBreakdownUpdate?.();
+      if (onBreakdownUpdate) {
+        onBreakdownUpdate();
+      }
     } catch (error) {
-      console.error('Error saving breakdown element:', error);
-      toast.error('Failed to save breakdown element');
+      console.error('Error saving element:', error);
+      toast.error('Failed to save element');
     }
   };
 

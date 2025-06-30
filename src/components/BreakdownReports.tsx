@@ -34,10 +34,28 @@ const BreakdownReports: React.FC<BreakdownReportsProps> = ({ document: projectDo
   const loadBreakdownElements = async () => {
     try {
       setLoading(true);
-      const q = query(
-        collection(db, 'breakdownElements'),
-        where('documentId', '==', projectDocument?.id)
-      );
+      
+      let q;
+      
+      if (projectDocument?.id) {
+        // Query by document ID if available
+        q = query(
+          collection(db, 'breakdownElements'),
+          where('documentId', '==', projectDocument.id)
+        );
+      } else if (projectId) {
+        // Query by project ID if no document
+        q = query(
+          collection(db, 'breakdownElements'),
+          where('projectId', '==', projectId)
+        );
+      } else {
+        // No document or project ID available
+        setBreakdownElements([]);
+        setLoading(false);
+        return;
+      }
+      
       const querySnapshot = await getDocs(q);
       const elements = querySnapshot.docs.map(doc => ({
         id: doc.id,
