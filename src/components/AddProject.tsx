@@ -4,6 +4,8 @@ import { db, auth } from '../firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import ProjectForm from './ProjectForm';
+import { storage } from '../firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 // Country list for dropdown
 const COUNTRIES = [
@@ -60,6 +62,8 @@ const AddProject: React.FC = () => {
   const [projectWebsite, setProjectWebsite] = useState('');
   const [productionBudget, setProductionBudget] = useState('');
   const [productionCompanyContact, setProductionCompanyContact] = useState('');
+  const [screenplayFile, setScreenplayFile] = useState<File | null>(null);
+  const [screenplayUrl, setScreenplayUrl] = useState('');
 
   const navigate = useNavigate();
   const [user, loading, error] = useAuthState(auth);
@@ -120,6 +124,17 @@ const AddProject: React.FC = () => {
 
   const handleCancel = () => {
     navigate('/');
+  };
+
+  const handleScreenplayUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setScreenplayFile(file);
+      const storageRef = ref(storage, `screenplays/${file.name}`);
+      await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(storageRef);
+      setScreenplayUrl(url);
+    }
   };
 
   if (loading) return <p>Loading...</p>;

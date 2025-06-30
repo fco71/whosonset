@@ -125,6 +125,16 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 
   const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
 
+  // Screenplay upload state
+  const [screenplayFile, setScreenplayFile] = useState<File | null>(null);
+  const [screenplayUrl, setScreenplayUrl] = useState('');
+  const [uploadingScreenplay, setUploadingScreenplay] = useState(false);
+  const [uploadedScreenplay, setUploadedScreenplay] = useState<{
+    name: string;
+    url: string;
+    type: string;
+  } | null>(null);
+
   useEffect(() => {
     console.log('CollaborationHub mounted with projectId:', projectId);
     console.log('Current user:', currentUser);
@@ -593,6 +603,42 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       return;
     }
     setShowVideoCallModal(true);
+  };
+
+  const handleScreenplayUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setScreenplayFile(file);
+    }
+  };
+
+  const uploadScreenplay = async () => {
+    if (!screenplayFile) {
+      toast.error('Please select a file first');
+      return;
+    }
+
+    setUploadingScreenplay(true);
+    try {
+      // In a real app, you would upload to Firebase Storage here
+      // For now, we'll simulate the upload
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate upload time
+      
+      const uploadedFile = {
+        name: screenplayFile.name,
+        url: URL.createObjectURL(screenplayFile), // In real app, this would be the Firebase Storage URL
+        type: screenplayFile.type
+      };
+      
+      setUploadedScreenplay(uploadedFile);
+      setScreenplayFile(null);
+      toast.success(`${screenplayFile.name} uploaded successfully!`);
+    } catch (error) {
+      console.error('Error uploading screenplay:', error);
+      toast.error('Failed to upload screenplay');
+    } finally {
+      setUploadingScreenplay(false);
+    }
   };
 
   const formatTimeAgo = (date: Date) => {
@@ -1259,12 +1305,107 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     <div className="screenplays-tab">
       <div className="screenplays-header">
         <h2>Screenplays</h2>
-        <p>Manage screenplay breakdowns and reports</p>
+        <p>Upload and manage screenplay breakdowns</p>
       </div>
       
       <div className="screenplays-content">
-        <ScreenplayBreakdown projectId={projectId || 'default-project'} />
-        <BreakdownReports projectId={projectId || 'default-project'} />
+        {/* Screenplay Upload Section */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Upload Screenplay</h3>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Select Screenplay File
+              </label>
+              <input
+                type="file"
+                accept=".fdx,.pdf,.doc,.docx"
+                className="w-full bg-white text-gray-900 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                onChange={handleScreenplayUpload}
+              />
+              <p className="text-sm text-gray-500 mt-1">
+                Supported formats: Final Draft (.fdx), PDF (.pdf), Word (.doc, .docx)
+              </p>
+            </div>
+            {screenplayFile && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-center gap-2">
+                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <span className="text-blue-800 font-medium">
+                    {screenplayFile.name} selected
+                  </span>
+                </div>
+              </div>
+            )}
+            <button 
+              onClick={uploadScreenplay}
+              disabled={!screenplayFile || uploadingScreenplay}
+              className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+            >
+              {uploadingScreenplay && (
+                <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              )}
+              {uploadingScreenplay ? 'Uploading...' : 'Upload Screenplay'}
+            </button>
+          </div>
+        </div>
+
+        {/* Uploaded Screenplay Display */}
+        {uploadedScreenplay && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                  <h4 className="text-lg font-semibold text-green-800">{uploadedScreenplay.name}</h4>
+                  <p className="text-green-600">Successfully uploaded</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setUploadedScreenplay(null)}
+                className="text-green-600 hover:text-green-800"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="flex gap-3">
+              <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors">
+                View Screenplay
+              </button>
+              <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
+                Add Comments
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Screenplay Breakdown Section */}
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Screenplay Breakdown</h3>
+          {uploadedScreenplay ? (
+            <div>
+              <p className="text-gray-600 mb-4">
+                Now you can create breakdown elements for props, cast, locations, and more.
+              </p>
+              <ScreenplayBreakdown projectId={projectId || 'default-project'} />
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <div className="text-6xl mb-4 opacity-20">📄</div>
+              <p className="text-lg font-medium mb-2">No screenplay uploaded</p>
+              <p className="text-sm">Upload a screenplay file above to start creating breakdown elements.</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

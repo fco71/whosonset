@@ -79,6 +79,14 @@ const MyProjectsPage: React.FC = () => {
             <p className="body-large max-w-2xl mx-auto animate-slide">
               View, edit, or delete your own film projects.
             </p>
+            <div className="mt-8">
+              <button
+                onClick={() => navigate('/projects/add')}
+                className="btn-primary"
+              >
+                + Create New Project
+              </button>
+            </div>
           </div>
         </div>
       </div>

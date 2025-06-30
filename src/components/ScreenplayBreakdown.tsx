@@ -579,8 +579,14 @@ const ScreenplayBreakdown: React.FC<ScreenplayBreakdownProps> = ({
         </>
       )}
 
-      {activeTab === 'reports' && (
+      {activeTab === 'reports' && document && (
         <BreakdownReports document={document} projectId={projectId} />
+      )}
+      {activeTab === 'reports' && !document && (
+        <div className="text-center py-8 text-gray-500">
+          <p>No screenplay document available for reports.</p>
+          <p className="text-sm">Upload a screenplay first to generate reports.</p>
+        </div>
       )}
     </div>
   );
