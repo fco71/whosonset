@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { collection, addDoc, query, where, orderBy, getDocs, onSnapshot } from 'firebase/firestore';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { db } from '../../firebase';
@@ -17,6 +17,7 @@ interface ScreenplayViewerProps {
   };
   projectId: string;
   onClose: () => void;
+  onGenerateReport?: () => void;
 }
 
 interface Comment {
@@ -28,6 +29,7 @@ interface Comment {
   pageNumber?: number;
   lineNumber?: number;
   selection?: string;
+  position?: { start: number; end: number };
 }
 
 interface Tag {
@@ -40,10 +42,11 @@ interface Tag {
   pageNumber?: number;
   lineNumber?: number;
   selection?: string;
+  position?: { start: number; end: number };
   color: string;
 }
 
-const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, projectId, onClose }) => {
+const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, projectId, onClose, onGenerateReport }) => {
   const { currentUser } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
@@ -51,15 +54,18 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   const [newTag, setNewTag] = useState('');
   const [selectedTagType, setSelectedTagType] = useState<Tag['tagType']>('character');
   const [selectedText, setSelectedText] = useState('');
-  const [showCommentPanel, setShowCommentPanel] = useState(false);
-  const [showTagPanel, setShowTagPanel] = useState(false);
+  const [showCommentPanel, setShowCommentPanel] = useState(true);
+  const [showTagPanel, setShowTagPanel] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [numPages, setNumPages] = useState<number | null>(null);
   const [screenplayContent, setScreenplayContent] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [fileType, setFileType] = useState<'pdf' | 'fdx' | 'text'>('text');
+  const [highlightedElement, setHighlightedElement] = useState<string | null>(null);
+  const [activePanel, setActivePanel] = useState<'comments' | 'tags' | 'both'>('both');
   const viewerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const tagColors = {
     // Character related
@@ -127,8 +133,8 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
 
   // Debug panel state changes
   useEffect(() => {
-    console.log('Panel state changed:', { showCommentPanel, showTagPanel });
-  }, [showCommentPanel, showTagPanel]);
+    console.log('Panel state changed:', { showCommentPanel, showTagPanel, activePanel });
+  }, [showCommentPanel, showTagPanel, activePanel]);
 
   const determineFileType = () => {
     const fileName = screenplay.name.toLowerCase();
@@ -277,6 +283,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
 
       await addDoc(collection(db, 'screenplayComments'), commentData);
       setNewComment('');
+      setSelectedText('');
     } catch (error) {
       console.error('Error adding comment:', error);
     }
@@ -301,6 +308,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
 
       await addDoc(collection(db, 'screenplayTags'), tagData);
       setNewTag('');
+      setSelectedText('');
     } catch (error) {
       console.error('Error adding tag:', error);
     }
@@ -319,6 +327,52 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     setSelectedText('');
     window.getSelection()?.removeAllRanges();
   };
+
+  const navigateToComment = useCallback((comment: Comment) => {
+    if (comment.selection && contentRef.current) {
+      // Find the text in the content and scroll to it
+      const content = contentRef.current.textContent || '';
+      const index = content.indexOf(comment.selection);
+      if (index !== -1) {
+        // Create a temporary highlight
+        setHighlightedElement(`comment-${comment.id}`);
+        setTimeout(() => setHighlightedElement(null), 3000);
+        
+        // Scroll to the element
+        const textNodes = contentRef.current.querySelectorAll('*');
+        for (let i = 0; i < textNodes.length; i++) {
+          const node = textNodes[i];
+          if (node.textContent?.includes(comment.selection)) {
+            node.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            break;
+          }
+        }
+      }
+    }
+  }, []);
+
+  const navigateToTag = useCallback((tag: Tag) => {
+    if (tag.selection && contentRef.current) {
+      // Find the text in the content and scroll to it
+      const content = contentRef.current.textContent || '';
+      const index = content.indexOf(tag.selection);
+      if (index !== -1) {
+        // Create a temporary highlight
+        setHighlightedElement(`tag-${tag.id}`);
+        setTimeout(() => setHighlightedElement(null), 3000);
+        
+        // Scroll to the element
+        const textNodes = contentRef.current.querySelectorAll('*');
+        for (let i = 0; i < textNodes.length; i++) {
+          const node = textNodes[i];
+          if (node.textContent?.includes(tag.selection)) {
+            node.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            break;
+          }
+        }
+      }
+    }
+  }, []);
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
@@ -341,6 +395,25 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     if (minutes < 60) return `${minutes}m ago`;
     if (hours < 24) return `${hours}h ago`;
     return `${days}d ago`;
+  };
+
+  const togglePanel = (panel: 'comments' | 'tags') => {
+    if (panel === 'comments') {
+      setShowCommentPanel(!showCommentPanel);
+    } else {
+      setShowTagPanel(!showTagPanel);
+    }
+    
+    // Update active panel state
+    if (showCommentPanel && showTagPanel) {
+      setActivePanel(panel);
+    } else if (showCommentPanel && !showTagPanel) {
+      setActivePanel('comments');
+    } else if (!showCommentPanel && showTagPanel) {
+      setActivePanel('tags');
+    } else {
+      setActivePanel('both');
+    }
   };
 
   const renderScreenplayContent = () => {
@@ -414,7 +487,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       <div 
         className="screenplay-content"
         onMouseUp={handleTextSelection}
-        ref={viewerRef}
+        ref={contentRef}
       >
         <pre className="screenplay-text">{screenplayContent}</pre>
         
@@ -423,12 +496,14 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
           comment.selection && (
             <div
               key={`comment-${comment.id}`}
-              className="text-highlight comment-highlight"
+              className={`text-highlight comment-highlight ${highlightedElement === `comment-${comment.id}` ? 'highlighted' : ''}`}
               style={{
-                backgroundColor: 'rgba(59, 130, 246, 0.3)',
-                borderBottom: '2px solid #3b82f6'
+                backgroundColor: highlightedElement === `comment-${comment.id}` ? 'rgba(59, 130, 246, 0.6)' : 'rgba(59, 130, 246, 0.3)',
+                borderBottom: '2px solid #3b82f6',
+                transition: 'all 0.3s ease'
               }}
               title={`Comment by ${comment.userName}: ${comment.comment}`}
+              onClick={() => navigateToComment(comment)}
             >
               <span className="highlight-label">💬</span>
             </div>
@@ -440,12 +515,14 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
           tag.selection && (
             <div
               key={`tag-${tag.id}`}
-              className="text-highlight tag-highlight"
+              className={`text-highlight tag-highlight ${highlightedElement === `tag-${tag.id}` ? 'highlighted' : ''}`}
               style={{
-                backgroundColor: `${tag.color}40`,
-                borderBottom: `2px solid ${tag.color}`
+                backgroundColor: highlightedElement === `tag-${tag.id}` ? `${tag.color}80` : `${tag.color}40`,
+                borderBottom: `2px solid ${tag.color}`,
+                transition: 'all 0.3s ease'
               }}
               title={`${tag.tagType}: ${tag.content} by ${tag.userName}`}
+              onClick={() => navigateToTag(tag)}
             >
               <span className="highlight-label" style={{ color: tag.color }}>
                 {tag.tagType === 'character' ? '👤' :
@@ -466,35 +543,35 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     );
   };
 
-  // Debug logging for panel state
-  console.log('ScreenplayViewer render state:', {
-    showCommentPanel,
-    showTagPanel,
-    commentsCount: comments.length,
-    tagsCount: tags.length
-  });
-
   return (
     <div className="screenplay-viewer-overlay">
       <div className="screenplay-viewer">
         <div className="viewer-header">
           <div className="header-left">
-            <h2 style={{ margin: 0, padding: 0, lineHeight: '1.2', display: 'flex', alignItems: 'center' }}>{screenplay.name}</h2>
+            <h2>{screenplay.name}</h2>
             <span className="file-type">{screenplay.type}</span>
           </div>
           <div className="header-actions">
             <button
-              onClick={() => setShowCommentPanel(!showCommentPanel)}
+              onClick={() => togglePanel('comments')}
               className={`btn-toggle ${showCommentPanel ? 'active' : ''}`}
             >
-              Comments ({comments.length})
+              💬 Comments ({comments.length})
             </button>
             <button
-              onClick={() => setShowTagPanel(!showTagPanel)}
+              onClick={() => togglePanel('tags')}
               className={`btn-toggle ${showTagPanel ? 'active' : ''}`}
             >
-              Tags ({tags.length})
+              🏷️ Tags ({tags.length})
             </button>
+            {onGenerateReport && (
+              <button
+                onClick={onGenerateReport}
+                className="btn-report"
+              >
+                📊 Generate Report
+              </button>
+            )}
             <button onClick={onClose} className="btn-close">
               ×
             </button>
@@ -502,13 +579,21 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         </div>
 
         <div className="viewer-content">
-          <div className="screenplay-panel">
+          <div className={`screenplay-panel ${activePanel === 'both' ? 'with-panels' : activePanel === 'comments' ? 'with-comments' : activePanel === 'tags' ? 'with-tags' : ''}`}>
             {renderScreenplayContent()}
           </div>
 
           {showCommentPanel && (
             <div className="comment-panel">
-              <h3>Comments ({comments.length})</h3>
+              <div className="panel-header">
+                <h3>💬 Comments ({comments.length})</h3>
+                <button 
+                  onClick={() => togglePanel('comments')}
+                  className="panel-close"
+                >
+                  ×
+                </button>
+              </div>
               <div className="comment-input">
                 <textarea
                   value={newComment}
@@ -518,36 +603,29 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                 />
                 {selectedText && (
                   <div className="selected-text">
-                    Selected: "{selectedText}"
+                    <span className="selected-label">Selected:</span>
+                    <span className="selected-content">"{selectedText}"</span>
                     <button 
                       onClick={clearSelection}
-                      style={{ 
-                        marginLeft: '8px', 
-                        background: '#ef4444', 
-                        color: 'white', 
-                        border: 'none', 
-                        borderRadius: '4px', 
-                        padding: '2px 6px', 
-                        fontSize: '0.75rem',
-                        cursor: 'pointer'
-                      }}
+                      className="clear-selection"
                     >
                       Clear
                     </button>
                   </div>
                 )}
-                <button onClick={addComment} disabled={!newComment.trim()}>
+                <button onClick={addComment} disabled={!newComment.trim()} className="add-button">
                   Add Comment
                 </button>
               </div>
               <div className="comments-list">
                 {comments.length === 0 ? (
-                  <div style={{ textAlign: 'center', color: '#6b7280', padding: '20px' }}>
-                    No comments yet. Be the first to add one!
+                  <div className="empty-state">
+                    <div className="empty-icon">💬</div>
+                    <p>No comments yet. Be the first to add one!</p>
                   </div>
                 ) : (
                   comments.map(comment => (
-                    <div key={comment.id} className="comment-item">
+                    <div key={comment.id} className="comment-item" onClick={() => navigateToComment(comment)}>
                       <div className="comment-header">
                         <span className="comment-author">{comment.userName}</span>
                         <span className="comment-time">{formatTimeAgo(comment.timestamp)}</span>
@@ -558,6 +636,9 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                         </div>
                       )}
                       <div className="comment-text">{comment.comment}</div>
+                      <div className="comment-actions">
+                        <button className="navigate-btn">📍 Go to text</button>
+                      </div>
                     </div>
                   ))
                 )}
@@ -567,11 +648,20 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
 
           {showTagPanel && (
             <div className="tag-panel">
-              <h3>Tags ({tags.length})</h3>
+              <div className="panel-header">
+                <h3>🏷️ Tags ({tags.length})</h3>
+                <button 
+                  onClick={() => togglePanel('tags')}
+                  className="panel-close"
+                >
+                  ×
+                </button>
+              </div>
               <div className="tag-input">
                 <select
                   value={selectedTagType}
                   onChange={(e) => setSelectedTagType(e.target.value as Tag['tagType'])}
+                  className="tag-select"
                 >
                   <optgroup label="Character">
                     <option value="character">Character</option>
@@ -619,39 +709,33 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                   value={newTag}
                   onChange={(e) => setNewTag(e.target.value)}
                   placeholder="Add a tag..."
+                  className="tag-input-field"
                 />
                 {selectedText && (
                   <div className="selected-text">
-                    Selected: "{selectedText}"
+                    <span className="selected-label">Selected:</span>
+                    <span className="selected-content">"{selectedText}"</span>
                     <button 
                       onClick={clearSelection}
-                      style={{ 
-                        marginLeft: '8px', 
-                        background: '#ef4444', 
-                        color: 'white', 
-                        border: 'none', 
-                        borderRadius: '4px', 
-                        padding: '2px 6px', 
-                        fontSize: '0.75rem',
-                        cursor: 'pointer'
-                      }}
+                      className="clear-selection"
                     >
                       Clear
                     </button>
                   </div>
                 )}
-                <button onClick={addTag} disabled={!newTag.trim()}>
+                <button onClick={addTag} disabled={!newTag.trim()} className="add-button">
                   Add Tag
                 </button>
               </div>
               <div className="tags-list">
                 {tags.length === 0 ? (
-                  <div style={{ textAlign: 'center', color: '#6b7280', padding: '20px' }}>
-                    No tags yet. Add your first tag!
+                  <div className="empty-state">
+                    <div className="empty-icon">🏷️</div>
+                    <p>No tags yet. Add your first tag!</p>
                   </div>
                 ) : (
                   tags.map(tag => (
-                    <div key={tag.id} className="tag-item">
+                    <div key={tag.id} className="tag-item" onClick={() => navigateToTag(tag)}>
                       <div className="tag-header">
                         <span 
                           className="tag-type"
@@ -668,6 +752,9 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                         </div>
                       )}
                       <div className="tag-content">{tag.content}</div>
+                      <div className="tag-actions">
+                        <button className="navigate-btn">📍 Go to text</button>
+                      </div>
                     </div>
                   ))
                 )}

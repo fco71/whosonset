@@ -767,6 +767,20 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     return `${days}d ago`;
   };
 
+  const handleGenerateReport = () => {
+    // Navigate to the breakdown reports component
+    setActiveTab('screenplays');
+    // You can add additional logic here to generate a comprehensive report
+    // For now, we'll just show a toast notification
+    toast.success('Generating screenplay breakdown report...');
+    
+    // In a real implementation, you might want to:
+    // 1. Collect all comments and tags
+    // 2. Generate a PDF report
+    // 3. Include breakdown elements
+    // 4. Add analytics and insights
+  };
+
   const renderWorkspacesTab = () => (
     <div className="workspaces-tab">
       <div className="workspaces-header">
@@ -1777,6 +1791,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
             screenplay={uploadedScreenplay}
             projectId={projectId || 'default-project'}
             onClose={() => setShowScreenplayViewer(false)}
+            onGenerateReport={handleGenerateReport}
           />
         )}
       </div>
