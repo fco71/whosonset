@@ -451,7 +451,7 @@
       }
     }
     
-    .comments-section,
+    .annotations-section,
     .tags-section {
       margin-bottom: 32px;
       
@@ -462,13 +462,13 @@
         font-weight: 600;
       }
       
-      .comments-list,
+      .annotations-list,
       .tags-list {
         display: flex;
         flex-direction: column;
         gap: 16px;
         
-        .comment-item,
+        .annotation-item,
         .tag-item {
           background: white;
           border: 1px solid #e2e8f0;
@@ -485,20 +485,20 @@
             opacity: 0.6;
             background: #f8fafc;
             
-            .comment-content,
+            .annotation-content,
             .tag-content {
               text-decoration: line-through;
             }
           }
           
-          .comment-header,
+          .annotation-header,
           .tag-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
             margin-bottom: 12px;
             
-            .comment-author,
+            .annotation-author,
             .tag-author {
               display: flex;
               align-items: center;
@@ -524,7 +524,7 @@
               }
             }
             
-            .comment-meta,
+            .annotation-meta,
             .tag-meta {
               display: flex;
               gap: 8px;
@@ -533,7 +533,7 @@
             }
           }
           
-          .comment-content {
+          .annotation-content {
             color: #374151;
             line-height: 1.5;
             margin-bottom: 12px;
@@ -560,7 +560,7 @@
             }
           }
           
-          .comment-actions,
+          .annotation-actions,
           .tag-actions {
             display: flex;
             gap: 8px;
@@ -606,7 +606,7 @@
 }
 
 // Visual Overlays
-.comment-overlay,
+.annotation-overlay,
 .tag-overlay {
   position: absolute;
   border-radius: 4px;
@@ -1040,5 +1040,171 @@
   p {
     margin: 0;
     font-weight: 500;
+  }
+}
+
+// Annotation Input Popup
+.annotation-input-popup {
+  .popup-content {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    border: 1px solid #e2e8f0;
+    min-width: 320px;
+    max-width: 400px;
+    animation: fadeInScale 0.2s ease;
+    
+    .popup-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid #e2e8f0;
+      background: #f8fafc;
+      border-radius: 12px 12px 0 0;
+      
+      h4 {
+        margin: 0;
+        color: #1f2937;
+        font-size: 1rem;
+        font-weight: 600;
+      }
+      
+      .close-btn {
+        background: none;
+        border: none;
+        font-size: 1.2rem;
+        color: #6b7280;
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+        
+        &:hover {
+          background: #e5e7eb;
+          color: #374151;
+        }
+      }
+    }
+    
+    .annotation-input,
+    .tag-input {
+      padding: 20px;
+      
+      textarea,
+      input[type="text"] {
+        width: 100%;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        padding: 12px;
+        font-size: 0.875rem;
+        color: #374151;
+        background: white;
+        transition: all 0.2s ease;
+        
+        &:focus {
+          outline: none;
+          border-color: #3b82f6;
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        &::placeholder {
+          color: #9ca3af;
+        }
+      }
+      
+      textarea {
+        resize: vertical;
+        min-height: 80px;
+        font-family: inherit;
+      }
+      
+      .priority-selector,
+      .tag-type-selector {
+        margin: 12px 0;
+        
+        label {
+          display: block;
+          font-size: 0.875rem;
+          font-weight: 500;
+          color: #374151;
+          margin-bottom: 6px;
+        }
+        
+        select {
+          width: 100%;
+          border: 1px solid #d1d5db;
+          border-radius: 6px;
+          padding: 8px 12px;
+          font-size: 0.875rem;
+          color: #374151;
+          background: white;
+          
+          &:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+          }
+        }
+      }
+      
+      .popup-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 16px;
+        
+        .btn-cancel,
+        .btn-save {
+          flex: 1;
+          padding: 10px 16px;
+          border-radius: 8px;
+          font-size: 0.875rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          border: none;
+        }
+        
+        .btn-cancel {
+          background: #f3f4f6;
+          color: #374151;
+          border: 1px solid #d1d5db;
+          
+          &:hover {
+            background: #e5e7eb;
+            color: #1f2937;
+          }
+        }
+        
+        .btn-save {
+          background: #3b82f6;
+          color: white;
+          
+          &:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+          }
+          
+          &:disabled {
+            background: #cbd5e1;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+          }
+        }
+      }
+    }
+  }
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 } 

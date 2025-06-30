@@ -410,33 +410,47 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   };
 
   const handleMouseUp = (e: React.MouseEvent) => {
-    if (!isDrawing || !pdfContainerRef.current) return;
-
-    setIsDrawing(false);
-    const rect = pdfContainerRef.current.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / scale;
-    const y = (e.clientY - rect.top) / scale;
-
+    if (!isDrawing || !drawingMode) return;
+    
+    const rect = pdfContainerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    
+    const x = (e.clientX - rect.left) / rect.width;
+    const y = (e.clientY - rect.top) / rect.height;
+    
+    // Calculate position based on mouse movement
+    const startX = Math.min(mousePosition.x, x);
+    const startY = Math.min(mousePosition.y, y);
+    const width = Math.abs(x - mousePosition.x);
+    const height = Math.abs(y - mousePosition.y);
+    
     const position = {
-      x: Math.min(mousePosition.x, x),
-      y: Math.min(mousePosition.y, y),
-      width: Math.abs(x - mousePosition.x),
-      height: Math.abs(y - mousePosition.y)
+      x: startX,
+      y: startY,
+      width: Math.max(width, 0.05), // Minimum size
+      height: Math.max(height, 0.05)
     };
-
+    
     if (drawingMode === 'annotation') {
-      addAnnotation(position);
+      // Show annotation input popup
+      setAnnotationPopup({
+        pageNumber: 1, // You might want to calculate this based on scroll position
+        x: e.clientX,
+        y: e.clientY
+      });
+      setAnnotationInput('');
     } else if (drawingMode === 'tag') {
-      addTag(position);
+      // Show tag input popup
+      setAnnotationPopup({
+        pageNumber: 1,
+        x: e.clientX,
+        y: e.clientY
+      });
+      setNewTag('');
     }
-
-    // Clear drawing canvas
-    if (drawingCanvasRef.current) {
-      const ctx = drawingCanvasRef.current.getContext('2d');
-      if (ctx) {
-        ctx.clearRect(0, 0, drawingCanvasRef.current.width, drawingCanvasRef.current.height);
-      }
-    }
+    
+    setIsDrawing(false);
+    setDrawingMode(null);
   };
 
   const navigateToElement = (element: Annotation | Tag) => {
@@ -1120,6 +1134,123 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                 onKeyDown={e => e.key === 'Enter' && handleAddReply()}
               />
               <button onClick={handleAddReply}>Reply</button>
+            </div>
+          </div>
+        )}
+
+        {/* Annotation/Tag Input Popup */}
+        {annotationPopup && (
+          <div 
+            className="annotation-input-popup"
+            style={{ 
+              position: 'fixed',
+              left: annotationPopup.x,
+              top: annotationPopup.y,
+              zIndex: 1000
+            }}
+          >
+            <div className="popup-content">
+              <div className="popup-header">
+                <h4>{drawingMode === 'annotation' ? '💬 Add Annotation' : '🏷️ Add Tag'}</h4>
+                <button 
+                  className="close-btn" 
+                  onClick={() => setAnnotationPopup(null)}
+                >
+                  ×
+                </button>
+              </div>
+              
+              {drawingMode === 'annotation' ? (
+                <div className="annotation-input">
+                  <textarea
+                    placeholder="Enter your annotation..."
+                    value={annotationInput}
+                    onChange={(e) => setAnnotationInput(e.target.value)}
+                    rows={3}
+                    autoFocus
+                  />
+                  <div className="priority-selector">
+                    <label>Priority:</label>
+                    <select 
+                      value={activeAnnotation?.priority || 'medium'}
+                      onChange={(e) => setActiveAnnotation(prev => prev ? {...prev, priority: e.target.value as any} : null)}
+                    >
+                      <option value="low">Low</option>
+                      <option value="medium">Medium</option>
+                      <option value="high">High</option>
+                      <option value="critical">Critical</option>
+                    </select>
+                  </div>
+                  <div className="popup-actions">
+                    <button 
+                      className="btn-cancel"
+                      onClick={() => setAnnotationPopup(null)}
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      className="btn-save"
+                      onClick={() => {
+                        if (annotationInput.trim()) {
+                          addAnnotation({ x: 0, y: 0, width: 0, height: 0 });
+                          setAnnotationPopup(null);
+                          setAnnotationInput('');
+                        }
+                      }}
+                    >
+                      Save Annotation
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="tag-input">
+                  <div className="tag-type-selector">
+                    <label>Tag Type:</label>
+                    <select 
+                      value={selectedTagType}
+                      onChange={(e) => setSelectedTagType(e.target.value as any)}
+                    >
+                      <option value="character">Character</option>
+                      <option value="location">Location</option>
+                      <option value="prop">Prop</option>
+                      <option value="scene">Scene</option>
+                      <option value="camera">Camera</option>
+                      <option value="lighting">Lighting</option>
+                      <option value="sound">Sound</option>
+                      <option value="budget">Budget</option>
+                      <option value="schedule">Schedule</option>
+                      <option value="note">Note</option>
+                    </select>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Enter tag content..."
+                    value={newTag}
+                    onChange={(e) => setNewTag(e.target.value)}
+                    autoFocus
+                  />
+                  <div className="popup-actions">
+                    <button 
+                      className="btn-cancel"
+                      onClick={() => setAnnotationPopup(null)}
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      className="btn-save"
+                      onClick={() => {
+                        if (newTag.trim()) {
+                          addTag({ x: 0, y: 0, width: 0, height: 0 });
+                          setAnnotationPopup(null);
+                          setNewTag('');
+                        }
+                      }}
+                    >
+                      Save Tag
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
