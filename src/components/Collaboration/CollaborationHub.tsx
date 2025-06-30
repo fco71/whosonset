@@ -37,6 +37,9 @@ interface UserSearchResult {
 // Workspace creation step
 type WorkspaceCreationStep = 'details' | 'members' | 'settings';
 
+// Add this type above the component
+type TabType = 'workspaces' | 'channels' | 'documents' | 'whiteboards' | 'tasks' | 'screenplays' | 'help';
+
 // Error Boundary Component
 class CollaborationErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -72,7 +75,7 @@ class CollaborationErrorBoundary extends React.Component<
 
 const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const { currentUser } = useAuth();
-  const [activeTab, setActiveTab] = useState<'workspaces' | 'channels' | 'documents' | 'whiteboards' | 'tasks' | 'screenplays' | 'help'>('workspaces');
+  const [activeTab, setActiveTab] = useState<TabType>('workspaces');
   const [workspaces, setWorkspaces] = useState<CollaborationWorkspace[]>([]);
   const [selectedWorkspace, setSelectedWorkspace] = useState<CollaborationWorkspace | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1788,7 +1791,12 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         {/* Screenplay Viewer Modal */}
         {showScreenplayViewer && uploadedScreenplay && (
           <ScreenplayViewer
-            screenplay={uploadedScreenplay}
+            screenplay={{
+              id: uploadedScreenplay.id || '',
+              name: uploadedScreenplay.name,
+              url: uploadedScreenplay.url,
+              type: uploadedScreenplay.type
+            }}
             projectId={projectId || 'default-project'}
             onClose={() => setShowScreenplayViewer(false)}
             onGenerateReport={handleGenerateReport}

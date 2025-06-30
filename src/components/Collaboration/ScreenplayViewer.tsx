@@ -6,7 +6,6 @@ import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
 import './ScreenplayViewer.scss';
 
-// Set up PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
 interface ScreenplayViewerProps {
@@ -167,6 +166,11 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
 
   // Initialize collaboration session
   useEffect(() => {
+    console.log('[DEBUG] ScreenplayViewer mounted with screenplay:', screenplay);
+    if (!screenplay.url || typeof screenplay.url !== 'string' || screenplay.url.trim() === '') {
+      setError('No PDF URL found for this screenplay.');
+      setLoading(false);
+    }
     initializeSession();
     loadComments();
     loadTags();
@@ -255,43 +259,43 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
 
   const loadComments = async () => {
     try {
+      console.log('[DEBUG] Querying screenplayComments with screenplayId:', screenplay.id);
       const q = query(
         collection(db, 'screenplayComments'),
         where('screenplayId', '==', screenplay.id),
         orderBy('timestamp', 'desc')
       );
-      
       const querySnapshot = await getDocs(q);
       const commentsData = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
         timestamp: doc.data().timestamp.toDate()
       })) as Comment[];
-      
       setComments(commentsData);
+      console.log('[DEBUG] Loaded comments:', commentsData);
     } catch (error) {
-      console.error('Error loading comments:', error);
+      console.error('[DEBUG] Error loading comments:', error);
     }
   };
 
   const loadTags = async () => {
     try {
+      console.log('[DEBUG] Querying screenplayTags with screenplayId:', screenplay.id);
       const q = query(
         collection(db, 'screenplayTags'),
         where('screenplayId', '==', screenplay.id),
         orderBy('timestamp', 'desc')
       );
-      
       const querySnapshot = await getDocs(q);
       const tagsData = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
         timestamp: doc.data().timestamp.toDate()
       })) as Tag[];
-      
       setTags(tagsData);
+      console.log('[DEBUG] Loaded tags:', tagsData);
     } catch (error) {
-      console.error('Error loading tags:', error);
+      console.error('[DEBUG] Error loading tags:', error);
     }
   };
 
@@ -466,6 +470,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   };
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
+    console.log('PDF loaded successfully, numPages:', numPages);
     setNumPages(numPages);
     setLoading(false);
   };
@@ -676,19 +681,9 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
             >
-              {loading ? (
-                <div className="loading-container">
-                  <div className="loading-spinner"></div>
-                  <p>Loading screenplay...</p>
-                </div>
-              ) : error ? (
-                <div className="error-container">
-                  <p className="error-message">{error}</p>
-                  <button onClick={() => window.location.reload()} className="retry-button">
-                    Retry Loading
-                  </button>
-                </div>
-              ) : (
+              {error ? (
+                <div className="error-message">{error}</div>
+              ) : screenplay.url ? (
                 <>
                   <Document
                     file={screenplay.url}
@@ -700,6 +695,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                         <p>Loading PDF...</p>
                       </div>
                     }
+                    error={<div>Failed to load PDF document.</div>}
                   >
                     <Page 
                       pageNumber={currentPage} 
@@ -803,6 +799,8 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                     </>
                   )}
                 </>
+              ) : (
+                <div>No PDF URL provided.</div>
               )}
             </div>
           </div>
