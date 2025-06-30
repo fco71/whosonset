@@ -163,6 +163,9 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     role: string;
   }[]>([]);
 
+  const [userScreenplays, setUserScreenplays] = useState<any[]>([]);
+  const [selectedScreenplayId, setSelectedScreenplayId] = useState<string | null>(null);
+
   useEffect(() => {
     console.log('CollaborationHub mounted with projectId:', projectId);
     console.log('Current user:', currentUser);
@@ -170,6 +173,27 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     try {
       loadWorkspaces();
       loadTeamMembers();
+      if (!currentUser) return;
+      const fetchScreenplays = async () => {
+        try {
+          const screenplaysRef = collection(db, 'screenplays');
+          // Query 1: uploadedBy == currentUser.uid
+          const q1 = query(screenplaysRef, where('uploadedBy', '==', currentUser.uid));
+          const snap1 = await getDocs(q1);
+          // Query 2: teamMembers array-contains currentUser.uid
+          const q2 = query(screenplaysRef, where('teamMembers', 'array-contains', currentUser.uid));
+          const snap2 = await getDocs(q2);
+          // Merge and deduplicate
+          const allScreenplays = [...snap1.docs, ...snap2.docs];
+          const uniqueScreenplays = Array.from(
+            new Map(allScreenplays.map(doc => [doc.id, { id: doc.id, ...doc.data() }])).values()
+          );
+          setUserScreenplays(uniqueScreenplays);
+        } catch (err) {
+          console.error('Error fetching user screenplays:', err);
+        }
+      };
+      fetchScreenplays();
     } catch (err) {
       console.error('Error in CollaborationHub useEffect:', err);
       setError('Failed to initialize Collaboration Hub');
@@ -1586,6 +1610,33 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
               <p className="text-lg font-medium mb-2">No screenplay uploaded</p>
               <p className="text-sm">Upload a screenplay file above to start creating breakdown elements.</p>
             </div>
+          )}
+        </div>
+
+        {/* Screenplay Selector */}
+        <div className="screenplay-selector-container">
+          <h3>Select a Screenplay</h3>
+          {userScreenplays.length === 0 ? (
+            <div>No screenplays found. Upload one to get started.</div>
+          ) : (
+            <select
+              value={selectedScreenplayId || ''}
+              onChange={e => setSelectedScreenplayId(e.target.value)}
+              style={{ marginBottom: 16 }}
+            >
+              <option value="" disabled>Select a screenplay...</option>
+              {userScreenplays.map(sp => (
+                <option key={sp.id} value={sp.id}>{sp.name}</option>
+              ))}
+            </select>
+          )}
+          {selectedScreenplayId && (
+            <ScreenplayViewer
+              screenplay={userScreenplays.find(sp => sp.id === selectedScreenplayId)}
+              projectId={projectId || 'default-project'}
+              onClose={() => setSelectedScreenplayId(null)}
+              onGenerateReport={handleGenerateReport}
+            />
           )}
         </div>
       </div>
