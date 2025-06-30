@@ -10,6 +10,8 @@ import {
   WorkspaceMember
 } from '../../types/Collaboration';
 import CollaborativeTasksHub from '../CollaborativeTasks/CollaborativeTasksHub';
+import ScreenplayBreakdown from '../ScreenplayBreakdown';
+import BreakdownReports from '../BreakdownReports';
 import './CollaborationHub.scss';
 import UserAutocomplete, { UserAutocompleteOption } from './UserAutocomplete';
 import { toast } from 'react-hot-toast';
@@ -1253,6 +1255,20 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     </div>
   );
 
+  const renderScreenplaysTab = () => (
+    <div className="screenplays-tab">
+      <div className="screenplays-header">
+        <h2>Screenplays</h2>
+        <p>Manage screenplay breakdowns and reports</p>
+      </div>
+      
+      <div className="screenplays-content">
+        <ScreenplayBreakdown projectId={projectId || 'default-project'} />
+        <BreakdownReports projectId={projectId || 'default-project'} />
+      </div>
+    </div>
+  );
+
   const renderHelpSection = () => (
     <div className="help-section">
       <h3>What's the difference?</h3>
@@ -1283,6 +1299,8 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
           return renderWhiteboardsTab();
         case 'tasks':
           return renderTasksTab();
+        case 'screenplays':
+          return renderScreenplaysTab();
         case 'help':
           return renderHelpSection();
         default:
@@ -1376,6 +1394,14 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
               >
                 <span className="nav-icon">✅</span>
                 <span className="nav-label">Tasks</span>
+              </button>
+              
+              <button 
+                className={`nav-item ${activeTab === 'screenplays' ? 'active' : ''}`}
+                onClick={() => setActiveTab('screenplays')}
+              >
+                <span className="nav-icon">📄</span>
+                <span className="nav-label">Screenplays</span>
               </button>
               
               <button 

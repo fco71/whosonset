@@ -3,6 +3,13 @@ import { collection, addDoc, updateDoc, deleteDoc, doc, query, where, getDocs } 
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, auth, storage } from '../../firebase';
 import { ProjectDocument } from '../../types/ProjectManagement';
+import { Document, Page, pdfjs } from 'react-pdf';
+import { XMLParser } from 'fast-xml-parser';
+import Modal from 'react-modal';
+import ScreenplayBreakdown from '../../components/ScreenplayBreakdown';
+import toast from 'react-hot-toast';
+
+pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
 
 interface ProjectDocumentsProps {
   projectId: string;
@@ -36,6 +43,11 @@ const ProjectDocuments: React.FC<ProjectDocumentsProps> = ({
     tags: [],
     notes: ''
   });
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerDoc, setViewerDoc] = useState<ProjectDocument | null>(null);
+  const [fdxText, setFdxText] = useState<string>('');
+  const [breakdownOpen, setBreakdownOpen] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState<ProjectDocument | null>(null);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -163,6 +175,49 @@ const ProjectDocuments: React.FC<ProjectDocumentsProps> = ({
     acc[doc.category].push(doc);
     return acc;
   }, {} as Record<string, ProjectDocument[]>);
+
+  const handleOpenViewer = async (doc: ProjectDocument) => {
+    setViewerDoc(doc);
+    setViewerOpen(true);
+    if (doc.fileName.endsWith('.fdx')) {
+      // Fetch and parse FDX
+      const res = await fetch(doc.downloadURL);
+      const xml = await res.text();
+      const parser = new XMLParser();
+      const parsed = parser.parse(xml);
+      // Extract screenplay text (simple version)
+      let text = '';
+      if (parsed.FinalDraft && parsed.FinalDraft.Content && parsed.FinalDraft.Content.Paragraph) {
+        const paragraphs = parsed.FinalDraft.Content.Paragraph;
+        text = Array.isArray(paragraphs)
+          ? paragraphs.map((p: any) => p['#text'] || '').join('\n')
+          : paragraphs['#text'] || '';
+      }
+      setFdxText(text);
+    }
+  };
+
+  const handleCloseViewer = () => {
+    setViewerOpen(false);
+    setViewerDoc(null);
+    setFdxText('');
+  };
+
+  const handleOpenBreakdown = (document: ProjectDocument) => {
+    setSelectedDocument(document);
+    setBreakdownOpen(true);
+  };
+
+  const handleCloseBreakdown = () => {
+    setBreakdownOpen(false);
+    setSelectedDocument(null);
+  };
+
+  const isScreenplay = (document: ProjectDocument) => {
+    return document.fileName.endsWith('.fdx') || 
+           document.fileName.endsWith('.pdf') || 
+           document.category === 'script';
+  };
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
@@ -292,6 +347,7 @@ const ProjectDocuments: React.FC<ProjectDocumentsProps> = ({
                 <input
                   type="file"
                   required
+                  accept=".fdx,.pdf"
                   onChange={handleFileSelect}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -431,6 +487,27 @@ const ProjectDocuments: React.FC<ProjectDocumentsProps> = ({
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
                       </button>
+                      <button
+                        onClick={() => handleOpenViewer(document)}
+                        className="text-gray-600 hover:text-gray-800 p-2"
+                        title="View"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7c-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      </button>
+                      {isScreenplay(document) && (
+                        <button
+                          onClick={() => handleOpenBreakdown(document)}
+                          className="text-purple-600 hover:text-purple-800 p-2"
+                          title="Breakdown"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                          </svg>
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -447,6 +524,51 @@ const ProjectDocuments: React.FC<ProjectDocumentsProps> = ({
           </div>
         )}
       </div>
+
+      <Modal isOpen={viewerOpen} onRequestClose={handleCloseViewer} contentLabel="Document Viewer" style={{content:{maxWidth:'800px',margin:'auto'}}}>
+        <button onClick={handleCloseViewer} className="float-right text-lg">&times;</button>
+        {viewerDoc?.fileName.endsWith('.pdf') && (
+          <Document file={viewerDoc.downloadURL}>
+            <Page pageNumber={1} />
+          </Document>
+        )}
+        {viewerDoc?.fileName.endsWith('.fdx') && (
+          <pre style={{whiteSpace:'pre-wrap',fontFamily:'monospace',marginTop:'2em'}}>{fdxText || 'Loading...'}</pre>
+        )}
+      </Modal>
+
+      <Modal 
+        isOpen={breakdownOpen} 
+        onRequestClose={handleCloseBreakdown} 
+        contentLabel="Screenplay Breakdown" 
+        style={{
+          content: {
+            maxWidth: '1200px',
+            maxHeight: '90vh',
+            margin: 'auto',
+            padding: '20px'
+          }
+        }}
+      >
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">Screenplay Breakdown</h2>
+          <button 
+            onClick={handleCloseBreakdown} 
+            className="text-gray-500 hover:text-gray-700 text-2xl"
+          >
+            ×
+          </button>
+        </div>
+        {selectedDocument && (
+          <ScreenplayBreakdown 
+            document={selectedDocument} 
+            onBreakdownUpdate={() => {
+              // Refresh documents if needed
+              onDocumentsUpdate();
+            }} 
+          />
+        )}
+      </Modal>
     </div>
   );
 };

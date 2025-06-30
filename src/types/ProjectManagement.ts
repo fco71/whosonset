@@ -57,6 +57,47 @@ export interface ProjectBudget {
   lastUpdated: any;
 }
 
+export interface BreakdownTag {
+  id: string;
+  type: 'prop' | 'cast' | 'location' | 'costume' | 'vehicle' | 'equipment' | 'sound' | 'effect';
+  name: string;
+  description?: string;
+  scene?: string;
+  pageNumber?: number;
+  notes?: string;
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  status: 'identified' | 'acquired' | 'in_progress' | 'completed';
+  assignedTo?: string;
+  estimatedCost?: number;
+  actualCost?: number;
+  tags: string[];
+  createdAt: any;
+  createdBy: string;
+  updatedAt: any;
+}
+
+export interface BreakdownElement {
+  id: string;
+  documentId: string;
+  elementType: 'prop' | 'cast' | 'location' | 'costume' | 'vehicle' | 'equipment' | 'sound' | 'effect';
+  name: string;
+  description?: string;
+  scene?: string;
+  pageNumber?: number;
+  lineNumber?: number;
+  context?: string; // The surrounding text where this element appears
+  notes?: string;
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  status: 'identified' | 'acquired' | 'in_progress' | 'completed';
+  assignedTo?: string;
+  estimatedCost?: number;
+  actualCost?: number;
+  tags: string[];
+  createdAt: any;
+  createdBy: string;
+  updatedAt: any;
+}
+
 export interface ProjectDocument {
   id: string;
   projectId: string;
@@ -75,6 +116,13 @@ export interface ProjectDocument {
   title: string;
   fileSize: number;
   notes?: string;
+  // New fields for screenplay breakdown
+  isScreenplay?: boolean;
+  breakdownElements?: BreakdownElement[];
+  totalScenes?: number;
+  totalPages?: number;
+  breakdownStatus?: 'not_started' | 'in_progress' | 'completed';
+  lastBreakdownAt?: any;
 }
 
 export interface ProjectSchedule {
