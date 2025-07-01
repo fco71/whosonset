@@ -393,54 +393,37 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     }
   };
 
-  const handleTextSelection = (e: MouseEvent, pageNumber: number) => {
+  const handleTextSelection = (e: MouseEvent, pageNum: number) => {
     const selection = window.getSelection();
-    if (selection && selection.toString().trim().length > 0) {
-      const range = selection.getRangeAt(0);
-      const rect = range.getBoundingClientRect();
-      setSelectionRect(rect);
-      setSelectedText(selection.toString());
-      setSelectionPage(pageNumber);
-      setShowSelectionPopup(true);
-    } else {
+    if (!selection || selection.isCollapsed || !selection.toString().trim()) {
       setShowSelectionPopup(false);
-      setSelectedText('');
-      setSelectionRect(null);
-      setSelectionPage(null);
+      return;
     }
+    const range = selection.getRangeAt(0);
+    const rect = range.getBoundingClientRect();
+    setSelectionRect(rect);
+    setShowSelectionPopup(true);
+    setSelectedText(selection.toString());
+    setSelectionPage(pageNum);
   };
 
-  // Add this new useEffect:
   useEffect(() => {
+    // Attach to the PDF text layer
     const attachHandler = () => {
-      const pdfPages = document.querySelectorAll('.react-pdf__Page');
-      pdfPages.forEach((page, idx) => {
-        // Remove any previous handler to avoid duplicates
-        page.removeEventListener('mouseup', (e) => handleTextSelection(e as MouseEvent, idx + 1));
-        page.addEventListener('mouseup', (e) => {
-          console.log('[DEBUG] Mouseup on PDF page', idx + 1);
-          handleTextSelection(e as MouseEvent, idx + 1);
-        });
+      const textLayers = document.querySelectorAll('.react-pdf__Page .react-pdf__Page__textContent');
+      textLayers.forEach((layer, idx) => {
+        layer.removeEventListener('mouseup', handleTextSelection as any);
+        layer.addEventListener('mouseup', (e) => handleTextSelection(e as MouseEvent, idx + 1));
       });
     };
-    // Initial attach
+    // Attach on mount and after every render
     attachHandler();
-    // Observe for new pages
-    const observer = new MutationObserver(() => {
-      attachHandler();
+    // Optionally, use a MutationObserver to re-attach if PDF rerenders
+    const observer = new MutationObserver(attachHandler);
+    document.querySelectorAll('.react-pdf__Page').forEach(page => {
+      observer.observe(page, { childList: true, subtree: true });
     });
-    const pdfContainer = document.querySelector('.pdf-scrollable-container');
-    if (pdfContainer) {
-      observer.observe(pdfContainer, { childList: true, subtree: true });
-    }
-    return () => {
-      observer.disconnect();
-      // Clean up handlers
-      const pdfPages = document.querySelectorAll('.react-pdf__Page');
-      pdfPages.forEach((page, idx) => {
-        page.removeEventListener('mouseup', (e) => handleTextSelection(e as MouseEvent, idx + 1));
-      });
-    };
+    return () => observer.disconnect();
   }, []);
 
   const formatTimeAgo = (date: Date | { seconds: number }) => {
@@ -678,10 +661,12 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                             top: `${annotation.position.y * 100}%`,
                             width: `${annotation.position.width * 100}%`,
                             height: `${annotation.position.height * 100}%`,
-                            border: `2px solid ${annotation.priority ? priorityColors[annotation.priority] : '#3B82F6'}`,
-                            backgroundColor: `${annotation.priority ? priorityColors[annotation.priority] : '#3B82F6'}20`,
+                            border: `1.5px solid #3B82F6`,
+                            backgroundColor: 'rgba(59,130,246,0.10)',
+                            borderRadius: 8,
                             cursor: 'pointer',
-                            zIndex: 5
+                            zIndex: 5,
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
                           }}
                           data-element-id={annotation.id}
                           onClick={(e) => {
@@ -690,7 +675,13 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                           }}
                           title={`Annotation by ${annotation.userName}: ${annotation.annotation}`}
                         >
-                          <div className="overlay-icon">💬</div>
+                          <div style={{ position: 'absolute', top: 4, left: 4, width: 24, height: 24, borderRadius: '50%', overflow: 'hidden', background: '#e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600 }}>
+                            {annotation.userAvatar ? (
+                              <img src={annotation.userAvatar} alt={annotation.userName} style={{ width: 24, height: 24, borderRadius: '50%' }} />
+                            ) : (
+                              annotation.userName.charAt(0)
+                            )}
+                          </div>
                         </div>
                       ))}
 
@@ -705,10 +696,12 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                             top: `${tag.position.y * 100}%`,
                             width: `${tag.position.width * 100}%`,
                             height: `${tag.position.height * 100}%`,
-                            border: `2px solid ${tag.color}`,
+                            border: `1.5px solid ${tag.color}`,
                             backgroundColor: `${tag.color}20`,
+                            borderRadius: 8,
                             cursor: 'pointer',
-                            zIndex: 5
+                            zIndex: 5,
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
                           }}
                           data-element-id={tag.id}
                           onClick={(e) => {
@@ -717,17 +710,12 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                           }}
                           title={`${tag.tagType}: ${tag.content} by ${tag.userName}`}
                         >
-                          <div className="overlay-icon" style={{ color: tag.color }}>
-                            {tag.tagType === 'character' ? '👤' :
-                             tag.tagType === 'location' ? '📍' :
-                             tag.tagType === 'prop' ? '🎭' :
-                             tag.tagType === 'scene' ? '🎬' :
-                             tag.tagType === 'camera' ? '📹' :
-                             tag.tagType === 'lighting' ? '💡' :
-                             tag.tagType === 'sound' ? '🔊' :
-                             tag.tagType === 'budget' ? '💰' :
-                             tag.tagType === 'schedule' ? '📅' :
-                             '🏷️'}
+                          <div style={{ position: 'absolute', top: 4, left: 4, width: 24, height: 24, borderRadius: '50%', overflow: 'hidden', background: '#e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600 }}>
+                            {tag.userAvatar ? (
+                              <img src={tag.userAvatar} alt={tag.userName} style={{ width: 24, height: 24, borderRadius: '50%' }} />
+                            ) : (
+                              tag.userName.charAt(0)
+                            )}
                           </div>
                         </div>
                       ))}
@@ -974,23 +962,44 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         {/* Selection Popup */}
         {showSelectionPopup && selectionRect && (
           <div
-            className="selection-popup"
+            className="selection-popup-modern"
             style={{
               position: 'fixed',
               top: selectionRect.bottom + 8,
-              left: selectionRect.left,
+              left: Math.max(12, Math.min(selectionRect.left + selectionRect.width / 2 - 90, window.innerWidth - 200)),
               zIndex: 2000,
-              background: 'white',
-              border: '1px solid #eee',
-              borderRadius: 6,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-              padding: '0.5rem 1rem',
+              background: 'rgba(255,255,255,0.97)',
+              border: '1px solid #e5e7eb',
+              borderRadius: 10,
+              boxShadow: '0 4px 24px rgba(0,0,0,0.10)',
+              padding: '0.75rem 1.5rem',
+              minWidth: 180,
+              fontFamily: 'Inter, sans-serif',
+              fontSize: 15,
+              color: '#222',
               display: 'flex',
-              gap: '1rem',
+              flexDirection: 'column',
+              alignItems: 'center',
+              transition: 'opacity 0.2s',
             }}
           >
-            <button onClick={() => { setPopupType('annotation'); setShowSelectionPopup(false); }}>Add Annotation</button>
-            <button onClick={() => { setPopupType('tag'); setShowSelectionPopup(false); }}>Add Tag</button>
+            <div style={{ position: 'absolute', top: -8, left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '8px solid transparent', borderRight: '8px solid transparent', borderBottom: '8px solid #e5e7eb' }} />
+            <div style={{ position: 'absolute', top: -7, left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '7px solid transparent', borderRight: '7px solid transparent', borderBottom: '7px solid #fff' }} />
+            <span style={{ marginBottom: 8, fontWeight: 600 }}>Add to selection:</span>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button
+                style={{
+                  background: '#3B82F6', color: 'white', border: 'none', borderRadius: 6, padding: '0.4rem 1.1rem', fontWeight: 500, fontSize: 15, cursor: 'pointer', boxShadow: '0 1px 4px rgba(59,130,246,0.08)'
+                }}
+                onClick={() => setPopupType('annotation')}
+              >Annotation</button>
+              <button
+                style={{
+                  background: '#F59E42', color: 'white', border: 'none', borderRadius: 6, padding: '0.4rem 1.1rem', fontWeight: 500, fontSize: 15, cursor: 'pointer', boxShadow: '0 1px 4px rgba(245,158,66,0.08)'
+                }}
+                onClick={() => setPopupType('tag')}
+              >Tag</button>
+            </div>
           </div>
         )}
 
@@ -1091,19 +1100,6 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
             </div>
           </div>
         )}
-
-        {/* Fallback floating button for manual annotation/tag creation */}
-        <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 3000 }}>
-          <button
-            style={{ padding: '0.75rem 1.5rem', borderRadius: 24, background: '#3B82F6', color: 'white', fontWeight: 600, fontSize: 18, boxShadow: '0 2px 8px rgba(0,0,0,0.12)' }}
-            onClick={() => {
-              setSelectionRect({ left: window.innerWidth / 2 - 150, top: window.innerHeight / 2 - 50, width: 300, height: 40, right: window.innerWidth / 2 + 150, bottom: window.innerHeight / 2 - 10, x: window.innerWidth / 2 - 150, y: window.innerHeight / 2 - 50, toJSON: () => ({}) });
-              setShowSelectionPopup(true);
-              setSelectedText('');
-              setSelectionPage(1);
-            }}
-          >+ Add Annotation/Tag</button>
-        </div>
       </div>
     </div>
   );
