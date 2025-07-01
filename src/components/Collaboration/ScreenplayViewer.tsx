@@ -90,6 +90,22 @@ function toDate(val: Date | { seconds: number }): Date {
   return val instanceof Date ? val : new Date(val.seconds * 1000);
 }
 
+// Helper to get mouse position relative to PDF page
+function getRelativePosition(e: React.MouseEvent, pageDiv: HTMLDivElement, scale: number) {
+  const rect = pageDiv.getBoundingClientRect();
+  const x = (e.clientX - rect.left) / rect.width;
+  const y = (e.clientY - rect.top) / rect.height;
+  return { x: Math.max(0, Math.min(1, x)), y: Math.max(0, Math.min(1, y)) };
+}
+
+const handleAddReply = () => {
+  // TODO: Implement reply logic
+};
+
+const handleRemoveTag = (tagContent: string) => {
+  // TODO: Implement tag removal logic
+};
+
 const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, projectId, onClose, onGenerateReport }) => {
   const { currentUser } = useAuth();
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
@@ -103,8 +119,6 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   const [scale, setScale] = useState(1.2);
   const [showOverlays, setShowOverlays] = useState(true);
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [drawingMode, setDrawingMode] = useState<'annotation' | 'tag' | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [session, setSession] = useState<ScreenplaySession | null>(null);
   const [activeUsers, setActiveUsers] = useState<ScreenplaySession['activeUsers']>([]);
@@ -118,6 +132,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     pageNumber: number;
     x: number;
     y: number;
+    position: { x: number; y: number; width: number; height: number };
   } | null>(null);
   const [annotationInput, setAnnotationInput] = useState('');
   const [activeThread, setActiveThread] = useState<Annotation | null>(null);
@@ -127,6 +142,12 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   const [showAnnotationPanel, setShowAnnotationPanel] = useState(false);
   const [panelX, setPanelX] = useState(0);
   const [panelY, setPanelY] = useState(0);
+  const [drawingPage, setDrawingPage] = useState<number | null>(null);
+  const [selectionRect, setSelectionRect] = useState<DOMRect | null>(null);
+  const [selectedText, setSelectedText] = useState<string>('');
+  const [selectionPage, setSelectionPage] = useState<number | null>(null);
+  const [showSelectionPopup, setShowSelectionPopup] = useState(false);
+  const [popupType, setPopupType] = useState<'annotation' | 'tag' | null>(null);
   
   const viewerRef = useRef<HTMLDivElement>(null);
   const pdfContainerRef = useRef<HTMLDivElement>(null);
@@ -316,7 +337,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     }
   };
 
-  const addAnnotation = async (position: { x: number; y: number; width: number; height: number }) => {
+  const addAnnotation = async (position: { x: number; y: number; width: number; height: number }, pageNumber: number) => {
     if (!newAnnotation.trim()) return;
 
     try {
@@ -328,7 +349,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         annotation: newAnnotation.trim(),
         timestamp: new Date(),
         projectId: projectId,
-        pageNumber: 1,
+        pageNumber,
         position,
         replies: [],
         resolved: false,
@@ -337,7 +358,6 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
 
       await addDoc(collection(db, 'screenplayAnnotations'), annotationData);
       setNewAnnotation('');
-      setDrawingMode(null);
       toast.success('Annotation added successfully!');
     } catch (error) {
       console.error('Error adding annotation:', error);
@@ -345,7 +365,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     }
   };
 
-  const addTag = async (position: { x: number; y: number; width: number; height: number }) => {
+  const addTag = async (position: { x: number; y: number; width: number; height: number }, pageNumber: number) => {
     if (!newTag.trim()) return;
 
     try {
@@ -358,7 +378,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         content: newTag.trim(),
         timestamp: new Date(),
         projectId: projectId,
-        pageNumber: 1,
+        pageNumber,
         position,
         color: tagColors[selectedTagType],
         resolved: false
@@ -366,7 +386,6 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
 
       await addDoc(collection(db, 'screenplayTags'), tagData);
       setNewTag('');
-      setDrawingMode(null);
       toast.success('Tag added successfully!');
     } catch (error) {
       console.error('Error adding tag:', error);
@@ -374,100 +393,46 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     }
   };
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (!drawingMode || !pdfContainerRef.current) return;
-
-    setIsDrawing(true);
-    const rect = pdfContainerRef.current.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / scale;
-    const y = (e.clientY - rect.top) / scale;
-    setMousePosition({ x, y });
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDrawing || !pdfContainerRef.current) return;
-
-    const rect = pdfContainerRef.current.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / scale;
-    const y = (e.clientY - rect.top) / scale;
-
-    // Update drawing canvas
-    if (drawingCanvasRef.current) {
-      const ctx = drawingCanvasRef.current.getContext('2d');
-      if (ctx) {
-        ctx.clearRect(0, 0, drawingCanvasRef.current.width, drawingCanvasRef.current.height);
-        ctx.strokeStyle = drawingMode === 'annotation' ? '#3B82F6' : tagColors[selectedTagType];
-        ctx.lineWidth = 2;
-        ctx.setLineDash([5, 5]);
-        ctx.strokeRect(
-          mousePosition.x,
-          mousePosition.y,
-          x - mousePosition.x,
-          y - mousePosition.y
-        );
-      }
+  const handleTextSelection = (e: MouseEvent, pageNumber: number) => {
+    const selection = window.getSelection();
+    if (selection && selection.toString().trim().length > 0) {
+      const range = selection.getRangeAt(0);
+      const rect = range.getBoundingClientRect();
+      setSelectionRect(rect);
+      setSelectedText(selection.toString());
+      setSelectionPage(pageNumber);
+      setShowSelectionPopup(true);
+    } else {
+      setShowSelectionPopup(false);
+      setSelectedText('');
+      setSelectionRect(null);
+      setSelectionPage(null);
     }
   };
 
-  const handleMouseUp = (e: React.MouseEvent) => {
-    if (!isDrawing || !drawingMode) return;
-    
-    const rect = pdfContainerRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    
-    const x = (e.clientX - rect.left) / rect.width;
-    const y = (e.clientY - rect.top) / rect.height;
-    
-    // Calculate position based on mouse movement
-    const startX = Math.min(mousePosition.x, x);
-    const startY = Math.min(mousePosition.y, y);
-    const width = Math.abs(x - mousePosition.x);
-    const height = Math.abs(y - mousePosition.y);
-    
-    const position = {
-      x: startX,
-      y: startY,
-      width: Math.max(width, 0.05), // Minimum size
-      height: Math.max(height, 0.05)
+  // Attach selection handler to each PDF page
+  useEffect(() => {
+    const pdfPages = document.querySelectorAll('.react-pdf__Page');
+    pdfPages.forEach((page, idx) => {
+      page.addEventListener('mouseup', function (e) { handleTextSelection(e as MouseEvent, idx + 1); });
+    });
+    return () => {
+      pdfPages.forEach((page, idx) => {
+        page.removeEventListener('mouseup', function (e) { handleTextSelection(e as MouseEvent, idx + 1); });
+      });
     };
-    
-    if (drawingMode === 'annotation') {
-      // Show annotation input popup
-      setAnnotationPopup({
-        pageNumber: 1, // You might want to calculate this based on scroll position
-        x: e.clientX,
-        y: e.clientY
-      });
-      setAnnotationInput('');
-    } else if (drawingMode === 'tag') {
-      // Show tag input popup
-      setAnnotationPopup({
-        pageNumber: 1,
-        x: e.clientX,
-        y: e.clientY
-      });
-      setNewTag('');
-    }
-    
-    setIsDrawing(false);
-    setDrawingMode(null);
-  };
+  }, []);
 
-  const navigateToElement = (element: Annotation | Tag) => {
-    setSelectedElement(element.id);
-    
-    // Scroll to the element position
-    setTimeout(() => {
-      if (pdfContainerRef.current) {
-        const elementDiv = pdfContainerRef.current.querySelector(`[data-element-id="${element.id}"]`);
-        if (elementDiv) {
-          elementDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      }
-    }, 100);
-
-    // Clear selection after 3 seconds
-    setTimeout(() => setSelectedElement(null), 3000);
+  const formatTimeAgo = (date: Date | { seconds: number }) => {
+    const now = new Date();
+    const d = toDate(date);
+    const diff = now.getTime() - d.getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    return `${days}d ago`;
   };
 
   const toggleElementResolved = async (elementId: string, type: 'annotation' | 'tag') => {
@@ -477,7 +442,6 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       const element = type === 'annotation' 
         ? annotations.find(c => c.id === elementId)
         : tags.find(t => t.id === elementId);
-      
       if (element) {
         await updateDoc(elementRef, { resolved: !element.resolved });
         toast.success(`${type === 'annotation' ? 'Annotation' : 'Tag'} ${element.resolved ? 'reopened' : 'resolved'}!`);
@@ -496,149 +460,6 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     } catch (error) {
       console.error(`Error deleting ${type}:`, error);
       toast.error(`Failed to delete ${type}`);
-    }
-  };
-
-  const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
-    console.log('PDF loaded successfully, numPages:', numPages);
-    setNumPages(numPages);
-    setLoading(false);
-  };
-
-  const onDocumentLoadError = (error: Error) => {
-    console.error('Error loading PDF:', error);
-    setError('Failed to load PDF document');
-    setLoading(false);
-  };
-
-  const formatTimeAgo = (date: Date) => {
-    const now = new Date();
-    const diff = now.getTime() - toDate(date).getTime();
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(diff / 3600000);
-    const days = Math.floor(diff / 86400000);
-
-    if (minutes < 60) return `${minutes}m ago`;
-    if (hours < 24) return `${hours}h ago`;
-    return `${days}d ago`;
-  };
-
-  const filteredAnnotations = useMemo(() => {
-    let filtered = annotations;
-    
-    if (filterType === 'annotations') {
-      filtered = annotations;
-    } else if (filterType === 'tags') {
-      filtered = [];
-    } else if (filterType === 'resolved') {
-      filtered = annotations.filter(c => c.resolved);
-    }
-
-    if (searchQuery) {
-      filtered = filtered.filter(c => 
-        c.annotation.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.userName.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    switch (sortBy) {
-      case 'time':
-        return filtered.sort((a, b) => toDate(b.timestamp).getTime() - toDate(a.timestamp).getTime());
-      case 'page':
-        return filtered.sort((a, b) => a.pageNumber - b.pageNumber);
-      case 'user':
-        return filtered.sort((a, b) => a.userName.localeCompare(b.userName));
-      default:
-        return filtered;
-    }
-  }, [annotations, filterType, searchQuery, sortBy]);
-
-  const filteredTags = useMemo(() => {
-    let filtered = tags;
-    
-    if (filterType === 'annotations') {
-      filtered = [];
-    } else if (filterType === 'tags') {
-      filtered = tags;
-    } else if (filterType === 'resolved') {
-      filtered = tags.filter(t => t.resolved);
-    }
-
-    if (searchQuery) {
-      filtered = filtered.filter(t => 
-        t.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        t.userName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        t.tagType.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    switch (sortBy) {
-      case 'time':
-        return filtered.sort((a, b) => toDate(b.timestamp).getTime() - toDate(a.timestamp).getTime());
-      case 'page':
-        return filtered.sort((a, b) => a.pageNumber - b.pageNumber);
-      case 'type':
-        return filtered.sort((a, b) => a.tagType.localeCompare(b.tagType));
-      case 'user':
-        return filtered.sort((a, b) => a.userName.localeCompare(b.userName));
-      default:
-        return filtered;
-    }
-  }, [tags, filterType, searchQuery, sortBy]);
-
-  const handleAddTag = () => {
-    if (!newTag.trim()) return;
-
-    try {
-      const tagData = {
-        screenplayId: screenplay.id,
-        userId: currentUser?.uid || 'unknown',
-        userName: currentUser?.displayName || 'Anonymous',
-        userAvatar: currentUser?.photoURL || '',
-        tagType: selectedTagType,
-        content: newTag.trim(),
-        timestamp: new Date(),
-        projectId: projectId,
-        pageNumber: 1,
-        position: { x: 0, y: 0, width: 0, height: 0 },
-        color: tagColors[selectedTagType],
-        resolved: false
-      };
-
-      addTag(tagData.position);
-      setNewTag('');
-      setDrawingMode(null);
-      toast.success('Tag added successfully!');
-    } catch (error) {
-      console.error('Error adding tag:', error);
-      toast.error('Failed to add tag');
-    }
-  };
-
-  const handleRemoveTag = (tag: string) => {
-    // Implement the logic to remove a tag from the activeAnnotation
-    console.log('Removing tag:', tag);
-  };
-
-  const handleAddReply = () => {
-    if (!newReply.trim()) return;
-
-    try {
-      const replyData = {
-        screenplayId: screenplay.id,
-        userId: currentUser?.uid || 'unknown',
-        userName: currentUser?.displayName || 'Anonymous',
-        userAvatar: currentUser?.photoURL || '',
-        content: newReply.trim(),
-        timestamp: new Date()
-      };
-
-      // Implement the logic to add a reply to the activeAnnotation
-      console.log('Adding reply:', replyData);
-      setNewReply('');
-    } catch (error) {
-      console.error('Error adding reply:', error);
-      toast.error('Failed to add reply');
     }
   };
 
@@ -693,21 +514,6 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
               </button>
             </div>
             
-            <div className="drawing-controls">
-              <button
-                onClick={() => setDrawingMode(drawingMode === 'annotation' ? null : 'annotation')}
-                className={`draw-btn ${drawingMode === 'annotation' ? 'active' : ''}`}
-              >
-                💬 Annotation
-              </button>
-              <button
-                onClick={() => setDrawingMode(drawingMode === 'tag' ? null : 'tag')}
-                className={`draw-btn ${drawingMode === 'tag' ? 'active' : ''}`}
-              >
-                🏷️ Tag
-              </button>
-            </div>
-
             {onGenerateReport && (
               <button onClick={onGenerateReport} className="btn-report">
                 📊 Generate Report
@@ -732,9 +538,6 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
             <div 
               className="pdf-container"
               ref={pdfContainerRef}
-              onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
             >
               {error ? (
                 <div className="error-message">{error}</div>
@@ -742,8 +545,16 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                 <>
                   <Document
                     file={screenplay.url}
-                    onLoadSuccess={onDocumentLoadSuccess}
-                    onLoadError={onDocumentLoadError}
+                    onLoadSuccess={({ numPages }: { numPages: number }) => {
+                      console.log('PDF loaded successfully, numPages:', numPages);
+                      setNumPages(numPages);
+                      setLoading(false);
+                    }}
+                    onLoadError={(error: Error) => {
+                      console.error('Error loading PDF:', error);
+                      setError('Failed to load PDF document');
+                      setLoading(false);
+                    }}
                     loading={
                       <div className="loading-container">
                         <div className="loading-spinner"></div>
@@ -795,7 +606,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                                       zIndex: 10,
                                       cursor: 'pointer',
                                     }}
-                                    onClick={e => {
+                                    onClick={(e) => {
                                       e.stopPropagation();
                                       setActiveAnnotation(annotation);
                                       setShowAnnotationPanel(true);
@@ -837,23 +648,26 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                   {showOverlays && (
                     <>
                       {/* Annotation Overlays */}
-                      {filteredAnnotations.map(annotation => (
+                      {annotations.map(annotation => (
                         <div
                           key={`annotation-${annotation.id}`}
                           className={`annotation-overlay ${selectedElement === annotation.id ? 'selected' : ''} ${annotation.resolved ? 'resolved' : ''}`}
                           style={{
                             position: 'absolute',
-                            left: annotation.position.x * scale,
-                            top: annotation.position.y * scale,
-                            width: annotation.position.width * scale,
-                            height: annotation.position.height * scale,
+                            left: `${annotation.position.x * 100}%`,
+                            top: `${annotation.position.y * 100}%`,
+                            width: `${annotation.position.width * 100}%`,
+                            height: `${annotation.position.height * 100}%`,
                             border: `2px solid ${annotation.priority ? priorityColors[annotation.priority] : '#3B82F6'}`,
                             backgroundColor: `${annotation.priority ? priorityColors[annotation.priority] : '#3B82F6'}20`,
                             cursor: 'pointer',
                             zIndex: 5
                           }}
                           data-element-id={annotation.id}
-                          onClick={() => navigateToElement(annotation)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedElement(annotation.id);
+                          }}
                           title={`Annotation by ${annotation.userName}: ${annotation.annotation}`}
                         >
                           <div className="overlay-icon">💬</div>
@@ -861,23 +675,26 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                       ))}
 
                       {/* Tag Overlays */}
-                      {filteredTags.map(tag => (
+                      {tags.map(tag => (
                         <div
                           key={`tag-${tag.id}`}
                           className={`tag-overlay ${selectedElement === tag.id ? 'selected' : ''} ${tag.resolved ? 'resolved' : ''}`}
                           style={{
                             position: 'absolute',
-                            left: tag.position.x * scale,
-                            top: tag.position.y * scale,
-                            width: tag.position.width * scale,
-                            height: tag.position.height * scale,
+                            left: `${tag.position.x * 100}%`,
+                            top: `${tag.position.y * 100}%`,
+                            width: `${tag.position.width * 100}%`,
+                            height: `${tag.position.height * 100}%`,
                             border: `2px solid ${tag.color}`,
                             backgroundColor: `${tag.color}20`,
                             cursor: 'pointer',
                             zIndex: 5
                           }}
                           data-element-id={tag.id}
-                          onClick={() => navigateToElement(tag)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedElement(tag.id);
+                          }}
                           title={`${tag.tagType}: ${tag.content} by ${tag.userName}`}
                         >
                           <div className="overlay-icon" style={{ color: tag.color }}>
@@ -972,9 +789,9 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
 
                 {/* Annotations List */}
                 <div className="annotations-section">
-                  <h4>💬 Annotations ({filteredAnnotations.length})</h4>
+                  <h4>💬 Annotations ({annotations.length})</h4>
                   <div className="annotations-list">
-                    {filteredAnnotations.map(annotation => (
+                    {annotations.map(annotation => (
                       <div key={annotation.id} className={`annotation-item ${annotation.resolved ? 'resolved' : ''}`}>
                         <div className="annotation-header">
                           <div className="annotation-author">
@@ -991,17 +808,20 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                         </div>
                         <div className="annotation-content">{annotation.annotation}</div>
                         <div className="annotation-actions">
-                          <button onClick={() => navigateToElement(annotation)} className="action-btn">
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); setSelectedElement(annotation.id); }}
+                            className="action-btn"
+                          >
                             📍 Go to
                           </button>
                           <button 
-                            onClick={() => toggleElementResolved(annotation.id, 'annotation')}
+                            onClick={(e) => { e.stopPropagation(); toggleElementResolved(annotation.id, 'annotation'); }}
                             className={`action-btn ${annotation.resolved ? 'resolved' : ''}`}
                           >
                             {annotation.resolved ? '🔄 Reopen' : '✅ Resolve'}
                           </button>
                           <button 
-                            onClick={() => deleteElement(annotation.id, 'annotation')}
+                            onClick={(e) => { e.stopPropagation(); deleteElement(annotation.id, 'annotation'); }}
                             className="action-btn delete"
                           >
                             🗑️ Delete
@@ -1014,9 +834,9 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
 
                 {/* Tags List */}
                 <div className="tags-section">
-                  <h4>🏷️ Tags ({filteredTags.length})</h4>
+                  <h4>🏷️ Tags ({tags.length})</h4>
                   <div className="tags-list">
-                    {filteredTags.map(tag => (
+                    {tags.map(tag => (
                       <div key={tag.id} className={`tag-item ${tag.resolved ? 'resolved' : ''}`}>
                         <div className="tag-header">
                           <div className="tag-author">
@@ -1041,17 +861,20 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                           <span className="tag-text">{tag.content}</span>
                         </div>
                         <div className="tag-actions">
-                          <button onClick={() => navigateToElement(tag)} className="action-btn">
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); setSelectedElement(tag.id); }}
+                            className="action-btn"
+                          >
                             📍 Go to
                           </button>
                           <button 
-                            onClick={() => toggleElementResolved(tag.id, 'tag')}
+                            onClick={(e) => { e.stopPropagation(); toggleElementResolved(tag.id, 'tag'); }}
                             className={`action-btn ${tag.resolved ? 'resolved' : ''}`}
                           >
                             {tag.resolved ? '🔄 Reopen' : '✅ Resolve'}
                           </button>
                           <button 
-                            onClick={() => deleteElement(tag.id, 'tag')}
+                            onClick={(e) => { e.stopPropagation(); deleteElement(tag.id, 'tag'); }}
                             className="action-btn delete"
                           >
                             🗑️ Delete
@@ -1065,16 +888,6 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
             </div>
           )}
         </div>
-
-        {/* Drawing Mode Instructions */}
-        {drawingMode && (
-          <div className="drawing-instructions">
-            <p>
-              {drawingMode === 'annotation' ? '💬' : '🏷️'} 
-              Click and drag to create a {drawingMode === 'annotation' ? 'annotation' : 'tag'} area
-            </p>
-          </div>
-        )}
 
         {/* Sidebar/popup for annotation thread and tags */}
         {showAnnotationSidebar && activeThread && (
@@ -1138,119 +951,89 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
           </div>
         )}
 
-        {/* Annotation/Tag Input Popup */}
-        {annotationPopup && (
-          <div 
-            className="annotation-input-popup"
-            style={{ 
+        {/* Selection Popup */}
+        {showSelectionPopup && selectionRect && (
+          <div
+            className="selection-popup"
+            style={{
               position: 'fixed',
-              left: annotationPopup.x,
-              top: annotationPopup.y,
-              zIndex: 1000
+              top: selectionRect.bottom + 8,
+              left: selectionRect.left,
+              zIndex: 2000,
+              background: 'white',
+              border: '1px solid #eee',
+              borderRadius: 6,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+              padding: '0.5rem 1rem',
+              display: 'flex',
+              gap: '1rem',
             }}
           >
-            <div className="popup-content">
-              <div className="popup-header">
-                <h4>{drawingMode === 'annotation' ? '💬 Add Annotation' : '🏷️ Add Tag'}</h4>
-                <button 
-                  className="close-btn" 
-                  onClick={() => setAnnotationPopup(null)}
-                >
-                  ×
-                </button>
-              </div>
-              
-              {drawingMode === 'annotation' ? (
-                <div className="annotation-input">
-                  <textarea
-                    placeholder="Enter your annotation..."
-                    value={annotationInput}
-                    onChange={(e) => setAnnotationInput(e.target.value)}
-                    rows={3}
-                    autoFocus
-                  />
-                  <div className="priority-selector">
-                    <label>Priority:</label>
-                    <select 
-                      value={activeAnnotation?.priority || 'medium'}
-                      onChange={(e) => setActiveAnnotation(prev => prev ? {...prev, priority: e.target.value as any} : null)}
-                    >
-                      <option value="low">Low</option>
-                      <option value="medium">Medium</option>
-                      <option value="high">High</option>
-                      <option value="critical">Critical</option>
-                    </select>
-                  </div>
-                  <div className="popup-actions">
-                    <button 
-                      className="btn-cancel"
-                      onClick={() => setAnnotationPopup(null)}
-                    >
-                      Cancel
-                    </button>
-                    <button 
-                      className="btn-save"
-                      onClick={() => {
-                        if (annotationInput.trim()) {
-                          addAnnotation({ x: 0, y: 0, width: 0, height: 0 });
-                          setAnnotationPopup(null);
-                          setAnnotationInput('');
-                        }
-                      }}
-                    >
-                      Save Annotation
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="tag-input">
-                  <div className="tag-type-selector">
-                    <label>Tag Type:</label>
-                    <select 
-                      value={selectedTagType}
-                      onChange={(e) => setSelectedTagType(e.target.value as any)}
-                    >
-                      <option value="character">Character</option>
-                      <option value="location">Location</option>
-                      <option value="prop">Prop</option>
-                      <option value="scene">Scene</option>
-                      <option value="camera">Camera</option>
-                      <option value="lighting">Lighting</option>
-                      <option value="sound">Sound</option>
-                      <option value="budget">Budget</option>
-                      <option value="schedule">Schedule</option>
-                      <option value="note">Note</option>
-                    </select>
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Enter tag content..."
-                    value={newTag}
-                    onChange={(e) => setNewTag(e.target.value)}
-                    autoFocus
-                  />
-                  <div className="popup-actions">
-                    <button 
-                      className="btn-cancel"
-                      onClick={() => setAnnotationPopup(null)}
-                    >
-                      Cancel
-                    </button>
-                    <button 
-                      className="btn-save"
-                      onClick={() => {
-                        if (newTag.trim()) {
-                          addTag({ x: 0, y: 0, width: 0, height: 0 });
-                          setAnnotationPopup(null);
-                          setNewTag('');
-                        }
-                      }}
-                    >
-                      Save Tag
-                    </button>
-                  </div>
-                </div>
-              )}
+            <button onClick={() => { setPopupType('annotation'); setShowSelectionPopup(false); }}>Add Annotation</button>
+            <button onClick={() => { setPopupType('tag'); setShowSelectionPopup(false); }}>Add Tag</button>
+          </div>
+        )}
+
+        {/* Inline annotation/tag input popup */}
+        {popupType === 'annotation' && selectionRect && (
+          <div
+            className="annotation-input-popup"
+            style={{
+              position: 'fixed',
+              top: selectionRect.bottom + 8,
+              left: selectionRect.left,
+              zIndex: 2000,
+              background: 'white',
+              border: '1px solid #eee',
+              borderRadius: 6,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+              padding: '1rem',
+              minWidth: 300,
+            }}
+          >
+            <h4>Add Annotation</h4>
+            <textarea
+              placeholder="Enter your annotation..."
+              value={annotationInput}
+              onChange={e => setAnnotationInput(e.target.value)}
+              rows={3}
+              style={{ width: '100%', marginBottom: 8 }}
+              autoFocus
+            />
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button onClick={() => { setPopupType(null); setAnnotationInput(''); }}>Cancel</button>
+              <button onClick={() => { setPopupType(null); setAnnotationInput(''); }}>Save</button>
+            </div>
+          </div>
+        )}
+        {popupType === 'tag' && selectionRect && (
+          <div
+            className="tag-input-popup"
+            style={{
+              position: 'fixed',
+              top: selectionRect.bottom + 8,
+              left: selectionRect.left,
+              zIndex: 2000,
+              background: 'white',
+              border: '1px solid #eee',
+              borderRadius: 6,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+              padding: '1rem',
+              minWidth: 300,
+            }}
+          >
+            <h4>Add Tag</h4>
+            <input
+              type="text"
+              placeholder="Enter tag..."
+              value={newTag}
+              onChange={e => setNewTag(e.target.value)}
+              style={{ width: '100%', marginBottom: 8 }}
+              autoFocus
+            />
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button onClick={() => { setPopupType(null); setNewTag(''); }}>Cancel</button>
+              <button onClick={() => { setPopupType(null); setNewTag(''); }}>Save</button>
             </div>
           </div>
         )}

@@ -862,7 +862,13 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     <div className="workspaces-tab">
       <div className="workspaces-header">
         <h2>Workspaces</h2>
-        <button className="btn-primary" onClick={() => setShowCreateWorkspaceModal(true)}>Create Workspace</button>
+        <button className="create-workspace-btn" onClick={() => setShowCreateWorkspaceModal(true)}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Create Workspace
+        </button>
       </div>
       
       <div className="workspaces-grid">
@@ -873,46 +879,84 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
             onClick={() => setSelectedWorkspace(workspace)}
           >
             <div className="workspace-header">
-              <h3>{workspace.name}</h3>
-              <span className={`workspace-type ${workspace.type}`}>{workspace.type}</span>
+              <div className="workspace-title-section">
+                <div className="workspace-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                    <polyline points="9,22 9,12 15,12 15,22"/>
+                  </svg>
+                </div>
+                <div className="workspace-info">
+                  <h3 className="workspace-title">{workspace.name}</h3>
+                  <span className={`workspace-type ${workspace.type}`}>{workspace.type}</span>
+                </div>
+              </div>
             </div>
+            
             <p className="workspace-description">{workspace.description}</p>
+            
             <div className="workspace-stats">
               <div className="stat">
-                <span className="stat-label">Members</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
                 <span className="stat-value">{workspace.members.length}</span>
+                <span className="stat-label">Members</span>
               </div>
               <div className="stat">
-                <span className="stat-label">Online</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12,6 12,12 16,14"/>
+                </svg>
                 <span className="stat-value">{workspace.members.filter(m => m.isOnline).length}</span>
+                <span className="stat-label">Online</span>
               </div>
             </div>
+            
             <div className="workspace-actions">
               <button 
-                className="btn-secondary"
+                className="action-btn primary"
                 onClick={(e) => {
                   e.stopPropagation();
                   handleJoinWorkspace(workspace.id);
                 }}
               >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                  <polyline points="10,17 15,12 10,7"/>
+                  <line x1="15" y1="12" x2="3" y2="12"/>
+                </svg>
                 Join
               </button>
               <button 
-                className="btn-secondary"
+                className="action-btn secondary"
                 onClick={(e) => {
                   e.stopPropagation();
                   setShowAddMemberModal(true);
                 }}
               >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                  <circle cx="8.5" cy="7" r="4"/>
+                  <line x1="20" y1="8" x2="20" y2="14"/>
+                  <line x1="23" y1="11" x2="17" y2="11"/>
+                </svg>
                 Add Member
               </button>
               <button 
-                className="btn-secondary"
+                className="action-btn secondary"
                 onClick={(e) => {
                   e.stopPropagation();
                   handleWorkspaceSettings(workspace.id);
                 }}
               >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="3"/>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                </svg>
                 Settings
               </button>
             </div>
@@ -1536,7 +1580,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <div className="flex items-center gap-2">
                   <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z" />
                   </svg>
                   <span className="text-blue-800 font-medium">
                     {screenplayFile.name} selected
@@ -1805,7 +1849,10 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                 className={`nav-item ${activeTab === 'workspaces' ? 'active' : ''}`}
                 onClick={() => setActiveTab('workspaces')}
               >
-                <span className="nav-icon">🏢</span>
+                <svg className="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                  <polyline points="9,22 9,12 15,12 15,22"/>
+                </svg>
                 <span className="nav-label">Workspaces</span>
               </button>
               
@@ -1813,7 +1860,9 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                 className={`nav-item ${activeTab === 'channels' ? 'active' : ''}`}
                 onClick={() => setActiveTab('channels')}
               >
-                <span className="nav-icon">💬</span>
+                <svg className="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
                 <span className="nav-label">Channels</span>
               </button>
               
@@ -1821,7 +1870,13 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                 className={`nav-item ${activeTab === 'documents' ? 'active' : ''}`}
                 onClick={() => setActiveTab('documents')}
               >
-                <span className="nav-icon">📄</span>
+                <svg className="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14,2 14,8 20,8"/>
+                  <line x1="16" y1="13" x2="8" y2="13"/>
+                  <line x1="16" y1="17" x2="8" y2="17"/>
+                  <polyline points="10,9 9,9 8,9"/>
+                </svg>
                 <span className="nav-label">Documents</span>
               </button>
               
@@ -1829,7 +1884,11 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                 className={`nav-item ${activeTab === 'whiteboards' ? 'active' : ''}`}
                 onClick={() => setActiveTab('whiteboards')}
               >
-                <span className="nav-icon">🖼️</span>
+                <svg className="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                  <circle cx="8.5" cy="8.5" r="1.5"/>
+                  <polyline points="21,15 16,10 5,21"/>
+                </svg>
                 <span className="nav-label">Whiteboards</span>
               </button>
               
@@ -1837,7 +1896,10 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                 className={`nav-item ${activeTab === 'tasks' ? 'active' : ''}`}
                 onClick={() => setActiveTab('tasks')}
               >
-                <span className="nav-icon">✅</span>
+                <svg className="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                  <polyline points="22,4 12,14.01 9,11.01"/>
+                </svg>
                 <span className="nav-label">Tasks</span>
               </button>
               
@@ -1845,7 +1907,13 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                 className={`nav-item ${activeTab === 'screenplays' ? 'active' : ''}`}
                 onClick={() => setActiveTab('screenplays')}
               >
-                <span className="nav-icon">📄</span>
+                <svg className="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14,2 14,8 20,8"/>
+                  <line x1="16" y1="13" x2="8" y2="13"/>
+                  <line x1="16" y1="17" x2="8" y2="17"/>
+                  <polyline points="10,9 9,9 8,9"/>
+                </svg>
                 <span className="nav-label">Screenplays</span>
               </button>
             </nav>
