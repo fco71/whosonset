@@ -127,7 +127,6 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   const [showAnnotationSidebar, setShowAnnotationSidebar] = useState(false);
   const [activeAnnotation, setActiveAnnotation] = useState<Annotation | null>(null);
   const [newReply, setNewReply] = useState('');
-  const [showAnnotationPanel, setShowAnnotationPanel] = useState(false);
   const [panelX, setPanelX] = useState(0);
   const [panelY, setPanelY] = useState(0);
   const [drawingPage, setDrawingPage] = useState<number | null>(null);
@@ -850,7 +849,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setActiveAnnotation(annotation);
-                                  setShowAnnotationPanel(true);
+                                  setShowAnnotationSidebar(true);
                                   setPanelX(e.clientX);
                                   setPanelY(e.clientY);
                                   setSelectedElement(annotation.id);
