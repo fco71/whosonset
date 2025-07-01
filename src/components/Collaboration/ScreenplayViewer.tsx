@@ -337,8 +337,8 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     }
   };
 
-  const addAnnotation = async (position: { x: number; y: number; width: number; height: number }, pageNumber: number) => {
-    if (!newAnnotation.trim()) return;
+  const addAnnotation = async (position: { x: number; y: number; width: number; height: number }, pageNumber: number, annotation: string) => {
+    if (!annotation.trim()) return;
 
     try {
       const annotationData = {
@@ -346,7 +346,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         userId: currentUser?.uid || 'unknown',
         userName: currentUser?.displayName || 'Anonymous',
         userAvatar: currentUser?.photoURL || '',
-        annotation: newAnnotation.trim(),
+        annotation: annotation.trim(),
         timestamp: new Date(),
         projectId: projectId,
         pageNumber,
@@ -365,8 +365,8 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     }
   };
 
-  const addTag = async (position: { x: number; y: number; width: number; height: number }, pageNumber: number) => {
-    if (!newTag.trim()) return;
+  const addTag = async (position: { x: number; y: number; width: number; height: number }, pageNumber: number, tag: string) => {
+    if (!tag.trim()) return;
 
     try {
       const tagData = {
@@ -375,7 +375,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         userName: currentUser?.displayName || 'Anonymous',
         userAvatar: currentUser?.photoURL || '',
         tagType: selectedTagType,
-        content: newTag.trim(),
+        content: tag.trim(),
         timestamp: new Date(),
         projectId: projectId,
         pageNumber,
@@ -410,15 +410,35 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     }
   };
 
-  // Attach selection handler to each PDF page
+  // Add this new useEffect:
   useEffect(() => {
-    const pdfPages = document.querySelectorAll('.react-pdf__Page');
-    pdfPages.forEach((page, idx) => {
-      page.addEventListener('mouseup', function (e) { handleTextSelection(e as MouseEvent, idx + 1); });
-    });
-    return () => {
+    const attachHandler = () => {
+      const pdfPages = document.querySelectorAll('.react-pdf__Page');
       pdfPages.forEach((page, idx) => {
-        page.removeEventListener('mouseup', function (e) { handleTextSelection(e as MouseEvent, idx + 1); });
+        // Remove any previous handler to avoid duplicates
+        page.removeEventListener('mouseup', (e) => handleTextSelection(e as MouseEvent, idx + 1));
+        page.addEventListener('mouseup', (e) => {
+          console.log('[DEBUG] Mouseup on PDF page', idx + 1);
+          handleTextSelection(e as MouseEvent, idx + 1);
+        });
+      });
+    };
+    // Initial attach
+    attachHandler();
+    // Observe for new pages
+    const observer = new MutationObserver(() => {
+      attachHandler();
+    });
+    const pdfContainer = document.querySelector('.pdf-scrollable-container');
+    if (pdfContainer) {
+      observer.observe(pdfContainer, { childList: true, subtree: true });
+    }
+    return () => {
+      observer.disconnect();
+      // Clean up handlers
+      const pdfPages = document.querySelectorAll('.react-pdf__Page');
+      pdfPages.forEach((page, idx) => {
+        page.removeEventListener('mouseup', (e) => handleTextSelection(e as MouseEvent, idx + 1));
       });
     };
   }, []);
@@ -1002,7 +1022,24 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
             />
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <button onClick={() => { setPopupType(null); setAnnotationInput(''); }}>Cancel</button>
-              <button onClick={() => { setPopupType(null); setAnnotationInput(''); }}>Save</button>
+              <button
+                onClick={async () => {
+                  if (!annotationInput.trim() || !selectionRect || selectionPage == null) return;
+                  const position = {
+                    x: selectionRect.left / window.innerWidth,
+                    y: selectionRect.top / window.innerHeight,
+                    width: selectionRect.width / window.innerWidth,
+                    height: selectionRect.height / window.innerHeight,
+                  };
+                  await addAnnotation(position, selectionPage, annotationInput.trim());
+                  setPopupType(null);
+                  setAnnotationInput('');
+                  setSelectionRect(null);
+                  setSelectedText('');
+                  setSelectionPage(null);
+                }}
+                disabled={!annotationInput.trim()}
+              >Save</button>
             </div>
           </div>
         )}
@@ -1033,10 +1070,40 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
             />
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <button onClick={() => { setPopupType(null); setNewTag(''); }}>Cancel</button>
-              <button onClick={() => { setPopupType(null); setNewTag(''); }}>Save</button>
+              <button
+                onClick={async () => {
+                  if (!newTag.trim() || !selectionRect || selectionPage == null) return;
+                  const position = {
+                    x: selectionRect.left / window.innerWidth,
+                    y: selectionRect.top / window.innerHeight,
+                    width: selectionRect.width / window.innerWidth,
+                    height: selectionRect.height / window.innerHeight,
+                  };
+                  await addTag(position, selectionPage, newTag.trim());
+                  setPopupType(null);
+                  setNewTag('');
+                  setSelectionRect(null);
+                  setSelectedText('');
+                  setSelectionPage(null);
+                }}
+                disabled={!newTag.trim()}
+              >Save</button>
             </div>
           </div>
         )}
+
+        {/* Fallback floating button for manual annotation/tag creation */}
+        <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 3000 }}>
+          <button
+            style={{ padding: '0.75rem 1.5rem', borderRadius: 24, background: '#3B82F6', color: 'white', fontWeight: 600, fontSize: 18, boxShadow: '0 2px 8px rgba(0,0,0,0.12)' }}
+            onClick={() => {
+              setSelectionRect({ left: window.innerWidth / 2 - 150, top: window.innerHeight / 2 - 50, width: 300, height: 40, right: window.innerWidth / 2 + 150, bottom: window.innerHeight / 2 - 10, x: window.innerWidth / 2 - 150, y: window.innerHeight / 2 - 50, toJSON: () => ({}) });
+              setShowSelectionPopup(true);
+              setSelectedText('');
+              setSelectionPage(1);
+            }}
+          >+ Add Annotation/Tag</button>
+        </div>
       </div>
     </div>
   );
