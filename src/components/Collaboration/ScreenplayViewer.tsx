@@ -1078,13 +1078,30 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         </div>
 
         {/* Collapsible Collaboration Panel */}
-        <div className={`collaboration-panel${sidebarCollapsed ? ' collapsed' : ''}`}>
+        <div className={`collaboration-panel${sidebarCollapsed ? ' collapsed' : ''}`}
+          style={{ boxShadow: sidebarCollapsed ? '0 0 12px 2px #3b82f6' : undefined }}
+        >
           <button
-            className="sidebar-toggle-btn"
+            className={`sidebar-toggle-btn${sidebarCollapsed ? ' bounce' : ''}`}
             onClick={() => setSidebarCollapsed((prev) => !prev)}
-            aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            aria-label={sidebarCollapsed ? 'Show Annotations Sidebar' : 'Hide Annotations Sidebar'}
+            title={sidebarCollapsed ? 'Show Annotations Sidebar' : 'Hide Annotations Sidebar'}
+            style={{
+              left: sidebarCollapsed ? '-24px' : '-24px',
+              background: sidebarCollapsed ? '#3b82f6' : '#f3f4f6',
+              color: sidebarCollapsed ? 'white' : '#6b7280',
+              border: sidebarCollapsed ? '2px solid #3b82f6' : '1px solid #e2e8f0',
+              zIndex: 102,
+              fontWeight: 700,
+              fontSize: 24,
+              width: 44,
+              height: 44,
+              boxShadow: sidebarCollapsed ? '0 0 12px 2px #3b82f6' : '0 2px 8px rgba(0,0,0,0.08)'
+            }}
           >
             {sidebarCollapsed ? '⮜' : '⮞'}
+            {!sidebarCollapsed && <span style={{marginLeft:8,fontSize:15,fontWeight:500}}>Hide</span>}
+            {sidebarCollapsed && <span style={{marginLeft:8,fontSize:15,fontWeight:500}}>Show</span>}
           </button>
           {!sidebarCollapsed && (
             <>

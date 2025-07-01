@@ -97,7 +97,6 @@
         border-radius: 8px;
         cursor: pointer;
         transition: all 0.2s ease;
-        font-size: 0.875rem;
         
         &:hover {
           background: rgba(255, 255, 255, 0.2);
@@ -224,30 +223,44 @@
       overflow: hidden;
       border-left: 1px solid #e2e8f0;
       background: #f3f4f6;
-      box-shadow: 0 0 8px rgba(0,0,0,0.04);
+      box-shadow: 0 0 12px 2px #3b82f6;
     }
 
     .sidebar-toggle-btn {
       position: absolute;
       left: -24px;
       top: 16px;
-      width: 32px;
-      height: 32px;
+      width: 44px;
+      height: 44px;
       background: #f3f4f6;
       border: 1px solid #e2e8f0;
       border-radius: 50%;
       color: #6b7280;
-      font-size: 18px;
+      font-size: 24px;
+      font-weight: 700;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
       z-index: 101;
       box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-      transition: background 0.2s, color 0.2s;
-      &:hover {
-        background: #e5e7eb;
+      transition: background 0.2s, color 0.2s, box-shadow 0.2s, border 0.2s;
+      &:hover, &:focus {
+        background: #3b82f6;
+        color: white;
+        border: 2px solid #3b82f6;
+        outline: none;
+      }
+      &.bounce {
+        animation: bounceBtn 1s 2;
+      }
+      span {
+        margin-left: 8px;
+        font-size: 15px;
+        font-weight: 500;
         color: #3b82f6;
+        display: inline-block;
+        vertical-align: middle;
       }
     }
   }
@@ -1724,4 +1737,12 @@
     min-width: 0;
     max-width: none;
   }
+}
+
+@keyframes bounceBtn {
+  0%, 100% { transform: translateY(0); }
+  20% { transform: translateY(-8px); }
+  40% { transform: translateY(0); }
+  60% { transform: translateY(-4px); }
+  80% { transform: translateY(0); }
 } 
