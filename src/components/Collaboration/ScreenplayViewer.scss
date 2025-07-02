@@ -2007,7 +2007,7 @@
 .panel-controls select, .overlay-btn, .three-bars-icon { display: none !important; }
 
 .pdf-floating-zoom-controls {
-  position: fixed;
+  position: absolute;
   right: 32px;
   bottom: 32px;
   z-index: 2001;
@@ -2020,6 +2020,7 @@
   padding: 8px 16px;
   transition: opacity 0.2s;
   opacity: 0.95;
+  border: 2px solid red !important;
   &:hover { opacity: 1; }
   button {
     background: #f3f4f6;

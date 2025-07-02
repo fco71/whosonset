@@ -703,42 +703,15 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       <div className="viewer-content">
         {/* PDF Viewer Panel */}
         <div className={`pdf-panel ${viewMode} ${sidebarCollapsed ? 'expanded' : ''}`}>
-          <div className="pdf-controls">
-            <div className="pdf-zoom-controls" style={{
-              position: 'absolute',
-              bottom: 24,
-              right: 24,
-              display: 'flex',
-              alignItems: 'center',
-              background: 'rgba(255,255,255,0.92)',
-              borderRadius: 24,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-              padding: '6px 16px',
-              zIndex: 50
-            }}>
-              <button onClick={() => setScale(prev => Math.max(0.5, prev - 0.1))} style={{
-                background: 'none',
-                border: 'none',
-                fontSize: 22,
-                color: '#555',
-                cursor: 'pointer',
-                marginRight: 12
-              }}>–</button>
-              <span style={{ fontWeight: 500, fontSize: 16, color: '#222', minWidth: 48, textAlign: 'center' }}>{Math.round(scale * 100)}%</span>
-              <button onClick={() => setScale(prev => Math.min(3, prev + 0.1))} style={{
-                background: 'none',
-                border: 'none',
-                fontSize: 22,
-                color: '#555',
-                cursor: 'pointer',
-                marginLeft: 12
-              }}>+</button>
-            </div>
+          <div className="pdf-floating-zoom-controls">
+            <button onClick={() => setScale(prev => Math.max(0.5, prev - 0.2))}>-</button>
+            <span>{Math.round(scale * 100)}%</span>
+            <button onClick={() => setScale(prev => Math.min(3, prev + 0.2))}>+</button>
           </div>
-
           <div 
             className="pdf-container"
             ref={pdfContainerRef}
+            style={{ position: 'relative' }}
           >
             {error ? (
               <div className="error-message">{error}</div>
