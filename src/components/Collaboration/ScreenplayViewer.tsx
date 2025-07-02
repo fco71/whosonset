@@ -140,6 +140,8 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isNavigating, setIsNavigating] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyInput, setReplyInput] = useState('');
   
   const viewerRef = useRef<HTMLDivElement>(null);
   const pdfContainerRef = useRef<HTMLDivElement>(null);
@@ -739,11 +741,11 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                   error={<div>Failed to load PDF document.</div>}
                 >
                   {typeof numPages === 'number' && numPages > 0 ? (
-                    <div className="pdf-scrollable-container" style={{ maxHeight: '70vh', overflowY: 'auto', position: 'relative' }}>
+                    <div className="pdf-scrollable-container" style={{ height: '100%', overflowY: 'auto', position: 'relative' }}>
                       {Array.from(new Array(numPages), (el, index) => {
                         const pageNumber = index + 1;
                         return (
-                          <div key={`page_${pageNumber}`} className="page-container" style={{ position: 'relative' }}>
+                          <div key={`page_${pageNumber}`} className="page-container" style={{ position: 'relative', marginBottom: '20px' }}>
                             <Page
                               pageNumber={pageNumber}
                               scale={scale}
@@ -851,27 +853,6 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                                 }}
                                 title={`${tag.tagType}: ${tag.content} by ${tag.userName}`}
                               >
-                                <div 
-                                  className="tag-marker"
-                                  style={{
-                                    position: 'absolute',
-                                    top: '-6px',
-                                    right: '-6px',
-                                    width: '20px',
-                                    height: '20px',
-                                    borderRadius: '50%',
-                                    background: tag.color,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontSize: '10px',
-                                    color: 'white',
-                                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                                    border: '1px solid white'
-                                  }}
-                                >
-                                  🏷️
-                                </div>
                               </div>
                             ))}
                             
@@ -1089,6 +1070,72 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                           </div>
                         </div>
                         <div className="annotation-content">{annotation.annotation}</div>
+                        
+                        {/* Replies Section */}
+                        {annotation.replies && annotation.replies.length > 0 && (
+                          <div className="replies-section">
+                            {annotation.replies.map(reply => (
+                              <div key={reply.id} className="reply-item">
+                                <div className="reply-header">
+                                  <div className="reply-author">
+                                    {reply.userAvatar ? (
+                                      <img src={reply.userAvatar} alt={reply.userName} />
+                                    ) : (
+                                      <div className="avatar-placeholder">{reply.userName.charAt(0)}</div>
+                                    )}
+                                    <span>{reply.userName}</span>
+                                  </div>
+                                  <span className="reply-time">{formatTimeAgo(toDate(reply.timestamp))}</span>
+                                </div>
+                                <div className="reply-content">{reply.content}</div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        
+                        {/* Reply Input */}
+                        {replyingTo === annotation.id ? (
+                          <div className="reply-input-section">
+                            <textarea
+                              value={replyInput}
+                              onChange={(e) => setReplyInput(e.target.value)}
+                              placeholder="Write a reply..."
+                              className="reply-textarea"
+                              rows={2}
+                            />
+                            <div className="reply-actions">
+                              <button
+                                onClick={() => {
+                                  if (replyInput.trim()) {
+                                    handleAddReply(annotation.id, replyInput.trim());
+                                    setReplyInput('');
+                                    setReplyingTo(null);
+                                  }
+                                }}
+                                className="reply-submit-btn"
+                              >
+                                Reply
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setReplyingTo(null);
+                                  setReplyInput('');
+                                }}
+                                className="reply-cancel-btn"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setReplyingTo(annotation.id)}
+                            className="reply-btn"
+                          >
+                            💬 Reply
+                          </button>
+                        )}
+                        
                         <div className="annotation-actions">
                           <button 
                             onClick={(e) => { e.stopPropagation(); navigateToElement(annotation); }}
