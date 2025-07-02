@@ -1943,14 +1943,17 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         {showScreenplayModal && selectedScreenplayId && (
           <div className="screenplay-modal-overlay">
             <div className="screenplay-modal">
-              <div className="modal-header">
-                <h2>{userScreenplays.find(s => s.id === selectedScreenplayId)?.name}</h2>
-                <button 
+              <div className="modal-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                <div style={{ flex: 1 }}>
+                  <h2 style={{ margin: 0 }}>{userScreenplays.find(s => s.id === selectedScreenplayId)?.name}</h2>
+                </div>
+                <button
                   className="close-btn"
                   onClick={() => {
                     setShowScreenplayModal(false);
                     setSelectedScreenplayId(null);
                   }}
+                  aria-label="Close"
                 >
                   ×
                 </button>

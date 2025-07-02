@@ -41,6 +41,65 @@
     height: 95vh;
     max-width: none;
   }
+
+  h1, h2, h3, h4, h5, h6 {
+    &:not(.document-title) {
+      display: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+  }
+
+  // Hide any title attributes or elements from PDF viewers
+  [title], [aria-label*="title"], [aria-label*="Title"] {
+    &::before, &::after {
+      display: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      content: none !important;
+    }
+  }
+  
+  // Hide any PDF viewer title elements
+  .react-pdf__Document,
+  .react-pdf__Page,
+  .react-pdf__Page__canvas,
+  .react-pdf__Page__textContent {
+    h1, h2, h3, h4, h5, h6 {
+      display: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+    
+    // Hide any title-like elements
+    [class*="title"], [class*="Title"],
+    [id*="title"], [id*="Title"] {
+      display: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+  }
+  
+  // Hide any iframe or object titles
+  iframe, object, embed {
+    &[title], &[aria-label] {
+      &::before, &::after {
+        display: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        content: none !important;
+      }
+    }
+  }
+  
+  // Hide any browser default PDF viewer titles
+  .react-pdf__Document {
+    &::before, &::after {
+      content: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+  }
 }
 
 .viewer-header {
@@ -184,295 +243,30 @@
 .viewer-content {
   display: flex;
   height: calc(100vh - 40px);
-  
   .pdf-panel {
-    flex: 1;
+    flex: 1 1 0%;
+    min-width: 0;
     overflow: hidden;
-    
-    &.single {
-      width: 100%;
-    }
-    
-    &.split {
-      width: 60%;
-      border-right: 1px solid #e2e8f0;
-    }
-    
-    &.fullscreen {
-      width: 100%;
-    }
+    position: relative;
+    z-index: 1;
+    background: none;
   }
-  
   .collaboration-panel {
     position: relative;
-    width: 40%;
-    min-width: 320px;
-    max-width: 420px;
+    width: 340px;
+    min-width: 220px;
+    max-width: 400px;
+    z-index: 2;
     background: #f8fafc;
     border-left: 1px solid #e2e8f0;
     display: flex;
     flex-direction: column;
-    transition: width 0.2s cubic-bezier(0.4,0,0.2,1), min-width 0.2s, max-width 0.2s;
-    z-index: 100;
-    height: 100%;
-    overflow: hidden;
-
+    transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
+    box-shadow: none;
+    transform: translateX(0);
     &.collapsed {
-      width: 36px !important;
-      min-width: 36px !important;
-      max-width: 36px !important;
-      padding: 0;
-      overflow: hidden;
-      border-left: 1px solid #e2e8f0;
-      background: #f3f4f6;
-      box-shadow: 0 0 12px 2px #3b82f6;
-      border-left: 3px solid #3b82f6;
-    }
-
-    .sidebar-toggle-btn {
-      position: absolute;
-      left: -24px;
-      top: 16px;
-      width: 44px;
-      height: 44px;
-      background: #f3f4f6;
-      border: 1px solid #e2e8f0;
-      border-radius: 50%;
-      color: #6b7280;
-      font-size: 24px;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      z-index: 102;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-      transition: background 0.2s, color 0.2s, box-shadow 0.2s, border 0.2s;
-      &:hover, &:focus {
-        background: #3b82f6;
-        color: white;
-        border: 2px solid #3b82f6;
-        outline: none;
-      }
-      &.bounce {
-        animation: bounceBtn 1s 2;
-      }
-      span {
-        margin-left: 8px;
-        font-size: 15px;
-        font-weight: 500;
-        color: #3b82f6;
-        display: inline-block;
-        vertical-align: middle;
-      }
-    }
-    
-    .panel-header {
-      padding: 16px;
-      border-bottom: 1px solid #e2e8f0;
-      background: white;
-      flex-shrink: 0;
-      
-      h3 {
-        margin: 0 0 12px 0;
-        color: #1f2937;
-        font-size: 1.1rem;
-        font-weight: 600;
-      }
-      
-      .panel-controls {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-        
-        select {
-          padding: 6px 8px;
-          border: 1px solid #e2e8f0;
-          border-radius: 6px;
-          font-size: 0.875rem;
-          background: white;
-          color: #374151;
-          cursor: pointer;
-          
-          &:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-          }
-        }
-        
-        .search-input {
-          padding: 6px 8px;
-          border: 1px solid #e2e8f0;
-          border-radius: 6px;
-          font-size: 0.875rem;
-          background: white;
-          color: #374151;
-          min-width: 120px;
-          
-          &:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-          }
-          
-          &::placeholder {
-            color: #9ca3af;
-          }
-        }
-      }
-    }
-    
-    .panel-content {
-      flex: 1;
-      overflow-y: auto;
-      padding: 16px;
-      
-      .annotations-section,
-      .tags-section {
-        margin-bottom: 32px;
-        
-        h4 {
-          margin: 0 0 16px 0;
-          color: #1f2937;
-          font-size: 1rem;
-          font-weight: 600;
-        }
-        
-        .annotations-list,
-        .tags-list {
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-          
-          .annotation-item,
-          .tag-item {
-            background: white;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 16px;
-            transition: all 0.2s ease;
-            
-            &:hover {
-              border-color: #cbd5e1;
-              box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-            }
-            
-            &.resolved {
-              opacity: 0.6;
-              background: #f8fafc;
-              
-              .annotation-content,
-              .tag-content {
-                text-decoration: line-through;
-              }
-            }
-            
-            .annotation-header,
-            .tag-header {
-              display: flex;
-              justify-content: space-between;
-              align-items: flex-start;
-              margin-bottom: 8px;
-              
-              .annotation-author,
-              .tag-author {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                
-                img {
-                  width: 24px;
-                  height: 24px;
-                  border-radius: 50%;
-                  object-fit: cover;
-                }
-                
-                .avatar-placeholder {
-                  width: 24px;
-                  height: 24px;
-                  border-radius: 50%;
-                  background: #e2e8f0;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  font-size: 0.75rem;
-                  font-weight: 600;
-                  color: #6b7280;
-                }
-                
-                span {
-                  font-size: 0.875rem;
-                  font-weight: 500;
-                  color: #374151;
-                }
-              }
-              
-              .annotation-meta,
-              .tag-meta {
-                display: flex;
-                flex-direction: column;
-                align-items: flex-end;
-                gap: 4px;
-                
-                .annotation-time,
-                .tag-time {
-                  font-size: 0.75rem;
-                  color: #6b7280;
-                }
-              }
-            }
-            
-            .annotation-content,
-            .tag-content {
-              font-size: 0.875rem;
-              color: #374151;
-              line-height: 1.5;
-              margin-bottom: 12px;
-            }
-            
-            .annotation-actions,
-            .tag-actions {
-              display: flex;
-              gap: 8px;
-              flex-wrap: wrap;
-              
-              .action-btn {
-                background: #f1f5f9;
-                border: 1px solid #e2e8f0;
-                color: #64748b;
-                padding: 4px 8px;
-                border-radius: 4px;
-                cursor: pointer;
-                font-size: 0.75rem;
-                transition: all 0.2s ease;
-                
-                &:hover {
-                  background: #e2e8f0;
-                  color: #374151;
-                }
-                
-                &.resolved {
-                  background: #dcfce7;
-                  border-color: #bbf7d0;
-                  color: #166534;
-                }
-                
-                &.delete {
-                  background: #fef2f2;
-                  border-color: #fecaca;
-                  color: #dc2626;
-                  
-                  &:hover {
-                    background: #fee2e2;
-                    color: #b91c1c;
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
+      transform: translateX(100%);
+      box-shadow: none;
     }
   }
 }
@@ -1976,123 +1770,20 @@
 
 // Minimal header styles
 .viewer-header-minimal {
+  height: 32px !important;
+  min-height: 32px !important;
+  padding: 0 8px !important;
+  background: #f8fafc !important;
+  border-bottom: 1px solid #e2e8f0 !important;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 6px 12px;
-  background: #f8fafc;
-  border-bottom: 1px solid #e2e8f0;
-  height: 40px;
-  min-height: 40px;
-  
-  .header-left-minimal {
-    .document-title {
-      font-size: 0.75rem;
-      font-weight: 500;
-      color: #6b7280;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 200px;
-      opacity: 0.8;
-    }
-  }
-  
-  .header-controls-minimal {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    
-    .zoom-controls-minimal {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: white;
-      border: 1px solid #e2e8f0;
-      border-radius: 4px;
-      padding: 3px 6px;
-      
-      button {
-        background: none;
-        border: none;
-        cursor: pointer;
-        padding: 1px 3px;
-        border-radius: 2px;
-        font-size: 10px;
-        color: #6b7280;
-        transition: all 0.2s ease;
-        
-        &:hover {
-          background: #f3f4f6;
-          color: #374151;
-        }
-      }
-      
-      span {
-        font-size: 10px;
-        font-weight: 500;
-        color: #374151;
-        min-width: 35px;
-        text-align: center;
-      }
-    }
-    
-    .overlay-btn {
-      background: white;
-      border: 1px solid #e2e8f0;
-      border-radius: 4px;
-      padding: 4px 6px;
-      cursor: pointer;
-      font-size: 12px;
-      transition: all 0.2s ease;
-      
-      &:hover {
-        background: #f3f4f6;
-        border-color: #cbd5e1;
-      }
-      
-      &.active {
-        background: #3b82f6;
-        border-color: #3b82f6;
-        color: white;
-      }
-    }
-    
-    .btn-report-minimal {
-      background: white;
-      border: 1px solid #e2e8f0;
-      border-radius: 4px;
-      padding: 4px 6px;
-      cursor: pointer;
-      font-size: 12px;
-      transition: all 0.2s ease;
-      
-      &:hover {
-        background: #f3f4f6;
-        border-color: #cbd5e1;
-      }
-    }
-    
-    .btn-close-minimal {
-      background: white;
-      border: 1px solid #e2e8f0;
-      border-radius: 4px;
-      width: 24px;
-      height: 24px;
-      cursor: pointer;
-      font-size: 14px;
-      color: #6b7280;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s ease;
-      
-      &:hover {
-        background: #fef2f2;
-        border-color: #fecaca;
-        color: #dc2626;
-      }
-    }
+  .header-left-minimal .document-title {
+    font-size: 0.8rem !important;
+    font-weight: 500 !important;
+    color: #6b7280 !important;
+    opacity: 0.8 !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 }
 
@@ -2105,5 +1796,311 @@
   .pdf-scrollable-container {
     max-height: none !important;
     height: auto;
+  }
+}
+
+// Hide any duplicate titles from react-pdf or other sources
+.react-pdf__Document {
+  h1, h2, h3, h4, h5, h6 {
+    display: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  
+  .react-pdf__Page__textContent {
+    user-select: text;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+  }
+}
+
+// Hide any title elements that might be rendered by the PDF library
+.pdf-container {
+  h1, h2, h3, h4, h5, h6 {
+    display: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  
+  .react-pdf__Document {
+    h1, h2, h3, h4, h5, h6 {
+      display: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+  }
+}
+
+// Ensure only our minimal header title is visible
+.viewer-header-minimal .document-title {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+// Hide any other title elements
+.screenplay-viewer {
+  h1, h2, h3, h4, h5, h6 {
+    &:not(.document-title) {
+      display: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+  }
+}
+
+// Additional rules for PDF viewer elements
+.react-pdf__Page {
+  &::before, &::after {
+    content: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+}
+
+// Hide any title elements in the entire component tree
+.screenplay-viewer * {
+  &[class*="title"], &[class*="Title"],
+  &[id*="title"], &[id*="Title"] {
+    &:not(.document-title) {
+      display: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      height: 0 !important;
+      overflow: hidden !important;
+    }
+  }
+}
+
+// Target any remaining title with extreme measures
+.screenplay-viewer {
+  // Remove all padding from the entire viewer
+  padding: 0 !important;
+  
+  // Target any element that might contain a title
+  div, span, p, h1, h2, h3, h4, h5, h6 {
+    &[class*="title"], &[class*="Title"],
+    &[id*="title"], &[id*="Title"] {
+      display: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      height: 0 !important;
+      width: 0 !important;
+      overflow: hidden !important;
+      position: absolute !important;
+      left: -9999px !important;
+      top: -9999px !important;
+    }
+  }
+}
+
+// Additional aggressive rules for any remaining titles
+.screenplay-viewer {
+  // Target any remaining title elements with extreme measures
+  * {
+    &[class*="pdf"], &[class*="PDF"],
+    &[class*="viewer"], &[class*="Viewer"],
+    &[class*="document"], &[class*="Document"] {
+      h1, h2, h3, h4, h5, h6,
+      [class*="title"], [class*="Title"],
+      [id*="title"], [id*="Title"] {
+        display: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        height: 0 !important;
+        width: 0 !important;
+        overflow: hidden !important;
+        position: absolute !important;
+        left: -9999px !important;
+        top: -9999px !important;
+        font-size: 0 !important;
+        line-height: 0 !important;
+      }
+    }
+  }
+}
+
+.pdf-container, .pdf-scrollable-container, .react-pdf__Page {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
+
+// Annotation search bar smaller and subtle
+.panel-controls .search-input {
+  font-size: 0.85rem;
+  padding: 4px 8px;
+  min-width: 80px;
+  max-width: 120px;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+  background: #f3f4f6;
+  color: #6b7280;
+  margin-left: 4px;
+}
+
+// Remove extra margin from panel-controls
+.panel-controls {
+  margin-bottom: 0;
+  gap: 6px;
+}
+
+// Remove any extra margin from .panel-header
+.panel-header {
+  margin-bottom: 0;
+  padding-bottom: 8px;
+}
+
+.screenplay-viewer, .viewer-content, .pdf-panel, .pdf-container, .pdf-scrollable-container, .react-pdf__Page {
+  padding: 0 !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+  background: none !important;
+}
+
+// Sidebar toggle chevron button
+.sidebar-toggle-btn, .sidebar-toggle-btn-collapsed { display: none !important; }
+.collaboration-panel { padding: 0 !important; margin: 0 !important; box-shadow: none !important; background: #f8fafc; border-left: 1px solid #e2e8f0; }
+.collaboration-panel.collapsed { transform: none !important; box-shadow: none !important; }
+
+// Hide any element that could be a PDF title (unless part of PDF content)
+.screenplay-viewer h1, .screenplay-viewer h2, .screenplay-viewer h3, .screenplay-viewer h4, .screenplay-viewer h5, .screenplay-viewer h6 {
+  &:not(.document-title) {
+    display: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+  }
+}
+
+// Highlight overlay for Go to
+.annotation-overlay.highlighted, .tag-overlay.highlighted {
+  box-shadow: 0 0 0 4px #3b82f6, 0 2px 8px rgba(59,130,246,0.15);
+  border-width: 3px !important;
+  z-index: 10;
+  animation: pulse 1s;
+}
+
+// Single popup for annotation/tag creation
+.annotation-tag-popup {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 3000;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+  padding: 18px 24px;
+  min-width: 260px;
+  max-width: 340px;
+  font-size: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  cursor: default;
+}
+
+// Remove sort/filter/eye/three-bars icon styles
+.panel-controls select, .overlay-btn, .three-bars-icon { display: none !important; }
+
+.pdf-floating-zoom-controls {
+  position: fixed;
+  right: 32px;
+  bottom: 32px;
+  z-index: 2001;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(245, 245, 245, 0.85);
+  border-radius: 24px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  padding: 8px 16px;
+  transition: opacity 0.2s;
+  opacity: 0.95;
+  &:hover { opacity: 1; }
+  button {
+    background: #f3f4f6;
+    border: 1px solid #e2e8f0;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    font-size: 18px;
+    color: #374151;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    &:hover { background: #3b82f6; color: white; }
+  }
+  span {
+    font-size: 15px;
+    color: #374151;
+    min-width: 40px;
+    text-align: center;
+  }
+}
+
+.sidebar-toggle-btn-collapsed {
+  position: fixed !important;
+  right: 0;
+  top: 40%;
+  z-index: 3000;
+  width: 36px;
+  height: 48px;
+  background: #f3f4f6;
+  border: 1px solid #e2e8f0;
+  border-radius: 0 8px 8px 0;
+  color: #3b82f6;
+  font-size: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  opacity: 0.85;
+  &:hover { background: #3b82f6; color: white; opacity: 1; }
+}
+
+// Annotation/tag popup should never go offscreen and should be draggable
+.selection-popup {
+  max-width: 340px;
+  min-width: 180px;
+  max-height: 80vh;
+  overflow-y: auto;
+  cursor: grab;
+  user-select: none;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: white;
+  z-index: 3000;
+  position: fixed;
+  padding: 18px 24px;
+  font-size: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: box-shadow 0.2s;
+}
+.selection-popup:active {
+  cursor: grabbing;
+}
+
+.screenplay-modal .modal-header {
+  justify-content: flex-start !important;
+}
+.screenplay-modal .modal-header > *:not(h2) {
+  /* Hide any direct child that is just an '×' character */
+  &:not([class]) {
+    /* Only target elements with no class */
+    &:not(:empty) {
+      &:only-child {
+        /* Hide if the only content is '×' */
+        font-size: 18px;
+        color: #f00;
+        display: none !important;
+      }
+    }
   }
 } 
