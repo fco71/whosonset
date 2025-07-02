@@ -127,6 +127,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   const [showAnnotationSidebar, setShowAnnotationSidebar] = useState(false);
   const [activeAnnotation, setActiveAnnotation] = useState<Annotation | null>(null);
   const [newReply, setNewReply] = useState('');
+  const [showAnnotationPanel, setShowAnnotationPanel] = useState(false);
   const [panelX, setPanelX] = useState(0);
   const [panelY, setPanelY] = useState(0);
   const [drawingPage, setDrawingPage] = useState<number | null>(null);
@@ -140,7 +141,8 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isNavigating, setIsNavigating] = useState(false);
-
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  
   const viewerRef = useRef<HTMLDivElement>(null);
   const pdfContainerRef = useRef<HTMLDivElement>(null);
   const drawingCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -289,19 +291,27 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     setIsNavigating(true);
     setCurrentPage(element.pageNumber);
     setSelectedElement(element.id);
+    
+    // Scroll to the element's position
     setTimeout(() => {
       const elementOverlay = document.querySelector(`[data-element-id="${element.id}"]`) as HTMLElement;
       if (elementOverlay) {
-        elementOverlay.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
-        elementOverlay.classList.add('highlighted');
+        elementOverlay.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center',
+          inline: 'center'
+        });
+        
+        // Highlight the element briefly
+        elementOverlay.style.animation = 'pulse 1s ease-in-out';
         setTimeout(() => {
-          elementOverlay.classList.remove('highlighted');
+          elementOverlay.style.animation = '';
           setIsNavigating(false);
-        }, 1200);
+        }, 1000);
       } else {
         setIsNavigating(false);
       }
-    }, 400);
+    }, 100);
   };
 
   // Handle popup dragging
@@ -527,20 +537,26 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     }
   };
 
-  // Attach selection handler to PDF text layers
   const attachSelectionHandlers = useCallback(() => {
-    const textLayers = document.querySelectorAll('.react-pdf__Page__textContent');
-    textLayers.forEach((layer) => {
-      // Remove existing listeners to prevent duplicates
-      layer.removeEventListener('mouseup', handleTextSelection);
-      layer.removeEventListener('touchend', handleTextSelection);
-      layer.addEventListener('mouseup', handleTextSelection, { passive: true });
-      layer.addEventListener('touchend', handleTextSelection, { passive: true });
-    });
+    // Debounce the handler attachment to prevent multiple listeners
+    const timeoutId = setTimeout(() => {
+      const textLayers = document.querySelectorAll('.react-pdf__Page__textContent');
+      textLayers.forEach((layer) => {
+        // Remove existing listeners to prevent duplicates
+        layer.removeEventListener('mouseup', handleTextSelection);
+        layer.removeEventListener('touchend', handleTextSelection);
+        
+        // Add optimized listeners
+        layer.addEventListener('mouseup', handleTextSelection, { passive: true });
+        layer.addEventListener('touchend', handleTextSelection, { passive: true });
+      });
+    }, 100);
+    
+    return () => clearTimeout(timeoutId);
   }, []);
 
-  // Handler for text selection
   const handleTextSelection = useCallback((e: Event) => {
+    // Use requestAnimationFrame for better performance
     requestAnimationFrame(() => {
       const selection = window.getSelection();
       if (!selection || selection.toString().trim() === '') {
@@ -550,12 +566,15 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         setSelectionPage(null);
         return;
       }
+
       const range = selection.getRangeAt(0);
       const rect = range.getBoundingClientRect();
+      
       // Get the page number from the closest page container
       const pageContainer = (e.target as Element).closest('.react-pdf__Page');
       const pageNumber = pageContainer ? 
         parseInt(pageContainer.getAttribute('data-page-number') || '1') : 1;
+      
       if (rect.width > 0 && rect.height > 0) {
         // Calculate position relative to the page for accurate marker placement
         const pageRect = pageContainer?.getBoundingClientRect();
@@ -564,6 +583,8 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
           const relativeY = (rect.top - pageRect.top) / pageRect.height;
           const relativeWidth = rect.width / pageRect.width;
           const relativeHeight = rect.height / pageRect.height;
+          
+          // Store the relative position for accurate marker placement
           setSelectionRect({
             ...rect,
             relativeX,
@@ -575,20 +596,17 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         } else {
           setSelectionRect(rect);
         }
+        
         setSelectedText(selection.toString().trim());
         setSelectionPage(pageNumber);
         setShowSelectionPopup(true);
+        
         // Calculate popup position immediately
         const position = calculatePopupPosition(rect);
         setPopupPosition(position);
       }
     });
-  }, [calculatePopupPosition]);
-
-  // Attach selection handlers after each page render
-  useEffect(() => {
-    attachSelectionHandlers();
-  }, [numPages, scale]);
+  }, []);
 
   const formatTimeAgo = (date: Date | { seconds: number }) => {
     const now = new Date();
@@ -680,56 +698,77 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     }
   }, [selectionRect, selectionPage, currentUser, annotationInput, newTag, addAnnotation, addTag]);
 
-  useEffect(() => {
-    const handleSelection = (e: Event) => {
-      const selection = window.getSelection();
-      if (selection && selection.toString().trim().length > 0) {
-        const range = selection.getRangeAt(0);
-        const rect = range.getBoundingClientRect();
-        setSelectionRect(rect);
-        setShowSelectionPopup(true);
-        setPopupPosition({ x: rect.left, y: rect.bottom });
-        setSelectedText(selection.toString());
-      } else {
-        setShowSelectionPopup(false);
-        setSelectedText('');
-      }
-    };
-    const pdfArea = document.querySelector('.pdf-container');
-    if (pdfArea) {
-      pdfArea.addEventListener('mouseup', handleSelection as EventListener);
-    }
-    return () => {
-      if (pdfArea) {
-        pdfArea.removeEventListener('mouseup', handleSelection as EventListener);
-      }
-    };
-  }, []);
-
   return (
     <div className="screenplay-viewer" ref={viewerRef}>
-      {/* Minimal Header */}
-      <div className="viewer-header-minimal" style={{ height: 32, minHeight: 32, padding: '0 8px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-        <div className="header-left-minimal">
-          <span className="document-title" style={{ fontSize: '0.8rem', fontWeight: 500, color: '#6b7280', opacity: 0.8, margin: 0, padding: 0 }}>{screenplay.name}</span>
-        </div>
-        <div className="header-controls-minimal">
-          <div className="pdf-floating-zoom-controls">
-            <button onClick={() => setScale(prev => Math.max(0.5, prev - 0.2))}>-</button>
-            <span>{Math.round(scale * 100)}%</span>
-            <button onClick={() => setScale(prev => Math.min(3, prev + 0.2))}>+</button>
+      {/* Enhanced Header */}
+      <div className="viewer-header">
+        <div className="header-left">
+          <h2>{screenplay.name}</h2>
+          <div className="file-info">
+            <span className="file-type">{screenplay.type}</span>
           </div>
+        </div>
+        
+        <div className="header-center">
+          <div className="view-controls">
+            <button
+              onClick={() => setViewMode('single')}
+              className={`view-btn ${viewMode === 'single' ? 'active' : ''}`}
+            >
+              📄 Single
+            </button>
+            <button
+              onClick={() => setViewMode('split')}
+              className={`view-btn ${viewMode === 'split' ? 'active' : ''}`}
+            >
+              📊 Split
+            </button>
+            <button
+              onClick={() => setViewMode('fullscreen')}
+              className={`view-btn ${viewMode === 'fullscreen' ? 'active' : ''}`}
+            >
+              🖥️ Fullscreen
+            </button>
+          </div>
+        </div>
+
+        <div className="header-actions">
+          <div className="overlay-controls">
+            <button
+              onClick={() => setShowOverlays(!showOverlays)}
+              className={`overlay-btn ${showOverlays ? 'active' : ''}`}
+            >
+              {showOverlays ? '👁️' : '👁️‍🗨️'} Overlays
+            </button>
+            <button
+              onClick={() => setShowUserCursors(!showUserCursors)}
+              className={`cursor-btn ${showUserCursors ? 'active' : ''}`}
+            >
+              👥 Cursors
+            </button>
+          </div>
+          
+          {onGenerateReport && (
+            <button onClick={onGenerateReport} className="btn-report">
+              📊 Generate Report
+            </button>
+          )}
+          
+          <button onClick={onClose} className="btn-close">×</button>
         </div>
       </div>
 
       <div className="viewer-content">
         {/* PDF Viewer Panel */}
-        <div className={`pdf-panel ${viewMode}`}>
-          <div className="pdf-floating-zoom-controls">
-            <button onClick={() => setScale(prev => Math.max(0.5, prev - 0.2))}>-</button>
-            <span>{Math.round(scale * 100)}%</span>
-            <button onClick={() => setScale(prev => Math.min(3, prev + 0.2))}>+</button>
+        <div className={`pdf-panel ${viewMode} ${sidebarCollapsed ? 'expanded' : ''}`}>
+          <div className="pdf-controls">
+            <div className="zoom-controls">
+              <button onClick={() => setScale(prev => Math.max(0.5, prev - 0.2))}>🔍-</button>
+              <span className="zoom-level">{Math.round(scale * 100)}%</span>
+              <button onClick={() => setScale(prev => Math.min(3, prev + 0.2))}>🔍+</button>
+            </div>
           </div>
+
           <div 
             className="pdf-container"
             ref={pdfContainerRef}
@@ -740,7 +779,6 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
               <>
                 <Document
                   file={screenplay.url}
-                  title=""
                   onLoadSuccess={({ numPages }: { numPages: number }) => {
                     console.log('PDF loaded successfully, numPages:', numPages);
                     setNumPages(numPages);
@@ -812,7 +850,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setActiveAnnotation(annotation);
-                                  setShowAnnotationSidebar(true);
+                                  setShowAnnotationPanel(true);
                                   setPanelX(e.clientX);
                                   setPanelY(e.clientY);
                                   setSelectedElement(annotation.id);
@@ -897,15 +935,14 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                             ))}
                             
                             {/* Selection Popup for this page */}
-                            {showSelectionPopup && selectionRect && selectionPage === pageNumber && !popupType && (
+                            {showSelectionPopup && selectionRect && selectionPage === pageNumber && (
                               <div
                                 className="selection-popup"
-                                ref={popupRef}
                                 style={{
-                                  position: 'fixed',
-                                  top: popupPosition.y,
-                                  left: popupPosition.x,
-                                  zIndex: 3000,
+                                  position: 'absolute',
+                                  top: selectionRect.bottom + 8,
+                                  left: selectionRect.left + selectionRect.width / 2 - 90,
+                                  zIndex: 2000,
                                   background: 'rgba(255,255,255,0.98)',
                                   border: '1px solid #e5e7eb',
                                   borderRadius: 10,
@@ -919,119 +956,70 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                                   flexDirection: 'column',
                                   alignItems: 'center',
                                   transition: 'all 0.2s ease',
-                                  backdropFilter: 'blur(10px)',
-                                  cursor: isDragging ? 'grabbing' : 'grab',
+                                  backdropFilter: 'blur(10px)'
                                 }}
-                                onMouseDown={handlePopupMouseDown}
                               >
+                                <div style={{ 
+                                  position: 'absolute', 
+                                  top: -8, 
+                                  left: '50%', 
+                                  transform: 'translateX(-50%)', 
+                                  width: 0, 
+                                  height: 0, 
+                                  borderLeft: '8px solid transparent', 
+                                  borderRight: '8px solid transparent', 
+                                  borderBottom: '8px solid #e5e7eb' 
+                                }} />
+                                <div style={{ 
+                                  position: 'absolute', 
+                                  top: -7, 
+                                  left: '50%', 
+                                  transform: 'translateX(-50%)', 
+                                  width: 0, 
+                                  height: 0, 
+                                  borderLeft: '7px solid transparent', 
+                                  borderRight: '7px solid transparent', 
+                                  borderBottom: '7px solid rgba(255,255,255,0.98)' 
+                                }} />
                                 <span style={{ marginBottom: 8, fontWeight: 600, color: '#374151' }}>Add to selection:</span>
                                 <div style={{ display: 'flex', gap: 12 }}>
                                   <button
                                     style={{
-                                      background: '#3B82F6',
-                                      color: 'white',
-                                      border: 'none',
-                                      borderRadius: 6,
-                                      padding: '0.4rem 1.1rem',
-                                      fontWeight: 500,
-                                      fontSize: 15,
-                                      cursor: 'pointer',
+                                      background: '#3B82F6', 
+                                      color: 'white', 
+                                      border: 'none', 
+                                      borderRadius: 6, 
+                                      padding: '0.4rem 1.1rem', 
+                                      fontWeight: 500, 
+                                      fontSize: 15, 
+                                      cursor: 'pointer', 
                                       boxShadow: '0 1px 4px rgba(59,130,246,0.08)',
                                       transition: 'all 0.2s ease'
                                     }}
+                                    onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
+                                    onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
                                     onClick={() => setPopupType('annotation')}
                                   >
                                     💬 Annotation
                                   </button>
                                   <button
                                     style={{
-                                      background: '#F59E42',
-                                      color: 'white',
-                                      border: 'none',
-                                      borderRadius: 6,
-                                      padding: '0.4rem 1.1rem',
-                                      fontWeight: 500,
-                                      fontSize: 15,
-                                      cursor: 'pointer',
+                                      background: '#F59E42', 
+                                      color: 'white', 
+                                      border: 'none', 
+                                      borderRadius: 6, 
+                                      padding: '0.4rem 1.1rem', 
+                                      fontWeight: 500, 
+                                      fontSize: 15, 
+                                      cursor: 'pointer', 
                                       boxShadow: '0 1px 4px rgba(245,158,66,0.08)',
                                       transition: 'all 0.2s ease'
                                     }}
+                                    onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
+                                    onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
                                     onClick={() => setPopupType('tag')}
                                   >
                                     🏷️ Tag
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-                            {/* Annotation/Tag Input Popup */}
-                            {showSelectionPopup && selectionRect && selectionPage === pageNumber && popupType && (
-                              <div
-                                className={popupType === 'annotation' ? 'annotation-input-popup' : 'tag-input-popup'}
-                                ref={popupRef}
-                                style={{
-                                  position: 'fixed',
-                                  top: popupPosition.y,
-                                  left: popupPosition.x,
-                                  zIndex: 3001,
-                                  background: 'white',
-                                  border: '1px solid #e2e8f0',
-                                  borderRadius: 10,
-                                  boxShadow: '0 4px 24px rgba(0,0,0,0.15)',
-                                  padding: '18px 24px',
-                                  minWidth: 260,
-                                  maxWidth: 340,
-                                  fontSize: 15,
-                                  display: 'flex',
-                                  flexDirection: 'column',
-                                  gap: 12,
-                                  cursor: isDragging ? 'grabbing' : 'grab',
-                                }}
-                                onMouseDown={handlePopupMouseDown}
-                              >
-                                <div style={{ fontWeight: 600, color: '#374151', marginBottom: 8 }}>
-                                  {popupType === 'annotation' ? 'Add Annotation' : 'Add Tag'}
-                                </div>
-                                {popupType === 'annotation' ? (
-                                  <textarea
-                                    value={annotationInput}
-                                    onChange={e => setAnnotationInput(e.target.value)}
-                                    placeholder="Enter annotation..."
-                                    style={{ width: '100%', minHeight: 60, fontSize: 15, padding: 8, borderRadius: 6, border: '1px solid #e5e7eb', resize: 'vertical' }}
-                                    autoFocus
-                                  />
-                                ) : (
-                                  <>
-                                    <select
-                                      value={selectedTagType}
-                                      onChange={e => setSelectedTagType(e.target.value as any)}
-                                      style={{ marginBottom: 8, padding: 6, borderRadius: 6, border: '1px solid #e5e7eb', fontSize: 15 }}
-                                    >
-                                      {Object.keys(tagColors).map(type => (
-                                        <option key={type} value={type}>{type.replace(/_/g, ' ')}</option>
-                                      ))}
-                                    </select>
-                                    <input
-                                      value={newTag}
-                                      onChange={e => setNewTag(e.target.value)}
-                                      placeholder="Enter tag..."
-                                      style={{ width: '100%', fontSize: 15, padding: 8, borderRadius: 6, border: '1px solid #e5e7eb' }}
-                                      autoFocus
-                                    />
-                                  </>
-                                )}
-                                <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
-                                  <button
-                                    style={{ flex: 1, background: '#f3f4f6', color: '#374151', border: '1px solid #d1d5db', borderRadius: 8, padding: '10px 16px', fontWeight: 500, fontSize: 15, cursor: 'pointer' }}
-                                    onClick={() => { setPopupType(null); }}
-                                  >
-                                    Cancel
-                                  </button>
-                                  <button
-                                    style={{ flex: 1, background: '#3b82f6', color: 'white', border: 'none', borderRadius: 8, padding: '10px 16px', fontWeight: 500, fontSize: 15, cursor: 'pointer' }}
-                                    onClick={() => createAnnotation(popupType)}
-                                    disabled={popupType === 'annotation' ? !annotationInput.trim() : !newTag.trim()}
-                                  >
-                                    Save
                                   </button>
                                 </div>
                               </div>
@@ -1090,134 +1078,454 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         </div>
 
         {/* Collapsible Collaboration Panel */}
-        <div className="collaboration-panel">
-          <div className="panel-header" style={{padding: '8px 12px', margin: 0}}>
-            <div className="panel-controls">
-              {/* No sort/filter dropdowns, no search bar */}
-            </div>
-          </div>
-          <div className="panel-content">
-            {/* Active Users */}
-            <div className="active-users">
-              <h4>👥 Active Users ({activeUsers.length})</h4>
-              <div className="users-list">
-                {activeUsers.map(user => (
-                  <div key={user.userId} className="user-item">
-                    <div className="user-avatar">
-                      {user.userAvatar ? (
-                        <img src={user.userAvatar} alt={user.userName} />
-                      ) : (
-                        <div className="avatar-placeholder">{user.userName.charAt(0)}</div>
-                      )}
-                    </div>
-                    <div className="user-info">
-                      <span className="user-name">{user.userName}</span>
-                    </div>
-                  </div>
-                ))}
+        <div className={`collaboration-panel${sidebarCollapsed ? ' collapsed' : ''}`}>
+          <button
+            className="sidebar-toggle-btn"
+            onClick={() => setSidebarCollapsed((prev) => !prev)}
+            aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {sidebarCollapsed ? '⮜' : '⮞'}
+          </button>
+          {!sidebarCollapsed && (
+            <>
+              <div className="panel-header">
+                <h3>💬 Collaboration</h3>
+                <div className="panel-controls">
+                  <select value={filterType} onChange={(e) => setFilterType(e.target.value as any)}>
+                    <option value="all">All</option>
+                    <option value="annotations">Annotations</option>
+                    <option value="tags">Tags</option>
+                    <option value="resolved">Resolved</option>
+                  </select>
+                  <select value={sortBy} onChange={(e) => setSortBy(e.target.value as any)}>
+                    <option value="time">Time</option>
+                    <option value="page">Page</option>
+                    <option value="type">Type</option>
+                    <option value="user">User</option>
+                  </select>
+                  <input
+                    type="text"
+                    placeholder="Search..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="search-input"
+                  />
+                </div>
               </div>
-            </div>
 
-            {/* Annotations List */}
-            <div className="annotations-section">
-              <h4>💬 Annotations ({annotations.length})</h4>
-              <div className="annotations-list">
-                {annotations.map(annotation => (
-                  <div key={annotation.id} className={`annotation-item ${annotation.resolved ? 'resolved' : ''}`}>
-                    <div className="annotation-header">
-                      <div className="annotation-author">
-                        {annotation.userAvatar ? (
-                          <img src={annotation.userAvatar} alt={annotation.userName} />
-                        ) : (
-                          <div className="avatar-placeholder">{annotation.userName.charAt(0)}</div>
-                        )}
-                        <span>{annotation.userName}</span>
+              <div className="panel-content">
+                {/* Active Users */}
+                <div className="active-users">
+                  <h4>👥 Active Users ({activeUsers.length})</h4>
+                  <div className="users-list">
+                    {activeUsers.map(user => (
+                      <div key={user.userId} className="user-item">
+                        <div className="user-avatar">
+                          {user.userAvatar ? (
+                            <img src={user.userAvatar} alt={user.userName} />
+                          ) : (
+                            <div className="avatar-placeholder">{user.userName.charAt(0)}</div>
+                          )}
+                        </div>
+                        <div className="user-info">
+                          <span className="user-name">{user.userName}</span>
+                        </div>
                       </div>
-                      <div className="annotation-meta">
-                        <span className="annotation-time">{formatTimeAgo(toDate(annotation.timestamp))}</span>
-                      </div>
-                    </div>
-                    <div className="annotation-content">{annotation.annotation}</div>
-                    <div className="annotation-actions">
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); navigateToElement(annotation); }}
-                        className="action-btn"
-                      >
-                        📍 Go to
-                      </button>
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); toggleElementResolved(annotation.id, 'annotation'); }}
-                        className={`action-btn ${annotation.resolved ? 'resolved' : ''}`}
-                      >
-                        {annotation.resolved ? '🔄 Reopen' : '✅ Resolve'}
-                      </button>
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); deleteElement(annotation.id, 'annotation'); }}
-                        className="action-btn delete"
-                      >
-                        🗑️ Delete
-                      </button>
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
+                </div>
 
-            {/* Tags List */}
-            <div className="tags-section">
-              <h4>🏷️ Tags ({tags.length})</h4>
-              <div className="tags-list">
-                {tags.map(tag => (
-                  <div key={tag.id} className={`tag-item ${tag.resolved ? 'resolved' : ''}`}>
-                    <div className="tag-header">
-                      <div className="tag-author">
-                        {tag.userAvatar ? (
-                          <img src={tag.userAvatar} alt={tag.userName} />
-                        ) : (
-                          <div className="avatar-placeholder">{tag.userName.charAt(0)}</div>
-                        )}
-                        <span>{tag.userName}</span>
+                {/* Annotations List */}
+                <div className="annotations-section">
+                  <h4>💬 Annotations ({annotations.length})</h4>
+                  <div className="annotations-list">
+                    {annotations.map(annotation => (
+                      <div key={annotation.id} className={`annotation-item ${annotation.resolved ? 'resolved' : ''}`}>
+                        <div className="annotation-header">
+                          <div className="annotation-author">
+                            {annotation.userAvatar ? (
+                              <img src={annotation.userAvatar} alt={annotation.userName} />
+                            ) : (
+                              <div className="avatar-placeholder">{annotation.userName.charAt(0)}</div>
+                            )}
+                            <span>{annotation.userName}</span>
+                          </div>
+                          <div className="annotation-meta">
+                            <span className="annotation-time">{formatTimeAgo(toDate(annotation.timestamp))}</span>
+                          </div>
+                        </div>
+                        <div className="annotation-content">{annotation.annotation}</div>
+                        <div className="annotation-actions">
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); navigateToElement(annotation); }}
+                            className="action-btn"
+                          >
+                            📍 Go to
+                          </button>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); toggleElementResolved(annotation.id, 'annotation'); }}
+                            className={`action-btn ${annotation.resolved ? 'resolved' : ''}`}
+                          >
+                            {annotation.resolved ? '🔄 Reopen' : '✅ Resolve'}
+                          </button>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); deleteElement(annotation.id, 'annotation'); }}
+                            className="action-btn delete"
+                          >
+                            🗑️ Delete
+                          </button>
+                        </div>
                       </div>
-                      <div className="tag-meta">
-                        <span className="tag-time">{formatTimeAgo(toDate(tag.timestamp))}</span>
-                      </div>
-                    </div>
-                    <div className="tag-content">
-                      <span 
-                        className="tag-type"
-                        style={{ backgroundColor: tag.color }}
-                      >
-                        {tag.tagType}
-                      </span>
-                      <span className="tag-text">{tag.content}</span>
-                    </div>
-                    <div className="tag-actions">
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); navigateToElement(tag); }}
-                        className="action-btn"
-                      >
-                        📍 Go to
-                      </button>
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); toggleElementResolved(tag.id, 'tag'); }}
-                        className={`action-btn ${tag.resolved ? 'resolved' : ''}`}
-                      >
-                        {tag.resolved ? '🔄 Reopen' : '✅ Resolve'}
-                      </button>
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); deleteElement(tag.id, 'tag'); }}
-                        className="action-btn delete"
-                      >
-                        🗑️ Delete
-                      </button>
-                    </div>
+                    ))}
                   </div>
-                ))}
+                </div>
+
+                {/* Tags List */}
+                <div className="tags-section">
+                  <h4>🏷️ Tags ({tags.length})</h4>
+                  <div className="tags-list">
+                    {tags.map(tag => (
+                      <div key={tag.id} className={`tag-item ${tag.resolved ? 'resolved' : ''}`}>
+                        <div className="tag-header">
+                          <div className="tag-author">
+                            {tag.userAvatar ? (
+                              <img src={tag.userAvatar} alt={tag.userName} />
+                            ) : (
+                              <div className="avatar-placeholder">{tag.userName.charAt(0)}</div>
+                            )}
+                            <span>{tag.userName}</span>
+                          </div>
+                          <div className="tag-meta">
+                            <span className="tag-time">{formatTimeAgo(toDate(tag.timestamp))}</span>
+                          </div>
+                        </div>
+                        <div className="tag-content">
+                          <span 
+                            className="tag-type"
+                            style={{ backgroundColor: tag.color }}
+                          >
+                            {tag.tagType}
+                          </span>
+                          <span className="tag-text">{tag.content}</span>
+                        </div>
+                        <div className="tag-actions">
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); navigateToElement(tag); }}
+                            className="action-btn"
+                          >
+                            📍 Go to
+                          </button>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); toggleElementResolved(tag.id, 'tag'); }}
+                            className={`action-btn ${tag.resolved ? 'resolved' : ''}`}
+                          >
+                            {tag.resolved ? '🔄 Reopen' : '✅ Resolve'}
+                          </button>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); deleteElement(tag.id, 'tag'); }}
+                            className="action-btn delete"
+                          >
+                            🗑️ Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            </>
+          )}
         </div>
       </div>
+
+      {/* Fast inline selection popup */}
+      {showSelectionPopup && selectionRect && (
+        <div
+          className="fast-selection-popup"
+          style={{
+            position: 'fixed',
+            left: popupPosition.x,
+            top: popupPosition.y,
+            zIndex: 2000,
+            background: 'white',
+            border: '1px solid #e2e8f0',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            padding: '12px',
+            minWidth: '200px',
+            maxWidth: '300px',
+            fontFamily: 'Inter, sans-serif',
+            fontSize: '14px'
+          }}
+        >
+          <div style={{ marginBottom: '8px', fontSize: '12px', color: '#6b7280' }}>
+            "{selectedText.substring(0, 30)}{selectedText.length > 30 ? '...' : ''}"
+          </div>
+          
+          <div style={{ display: 'flex', gap: '8px', flexDirection: 'column' }}>
+            <button
+              onClick={() => {
+                setPopupType('annotation');
+                setAnnotationInput('');
+              }}
+              style={{
+                background: '#3b82f6',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                padding: '8px 12px',
+                fontSize: '13px',
+                cursor: 'pointer',
+                transition: 'background 0.2s ease'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#2563eb'}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#3b82f6'}
+            >
+              💬 Add Annotation
+            </button>
+            
+            <button
+              onClick={() => {
+                setPopupType('tag');
+                setNewTag('');
+              }}
+              style={{
+                background: '#f59e0b',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                padding: '8px 12px',
+                fontSize: '13px',
+                cursor: 'pointer',
+                transition: 'background 0.2s ease'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#d97706'}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#f59e0b'}
+            >
+              🏷️ Add Tag
+            </button>
+            
+            <button
+              onClick={() => {
+                setShowSelectionPopup(false);
+                setSelectionRect(null);
+                setSelectedText('');
+                setSelectionPage(null);
+                window.getSelection()?.removeAllRanges();
+              }}
+              style={{
+                background: '#f3f4f6',
+                color: '#6b7280',
+                border: '1px solid #d1d5db',
+                borderRadius: '6px',
+                padding: '6px 12px',
+                fontSize: '12px',
+                cursor: 'pointer',
+                transition: 'background 0.2s ease'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#e5e7eb'}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#f3f4f6'}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Fast annotation input popup */}
+      {popupType === 'annotation' && selectionRect && (
+        <div
+          className="fast-annotation-popup"
+          style={{
+            position: 'fixed',
+            left: popupPosition.x,
+            top: popupPosition.y,
+            zIndex: 2001,
+            background: 'white',
+            border: '1px solid #e2e8f0',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            padding: '12px',
+            minWidth: '250px',
+            fontFamily: 'Inter, sans-serif',
+            fontSize: '14px'
+          }}
+        >
+          <div style={{ marginBottom: '8px', fontWeight: '600', color: '#374151' }}>
+            Add Annotation
+          </div>
+          
+          <textarea
+            placeholder="Enter your annotation..."
+            value={annotationInput}
+            onChange={e => setAnnotationInput(e.target.value)}
+            rows={3}
+            style={{ 
+              width: '100%', 
+              marginBottom: '8px',
+              border: '1px solid #d1d5db',
+              borderRadius: '6px',
+              padding: '8px',
+              fontSize: '13px',
+              resize: 'vertical',
+              minHeight: '60px',
+              fontFamily: 'inherit'
+            }}
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && e.ctrlKey) {
+                createAnnotation('annotation');
+              } else if (e.key === 'Escape') {
+                setPopupType(null);
+                setAnnotationInput('');
+              }
+            }}
+          />
+          
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+            <button
+              onClick={() => {
+                setPopupType(null);
+                setAnnotationInput('');
+              }}
+              style={{
+                background: '#f3f4f6',
+                color: '#6b7280',
+                border: '1px solid #d1d5db',
+                borderRadius: '6px',
+                padding: '6px 12px',
+                fontSize: '12px',
+                cursor: 'pointer'
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => createAnnotation('annotation')}
+              disabled={!annotationInput.trim()}
+              style={{
+                background: annotationInput.trim() ? '#3b82f6' : '#9ca3af',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                padding: '6px 12px',
+                fontSize: '12px',
+                cursor: annotationInput.trim() ? 'pointer' : 'not-allowed'
+              }}
+            >
+              Save (Ctrl+Enter)
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Fast tag input popup */}
+      {popupType === 'tag' && selectionRect && (
+        <div
+          className="fast-tag-popup"
+          style={{
+            position: 'fixed',
+            left: popupPosition.x,
+            top: popupPosition.y,
+            zIndex: 2001,
+            background: 'white',
+            border: '1px solid #e2e8f0',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            padding: '12px',
+            minWidth: '250px',
+            fontFamily: 'Inter, sans-serif',
+            fontSize: '14px'
+          }}
+        >
+          <div style={{ marginBottom: '8px', fontWeight: '600', color: '#374151' }}>
+            Add Tag
+          </div>
+          
+          <select
+            value={selectedTagType}
+            onChange={e => setSelectedTagType(e.target.value as Tag['tagType'])}
+            style={{
+              width: '100%',
+              marginBottom: '8px',
+              border: '1px solid #d1d5db',
+              borderRadius: '6px',
+              padding: '8px',
+              fontSize: '13px',
+              fontFamily: 'inherit'
+            }}
+          >
+            <option value="character">Character</option>
+            <option value="location">Location</option>
+            <option value="prop">Prop</option>
+            <option value="scene">Scene</option>
+            <option value="camera">Camera</option>
+            <option value="lighting">Lighting</option>
+            <option value="sound">Sound</option>
+            <option value="note">Note</option>
+          </select>
+          
+          <input
+            type="text"
+            placeholder="Enter tag content..."
+            value={newTag}
+            onChange={e => setNewTag(e.target.value)}
+            style={{ 
+              width: '100%', 
+              marginBottom: '8px',
+              border: '1px solid #d1d5db',
+              borderRadius: '6px',
+              padding: '8px',
+              fontSize: '13px',
+              fontFamily: 'inherit'
+            }}
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                createAnnotation('tag');
+              } else if (e.key === 'Escape') {
+                setPopupType(null);
+                setNewTag('');
+              }
+            }}
+          />
+          
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+            <button
+              onClick={() => {
+                setPopupType(null);
+                setNewTag('');
+              }}
+              style={{
+                background: '#f3f4f6',
+                color: '#6b7280',
+                border: '1px solid #d1d5db',
+                borderRadius: '6px',
+                padding: '6px 12px',
+                fontSize: '12px',
+                cursor: 'pointer'
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => createAnnotation('tag')}
+              disabled={!newTag.trim()}
+              style={{
+                background: newTag.trim() ? '#f59e0b' : '#9ca3af',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                padding: '6px 12px',
+                fontSize: '12px',
+                cursor: newTag.trim() ? 'pointer' : 'not-allowed'
+              }}
+            >
+              Save (Enter)
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Navigation loading indicator */}
       {isNavigating && (
