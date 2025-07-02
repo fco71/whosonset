@@ -725,6 +725,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                     console.log('PDF loaded successfully, numPages:', numPages);
                     setNumPages(numPages);
                     setLoading(false);
+                    setCurrentPage(1);
                   }}
                   onLoadError={(error: Error) => {
                     console.error('Error loading PDF:', error);
@@ -1045,13 +1046,6 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                     <option value="type">Type</option>
                     <option value="user">User</option>
                   </select>
-                  <input
-                    type="text"
-                    placeholder="Search..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="search-input"
-                  />
                 </div>
               </div>
 
