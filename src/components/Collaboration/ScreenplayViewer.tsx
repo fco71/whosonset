@@ -98,8 +98,6 @@ function getRelativePosition(e: React.MouseEvent, pageDiv: HTMLDivElement, scale
   return { x: Math.max(0, Math.min(1, x)), y: Math.max(0, Math.min(1, y)) };
 }
 
-
-
 const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, projectId, onClose, onGenerateReport }) => {
   const { currentUser } = useAuth();
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
@@ -148,6 +146,8 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   const drawingCanvasRef = useRef<HTMLCanvasElement>(null);
   const popupRef = useRef<HTMLDivElement>(null);
   const pdfScrollRef = useRef<HTMLDivElement>(null);
+
+  if (!screenplay || !screenplay.id) return null;
 
   // Reply functionality
   const handleAddReply = async (annotationId: string, replyContent: string) => {
@@ -700,64 +700,6 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
 
   return (
     <div className="screenplay-viewer" ref={viewerRef}>
-      {/* Enhanced Header */}
-      <div className="viewer-header">
-        <div className="header-left">
-          <h2>{screenplay.name}</h2>
-          <div className="file-info">
-            <span className="file-type">{screenplay.type}</span>
-          </div>
-        </div>
-        
-        <div className="header-center">
-          <div className="view-controls">
-            <button
-              onClick={() => setViewMode('single')}
-              className={`view-btn ${viewMode === 'single' ? 'active' : ''}`}
-            >
-              📄 Single
-            </button>
-            <button
-              onClick={() => setViewMode('split')}
-              className={`view-btn ${viewMode === 'split' ? 'active' : ''}`}
-            >
-              📊 Split
-            </button>
-            <button
-              onClick={() => setViewMode('fullscreen')}
-              className={`view-btn ${viewMode === 'fullscreen' ? 'active' : ''}`}
-            >
-              🖥️ Fullscreen
-            </button>
-          </div>
-        </div>
-
-        <div className="header-actions">
-          <div className="overlay-controls">
-            <button
-              onClick={() => setShowOverlays(!showOverlays)}
-              className={`overlay-btn ${showOverlays ? 'active' : ''}`}
-            >
-              {showOverlays ? '👁️' : '👁️‍🗨️'} Overlays
-            </button>
-            <button
-              onClick={() => setShowUserCursors(!showUserCursors)}
-              className={`cursor-btn ${showUserCursors ? 'active' : ''}`}
-            >
-              👥 Cursors
-            </button>
-          </div>
-          
-          {onGenerateReport && (
-            <button onClick={onGenerateReport} className="btn-report">
-              📊 Generate Report
-            </button>
-          )}
-          
-          <button onClick={onClose} className="btn-close">×</button>
-        </div>
-      </div>
-
       <div className="viewer-content">
         {/* PDF Viewer Panel */}
         <div className={`pdf-panel ${viewMode} ${sidebarCollapsed ? 'expanded' : ''}`}>
