@@ -164,7 +164,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   // Reply functionality
   const handleAddReply = async (annotationId: string, replyContent: string) => {
     if (!currentUser || !replyContent.trim()) return;
-    
+
     try {
       const reply: Reply = {
         id: Date.now().toString(),
@@ -175,24 +175,25 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         timestamp: new Date()
       };
 
-      // Update the annotation with the new reply
+      // Update local state immediately for instant feedback
+      setAnnotations(prev => prev.map(a =>
+        a.id === annotationId
+          ? { ...a, replies: [...(a.replies || []), reply] }
+          : a
+      ));
+
+      // Update the annotation with the new reply in Firestore
       const annotationRef = doc(db, 'screenplayAnnotations', annotationId);
       const annotation = annotations.find(a => a.id === annotationId);
-      
       if (annotation) {
         const updatedReplies = [...(annotation.replies || []), reply];
         await updateDoc(annotationRef, { replies: updatedReplies });
-        
-        // Update local state
-        setAnnotations(prev => prev.map(a => 
-          a.id === annotationId 
-            ? { ...a, replies: updatedReplies }
-            : a
-        ));
-        
-        toast.success('Reply added successfully!');
-        setNewReply(''); // Clear input after successful reply
       }
+
+      toast.success('Reply added successfully!');
+      setNewReply(''); // Clear input after successful reply
+      setReplyInput('');
+      setReplyingTo(null);
     } catch (error) {
       console.error('Error adding reply:', error);
       toast.error('Failed to add reply');
@@ -1011,21 +1012,19 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                           
                           {/* Replies Section */}
                           {annotation.replies && annotation.replies.length > 0 && (
-                            <div className="replies-section">
+                            <div className="replies-section compact">
                               {annotation.replies.map(reply => (
-                                <div key={reply.id} className="reply-item">
-                                  <div className="reply-header">
-                                    <div className="reply-author">
-                                      {reply.userAvatar ? (
-                                        <img src={reply.userAvatar} alt={reply.userName} />
-                                      ) : (
-                                        <div className="avatar-placeholder">{reply.userName.charAt(0)}</div>
-                                      )}
-                                      <span>{reply.userName}</span>
-                                    </div>
-                                    <span className="reply-time">{formatTimeAgo(toDate(reply.timestamp))}</span>
+                                <div key={reply.id} className="reply-item compact">
+                                  <div className="reply-header compact">
+                                    {reply.userAvatar ? (
+                                      <img src={reply.userAvatar} alt={reply.userName} className="reply-avatar compact" />
+                                    ) : (
+                                      <div className="avatar-placeholder compact">{reply.userName.charAt(0)}</div>
+                                    )}
+                                    <span className="reply-author compact">{reply.userName}</span>
+                                    <span className="reply-time compact">{formatTimeAgo(toDate(reply.timestamp))}</span>
                                   </div>
-                                  <div className="reply-content">{reply.content}</div>
+                                  <div className="reply-content compact">{reply.content}</div>
                                 </div>
                               ))}
                             </div>
@@ -1033,15 +1032,29 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                           
                           {/* Reply Input */}
                           {replyingTo === annotation.id ? (
-                            <div className="reply-input-section">
+                            <div className="reply-input-section compact">
                               <textarea
                                 value={replyInput}
                                 onChange={(e) => setReplyInput(e.target.value)}
                                 placeholder="Write a reply..."
-                                className="reply-textarea"
+                                className="reply-textarea compact"
                                 rows={2}
+                                autoFocus
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    if (replyInput.trim()) {
+                                      handleAddReply(annotation.id, replyInput.trim());
+                                      setReplyInput('');
+                                      setReplyingTo(null);
+                                    }
+                                  } else if (e.key === 'Escape') {
+                                    setReplyingTo(null);
+                                    setReplyInput('');
+                                  }
+                                }}
                               />
-                              <div className="reply-actions">
+                              <div className="reply-actions compact">
                                 <button
                                   onClick={() => {
                                     if (replyInput.trim()) {
@@ -1050,7 +1063,8 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                                       setReplyingTo(null);
                                     }
                                   }}
-                                  className="reply-submit-btn"
+                                  className="reply-submit-btn compact"
+                                  disabled={!replyInput.trim()}
                                 >
                                   Reply
                                 </button>
@@ -1059,7 +1073,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                                     setReplyingTo(null);
                                     setReplyInput('');
                                   }}
-                                  className="reply-cancel-btn"
+                                  className="reply-cancel-btn compact"
                                 >
                                   Cancel
                                 </button>
@@ -1068,7 +1082,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                           ) : (
                             <button
                               onClick={() => setReplyingTo(annotation.id)}
-                              className="reply-btn"
+                              className="reply-btn compact"
                             >
                               💬 Reply
                             </button>
