@@ -1941,7 +1941,11 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 
         {/* Full-Screen Screenplay Modal */}
         {showScreenplayModal && selectedScreenplayId && (
-          <div className="screenplay-modal-overlay">
+          <div 
+            className="screenplay-modal-overlay"
+            onScroll={(e) => e.stopPropagation()}
+            onWheel={(e) => e.stopPropagation()}
+          >
             <div className="screenplay-modal">
               <div className="modal-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 1.5rem', height: 56, minHeight: 56, borderBottom: '1px solid #e5e7eb', background: '#fff' }}>
                 <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 500 }}>{userScreenplays.find(s => s.id === selectedScreenplayId)?.name}</h2>

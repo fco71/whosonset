@@ -222,7 +222,7 @@
     position: relative;
     width: 100%;
     height: 100%;
-    overflow: hidden;
+    overflow: auto;
     background: #f8fafc;
   }
 }
@@ -234,6 +234,31 @@
   overflow-x: hidden;
   padding: 20px;
   background: #f8fafc;
+  position: relative;
+  
+  // Prevent scroll events from bubbling to parent
+  &:hover {
+    overflow-y: auto;
+  }
+  
+  // Ensure scroll events are captured
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+    
+    &:hover {
+      background: #a8a8a8;
+    }
+  }
   
   .page-container {
     display: flex;
@@ -1387,14 +1412,75 @@
 
 // Update PDF container height
 .pdf-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background: #f8fafc;
+}
+
+.pdf-scrollable-container {
+  width: 100%;
   height: 100%;
   overflow-y: auto;
-  padding: 16px;
+  overflow-x: hidden;
+  padding: 20px;
+  background: #f8fafc;
+  position: relative;
   
-  .pdf-scrollable-container {
-    max-height: none !important;
-    height: auto;
+  // Prevent scroll events from bubbling to parent
+  &:hover {
+    overflow-y: auto;
   }
+  
+  // Ensure scroll events are captured
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+    
+    &:hover {
+      background: #a8a8a8;
+    }
+  }
+  
+  .page-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+}
+
+.page-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.page-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  color: #ef4444;
+  font-size: 0.875rem;
 }
 
 // Hide any duplicate titles from react-pdf or other sources
@@ -1858,4 +1944,25 @@
     background: #e5e7eb;
     color: #374151;
   }
+}
+
+// Ensure the modal prevents background scrolling
+.screenplay-viewer {
+  overflow: hidden;
+  
+  .viewer-content {
+    overflow: hidden;
+    height: 100%;
+  }
+  
+  .pdf-panel {
+    overflow: hidden;
+    height: 100%;
+  }
+}
+
+// Ensure pdf-scrollable-container can scroll
+.pdf-scrollable-container {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
 } 

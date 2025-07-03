@@ -151,6 +151,16 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
 
   if (!screenplay || !screenplay.id) return null;
 
+  // Prevent body scrolling when modal is open
+  useEffect(() => {
+    const originalStyle = window.getComputedStyle(document.body).overflow;
+    document.body.style.overflow = 'hidden';
+    
+    return () => {
+      document.body.style.overflow = originalStyle;
+    };
+  }, []);
+
   // Reply functionality
   const handleAddReply = async (annotationId: string, replyContent: string) => {
     if (!currentUser || !replyContent.trim()) return;
@@ -346,6 +356,18 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
 
   const handlePopupMouseUp = () => {
     setIsDragging(false);
+  };
+
+  // Handle PDF scroll events to prevent background scrolling
+  const handlePdfScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    // Allow the scroll to work normally, just prevent it from bubbling up
+    e.stopPropagation();
+  };
+
+  // Handle PDF wheel events to prevent background scrolling
+  const handlePdfWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    // Allow the wheel scroll to work normally, just prevent it from bubbling up
+    e.stopPropagation();
   };
 
   // Initialize collaboration session
@@ -701,10 +723,17 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   }, [selectionRect, selectionPage, currentUser, annotationInput, newTag, addAnnotation, addTag]);
 
   return (
-    <div className="screenplay-viewer" ref={viewerRef}>
-      <div className="viewer-content">
+    <div 
+      className="screenplay-viewer" 
+      ref={viewerRef}
+    >
+      <div 
+        className="viewer-content"
+      >
         {/* PDF Viewer Panel */}
-        <div className={`pdf-panel ${viewMode} ${sidebarCollapsed ? 'expanded' : ''}`}>
+        <div 
+          className={`pdf-panel ${viewMode} ${sidebarCollapsed ? 'expanded' : ''}`}
+        >
           <div className="pdf-floating-zoom-controls">
             <button onClick={() => setScale(prev => Math.max(0.5, prev - 0.2))}>-</button>
             <span>{Math.round(scale * 100)}%</span>
@@ -741,7 +770,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                   error={<div>Failed to load PDF document.</div>}
                 >
                   {typeof numPages === 'number' && numPages > 0 ? (
-                    <div className="pdf-scrollable-container" style={{ height: '100%', overflowY: 'auto', position: 'relative' }}>
+                    <div className="pdf-scrollable-container" onScroll={handlePdfScroll} onWheel={handlePdfWheel}>
                       {Array.from(new Array(numPages), (el, index) => {
                         const pageNumber = index + 1;
                         return (
