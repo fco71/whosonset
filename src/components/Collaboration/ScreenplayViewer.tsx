@@ -884,97 +884,6 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                                 >
                                 </div>
                               ))}
-                              
-                              {/* Selection Popup for this page */}
-                              {showSelectionPopup && selectionRect && selectionPage === pageNumber && (
-                                <div
-                                  className="selection-popup"
-                                  style={{
-                                    position: 'absolute',
-                                    top: selectionRect.bottom + 8,
-                                    left: selectionRect.left + selectionRect.width / 2 - 90,
-                                    zIndex: 2000,
-                                    background: 'rgba(255,255,255,0.98)',
-                                    border: '1px solid #e5e7eb',
-                                    borderRadius: 10,
-                                    boxShadow: '0 4px 24px rgba(0,0,0,0.15)',
-                                    padding: '0.75rem 1.5rem',
-                                    minWidth: 180,
-                                    fontFamily: 'Inter, sans-serif',
-                                    fontSize: 15,
-                                    color: '#222',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'center',
-                                    transition: 'all 0.2s ease',
-                                    backdropFilter: 'blur(10px)'
-                                  }}
-                                >
-                                  <div style={{ 
-                                    position: 'absolute', 
-                                    top: -8, 
-                                    left: '50%', 
-                                    transform: 'translateX(-50%)', 
-                                    width: 0, 
-                                    height: 0, 
-                                    borderLeft: '8px solid transparent', 
-                                    borderRight: '8px solid transparent', 
-                                    borderBottom: '8px solid #e5e7eb' 
-                                  }} />
-                                  <div style={{ 
-                                    position: 'absolute', 
-                                    top: -7, 
-                                    left: '50%', 
-                                    transform: 'translateX(-50%)', 
-                                    width: 0, 
-                                    height: 0, 
-                                    borderLeft: '7px solid transparent', 
-                                    borderRight: '7px solid transparent', 
-                                    borderBottom: '7px solid rgba(255,255,255,0.98)' 
-                                  }} />
-                                  <span style={{ marginBottom: 8, fontWeight: 600, color: '#374151' }}>Add to selection:</span>
-                                  <div style={{ display: 'flex', gap: 12 }}>
-                                    <button
-                                      style={{
-                                        background: '#3B82F6', 
-                                        color: 'white', 
-                                        border: 'none', 
-                                        borderRadius: 6, 
-                                        padding: '0.4rem 1.1rem', 
-                                        fontWeight: 500, 
-                                        fontSize: 15, 
-                                        cursor: 'pointer', 
-                                        boxShadow: '0 1px 4px rgba(59,130,246,0.08)',
-                                        transition: 'all 0.2s ease'
-                                      }}
-                                      onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
-                                      onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-                                      onClick={() => setPopupType('annotation')}
-                                    >
-                                      💬 Annotation
-                                    </button>
-                                    <button
-                                      style={{
-                                        background: '#F59E42', 
-                                        color: 'white', 
-                                        border: 'none', 
-                                        borderRadius: 6, 
-                                        padding: '0.4rem 1.1rem', 
-                                        fontWeight: 500, 
-                                        fontSize: 15, 
-                                        cursor: 'pointer', 
-                                        boxShadow: '0 1px 4px rgba(245,158,66,0.08)',
-                                        transition: 'all 0.2s ease'
-                                      }}
-                                      onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
-                                      onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-                                      onClick={() => setPopupType('tag')}
-                                    >
-                                      🏷️ Tag
-                                    </button>
-                                  </div>
-                                </div>
-                              )}
                             </div>
                           );
                         })}
@@ -1248,238 +1157,58 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
           </div>
         </div>
 
-        {/* Fast inline selection popup */}
-        {showSelectionPopup && selectionRect && (
-          (() => {
-            const top = typeof selectionRect.bottom === 'number' ? selectionRect.bottom + 8 : 0;
-            const left = typeof selectionRect.left === 'number' && typeof selectionRect.width === 'number' ? selectionRect.left + selectionRect.width / 2 - 90 : 0;
-            return (
-              <div
-                className="fast-selection-popup"
-                style={{
-                  position: 'fixed',
-                  left,
-                  top,
-                  zIndex: 2000,
-                  background: 'white',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '8px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                  padding: '12px',
-                  minWidth: '200px',
-                  maxWidth: '300px',
-                  fontFamily: 'Inter, sans-serif',
-                  fontSize: '14px'
-                }}
-              >
-                <div style={{ marginBottom: '8px', fontSize: '12px', color: '#6b7280' }}>
-                  "{selectedText.substring(0, 30)}{selectedText.length > 30 ? '...' : ''}"
-                </div>
-                
-                <div style={{ display: 'flex', gap: '8px', flexDirection: 'column' }}>
-                  <button
-                    onClick={() => {
-                      setPopupType('annotation');
-                      setAnnotationInput('');
-                    }}
-                    style={{
-                      background: '#3b82f6',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '6px',
-                      padding: '8px 12px',
-                      fontSize: '13px',
-                      cursor: 'pointer',
-                      transition: 'background 0.2s ease'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = '#2563eb'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = '#3b82f6'}
-                  >
-                    💬 Add Annotation
-                  </button>
-                  
-                  <button
-                    onClick={() => {
-                      setPopupType('tag');
-                      setNewTag('');
-                    }}
-                    style={{
-                      background: '#f59e0b',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '6px',
-                      padding: '8px 12px',
-                      fontSize: '13px',
-                      cursor: 'pointer',
-                      transition: 'background 0.2s ease'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = '#d97706'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = '#f59e0b'}
-                  >
-                    🏷️ Add Tag
-                  </button>
-                  
-                  <button
-                    onClick={() => {
-                      setShowSelectionPopup(false);
-                      setSelectionRect(null);
-                      setSelectedText('');
-                      setSelectionPage(null);
-                      window.getSelection()?.removeAllRanges();
-                    }}
-                    style={{
-                      background: '#f3f4f6',
-                      color: '#6b7280',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '6px',
-                      padding: '6px 12px',
-                      fontSize: '12px',
-                      cursor: 'pointer',
-                      transition: 'background 0.2s ease'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = '#e5e7eb'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = '#f3f4f6'}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            );
-          })()
+        {/* Navigation loading indicator */}
+        {isNavigating && (
+          <div className="navigation-loading">
+            <div className="spinner"></div>
+            <span>Navigating to annotation...</span>
+          </div>
         )}
 
-        {/* Fast annotation input popup */}
-        {popupType === 'annotation' && selectionRect && (
-          (() => {
-            const top = typeof selectionRect.bottom === 'number' ? selectionRect.bottom + 8 : 0;
-            const left = typeof selectionRect.left === 'number' && typeof selectionRect.width === 'number' ? selectionRect.left + selectionRect.width / 2 - 90 : 0;
-            return (
-              <div
-                className="fast-annotation-popup"
-                style={{
-                  position: 'fixed',
-                  left,
-                  top,
-                  zIndex: 2001,
-                  background: 'white',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '8px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                  padding: '12px',
-                  minWidth: '250px',
-                  fontFamily: 'Inter, sans-serif',
-                  fontSize: '14px'
+        {/* Selection popup */}
+        {(showSelectionPopup || popupType) && (
+          <div
+            className="selection-popup"
+            ref={popupRef}
+            style={{
+              left: popupPosition.x || 100,
+              top: popupPosition.y || 100,
+              position: 'fixed',
+              zIndex: 3000,
+              minWidth: 260,
+              maxWidth: 340,
+              cursor: isDragging ? 'grabbing' : 'grab',
+              userSelect: 'none',
+            }}
+            onMouseDown={handlePopupMouseDown}
+          >
+            <div className="popup-header" style={{ fontWeight: 600, color: '#374151', marginBottom: 8, cursor: 'grab' }}>
+              {popupType === 'annotation' ? 'Add Annotation' : popupType === 'tag' ? 'Add Tag' : 'Add to selection:'}
+            </div>
+            {popupType === 'annotation' && (
+              <textarea
+                placeholder="Enter your annotation..."
+                value={annotationInput}
+                onChange={e => setAnnotationInput(e.target.value)}
+                rows={3}
+                style={{ width: '100%', marginBottom: 8, border: '1px solid #d1d5db', borderRadius: 6, padding: 8, fontSize: 13, resize: 'vertical', minHeight: 60, fontFamily: 'inherit' }}
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && e.ctrlKey) {
+                    createAnnotation('annotation');
+                  } else if (e.key === 'Escape') {
+                    setPopupType(null);
+                    setAnnotationInput('');
+                  }
                 }}
-              >
-                <div style={{ marginBottom: '8px', fontWeight: '600', color: '#374151' }}>
-                  Add Annotation
-                </div>
-                
-                <textarea
-                  placeholder="Enter your annotation..."
-                  value={annotationInput}
-                  onChange={e => setAnnotationInput(e.target.value)}
-                  rows={3}
-                  style={{ 
-                    width: '100%', 
-                    marginBottom: '8px',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '6px',
-                    padding: '8px',
-                    fontSize: '13px',
-                    resize: 'vertical',
-                    minHeight: '60px',
-                    fontFamily: 'inherit'
-                  }}
-                  autoFocus
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && e.ctrlKey) {
-                      createAnnotation('annotation');
-                    } else if (e.key === 'Escape') {
-                      setPopupType(null);
-                      setAnnotationInput('');
-                    }
-                  }}
-                />
-                
-                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                  <button
-                    onClick={() => {
-                      setPopupType(null);
-                      setAnnotationInput('');
-                    }}
-                    style={{
-                      background: '#f3f4f6',
-                      color: '#6b7280',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '6px',
-                      padding: '6px 12px',
-                      fontSize: '12px',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={() => createAnnotation('annotation')}
-                    disabled={!annotationInput.trim()}
-                    style={{
-                      background: annotationInput.trim() ? '#3b82f6' : '#9ca3af',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '6px',
-                      padding: '6px 12px',
-                      fontSize: '12px',
-                      cursor: annotationInput.trim() ? 'pointer' : 'not-allowed'
-                    }}
-                  >
-                    Save (Ctrl+Enter)
-                  </button>
-                </div>
-              </div>
-            );
-          })()
-        )}
-
-        {/* Fast tag input popup */}
-        {popupType === 'tag' && selectionRect && (
-          (() => {
-            const top = typeof selectionRect.bottom === 'number' ? selectionRect.bottom + 8 : 0;
-            const left = typeof selectionRect.left === 'number' && typeof selectionRect.width === 'number' ? selectionRect.left + selectionRect.width / 2 - 90 : 0;
-            return (
-              <div
-                className="fast-tag-popup"
-                style={{
-                  position: 'fixed',
-                  left,
-                  top,
-                  zIndex: 2001,
-                  background: 'white',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '8px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                  padding: '12px',
-                  minWidth: '250px',
-                  fontFamily: 'Inter, sans-serif',
-                  fontSize: '14px'
-                }}
-              >
-                <div style={{ marginBottom: '8px', fontWeight: '600', color: '#374151' }}>
-                  Add Tag
-                </div>
-                
+              />
+            )}
+            {popupType === 'tag' && (
+              <>
                 <select
                   value={selectedTagType}
                   onChange={e => setSelectedTagType(e.target.value as Tag['tagType'])}
-                  style={{
-                    width: '100%',
-                    marginBottom: '8px',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '6px',
-                    padding: '8px',
-                    fontSize: '13px',
-                    fontFamily: 'inherit'
-                  }}
+                  style={{ width: '100%', marginBottom: 8, border: '1px solid #d1d5db', borderRadius: 6, padding: 8, fontSize: 13, fontFamily: 'inherit' }}
                 >
                   <option value="character">Character</option>
                   <option value="location">Location</option>
@@ -1490,7 +1219,6 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                   <option value="sound">Sound</option>
                   <option value="note">Note</option>
                 </select>
-                
                 <input
                   type="text"
                   placeholder="Enter tag content..."
@@ -1515,51 +1243,63 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                     }
                   }}
                 />
-                
-                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                  <button
-                    onClick={() => {
-                      setPopupType(null);
-                      setNewTag('');
-                    }}
-                    style={{
-                      background: '#f3f4f6',
-                      color: '#6b7280',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '6px',
-                      padding: '6px 12px',
-                      fontSize: '12px',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={() => createAnnotation('tag')}
-                    disabled={!newTag.trim()}
-                    style={{
-                      background: newTag.trim() ? '#f59e0b' : '#9ca3af',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '6px',
-                      padding: '6px 12px',
-                      fontSize: '12px',
-                      cursor: newTag.trim() ? 'pointer' : 'not-allowed'
-                    }}
-                  >
-                    Save (Enter)
-                  </button>
-                </div>
+              </>
+            )}
+            {!popupType && (
+              <div style={{ display: 'flex', gap: 8, flexDirection: 'column' }}>
+                <button
+                  onClick={() => {
+                    setPopupType('annotation');
+                    setAnnotationInput('');
+                  }}
+                  style={{ background: '#3b82f6', color: 'white', border: 'none', borderRadius: 6, padding: '8px 12px', fontSize: 13, cursor: 'pointer', transition: 'background 0.2s ease' }}
+                >
+                  💬 Add Annotation
+                </button>
+                <button
+                  onClick={() => {
+                    setPopupType('tag');
+                    setNewTag('');
+                  }}
+                  style={{ background: '#f59e0b', color: 'white', border: 'none', borderRadius: 6, padding: '8px 12px', fontSize: 13, cursor: 'pointer', transition: 'background 0.2s ease' }}
+                >
+                  🏷️ Add Tag
+                </button>
+                <button
+                  onClick={() => {
+                    setShowSelectionPopup(false);
+                    setSelectionRect(null);
+                    setSelectedText('');
+                    setSelectionPage(null);
+                    window.getSelection()?.removeAllRanges();
+                  }}
+                  style={{ background: '#f3f4f6', color: '#6b7280', border: '1px solid #d1d5db', borderRadius: 6, padding: '6px 12px', fontSize: 12, cursor: 'pointer', transition: 'background 0.2s ease' }}
+                >
+                  Cancel
+                </button>
               </div>
-            );
-          })()
-        )}
-
-        {/* Navigation loading indicator */}
-        {isNavigating && (
-          <div className="navigation-loading">
-            <div className="spinner"></div>
-            <span>Navigating to annotation...</span>
+            )}
+            {(popupType === 'annotation' || popupType === 'tag') && (
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => {
+                    setPopupType(null);
+                    setAnnotationInput('');
+                    setNewTag('');
+                  }}
+                  style={{ background: '#f3f4f6', color: '#6b7280', border: '1px solid #d1d5db', borderRadius: 6, padding: '6px 12px', fontSize: 12, cursor: 'pointer' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => createAnnotation(popupType as 'annotation' | 'tag')}
+                  disabled={popupType === 'annotation' ? !annotationInput.trim() : !newTag.trim()}
+                  style={{ background: (popupType === 'annotation' ? annotationInput.trim() : newTag.trim()) ? (popupType === 'annotation' ? '#3b82f6' : '#f59e0b') : '#9ca3af', color: 'white', border: 'none', borderRadius: 6, padding: '6px 12px', fontSize: 12, cursor: (popupType === 'annotation' ? annotationInput.trim() : newTag.trim()) ? 'pointer' : 'not-allowed' }}
+                >
+                  Save {popupType === 'annotation' ? '(Ctrl+Enter)' : '(Enter)'}
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

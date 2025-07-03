@@ -1862,9 +1862,25 @@
 
 // Reply functionality styles
 .replies-section {
-  margin: 12px 0;
-  padding-left: 16px;
-  border-left: 2px solid #e2e8f0;
+  margin: 12px 0 0 0;
+  padding-left: 24px;
+  border-left: 3px solid #e0e7ef;
+  background: #f7fafd;
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 1px 4px rgba(59,130,246,0.04);
+  position: relative;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(to bottom, #e0e7ef 60%, #c7d2fe 100%);
+    border-radius: 1px;
+    opacity: 0.7;
+  }
   
   .reply-item {
     margin-bottom: 12px;
@@ -1872,39 +1888,9 @@
     background: #f8fafc;
     border-radius: 6px;
     border: 1px solid #e2e8f0;
-    
-    .reply-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 6px;
-      
-      .reply-author {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 0.8rem;
-        color: #6b7280;
-        
-        img, .avatar-placeholder {
-          width: 16px;
-          height: 16px;
-          border-radius: 50%;
-          font-size: 0.7rem;
-        }
-      }
-      
-      .reply-time {
-        font-size: 0.75rem;
-        color: #9ca3af;
-      }
-    }
-    
-    .reply-content {
-      font-size: 0.875rem;
-      color: #374151;
-      line-height: 1.4;
-    }
+    box-shadow: 0 1px 2px rgba(59,130,246,0.03);
+    position: relative;
+    margin-left: 8px;
   }
 }
 
