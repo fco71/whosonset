@@ -23,6 +23,11 @@
   flex-direction: column;
   overflow: hidden;
   position: relative;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 0;
+  padding-right: 0;
+  box-sizing: border-box;
   
   &.single {
     .viewer-content {
@@ -103,7 +108,38 @@
 }
 
 .viewer-header {
-  display: none !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 24px 6px 24px;
+  background: transparent;
+  border-bottom: 1px solid #f1f5f9;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.btn-close {
+  background: none;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  transition: background 0.15s, color 0.15s;
+  cursor: pointer;
+  box-shadow: none;
+  outline: none;
+  font-size: 2rem;
+  margin-left: 12px;
+
+  &:hover, &:focus {
+    background: #f1f5f9;
+    color: #1e293b;
+  }
 }
 
 .viewer-header-minimal {
@@ -1965,4 +2001,75 @@
 .pdf-scrollable-container {
   overflow-y: auto !important;
   overflow-x: hidden !important;
+}
+
+.screenplay-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 24px 6px 24px;
+  background: transparent;
+  border-bottom: 1px solid #f1f5f9;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.screenplay-title {
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: #1e293b;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.screenplay-close-btn {
+  background: none;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  transition: background 0.15s, color 0.15s;
+  cursor: pointer;
+  box-shadow: none;
+  outline: none;
+
+  &:hover, &:focus {
+    background: #f1f5f9;
+    color: #1e293b;
+  }
+}
+
+.btn-close-absolute {
+  position: absolute;
+  top: 8px;
+  right: 16px;
+  z-index: 3000;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid #e2e8f0;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  font-size: 1.5rem;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  outline: none;
+  transition: background 0.15s, color 0.15s;
+  padding: 0;
+  line-height: 1;
+
+  &:hover, &:focus {
+    background: rgba(241,245,249,0.9);
+    color: #1e293b;
+  }
 } 

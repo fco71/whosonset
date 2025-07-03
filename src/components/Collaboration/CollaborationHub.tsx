@@ -1947,19 +1947,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
             onWheel={(e) => e.stopPropagation()}
           >
             <div className="screenplay-modal">
-              <div className="modal-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 1.5rem', height: 56, minHeight: 56, borderBottom: '1px solid #e5e7eb', background: '#fff' }}>
-                <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 500 }}>{userScreenplays.find(s => s.id === selectedScreenplayId)?.name}</h2>
-                <button
-                  className="close-btn"
-                  onClick={() => {
-                    setShowScreenplayModal(false);
-                    setSelectedScreenplayId(null);
-                  }}
-                  aria-label="Close"
-                >
-                  ×
-                </button>
-              </div>
+              {/* Removed parent modal-header and close button to avoid double X and large header */}
               <div className="modal-content">
                 <ScreenplayViewer
                   screenplay={userScreenplays.find(s => s.id === selectedScreenplayId)}
