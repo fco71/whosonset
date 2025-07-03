@@ -61,6 +61,7 @@ import CollaborationHub from './components/Collaboration/CollaborationHub';
 import VideoConferenceHub from './components/VideoConference/VideoConferenceHub';
 
 import { AnimatePresence } from 'framer-motion';
+import Navigation from './components/Navigation';
 
 const CrewSearch = () => <h2 className="text-white p-6">Crew Search (Protected)</h2>;
 
@@ -97,41 +98,7 @@ const App: React.FC = () => {
 
     return (
         <>
-            <header className="bg-white bg-opacity-90 backdrop-blur-md shadow-sm fixed w-full z-50 top-0 left-0 border-b border-gray-100">
-                <nav className="flex flex-wrap items-center justify-between px-8 py-2">
-                    <div>
-                        {/* Typographical logo */}
-                        <Link to="/" className="tracking-widest text-lg font-medium text-gray-800 uppercase select-none" style={{ letterSpacing: '0.15em', fontFamily: 'Inter, Helvetica, Arial, sans-serif' }}>
-                            whosonset
-                        </Link>
-                    </div>
-                    <ul className="flex gap-5 flex-wrap items-center">
-                        <li><Link to="/" className="nav-link">Home</Link></li>
-                        <li><Link to="/projects" className="nav-link">Projects</Link></li>
-                        <li><Link to="/jobs" className="nav-link">Jobs</Link></li>
-                        <li><Link to="/crew" className="nav-link">Crew</Link></li>
-                        {!authUser ? (
-                            <>
-                                <li><Link to="/login" className="nav-link">Login</Link></li>
-                                <li><Link to="/register" className="nav-link">Register</Link></li>
-                            </>
-                        ) : (
-                            <>
-                                <li><Link to="/my-projects" className="nav-link">My Projects</Link></li>
-                                <li><Link to="/edit-profile" className="nav-link">Resume Builder</Link></li>
-                                <li><Link to="/social" className="nav-link">Social</Link></li>
-                                <li><Link to="/collaboration" className="nav-link">Collaboration</Link></li>
-                                <li><Link to="/analytics" className="nav-link">📊 Analytics</Link></li>
-                                <li><NotificationBell currentUserId={authUser?.uid || ''} /></li>
-                                <li>
-                                    <UserMenu authUser={authUser} userSignOut={userSignOut} />
-                                </li>
-                            </>
-                        )}
-                    </ul>
-                </nav>
-            </header>
-
+            <Navigation authUser={authUser} userSignOut={userSignOut} />
             <main className="bg-gray-900 min-h-screen pt-16">
                 <AnimatePresence mode="wait">
                     <Routes location={location} key={location.pathname}>

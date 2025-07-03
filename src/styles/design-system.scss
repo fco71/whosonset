@@ -1,0 +1,485 @@
+/**
+ * DESIGN SYSTEM FOUNDATION
+ * ========================
+ * 
+ * Comprehensive design system for consistent UI/UX across the application
+ * This establishes the foundation for Phase 1: Foundation & Polish
+ */
+
+// ============================================================================
+// COLOR PALETTE
+// ============================================================================
+
+:root {
+  /* Primary Colors */
+  --primary-50: #eff6ff;
+  --primary-100: #dbeafe;
+  --primary-200: #bfdbfe;
+  --primary-300: #93c5fd;
+  --primary-400: #60a5fa;
+  --primary-500: #3b82f6;
+  --primary-600: #2563eb;
+  --primary-700: #1d4ed8;
+  --primary-800: #1e40af;
+  --primary-900: #1e3a8a;
+  --primary-950: #172554;
+
+  /* Neutral Colors */
+  --neutral-50: #f9fafb;
+  --neutral-100: #f3f4f6;
+  --neutral-200: #e5e7eb;
+  --neutral-300: #d1d5db;
+  --neutral-400: #9ca3af;
+  --neutral-500: #6b7280;
+  --neutral-600: #4b5563;
+  --neutral-700: #374151;
+  --neutral-800: #1f2937;
+  --neutral-900: #111827;
+  --neutral-950: #030712;
+
+  /* Success Colors */
+  --success-50: #f0fdf4;
+  --success-100: #dcfce7;
+  --success-200: #bbf7d0;
+  --success-300: #86efac;
+  --success-400: #4ade80;
+  --success-500: #22c55e;
+  --success-600: #16a34a;
+  --success-700: #15803d;
+  --success-800: #166534;
+  --success-900: #14532d;
+
+  /* Warning Colors */
+  --warning-50: #fffbeb;
+  --warning-100: #fef3c7;
+  --warning-200: #fde68a;
+  --warning-300: #fcd34d;
+  --warning-400: #fbbf24;
+  --warning-500: #f59e0b;
+  --warning-600: #d97706;
+  --warning-700: #b45309;
+  --warning-800: #92400e;
+  --warning-900: #78350f;
+
+  /* Error Colors */
+  --error-50: #fef2f2;
+  --error-100: #fee2e2;
+  --error-200: #fecaca;
+  --error-300: #fca5a5;
+  --error-400: #f87171;
+  --error-500: #ef4444;
+  --error-600: #dc2626;
+  --error-700: #b91c1c;
+  --error-800: #991b1b;
+  --error-900: #7f1d1d;
+
+  /* Semantic Colors */
+  --text-primary: var(--neutral-900);
+  --text-secondary: var(--neutral-600);
+  --text-tertiary: var(--neutral-500);
+  --text-inverse: var(--neutral-50);
+  
+  --bg-primary: #ffffff;
+  --bg-secondary: var(--neutral-50);
+  --bg-tertiary: var(--neutral-100);
+  --bg-overlay: rgba(0, 0, 0, 0.5);
+  
+  --border-primary: var(--neutral-200);
+  --border-secondary: var(--neutral-300);
+  --border-focus: var(--primary-500);
+  
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+// Dark mode support
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text-primary: var(--neutral-50);
+    --text-secondary: var(--neutral-400);
+    --text-tertiary: var(--neutral-500);
+    --text-inverse: var(--neutral-900);
+    
+    --bg-primary: var(--neutral-900);
+    --bg-secondary: var(--neutral-800);
+    --bg-tertiary: var(--neutral-700);
+    
+    --border-primary: var(--neutral-700);
+    --border-secondary: var(--neutral-600);
+  }
+}
+
+// ============================================================================
+// TYPOGRAPHY
+// ============================================================================
+
+// Font families
+$font-family-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+$font-family-mono: 'JetBrains Mono', 'Fira Code', 'Monaco', 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+
+// Font weights
+$font-weight-light: 300;
+$font-weight-normal: 400;
+$font-weight-medium: 500;
+$font-weight-semibold: 600;
+$font-weight-bold: 700;
+
+// Font sizes
+$text-xs: 0.75rem;    // 12px
+$text-sm: 0.875rem;   // 14px
+$text-base: 1rem;     // 16px
+$text-lg: 1.125rem;   // 18px
+$text-xl: 1.25rem;    // 20px
+$text-2xl: 1.5rem;    // 24px
+$text-3xl: 1.875rem;  // 30px
+$text-4xl: 2.25rem;   // 36px
+$text-5xl: 3rem;      // 48px
+
+// Line heights
+$leading-none: 1;
+$leading-tight: 1.25;
+$leading-snug: 1.375;
+$leading-normal: 1.5;
+$leading-relaxed: 1.625;
+$leading-loose: 2;
+
+// Typography mixins
+@mixin text-xs { font-size: $text-xs; line-height: $leading-tight; }
+@mixin text-sm { font-size: $text-sm; line-height: $leading-normal; }
+@mixin text-base { font-size: $text-base; line-height: $leading-normal; }
+@mixin text-lg { font-size: $text-lg; line-height: $leading-relaxed; }
+@mixin text-xl { font-size: $text-xl; line-height: $leading-relaxed; }
+@mixin text-2xl { font-size: $text-2xl; line-height: $leading-tight; }
+@mixin text-3xl { font-size: $text-3xl; line-height: $leading-tight; }
+@mixin text-4xl { font-size: $text-4xl; line-height: $leading-none; }
+@mixin text-5xl { font-size: $text-5xl; line-height: $leading-none; }
+
+// ============================================================================
+// SPACING
+// ============================================================================
+
+// Spacing scale
+$space-0: 0;
+$space-1: 0.25rem;   // 4px
+$space-2: 0.5rem;    // 8px
+$space-3: 0.75rem;   // 12px
+$space-4: 1rem;      // 16px
+$space-5: 1.25rem;   // 20px
+$space-6: 1.5rem;    // 24px
+$space-8: 2rem;      // 32px
+$space-10: 2.5rem;   // 40px
+$space-12: 3rem;     // 48px
+$space-16: 4rem;     // 64px
+$space-20: 5rem;     // 80px
+$space-24: 6rem;     // 96px
+
+// ============================================================================
+// BORDER RADIUS
+// ============================================================================
+
+$radius-none: 0;
+$radius-sm: 0.125rem;   // 2px
+$radius-base: 0.25rem;  // 4px
+$radius-md: 0.375rem;   // 6px
+$radius-lg: 0.5rem;     // 8px
+$radius-xl: 0.75rem;    // 12px
+$radius-2xl: 1rem;      // 16px
+$radius-3xl: 1.5rem;    // 24px
+$radius-full: 9999px;
+
+// ============================================================================
+// TRANSITIONS & ANIMATIONS
+// ============================================================================
+
+// Transition durations
+$duration-75: 75ms;
+$duration-100: 100ms;
+$duration-150: 150ms;
+$duration-200: 200ms;
+$duration-300: 300ms;
+$duration-500: 500ms;
+$duration-700: 700ms;
+$duration-1000: 1000ms;
+
+// Transition timing functions
+$ease-linear: linear;
+$ease-in: cubic-bezier(0.4, 0, 1, 1);
+$ease-out: cubic-bezier(0, 0, 0.2, 1);
+$ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+
+// Animation mixins
+@mixin transition-all {
+  transition: all $duration-200 $ease-in-out;
+}
+
+@mixin transition-colors {
+  transition: color $duration-200 $ease-in-out, background-color $duration-200 $ease-in-out, border-color $duration-200 $ease-in-out;
+}
+
+@mixin transition-transform {
+  transition: transform $duration-200 $ease-in-out;
+}
+
+@mixin transition-opacity {
+  transition: opacity $duration-200 $ease-in-out;
+}
+
+// ============================================================================
+// COMPONENT MIXINS
+// ============================================================================
+
+// Button base styles
+@mixin button-base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: $space-2;
+  border: 1px solid transparent;
+  border-radius: $radius-lg;
+  font-family: $font-family-sans;
+  font-weight: $font-weight-medium;
+  text-decoration: none;
+  cursor: pointer;
+  @include transition-all;
+  
+  &:focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+// Button variants
+@mixin button-primary {
+  @include button-base;
+  background-color: var(--primary-600);
+  color: var(--text-inverse);
+  
+  &:hover:not(:disabled) {
+    background-color: var(--primary-700);
+  }
+  
+  &:active:not(:disabled) {
+    background-color: var(--primary-800);
+  }
+}
+
+@mixin button-secondary {
+  @include button-base;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: var(--border-primary);
+  
+  &:hover:not(:disabled) {
+    background-color: var(--bg-tertiary);
+    border-color: var(--border-secondary);
+  }
+}
+
+@mixin button-ghost {
+  @include button-base;
+  background-color: transparent;
+  color: var(--text-secondary);
+  
+  &:hover:not(:disabled) {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+  }
+}
+
+// Input base styles
+@mixin input-base {
+  width: 100%;
+  padding: $space-3 $space-4;
+  border: 1px solid var(--border-primary);
+  border-radius: $radius-lg;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: $font-family-sans;
+  @include text-base;
+  @include transition-colors;
+  
+  &::placeholder {
+    color: var(--text-tertiary);
+  }
+  
+  &:focus {
+    outline: none;
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+  
+  &:disabled {
+    background-color: var(--bg-secondary);
+    color: var(--text-tertiary);
+    cursor: not-allowed;
+  }
+}
+
+// Card base styles
+@mixin card-base {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: $radius-xl;
+  box-shadow: var(--shadow-sm);
+  @include transition-all;
+  
+  &:hover {
+    box-shadow: var(--shadow-md);
+  }
+}
+
+// ============================================================================
+// UTILITY CLASSES
+// ============================================================================
+
+// Text utilities
+.text-xs { @include text-xs; }
+.text-sm { @include text-sm; }
+.text-base { @include text-base; }
+.text-lg { @include text-lg; }
+.text-xl { @include text-xl; }
+.text-2xl { @include text-2xl; }
+.text-3xl { @include text-3xl; }
+.text-4xl { @include text-4xl; }
+.text-5xl { @include text-5xl; }
+
+// Font weight utilities
+.font-light { font-weight: $font-weight-light; }
+.font-normal { font-weight: $font-weight-normal; }
+.font-medium { font-weight: $font-weight-medium; }
+.font-semibold { font-weight: $font-weight-semibold; }
+.font-bold { font-weight: $font-weight-bold; }
+
+// Color utilities
+.text-primary { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.text-tertiary { color: var(--text-tertiary); }
+.text-inverse { color: var(--text-inverse); }
+
+.bg-primary { background-color: var(--bg-primary); }
+.bg-secondary { background-color: var(--bg-secondary); }
+.bg-tertiary { background-color: var(--bg-tertiary); }
+
+// Spacing utilities
+.p-0 { padding: $space-0; }
+.p-1 { padding: $space-1; }
+.p-2 { padding: $space-2; }
+.p-3 { padding: $space-3; }
+.p-4 { padding: $space-4; }
+.p-5 { padding: $space-5; }
+.p-6 { padding: $space-6; }
+.p-8 { padding: $space-8; }
+
+.m-0 { margin: $space-0; }
+.m-1 { margin: $space-1; }
+.m-2 { margin: $space-2; }
+.m-3 { margin: $space-3; }
+.m-4 { margin: $space-4; }
+.m-5 { margin: $space-5; }
+.m-6 { margin: $space-6; }
+.m-8 { margin: $space-8; }
+
+// Flex utilities
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.flex-row { flex-direction: row; }
+.items-center { align-items: center; }
+.items-start { align-items: flex-start; }
+.items-end { align-items: flex-end; }
+.justify-center { justify-content: center; }
+.justify-between { justify-content: space-between; }
+.justify-start { justify-content: flex-start; }
+.justify-end { justify-content: flex-end; }
+
+// ============================================================================
+// RESPONSIVE BREAKPOINTS
+// ============================================================================
+
+$breakpoint-sm: 640px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 1024px;
+$breakpoint-xl: 1280px;
+$breakpoint-2xl: 1536px;
+
+// Responsive utilities
+.sm\:block { @media (min-width: $breakpoint-sm) { display: block; } }
+.sm\:flex { @media (min-width: $breakpoint-sm) { display: flex; } }
+.sm\:hidden { @media (min-width: $breakpoint-sm) { display: none; } }
+
+.md\:block { @media (min-width: $breakpoint-md) { display: block; } }
+.md\:flex { @media (min-width: $breakpoint-md) { display: flex; } }
+.md\:hidden { @media (min-width: $breakpoint-md) { display: none; } }
+
+.lg\:block { @media (min-width: $breakpoint-lg) { display: block; } }
+.lg\:flex { @media (min-width: $breakpoint-lg) { display: flex; } }
+.lg\:hidden { @media (min-width: $breakpoint-lg) { display: none; } }
+
+.xl\:block { @media (min-width: $breakpoint-xl) { display: block; } }
+.xl\:flex { @media (min-width: $breakpoint-xl) { display: flex; } }
+.xl\:hidden { @media (min-width: $breakpoint-xl) { display: none; } }
+
+// ============================================================================
+// PERFORMANCE OPTIMIZATIONS
+// ============================================================================
+
+// Hardware acceleration
+.gpu-accelerated {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+// Smooth scrolling
+.smooth-scroll {
+  scroll-behavior: smooth;
+}
+
+// Reduced motion
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+// ============================================================================
+// ACCESSIBILITY
+// ============================================================================
+
+// Focus styles
+.focus-visible {
+  &:focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
+  }
+}
+
+// Screen reader only
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+// High contrast mode
+@media (prefers-contrast: high) {
+  :root {
+    --border-primary: var(--neutral-900);
+    --border-secondary: var(--neutral-700);
+  }
+} 
