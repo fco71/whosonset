@@ -85,10 +85,13 @@ interface ScreenplaySession {
   updatedAt: Date;
 }
 
-// Helper to normalize Date or { seconds: number } to Date
-function toDate(val: Date | { seconds: number }): Date {
-  return val instanceof Date ? val : new Date(val.seconds * 1000);
-}
+// Helper to convert Firestore timestamp or Date to JS Date
+const toDate = (ts: any) => {
+  if (!ts) return new Date();
+  if (ts instanceof Date) return ts;
+  if (typeof ts === 'object' && ts.seconds) return new Date(ts.seconds * 1000);
+  return new Date(ts);
+};
 
 // Helper to get mouse position relative to PDF page
 function getRelativePosition(e: React.MouseEvent, pageDiv: HTMLDivElement, scale: number) {
@@ -149,6 +152,9 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   const popupRef = useRef<HTMLDivElement>(null);
   const pdfScrollRef = useRef<HTMLDivElement>(null);
 
+  // Add state for virtualization
+  const [visiblePageRange, setVisiblePageRange] = useState<[number, number]>([1, 10]);
+
   if (!screenplay || !screenplay.id) return null;
 
   // Prevent body scrolling when modal is open
@@ -176,19 +182,29 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       };
 
       // Update local state immediately for instant feedback
-      setAnnotations(prev => prev.map(a =>
-        a.id === annotationId
-          ? { ...a, replies: [...(a.replies || []), reply] }
-          : a
-      ));
-
-      // Update the annotation with the new reply in Firestore
-      const annotationRef = doc(db, 'screenplayAnnotations', annotationId);
-      const annotation = annotations.find(a => a.id === annotationId);
-      if (annotation) {
-        const updatedReplies = [...(annotation.replies || []), reply];
-        await updateDoc(annotationRef, { replies: updatedReplies });
-      }
+      setAnnotations(prev => {
+        const updatedAnnotations = prev.map(a =>
+          a.id === annotationId
+            ? { ...a, replies: [...(a.replies || []), reply] }
+            : a
+        );
+        
+        // Update Firestore with the updated annotation data
+        const updatedAnnotation = updatedAnnotations.find(a => a.id === annotationId);
+        if (updatedAnnotation) {
+          const annotationRef = doc(db, 'screenplayAnnotations', annotationId);
+          updateDoc(annotationRef, { replies: updatedAnnotation.replies })
+            .then(() => {
+              console.log('[DEBUG] Reply saved to Firestore successfully');
+            })
+            .catch((error) => {
+              console.error('[DEBUG] Error saving reply to Firestore:', error);
+              toast.error('Failed to save reply to server');
+            });
+        }
+        
+        return updatedAnnotations;
+      });
 
       toast.success('Reply added successfully!');
       setNewReply(''); // Clear input after successful reply
@@ -417,11 +433,24 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     );
 
     const annotationsUnsubscribe = onSnapshot(annotationsQuery, (snapshot) => {
-      const annotationsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        timestamp: toDate(doc.data().timestamp)
-      })) as Annotation[];
+      const annotationsData = snapshot.docs.map(doc => {
+        const data = doc.data();
+        const processedReplies = Array.isArray(data.replies)
+          ? data.replies.map((reply: any) => ({
+              ...reply,
+              timestamp: toDate(reply.timestamp)
+            }))
+          : [];
+        
+        console.log(`[DEBUG] Annotation ${doc.id} has ${processedReplies.length} replies:`, processedReplies);
+        
+        return {
+          id: doc.id,
+          ...data,
+          timestamp: toDate(data.timestamp),
+          replies: processedReplies
+        };
+      }) as Annotation[];
       setAnnotations(annotationsData);
     });
 
@@ -473,13 +502,26 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         orderBy('timestamp', 'desc')
       );
       const querySnapshot = await getDocs(q);
-      const annotationsData = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        timestamp: toDate(doc.data().timestamp)
-      })) as Annotation[];
+      const annotationsData = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        const processedReplies = Array.isArray(data.replies)
+          ? data.replies.map((reply: any) => ({
+              ...reply,
+              timestamp: toDate(reply.timestamp)
+            }))
+          : [];
+        
+        console.log(`[DEBUG] Loaded annotation ${doc.id} with ${processedReplies.length} replies:`, processedReplies);
+        
+        return {
+          id: doc.id,
+          ...data,
+          timestamp: toDate(data.timestamp),
+          replies: processedReplies
+        };
+      }) as Annotation[];
       setAnnotations(annotationsData);
-      console.log('[DEBUG] Loaded annotations:', annotationsData);
+      console.log('[DEBUG] Total annotations loaded:', annotationsData.length);
     } catch (error) {
       console.error('[DEBUG] Error loading annotations:', error);
     }
@@ -723,6 +765,45 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     }
   }, [selectionRect, selectionPage, currentUser, annotationInput, newTag, addAnnotation, addTag]);
 
+  // Helper to calculate visible pages based on scroll
+  const handleVirtualizedScroll = useCallback(() => {
+    if (!pdfScrollRef.current || !numPages) return;
+    const scrollTop = pdfScrollRef.current.scrollTop;
+    const containerHeight = pdfScrollRef.current.clientHeight;
+    
+    // Calculate which pages should be visible with a larger buffer
+    const pageHeight = 900; // Approximate page height
+    const buffer = 2; // Show 2 pages before and after
+    
+    const firstVisible = Math.max(1, Math.floor(scrollTop / pageHeight) - buffer);
+    const lastVisible = Math.min(numPages, Math.ceil((scrollTop + containerHeight) / pageHeight) + buffer);
+    
+    setVisiblePageRange([firstVisible, lastVisible]);
+  }, [numPages]);
+
+  // Attach scroll handler
+  useEffect(() => {
+    const ref = pdfScrollRef.current;
+    if (!ref) return;
+    ref.addEventListener('scroll', handleVirtualizedScroll);
+    handleVirtualizedScroll();
+    return () => ref.removeEventListener('scroll', handleVirtualizedScroll);
+  }, [handleVirtualizedScroll]);
+
+  // Debug replies when annotations change
+  useEffect(() => {
+    console.log('[DEBUG] Annotations updated:', annotations.length);
+    annotations.forEach(annotation => {
+      console.log(`[DEBUG] Annotation ${annotation.id}:`, {
+        content: annotation.annotation,
+        repliesCount: annotation.replies?.length || 0,
+        replies: annotation.replies,
+        hasRepliesArray: Array.isArray(annotation.replies),
+        repliesType: typeof annotation.replies
+      });
+    });
+  }, [annotations]);
+
   return (
     <div className="screenplay-viewer-overlay">
       <div className="screenplay-viewer" ref={viewerRef}>
@@ -771,37 +852,45 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                     error={<div>Failed to load PDF document.</div>}
                   >
                     {typeof numPages === 'number' && numPages > 0 ? (
-                      <div className="pdf-scrollable-container" onScroll={handlePdfScroll} onWheel={handlePdfWheel}>
+                      <div className="pdf-scrollable-container" ref={pdfScrollRef} onScroll={handlePdfScroll} onWheel={handlePdfWheel}>
                         {Array.from(new Array(numPages), (el, index) => {
                           const pageNumber = index + 1;
+                          // Temporarily disable virtualization to show all pages
+                          // const [first, last] = visiblePageRange;
+                          // const isVisible = pageNumber >= first && pageNumber <= last;
+                          const isVisible = true; // Show all pages for now
                           return (
-                            <div key={`page_${pageNumber}`} className="page-container" style={{ position: 'relative', marginBottom: '20px' }}>
-                              <Page
-                                pageNumber={pageNumber}
-                                scale={scale}
-                                onLoadSuccess={() => {
-                                  console.log(`Page ${pageNumber} loaded successfully`);
-                                  attachSelectionHandlers();
-                                }}
-                                onRenderSuccess={() => {
-                                  console.log(`Page ${pageNumber} rendered successfully`);
-                                  attachSelectionHandlers();
-                                }}
-                                onLoadError={(error: Error) => console.error(`Error loading page ${pageNumber}:`, error)}
-                                error={(error: Error) => (
-                                  <div className="page-error">
-                                    <p>Error loading page {pageNumber}</p>
-                                    <small>{error.message}</small>
-                                  </div>
-                                )}
-                                loading={() => (
-                                  <div className="page-loading">
-                                    <p>Loading page {pageNumber}...</p>
-                                  </div>
-                                )}
-                              />
+                            <div key={`page_${pageNumber}`} className="page-container" style={{ position: 'relative', marginBottom: '20px', minHeight: 900 }}>
+                              {isVisible ? (
+                                <Page
+                                  pageNumber={pageNumber}
+                                  scale={scale}
+                                  onLoadSuccess={() => {
+                                    console.log(`Page ${pageNumber} loaded successfully`);
+                                    attachSelectionHandlers();
+                                  }}
+                                  onRenderSuccess={() => {
+                                    console.log(`Page ${pageNumber} rendered successfully`);
+                                    attachSelectionHandlers();
+                                  }}
+                                  onLoadError={(error: Error) => console.error(`Error loading page ${pageNumber}:`, error)}
+                                  error={(error: Error) => (
+                                    <div className="page-error">
+                                      <p>Error loading page {pageNumber}</p>
+                                      <small>{error.message}</small>
+                                    </div>
+                                  )}
+                                  loading={() => (
+                                    <div className="page-loading">
+                                      <p>Loading page {pageNumber}...</p>
+                                    </div>
+                                  )}
+                                />
+                              ) : (
+                                <div className="page-loading" style={{ minHeight: 900 }} />
+                              )}
                               {/* Annotation Overlays for this page */}
-                              {showOverlays && annotations.filter(annotation => annotation.pageNumber === pageNumber).map(annotation => (
+                              {isVisible && showOverlays && annotations.filter(annotation => annotation.pageNumber === pageNumber).map(annotation => (
                                 <div
                                   key={`annotation-${annotation.id}`}
                                   className={`annotation-overlay ${selectedElement === annotation.id ? 'selected' : ''} ${annotation.resolved ? 'resolved' : ''}`}
@@ -852,37 +941,6 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                                   >
                                     💬
                                   </div>
-                                </div>
-                              ))}
-                              
-                              {/* Tag Overlays for this page */}
-                              {showOverlays && tags.filter(tag => tag.pageNumber === pageNumber).map(tag => (
-                                <div
-                                  key={`tag-${tag.id}`}
-                                  className={`tag-overlay ${selectedElement === tag.id ? 'selected' : ''} ${tag.resolved ? 'resolved' : ''}`}
-                                  style={{
-                                    position: 'absolute',
-                                    left: `${tag.position.x * 100}%`,
-                                    top: `${tag.position.y * 100}%`,
-                                    width: `${tag.position.width * 100}%`,
-                                    height: `${tag.position.height * 100}%`,
-                                    border: `2px solid ${tag.color}`,
-                                    backgroundColor: `${tag.color}15`,
-                                    borderRadius: 2,
-                                    cursor: 'pointer',
-                                    zIndex: 5,
-                                    transition: 'all 0.15s ease',
-                                    pointerEvents: 'auto'
-                                  }}
-                                  data-element-id={tag.id}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedElement(tag.id);
-                                    setActiveAnnotation(null);
-                                    setActiveThread(null);
-                                  }}
-                                  title={`${tag.tagType}: ${tag.content} by ${tag.userName}`}
-                                >
                                 </div>
                               ))}
                             </div>
