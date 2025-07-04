@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { collection, addDoc, query, where, orderBy, getDocs, onSnapshot, updateDoc, doc, deleteDoc } from 'firebase/firestore';
+import { collection, addDoc, query, where, orderBy, getDocs, onSnapshot, updateDoc, doc, deleteDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -145,6 +145,13 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyInput, setReplyInput] = useState('');
+  const [userPresence, setUserPresence] = useState<{[key: string]: {isOnline: boolean, lastSeen: Date, currentPage: number}}>({});
+  const [previousActiveUsers, setPreviousActiveUsers] = useState<ScreenplaySession['activeUsers']>([]);
+  const [showAddCollaboratorModal, setShowAddCollaboratorModal] = useState(false);
+  const [collaboratorSearch, setCollaboratorSearch] = useState('');
+  const [collaboratorResults, setCollaboratorResults] = useState<any[]>([]);
+  const [addingCollaborator, setAddingCollaborator] = useState(false);
+  const [collaborators, setCollaborators] = useState<any[]>([]);
   
   const viewerRef = useRef<HTMLDivElement>(null);
   const pdfContainerRef = useRef<HTMLDivElement>(null);
@@ -441,6 +448,61 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     }
   };
 
+  const updateUserPresence = async () => {
+    if (!session || !currentUser) return;
+    
+    try {
+      const userPresenceData = {
+        userId: currentUser.uid,
+        userName: currentUser.displayName || 'Anonymous',
+        userAvatar: currentUser.photoURL || '',
+        lastSeen: new Date(),
+        currentPage: 1, // This would be updated based on actual page
+        isOnline: true
+      };
+
+      // Update session with current user's presence
+      const sessionRef = doc(db, 'screenplaySessions', session.id);
+      await updateDoc(sessionRef, {
+        activeUsers: arrayUnion(userPresenceData),
+        updatedAt: new Date()
+      });
+
+      // Update local state
+      setActiveUsers(prev => {
+        const existingUser = prev.find(u => u.userId === currentUser.uid);
+        if (existingUser) {
+          return prev.map(u => u.userId === currentUser.uid ? userPresenceData : u);
+        } else {
+          return [...prev, userPresenceData];
+        }
+      });
+    } catch (error) {
+      console.error('Error updating user presence:', error);
+    }
+  };
+
+  const removeUserPresence = async () => {
+    if (!session || !currentUser) return;
+    
+    try {
+      const sessionRef = doc(db, 'screenplaySessions', session.id);
+      await updateDoc(sessionRef, {
+        activeUsers: arrayRemove({
+          userId: currentUser.uid,
+          userName: currentUser.displayName || 'Anonymous',
+          userAvatar: currentUser.photoURL || '',
+          lastSeen: new Date(),
+          currentPage: 1,
+          isOnline: false
+        }),
+        updatedAt: new Date()
+      });
+    } catch (error) {
+      console.error('Error removing user presence:', error);
+    }
+  };
+
   const startRealTimeSync = () => {
     // Real-time annotations sync
     const annotationsQuery = query(
@@ -487,13 +549,33 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       setTags(tagsData);
     });
 
-    // Real-time session sync
+    // Enhanced real-time session sync with presence
     if (session) {
       const sessionUnsubscribe = onSnapshot(doc(db, 'screenplaySessions', session.id), (doc) => {
         if (doc.exists()) {
           const sessionData = doc.data() as ScreenplaySession;
           setSession(sessionData);
-          setActiveUsers(sessionData.activeUsers);
+          
+          // Process active users and remove stale entries
+          const now = new Date();
+          const activeUsersData = sessionData.activeUsers.filter(user => {
+            const lastSeen = new Date(user.lastSeen);
+            const timeDiff = now.getTime() - lastSeen.getTime();
+            return timeDiff < 60000; // Remove users inactive for more than 1 minute
+          });
+          
+          setActiveUsers(activeUsersData);
+          
+          // Update presence state
+          const presenceData: {[key: string]: {isOnline: boolean, lastSeen: Date, currentPage: number}} = {};
+          activeUsersData.forEach(user => {
+            presenceData[user.userId] = {
+              isOnline: true,
+              lastSeen: new Date(user.lastSeen),
+              currentPage: user.currentPage
+            };
+          });
+          setUserPresence(presenceData);
         }
       });
 
@@ -821,6 +903,105 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     });
   }, [annotations]);
 
+  useEffect(() => {
+    if (session) {
+      // Update presence every 30 seconds
+      const presenceInterval = setInterval(updateUserPresence, 30000);
+      
+      // Initial presence update
+      updateUserPresence();
+      
+      return () => {
+        clearInterval(presenceInterval);
+        removeUserPresence();
+      };
+    }
+  }, [session, currentUser]);
+
+  useEffect(() => {
+    // Check for user presence changes and show notifications
+    if (activeUsers.length > 0 && previousActiveUsers.length > 0) {
+      const newUsers = activeUsers.filter(user => 
+        !previousActiveUsers.find(prevUser => prevUser.userId === user.userId)
+      );
+      
+      const leftUsers = previousActiveUsers.filter(user => 
+        !activeUsers.find(currentUser => currentUser.userId === user.userId)
+      );
+      
+      newUsers.forEach(user => {
+        if (user.userId !== currentUser?.uid) {
+          toast.success(`${user.userName} joined the session`, {
+            icon: '👋',
+            duration: 3000
+          });
+        }
+      });
+      
+      leftUsers.forEach(user => {
+        if (user.userId !== currentUser?.uid) {
+          toast(`${user.userName} left the session`, {
+            icon: '👋',
+            duration: 2000
+          });
+        }
+      });
+    }
+    
+    setPreviousActiveUsers(activeUsers);
+  }, [activeUsers, currentUser]);
+
+  // Load current collaborators from Firestore
+  useEffect(() => {
+    const fetchCollaborators = async () => {
+      if (!screenplay.id) return;
+      const screenplayRef = doc(db, 'screenplays', screenplay.id);
+      const docSnap = await getDocs(query(collection(db, 'screenplays'), where('id', '==', screenplay.id)));
+      if (!docSnap.empty) {
+        const data = docSnap.docs[0].data();
+        setCollaborators(data.teamMembers || []);
+      }
+    };
+    fetchCollaborators();
+  }, [screenplay.id, showAddCollaboratorModal]);
+
+  const handleCollaboratorSearch = async (queryStr: string) => {
+    setCollaboratorSearch(queryStr);
+    if (!queryStr.trim()) {
+      setCollaboratorResults([]);
+      return;
+    }
+    // For demo: search users in 'users' collection by name/email
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, where('searchKeywords', 'array-contains', queryStr.toLowerCase()));
+    const snap = await getDocs(q);
+    setCollaboratorResults(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+  };
+
+  const handleAddCollaborator = async (user: any) => {
+    setAddingCollaborator(true);
+    try {
+      const screenplayRef = doc(db, 'screenplays', screenplay.id);
+      await updateDoc(screenplayRef, {
+        teamMembers: arrayUnion({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          avatar: user.avatar || '',
+          role: user.role || 'collaborator',
+        })
+      });
+      toast.success(`${user.name} added as collaborator!`);
+      setShowAddCollaboratorModal(false);
+      setCollaboratorSearch('');
+      setCollaboratorResults([]);
+    } catch (err) {
+      toast.error('Failed to add collaborator');
+    } finally {
+      setAddingCollaborator(false);
+    }
+  };
+
   return (
     <div className="screenplay-viewer-overlay">
       <div className="screenplay-viewer" ref={viewerRef}>
@@ -1063,7 +1244,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                   {showOverlays && (
                     <>
                       {/* User Cursors */}
-                      {showUserCursors && activeUsers.map(user => (
+                      {false && showUserCursors && activeUsers.map(user => (
                         <div
                           key={user.userId}
                           className="user-cursor"
@@ -1078,6 +1259,34 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                           <div className="cursor-label">{user.userName}</div>
                         </div>
                       ))}
+                      
+                      {/* Floating Collaboration Indicator */}
+                      {activeUsers.length > 1 && (
+                        <div className="floating-collaboration-indicator">
+                          <div className="indicator-content">
+                            <div className="active-users-count">
+                              <span className="count">{activeUsers.length}</span>
+                              <span className="label">collaborating</span>
+                            </div>
+                            <div className="users-avatars">
+                              {activeUsers.slice(0, 3).map(user => (
+                                <div key={user.userId} className="mini-avatar" title={user.userName}>
+                                  {user.userAvatar ? (
+                                    <img src={user.userAvatar} alt={user.userName} />
+                                  ) : (
+                                    <div className="mini-avatar-placeholder">
+                                      {user.userName.charAt(0).toUpperCase()}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                              {activeUsers.length > 3 && (
+                                <div className="more-users">+{activeUsers.length - 3}</div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </>
                   )}
                 </>
@@ -1127,15 +1336,49 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                             {user.userAvatar ? (
                               <img src={user.userAvatar} alt={user.userName} />
                             ) : (
-                              <div className="avatar-placeholder">{user.userName.charAt(0)}</div>
+                              <div className="avatar-placeholder">{user.userName.charAt(0).toUpperCase()}</div>
                             )}
+                            <div className={`online-indicator ${userPresence[user.userId]?.isOnline ? 'online' : 'offline'}`}></div>
                           </div>
                           <div className="user-info">
-                            <span className="user-name">{user.userName}</span>
+                            <span className="user-name">
+                              {user.userId === currentUser?.uid ? `${user.userName} (You)` : user.userName}
+                            </span>
+                            <span className="user-status">
+                              {userPresence[user.userId]?.isOnline ? '🟢 Online' : '🔴 Offline'}
+                            </span>
+                            <span className="user-page">
+                              Page {userPresence[user.userId]?.currentPage || 1}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                      {activeUsers.length === 0 && (
+                        <div className="no-users">
+                          <span>No other users currently viewing</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Collaborators */}
+                  <div className="collaborators-section">
+                    <h4>🤝 Collaborators</h4>
+                    <div className="collaborators-list">
+                      {collaborators.length === 0 && <div className="no-collaborators">No collaborators yet.</div>}
+                      {collaborators.map(user => (
+                        <div key={user.id} className="collaborator-item">
+                          <div className="collaborator-avatar">
+                            {user.avatar ? <img src={user.avatar} alt={user.name} /> : <div className="avatar-placeholder">{user.name?.charAt(0).toUpperCase()}</div>}
+                          </div>
+                          <div className="collaborator-info">
+                            <span className="collaborator-name">{user.name}</span>
+                            <span className="collaborator-role">{user.role}</span>
                           </div>
                         </div>
                       ))}
                     </div>
+                    <button className="add-collaborator-btn" onClick={() => setShowAddCollaboratorModal(true)}>+ Add Collaborator</button>
                   </div>
 
                   {/* Annotations List */}
@@ -1471,6 +1714,38 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                 </button>
               </div>
             )}
+          </div>
+        )}
+
+        {showAddCollaboratorModal && (
+          <div className="modal-overlay">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h3>Add Collaborator</h3>
+                <button onClick={() => setShowAddCollaboratorModal(false)} className="close-btn">×</button>
+              </div>
+              <div className="modal-body">
+                <input
+                  type="text"
+                  placeholder="Search by name or email..."
+                  value={collaboratorSearch}
+                  onChange={e => handleCollaboratorSearch(e.target.value)}
+                  className="collaborator-search-input"
+                />
+                <div className="collaborator-search-results">
+                  {collaboratorResults.length === 0 && <div className="no-results">No users found.</div>}
+                  {collaboratorResults.map(user => (
+                    <div key={user.id} className="user-result">
+                      <div className="user-info">
+                        <span className="user-name">{user.name}</span>
+                        <span className="user-email">{user.email}</span>
+                      </div>
+                      <button disabled={addingCollaborator} onClick={() => handleAddCollaborator(user)} className="add-btn">Add</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
