@@ -149,9 +149,10 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   const [previousActiveUsers, setPreviousActiveUsers] = useState<ScreenplaySession['activeUsers']>([]);
   const [showAddCollaboratorModal, setShowAddCollaboratorModal] = useState(false);
   const [collaboratorSearch, setCollaboratorSearch] = useState('');
-  const [collaboratorResults, setCollaboratorResults] = useState<any[]>([]);
+  const [collaboratorResults, setCollaboratorResults] = useState<Array<{id: string; name?: string; email?: string; avatar?: string; role?: string;}>>([]);
   const [addingCollaborator, setAddingCollaborator] = useState(false);
   const [collaborators, setCollaborators] = useState<any[]>([]);
+  const [userFollows, setUserFollows] = useState<string[]>([]);
   
   const viewerRef = useRef<HTMLDivElement>(null);
   const pdfContainerRef = useRef<HTMLDivElement>(null);
@@ -965,17 +966,39 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     fetchCollaborators();
   }, [screenplay.id, showAddCollaboratorModal]);
 
+  // Fetch current user's followers and following on mount
+  useEffect(() => {
+    const fetchFollows = async () => {
+      if (!currentUser) return;
+      const userRef = doc(db, 'users', currentUser.uid);
+      const userSnap = await getDocs(query(collection(db, 'users'), where('id', '==', currentUser.uid)));
+      if (!userSnap.empty) {
+        const data = userSnap.docs[0].data();
+        const followers = Array.isArray(data.followers) ? data.followers : [];
+        const following = Array.isArray(data.following) ? data.following : [];
+        setUserFollows(Array.from(new Set([...followers, ...following])));
+      }
+    };
+    fetchFollows();
+  }, [currentUser]);
+
   const handleCollaboratorSearch = async (queryStr: string) => {
     setCollaboratorSearch(queryStr);
-    if (!queryStr.trim()) {
+    if (!queryStr.trim() || userFollows.length === 0) {
       setCollaboratorResults([]);
       return;
     }
-    // For demo: search users in 'users' collection by name/email
+    // Only search users in userFollows
     const usersRef = collection(db, 'users');
-    const q = query(usersRef, where('searchKeywords', 'array-contains', queryStr.toLowerCase()));
+    const q = query(usersRef, where('id', 'in', userFollows));
     const snap = await getDocs(q);
-    setCollaboratorResults(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    const filtered = snap.docs
+      .map(doc => ({ id: doc.id, ...(doc.data() as { name?: string; email?: string; avatar?: string; role?: string }) }))
+      .filter(user =>
+        (typeof user.name === 'string' && user.name.toLowerCase().includes(queryStr.toLowerCase())) ||
+        (typeof user.email === 'string' && user.email.toLowerCase().includes(queryStr.toLowerCase()))
+      );
+    setCollaboratorResults(filtered);
   };
 
   const handleAddCollaborator = async (user: any) => {
