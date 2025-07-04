@@ -877,87 +877,145 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                           return (
                             <div key={`page_${pageNumber}`} className="page-container" style={{ position: 'relative', marginBottom: '20px', minHeight: 900 }}>
                               {isVisible ? (
-                                <Page
-                                  pageNumber={pageNumber}
-                                  scale={scale}
-                                  onLoadSuccess={() => {
-                                    console.log(`Page ${pageNumber} loaded successfully`);
-                                    attachSelectionHandlers();
-                                  }}
-                                  onRenderSuccess={() => {
-                                    console.log(`Page ${pageNumber} rendered successfully`);
-                                    attachSelectionHandlers();
-                                  }}
-                                  onLoadError={(error: Error) => console.error(`Error loading page ${pageNumber}:`, error)}
-                                  error={(error: Error) => (
-                                    <div className="page-error">
-                                      <p>Error loading page {pageNumber}</p>
-                                      <small>{error.message}</small>
+                                <>
+                                  <Page
+                                    pageNumber={pageNumber}
+                                    scale={scale}
+                                    onLoadSuccess={() => {
+                                      console.log(`Page ${pageNumber} loaded successfully`);
+                                      attachSelectionHandlers();
+                                    }}
+                                    onRenderSuccess={() => {
+                                      console.log(`Page ${pageNumber} rendered successfully`);
+                                      attachSelectionHandlers();
+                                    }}
+                                    onLoadError={(error: Error) => console.error(`Error loading page ${pageNumber}:`, error)}
+                                    error={(error: Error) => (
+                                      <div className="page-error">
+                                        <p>Error loading page {pageNumber}</p>
+                                        <small>{error.message}</small>
+                                      </div>
+                                    )}
+                                    loading={() => (
+                                      <div className="page-loading">
+                                        <p>Loading page {pageNumber}...</p>
+                                      </div>
+                                    )}
+                                  />
+                                  {/* Annotation Overlays for this page */}
+                                  {showOverlays && annotations.filter(annotation => annotation.pageNumber === pageNumber).map(annotation => (
+                                    <div
+                                      key={`annotation-${annotation.id}`}
+                                      className={`annotation-overlay ${selectedElement === annotation.id ? 'selected' : ''} ${annotation.resolved ? 'resolved' : ''}`}
+                                      style={{
+                                        position: 'absolute',
+                                        left: `${annotation.position.x * 100}%`,
+                                        top: `${annotation.position.y * 100}%`,
+                                        width: `${annotation.position.width * 100}%`,
+                                        height: `${annotation.position.height * 100}%`,
+                                        border: '2px solid #EF4444',
+                                        borderRadius: 8,
+                                        cursor: 'pointer',
+                                        zIndex: 5,
+                                        transition: 'all 0.15s ease',
+                                        pointerEvents: 'auto',
+                                        background: 'none',
+                                        boxShadow: '0 2px 8px rgba(239, 68, 68, 0.08)'
+                                      }}
+                                      data-element-id={annotation.id}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setActiveAnnotation(annotation);
+                                        setShowAnnotationPanel(true);
+                                        setPanelX(e.clientX);
+                                        setPanelY(e.clientY);
+                                        setSelectedElement(annotation.id);
+                                        setActiveThread(null);
+                                      }}
+                                      title={`Annotation by ${annotation.userName}: ${annotation.annotation}`}
+                                    >
+                                      <div 
+                                        className="annotation-marker"
+                                        style={{
+                                          position: 'absolute',
+                                          top: '-6px',
+                                          right: '-6px',
+                                          width: '20px',
+                                          height: '20px',
+                                          borderRadius: '50%',
+                                          background: '#EF4444',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          fontSize: '10px',
+                                          color: 'white',
+                                          boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                                          border: '1px solid white'
+                                        }}
+                                      >
+                                        💬
+                                      </div>
                                     </div>
-                                  )}
-                                  loading={() => (
-                                    <div className="page-loading">
-                                      <p>Loading page {pageNumber}...</p>
+                                  ))}
+                                  {/* Tag Overlays for this page */}
+                                  {showOverlays && tags.filter(tag => tag.pageNumber === pageNumber).map(tag => (
+                                    <div
+                                      key={`tag-${tag.id}`}
+                                      className={`tag-overlay ${selectedElement === tag.id ? 'selected' : ''} ${tag.resolved ? 'resolved' : ''}`}
+                                      style={{
+                                        position: 'absolute',
+                                        left: `${tag.position.x * 100}%`,
+                                        top: `${tag.position.y * 100}%`,
+                                        width: `${tag.position.width * 100}%`,
+                                        height: `${tag.position.height * 100}%`,
+                                        border: '2px solid #f59e0b',
+                                        borderRadius: 8,
+                                        cursor: 'pointer',
+                                        zIndex: 5,
+                                        transition: 'all 0.15s ease',
+                                        pointerEvents: 'auto',
+                                        background: 'none',
+                                        boxShadow: '0 2px 8px rgba(245, 158, 11, 0.08)'
+                                      }}
+                                      data-element-id={tag.id}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setActiveAnnotation(null);
+                                        setShowAnnotationPanel(true);
+                                        setPanelX(e.clientX);
+                                        setPanelY(e.clientY);
+                                        setSelectedElement(tag.id);
+                                        setActiveThread(null);
+                                      }}
+                                      title={`Tag by ${tag.userName}: ${tag.content}`}
+                                    >
+                                      <div 
+                                        className="tag-marker"
+                                        style={{
+                                          position: 'absolute',
+                                          top: '-6px',
+                                          right: '-6px',
+                                          width: '20px',
+                                          height: '20px',
+                                          borderRadius: '50%',
+                                          background: '#f59e0b',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          fontSize: '10px',
+                                          color: 'white',
+                                          boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                                          border: '1px solid white'
+                                        }}
+                                      >
+                                        🏷️
+                                      </div>
                                     </div>
-                                  )}
-                                />
+                                  ))}
+                                </>
                               ) : (
                                 <div className="page-loading" style={{ minHeight: 900 }} />
                               )}
-                              {/* Annotation Overlays for this page */}
-                              {isVisible && showOverlays && annotations.filter(annotation => annotation.pageNumber === pageNumber).map(annotation => (
-                                <div
-                                  key={`annotation-${annotation.id}`}
-                                  className={`annotation-overlay ${selectedElement === annotation.id ? 'selected' : ''} ${annotation.resolved ? 'resolved' : ''}`}
-                                  style={{
-                                    position: 'absolute',
-                                    left: `${annotation.position.x * 100}%`,
-                                    top: `${annotation.position.y * 100}%`,
-                                    width: `${annotation.position.width * 100}%`,
-                                    height: `${annotation.position.height * 100}%`,
-                                    border: '2px solid #EF4444',
-                                    backgroundColor: 'rgba(239, 68, 68, 0.08)',
-                                    borderRadius: 2,
-                                    cursor: 'pointer',
-                                    zIndex: 5,
-                                    transition: 'all 0.15s ease',
-                                    pointerEvents: 'auto'
-                                  }}
-                                  data-element-id={annotation.id}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setActiveAnnotation(annotation);
-                                    setShowAnnotationPanel(true);
-                                    setPanelX(e.clientX);
-                                    setPanelY(e.clientY);
-                                    setSelectedElement(annotation.id);
-                                    setActiveThread(null);
-                                  }}
-                                  title={`Annotation by ${annotation.userName}: ${annotation.annotation}`}
-                                >
-                                  <div 
-                                    className="annotation-marker"
-                                    style={{
-                                      position: 'absolute',
-                                      top: '-6px',
-                                      right: '-6px',
-                                      width: '20px',
-                                      height: '20px',
-                                      borderRadius: '50%',
-                                      background: '#EF4444',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      fontSize: '10px',
-                                      color: 'white',
-                                      boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                                      border: '1px solid white'
-                                    }}
-                                  >
-                                    💬
-                                  </div>
-                                </div>
-                              ))}
                             </div>
                           );
                         })}
