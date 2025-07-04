@@ -193,7 +193,24 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         const updatedAnnotation = updatedAnnotations.find(a => a.id === annotationId);
         if (updatedAnnotation) {
           const annotationRef = doc(db, 'screenplayAnnotations', annotationId);
-          updateDoc(annotationRef, { replies: updatedAnnotation.replies })
+          // Deep sanitize replies
+          const safeReplies = Array.isArray(updatedAnnotation.replies)
+            ? updatedAnnotation.replies
+                .filter(r => r && typeof r === 'object' && r.id && r.userId && r.userName && r.content && r.timestamp)
+                .map(r => {
+                  // Remove undefined properties and set userAvatar to null if missing
+                  const { id, userId, userName, content, timestamp } = r;
+                  return {
+                    id,
+                    userId,
+                    userName,
+                    content,
+                    timestamp,
+                    userAvatar: r.userAvatar || null
+                  };
+                })
+            : [];
+          updateDoc(annotationRef, { replies: safeReplies })
             .then(() => {
               console.log('[DEBUG] Reply saved to Firestore successfully');
             })
