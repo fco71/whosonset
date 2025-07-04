@@ -903,115 +903,133 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                                     )}
                                   />
                                   {/* Annotation Overlays for this page */}
-                                  {showOverlays && annotations.filter(annotation => annotation.pageNumber === pageNumber).map(annotation => (
-                                    <div
-                                      key={`annotation-${annotation.id}`}
-                                      className={`annotation-overlay ${selectedElement === annotation.id ? 'selected' : ''} ${annotation.resolved ? 'resolved' : ''}`}
-                                      style={{
-                                        position: 'absolute',
-                                        left: `${annotation.position.x * 100}%`,
-                                        top: `${annotation.position.y * 100}%`,
-                                        width: `${annotation.position.width * 100}%`,
-                                        height: `${annotation.position.height * 100}%`,
-                                        border: '2px solid #EF4444',
-                                        borderRadius: 8,
-                                        cursor: 'pointer',
-                                        zIndex: 5,
-                                        transition: 'all 0.15s ease',
-                                        pointerEvents: 'auto',
-                                        background: 'none',
-                                        boxShadow: '0 2px 8px rgba(239, 68, 68, 0.08)'
-                                      }}
-                                      data-element-id={annotation.id}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setActiveAnnotation(annotation);
-                                        setShowAnnotationPanel(true);
-                                        setPanelX(e.clientX);
-                                        setPanelY(e.clientY);
-                                        setSelectedElement(annotation.id);
-                                        setActiveThread(null);
-                                      }}
-                                      title={`Annotation by ${annotation.userName}: ${annotation.annotation}`}
-                                    >
-                                      <div 
-                                        className="annotation-marker"
-                                        style={{
-                                          position: 'absolute',
-                                          top: '-6px',
-                                          right: '-6px',
-                                          width: '20px',
-                                          height: '20px',
-                                          borderRadius: '50%',
-                                          background: '#EF4444',
-                                          display: 'flex',
-                                          alignItems: 'center',
-                                          justifyContent: 'center',
-                                          fontSize: '10px',
-                                          color: 'white',
-                                          boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                                          border: '1px solid white'
-                                        }}
-                                      >
-                                        💬
-                                      </div>
-                                    </div>
-                                  ))}
+                                  {showOverlays && annotations.filter(annotation => annotation.pageNumber === pageNumber).map(annotation => {
+                                    const overlayHeight = `${annotation.position.height * 100}%`;
+                                    const pagePixelHeight = 900;
+                                    const heightPx = annotation.position.height * pagePixelHeight;
+                                    const isSingleLine = heightPx < 32;
+                                    const verticalPad = isSingleLine ? 4 : 0;
+                                    const markerOffset = isSingleLine ? -18 : -20;
+                                    return (
+                                      <React.Fragment key={`annotation-${annotation.id}`}>
+                                        <div
+                                          className={`annotation-overlay ${selectedElement === annotation.id ? 'selected' : ''} ${annotation.resolved ? 'resolved' : ''}`}
+                                          style={{
+                                            position: 'absolute',
+                                            left: `${annotation.position.x * 100}%`,
+                                            top: `calc(${annotation.position.y * 100}% - ${verticalPad}px)`,
+                                            width: `${annotation.position.width * 100}%`,
+                                            height: `calc(${overlayHeight} + ${verticalPad * 2}px)`,
+                                            border: isSingleLine ? '1px solid rgba(239, 68, 68, 0.45)' : '2px solid rgba(239, 68, 68, 0.7)',
+                                            borderRadius: isSingleLine ? 3 : 8,
+                                            cursor: 'pointer',
+                                            zIndex: 5,
+                                            transition: 'all 0.15s ease',
+                                            pointerEvents: 'auto',
+                                            background: 'none',
+                                            boxShadow: '0 2px 8px rgba(239, 68, 68, 0.08)'
+                                          }}
+                                          data-element-id={annotation.id}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setActiveAnnotation(annotation);
+                                            setShowAnnotationPanel(true);
+                                            setPanelX(e.clientX);
+                                            setPanelY(e.clientY);
+                                            setSelectedElement(annotation.id);
+                                            setActiveThread(null);
+                                          }}
+                                          title={`Annotation by ${annotation.userName}: ${annotation.annotation}`}
+                                        />
+                                        <div
+                                          className="annotation-marker"
+                                          style={{
+                                            position: 'absolute',
+                                            left: `calc(${annotation.position.x * 100}% + ${annotation.position.width * 100}% - 10px)`,
+                                            top: `calc(${annotation.position.y * 100}% - ${verticalPad}px + ${markerOffset}px)`,
+                                            width: 20,
+                                            height: 20,
+                                            borderRadius: '50%',
+                                            background: '#EF4444',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            fontSize: 10,
+                                            color: 'white',
+                                            boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                                            border: '1px solid white',
+                                            zIndex: 10
+                                          }}
+                                        >
+                                          💬
+                                        </div>
+                                      </React.Fragment>
+                                    );
+                                  })}
                                   {/* Tag Overlays for this page */}
-                                  {showOverlays && tags.filter(tag => tag.pageNumber === pageNumber).map(tag => (
-                                    <div
-                                      key={`tag-${tag.id}`}
-                                      className={`tag-overlay ${selectedElement === tag.id ? 'selected' : ''} ${tag.resolved ? 'resolved' : ''}`}
-                                      style={{
-                                        position: 'absolute',
-                                        left: `${tag.position.x * 100}%`,
-                                        top: `${tag.position.y * 100}%`,
-                                        width: `${tag.position.width * 100}%`,
-                                        height: `${tag.position.height * 100}%`,
-                                        border: '2px solid #f59e0b',
-                                        borderRadius: 8,
-                                        cursor: 'pointer',
-                                        zIndex: 5,
-                                        transition: 'all 0.15s ease',
-                                        pointerEvents: 'auto',
-                                        background: 'none',
-                                        boxShadow: '0 2px 8px rgba(245, 158, 11, 0.08)'
-                                      }}
-                                      data-element-id={tag.id}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setActiveAnnotation(null);
-                                        setShowAnnotationPanel(true);
-                                        setPanelX(e.clientX);
-                                        setPanelY(e.clientY);
-                                        setSelectedElement(tag.id);
-                                        setActiveThread(null);
-                                      }}
-                                      title={`Tag by ${tag.userName}: ${tag.content}`}
-                                    >
-                                      <div 
-                                        className="tag-marker"
-                                        style={{
-                                          position: 'absolute',
-                                          top: '-6px',
-                                          right: '-6px',
-                                          width: '20px',
-                                          height: '20px',
-                                          borderRadius: '50%',
-                                          background: '#f59e0b',
-                                          display: 'flex',
-                                          alignItems: 'center',
-                                          justifyContent: 'center',
-                                          fontSize: '10px',
-                                          color: 'white',
-                                          boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                                          border: '1px solid white'
-                                        }}
-                                      >
-                                        🏷️
-                                      </div>
-                                    </div>
-                                  ))}
+                                  {showOverlays && tags.filter(tag => tag.pageNumber === pageNumber).map(tag => {
+                                    const overlayHeight = `${tag.position.height * 100}%`;
+                                    const pagePixelHeight = 900;
+                                    const heightPx = tag.position.height * pagePixelHeight;
+                                    const isSingleLine = heightPx < 32;
+                                    const verticalPad = isSingleLine ? 4 : 0;
+                                    const markerOffset = isSingleLine ? -18 : -20;
+                                    return (
+                                      <React.Fragment key={`tag-${tag.id}`}>
+                                        <div
+                                          className={`tag-overlay ${selectedElement === tag.id ? 'selected' : ''} ${tag.resolved ? 'resolved' : ''}`}
+                                          style={{
+                                            position: 'absolute',
+                                            left: `${tag.position.x * 100}%`,
+                                            top: `calc(${tag.position.y * 100}% - ${verticalPad}px)`,
+                                            width: `${tag.position.width * 100}%`,
+                                            height: `calc(${overlayHeight} + ${verticalPad * 2}px)`,
+                                            border: isSingleLine ? '1px solid rgba(245, 158, 11, 0.45)' : '2px solid rgba(245, 158, 11, 0.7)',
+                                            borderRadius: isSingleLine ? 3 : 8,
+                                            cursor: 'pointer',
+                                            zIndex: 5,
+                                            transition: 'all 0.15s ease',
+                                            pointerEvents: 'auto',
+                                            background: 'none',
+                                            boxShadow: '0 2px 8px rgba(245, 158, 11, 0.08)'
+                                          }}
+                                          data-element-id={tag.id}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setActiveAnnotation(null);
+                                            setShowAnnotationPanel(true);
+                                            setPanelX(e.clientX);
+                                            setPanelY(e.clientY);
+                                            setSelectedElement(tag.id);
+                                            setActiveThread(null);
+                                          }}
+                                          title={`Tag by ${tag.userName}: ${tag.content}`}
+                                        />
+                                        <div
+                                          className="tag-marker"
+                                          style={{
+                                            position: 'absolute',
+                                            left: `calc(${tag.position.x * 100}% + ${tag.position.width * 100}% - 10px)`,
+                                            top: `calc(${tag.position.y * 100}% - ${verticalPad}px + ${markerOffset}px)`,
+                                            width: 20,
+                                            height: 20,
+                                            borderRadius: '50%',
+                                            background: '#f59e0b',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            fontSize: 10,
+                                            color: 'white',
+                                            boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                                            border: '1px solid white',
+                                            zIndex: 10
+                                          }}
+                                        >
+                                          🏷️
+                                        </div>
+                                      </React.Fragment>
+                                    );
+                                  })}
                                 </>
                               ) : (
                                 <div className="page-loading" style={{ minHeight: 900 }} />
