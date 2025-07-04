@@ -1084,7 +1084,15 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                             </div>
                           </div>
                           <div className="annotation-content">{annotation.annotation}</div>
-                          
+                          {/* Reply Button below annotation text */}
+                          {!annotation.resolved && (
+                            <button
+                              onClick={() => setReplyingTo(annotation.id)}
+                              className="reply-btn compact"
+                            >
+                              <span style={{fontSize: '1.1em', marginRight: 2}}>↩</span> Reply
+                            </button>
+                          )}
                           {/* Replies Section */}
                           {annotation.replies && annotation.replies.length > 0 && (
                             <div className="replies-section compact">
@@ -1104,9 +1112,8 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                               ))}
                             </div>
                           )}
-                          
                           {/* Reply Input */}
-                          {replyingTo === annotation.id ? (
+                          {replyingTo === annotation.id && !annotation.resolved && (
                             <div className="reply-input-section compact">
                               <textarea
                                 value={replyInput}
@@ -1154,15 +1161,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                                 </button>
                               </div>
                             </div>
-                          ) : (
-                            <button
-                              onClick={() => setReplyingTo(annotation.id)}
-                              className="reply-btn compact"
-                            >
-                              <span style={{fontSize: '1.1em', marginRight: 4}}>💬</span> Reply
-                            </button>
                           )}
-                          
                           <div className="annotation-actions">
                             <button 
                               onClick={(e) => { e.stopPropagation(); navigateToElement(annotation); }}
@@ -1170,12 +1169,21 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                             >
                               📍 Go to
                             </button>
-                            <button 
-                              onClick={(e) => { e.stopPropagation(); toggleElementResolved(annotation.id, 'annotation'); }}
-                              className={`action-btn ${annotation.resolved ? 'resolved' : ''}`}
-                            >
-                              {annotation.resolved ? '🔄 Reopen' : '✅ Resolve'}
-                            </button>
+                            {!annotation.resolved ? (
+                              <button
+                                onClick={() => toggleElementResolved(annotation.id, 'annotation')}
+                                className="action-btn"
+                              >
+                                ✅ Resolve
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => toggleElementResolved(annotation.id, 'annotation')}
+                                className="action-btn"
+                              >
+                                🔄 Reopen
+                              </button>
+                            )}
                             <button 
                               onClick={(e) => { e.stopPropagation(); deleteElement(annotation.id, 'annotation'); }}
                               className="action-btn delete"

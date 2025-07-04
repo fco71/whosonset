@@ -1863,25 +1863,27 @@
 // Modern annotation card
 .annotation-item {
   background: #fff;
-  border-radius: 14px;
-  box-shadow: 0 2px 12px rgba(30,41,59,0.07);
+  border-radius: 10px;
+  box-shadow: 0 1px 4px rgba(30,41,59,0.04);
   border: 1px solid #e5e7eb;
-  padding: 20px 22px 16px 22px;
-  margin-bottom: 24px;
+  padding: 14px 16px 10px 16px;
+  margin-bottom: 18px;
   font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
   transition: box-shadow 0.18s;
   position: relative;
   &:hover {
-    box-shadow: 0 4px 24px rgba(30,41,59,0.13);
+    box-shadow: 0 2px 8px rgba(30,41,59,0.08);
     border-color: #cbd5e1;
   }
 }
+
 .annotation-header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 6px;
+  gap: 10px;
+  margin-bottom: 2px;
 }
+
 .annotation-author {
   display: flex;
   align-items: center;
@@ -1890,6 +1892,7 @@
   color: #1e293b;
   font-size: 1.08em;
 }
+
 .annotation-author img, .annotation-author .avatar-placeholder {
   width: 36px;
   height: 36px;
@@ -1901,156 +1904,84 @@
   align-items: center;
   justify-content: center;
 }
+
 .annotation-meta {
   margin-left: auto;
   color: #94a3b8;
   font-size: 0.98em;
   font-weight: 400;
 }
+
 .annotation-content {
   color: #374151;
   font-size: 1.04em;
-  line-height: 1.6;
-  margin-bottom: 14px;
-  padding-left: 2px;
+  line-height: 1.5;
+  margin-bottom: 4px;
+  padding-left: 1px;
 }
 
 // Modern replies section
 .replies-section.compact {
-  margin: 10px 0 0 0;
+  margin: 2px 0 0 0;
   padding-left: 0;
   border-left: none;
-  background: #f7fafc;
-  border-radius: 8px;
-  box-shadow: 0 1px 4px rgba(59,130,246,0.03);
+  background: #f8fafc;
+  border-radius: 7px;
+  box-shadow: none;
   display: flex;
   flex-direction: column;
   gap: 0;
   border: 1px solid #e5e7eb;
 }
+
 .reply-item.compact {
   display: flex;
   flex-direction: column;
-  background: #f9fafb;
-  border-radius: 8px;
-  margin: 0 0 0 0;
-  border-left: 4px solid #3b82f6;
-  padding: 10px 16px 8px 16px;
-  font-size: 0.98em;
+  background: #fff;
+  border-radius: 5px;
   box-shadow: none;
-  margin-bottom: 0;
-  position: relative;
-  border-bottom: 1px solid #e5e7eb;
-  &:last-child { border-bottom: none; }
+  padding: 7px 12px 5px 16px;
+  margin-bottom: 2px;
+  font-size: 0.96em;
+  border-left: none;
+  transition: background 0.18s;
 }
+
+.reply-item.compact:nth-child(even) {
+  background: #f5f6fa;
+}
+
+.reply-item.compact:nth-child(odd) {
+  background: #eceff3;
+}
+
+.reply-item.compact:hover {
+  background: #f0f4fa;
+}
+
 .reply-header.compact {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 2px;
+  gap: 6px;
+  margin-bottom: 1px;
 }
-.reply-avatar.compact, .avatar-placeholder.compact {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  object-fit: cover;
-  background: #e0e7ef;
-  font-size: 0.95em;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.reply-author.compact {
-  font-weight: 500;
-  color: #334155;
-  font-size: 0.97em;
-}
-.reply-time.compact {
-  color: #94a3b8;
-  font-size: 0.89em;
-  margin-left: auto;
-}
+
 .reply-content.compact {
+  font-size: 0.98em;
   color: #374151;
-  font-size: 1em;
-  line-height: 1.5;
-  margin-left: 34px;
-  margin-bottom: 2px;
-  margin-top: 1px;
+  line-height: 1.4;
+  margin-bottom: 0;
 }
-.reply-input-section.compact {
-  background: #f8fafc;
-  border: 1.5px solid #e0e7ef;
-  border-radius: 10px;
-  padding: 10px 12px 8px 12px;
-  margin-top: 6px;
-  margin-bottom: 2px;
-  box-shadow: 0 2px 8px rgba(30,41,59,0.04);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+
+// Add a small gap between last reply and action row
+.replies-section.compact {
+  margin-bottom: 4px;
 }
-.reply-textarea.compact {
-  min-height: 32px;
-  max-height: 80px;
-  padding: 8px 12px;
-  border: 1.5px solid #cbd5e1;
-  border-radius: 7px;
-  font-size: 1em;
-  resize: vertical;
-  background: #fff;
-  color: #1e293b;
-  transition: border 0.15s, box-shadow 0.15s;
-  box-shadow: none;
-  &:focus {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 2px #dbeafe;
-    outline: none;
-  }
-}
-.reply-actions.compact {
-  display: flex;
-  flex-direction: row;
-  gap: 10px;
+
+.annotation-actions {
   margin-top: 2px;
-}
-.reply-submit-btn.compact {
-  background: #2563eb;
-  color: #fff;
-  border: none;
-  border-radius: 7px;
-  padding: 6px 18px;
-  font-size: 1em;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-  box-shadow: none;
-  &:hover, &:focus {
-    background: #1d4ed8;
-    color: #fff;
-  }
-  &:disabled {
-    background: #cbd5e1;
-    color: #64748b;
-    cursor: not-allowed;
-  }
-}
-.reply-cancel-btn.compact {
-  background: #f3f4f6;
-  color: #64748b;
-  border: 1.5px solid #cbd5e1;
-  border-radius: 7px;
-  padding: 6px 18px;
-  font-size: 1em;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s, border 0.15s;
-  box-shadow: none;
-  &:hover, &:focus {
-    background: #e5e7eb;
-    color: #334155;
-    border-color: #94a3b8;
-  }
+  display: flex;
+  gap: 8px;
 }
 
 // Ensure the modal prevents background scrolling
@@ -2157,20 +2088,40 @@
 .reply-btn.compact {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 14px;
-  border: 1.5px solid #3b82f6;
-  background: #fff;
+  gap: 4px;
+  padding: 2px 8px;
+  background: none;
   color: #2563eb;
-  border-radius: 999px;
-  font-size: 1em;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.98em;
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, border 0.15s;
+  transition: background 0.15s, color 0.15s;
   outline: none;
   box-shadow: none;
-  margin-top: 4px;
+  margin-top: 8px;
   margin-bottom: 2px;
+  margin-left: 0;
+  &:hover, &:focus {
+    background: #eff6ff;
+    color: #1d4ed8;
+  }
+}
+
+// Action row resolve/reopen button
+.annotation-actions .action-btn {
+  background: #f8fafc;
+  color: #2563eb;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 999px;
+  font-size: 0.98em;
+  padding: 4px 14px;
+  margin-left: 4px;
+  font-weight: 500;
+  transition: background 0.15s, color 0.15s, border 0.15s;
+  cursor: pointer;
+  outline: none;
   &:hover, &:focus {
     background: #eff6ff;
     border-color: #2563eb;
@@ -2178,81 +2129,22 @@
   }
 }
 
-.reply-input-section.compact {
+// Grey out resolved annotation card
+.annotation-item.resolved {
   background: #f8fafc;
-  border: 1.5px solid #e0e7ef;
-  border-radius: 10px;
-  padding: 10px 12px 8px 12px;
-  margin-top: 6px;
-  margin-bottom: 2px;
-  box-shadow: 0 2px 8px rgba(30,41,59,0.04);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  border-color: #e5e7eb;
+  color: #94a3b8;
+  opacity: 0.85;
 }
 
-.reply-textarea.compact {
-  min-height: 32px;
-  max-height: 80px;
-  padding: 8px 12px;
-  border: 1.5px solid #cbd5e1;
+.replies-section.compact .reply-item.compact:first-child {
+  border-left: none;
+}
+
+.replies-section.compact {
+  border-left: 2.5px solid #e0e0e0;
+  border-top: none;
+  border-right: none;
+  border-bottom: none;
   border-radius: 7px;
-  font-size: 1em;
-  resize: vertical;
-  background: #fff;
-  color: #1e293b;
-  transition: border 0.15s, box-shadow 0.15s;
-  box-shadow: none;
-  &:focus {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 2px #dbeafe;
-    outline: none;
-  }
-}
-
-.reply-actions.compact {
-  display: flex;
-  flex-direction: row;
-  gap: 10px;
-  margin-top: 2px;
-}
-
-.reply-submit-btn.compact {
-  background: #2563eb;
-  color: #fff;
-  border: none;
-  border-radius: 7px;
-  padding: 6px 18px;
-  font-size: 1em;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-  box-shadow: none;
-  &:hover, &:focus {
-    background: #1d4ed8;
-    color: #fff;
-  }
-  &:disabled {
-    background: #cbd5e1;
-    color: #64748b;
-    cursor: not-allowed;
-  }
-}
-
-.reply-cancel-btn.compact {
-  background: #f3f4f6;
-  color: #64748b;
-  border: 1.5px solid #cbd5e1;
-  border-radius: 7px;
-  padding: 6px 18px;
-  font-size: 1em;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s, border 0.15s;
-  box-shadow: none;
-  &:hover, &:focus {
-    background: #e5e7eb;
-    color: #334155;
-    border-color: #94a3b8;
-  }
 } 
