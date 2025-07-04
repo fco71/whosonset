@@ -872,10 +872,8 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                       <div className="pdf-scrollable-container" ref={pdfScrollRef} onScroll={handlePdfScroll} onWheel={handlePdfWheel}>
                         {Array.from(new Array(numPages), (el, index) => {
                           const pageNumber = index + 1;
-                          // Temporarily disable virtualization to show all pages
-                          // const [first, last] = visiblePageRange;
-                          // const isVisible = pageNumber >= first && pageNumber <= last;
-                          const isVisible = true; // Show all pages for now
+                          const [first, last] = visiblePageRange;
+                          const isVisible = pageNumber >= first && pageNumber <= last;
                           return (
                             <div key={`page_${pageNumber}`} className="page-container" style={{ position: 'relative', marginBottom: '20px', minHeight: 900 }}>
                               {isVisible ? (
