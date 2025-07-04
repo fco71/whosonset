@@ -1159,7 +1159,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                               onClick={() => setReplyingTo(annotation.id)}
                               className="reply-btn compact"
                             >
-                              💬 Reply
+                              <span style={{fontSize: '1.1em', marginRight: 4}}>💬</span> Reply
                             </button>
                           )}
                           
