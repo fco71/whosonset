@@ -156,8 +156,8 @@ const MessageInput = React.forwardRef<{
         const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
         const normalizedLevel = average / 255; // Normalize to 0-1
         
-        // Only update if we detect actual audio (not just silence)
-        if (average > 5) { // Threshold to avoid noise
+        // Lower threshold for better sensitivity
+        if (average > 2) { // Lower threshold to detect more audio
           setAudioLevel(normalizedLevel);
           console.log('[Audio Level] Detected audio level:', normalizedLevel.toFixed(3));
         } else {
@@ -294,9 +294,9 @@ const MessageInput = React.forwardRef<{
           const totalSize = recordingChunksRef.current.reduce((sum, chunk) => sum + chunk.size, 0);
           console.log('[Voice Recording] Total recorded size:', totalSize, 'bytes');
           
-          if (totalSize < 100) {
+          if (totalSize < 50) {
             console.warn('[Voice Recording] Recording seems too small, may not have captured audio');
-            setRecordingError('No audio detected. Please check your microphone and try again.');
+            setRecordingError('No audio detected. Please speak louder or check your microphone.');
             return;
           }
           
@@ -313,6 +313,9 @@ const MessageInput = React.forwardRef<{
           
           // Store the file for user to send or cancel
           setRecordedAudioFile(audioFile);
+          
+          // Show success message
+          console.log('[Voice Recording] Voice message recorded successfully!');
         } else {
           console.warn('[Voice Recording] No recording chunks available');
           setRecordingError('Recording failed. Please try again.');
@@ -407,9 +410,10 @@ If you don't see the microphone icon, check your browser settings.`;
 
   const sendRecordedAudio = useCallback(() => {
     if (recordedAudioFile && sendCallbackRef.current) {
-      console.log('[Voice Recording] Sending recorded audio:', recordedAudioFile.name);
+      console.log('[Voice Recording] Sending recorded audio file:', recordedAudioFile.name);
       sendCallbackRef.current('Voice Message', 'voice', recordedAudioFile);
       setRecordedAudioFile(null);
+      setRecordingError(null);
     }
   }, [recordedAudioFile]);
 
@@ -609,6 +613,7 @@ If you don't see the microphone icon, check your browser settings.`;
               <div className="audio-size">{(recordedAudioFile.size / 1024).toFixed(1)} KB</div>
             </div>
           </div>
+          <audio controls src={URL.createObjectURL(recordedAudioFile)} style={{ width: '100%', margin: '12px 0' }} />
           <div className="audio-actions">
             <button 
               onClick={sendRecordedAudio} 
@@ -1007,15 +1012,23 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const getUserInfo = (userId: string) => {
     // Try to find in conversations (from Firestore)
     const conv = conversations.find(c => c.userId === userId);
-    if (conv && conv.userName && conv.userAvatar) {
+    if (conv && conv.userName) {
       return { name: conv.userName, avatar: conv.userAvatar };
     }
+    
     // Try demo users
     if (demoUsers[userId]) {
       return { name: demoUsers[userId].displayName, avatar: demoUsers[userId].avatar };
     }
-    // Fallback
-    return { name: 'Unknown User', avatar: undefined };
+    
+    // Try to get from SocialService
+    try {
+      // This would need to be async, but for now we'll use a fallback
+      return { name: `User ${userId.slice(-6)}`, avatar: undefined };
+    } catch (error) {
+      console.error('[getUserInfo] Error fetching user info:', error);
+      return { name: `User ${userId.slice(-6)}`, avatar: undefined };
+    }
   };
 
   // Send message function - memoized with useCallback
@@ -1029,6 +1042,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     try {
       let content = messageContent;
       let type = messageType as 'text' | 'image' | 'file' | 'voice' | 'project_invite';
+      let fileUrl: string | undefined = undefined;
 
       // Handle file uploads
       if (file) {
@@ -1037,24 +1051,28 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         if (file.type.startsWith('image/')) {
           type = 'image';
           content = `📷 ${file.name}`;
+          // Optionally upload image here in future
         } else if (file.type.startsWith('audio/')) {
           type = 'voice';
           content = `Voice Message (${(file.size / 1024).toFixed(1)} KB)`;
           console.log('[SendMessage] Detected voice message:', content);
+          // Upload audio file to Firebase Storage
+          fileUrl = await MessagingService.uploadFileToStorage(file, 'chat-audio');
+          console.log('[SendMessage] Uploaded audio file, got URL:', fileUrl);
         } else if (file.type.startsWith('video/')) {
           type = 'file';
           content = `🎥 ${file.name}`;
+          // Optionally upload video here in future
         } else {
           type = 'file';
           content = `📎 ${file.name}`;
+          // Optionally upload file here in future
         }
-        
-        // TODO: Upload file to Firebase Storage and get URL
-        // For now, we'll just send the file name
-        console.log('[SendMessage] File to upload:', file.name, file.type, file.size);
+        // For non-audio, fallback to local preview for now
+        if (!fileUrl) fileUrl = URL.createObjectURL(file);
       }
 
-      console.log('[SendMessage] Final message data:', { content, type });
+      console.log('[SendMessage] Final message data:', { content, type, fileUrl });
 
       // Optimistically add message to UI
       const optimisticMessage: DirectMessage = {
@@ -1066,7 +1084,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         isRead: false,
         messageType: type,
         status: 'sending',
-        fileUrl: file ? URL.createObjectURL(file) : undefined,
+        fileUrl,
         fileName: file?.name,
         fileSize: file?.size,
         fileType: file?.type
@@ -1075,8 +1093,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       setMessages(prev => [...prev, optimisticMessage]);
 
       // Send actual message
-      console.log('[SendMessage] Calling MessagingService.sendDirectMessage with:', { currentUserId, selectedUser, content, type });
-      await MessagingService.sendDirectMessage(currentUserId, selectedUser, content, type);
+      console.log('[SendMessage] Calling MessagingService.sendDirectMessage with:', { currentUserId, selectedUser, content, type, fileUrl });
+      await MessagingService.sendDirectMessage(currentUserId, selectedUser, content, type, undefined, fileUrl);
       
       // Update optimistic message status
       setMessages(prev => prev.map(msg => 
@@ -1450,32 +1468,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                         </div>
                       ) : message.messageType === 'voice' ? (
                         <div className="message-voice">
-                          <div className="voice-player">
-                            <button className="play-button">▶️</button>
-                            <div className="voice-waveform">
-                              {message.voiceWaveform ? (
-                                message.voiceWaveform.map((height, index) => (
-                                  <div 
-                                    key={index} 
-                                    className="waveform-bar"
-                                    style={{ height: `${height}%` }}
-                                  />
-                                ))
-                              ) : (
-                                <div className="voice-placeholder">
-                                  {Array.from({ length: 20 }, (_, i) => (
-                                    <div key={i} className="waveform-bar" />
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                            <div className="voice-duration">
-                              {message.voiceDuration ? 
-                                `${Math.floor(message.voiceDuration / 60)}:${(message.voiceDuration % 60).toString().padStart(2, '0')}` : 
-                                '0:00'
-                              }
-                            </div>
-                          </div>
+                          <audio controls src={message.fileUrl} style={{ width: '100%' }} />
                           {message.content && <p className="voice-caption">{message.content}</p>}
                         </div>
                       ) : (

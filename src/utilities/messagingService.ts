@@ -20,6 +20,8 @@ import {
 import { db } from '../firebase';
 import { DirectMessage, ChatRoom, ChatSettings, MessageReaction, ChatPresence } from '../types/Chat';
 import { SocialService } from './socialService';
+import { storage } from '../firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 export interface ConversationSummary {
   userId: string;
@@ -54,7 +56,8 @@ export class MessagingService {
     receiverId: string, 
     content: string, 
     messageType: 'text' | 'image' | 'file' | 'voice' | 'project_invite' = 'text', 
-    relatedProjectId?: string
+    relatedProjectId?: string,
+    fileUrl?: string
   ): Promise<string> {
     try {
       console.log('[MessagingService] Sending direct message from', senderId, 'to', receiverId);
@@ -80,6 +83,10 @@ export class MessagingService {
       // Only add relatedProjectId if it's defined
       if (relatedProjectId) {
         messageData.relatedProjectId = relatedProjectId;
+      }
+      // Only add fileUrl if it's defined
+      if (fileUrl) {
+        messageData.fileUrl = fileUrl;
       }
 
       // Add to Firestore
@@ -699,5 +706,11 @@ export class MessagingService {
     this.messageCache.clear();
     this.conversationCache.clear();
     this.typingUsers.clear();
+  }
+
+  static async uploadFileToStorage(file: File, pathPrefix: string = 'chat-uploads'): Promise<string> {
+    const fileRef = ref(storage, `${pathPrefix}/${Date.now()}-${file.name}`);
+    await uploadBytes(fileRef, file);
+    return await getDownloadURL(fileRef);
   }
 } 

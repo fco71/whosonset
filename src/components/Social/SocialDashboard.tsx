@@ -39,8 +39,9 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
   const [selectedProfile, setSelectedProfile] = useState<CrewProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [followingProfiles, setFollowingProfiles] = useState<Record<string, UserProfile | null>>({});
+  const [error, setError] = useState<string | null>(null);
 
-  // Real-time listeners
+  // Real-time listeners with error handling
   useEffect(() => {
     if (!currentUserId) {
       setIsLoading(false);
@@ -49,45 +50,64 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
 
     console.log('[SocialDashboard] Setting up real-time listeners for user:', currentUserId);
     
-    const unsubscribeFollowRequests = SocialService.subscribeToFollowRequests(currentUserId, setFollowRequests);
-    const unsubscribeNotifications = SocialService.subscribeToNotifications(currentUserId, setNotifications);
-    const unsubscribeFollowers = SocialService.subscribeToFollowers(currentUserId, setFollowers);
-    const unsubscribeFollowing = SocialService.subscribeToFollowing(currentUserId, setFollowing);
+    let unsubscribeFunctions: (() => void)[] = [];
+    
+    try {
+      const unsubscribeFollowRequests = SocialService.subscribeToFollowRequests(currentUserId, setFollowRequests);
+      const unsubscribeNotifications = SocialService.subscribeToNotifications(currentUserId, setNotifications);
+      const unsubscribeFollowers = SocialService.subscribeToFollowers(currentUserId, setFollowers);
+      const unsubscribeFollowing = SocialService.subscribeToFollowing(currentUserId, setFollowing);
+      
+      unsubscribeFunctions = [unsubscribeFollowRequests, unsubscribeNotifications, unsubscribeFollowers, unsubscribeFollowing];
 
-    // Load crew profiles for member list
-    const loadCrewProfiles = async () => {
-      try {
-        const profiles = await SocialService.getCrewProfiles();
-        setCrewProfiles(profiles);
-      } catch (error) {
-        console.error('[SocialDashboard] Error loading crew profiles:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+      // Load crew profiles for member list
+      const loadCrewProfiles = async () => {
+        try {
+          const profiles = await SocialService.getCrewProfiles();
+          setCrewProfiles(profiles);
+          setError(null);
+        } catch (error) {
+          console.error('[SocialDashboard] Error loading crew profiles:', error);
+          setError('Failed to load crew profiles');
+        } finally {
+          setIsLoading(false);
+        }
+      };
 
-    loadCrewProfiles();
+      loadCrewProfiles();
+    } catch (error) {
+      console.error('[SocialDashboard] Error setting up listeners:', error);
+      setError('Failed to set up real-time updates');
+      setIsLoading(false);
+    }
 
     return () => {
       console.log('[SocialDashboard] Cleaning up real-time listeners');
-      unsubscribeFollowRequests();
-      unsubscribeNotifications();
-      unsubscribeFollowers();
-      unsubscribeFollowing();
+      unsubscribeFunctions.forEach(unsubscribe => {
+        try {
+          unsubscribe();
+        } catch (error) {
+          console.error('[SocialDashboard] Error during cleanup:', error);
+        }
+      });
     };
   }, [currentUserId]);
 
   useEffect(() => {
-    // Fetch profiles for all following users
+    // Fetch profiles for all following users with error handling
     const fetchProfiles = async () => {
-      const ids = following.map(f => f.followingId);
-      if (ids.length === 0) return;
-      const profilesMap = await UserUtils.getMultipleUserProfiles(ids);
-      const profiles: Record<string, UserProfile | null> = {};
-      ids.forEach(id => {
-        profiles[id] = profilesMap.get(id) || null;
-      });
-      setFollowingProfiles(profiles);
+      try {
+        const ids = following.map(f => f.followingId);
+        if (ids.length === 0) return;
+        const profilesMap = await UserUtils.getMultipleUserProfiles(ids);
+        const profiles: Record<string, UserProfile | null> = {};
+        ids.forEach(id => {
+          profiles[id] = profilesMap.get(id) || null;
+        });
+        setFollowingProfiles(profiles);
+      } catch (error) {
+        console.error('[SocialDashboard] Error fetching following profiles:', error);
+      }
     };
     fetchProfiles();
   }, [following]);
@@ -102,22 +122,27 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
   };
 
   const handleNotificationClick = (notification: SocialNotification) => {
-    // Mark notification as read
-    SocialService.markNotificationAsRead(notification.id);
-    
-    // Navigate based on notification type
-    switch (notification.type) {
-      case 'follow_request':
-        setActiveTab('requests');
-        break;
-      case 'follow_accepted':
-        setActiveTab('followers');
-        break;
-      case 'message':
-        setActiveTab('messaging');
-        break;
-      default:
-        setActiveTab('notifications');
+    try {
+      // Mark notification as read
+      SocialService.markNotificationAsRead(notification.id);
+      
+      // Navigate based on notification type
+      switch (notification.type) {
+        case 'follow_request':
+          setActiveTab('requests');
+          break;
+        case 'follow_accepted':
+          setActiveTab('followers');
+          break;
+        case 'message':
+          setActiveTab('messaging');
+          break;
+        default:
+          setActiveTab('notifications');
+      }
+    } catch (error) {
+      console.error('[SocialDashboard] Error handling notification click:', error);
+      toast.error('Failed to process notification');
     }
   };
 
@@ -130,10 +155,24 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
       setNotifications(prev => prev.filter(notif => 
         !(notif.type === 'follow_request' && notif.relatedEventId === requestId)
       ));
+      toast.success(`Follow request ${response}`);
     } catch (error) {
       console.error('Error responding to follow request:', error);
+      toast.error('Failed to respond to follow request');
     }
   };
+
+  if (error) {
+    return (
+      <div className="social-dashboard">
+        <div className="error-state">
+          <h3>Something went wrong</h3>
+          <p>{error}</p>
+          <button onClick={() => window.location.reload()}>Retry</button>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -239,20 +278,20 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
               {following.map(follow => {
                 const profile = followingProfiles[follow.followingId];
                 return (
-                  <div key={follow.id} className="following-item">
+                  <div key={`following-${follow.id}`} className="following-item">
                     <img
-                      src={profile?.avatarUrl || "/default-avatar.png"}
+                      src={profile?.avatarUrl || "/bust-avatar.svg"}
                       alt={profile?.displayName || 'User'}
                       className="following-avatar"
-                      onError={e => (e.currentTarget.src = "/default-avatar.png")}
+                      onError={e => (e.currentTarget.src = "/bust-avatar.svg")}
                     />
                     <span className="following-name">
-                      {profile?.displayName || `User ${follow.followingId.slice(-4)}`}
+                      {profile?.displayName || `User ${follow.followingId.slice(-6)}`}
                     </span>
                     <QuickMessage
                       currentUserId={currentUserId}
                       targetUserId={follow.followingId}
-                      targetUserName={profile?.displayName || `User ${follow.followingId.slice(-4)}`}
+                      targetUserName={profile?.displayName || `User ${follow.followingId.slice(-6)}`}
                       className="ml-2"
                     />
                   </div>
@@ -272,13 +311,16 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
                     <div key={request.id} className="request-item">
                       <div className="request-user-info">
                         <img 
-                          src="/default-avatar.png" 
+                          src="/bust-avatar.svg" 
                           alt="User"
                           className="request-avatar"
+                          onError={(e) => {
+                            e.currentTarget.src = "/bust-avatar.svg";
+                          }}
                         />
                         <div className="request-user-details">
                           <span className="request-username">
-                            {request.fromUserName || `User ${request.fromUserId.slice(-4)}`}
+                            {request.fromUserName || `User ${request.fromUserId.slice(-6)}`}
                           </span>
                           <span className="request-handle">
                             @{request.fromUserId.slice(-8)}
@@ -289,19 +331,37 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
                         <button 
                           onClick={() => handleFollowRequestResponse(request.id, 'accepted')}
                           className="accept-btn"
+                          style={{
+                            backgroundColor: '#10b981',
+                            color: 'white',
+                            border: 'none',
+                            padding: '8px 16px',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontWeight: '500'
+                          }}
                         >
-                          Accept
+                          ✓ Accept
                         </button>
                         <button 
                           onClick={() => handleFollowRequestResponse(request.id, 'rejected')}
                           className="reject-btn"
+                          style={{
+                            backgroundColor: '#ef4444',
+                            color: 'white',
+                            border: 'none',
+                            padding: '8px 16px',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontWeight: '500'
+                          }}
                         >
-                          Reject
+                          ✕ Reject
                         </button>
                         <QuickMessage 
                           currentUserId={currentUserId}
                           targetUserId={request.fromUserId}
-                          targetUserName={request.fromUserName || `User ${request.fromUserId.slice(-4)}`}
+                          targetUserName={request.fromUserName || `User ${request.fromUserId.slice(-6)}`}
                           className="ml-auto"
                         />
                       </div>
@@ -357,15 +417,15 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
               </div>
             </div>
             <div className="members-grid">
-              {filteredProfiles.map((profile, index) => (
-                <div key={profile.uid} className="member-card">
+              {filteredProfiles.map((profile) => (
+                <div key={`member-${profile.uid}`} className="member-card">
                   <div className="member-avatar">
                     <img 
-                      src={profile.profileImageUrl || "/default-avatar.png"} 
+                      src={profile.profileImageUrl || "/bust-avatar.svg"} 
                       alt={profile.name}
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
-                        target.src = "/default-avatar.png";
+                        target.src = "/bust-avatar.svg";
                       }}
                     />
                     <button 
