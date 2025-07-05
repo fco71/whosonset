@@ -187,12 +187,17 @@
           border-radius: 8px;
           font-size: 14px;
           background: white;
+          color: #111827;
           transition: all 0.2s ease;
 
           &:focus {
             outline: none;
             border-color: #3b82f6;
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+          }
+
+          &::placeholder {
+            color: #9ca3af;
           }
         }
 
@@ -1387,6 +1392,7 @@
             border-radius: 12px;
             font-size: 14px;
             background: white;
+            color: #111827;
             transition: all 0.2s ease;
             resize: none;
             min-height: 44px;

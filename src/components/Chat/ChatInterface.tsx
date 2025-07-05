@@ -478,44 +478,7 @@ If you don't see the microphone icon, check your browser settings.`;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Test microphone function for debugging
-  const testMicrophone = useCallback(async () => {
-    try {
-      console.log('[Microphone Test] Starting microphone test...');
-      
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: {
-          echoCancellation: false,
-          noiseSuppression: false,
-          autoGainControl: false
-        } 
-      });
-      
-      console.log('[Microphone Test] Got test stream:', stream);
-      
-      const audioTracks = stream.getAudioTracks();
-      console.log('[Microphone Test] Audio tracks:', audioTracks);
-      
-      audioTracks.forEach((track, index) => {
-        console.log(`[Microphone Test] Track ${index}:`, {
-          label: track.label,
-          enabled: track.enabled,
-          muted: track.muted,
-          readyState: track.readyState,
-          settings: track.getSettings()
-        });
-      });
-      
-      // Stop the test stream after 2 seconds
-      setTimeout(() => {
-        stream.getTracks().forEach(track => track.stop());
-        console.log('[Microphone Test] Test stream stopped');
-      }, 2000);
-      
-    } catch (error) {
-      console.error('[Microphone Test] Error:', error);
-    }
-  }, []);
+
 
   return (
     <div className={`message-input ${dragOver ? 'drag-over' : ''}`} 
@@ -573,17 +536,7 @@ If you don't see the microphone icon, check your browser settings.`;
           accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt"
         />
         
-        {/* Test microphone button for debugging */}
-        <button
-          onClick={testMicrophone}
-          className="toolbar-button test-mic-button"
-          title="Test microphone"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
-            <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
-          </svg>
-        </button>
+
         
         <button
           ref={voiceRecorderRef}

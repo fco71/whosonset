@@ -830,4 +830,52 @@ export class SocialService {
       return [];
     }
   }
+
+  /**
+   * Send a collaboration request notification to a user for a screenplay/project.
+   * This does NOT add them to teamMembers directly; approval is required.
+   */
+  static async sendCollaborationRequest({
+    inviteeId,
+    inviterId,
+    screenplayId,
+    screenplayName,
+    inviterName
+  }: {
+    inviteeId: string;
+    inviterId: string;
+    screenplayId: string;
+    screenplayName: string;
+    inviterName: string;
+  }): Promise<void> {
+    try {
+      // Check for existing pending request
+      const notificationsQuery = query(
+        collection(db, 'notifications'),
+        where('userId', '==', inviteeId),
+        where('type', '==', 'collaboration_request'),
+        where('relatedScreenplayId', '==', screenplayId),
+        where('relatedUserId', '==', inviterId),
+      );
+      const existing = await getDocs(notificationsQuery);
+      if (!existing.empty) {
+        throw new Error('A collaboration request is already pending for this user and screenplay.');
+      }
+      // Create the notification
+      await addDoc(collection(db, 'notifications'), {
+        userId: inviteeId,
+        type: 'collaboration_request',
+        title: 'Collaboration Request',
+        message: `${inviterName} has invited you to collaborate on "${screenplayName}".`,
+        relatedScreenplayId: screenplayId,
+        relatedUserId: inviterId,
+        isRead: false,
+        createdAt: serverTimestamp(),
+        actionUrl: `/screenplays/${screenplayId}/collab-request`
+      });
+    } catch (error) {
+      console.error('Error sending collaboration request:', error);
+      throw error;
+    }
+  }
 } 

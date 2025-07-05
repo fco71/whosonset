@@ -220,6 +220,13 @@ export class MessagingService {
         this.listeners.get(listenerKey)!();
       }
       
+      // Add timeout protection
+      let timeoutId: NodeJS.Timeout;
+      const timeoutCallback = () => {
+        console.warn('[MessagingService] Conversation listener timeout, returning empty array');
+        callback([]);
+      };
+      
       // Get all messages for this conversation without limit to ensure reactions don't cause messages to disappear
       const messagesQuery = query(
         collection(db, 'directMessages'),
@@ -228,6 +235,11 @@ export class MessagingService {
 
       const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
         try {
+          // Clear timeout since we got a response
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+          }
+          
           // Filter messages for this conversation in memory
           const conversationMessages = snapshot.docs.filter(doc => {
             const data = doc.data();
@@ -265,12 +277,23 @@ export class MessagingService {
           callback(messages);
         } catch (error) {
           console.error('[MessagingService] Error processing conversation snapshot:', error);
+          // Clear timeout on error
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+          }
           callback([]);
         }
       }, (error) => {
         console.error('[MessagingService] Conversation listener error:', error);
+        // Clear timeout on error
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
         callback([]);
       });
+
+      // Set timeout for initial response
+      timeoutId = setTimeout(timeoutCallback, 10000); // 10 second timeout
 
       this.listeners.set(listenerKey, unsubscribe);
       return unsubscribe;

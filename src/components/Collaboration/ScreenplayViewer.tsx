@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { collection, addDoc, query, where, orderBy, getDocs, onSnapshot, updateDoc, doc, deleteDoc, arrayUnion, arrayRemove, limit } from 'firebase/firestore';
+import { collection, addDoc, query, where, orderBy, getDocs, onSnapshot, updateDoc, doc, deleteDoc, arrayUnion, arrayRemove, limit, getDoc } from 'firebase/firestore';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -149,10 +149,11 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   const [previousActiveUsers, setPreviousActiveUsers] = useState<ScreenplaySession['activeUsers']>([]);
   const [showAddCollaboratorModal, setShowAddCollaboratorModal] = useState(false);
   const [collaboratorSearch, setCollaboratorSearch] = useState('');
-  const [collaboratorResults, setCollaboratorResults] = useState<Array<{id: string; name?: string; email?: string; avatar?: string; role?: string; isFollowing: boolean}>>([]);
+  const [collaboratorResults, setCollaboratorResults] = useState<Array<{id: string; name?: string; email?: string; avatar?: string; role?: string; isFollowing: boolean; connectionStatus: string}>>([]);
   const [addingCollaborator, setAddingCollaborator] = useState(false);
   const [collaborators, setCollaborators] = useState<any[]>([]);
   const [userFollows, setUserFollows] = useState<string[]>([]);
+  const [approvedContacts, setApprovedContacts] = useState<string[]>([]);
   
   const viewerRef = useRef<HTMLDivElement>(null);
   const pdfContainerRef = useRef<HTMLDivElement>(null);
@@ -166,6 +167,8 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   // Focus trap for modal
   const modalRef = useRef<HTMLDivElement>(null);
   
+  const [searchLoading, setSearchLoading] = useState(false);
+
   if (!screenplay || !screenplay.id) return null;
 
   // Prevent body scrolling when modal is open
@@ -986,19 +989,36 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     setPreviousActiveUsers(activeUsers);
   }, [activeUsers, currentUser]);
 
-  // Load current collaborators from Firestore
+  // Real-time collaborators listener
   useEffect(() => {
-    const fetchCollaborators = async () => {
-      if (!screenplay.id) return;
-      const screenplayRef = doc(db, 'screenplays', screenplay.id);
-      const docSnap = await getDocs(query(collection(db, 'screenplays'), where('id', '==', screenplay.id)));
-      if (!docSnap.empty) {
-        const data = docSnap.docs[0].data();
-        setCollaborators(data.teamMembers || []);
+    if (!screenplay.id) return;
+
+    console.log('Setting up real-time collaborators listener for screenplay:', screenplay.id);
+
+    const collaboratorsUnsubscribe = onSnapshot(
+      doc(db, 'screenplays', screenplay.id),
+      (doc) => {
+        if (doc.exists()) {
+          const data = doc.data();
+          const teamMembers = data.teamMembers || [];
+          console.log('Real-time collaborators update received:', teamMembers);
+          setCollaborators(teamMembers);
+        } else {
+          console.log('Screenplay document does not exist');
+          setCollaborators([]);
+        }
+      },
+      (error) => {
+        console.error('Error listening to collaborators:', error);
+        setCollaborators([]);
       }
+    );
+
+    return () => {
+      console.log('Cleaning up collaborators listener');
+      collaboratorsUnsubscribe();
     };
-    fetchCollaborators();
-  }, [screenplay.id, showAddCollaboratorModal]);
+  }, [screenplay.id]);
 
   // Fetch current user's followers and following on mount
   useEffect(() => {
@@ -1022,89 +1042,141 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     fetchFollows();
   }, [currentUser]);
 
+  // Fetch approved contacts (mutual connections)
+  useEffect(() => {
+    if (!currentUser) return;
+    const fetchApprovedContacts = async () => {
+      const connectionsQuery = query(
+        collection(db, 'connections'),
+        where('status', '==', 'accepted'),
+        where('userId', '==', currentUser.uid)
+      );
+      const reverseConnectionsQuery = query(
+        collection(db, 'connections'),
+        where('status', '==', 'accepted'),
+        where('connectedUserId', '==', currentUser.uid)
+      );
+      const [directSnap, reverseSnap] = await Promise.all([
+        getDocs(connectionsQuery),
+        getDocs(reverseConnectionsQuery)
+      ]);
+      const directContacts = directSnap.docs.map(doc => doc.data().connectedUserId);
+      const reverseContacts = reverseSnap.docs.map(doc => doc.data().userId);
+      setApprovedContacts([...new Set([...directContacts, ...reverseContacts])]);
+    };
+    fetchApprovedContacts();
+  }, [currentUser]);
+
   const handleCollaboratorSearch = async (queryStr: string) => {
     setCollaboratorSearch(queryStr);
+    setSearchLoading(true);
     if (!queryStr.trim()) {
       setCollaboratorResults([]);
+      setSearchLoading(false);
       return;
     }
-    
     try {
-      // Search all users, not just followers/following
+      // Only search among approved contacts
+      if (approvedContacts.length === 0) {
+        setCollaboratorResults([]);
+        setSearchLoading(false);
+        return;
+      }
       const usersRef = collection(db, 'users');
-      
-      // First try to search by displayName
-      const nameQuery = query(
-        usersRef, 
-        where('displayName', '>=', queryStr),
-        where('displayName', '<=', queryStr + '\uf8ff'),
-        limit(10)
-      );
-      
-      // Also search by email
-      const emailQuery = query(
-        usersRef,
-        where('email', '>=', queryStr),
-        where('email', '<=', queryStr + '\uf8ff'),
-        limit(10)
-      );
-
-      const [nameSnap, emailSnap] = await Promise.all([
-        getDocs(nameQuery),
-        getDocs(emailQuery)
-      ]);
-
-      // Combine and deduplicate results
-      const allDocs = [...nameSnap.docs, ...emailSnap.docs];
-      const uniqueDocs = allDocs.filter((doc, index, self) => 
-        index === self.findIndex(d => d.id === doc.id)
-      );
-
-      const filtered = uniqueDocs
-        .map(doc => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            name: data.displayName || data.firstName || data.name || `User ${doc.id.slice(-4)}`,
-            email: data.email || '',
-            avatar: data.avatarUrl || data.avatar || '',
-            role: data.role || 'User',
-            isFollowing: userFollows.includes(doc.id)
-          };
-        })
-        .filter(user => 
-          user.id !== currentUser?.uid && // Don't show current user
-          (user.name.toLowerCase().includes(queryStr.toLowerCase()) ||
-           user.email.toLowerCase().includes(queryStr.toLowerCase()))
+      // Fetch all approved contacts' user docs
+      const approvedChunks = [];
+      for (let i = 0; i < approvedContacts.length; i += 10) {
+        approvedChunks.push(approvedContacts.slice(i, i + 10));
+      }
+      let allResults: Array<{ id: string; [key: string]: any }> = [];
+      for (const chunk of approvedChunks) {
+        const q = query(usersRef, where('id', 'in', chunk));
+        const snap = await getDocs(q);
+        allResults = allResults.concat(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      }
+      // Filter by search query
+      const filtered = allResults
+        .filter(user =>
+          user.id !== currentUser?.uid &&
+          ((user.displayName || user.name || '').toLowerCase().includes(queryStr.toLowerCase()) ||
+           (user.email || '').toLowerCase().includes(queryStr.toLowerCase()))
         )
-        .slice(0, 10);
-
+        .map(user => ({
+          id: user.id,
+          name: user.displayName || user.name || `User ${user.id.slice(-4)}`,
+          email: user.email || '',
+          avatar: user.avatarUrl || user.avatar || '',
+          role: user.role || 'User',
+          isFollowing: userFollows.includes(user.id),
+          connectionStatus: 'connected', // All in approvedContacts
+        }));
       setCollaboratorResults(filtered);
+      setSearchLoading(false);
     } catch (error) {
       console.error('Error searching users:', error);
       setCollaboratorResults([]);
+      setSearchLoading(false);
     }
   };
 
   const handleAddCollaborator = async (user: any) => {
+    if (collaborators.some(c => c.id === user.id)) {
+      toast.error(`${user.name} is already a collaborator.`);
+      return;
+    }
     setAddingCollaborator(true);
     try {
+      console.log('Adding collaborator:', user);
+      console.log('Screenplay ID:', screenplay.id);
+      
+      // First check if the screenplay document exists
       const screenplayRef = doc(db, 'screenplays', screenplay.id);
+      const screenplayDoc = await getDoc(screenplayRef);
+      
+      if (!screenplayDoc.exists()) {
+        throw new Error('Screenplay document not found');
+      }
+      
+      const screenplayData = screenplayDoc.data();
+      console.log('Current screenplay data:', screenplayData);
+      
+      const newCollaborator = {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        avatar: user.avatar || '',
+        role: user.role || 'collaborator',
+        addedAt: new Date(),
+        addedBy: currentUser?.uid
+      };
+
+      console.log('New collaborator object:', newCollaborator);
+
+      // Update the database
       await updateDoc(screenplayRef, {
-        teamMembers: arrayUnion({
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          avatar: user.avatar || '',
-          role: user.role || 'collaborator',
-        })
+        teamMembers: arrayUnion(newCollaborator)
       });
+
+      console.log('Database updated successfully');
+
+      // Update local state immediately
+      setCollaborators(prev => {
+        const updated = [...prev, newCollaborator];
+        console.log('Updated collaborators list:', updated);
+        return updated;
+      });
+
+      // Show success message
       toast.success(`${user.name} added as collaborator!`);
+      
+      // Close modal and reset search
       setShowAddCollaboratorModal(false);
       setCollaboratorSearch('');
       setCollaboratorResults([]);
+      
     } catch (err) {
-      toast.error('Failed to add collaborator');
+      console.error('Error adding collaborator:', err);
+      toast.error(`Failed to add collaborator: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setAddingCollaborator(false);
     }
@@ -1152,6 +1224,22 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       };
     }
   }, [showAddCollaboratorModal]);
+
+  // Add remove collaborator handler
+  const handleRemoveCollaborator = async (userId: string) => {
+    try {
+      const toRemove = collaborators.find(c => c.id === userId);
+      if (!toRemove) return;
+      const screenplayRef = doc(db, 'screenplays', screenplay.id);
+      await updateDoc(screenplayRef, {
+        teamMembers: arrayRemove(toRemove)
+      });
+      setCollaborators(collaborators.filter(c => c.id !== userId));
+      toast.success('Collaborator removed.');
+    } catch (err) {
+      toast.error('Failed to remove collaborator.');
+    }
+  };
 
   return (
     <div className="screenplay-viewer-overlay">
@@ -1525,18 +1613,28 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
 
                   {/* Collaborators */}
                   <div className="collaborators-section">
-                    <h4>🤝 Collaborators</h4>
+                    <h4>🤝 Collaborators ({collaborators.filter(user => user && user.id && user.name).length})</h4>
                     <div className="collaborators-list">
-                      {collaborators.length === 0 && <div className="no-collaborators">No collaborators yet.</div>}
-                      {collaborators.map(user => (
+                      {collaborators.filter(user => user && user.id && user.name).length === 0 && <div className="no-collaborators">No collaborators yet.</div>}
+                      {collaborators.filter(user => user && user.id && user.name).map(user => (
                         <div key={user.id} className="collaborator-item">
                           <div className="collaborator-avatar">
-                            {user.avatar ? <img src={user.avatar} alt={user.name} /> : <div className="avatar-placeholder">{user.name?.charAt(0).toUpperCase()}</div>}
+                            {user.avatar ? <img src={user.avatar} alt={user.name} /> : <div className="avatar-placeholder">{user.name?.charAt(0).toUpperCase() || '?'}</div>}
                           </div>
                           <div className="collaborator-info">
-                            <span className="collaborator-name">{user.name}</span>
-                            <span className="collaborator-role">{user.role}</span>
+                            <span className="collaborator-name">{user.name || 'Unknown'}</span>
+                            <span className="collaborator-role">{user.role || 'Collaborator'}</span>
                           </div>
+                          {user.id !== currentUser?.uid && (
+                            <button
+                              className="remove-btn"
+                              onClick={() => handleRemoveCollaborator(user.id)}
+                              title="Remove collaborator"
+                              style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#ef4444', fontSize: '1.2rem', cursor: 'pointer' }}
+                            >
+                              ×
+                            </button>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -1898,20 +1996,21 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
             }}
             tabIndex={-1}
           >
-            <div className="modal-content" ref={modalRef}>
+            <div className="modal-content" ref={modalRef} style={{ position: 'relative' }}>
+              <button
+                onClick={() => {
+                  setShowAddCollaboratorModal(false);
+                  setCollaboratorSearch('');
+                  setCollaboratorResults([]);
+                }}
+                className="close-btn"
+                aria-label="Close modal"
+                style={{ position: 'absolute', top: 12, right: 12, zIndex: 2, fontSize: '1.5rem', background: 'none', border: 'none', cursor: 'pointer' }}
+              >
+                ×
+              </button>
               <div className="modal-header">
                 <h3>Add Collaborator</h3>
-                <button 
-                  onClick={() => {
-                    setShowAddCollaboratorModal(false);
-                    setCollaboratorSearch('');
-                    setCollaboratorResults([]);
-                  }} 
-                  className="close-btn"
-                  aria-label="Close modal"
-                >
-                  ×
-                </button>
               </div>
               <div className="modal-body">
                 <input
@@ -1923,44 +2022,42 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                   autoFocus
                 />
                 <div className="collaborator-search-results">
-                  {collaboratorResults.length === 0 && collaboratorSearch.trim() && (
-                    <div className="no-results">
-                      <p>No users found matching "{collaboratorSearch}"</p>
-                      <p className="search-tip">Try searching by name or email address</p>
-                    </div>
+                  {searchLoading && (
+                    <div className="no-results">Searching...</div>
                   )}
-                  {collaboratorResults.length === 0 && !collaboratorSearch.trim() && (
-                    <div className="no-results">
-                      <p>Start typing to search for users</p>
-                    </div>
+                  {!searchLoading && collaboratorResults.length === 0 && collaboratorSearch.trim() && (
+                    <div className="no-results">No friends found.</div>
+                  )}
+                  {!searchLoading && collaboratorResults.length === 0 && !collaboratorSearch.trim() && (
+                    <div className="no-results">Start typing to search for users</div>
                   )}
                   {collaboratorResults.map(user => (
-                    <div key={user.id} className="user-result">
+                    <div key={user.id || user.email || Math.random()} className="user-result">
                       <div className="user-info">
                         <div className="user-avatar">
                           {user.avatar ? (
                             <img src={user.avatar} alt={user.name} />
                           ) : (
                             <div className="avatar-placeholder">
-                              {user.name?.charAt(0).toUpperCase() || 'U'}
+                              {user.name?.charAt(0).toUpperCase() || '?'}
                             </div>
-                          )}
-                          {user.isFollowing && (
-                            <div className="following-badge" title="You follow this user">✓</div>
                           )}
                         </div>
                         <div className="user-details">
-                          <span className="user-name">{user.name}</span>
+                          <span className="user-name">{user.name || 'Unknown'}</span>
                           <span className="user-email">{user.email}</span>
                           {user.role && <span className="user-role">{user.role}</span>}
+                          <span className="connection-badge" style={{ color: '#10b981', fontWeight: 500, fontSize: '0.85em', marginLeft: 6 }}>
+                            Connected
+                          </span>
                         </div>
                       </div>
-                      <button 
-                        disabled={addingCollaborator} 
-                        onClick={() => handleAddCollaborator(user)} 
+                      <button
+                        disabled={addingCollaborator || collaborators.some(c => c.id === user.id)}
+                        onClick={() => handleAddCollaborator(user)}
                         className="add-btn"
                       >
-                        {addingCollaborator ? 'Adding...' : 'Add'}
+                        {addingCollaborator ? 'Adding...' : collaborators.some(c => c.id === user.id) ? 'Already Added' : 'Add'}
                       </button>
                     </div>
                   ))}

@@ -32,6 +32,7 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
   const [showComments, setShowComments] = useState<{ [key: string]: boolean }>({});
   const [comments, setComments] = useState<{ [key: string]: SocialComment[] }>({});
   const [userLikes, setUserLikes] = useState<{ [key: string]: boolean }>({});
+  const [likedActivities, setLikedActivities] = useState<{ [key: string]: boolean }>({});
   
   // User profiles cache
   const [userProfiles, setUserProfiles] = useState<Map<string, UserProfile>>(new Map());
@@ -231,36 +232,20 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
   }, [isIntersecting, hasMore, loading, loadMoreActivities]);
 
   const handleLike = useCallback(async (activityId: string) => {
-    try {
-      setLoading(true);
-      // Find the activity and update its like count
-      setActivities(prevActivities => 
-        prevActivities.map(activity => 
-          activity.id === activityId 
-            ? { ...activity, likes: activity.likes + 1 }
-            : activity
-        )
-      );
-      
-      // Here you would typically call an API to persist the like
-      // await SocialService.likeActivity(currentUserId, activityId);
-      
-      // Add a small delay to prevent rapid clicking
-      await new Promise(resolve => setTimeout(resolve, 500));
-    } catch (error) {
-      console.error('Error liking activity:', error);
-      // Revert the like count if the API call fails
-      setActivities(prevActivities => 
-        prevActivities.map(activity => 
-          activity.id === activityId 
-            ? { ...activity, likes: Math.max(0, activity.likes - 1) }
-            : activity
-        )
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [currentUserId]);
+    setLikedActivities(prev => {
+      const alreadyLiked = prev[activityId];
+      // Toggle like
+      return { ...prev, [activityId]: !alreadyLiked };
+    });
+    setActivities(prevActivities =>
+      prevActivities.map(activity =>
+        activity.id === activityId
+          ? { ...activity, likes: likedActivities[activityId] ? Math.max(0, activity.likes - 1) : activity.likes + 1 }
+          : activity
+      )
+    );
+    // Optionally, call backend to persist like/unlike
+  }, [likedActivities]);
 
   const handleComment = useCallback(async (activityId: string, comment: string) => {
     if (!comment.trim()) return;
@@ -294,9 +279,9 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
 
   // Memoized activity item component for better performance
   const ActivityItem = useMemo(() => React.memo(({ activity }: { activity: ActivityFeedItem }) => {
-    const displayName = getUserDisplayName(activity.userId);
+    const displayName = getUserDisplayName(activity.userId) || 'Unknown User';
     const avatarUrl = getUserAvatar(activity.userId);
-    
+    const liked = likedActivities[activity.id] || false;
     return (
       <div className="activity-item" key={activity.id}>
         <div className="activity-header">
@@ -350,29 +335,21 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
         <div className="activity-actions">
           <button
             onClick={() => handleLike(activity.id)}
-            className="action-button"
-            disabled={loading}
+            className={`action-button like-btn${liked ? ' liked' : ''}`}
+            aria-label={liked ? 'Unlike' : 'Like'}
           >
-            <span className="icon">❤️</span>
+            <span className="icon">{liked ? '❤️' : '🤍'}</span>
             <span className="count">{activity.likes}</span>
           </button>
           
-          <button className="action-button">
+          <button className="action-button" aria-label="Comments">
             <span className="icon">💬</span>
             <span className="count">{activity.comments}</span>
-          </button>
-          
-          <button
-            onClick={() => handleShare(activity.id)}
-            className="action-button"
-          >
-            <span className="icon">📤</span>
-            <span>Share</span>
           </button>
         </div>
       </div>
     );
-  }), [getUserDisplayName, getUserAvatar, handleLike, handleShare]);
+  }), [getUserDisplayName, getUserAvatar, handleLike, likedActivities]);
 
   // Loading skeleton component for better perceived performance
   const ActivitySkeleton = useMemo(() => () => (
@@ -391,7 +368,6 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
         <div className="activity-description skeleton-text-short"></div>
       </div>
       <div className="activity-actions">
-        <div className="action-button skeleton-button"></div>
         <div className="action-button skeleton-button"></div>
         <div className="action-button skeleton-button"></div>
       </div>
@@ -509,17 +485,6 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
           </>
         )}
       </div>
-
-      {/* Performance Stats (Development Only) */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="performance-stats">
-          <small>
-            Loaded {activities.length} activities | 
-            Filtered: {filteredActivities.length} | 
-            Memory: {Math.round((performance as any).memory?.usedJSHeapSize / 1024 / 1024 || 0)}MB
-          </small>
-        </div>
-      )}
     </div>
   );
 };
