@@ -1476,14 +1476,18 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                       {/* Message content based on type */}
                       {['deleted_text', 'deleted_image', 'deleted_audio', 'deleted_file'].includes(message.messageType) ? (
                         <div className="deleted-message-placeholder" style={{
-                          color: '#9ca3af',
+                          display: 'flex', alignItems: 'center', gap: 6,
+                          color: '#b0b6be',
                           fontStyle: 'italic',
-                          background: '#f3f4f6',
-                          borderRadius: 8,
-                          padding: '12px 16px',
-                          textAlign: 'center',
-                          margin: '8px 0'
+                          fontSize: 13,
+                          background: 'none',
+                          borderRadius: 0,
+                          padding: 0,
+                          margin: '2px 0 0 0',
+                          boxShadow: 'none',
+                          minHeight: 0
                         }}>
+                          <span style={{ fontSize: 15, opacity: 0.7, marginRight: 2 }}>🗑️</span>
                           {message.content}
                         </div>
                       ) : message.messageType === 'image' && message.fileUrl ? (
