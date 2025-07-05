@@ -308,12 +308,12 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
           </div>
           <div className="activity-info">
             <div className="user-name">{displayName}</div>
-            <div className="activity-time">
-              {new Date(activity.createdAt).toLocaleDateString()}
+            <div className="activity-time" title={new Date(activity.createdAt).toLocaleString()}>
+              {formatTimeAgo(new Date(activity.createdAt))}
             </div>
           </div>
-          <div className="activity-type-badge">
-            {activity.type.replace('_', ' ')}
+          <div className="activity-type-badge" title={activity.type.replace('_', ' ')}>
+            {getActivityIcon(activity.type)}
           </div>
         </div>
         
@@ -337,14 +337,28 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
             onClick={() => handleLike(activity.id)}
             className={`action-button like-btn${liked ? ' liked' : ''}`}
             aria-label={liked ? 'Unlike' : 'Like'}
+            title={liked ? 'Unlike' : 'Like'}
           >
-            <span className="icon">{liked ? '❤️' : '🤍'}</span>
+            <span className="icon" aria-hidden="true">
+              {liked ? (
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="#ef4444" xmlns="http://www.w3.org/2000/svg"><path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"/></svg>
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#6b7280" strokeWidth="1.5" xmlns="http://www.w3.org/2000/svg"><path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"/></svg>
+              )}
+            </span>
             <span className="count">{activity.likes}</span>
           </button>
           
-          <button className="action-button" aria-label="Comments">
-            <span className="icon">💬</span>
+          <button className="action-button" aria-label="Comments" title="Comments">
+            <span className="icon" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#6b7280" strokeWidth="1.5" xmlns="http://www.w3.org/2000/svg"><path d="M18 10c0 3.866-3.582 7-8 7a8.96 8.96 0 01-3.39-.62L2 17l1.62-3.39A7.96 7.96 0 012 10c0-3.866 3.582-7 8-7s8 3.134 8 7z"/></svg>
+            </span>
             <span className="count">{activity.comments}</span>
+          </button>
+          <button className="action-button" aria-label="Share" title="Share">
+            <span className="icon" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#6b7280" strokeWidth="1.5" xmlns="http://www.w3.org/2000/svg"><path d="M15 8V5a3 3 0 00-6 0v3m6 0a3 3 0 01-6 0m6 0v7a3 3 0 01-6 0V8"/></svg>
+            </span>
           </button>
         </div>
       </div>
