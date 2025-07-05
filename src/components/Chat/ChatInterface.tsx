@@ -1474,7 +1474,19 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                   >
                     <div className="message-content">
                       {/* Message content based on type */}
-                      {message.messageType === 'image' && message.fileUrl ? (
+                      {['deleted_text', 'deleted_image', 'deleted_audio', 'deleted_file'].includes(message.messageType) ? (
+                        <div className="deleted-message-placeholder" style={{
+                          color: '#9ca3af',
+                          fontStyle: 'italic',
+                          background: '#f3f4f6',
+                          borderRadius: 8,
+                          padding: '12px 16px',
+                          textAlign: 'center',
+                          margin: '8px 0'
+                        }}>
+                          {message.content}
+                        </div>
+                      ) : message.messageType === 'image' && message.fileUrl ? (
                         <div className="message-image">
                           <img 
                             src={message.fileUrl} 
@@ -1559,7 +1571,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                         ))}
                       </div>
                       {/* Delete icon for sender's file/image/audio messages */}
-                      {message.senderId === currentUserId && message.fileUrl && (
+                      {message.senderId === currentUserId && !message.fileUrl && (message.messageType === 'text' || message.messageType === undefined) && (
                         <button
                           title="Delete message"
                           style={{
@@ -1575,7 +1587,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                           }}
                           onClick={async () => {
                             if (window.confirm('Delete this message for everyone?')) {
-                              await MessagingService.deleteMessage(message.id, message.fileUrl, message.messageType);
+                              await MessagingService.deleteMessage(message.id, undefined, message.messageType);
                             }
                           }}
                         >

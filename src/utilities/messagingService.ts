@@ -740,6 +740,9 @@ export class MessagingService {
       } else if (messageType === 'voice') {
         placeholder = '[Audio deleted]';
         deletedType = 'deleted_audio';
+      } else if (messageType === 'text') {
+        placeholder = '[Message deleted]';
+        deletedType = 'deleted_text';
       }
       await updateDoc(doc(db, 'directMessages', messageId), {
         content: placeholder,
