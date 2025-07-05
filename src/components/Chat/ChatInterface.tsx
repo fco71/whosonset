@@ -5,6 +5,7 @@ import { SocialService } from '../../utilities/socialService';
 import './ChatInterface.scss';
 import { collection, getDocs, where, limit, query as firestoreQuery } from 'firebase/firestore';
 import { db } from '../../firebase';
+import { FaTrash } from 'react-icons/fa';
 
 // Create a completely independent message input component with rich features
 const MessageInput = React.forwardRef<{
@@ -29,6 +30,8 @@ const MessageInput = React.forwardRef<{
   const [dragOver, setDragOver] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);
   const [recordedAudioFile, setRecordedAudioFile] = useState<File | null>(null);
+  const [pendingAttachment, setPendingAttachment] = useState<File | null>(null);
+  const [pendingAttachmentType, setPendingAttachmentType] = useState<string | null>(null);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordingChunksRef = useRef<Blob[]>([]);
@@ -85,10 +88,11 @@ const MessageInput = React.forwardRef<{
   // File handling
   const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file && sendCallbackRef.current) {
-      sendCallbackRef.current('', 'file', file);
-      event.target.value = '';
+    if (file) {
+      setPendingAttachment(file);
+      setPendingAttachmentType(file.type);
     }
+    event.target.value = '';
   }, []);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -482,7 +486,19 @@ If you don't see the microphone icon, check your browser settings.`;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Add cancel and send handlers for preview
+  const cancelPendingAttachment = useCallback(() => {
+    setPendingAttachment(null);
+    setPendingAttachmentType(null);
+  }, []);
 
+  const sendPendingAttachment = useCallback(() => {
+    if (pendingAttachment) {
+      sendCallbackRef.current?.('', undefined, pendingAttachment);
+      setPendingAttachment(null);
+      setPendingAttachmentType(null);
+    }
+  }, [pendingAttachment]);
 
   return (
     <div className={`message-input ${dragOver ? 'drag-over' : ''}`} 
@@ -539,8 +555,6 @@ If you don't see the microphone icon, check your browser settings.`;
           style={{ display: 'none' }}
           accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt"
         />
-        
-
         
         <button
           ref={voiceRecorderRef}
@@ -629,6 +643,28 @@ If you don't see the microphone icon, check your browser settings.`;
             >
               ❌ Cancel
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Preview UI */}
+      {pendingAttachment && (
+        <div className="attachment-preview" style={{
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, marginBottom: 12, zIndex: 10
+        }}>
+          {pendingAttachmentType?.startsWith('image/') ? (
+            <img src={URL.createObjectURL(pendingAttachment)} alt="Preview" style={{ maxWidth: 240, maxHeight: 240, borderRadius: 8, marginBottom: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }} />
+          ) : pendingAttachmentType?.startsWith('audio/') ? (
+            <audio controls src={URL.createObjectURL(pendingAttachment)} style={{ width: 220, marginBottom: 12 }} />
+          ) : (
+            <div style={{ marginBottom: 12, fontSize: 16 }}>
+              <span>📎 {pendingAttachment.name}</span>
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 16, marginTop: 4 }}>
+            <button onClick={sendPendingAttachment} style={{ background: '#3b82f6', color: 'white', border: 'none', borderRadius: 8, padding: '10px 24px', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}>Send</button>
+            <button onClick={cancelPendingAttachment} style={{ background: '#ef4444', color: 'white', border: 'none', borderRadius: 8, padding: '10px 24px', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}>Cancel</button>
           </div>
         </div>
       )}
@@ -1051,7 +1087,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         if (file.type.startsWith('image/')) {
           type = 'image';
           content = `📷 ${file.name}`;
-          // Optionally upload image here in future
+          // Upload image file to Firebase Storage
+          fileUrl = await MessagingService.uploadFileToStorage(file, 'chat-images');
+          console.log('[SendMessage] Uploaded image file, got URL:', fileUrl);
         } else if (file.type.startsWith('audio/')) {
           type = 'voice';
           content = `Voice Message (${(file.size / 1024).toFixed(1)} KB)`;
@@ -1068,7 +1106,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           content = `📎 ${file.name}`;
           // Optionally upload file here in future
         }
-        // For non-audio, fallback to local preview for now
+        // For non-audio/image, fallback to local preview for now
         if (!fileUrl) fileUrl = URL.createObjectURL(file);
       }
 
@@ -1432,6 +1470,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                   <div
                     key={message.id}
                     className={`message ${message.senderId === currentUserId ? 'sent' : 'received'}`}
+                    style={{ position: 'relative' }}
                   >
                     <div className="message-content">
                       {/* Message content based on type */}
@@ -1445,7 +1484,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                           />
                           {message.content && <p className="image-caption">{message.content}</p>}
                         </div>
-                      ) : message.messageType === 'file' ? (
+                      ) : message.messageType === 'file' && message.fileUrl ? (
                         <div className="message-file">
                           <div className="file-info">
                             <div className="file-icon">📎</div>
@@ -1466,7 +1505,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                           </div>
                           {message.content && <p className="file-caption">{message.content}</p>}
                         </div>
-                      ) : message.messageType === 'voice' ? (
+                      ) : message.messageType === 'voice' && message.fileUrl ? (
                         <div className="message-voice">
                           <audio controls src={message.fileUrl} style={{ width: '100%' }} />
                           {message.content && <p className="voice-caption">{message.content}</p>}
@@ -1519,6 +1558,30 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                           </button>
                         ))}
                       </div>
+                      {/* Delete icon for sender's file/image/audio messages */}
+                      {message.senderId === currentUserId && message.fileUrl && (
+                        <button
+                          title="Delete message"
+                          style={{
+                            position: 'absolute',
+                            top: 8,
+                            right: 8,
+                            background: 'none',
+                            border: 'none',
+                            color: '#ef4444',
+                            cursor: 'pointer',
+                            fontSize: 18,
+                            zIndex: 2
+                          }}
+                          onClick={async () => {
+                            if (window.confirm('Delete this message for everyone?')) {
+                              await MessagingService.deleteMessage(message.id, message.fileUrl, message.messageType);
+                            }
+                          }}
+                        >
+                          <FaTrash />
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}

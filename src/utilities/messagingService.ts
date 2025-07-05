@@ -21,7 +21,7 @@ import { db } from '../firebase';
 import { DirectMessage, ChatRoom, ChatSettings, MessageReaction, ChatPresence } from '../types/Chat';
 import { SocialService } from './socialService';
 import { storage } from '../firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL, ref as storageRef, deleteObject } from 'firebase/storage';
 
 export interface ConversationSummary {
   userId: string;
@@ -712,5 +712,44 @@ export class MessagingService {
     const fileRef = ref(storage, `${pathPrefix}/${Date.now()}-${file.name}`);
     await uploadBytes(fileRef, file);
     return await getDownloadURL(fileRef);
+  }
+
+  static async deleteMessage(messageId: string, fileUrl?: string, messageType?: string): Promise<void> {
+    try {
+      // If fileUrl is a Firebase Storage URL, delete the file
+      if (fileUrl && fileUrl.includes('firebasestorage.googleapis.com')) {
+        try {
+          // Extract the path from the URL
+          const matches = fileUrl.match(/\/o\/(.+)\?/);
+          if (matches && matches[1]) {
+            const path = decodeURIComponent(matches[1]);
+            const fileRef = storageRef(storage, path);
+            await deleteObject(fileRef);
+            console.log('[MessagingService] Deleted file from storage:', path);
+          }
+        } catch (err) {
+          console.warn('[MessagingService] Could not delete file from storage:', err);
+        }
+      }
+      // Update the message in Firestore to a placeholder
+      let placeholder = '[Attachment deleted]';
+      let deletedType = 'deleted_file';
+      if (messageType === 'image') {
+        placeholder = '[Image deleted]';
+        deletedType = 'deleted_image';
+      } else if (messageType === 'voice') {
+        placeholder = '[Audio deleted]';
+        deletedType = 'deleted_audio';
+      }
+      await updateDoc(doc(db, 'directMessages', messageId), {
+        content: placeholder,
+        fileUrl: null,
+        messageType: deletedType
+      });
+      console.log('[MessagingService] Marked message as deleted', messageId);
+    } catch (error) {
+      console.error('[MessagingService] Error deleting message:', error);
+      throw error;
+    }
   }
 } 
