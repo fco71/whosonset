@@ -11,4 +11,5 @@ export interface User {
   user_type: string;
   bio?: string;
   resume_ids?: string[];
+  activeProjectId?: string;
 }

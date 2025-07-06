@@ -13,27 +13,26 @@ interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, '
   inputSize?: 'sm' | 'md' | 'lg';
 }
 
-const Input = forwardRef<HTMLInputElement, InputProps>(
-  (
-    {
-      label,
-      error,
-      leftIcon,
-      rightIcon,
-      className = '',
-      containerClassName = '',
-      labelClassName = '',
-      errorClassName = '',
-      variant = 'outline',
-      inputSize = 'md',
-      id,
-      disabled,
-      onFocus,
-      onBlur,
-      ...props
-    },
-    ref
-  ) => {
+const Input = forwardRef<HTMLInputElement, InputProps>((
+  {
+    label,
+    error,
+    leftIcon,
+    rightIcon,
+    className = '',
+    containerClassName = '',
+    labelClassName = '',
+    errorClassName = '',
+    variant = 'outline',
+    inputSize = 'md',
+    id,
+    disabled,
+    onFocus,
+    onBlur,
+    ...props
+  },
+  ref
+) => {
     const { theme } = useTheme();
     const [isFocused, setIsFocused] = useState(false);
     const inputId = id || React.useId();
@@ -141,6 +140,9 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
   }
 );
 
+// Add display name for better debugging
 Input.displayName = 'Input';
 
+export { Input };
+// Also provide a default export for backward compatibility
 export default Input;

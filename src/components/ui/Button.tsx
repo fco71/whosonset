@@ -2,7 +2,7 @@ import React, { ButtonHTMLAttributes, forwardRef } from 'react';
 import { motion, HTMLMotionProps } from 'framer-motion';
 import clsx from 'clsx';
 
-type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'link' | 'danger' | 'success';
+type ButtonVariant = 'default' | 'primary' | 'secondary' | 'outline' | 'ghost' | 'link' | 'danger' | 'success';
 type ButtonSize = 'sm' | 'md' | 'lg';
 type ButtonRounded = 'none' | 'sm' | 'md' | 'lg' | 'full';
 
@@ -15,13 +15,14 @@ const sizeClasses = {
 
 // Button variant classes
 const variantClasses = {
-  primary: 'bg-blue-600 text-white hover:bg-blue-700 focus-visible:ring-2 focus-visible:ring-blue-500',
-  secondary: 'bg-gray-200 text-gray-900 hover:bg-gray-300 focus-visible:ring-2 focus-visible:ring-gray-400',
+  default: 'bg-gray-100 text-gray-900 hover:bg-gray-200 focus-visible:ring-2 focus-visible:ring-gray-400 border border-transparent',
+  primary: 'bg-blue-600 text-white hover:bg-blue-700 focus-visible:ring-2 focus-visible:ring-blue-500 border border-transparent',
+  secondary: 'bg-gray-200 text-gray-900 hover:bg-gray-300 focus-visible:ring-2 focus-visible:ring-gray-400 border border-transparent',
   outline: 'bg-transparent border border-blue-600 text-blue-600 hover:bg-blue-50 focus-visible:ring-2 focus-visible:ring-blue-400',
-  ghost: 'bg-transparent hover:bg-gray-100 text-gray-700 focus-visible:ring-2 focus-visible:ring-gray-300',
-  link: 'bg-transparent text-blue-600 hover:underline p-0 focus-visible:ring-0',
-  danger: 'bg-red-600 text-white hover:bg-red-700 focus-visible:ring-2 focus-visible:ring-red-500',
-  success: 'bg-green-600 text-white hover:bg-green-700 focus-visible:ring-2 focus-visible:ring-green-500',
+  ghost: 'bg-transparent hover:bg-gray-100 text-gray-700 focus-visible:ring-2 focus-visible:ring-gray-300 border border-transparent',
+  link: 'bg-transparent text-blue-600 hover:underline p-0 focus-visible:ring-0 border-0',
+  danger: 'bg-red-600 text-white hover:bg-red-700 focus-visible:ring-2 focus-visible:ring-red-500 border border-transparent',
+  success: 'bg-green-600 text-white hover:bg-green-700 focus-visible:ring-2 focus-visible:ring-green-500 border border-transparent',
 } as const;
 
 // Rounded classes
@@ -50,7 +51,7 @@ type ButtonProps = {
   Omit<HTMLMotionProps<'button'>, 'onDragStart' | 'onDragEnd' | 'onDrag'>;
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
-  variant = 'primary',
+  variant = 'default',
   size = 'md',
   isLoading = false,
   loadingText,

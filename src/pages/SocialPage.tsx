@@ -1,9 +1,36 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, UserCheck, Users, UserPlus, UserX, Bell, Check, X, MoreHorizontal } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { SocialService } from '../utilities/socialService';
-import { Profile, getProfileId, getDisplayName, getPhotoUrl, isCrewProfile } from '../types/Profile';
+import { getProfileId, getDisplayName, getPhotoUrl, isCrewProfile } from '../types/Profile';
+
+// Define a discriminated union type for profiles
+type BaseProfile = {
+  id: string;
+  displayName: string;
+  photoURL?: string;
+  bio?: string;
+};
+
+type CrewProfile = BaseProfile & {
+  type: 'crew';
+  uid: string;
+  name: string;
+  username: string;
+  jobTitles: string[];
+  residences: string[];
+  isPublished: boolean;
+};
+
+type UserProfile = BaseProfile & {
+  type: 'user';
+  email: string;
+  phoneNumber?: string;
+};
+
+type AppProfile = CrewProfile | UserProfile;
+
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/Avatar';
@@ -44,94 +71,112 @@ const TabButton = ({
   </button>
 );
 
-interface CrewProfile {
-  id?: string;
-  uid?: string;
-  name?: string;
-  photoURL?: string;
-  bio?: string;
-  // Add other properties as needed
-}
-
 const SocialPage = () => {
   const auth = useAuth();
   const user = auth?.currentUser; // Access currentUser instead of user
-  const [activeTab, setActiveTab] = useState<TabValue>('following');
+  const [activeTab, setActiveTab] = useState<'connections' | 'requests' | 'discover' | 'notifications'>('connections');
   const [searchQuery, setSearchQuery] = useState('');
+  // Define the profile state with proper typing
+  const [allProfiles, setAllProfiles] = useState<AppProfile[]>([]);
+  const [filteredProfiles, setFilteredProfiles] = useState<AppProfile[]>([]);
+  const [connectionRequests, setConnectionRequests] = useState<AppProfile[]>([]);
+  const [sentRequests, setSentRequests] = useState<AppProfile[]>([]);
+  const [connections, setConnections] = useState<AppProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [following, setFollowing] = useState<Profile[]>([]);
-  const [followers, setFollowers] = useState<Profile[]>([]);
-  const [suggestedUsers, setSuggestedUsers] = useState<Profile[]>([]);
-  const [followRequests, setFollowRequests] = useState<Profile[]>([]);
 
   // Load initial data
-  const loadData = async () => {
-    if (!user?.uid) return;
+  const loadData = useCallback(async () => {
+    const currentUser = auth?.currentUser;
+    if (!currentUser?.uid) return;
     
     setIsLoading(true);
     try {
-      const crewProfiles = await SocialService.getCrewProfiles();
+      // Fetch crew profiles from the social service
+      const profiles = await SocialService.getCrewProfiles();
       
-      // Convert to Profile type with proper type safety
-      const profiles = crewProfiles.map(profile => {
-        // Handle both CrewProfile and UserProfile types
-        const id = 'id' in profile ? profile.id : profile.uid || `crew-${Math.random().toString(36).substr(2, 9)}`;
-        const displayName = 'name' in profile ? profile.name : profile.displayName || 'Unknown User';
-        const photoURL = 'profileImageUrl' in profile ? profile.profileImageUrl : profile.photoURL || '/default-avatar.png';
-        const bio = 'bio' in profile ? profile.bio : '';
+      // Map the profiles to the correct shape
+      const mappedProfiles = profiles.map((profile: any) => {
+        const id = profile.id || '';
+        const displayName = profile.displayName || profile.name || 'Unknown User';
+        const photoURL = profile.photoURL || profile.profileImageUrl || '';
+        const bio = profile.bio || '';
         
-        return {
-          ...profile,
-          id,
-          uid: 'uid' in profile ? profile.uid : id,
-          displayName,
-          photoURL,
-          bio,
-          type: 'crew' as const,
-        };
+        if (isCrewProfile(profile as any)) {
+          // Create a CrewProfile
+          const crewProfile: CrewProfile = {
+            id,
+            type: 'crew',
+            uid: (profile as any).uid || id,
+            displayName,
+            photoURL,
+            bio,
+            name: (profile as any).name || displayName,
+            username: (profile as any).username || 
+                     (profile as any).email ? String((profile as any).email).split('@')[0] : '',
+            jobTitles: Array.isArray((profile as any).jobTitles) ? [...(profile as any).jobTitles] : [],
+            residences: Array.isArray((profile as any).residences) ? [...(profile as any).residences] : [],
+            isPublished: (profile as any).isPublished !== undefined ? Boolean((profile as any).isPublished) : true,
+          };
+          return crewProfile;
+        } else {
+          // Create a UserProfile
+          const userProfile: UserProfile = {
+            id,
+            type: 'user',
+            displayName,
+            photoURL,
+            bio,
+            email: (profile as any).email || '',
+            phoneNumber: (profile as any).phoneNumber,
+          };
+          return userProfile;
+        }
       });
       
-      // Set sample data for demonstration
-      setFollowing(profiles.slice(0, 5));
-      setFollowers(profiles.slice(5, 10));
-      setSuggestedUsers(profiles.slice(10, 15));
-      setFollowRequests(profiles.slice(15, 20));
-      
+      setAllProfiles(mappedProfiles);
+      setFilteredProfiles(mappedProfiles);
+      setConnectionRequests(mappedProfiles.slice(0, 2));
+      setSentRequests(mappedProfiles.slice(2, 4));
+      setConnections(mappedProfiles.slice(4, 8));
     } catch (error) {
-      console.error('Error loading social data:', error);
+      console.error('Error loading profiles:', error);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [auth]);
 
   // Load data on component mount and when active tab changes
   useEffect(() => {
     loadData();
   }, [activeTab, user?.uid]);
 
-  // Filter users based on search query
-  const filterUsers = (users: Profile[]) => {
-    if (!searchQuery.trim()) return users;
+  // Filter profiles based on search query and active tab
+  const filteredItems = useMemo(() => {
+    const items = {
+      connections: [...connections],
+      requests: [...connectionRequests, ...sentRequests],
+      discover: [...filteredProfiles],
+      notifications: []
+    }[activeTab] || [];
+
+    if (!searchQuery.trim()) return items;
+
     const query = searchQuery.toLowerCase();
-    return users.filter(profile => {
-      const name = getDisplayName(profile).toLowerCase();
-      const bio = profile.bio?.toLowerCase() || '';
+    return items.filter((p) => {
+      const name = getDisplayName(p).toLowerCase();
+      const bio = p.bio ? p.bio.toLowerCase() : '';
       return name.includes(query) || bio.includes(query);
     });
-  };
-
-  const filteredFollowing = filterUsers(following);
-  const filteredFollowers = filterUsers(followers);
-  const filteredSuggested = filterUsers(suggestedUsers);
-  const filteredRequests = filterUsers(followRequests);
+  }, [activeTab, connections, connectionRequests, sentRequests, filteredProfiles, searchQuery]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
   };
 
   // Handle tab change
-  const handleTabChange = (value: TabValue) => {
+  const handleTabChange = (value: 'connections' | 'requests' | 'discover' | 'notifications') => {
     setActiveTab(value);
+    setSearchQuery('');
   };
 
   // Handle follow/unfollow action
@@ -151,42 +196,50 @@ const SocialPage = () => {
   };
 
   // Handle follow request response (accept/reject)
-  const handleFollowRequest = async (userId: string, action: 'accept' | 'reject') => {
-    if (!user?.uid) return;
+  const handleFollowRequest = (userId: string, action: 'accept' | 'reject') => {
+    // In a real app, you would update the database here
+    console.log(`${action}ing follow request from ${userId}`);
     
-    try {
-      // In a real app, you would have a request ID to use here
-      // For now, we'll use a simulated request ID and response
-      const requestId = `request-${Date.now()}`;
-      await SocialService.respondToFollowRequest(requestId, action === 'accept' ? 'accepted' : 'rejected');
-      await loadData();
-    } catch (error) {
-      console.error('Error responding to follow request:', error);
+    // Update local state
+    if (action === 'accept') {
+      const request = connectionRequests.find(p => getProfileId(p) === userId);
+      if (request) {
+        setConnections(prev => [...prev, request]);
+        setConnectionRequests(prev => prev.filter(p => getProfileId(p) !== userId));
+      }
+    } else {
+      setConnectionRequests(prev => prev.filter(p => getProfileId(p) !== userId));
     }
   };
 
   // Helper function to render user cards
-  const renderUserCard = (profile: Profile, action?: React.ReactNode) => (
-    <div key={getProfileId(profile)} className="border rounded-lg p-4 mb-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <img 
-            src={getPhotoUrl(profile)} 
-            alt={getDisplayName(profile)}
-            className="h-12 w-12 rounded-full object-cover"
-          />
-          <div>
-            <p className="font-medium text-gray-900">{getDisplayName(profile)}</p>
-            {profile.bio && <p className="text-sm text-gray-500">{profile.bio}</p>}
-          </div>
+  const renderUserCard = (profile: AppProfile, action?: React.ReactNode) => (
+    <div key={getProfileId(profile)} className="flex items-center justify-between p-4 border rounded-lg">
+      <div className="flex items-center space-x-4">
+        <img 
+          src={getPhotoUrl(profile)} 
+          alt={getDisplayName(profile)}
+          className="h-12 w-12 rounded-full object-cover"
+        />
+        <div>
+          <p className="font-medium text-gray-900">{getDisplayName(profile)}</p>
+          {profile.bio && <p className="text-sm text-gray-500 line-clamp-1">{profile.bio}</p>}
         </div>
-        {action}
       </div>
+      {action}
     </div>
   );
 
   // Render content based on active tab
   const renderTabContent = () => {
+    if (!user) {
+      return (
+        <div className="text-center py-12">
+          <p className="text-gray-500">Please sign in to view this page</p>
+        </div>
+      );
+    }
+
     if (isLoading) {
       return (
         <div className="flex justify-center py-12">
@@ -196,58 +249,91 @@ const SocialPage = () => {
     }
 
     switch (activeTab) {
-      case 'following':
+      case 'connections':
         return (
           <div>
-            <h2 className="text-xl font-semibold mb-4">Following</h2>
-            {filteredFollowing.length > 0 ? (
-              filteredFollowing.map(profile => renderUserCard(
-                profile,
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleFollowChange(getProfileId(profile), false)}
-                >
-                  <UserX className="h-4 w-4 mr-2" />
-                  Unfollow
-                </Button>
-              ))
+            <h2 className="text-xl font-semibold mb-4">Your Connections</h2>
+            {connections.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {connections.map((profile: AppProfile) => (
+                  <UserCard
+                    key={getProfileId(profile)}
+                    profile={profile}
+                    action={
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="whitespace-nowrap"
+                        onClick={() => handleFollowChange(getProfileId(profile), false)}
+                      >
+                        <UserX className="h-4 w-4 mr-2" />
+                        Unfollow
+                      </Button>
+                    }
+                  />
+                ))}
+              </div>
             ) : (
-              <p className="text-gray-500">You're not following anyone yet.</p>
+              <p className="text-gray-500">You don't have any connections yet.</p>
             )}
           </div>
         );
 
-      case 'followers':
+      case 'requests':
         return (
-          <div>
-            <h2 className="text-xl font-semibold mb-4">Followers</h2>
-            {filteredFollowers.length > 0 ? (
-              filteredFollowers.map(profile => {
-                const isFollowingUser = following.some(p => getProfileId(p) === getProfileId(profile));
-                return renderUserCard(
-                  profile,
-                  <Button
-                    variant={isFollowingUser ? "outline" : "default"}
-                    size="sm"
-                    onClick={() => handleFollowChange(getProfileId(profile), !isFollowingUser)}
-                  >
-                    {isFollowingUser ? (
-                      <>
-                        <UserX className="h-4 w-4 mr-2" />
-                        Unfollow
-                      </>
-                    ) : (
-                      <>
-                        <UserPlus className="h-4 w-4 mr-2" />
-                        Follow Back
-                      </>
-                    )}
-                  </Button>
-                );
-              })
-            ) : (
-              <p className="text-gray-500">You don't have any followers yet.</p>
+          <div className="space-y-4">
+            {connectionRequests.length > 0 && (
+              <div>
+                <h3 className="text-lg font-medium mb-2">Connection Requests</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                  {connectionRequests.map((profile: AppProfile) => (
+                    <UserCard
+                      key={getProfileId(profile)}
+                      profile={profile}
+                      action={
+                        <Button
+                          variant="default"
+                          size="sm"
+                          className="whitespace-nowrap"
+                          onClick={() => handleFollowRequest(getProfileId(profile), 'accept')}
+                        >
+                          <UserCheck className="h-4 w-4 mr-2" />
+                          Accept
+                        </Button>
+                      }
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {sentRequests.length > 0 && (
+              <div>
+                <h3 className="text-lg font-medium mb-2">Sent Requests</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {sentRequests.map((profile: AppProfile) => (
+                    <UserCard
+                      key={getProfileId(profile)}
+                      profile={profile}
+                      action={
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="whitespace-nowrap"
+                          onClick={() => handleFollowRequest(getProfileId(profile), 'reject')}
+                        >
+                          <UserX className="h-4 w-4 mr-2" />
+                          Cancel
+                        </Button>
+                      }
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {connectionRequests.length === 0 && sentRequests.length === 0 && (
+              <p className="text-gray-500">No pending requests.</p>
             )}
           </div>
         );
@@ -256,78 +342,28 @@ const SocialPage = () => {
         return (
           <div>
             <h2 className="text-xl font-semibold mb-4">Discover People</h2>
-            {filteredSuggested.length > 0 ? (
-              filteredSuggested.map(profile => {
-                const isFollowingUser = following.some(p => getProfileId(p) === getProfileId(profile));
-                return renderUserCard(
-                  profile,
-                  <Button
-                    variant={isFollowingUser ? "outline" : "default"}
-                    size="sm"
-                    onClick={() => handleFollowChange(getProfileId(profile), !isFollowingUser)}
-                  >
-                    {isFollowingUser ? (
-                      <>
-                        <UserX className="h-4 w-4 mr-2" />
-                        Unfollow
-                      </>
-                    ) : (
-                      <>
-                        <UserPlus className="h-4 w-4 mr-2" />
-                        Follow
-                      </>
-                    )}
-                  </Button>
-                );
-              })
-            ) : (
-              <p className="text-gray-500">No suggestions found.</p>
-            )}
-          </div>
-        );
-
-      case 'requests':
-        return (
-          <div>
-            <h2 className="text-xl font-semibold mb-4">Follow Requests</h2>
-            {filteredRequests.length > 0 ? (
-              filteredRequests.map(profile => (
-                <div key={getProfileId(profile)} className="border rounded-lg p-4 mb-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <img 
-                        src={getPhotoUrl(profile)} 
-                        alt={getDisplayName(profile)}
-                        className="h-12 w-12 rounded-full object-cover"
-                      />
-                      <div>
-                        <p className="font-medium text-gray-900">{getDisplayName(profile)}</p>
-                        <p className="text-sm text-gray-500">Wants to follow you</p>
-                      </div>
-                    </div>
-                    <div className="flex space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleFollowRequest(getProfileId(profile), 'reject')}
-                      >
-                        <UserX className="h-4 w-4 mr-2" />
-                        Reject
-                      </Button>
+            {filteredProfiles.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredProfiles.map((profile: AppProfile) => (
+                  <UserCard
+                    key={getProfileId(profile)}
+                    profile={profile}
+                    action={
                       <Button
                         variant="default"
                         size="sm"
-                        onClick={() => handleFollowRequest(getProfileId(profile), 'accept')}
+                        className="whitespace-nowrap"
+                        onClick={() => handleFollowChange(getProfileId(profile), true)}
                       >
-                        <UserCheck className="h-4 w-4 mr-2" />
-                        Accept
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        Follow
                       </Button>
-                    </div>
-                  </div>
-                </div>
-              ))
+                    }
+                  />
+                ))}
+              </div>
             ) : (
-              <p className="text-gray-500">No pending follow requests.</p>
+              <p className="text-gray-500">No suggestions found.</p>
             )}
           </div>
         );
@@ -346,7 +382,7 @@ const SocialPage = () => {
 
   // User card component
   const UserCard = ({ profile, action, showBio = true }: { 
-    profile: Profile; 
+    profile: AppProfile; 
     action?: React.ReactNode;
     showBio?: boolean;
   }) => (
@@ -365,7 +401,7 @@ const SocialPage = () => {
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <h3 className="font-medium text-gray-900 truncate">{getDisplayName(profile)}</h3>
+              <h3 className="font-medium text-gray-900">{getDisplayName(profile)}</h3>
               {showBio && profile.bio && (
                 <p className="text-sm text-gray-500 line-clamp-2">{profile.bio}</p>
               )}
@@ -427,20 +463,21 @@ const SocialPage = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-1 mb-8 p-1 bg-gray-100 rounded-xl w-full overflow-x-auto">
+      <div className="flex space-x-4 mb-6 overflow-x-auto pb-2">
         <TabButton 
-          active={activeTab === 'following'}
-          onClick={() => setActiveTab('following')}
+          active={activeTab === 'connections'}
+          onClick={() => setActiveTab('connections')}
           icon={UserCheck}
         >
-          Following
+          Connections
         </TabButton>
         <TabButton 
-          active={activeTab === 'followers'}
-          onClick={() => setActiveTab('followers')}
-          icon={Users}
+          active={activeTab === 'requests'}
+          onClick={() => setActiveTab('requests')}
+          count={connectionRequests.length}
+          icon={UserX}
         >
-          Followers
+          Requests
         </TabButton>
         <TabButton 
           active={activeTab === 'discover'}
@@ -448,14 +485,6 @@ const SocialPage = () => {
           icon={UserPlus}
         >
           Discover
-        </TabButton>
-        <TabButton 
-          active={activeTab === 'requests'}
-          onClick={() => setActiveTab('requests')}
-          count={followRequests.length}
-          icon={UserX}
-        >
-          Requests
         </TabButton>
         <TabButton 
           active={activeTab === 'notifications'}
@@ -468,206 +497,7 @@ const SocialPage = () => {
 
       {/* Content */}
       <div className="space-y-6">
-        {activeTab === 'following' && (
-          <div>
-            <h2 className="text-xl font-semibold mb-4">People You Follow</h2>
-            {filteredFollowing.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredFollowing.map(profile => (
-                  <UserCard
-                    key={getProfileId(profile)}
-                    profile={profile}
-                    action={
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="whitespace-nowrap"
-                        onClick={() => handleFollowChange(getProfileId(profile), false)}
-                      >
-                        <UserX className="h-4 w-4 mr-2" />
-                        Unfollow
-                      </Button>
-                    }
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12 bg-white rounded-xl border border-dashed border-gray-200">
-                <Users className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900">Not following anyone yet</h3>
-                <p className="text-gray-500 mt-1">When you follow people, they'll appear here</p>
-                <Button 
-                  variant="outline" 
-                  className="mt-4"
-                  onClick={() => setActiveTab('discover')}
-                >
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Discover People
-                </Button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'followers' && (
-          <div>
-            <h2 className="text-xl font-semibold mb-4">Your Followers</h2>
-            {filteredFollowers.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredFollowers.map(profile => {
-                  const isFollowingUser = following.some(p => getProfileId(p) === getProfileId(profile));
-                  return (
-                    <UserCard
-                      key={getProfileId(profile)}
-                      profile={profile}
-                      action={
-                        <Button
-                          variant={isFollowingUser ? 'outline' : 'default'}
-                          size="sm"
-                          className="whitespace-nowrap"
-                          onClick={() => handleFollowChange(getProfileId(profile), !isFollowingUser)}
-                        >
-                          {isFollowingUser ? (
-                            <>
-                              <UserX className="h-4 w-4 mr-2" />
-                              Unfollow
-                            </>
-                          ) : (
-                            <>
-                              <UserPlus className="h-4 w-4 mr-2" />
-                              Follow Back
-                            </>
-                          )}
-                        </Button>
-                      }
-                    />
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="text-center py-12 bg-white rounded-xl border border-dashed border-gray-200">
-                <Users className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900">No followers yet</h3>
-                <p className="text-gray-500 mt-1">When people follow you, they'll appear here</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'discover' && (
-          <div>
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Discover People</h2>
-              <Button variant="ghost" size="sm" className="text-blue-600">
-                Refresh
-              </Button>
-            </div>
-            {filteredSuggested.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredSuggested.map(profile => {
-                  const isFollowingUser = following.some(p => getProfileId(p) === getProfileId(profile));
-                  return (
-                    <UserCard
-                      key={getProfileId(profile)}
-                      profile={profile}
-                      action={
-                        <Button
-                          variant={isFollowingUser ? 'outline' : 'default'}
-                          size="sm"
-                          className="whitespace-nowrap"
-                          onClick={() => handleFollowChange(getProfileId(profile), !isFollowingUser)}
-                        >
-                          {isFollowingUser ? (
-                            <>
-                              <UserX className="h-4 w-4 mr-2" />
-                              Unfollow
-                            </>
-                          ) : (
-                            <>
-                              <UserPlus className="h-4 w-4 mr-2" />
-                              Follow
-                            </>
-                          )}
-                        </Button>
-                      }
-                    />
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="text-center py-12 bg-white rounded-xl border border-dashed border-gray-200">
-                <UserPlus className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900">No suggestions found</h3>
-                <p className="text-gray-500 mt-1">Try adjusting your search or check back later</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'requests' && (
-          <div>
-            <h2 className="text-xl font-semibold mb-4">Follow Requests</h2>
-            {filteredRequests.length > 0 ? (
-              <div className="space-y-4">
-                {filteredRequests.map(profile => (
-                  <div key={getProfileId(profile)} className="bg-white rounded-xl border border-gray-200 p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <Avatar className="h-12 w-12">
-                          <AvatarImage src={getPhotoUrl(profile)} alt={getDisplayName(profile)} />
-                          <AvatarFallback>
-                            {getDisplayName(profile)
-                              .split(' ')
-                              .map(n => n[0])
-                              .join('')
-                              .toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <h3 className="font-medium text-gray-900">{getDisplayName(profile)}</h3>
-                          <p className="text-sm text-gray-500">Wants to follow you</p>
-                        </div>
-                      </div>
-                      <div className="flex space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
-                          onClick={() => handleFollowRequest(getProfileId(profile), 'reject')}
-                        >
-                          <X className="h-4 w-4 mr-2" />
-                          Decline
-                        </Button>
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={() => handleFollowRequest(getProfileId(profile), 'accept')}
-                        >
-                          <Check className="h-4 w-4 mr-2" />
-                          Accept
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12 bg-white rounded-xl border border-dashed border-gray-200">
-                <UserCheck className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900">No pending requests</h3>
-                <p className="text-gray-500 mt-1">When someone requests to follow you, it will appear here</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'notifications' && (
-          <div className="text-center py-16 bg-white rounded-xl border border-dashed border-gray-200">
-            <Bell className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900">No new notifications</h3>
-            <p className="text-gray-500 mt-1">When you have notifications, they'll appear here</p>
-          </div>
-        )}
+        {renderTabContent()}
       </div>
     </div>
   );
