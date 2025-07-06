@@ -46,17 +46,17 @@ const CompactProjectCard: React.FC<CompactProjectCardProps> = ({
         {/* Text Content */}
         <div className="p-4 flex flex-col justify-between w-full">
           <div>
-            <h3 className="text-xl font-semibold text-gray-800 mb-1">
-              <Link to={`/projects/${id}`} className="hover:underline">
+            <h3 className="text-xl font-semibold mb-1" style={{ color: '#fff', fontWeight: 700, textShadow: '0 1px 4px rgba(0,0,0,0.18)' }}>
+              <Link to={`/projects/${id}`} className="hover:underline" style={{ color: '#fff' }}>
                 {projectName}
               </Link>
             </h3>
-            <div className="text-sm text-gray-600 mb-2">
+            <div className="text-sm mb-2" style={{ color: 'rgba(255,255,255,0.85)' }}>
               <span className="mr-4"><strong>Status:</strong> {status}</span>
               <span className="mr-4"><strong>Country:</strong> {country}</span>
               <span className="mr-4"><strong>Company:</strong> {productionCompany}</span>
             </div>
-            <p className="text-gray-700 italic line-clamp-2">
+            <p className="italic line-clamp-2" style={{ color: 'rgba(255,255,255,0.85)', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
               "{logline}"
             </p>
           </div>

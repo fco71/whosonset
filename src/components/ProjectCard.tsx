@@ -143,13 +143,13 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
       {/* Content Section - Flexible Height */}
       <div className="card-padding flex-1 flex flex-col">
         {/* Project Name */}
-        <h3 className="heading-card mb-3 group-hover:text-gray-700 transition-colors">
+        <h3 className="heading-card mb-3 group-hover:text-gray-700 transition-colors" style={{ color: '#fff', fontWeight: 700, textShadow: '0 1px 4px rgba(0,0,0,0.18)' }}>
           {projectName}
         </h3>
 
         {/* Company & Location */}
         {(productionCompany || primaryLocation) && (
-          <p className="body-small mb-3">
+          <p className="body-small mb-3" style={{ color: 'rgba(255,255,255,0.85)' }}>
             {productionCompany && primaryLocation ? `${productionCompany} • ${primaryLocation}` : productionCompany || primaryLocation}
           </p>
         )}
@@ -158,12 +158,12 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
         {showDetails && (director || producer) && (
           <div className="space-y-1 mb-3">
             {director && (
-              <p className="meta-text">
+              <p className="meta-text" style={{ color: 'rgba(255,255,255,0.85)' }}>
                 <span className="font-medium">Director:</span> {director}
               </p>
             )}
             {producer && (
-              <p className="meta-text">
+              <p className="meta-text" style={{ color: 'rgba(255,255,255,0.85)' }}>
                 <span className="font-medium">Producer:</span> {producer}
               </p>
             )}
@@ -172,7 +172,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
 
         {/* Summary (single field) */}
         {summary && (
-          <div className="mb-4 flex-1 text-gray-600 leading-relaxed line-clamp-3">
+          <div className="mb-4 flex-1 text-gray-100 leading-relaxed line-clamp-3" style={{ color: 'rgba(255,255,255,0.85)', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>
             {summary}
           </div>
         )}
@@ -184,12 +184,13 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
               <span
                 key={index}
                 className="badge-base badge-gray"
+                style={{ color: '#fff', background: 'rgba(255,255,255,0.12)' }}
               >
                 {genre}
               </span>
             ))}
             {genres.length > 3 && (
-              <span className="badge-base badge-gray">
+              <span className="badge-base badge-gray" style={{ color: '#fff', background: 'rgba(255,255,255,0.12)' }}>
                 +{genres.length - 3}
               </span>
             )}
@@ -197,8 +198,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
         )}
 
         {/* Bottom Section - Status Badge */}
-        <div className="mt-auto">
-          <span className={`badge-base ${getStatusBadgeColor(status)}`}>
+        <div className="mt-auto flex items-end">
+          <span className={`badge-base ${getStatusBadgeColor(status)}`} style={{ color: '#fff', background: 'rgba(102,126,234,0.18)' }}>
             {formatStatus(status)}
           </span>
         </div>

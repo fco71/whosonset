@@ -79,7 +79,7 @@ const JobCard: React.FC<JobCardProps> = ({
         {/* Header */}
         <div className="mb-4">
           <div className="flex items-start justify-between mb-3">
-            <h3 className="text-xl font-light text-gray-900 tracking-wide group-hover:text-gray-700 transition-colors">
+            <h3 className="text-xl font-light text-gray-900 tracking-wide group-hover:text-gray-700 transition-colors" style={{ color: '#fff', fontWeight: 600 }}>
               {job.title}
             </h3>
             {job.isUrgent && (
@@ -89,10 +89,10 @@ const JobCard: React.FC<JobCardProps> = ({
             )}
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <span className="text-sm font-medium text-gray-500 tracking-wider uppercase">
+            <span className="text-sm font-medium text-gray-500 tracking-wider uppercase" style={{ color: 'rgba(255,255,255,0.7)' }}>
               {job.department}
             </span>
-            <span className="text-sm font-light text-gray-600">
+            <span className="text-sm font-light text-gray-600" style={{ color: 'rgba(255,255,255,0.85)' }}>
               📍 {job.location}
             </span>
             {job.isRemote && (
@@ -104,7 +104,7 @@ const JobCard: React.FC<JobCardProps> = ({
         </div>
 
         {/* Description */}
-        <p className="text-gray-600 leading-relaxed mb-6 line-clamp-3">
+        <p className="text-gray-600 leading-relaxed mb-6 line-clamp-3" style={{ color: 'rgba(255,255,255,0.85)', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>
           {job.description.length > 150 
             ? `${job.description.substring(0, 150)}...` 
             : job.description
@@ -114,26 +114,26 @@ const JobCard: React.FC<JobCardProps> = ({
         {/* Details */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div className="flex justify-between">
-            <span className="text-sm font-medium text-gray-700">Salary:</span>
-            <span className="text-sm font-light text-gray-900">{formatSalary(job.salary)}</span>
+            <span className="text-sm font-medium text-gray-700" style={{ color: 'rgba(255,255,255,0.7)' }}>Salary:</span>
+            <span className="text-sm font-light text-gray-900" style={{ color: '#fff', fontWeight: 600 }}>{formatSalary(job.salary)}</span>
           </div>
           
           <div className="flex justify-between">
-            <span className="text-sm font-medium text-gray-700">Start Date:</span>
-            <span className="text-sm font-light text-gray-900">{new Date(job.startDate).toLocaleDateString()}</span>
+            <span className="text-sm font-medium text-gray-700" style={{ color: 'rgba(255,255,255,0.7)' }}>Start Date:</span>
+            <span className="text-sm font-light text-gray-900" style={{ color: '#fff', fontWeight: 600 }}>{new Date(job.startDate).toLocaleDateString()}</span>
           </div>
 
           {job.endDate && (
             <div className="flex justify-between">
-              <span className="text-sm font-medium text-gray-700">End Date:</span>
-              <span className="text-sm font-light text-gray-900">{new Date(job.endDate).toLocaleDateString()}</span>
+              <span className="text-sm font-medium text-gray-700" style={{ color: 'rgba(255,255,255,0.7)' }}>End Date:</span>
+              <span className="text-sm font-light text-gray-900" style={{ color: '#fff', fontWeight: 600 }}>{new Date(job.endDate).toLocaleDateString()}</span>
             </div>
           )}
 
           {job.deadline && (
             <div className="flex justify-between">
-              <span className="text-sm font-medium text-gray-700">Deadline:</span>
-              <span className="text-sm font-light text-red-600">
+              <span className="text-sm font-medium text-gray-700" style={{ color: 'rgba(255,255,255,0.7)' }}>Deadline:</span>
+              <span className="text-sm font-light text-red-600" style={{ color: '#ff6b6b', fontWeight: 600 }}>
                 {new Date(job.deadline).toLocaleDateString()}
               </span>
             </div>
@@ -157,10 +157,10 @@ const JobCard: React.FC<JobCardProps> = ({
         {/* Footer */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-4 border-t border-gray-100">
           <div className="flex items-center gap-4 text-sm font-light text-gray-500">
-            <span>
+            <span style={{ color: 'rgba(255,255,255,0.7)' }}>
               {job.applicationsCount} application{job.applicationsCount !== 1 ? 's' : ''}
             </span>
-            <span>Posted {formatDate(job.postedAt)}</span>
+            <span style={{ color: 'rgba(255,255,255,0.7)' }}>Posted {formatDate(job.postedAt)}</span>
           </div>
           
           <div className="flex gap-3">

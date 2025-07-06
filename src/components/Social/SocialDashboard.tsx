@@ -303,102 +303,96 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
         
         {activeTab === 'requests' && (
           <div className="requests-tab">
-            <div className="follow-requests-card">
-              <h3>Follow Requests ({followRequests.length})</h3>
-              {followRequests.length > 0 ? (
-                <div className="requests-list">
-                  {followRequests.map(request => (
-                    <div key={request.id} className="request-item">
-                      <div className="request-user-info">
-                        <img 
-                          src="/bust-avatar.svg" 
-                          alt="User"
-                          className="request-avatar"
-                          onError={(e) => {
-                            e.currentTarget.src = "/bust-avatar.svg";
-                          }}
-                        />
-                        <div className="request-user-details">
-                          <span className="request-username">
-                            {request.fromUserName || `User ${request.fromUserId.slice(-6)}`}
-                          </span>
-                          <span className="request-handle">
-                            @{request.fromUserId.slice(-8)}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="request-actions">
-                        <button 
-                          onClick={() => handleFollowRequestResponse(request.id, 'accepted')}
-                          className="accept-btn"
-                          style={{
-                            backgroundColor: '#10b981',
-                            color: 'white',
-                            border: 'none',
-                            padding: '8px 16px',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontWeight: '500'
-                          }}
-                        >
-                          ✓ Accept
-                        </button>
-                        <button 
-                          onClick={() => handleFollowRequestResponse(request.id, 'rejected')}
-                          className="reject-btn"
-                          style={{
-                            backgroundColor: '#ef4444',
-                            color: 'white',
-                            border: 'none',
-                            padding: '8px 16px',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontWeight: '500'
-                          }}
-                        >
-                          ✕ Reject
-                        </button>
-                        <QuickMessage 
-                          currentUserId={currentUserId}
-                          targetUserId={request.fromUserId}
-                          targetUserName={request.fromUserName || `User ${request.fromUserId.slice(-6)}`}
-                          className="ml-auto"
-                        />
+            <h3>Follow Requests ({followRequests.length})</h3>
+            {followRequests.length === 0 ? (
+              <div className="empty-state" style={{ color: '#374151', fontWeight: 500, fontSize: 16, background: 'rgba(55,65,81,0.04)', borderRadius: 8, padding: 24 }}>
+                No pending follow requests
+              </div>
+            ) : (
+              <div className="requests-list">
+                {followRequests.map(request => (
+                  <div key={request.id} className="request-item">
+                    <div className="request-user-info">
+                      <img 
+                        src="/bust-avatar.svg" 
+                        alt="User"
+                        className="request-avatar"
+                        onError={(e) => {
+                          e.currentTarget.src = "/bust-avatar.svg";
+                        }}
+                      />
+                      <div className="request-user-details">
+                        <span className="request-username">
+                          {request.fromUserName || `User ${request.fromUserId.slice(-6)}`}
+                        </span>
+                        <span className="request-handle">
+                          @{request.fromUserId.slice(-8)}
+                        </span>
                       </div>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <p>No pending follow requests</p>
-              )}
-            </div>
+                    <div className="request-actions">
+                      <button 
+                        onClick={() => handleFollowRequestResponse(request.id, 'accepted')}
+                        className="accept-btn"
+                        style={{
+                          backgroundColor: '#10b981',
+                          color: 'white',
+                          border: 'none',
+                          padding: '8px 16px',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          fontWeight: '500'
+                        }}
+                      >
+                        ✓ Accept
+                      </button>
+                      <button 
+                        onClick={() => handleFollowRequestResponse(request.id, 'rejected')}
+                        className="reject-btn"
+                        style={{
+                          backgroundColor: '#ef4444',
+                          color: 'white',
+                          border: 'none',
+                          padding: '8px 16px',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          fontWeight: '500'
+                        }}
+                      >
+                        ✕ Reject
+                      </button>
+                      <QuickMessage 
+                        currentUserId={currentUserId}
+                        targetUserId={request.fromUserId}
+                        targetUserName={request.fromUserName || `User ${request.fromUserId.slice(-6)}`}
+                        className="ml-auto"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
         
         {activeTab === 'notifications' && (
           <div className="notifications-tab">
             <h3>Notifications ({notifications.length})</h3>
-            <div className="notifications-list">
-              {notifications.map(notification => (
-                <div 
-                  key={notification.id} 
-                  className={`notification-item ${!notification.isRead ? 'unread' : ''}`}
-                  onClick={() => handleNotificationClick(notification)}
-                >
-                  <span className="notification-icon">
-                    {notification.type === 'follow_request' ? '👤' : 
-                     notification.type === 'message' ? '💬' : '🔔'}
-                  </span>
-                  <div className="notification-content">
-                    <p className="notification-title">{notification.title}</p>
-                    <p className="notification-message">{notification.message}</p>
-                    <span className="notification-time">
-                      {new Date(notification.createdAt).toLocaleDateString()}
-                    </span>
+            {notifications.length === 0 ? (
+              <div className="empty-state" style={{ color: '#374151', fontWeight: 500, fontSize: 16, background: 'rgba(55,65,81,0.04)', borderRadius: 8, padding: 24 }}>
+                No notifications
+              </div>
+            ) : (
+              <div className="notifications-list">
+                {notifications.map((notif) => (
+                  <div key={notif.id} className="notification-item" style={{ color: '#374151', fontWeight: 500, fontSize: 16, background: 'rgba(55,65,81,0.04)', borderRadius: 8, padding: 16, marginBottom: 12 }}>
+                    <div>{notif.title}</div>
+                    <div style={{ color: '#6b7280', fontWeight: 400, fontSize: 14 }}>{notif.message || notif.title}</div>
+                    <div style={{ color: '#9ca3af', fontSize: 13, marginTop: 4 }}>{notif.createdAt && new Date(notif.createdAt).toLocaleDateString()}</div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
         
@@ -482,17 +476,6 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
             </div>
           </div>
         )}
-      </div>
-
-      {/* Debug Information */}
-      <div className="debug-info">
-        <h4>Debug Information</h4>
-        <p><strong>Followers:</strong> {followers.length}</p>
-        <p><strong>Following:</strong> {following.length}</p>
-        <p><strong>Follow Requests:</strong> {followRequests.length}</p>
-        <p><strong>Notifications:</strong> {notifications.length}</p>
-        <p><strong>Crew Profiles:</strong> {crewProfiles.length}</p>
-        <p><strong>Active Tab:</strong> {activeTab}</p>
       </div>
     </div>
   );

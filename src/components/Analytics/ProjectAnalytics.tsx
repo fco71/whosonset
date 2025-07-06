@@ -104,27 +104,27 @@ const ProjectAnalytics: React.FC = () => {
           <div className="metric-card primary">
             <div className="metric-icon">👁️</div>
             <div className="metric-content">
-              <h3>{analytics.overview.totalViews.toLocaleString()}</h3>
-              <p>Total Views</p>
-              <span className="metric-subtitle">{analytics.overview.uniqueVisitors} unique visitors</span>
+              <h3 style={{ color: '#fff', fontWeight: 700 }}>{analytics.overview.totalViews.toLocaleString()}</h3>
+              <p style={{ color: 'rgba(255,255,255,0.7)' }}>Total Views</p>
+              <span className="metric-subtitle" style={{ color: 'rgba(255,255,255,0.85)' }}>{analytics.overview.uniqueVisitors} unique visitors</span>
             </div>
           </div>
 
           <div className="metric-card success">
             <div className="metric-icon">📝</div>
             <div className="metric-content">
-              <h3>{analytics.overview.applicationsReceived}</h3>
-              <p>Applications</p>
-              <span className="metric-subtitle">{analytics.overview.crewMembersHired} hired</span>
+              <h3 style={{ color: '#fff', fontWeight: 700 }}>{analytics.overview.applicationsReceived}</h3>
+              <p style={{ color: 'rgba(255,255,255,0.7)' }}>Applications</p>
+              <span className="metric-subtitle" style={{ color: 'rgba(255,255,255,0.85)' }}>{analytics.overview.crewMembersHired} hired</span>
             </div>
           </div>
 
           <div className="metric-card warning">
             <div className="metric-icon">💰</div>
             <div className="metric-content">
-              <h3>${analytics.budgetMetrics.spentBudget.toLocaleString()}</h3>
-              <p>Budget Spent</p>
-              <span className="metric-subtitle">
+              <h3 style={{ color: '#fff', fontWeight: 700 }}>${analytics.budgetMetrics.spentBudget.toLocaleString()}</h3>
+              <p style={{ color: 'rgba(255,255,255,0.7)' }}>Budget Spent</p>
+              <span className="metric-subtitle" style={{ color: 'rgba(255,255,255,0.85)' }}>
                 {Math.round(analytics.overview.budgetUtilization * 100)}% utilized
               </span>
             </div>
@@ -133,25 +133,25 @@ const ProjectAnalytics: React.FC = () => {
           <div className="metric-card info">
             <div className="metric-icon">📅</div>
             <div className="metric-content">
-              <h3>{Math.round(analytics.overview.timelineProgress * 100)}%</h3>
-              <p>Timeline Progress</p>
-              <span className="metric-subtitle">{analytics.timelineMetrics.completedPhases}/{analytics.timelineMetrics.totalPhases} phases</span>
+              <h3 style={{ color: '#fff', fontWeight: 700 }}>{Math.round(analytics.overview.timelineProgress * 100)}%</h3>
+              <p style={{ color: 'rgba(255,255,255,0.7)' }}>Timeline Progress</p>
+              <span className="metric-subtitle" style={{ color: 'rgba(255,255,255,0.85)' }}>{analytics.timelineMetrics.completedPhases}/{analytics.timelineMetrics.totalPhases} phases</span>
             </div>
           </div>
         </div>
 
         <div className="overview-charts">
           <div className="chart-container">
-            <h3>Engagement Over Time</h3>
+            <h3 style={{ color: '#fff', fontWeight: 600 }}>Engagement Over Time</h3>
             <div className="chart-placeholder">
-              <p>Views and applications trend chart</p>
+              <p style={{ color: 'rgba(255,255,255,0.85)' }}>Views and applications trend chart</p>
             </div>
           </div>
 
           <div className="chart-container">
-            <h3>Budget Utilization</h3>
+            <h3 style={{ color: '#fff', fontWeight: 600 }}>Budget Utilization</h3>
             <div className="chart-placeholder">
-              <p>Budget breakdown by category</p>
+              <p style={{ color: 'rgba(255,255,255,0.85)' }}>Budget breakdown by category</p>
             </div>
           </div>
         </div>
@@ -167,16 +167,16 @@ const ProjectAnalytics: React.FC = () => {
         <div className="crew-overview">
           <div className="crew-stats">
             <div className="stat-card">
-              <h3>{analytics.crewMetrics.totalCrewMembers}</h3>
-              <p>Total Crew</p>
+              <h3 style={{ color: '#fff', fontWeight: 700 }}>{analytics.crewMetrics.totalCrewMembers}</h3>
+              <p style={{ color: 'rgba(255,255,255,0.7)' }}>Total Crew</p>
             </div>
             <div className="stat-card">
-              <h3>{Math.round(analytics.crewMetrics.crewRetentionRate * 100)}%</h3>
-              <p>Retention Rate</p>
+              <h3 style={{ color: '#fff', fontWeight: 700 }}>{Math.round(analytics.crewMetrics.crewRetentionRate * 100)}%</h3>
+              <p style={{ color: 'rgba(255,255,255,0.7)' }}>Retention Rate</p>
             </div>
             <div className="stat-card">
-              <h3>{analytics.crewMetrics.averageCrewRating.toFixed(1)}</h3>
-              <p>Avg. Rating</p>
+              <h3 style={{ color: '#fff', fontWeight: 700 }}>{analytics.crewMetrics.averageCrewRating.toFixed(1)}</h3>
+              <p style={{ color: 'rgba(255,255,255,0.7)' }}>Avg. Rating</p>
             </div>
           </div>
 

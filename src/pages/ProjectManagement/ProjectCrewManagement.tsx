@@ -345,10 +345,10 @@ const ProjectCrewManagement: React.FC<ProjectCrewManagementProps> = ({
             <div key={member.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-300">
               <div className="flex justify-between items-start mb-4">
                 <div className="flex-1">
-                  <h4 className="text-lg font-medium text-gray-900 mb-1">
+                  <h4 className="text-lg font-medium text-gray-900 mb-1" style={{ color: '#fff', fontWeight: 600 }}>
                     {member.crewMemberId}
                   </h4>
-                  <p className="text-sm text-gray-600 mb-2">{member.role}</p>
+                  <p className="text-sm text-gray-600 mb-2" style={{ color: 'rgba(255,255,255,0.85)' }}>{member.role}</p>
                   <div className="flex gap-2">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDepartmentColor(member.department)}`}>
                       {member.department}
@@ -380,23 +380,23 @@ const ProjectCrewManagement: React.FC<ProjectCrewManagementProps> = ({
 
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Start Date:</span>
-                  <span className="font-medium text-gray-900">
+                  <span className="text-gray-600" style={{ color: 'rgba(255,255,255,0.7)' }}>Start Date:</span>
+                  <span className="font-medium text-gray-900" style={{ color: '#fff', fontWeight: 600 }}>
                     {new Date(member.startDate).toLocaleDateString()}
                   </span>
                 </div>
                 {member.endDate && (
                   <div className="flex justify-between">
-                    <span className="text-gray-600">End Date:</span>
-                    <span className="font-medium text-gray-900">
+                    <span className="text-gray-600" style={{ color: 'rgba(255,255,255,0.7)' }}>End Date:</span>
+                    <span className="font-medium text-gray-900" style={{ color: '#fff', fontWeight: 600 }}>
                       {new Date(member.endDate).toLocaleDateString()}
                     </span>
                   </div>
                 )}
                 {member.salary && (
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Salary:</span>
-                    <span className="font-medium text-gray-900">
+                    <span className="text-gray-600" style={{ color: 'rgba(255,255,255,0.7)' }}>Salary:</span>
+                    <span className="font-medium text-gray-900" style={{ color: '#fff', fontWeight: 600 }}>
                       ${member.salary.toLocaleString()}
                     </span>
                   </div>
@@ -405,7 +405,7 @@ const ProjectCrewManagement: React.FC<ProjectCrewManagementProps> = ({
 
               {member.notes && (
                 <div className="mt-4 pt-4 border-t border-gray-100">
-                  <p className="text-sm text-gray-600">{member.notes}</p>
+                  <p className="text-sm text-gray-600" style={{ color: 'rgba(255,255,255,0.85)', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>{member.notes}</p>
                 </div>
               )}
             </div>

@@ -280,11 +280,11 @@ const NetworkingHub: React.FC<NetworkingHubProps> = ({ currentUserId, currentUse
                     <div className="online-indicator"></div>
                   </div>
                   <div className="crew-info">
-                    <h3>{profile.name}</h3>
-                    <p className="primary-role">
+                    <h3 style={{ color: '#fff', fontWeight: 600 }}>{profile.name}</h3>
+                    <p className="primary-role" style={{ color: 'rgba(255,255,255,0.85)', fontWeight: 500 }}>
                       {profile.jobTitles?.[0]?.title || 'Film Professional'}
                     </p>
-                    <p className="location">
+                    <p className="location" style={{ color: 'rgba(255,255,255,0.7)' }}>
                       📍 {profile.residences?.[0]?.city}, {profile.residences?.[0]?.country}
                     </p>
                   </div>
@@ -398,10 +398,12 @@ const NetworkingHub: React.FC<NetworkingHubProps> = ({ currentUserId, currentUse
             {projects.map(project => (
               <div key={project.id} className="project-card">
                 <div className="project-header">
-                  <h4>{project.projectName}</h4>
+                  <h4 style={{ color: '#fff', fontWeight: 600 }}>{project.projectName}</h4>
                   <span className="project-type">{project.genre}</span>
                 </div>
-                <p className="project-description">{project.logline}</p>
+                <p className="project-description" style={{ color: 'rgba(255,255,255,0.85)', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>
+                  {project.logline}
+                </p>
                 <div className="project-meta">
                   <span>📍 {project.productionLocations && project.productionLocations.length > 0 
                     ? project.productionLocations[0].city 

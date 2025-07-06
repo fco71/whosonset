@@ -130,13 +130,13 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ projectId }) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">{project.projectName}</h1>
-              <p className="text-gray-600 mt-1">{project.logline}</p>
+              <h1 className="text-3xl font-bold text-gray-900" style={{ color: '#fff', fontWeight: 700 }}>{project.projectName}</h1>
+              <p className="text-gray-600 mt-1" style={{ color: 'rgba(255,255,255,0.85)', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{project.logline}</p>
               <div className="flex items-center gap-4 mt-2">
                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${getProjectStatusColor(project.status)}`}>
                   {project.status.replace('_', ' ')}
                 </span>
-                <span className="text-sm text-gray-500">
+                <span className="text-sm text-gray-500" style={{ color: 'rgba(255,255,255,0.7)' }}>
                   Created {new Date(project.createdAt?.toDate?.() || project.createdAt).toLocaleDateString()}
                 </span>
               </div>
@@ -198,8 +198,8 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ projectId }) => {
                     </div>
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">Crew Members</p>
-                    <p className="text-2xl font-semibold text-gray-900">{crew.length}</p>
+                    <p className="text-sm font-medium text-gray-500" style={{ color: 'rgba(255,255,255,0.7)' }}>Crew Members</p>
+                    <p className="text-2xl font-semibold text-gray-900" style={{ color: '#fff', fontWeight: 600 }}>{crew.length}</p>
                   </div>
                 </div>
               </div>
@@ -214,8 +214,8 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ projectId }) => {
                     </div>
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">Documents</p>
-                    <p className="text-2xl font-semibold text-gray-900">{documents.length}</p>
+                    <p className="text-sm font-medium text-gray-500" style={{ color: 'rgba(255,255,255,0.7)' }}>Documents</p>
+                    <p className="text-2xl font-semibold text-gray-900" style={{ color: '#fff', fontWeight: 600 }}>{documents.length}</p>
                   </div>
                 </div>
               </div>
@@ -230,8 +230,8 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ projectId }) => {
                     </div>
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">Progress</p>
-                    <p className="text-2xl font-semibold text-gray-900">{calculateProgress()}%</p>
+                    <p className="text-sm font-medium text-gray-500" style={{ color: 'rgba(255,255,255,0.7)' }}>Progress</p>
+                    <p className="text-2xl font-semibold text-gray-900" style={{ color: '#fff', fontWeight: 600 }}>{calculateProgress()}%</p>
                   </div>
                 </div>
               </div>
@@ -246,8 +246,8 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ projectId }) => {
                     </div>
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">Budget Used</p>
-                    <p className="text-2xl font-semibold text-gray-900">{calculateBudgetUsage()}%</p>
+                    <p className="text-sm font-medium text-gray-500" style={{ color: 'rgba(255,255,255,0.7)' }}>Budget Used</p>
+                    <p className="text-2xl font-semibold text-gray-900" style={{ color: '#fff', fontWeight: 600 }}>{calculateBudgetUsage()}%</p>
                   </div>
                 </div>
               </div>
@@ -256,15 +256,15 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ projectId }) => {
             {/* Project Details */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-white rounded-lg shadow-sm p-6 border">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Project Details</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4" style={{ color: '#fff', fontWeight: 600 }}>Project Details</h3>
                 <dl className="space-y-3">
                   <div>
-                    <dt className="text-sm font-medium text-gray-500">Genre</dt>
-                    <dd className="text-sm text-gray-900">{project.genre || 'Not specified'}</dd>
+                    <dt className="text-sm font-medium text-gray-500" style={{ color: 'rgba(255,255,255,0.7)' }}>Genre</dt>
+                    <dd className="text-sm text-gray-900" style={{ color: '#fff' }}>{project.genre || 'Not specified'}</dd>
                   </div>
                   <div>
-                    <dt className="text-sm font-medium text-gray-500">Location</dt>
-                    <dd className="text-sm text-gray-900">
+                    <dt className="text-sm font-medium text-gray-500" style={{ color: 'rgba(255,255,255,0.7)' }}>Location</dt>
+                    <dd className="text-sm text-gray-900" style={{ color: '#fff' }}>
                       {project.productionLocations && project.productionLocations.length > 0 
                         ? `${project.productionLocations[0].city || ''} ${project.productionLocations[0].country}`.trim()
                         : 'Not specified'
@@ -272,20 +272,20 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ projectId }) => {
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-sm font-medium text-gray-500">Start Date</dt>
-                    <dd className="text-sm text-gray-900">
+                    <dt className="text-sm font-medium text-gray-500" style={{ color: 'rgba(255,255,255,0.7)' }}>Start Date</dt>
+                    <dd className="text-sm text-gray-900" style={{ color: '#fff' }}>
                       {project.startDate ? new Date(project.startDate).toLocaleDateString() : 'Not specified'}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-sm font-medium text-gray-500">End Date</dt>
-                    <dd className="text-sm text-gray-900">
+                    <dt className="text-sm font-medium text-gray-500" style={{ color: 'rgba(255,255,255,0.7)' }}>End Date</dt>
+                    <dd className="text-sm text-gray-900" style={{ color: '#fff' }}>
                       {project.endDate ? new Date(project.endDate).toLocaleDateString() : 'Not specified'}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-sm font-medium text-gray-500">Budget</dt>
-                    <dd className="text-sm text-gray-900">
+                    <dt className="text-sm font-medium text-gray-500" style={{ color: 'rgba(255,255,255,0.7)' }}>Budget</dt>
+                    <dd className="text-sm text-gray-900" style={{ color: '#fff' }}>
                       {budget ? `$${budget.totalBudget?.toLocaleString()}` : 'Not specified'}
                     </dd>
                   </div>
@@ -315,7 +315,7 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ projectId }) => {
 
             {/* Quick Actions */}
             <div className="bg-white rounded-lg shadow-sm p-6 border">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4" style={{ color: '#fff', fontWeight: 600 }}>Quick Actions</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <button
                   onClick={() => setActiveTab('crew')}
@@ -327,8 +327,8 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ projectId }) => {
                     </svg>
                   </div>
                   <div className="text-left">
-                    <p className="font-medium text-gray-900">Add Crew Member</p>
-                    <p className="text-sm text-gray-500">Manage your team</p>
+                    <p className="font-medium text-gray-900" style={{ color: '#fff', fontWeight: 600 }}>Add Crew Member</p>
+                    <p className="text-sm text-gray-500" style={{ color: 'rgba(255,255,255,0.7)' }}>Manage your team</p>
                   </div>
                 </button>
 

@@ -72,19 +72,19 @@ const CrewProfileCard: React.FC<CrewProfileCardProps> = ({
   return (
     <div 
       className={`group card-base card-hover animate-entrance ${isFiltering ? 'opacity-50 scale-95' : 'opacity-100 scale-100'}`}
-      style={{ animationDelay: `${index * 0.1}s` }}
+      style={{ animationDelay: `${index * 0.1}s`, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 24 }}
     >
-      <div className="h-48 card-image-container">
+      <div className="h-48 card-image-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
         <img 
           src={profile.profileImageUrl || "/default-avatar.png"} 
           alt={profile.name}
           className="card-image"
+          style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', marginBottom: 8, border: '3px solid #e5e7eb' }}
           onError={(e) => {
             const target = e.target as HTMLImageElement;
             target.src = "/default-avatar.png";
           }}
         />
-        
         {/* Bookmark Button */}
         {user && currentUserId && (
           <button
@@ -108,86 +108,21 @@ const CrewProfileCard: React.FC<CrewProfileCardProps> = ({
             </svg>
           </button>
         )}
-        
         {/* Availability Badge */}
         {profile.availability && (
           <div className="absolute bottom-3 left-3">
-            <span className={`badge-base ${getAvailabilityColor(profile.availability)}`}>
-              {profile.availability}
-            </span>
+            <span className={`badge-base ${getAvailabilityColor(profile.availability)}`}>{profile.availability}</span>
           </div>
         )}
       </div>
-
-      <div className="card-padding">
-        <div className="mb-4">
-          <h3 className="heading-card mb-2 group-hover:text-gray-700 transition-colors">
-            {profile.name}
-          </h3>
-          <p className="body-medium mb-1">
-            {primaryJobTitle}
-          </p>
-          <p className="body-small">
-            {profile.jobTitles?.[0]?.department || 'Film & TV'}
-          </p>
-        </div>
-
-        <div className="flex items-center mb-4 meta-text">
-          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-          {primaryLocation}
-        </div>
-
-        {profile.bio && (
-          <p className="text-gray-600 leading-relaxed line-clamp-3 mb-4">
-            {profile.bio}
-          </p>
-        )}
-
-        {profile.languages && profile.languages.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-4">
-            {profile.languages.slice(0, 3).map((language, index) => (
-              <span
-                key={index}
-                className="badge-base badge-gray"
-              >
-                {language}
-              </span>
-            ))}
-            {profile.languages.length > 3 && (
-              <span className="badge-base badge-gray">
-                +{profile.languages.length - 3} more
-              </span>
-            )}
-          </div>
-        )}
-
-        <div className="flex justify-between items-center">
-          <Link
-            to={`/crew/${profile.uid}`}
-            className="meta-text font-medium text-gray-900 hover:text-gray-700 transition-colors"
-          >
-            View Profile →
-          </Link>
-          
-          {user && currentUserId && currentUserId !== profile.uid && (
-            <Link
-              to={`/social?tab=messaging&user=${profile.uid}`}
-              className="btn-card"
-            >
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-              </svg>
-              Message
-            </Link>
-          )}
-        </div>
-
-        {/* Follow Button - Consistent placement */}
+      <div style={{ width: '100%', textAlign: 'center', marginBottom: 12 }}>
+        <h3 style={{ fontWeight: 600, color: '#1f2937', fontSize: 20, margin: 0 }}>{profile.name}</h3>
+        <div style={{ color: '#6b7280', fontWeight: 500, fontSize: 15, marginBottom: 4 }}>{primaryJobTitle}</div>
+        <div style={{ color: '#9ca3af', fontSize: 14 }}>{primaryLocation}</div>
+      </div>
+      <div style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: 12, marginTop: 8 }}>
         {user && user.uid !== profile.uid && (
-          <div className="mt-4 pt-4 border-t border-gray-100">
+          <div className="btn-secondary" style={{ display: 'inline-block' }}>
             <FollowButton 
               currentUserId={user.uid}
               targetUserId={profile.uid}

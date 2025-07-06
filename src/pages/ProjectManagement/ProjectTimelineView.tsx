@@ -312,7 +312,7 @@ const ProjectTimelineView: React.FC<ProjectTimelineViewProps> = ({
                       <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                         <span className="text-blue-600 font-semibold text-sm">{index + 1}</span>
                       </div>
-                      <h4 className="text-lg font-semibold text-gray-900">{milestone.title}</h4>
+                      <h4 className="text-lg font-semibold text-gray-900" style={{ color: '#fff', fontWeight: 600 }}>{milestone.title}</h4>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(milestone.status)}`}>
                         {milestone.status.replace('_', ' ')}
                       </span>
@@ -322,13 +322,13 @@ const ProjectTimelineView: React.FC<ProjectTimelineViewProps> = ({
                     </div>
                     
                     {milestone.description && (
-                      <p className="text-gray-600 mb-2">{milestone.description}</p>
+                      <p className="text-gray-600 mb-2" style={{ color: 'rgba(255,255,255,0.85)', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{milestone.description}</p>
                     )}
                     
                     <div className="flex items-center gap-4 text-sm text-gray-500">
-                      <span>Due: {new Date(milestone.dueDate).toLocaleDateString()}</span>
+                      <span style={{ color: 'rgba(255,255,255,0.7)' }}>Due: {new Date(milestone.dueDate).toLocaleDateString()}</span>
                       {milestone.assignedTo && (
-                        <span>Assigned to: {milestone.assignedTo}</span>
+                        <span style={{ color: 'rgba(255,255,255,0.7)' }}>Assigned to: {milestone.assignedTo}</span>
                       )}
                     </div>
                     

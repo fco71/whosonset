@@ -153,54 +153,54 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           <div className="metric-card">
             <div className="metric-icon">👁️</div>
             <div className="metric-content">
-              <h3 className="metric-value">{userAnalytics.profileViews.toLocaleString()}</h3>
-              <p className="metric-label">Profile Views</p>
-              <span className="metric-change positive">+12% this month</span>
+              <h3 className="metric-value" style={{ color: '#fff', fontWeight: 700 }}>{userAnalytics.profileViews.toLocaleString()}</h3>
+              <p className="metric-label" style={{ color: 'rgba(255,255,255,0.7)' }}>Profile Views</p>
+              <span className="metric-change positive" style={{ color: 'rgba(255,255,255,0.85)' }}>+12% this month</span>
             </div>
           </div>
 
           <div className="metric-card">
             <div className="metric-icon">📈</div>
             <div className="metric-content">
-              <h3 className="metric-value">{(userAnalytics.jobMetrics.successRate * 100).toFixed(1)}%</h3>
-              <p className="metric-label">Job Success Rate</p>
-              <span className="metric-change positive">+5% this month</span>
+              <h3 className="metric-value" style={{ color: '#fff', fontWeight: 700 }}>{(userAnalytics.jobMetrics.successRate * 100).toFixed(1)}%</h3>
+              <p className="metric-label" style={{ color: 'rgba(255,255,255,0.7)' }}>Job Success Rate</p>
+              <span className="metric-change positive" style={{ color: 'rgba(255,255,255,0.85)' }}>+5% this month</span>
             </div>
           </div>
 
           <div className="metric-card">
             <div className="metric-icon">💰</div>
             <div className="metric-content">
-              <h3 className="metric-value">${userAnalytics.earningsMetrics.totalEarnings.toLocaleString()}</h3>
-              <p className="metric-label">Total Earnings</p>
-              <span className="metric-change positive">+18% this year</span>
+              <h3 className="metric-value" style={{ color: '#fff', fontWeight: 700 }}>${userAnalytics.earningsMetrics.totalEarnings.toLocaleString()}</h3>
+              <p className="metric-label" style={{ color: 'rgba(255,255,255,0.7)' }}>Total Earnings</p>
+              <span className="metric-change positive" style={{ color: 'rgba(255,255,255,0.85)' }}>+18% this year</span>
             </div>
           </div>
 
           <div className="metric-card">
             <div className="metric-icon">🤝</div>
             <div className="metric-content">
-              <h3 className="metric-value">{userAnalytics.networkingMetrics.connections}</h3>
-              <p className="metric-label">Professional Connections</p>
-              <span className="metric-change positive">+8 this month</span>
+              <h3 className="metric-value" style={{ color: '#fff', fontWeight: 700 }}>{userAnalytics.networkingMetrics.connections}</h3>
+              <p className="metric-label" style={{ color: 'rgba(255,255,255,0.7)' }}>Professional Connections</p>
+              <span className="metric-change positive" style={{ color: 'rgba(255,255,255,0.85)' }}>+8 this month</span>
             </div>
           </div>
         </div>
 
         <div className="charts-section">
           <div className="chart-container">
-            <h3>Profile Views Trend</h3>
+            <h3 style={{ color: '#fff', fontWeight: 600 }}>Profile Views Trend</h3>
             <div className="chart-placeholder">
-              <p>Chart visualization would go here</p>
-              <small>Showing last 30 days of profile views</small>
+              <p style={{ color: 'rgba(255,255,255,0.85)' }}>Chart visualization would go here</p>
+              <small style={{ color: 'rgba(255,255,255,0.7)' }}>Showing last 30 days of profile views</small>
             </div>
           </div>
 
           <div className="chart-container">
-            <h3>Earnings by Month</h3>
+            <h3 style={{ color: '#fff', fontWeight: 600 }}>Earnings by Month</h3>
             <div className="chart-placeholder">
-              <p>Chart visualization would go here</p>
-              <small>Monthly earnings breakdown</small>
+              <p style={{ color: 'rgba(255,255,255,0.85)' }}>Chart visualization would go here</p>
+              <small style={{ color: 'rgba(255,255,255,0.7)' }}>Monthly earnings breakdown</small>
             </div>
           </div>
         </div>

@@ -307,7 +307,7 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
             )}
           </div>
           <div className="activity-info">
-            <div className="user-name">{displayName}</div>
+            <div className="user-name" style={{ fontWeight: 600, color: '#1f2937', fontSize: 15 }}>{displayName}</div>
             <div className="activity-time" title={new Date(activity.createdAt).toLocaleString()}>
               {formatTimeAgo(new Date(activity.createdAt))}
             </div>

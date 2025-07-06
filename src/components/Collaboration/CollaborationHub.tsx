@@ -952,38 +952,38 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                   </svg>
                 </div>
                 <div className="workspace-info">
-                  <h3 className="workspace-title">{workspace.name}</h3>
-                  <span className={`workspace-type ${workspace.type}`}>{workspace.type}</span>
+                  <h3 className="workspace-title" style={{ color: selectedWorkspace?.id === workspace.id ? '#1a1a1a' : '#fff', fontWeight: 600 }}>{workspace.name}</h3>
+                  <span className={`workspace-type ${workspace.type}`} style={{ color: selectedWorkspace?.id === workspace.id ? '#666' : '#fff', background: selectedWorkspace?.id === workspace.id ? '#f0f0f0' : 'rgba(255,255,255,0.15)' }}>{workspace.type}</span>
                 </div>
               </div>
             </div>
             
-            <p className="workspace-description">{workspace.description}</p>
+            <p className="workspace-description" style={{ color: selectedWorkspace?.id === workspace.id ? '#666' : 'rgba(255,255,255,0.85)', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{workspace.description}</p>
             
             <div className="workspace-stats">
-              <div className="stat">
+              <div className="stat" style={{ color: selectedWorkspace?.id === workspace.id ? '#666' : 'rgba(255,255,255,0.85)' }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
                   <circle cx="9" cy="7" r="4"/>
                   <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
                   <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                 </svg>
-                <span className="stat-value">{workspace.members.length}</span>
-                <span className="stat-label">Members</span>
+                <span className="stat-value" style={{ color: selectedWorkspace?.id === workspace.id ? '#333' : '#fff', fontWeight: 600 }}>{workspace.members.length}</span>
+                <span className="stat-label" style={{ color: selectedWorkspace?.id === workspace.id ? '#666' : 'rgba(255,255,255,0.85)' }}>Members</span>
               </div>
-              <div className="stat">
+              <div className="stat" style={{ color: selectedWorkspace?.id === workspace.id ? '#666' : 'rgba(255,255,255,0.85)' }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="12" cy="12" r="10"/>
                   <polyline points="12,6 12,12 16,14"/>
                 </svg>
-                <span className="stat-value">{workspace.members.filter(m => m.isOnline).length}</span>
-                <span className="stat-label">Online</span>
+                <span className="stat-value" style={{ color: selectedWorkspace?.id === workspace.id ? '#333' : '#fff', fontWeight: 600 }}>{workspace.members.filter(m => m.isOnline).length}</span>
+                <span className="stat-label" style={{ color: selectedWorkspace?.id === workspace.id ? '#666' : 'rgba(255,255,255,0.85)' }}>Online</span>
               </div>
             </div>
             
             <div className="workspace-actions">
               <button 
-                className="action-btn primary"
+                className="btn-primary"
                 onClick={(e) => {
                   e.stopPropagation();
                   handleJoinWorkspace(workspace.id);
@@ -997,7 +997,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                 Join
               </button>
               <button 
-                className="action-btn secondary"
+                className="btn-secondary"
                 onClick={(e) => {
                   e.stopPropagation();
                   setShowAddMemberModal(true);
@@ -1012,7 +1012,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                 Add Member
               </button>
               <button 
-                className="action-btn secondary"
+                className="btn-secondary"
                 onClick={(e) => {
                   e.stopPropagation();
                   handleWorkspaceSettings(workspace.id);
@@ -1468,11 +1468,11 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         {selectedWorkspace?.documents.map((doc) => (
           <div key={doc.id} className="document-card">
             <div className="document-header">
-              <h4>{doc.title}</h4>
+              <h4 style={{ color: '#fff', fontWeight: 600 }}>{doc.title}</h4>
               <span className="document-type">{doc.type}</span>
             </div>
             <div className="document-content">
-              <p>{doc.content.substring(0, 100)}...</p>
+              <p style={{ color: 'rgba(255,255,255,0.85)', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>{doc.content.substring(0, 100)}...</p>
             </div>
             <div className="document-footer">
               <div className="collaborators">
@@ -1552,10 +1552,10 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         {selectedWorkspace?.whiteboards.map((wb) => (
           <div key={wb.id} className="whiteboard-card">
             <div className="whiteboard-header">
-              <h4>{wb.name}</h4>
+              <h4 style={{ color: '#fff', fontWeight: 600 }}>{wb.name}</h4>
             </div>
             <div className="whiteboard-content">
-              <p>Elements: {wb.elements.length}</p>
+              <p style={{ color: 'rgba(255,255,255,0.85)' }}>Elements: {wb.elements.length}</p>
             </div>
             <div className="whiteboard-footer">
               <div className="collaborators">
@@ -1678,7 +1678,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
             <button
               onClick={uploadScreenplay}
               disabled={!screenplayFile || uploadingScreenplay}
-              className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="btn-primary"
               aria-label="Upload screenplay"
             >
               {uploadingScreenplay && (
@@ -1693,9 +1693,9 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                   <span className="text-green-800 font-semibold">{uploadedScreenplay.name} uploaded successfully!</span>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={() => openScreenplayViewer(uploadedScreenplay)} className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg text-sm">View</button>
-                  <button onClick={loadAnnotations} className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded-lg text-sm">Annotate</button>
-                  <button onClick={() => { setUploadedScreenplay(null); setScreenplayFile(null); }} className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-lg text-sm">Upload another</button>
+                  <button onClick={() => openScreenplayViewer(uploadedScreenplay)} className="btn-primary text-sm">View</button>
+                  <button onClick={loadAnnotations} className="btn-secondary text-sm">Annotate</button>
+                  <button onClick={() => { setUploadedScreenplay(null); setScreenplayFile(null); }} className="btn-secondary text-sm">Upload another</button>
                 </div>
               </div>
             )}
@@ -1727,13 +1727,13 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
             <div className="flex gap-3">
               <button 
                 onClick={() => openScreenplayViewer(uploadedScreenplay)}
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
+                className="btn-primary"
               >
                 View Screenplay
               </button>
               <button 
                 onClick={loadAnnotations}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
+                className="btn-secondary"
               >
                 View Annotations ({screenplayAnnotations.length})
               </button>
@@ -1750,21 +1750,22 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
               <h4 className="font-medium text-gray-900 mb-3">Team Members</h4>
               <div className="space-y-2">
                 {teamMembers.map((member) => (
-                  <div key={member.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg border border-gray-200">
-                    <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white text-base font-semibold relative">
-                      {member.avatar ? (
-                        <img src={member.avatar} alt={member.name} className="w-10 h-10 rounded-full object-cover" />
-                      ) : (
-                        <span>{member.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()}</span>
-                      )}
-                      {/* Online indicator (optional, if member.isOnline) */}
-                      {member.isOnline && (
-                        <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 border-2 border-white rounded-full"></span>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-900 leading-tight truncate">{member.name}</p>
-                      <p className="text-xs text-gray-500 leading-tight">{member.role}</p>
+                  <div key={member.id} className="card-standard">
+                    <div className="flex items-center gap-3">
+                      <div className="avatar-list relative">
+                        {member.avatar ? (
+                          <img src={member.avatar} alt={member.name} className="w-full h-full rounded-full object-cover" />
+                        ) : (
+                          <span>{member.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()}</span>
+                        )}
+                        {member.isOnline && (
+                          <span className="online-indicator"></span>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="collaborator-name leading-tight truncate">{member.name}</p>
+                        <p className="text-xs text-gray-500 leading-tight">{member.role}</p>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -1777,9 +1778,9 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
               <div className="space-y-3 max-h-64 overflow-y-auto">
                 {screenplayAnnotations.length > 0 ? (
                   screenplayAnnotations.slice(0, 5).map((annotation) => (
-                    <div key={annotation.id} className="p-3 bg-gray-50 rounded-lg">
+                    <div key={annotation.id} className="card-standard">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium text-gray-900">{annotation.userName}</span>
+                        <span className="collaborator-name">{annotation.userName}</span>
                         <span className="text-xs text-gray-500">
                           {formatTimeAgo(annotation.timestamp)}
                         </span>
@@ -1819,7 +1820,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
           <div className="selector-header">
             <h3>Screenplays</h3>
             <button 
-              className="upload-btn"
+              className="btn-primary"
               onClick={() => document.getElementById('screenplay-upload')?.click()}
             >
               <span>📄</span> Upload Screenplay
@@ -1840,7 +1841,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
               <h4>No screenplays uploaded yet</h4>
               <p>Upload a PDF screenplay to start collaborating with your team.</p>
               <button 
-                className="upload-btn primary"
+                className="btn-primary"
                 onClick={() => document.getElementById('screenplay-upload')?.click()}
               >
                 Upload Your First Screenplay
@@ -1855,18 +1856,18 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                   </div>
                   <div className="card-content">
                     <h4 className="screenplay-name">{screenplay.name}</h4>
-                    <p className="upload-date">
+                    <p className="upload-date" style={{ color: 'rgba(255,255,255,0.7)' }}>
                       Uploaded {screenplay.uploadedAt ? new Date(screenplay.uploadedAt.seconds * 1000).toLocaleDateString() : 'Unknown'}
                     </p>
                     <div className="card-actions">
                       <button 
-                        className="open-btn"
+                        className="btn-primary"
                         onClick={() => openScreenplayViewer(screenplay)}
                       >
                         Open Viewer
                       </button>
                       <button 
-                        className="delete-btn"
+                        className="btn-danger"
                         onClick={() => handleDeleteScreenplay(screenplay.id)}
                       >
                         Delete
