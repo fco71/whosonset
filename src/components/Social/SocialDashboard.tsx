@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { collection, query, where, orderBy, getDocs, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { FollowRequest, SocialNotification, ActivityFeedItem, Follow } from '../../types/Social';
@@ -15,6 +15,7 @@ import NotificationBell from './NotificationBell';
 import { performanceMonitor } from '../../utilities/performanceUtils';
 import './SocialDashboard.scss';
 import { toast } from 'react-hot-toast';
+import { Unsubscribe } from 'firebase/auth';
 
 interface SocialDashboardProps {
   currentUserId: string;
@@ -27,8 +28,7 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
   currentUserName,
   currentUserAvatar 
 }) => {
-  console.log('[SocialDashboard] Component rendered with props:', { currentUserId, currentUserName, currentUserAvatar });
-  
+  // State management with proper types
   const [activeTab, setActiveTab] = useState<'overview' | 'followers' | 'following' | 'requests' | 'notifications' | 'members' | 'messaging'>('overview');
   const [followRequests, setFollowRequests] = useState<FollowRequest[]>([]);
   const [notifications, setNotifications] = useState<SocialNotification[]>([]);
@@ -40,58 +40,86 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [followingProfiles, setFollowingProfiles] = useState<Record<string, UserProfile | null>>({});
   const [error, setError] = useState<string | null>(null);
+  // Memoize the props to prevent unnecessary re-renders
+  const memoizedProps = useMemo(() => ({
+    currentUserId,
+    currentUserName,
+    currentUserAvatar: currentUserAvatar || '/default-avatar.svg' // Provide fallback avatar
+  }), [currentUserId, currentUserName, currentUserAvatar]);
 
-  // Real-time listeners with error handling
+  // Only log when props actually change
   useEffect(() => {
-    if (!currentUserId) {
+    console.log('[SocialDashboard] Component rendered with props:', memoizedProps);
+  }, [memoizedProps]);
+
+  // Set up all listeners when component mounts or userId changes
+  useEffect(() => {
+    if (!memoizedProps.currentUserId) {
       setIsLoading(false);
-      return;
+      return () => {};
     }
 
-    console.log('[SocialDashboard] Setting up real-time listeners for user:', currentUserId);
+    console.log('[SocialDashboard] Setting up real-time listeners for user:', memoizedProps.currentUserId);
     
     let unsubscribeFunctions: (() => void)[] = [];
+    let isMounted = true;
     
-    try {
-      const unsubscribeFollowRequests = SocialService.subscribeToFollowRequests(currentUserId, setFollowRequests);
-      const unsubscribeNotifications = SocialService.subscribeToNotifications(currentUserId, setNotifications);
-      const unsubscribeFollowers = SocialService.subscribeToFollowers(currentUserId, setFollowers);
-      const unsubscribeFollowing = SocialService.subscribeToFollowing(currentUserId, setFollowing);
-      
-      unsubscribeFunctions = [unsubscribeFollowRequests, unsubscribeNotifications, unsubscribeFollowers, unsubscribeFollowing];
-
-      // Load crew profiles for member list
-      const loadCrewProfiles = async () => {
-        try {
-          const profiles = await SocialService.getCrewProfiles();
-          setCrewProfiles(profiles);
-          setError(null);
-        } catch (error) {
-          console.error('[SocialDashboard] Error loading crew profiles:', error);
-          setError('Failed to load crew profiles');
-        } finally {
+    const setupListeners = async () => {
+      try {
+        // Set up listeners using static methods
+        const [unsubRequests, unsubNotifications, unsubFollowers, unsubFollowing] = await Promise.all([
+          SocialService.subscribeToFollowRequests(memoizedProps.currentUserId, (requests: FollowRequest[]) => {
+            if (isMounted) setFollowRequests(requests);
+          }),
+          SocialService.subscribeToNotifications(memoizedProps.currentUserId, (notifications: SocialNotification[]) => {
+            if (isMounted) setNotifications(notifications);
+          }),
+          SocialService.subscribeToFollowers(memoizedProps.currentUserId, (followersData: Follow[]) => {
+            if (isMounted) setFollowers(followersData);
+          }),
+          SocialService.subscribeToFollowing(memoizedProps.currentUserId, (followingData: Follow[]) => {
+            if (isMounted) setFollowing(followingData);
+          })
+        ]);
+        
+        unsubscribeFunctions = [
+          unsubRequests,
+          unsubNotifications,
+          unsubFollowers,
+          unsubFollowing
+        ].filter(Boolean) as (() => void)[];
+        
+        // Load crew profiles
+        const profiles = await SocialService.getCrewProfiles();
+        if (isMounted) setCrewProfiles(profiles);
+        
+        if (isMounted) setIsLoading(false);
+      } catch (error) {
+        console.error('Error setting up listeners:', error);
+        if (isMounted) {
+          setError('Failed to load social data. Please try again.');
           setIsLoading(false);
         }
-      };
-
-      loadCrewProfiles();
-    } catch (error) {
-      console.error('[SocialDashboard] Error setting up listeners:', error);
-      setError('Failed to set up real-time updates');
-      setIsLoading(false);
-    }
-
+      }
+    };
+    
+    setupListeners();
+    
+    // Cleanup function
     return () => {
-      console.log('[SocialDashboard] Cleaning up real-time listeners');
+      console.log('[SocialDashboard] Cleaning up listeners');
+      isMounted = false;
       unsubscribeFunctions.forEach(unsubscribe => {
-        try {
-          unsubscribe();
-        } catch (error) {
-          console.error('[SocialDashboard] Error during cleanup:', error);
+        if (typeof unsubscribe === 'function') {
+          try {
+            unsubscribe();
+          } catch (err) {
+            console.error('Error during cleanup:', err);
+          }
         }
       });
     };
-  }, [currentUserId]);
+  }, [memoizedProps.currentUserId]);
 
   useEffect(() => {
     // Fetch profiles for all following users with error handling
@@ -481,4 +509,5 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
   );
 };
 
-export default SocialDashboard;
+// Memoize the component to prevent unnecessary re-renders
+export default React.memo(SocialDashboard);
