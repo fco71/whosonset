@@ -1,6 +1,7 @@
 // src/components/Navigation.tsx
 import React from 'react';
 import { Link } from 'react-router-dom';
+import ThemeToggle from './ThemeToggle';
 
 interface NavigationProps {
     authUser: any;
@@ -32,8 +33,10 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                         {authUser && <Link to="/collaboration" className="nav-link text-gray-800 text-base font-normal hover:text-blue-700 hover:underline underline-offset-4 transition-colors">Collaboration</Link>}
                     </div>
 
-                    {/* Auth Buttons */}
-                    <div className="flex items-center space-x-2">
+                    {/* Theme Toggle and Auth Buttons */}
+                    <div className="flex items-center space-x-4">
+                        <ThemeToggle />
+                        <div className="h-6 w-px bg-gray-200"></div>
                         {!authUser ? (
                             <>
                                 <Link 
@@ -53,7 +56,7 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                             <>
                                 <button 
                                     onClick={userSignOut} 
-                                    className="px-4 py-2 text-base font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-blue-700 transition-all duration-200"
+                                    className="px-4 py-2 text-base font-medium text-gray-700 hover:text-blue-700 transition-colors"
                                 >
                                     Sign Out
                                 </button>

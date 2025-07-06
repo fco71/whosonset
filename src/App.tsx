@@ -1,14 +1,83 @@
-import React from 'react';
-import { BrowserRouter as Router } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-// ... existing imports ...
+import { ThemeProvider, useTheme } from './theme/ThemeProvider';
+import '@fontsource/inter/400.css';
+import '@fontsource/inter/500.css';
+import '@fontsource/inter/600.css';
+import '@fontsource/inter/700.css';
+import './App.module.scss';
+
+// Component to handle dark mode class on html element
+const DarkModeHandler = () => {
+  const { colorMode } = useTheme();
+
+  useEffect(() => {
+    if (colorMode === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [colorMode]);
+
+  return null;
+};
+
+// Import pages
+import ProducerView from './pages/ProducerView';
+import MyProjectsPage from './pages/MyProjectsPage';
+import FavoritesPage from './pages/FavoritesPage';
+import SavedCrewProfilesPage from './pages/SavedCrewProfilesPage';
+import SavedProjectsPage from './pages/SavedProjectsPage';
+import CollectionsHubPage from './pages/CollectionsHubPage';
+
+const fontFamily = 'Inter, sans-serif';
 
 function App() {
   return (
-    <Router>
-      {/* ...existing app structure... */}
-      <Toaster position="top-right" toastOptions={{ duration: 3500 }} />
-    </Router>
+    <ThemeProvider>
+      <DarkModeHandler />
+      <div className="min-h-screen bg-background text-foreground" style={{ fontFamily }}>
+        <Router>
+          <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+            {/* Navigation would go here */}
+            
+            <main className="container mx-auto px-4 py-8">
+              <Routes>
+                <Route path="/" element={<ProducerView />} />
+                <Route path="/my-projects" element={<MyProjectsPage />} />
+                <Route path="/favorites" element={<FavoritesPage />} />
+                <Route path="/saved-crew" element={<SavedCrewProfilesPage />} />
+                <Route path="/saved-projects" element={<SavedProjectsPage />} />
+                <Route path="/collections" element={<CollectionsHubPage />} />
+              </Routes>
+            </main>
+            
+            {/* Footer would go here */}
+          </div>
+          
+          <Toaster 
+            position="top-right" 
+            toastOptions={{ 
+              duration: 4000,
+              className: '!bg-white dark:!bg-gray-800 !text-gray-900 dark:!text-gray-100',
+              success: {
+                iconTheme: {
+                  primary: '#10B981',
+                  secondary: 'white',
+                },
+              },
+              error: {
+                iconTheme: {
+                  primary: '#EF4444',
+                  secondary: 'white',
+                },
+              },
+            }} 
+          />
+        </Router>
+      </div>
+    </ThemeProvider>
   );
 }
 
