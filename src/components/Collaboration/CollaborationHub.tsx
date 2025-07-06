@@ -143,6 +143,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     name: string;
     url: string;
     type: string;
+    size?: number;
   } | null>(null);
   
   // Screenplay collaboration state
@@ -162,10 +163,14 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     name: string;
     email: string;
     role: string;
+    avatar?: string;
+    isOnline?: boolean;
   }[]>([]);
 
   const [userScreenplays, setUserScreenplays] = useState<any[]>([]);
   const [selectedScreenplayId, setSelectedScreenplayId] = useState<string | null>(null);
+
+  const [approvedContacts, setApprovedContacts] = useState<string[]>([]);
 
   useEffect(() => {
     console.log('CollaborationHub mounted with projectId:', projectId);
@@ -200,6 +205,34 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       setError('Failed to initialize Collaboration Hub');
     }
   }, [currentUser, projectId]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    const fetchApprovedContacts = async () => {
+      try {
+        const connectionsQuery = query(
+          collection(db, 'connections'),
+          where('status', '==', 'accepted'),
+          where('userId', '==', currentUser.uid)
+        );
+        const reverseConnectionsQuery = query(
+          collection(db, 'connections'),
+          where('status', '==', 'accepted'),
+          where('connectedUserId', '==', currentUser.uid)
+        );
+        const [directSnap, reverseSnap] = await Promise.all([
+          getDocs(connectionsQuery),
+          getDocs(reverseConnectionsQuery)
+        ]);
+        const directContacts = directSnap.docs.map(doc => doc.data().connectedUserId);
+        const reverseContacts = reverseSnap.docs.map(doc => doc.data().userId);
+        setApprovedContacts([...new Set([...directContacts, ...reverseContacts])]);
+      } catch (error) {
+        setApprovedContacts([]);
+      }
+    };
+    fetchApprovedContacts();
+  }, [currentUser]);
 
   const loadWorkspaces = async () => {
     try {
@@ -327,33 +360,63 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   };
 
   // User search functionality
-  const searchUsers = async (query: string) => {
-    if (!query.trim()) {
+  const searchUsers = async (queryStr: string) => {
+    if (!queryStr.trim()) {
       setUserSearchResults([]);
       return;
     }
-
     setIsSearchingUsers(true);
     try {
-      // Mock user search results - in real app, this would query Firestore
-      const mockUsers: UserSearchResult[] = [
-        { id: 'user-1', name: 'John Director', email: 'john@example.com', role: 'Director', company: 'Film Co' },
-        { id: 'user-2', name: 'Sarah Producer', email: 'sarah@example.com', role: 'Producer', company: 'Production Inc' },
-        { id: 'user-3', name: 'Mike DP', email: 'mike@example.com', role: 'DP', company: 'Camera Dept' },
-        { id: 'user-4', name: 'Lisa Editor', email: 'lisa@example.com', role: 'Editor', company: 'Post House' },
-        { id: 'user-5', name: 'Tom Sound', email: 'tom@example.com', role: 'Sound Designer', company: 'Audio Studio' }
-      ];
-
-      const filteredUsers = mockUsers.filter(user =>
-        user.name.toLowerCase().includes(query.toLowerCase()) ||
-        user.email.toLowerCase().includes(query.toLowerCase()) ||
-        user.role?.toLowerCase().includes(query.toLowerCase()) ||
-        user.company?.toLowerCase().includes(query.toLowerCase())
+      let allResults: UserSearchResult[] = [];
+      if (approvedContacts.length > 0) {
+        // Fetch all approved contacts' user docs in chunks of 10
+        const usersRef = collection(db, 'users');
+        const approvedChunks = [];
+        for (let i = 0; i < approvedContacts.length; i += 10) {
+          approvedChunks.push(approvedContacts.slice(i, i + 10));
+        }
+        for (const chunk of approvedChunks) {
+          const q = query(usersRef, where('id', 'in', chunk));
+          const snap = await getDocs(q);
+          allResults = allResults.concat(
+            snap.docs.map(doc => ({
+              id: doc.id,
+              name: doc.data().displayName || doc.data().name || `User ${doc.id.slice(-4)}`,
+              email: doc.data().email || '',
+              avatar: doc.data().avatarUrl || doc.data().avatar || '',
+              role: doc.data().role || 'User',
+              company: doc.data().company || ''
+            }))
+          );
+        }
+      } else {
+        // Fallback: search all users
+        const usersRef = collection(db, 'users');
+        const snap = await getDocs(usersRef);
+        console.log('[CollabModal] Fallback: found', snap.docs.length, 'users in Firestore');
+        allResults = snap.docs.map(doc => ({
+          id: doc.id,
+          name: doc.data().displayName || doc.data().name || `User ${doc.id.slice(-4)}`,
+          email: doc.data().email || '',
+          avatar: doc.data().avatarUrl || doc.data().avatar || '',
+          role: doc.data().role || 'User',
+          company: doc.data().company || ''
+        }));
+        if (allResults.length === 0) {
+          console.warn('[CollabModal] No users found in Firestore users collection.');
+        }
+      }
+      // Filter by search query
+      const filtered = allResults.filter(user =>
+        (user.name || '').toLowerCase().includes(queryStr.toLowerCase()) ||
+        (user.email || '').toLowerCase().includes(queryStr.toLowerCase()) ||
+        (user.role || '').toLowerCase().includes(queryStr.toLowerCase()) ||
+        (user.company || '').toLowerCase().includes(queryStr.toLowerCase())
       );
-
-      setUserSearchResults(filteredUsers);
+      console.log('[CollabModal] Filtered users after search:', filtered.length, filtered.map(u => u.name));
+      setUserSearchResults(filtered);
     } catch (error) {
-      console.error('Error searching users:', error);
+      console.error('[CollabModal] Error searching users:', error);
       setUserSearchResults([]);
     } finally {
       setIsSearchingUsers(false);
@@ -687,7 +750,8 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         projectId: projectId || 'default-project',
         uploadedBy: currentUser?.uid || 'unknown',
         uploadedAt: new Date(),
-        teamMembers: teamMembers.map(member => member.id)
+        teamMembers: teamMembers.map(member => member.id),
+        size: screenplayFile.size
       };
       
       const docRef = await addDoc(collection(db, 'screenplays'), screenplayData);
@@ -696,7 +760,8 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         id: docRef.id,
         name: screenplayFile.name,
         url: downloadURL,
-        type: screenplayFile.type
+        type: screenplayFile.type,
+        size: screenplayFile.size
       };
       
       setUploadedScreenplay(uploadedFile);
@@ -1144,7 +1209,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                 setShowAddMemberModal(false);
                 setUserSearchQuery('');
                 setUserSearchResults([]);
-              }} className="close-btn">×</button>
+              }} className="close-btn" aria-label="Close">×</button>
             </div>
             <div className="modal-body">
               <div className="form-group">
@@ -1162,12 +1227,19 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                     // Only add new users
                     const newUsers = users.filter(u => !(selectedWorkspace && selectedWorkspace.members.some(m => m.userId === u.id)));
                     newUsers.forEach(user => addUserToWorkspace(user));
+                    setShowAddMemberModal(false);
+                    setUserSearchQuery('');
+                    setUserSearchResults([]);
                   }}
                   onSearch={handleUserSearchChange}
                   options={userSearchResults}
                   loading={isSearchingUsers}
                   placeholder="Search by name, email, or role..."
                 />
+                {/* Live feedback for search */}
+                {isSearchingUsers && <div className="searching-indicator">Searching...</div>}
+                {!isSearchingUsers && userSearchQuery.trim() && userSearchResults.length === 0 && <div className="searching-indicator">No friends found.</div>}
+                {!isSearchingUsers && !userSearchQuery.trim() && <div className="searching-indicator">Start typing to search for users</div>}
               </div>
             </div>
           </div>
@@ -1561,46 +1633,72 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         {/* Screenplay Upload Section */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Upload Screenplay</h3>
+          {/* Step Indicator */}
+          <div className="flex items-center gap-2 mb-4 text-sm text-gray-500">
+            <span className={`font-semibold ${!screenplayFile ? 'text-blue-600' : ''}`}>1. Select File</span>
+            <span>→</span>
+            <span className={`font-semibold ${screenplayFile && !uploadedScreenplay ? 'text-blue-600' : ''}`}>2. Upload</span>
+            <span>→</span>
+            <span className={`font-semibold ${uploadedScreenplay ? 'text-green-600' : ''}`}>3. Success</span>
+          </div>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="screenplay-upload-input">
                 Select Screenplay File
               </label>
               <input
+                id="screenplay-upload-input"
                 type="file"
                 accept=".pdf"
                 className="w-full bg-white text-gray-900 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                 onChange={handleScreenplayUpload}
+                aria-label="Select PDF screenplay file"
+                disabled={uploadingScreenplay}
               />
               <p className="text-sm text-gray-500 mt-1">
                 Supported formats: PDF (.pdf)
               </p>
-            </div>
-            {screenplayFile && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div className="flex items-center gap-2">
-                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z" />
-                  </svg>
-                  <span className="text-blue-800 font-medium">
-                    {screenplayFile.name} selected
-                  </span>
+              {screenplayFile && (
+                <div className="flex items-center gap-2 mt-2 text-blue-800 bg-blue-50 border border-blue-200 rounded-lg p-2">
+                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z" /></svg>
+                  <span className="font-medium">{screenplayFile.name}</span>
+                  <span className="text-xs text-gray-500">({(screenplayFile.size/1024/1024).toFixed(2)} MB)</span>
+                  <button
+                    type="button"
+                    className="ml-2 text-xs text-blue-600 underline hover:text-blue-800 focus:outline-none"
+                    onClick={() => setScreenplayFile(null)}
+                    aria-label="Change file"
+                    disabled={uploadingScreenplay}
+                  >
+                    Change file
+                  </button>
                 </div>
-              </div>
-            )}
-            <button 
+              )}
+            </div>
+            <button
               onClick={uploadScreenplay}
               disabled={!screenplayFile || uploadingScreenplay}
-              className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+              className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              aria-label="Upload screenplay"
             >
               {uploadingScreenplay && (
-                <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
+                <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
               )}
               {uploadingScreenplay ? 'Uploading...' : 'Upload Screenplay'}
             </button>
+            {uploadedScreenplay && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-2">
+                <div className="flex items-center gap-2 mb-2">
+                  <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  <span className="text-green-800 font-semibold">{uploadedScreenplay.name} uploaded successfully!</span>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => openScreenplayViewer(uploadedScreenplay)} className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg text-sm">View</button>
+                  <button onClick={loadAnnotations} className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded-lg text-sm">Annotate</button>
+                  <button onClick={() => { setUploadedScreenplay(null); setScreenplayFile(null); }} className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-lg text-sm">Upload another</button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -1652,13 +1750,21 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
               <h4 className="font-medium text-gray-900 mb-3">Team Members</h4>
               <div className="space-y-2">
                 {teamMembers.map((member) => (
-                  <div key={member.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                    <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
-                      {member.name.charAt(0)}
+                  <div key={member.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white text-base font-semibold relative">
+                      {member.avatar ? (
+                        <img src={member.avatar} alt={member.name} className="w-10 h-10 rounded-full object-cover" />
+                      ) : (
+                        <span>{member.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()}</span>
+                      )}
+                      {/* Online indicator (optional, if member.isOnline) */}
+                      {member.isOnline && (
+                        <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 border-2 border-white rounded-full"></span>
+                      )}
                     </div>
-                    <div>
-                      <p className="font-medium text-gray-900">{member.name}</p>
-                      <p className="text-sm text-gray-600">{member.role}</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-900 leading-tight truncate">{member.name}</p>
+                      <p className="text-xs text-gray-500 leading-tight">{member.role}</p>
                     </div>
                   </div>
                 ))}

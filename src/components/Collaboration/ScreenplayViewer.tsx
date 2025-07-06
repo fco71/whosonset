@@ -1076,23 +1076,28 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       return;
     }
     try {
-      // Only search among approved contacts
-      if (approvedContacts.length === 0) {
-        setCollaboratorResults([]);
-        setSearchLoading(false);
-        return;
-      }
-      const usersRef = collection(db, 'users');
-      // Fetch all approved contacts' user docs
-      const approvedChunks = [];
-      for (let i = 0; i < approvedContacts.length; i += 10) {
-        approvedChunks.push(approvedContacts.slice(i, i + 10));
-      }
       let allResults: Array<{ id: string; [key: string]: any }> = [];
-      for (const chunk of approvedChunks) {
-        const q = query(usersRef, where('id', 'in', chunk));
-        const snap = await getDocs(q);
-        allResults = allResults.concat(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      if (approvedContacts.length > 0) {
+        // Fetch all approved contacts' user docs in chunks of 10
+        const usersRef = collection(db, 'users');
+        const approvedChunks = [];
+        for (let i = 0; i < approvedContacts.length; i += 10) {
+          approvedChunks.push(approvedContacts.slice(i, i + 10));
+        }
+        for (const chunk of approvedChunks) {
+          const q = query(usersRef, where('id', 'in', chunk));
+          const snap = await getDocs(q);
+          allResults = allResults.concat(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        }
+      } else {
+        // Fallback: search all users
+        const usersRef = collection(db, 'users');
+        const snap = await getDocs(usersRef);
+        console.log('[ScreenplayCollabModal] Fallback: found', snap.docs.length, 'users in Firestore');
+        allResults = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        if (allResults.length === 0) {
+          console.warn('[ScreenplayCollabModal] No users found in Firestore users collection.');
+        }
       }
       // Filter by search query
       const filtered = allResults
@@ -1108,12 +1113,13 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
           avatar: user.avatarUrl || user.avatar || '',
           role: user.role || 'User',
           isFollowing: userFollows.includes(user.id),
-          connectionStatus: 'connected', // All in approvedContacts
+          connectionStatus: 'connected',
         }));
+      console.log('[ScreenplayCollabModal] Filtered users after search:', filtered.length, filtered.map(u => u.name));
       setCollaboratorResults(filtered);
       setSearchLoading(false);
     } catch (error) {
-      console.error('Error searching users:', error);
+      console.error('[ScreenplayCollabModal] Error searching users:', error);
       setCollaboratorResults([]);
       setSearchLoading(false);
     }
@@ -1240,6 +1246,9 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       toast.error('Failed to remove collaborator.');
     }
   };
+
+  // When rendering collaborators, ensure uniqueness by ID
+  const uniqueCollaborators = Array.from(new Map(collaborators.map(c => [c.id, c])).values());
 
   return (
     <div className="screenplay-viewer-overlay">
@@ -1615,8 +1624,8 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                   <div className="collaborators-section">
                     <h4>🤝 Collaborators ({collaborators.filter(user => user && user.id && user.name).length})</h4>
                     <div className="collaborators-list">
-                      {collaborators.filter(user => user && user.id && user.name).length === 0 && <div className="no-collaborators">No collaborators yet.</div>}
-                      {collaborators.filter(user => user && user.id && user.name).map(user => (
+                      {uniqueCollaborators.length === 0 && <div className="no-collaborators">No collaborators yet.</div>}
+                      {uniqueCollaborators.map(user => (
                         <div key={user.id} className="collaborator-item">
                           <div className="collaborator-avatar">
                             {user.avatar ? <img src={user.avatar} alt={user.name} /> : <div className="avatar-placeholder">{user.name?.charAt(0).toUpperCase() || '?'}</div>}
