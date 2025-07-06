@@ -261,23 +261,34 @@
           gap: 1.25rem;
 
           .workspace-card {
-            background: white;
+            background: #f8f9fb;
+            color: #1a1a1a;
             border: 1px solid #f0f0f0;
             border-radius: 12px;
             padding: 1.5rem;
             transition: all 0.15s ease;
             cursor: pointer;
             position: relative;
-
+            box-sizing: border-box;
+            
+            .workspace-title,
+            .workspace-type,
+            .workspace-description,
+            .stat,
+            .stat-value,
+            .stat-label {
+              color: #1a1a1a !important;
+            }
+            
             &:hover {
               border-color: #007AFF;
               box-shadow: 0 4px 12px rgba(0, 122, 255, 0.08);
               transform: translateY(-2px);
             }
-
+            
             &.selected {
               border-color: #007AFF;
-              background: #f8f9ff;
+              background: #f4f7ff;
             }
 
             .workspace-header {
@@ -356,7 +367,13 @@
             
             .workspace-actions {
               display: flex;
+              flex-wrap: wrap;
               gap: 0.5rem;
+              width: 100%;
+              box-sizing: border-box;
+              justify-content: flex-start;
+              align-items: stretch;
+              margin-top: 1rem;
 
               .action-btn {
                 flex: 1;
@@ -394,6 +411,41 @@
                   width: 14px;
                   height: 14px;
                 }
+              }
+            }
+
+            // Responsive: stack buttons on small screens
+            @media (max-width: 600px) {
+              .workspace-actions {
+                flex-direction: column;
+                gap: 0.5rem;
+              }
+            }
+
+            .workspace-settings-gear {
+              width: 28px;
+              height: 28px;
+              border-radius: 50%;
+              background: none;
+              border: none;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              transition: background 0.15s;
+              box-shadow: none;
+              color: #888;
+              z-index: 2;
+              outline: none;
+              padding: 0;
+              &:hover, &:focus {
+                background: #f0f0f0;
+                color: #007AFF;
+              }
+              svg {
+                display: block;
+                width: 16px;
+                height: 16px;
+                stroke: currentColor;
               }
             }
           }
