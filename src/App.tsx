@@ -15,6 +15,7 @@ import FavoritesPage from './pages/FavoritesPage';
 import SavedCrewProfilesPage from './pages/SavedCrewProfilesPage';
 import SavedProjectsPage from './pages/SavedProjectsPage';
 import CollectionsHubPage from './pages/CollectionsHubPage';
+import SocialPage from './pages/SocialPage.v2';
 
 const fontFamily = 'Inter, sans-serif';
 
@@ -34,6 +35,7 @@ function App() {
                 <Route path="/saved-crew" element={<SavedCrewProfilesPage />} />
                 <Route path="/saved-projects" element={<SavedProjectsPage />} />
                 <Route path="/collections" element={<CollectionsHubPage />} />
+                <Route path="/social" element={<SocialPage />} />
               </Routes>
             </main>
             

@@ -1,21 +1,30 @@
 {
   "compilerOptions": {
-    "target": "es2020",                   // ← was "es5"
-    "lib": ["dom", "es2020"],             // ← was "es2015"
+    "target": "es2020",
+    "lib": ["dom", "es2020"],
     "jsx": "react-jsx",
     "module": "esnext",
     "moduleResolution": "node",
     "strict": true,
     "esModuleInterop": true,
-    "skipLibCheck": true,                 // keep this true to ignore .d.ts errors
+    "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "outDir": "./dist",
     "baseUrl": ".",
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "paths": {
+      "class-variance-authority": ["./src/types/cva.d.ts"]
+    },
+    "typeRoots": [
+      "./node_modules/@types",
+      "./src/types"
+    ]
   },
   "include": [
     "src/**/*.tsx",
     "src/**/*.ts",
-    "scripts/**/*.ts"                    // ← add this line to include your seed script
-  ]
+    "src/**/*.d.ts",
+    "scripts/**/*.ts"
+  ],
+  "exclude": ["node_modules", "dist"]
 }

@@ -1,5 +1,11 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { Clock, MapPin, Film, Calendar, Bookmark, BookmarkCheck } from 'lucide-react';
+import Card, { CardHeader, CardBody, CardFooter, CardTitle, CardDescription } from "./ui/Card";
+import { Button } from "./ui/Button";
+
+type ProjectStatus = 'in_production' | 'pre_production' | 'post_production' | 'development' | 'completed' | 'cancelled' | string;
 
 interface ProjectCardProps {
   id: string;
@@ -7,7 +13,7 @@ interface ProjectCardProps {
   productionCompany?: string;
   country?: string;
   productionLocations?: Array<{ country: string; city?: string }>;
-  status: string;
+  status: ProjectStatus;
   summary?: string;
   director?: string;
   producer?: string;
@@ -18,7 +24,52 @@ interface ProjectCardProps {
   showDetails?: boolean;
   onBookmark?: (projectId: string, isBookmarked: boolean) => void;
   isBookmarked?: boolean;
+  className?: string;
 }
+
+/**
+ * Format a date string to a more readable format
+ */
+const formatDate = (dateString?: string): string => {
+  if (!dateString) return 'TBD';
+  
+  const date = new Date(dateString);
+  return new Intl.DateTimeFormat('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  }).format(date);
+};
+
+/**
+ * Get status badge styles based on project status
+ */
+const getStatusStyles = (status: ProjectStatus) => {
+  const statusMap: Record<string, { bg: string; text: string; icon: React.ReactNode }> = {
+    'in_production': { bg: 'bg-green-100', text: 'text-green-800', icon: <Film size={14} /> },
+    'production': { bg: 'bg-green-100', text: 'text-green-800', icon: <Film size={14} /> },
+    'pre_production': { bg: 'bg-blue-100', text: 'text-blue-800', icon: <Clock size={14} /> },
+    'pre-production': { bg: 'bg-blue-100', text: 'text-blue-800', icon: <Clock size={14} /> },
+    'post_production': { bg: 'bg-purple-100', text: 'text-purple-800', icon: <Film size={14} /> },
+    'post-production': { bg: 'bg-purple-100', text: 'text-purple-800', icon: <Film size={14} /> },
+    'development': { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: <Clock size={14} /> },
+    'completed': { bg: 'bg-green-100', text: 'text-green-800', icon: <Calendar size={14} /> },
+    'cancelled': { bg: 'bg-red-100', text: 'text-red-800', icon: <Clock size={14} /> },
+  };
+
+  const normalizedStatus = status.toLowerCase().replace('-', '_');
+  return statusMap[normalizedStatus] || { bg: 'bg-gray-100', text: 'text-gray-800', icon: <Clock size={14} /> };
+};
+
+/**
+ * Format status text for display
+ */
+const formatStatusText = (status: string): string => {
+  return status
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
 
 const ProjectCard: React.FC<ProjectCardProps> = ({
   id,
@@ -26,185 +77,156 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
   productionCompany,
   country,
   productionLocations,
-  status,
+  status = 'development',
   summary,
   director,
   producer,
-  genres,
+  genres = [],
   coverImageUrl,
   startDate,
   endDate,
   showDetails = false,
   onBookmark,
   isBookmarked = false,
+  className = '',
 }) => {
   const navigate = useNavigate();
-
-  // Get the primary location (first from productionLocations or fallback to country)
-  const getPrimaryLocation = () => {
-    if (productionLocations && productionLocations.length > 0) {
-      const location = productionLocations[0];
-      return location.city ? `${location.city}, ${location.country}` : location.country;
-    }
-    return country;
-  };
-
-  const getStatusBadgeColor = (rawStatus: string) => {
-    switch (rawStatus.toLowerCase()) {
-      case 'in production':
-      case 'production':
-        return 'badge-success';
-      case 'pre-production':
-      case 'pre_production':
-        return 'badge-info';
-      case 'post-production':
-      case 'post_production':
-        return 'badge-purple';
-      case 'development':
-        return 'badge-orange';
-      case 'completed':
-        return 'badge-success';
-      case 'cancelled':
-        return 'badge-error';
-      default:
-        return 'badge-gray';
-    }
-  };
-
-  const formatStatus = (status: string) =>
-    status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
-
-  const handleBookmarkClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (onBookmark) {
-      onBookmark(id, !isBookmarked);
-    }
-  };
+  const statusStyles = getStatusStyles(status);
+  
+  // Get primary production location
+  const primaryLocation = productionLocations?.[0]?.city 
+    ? `${productionLocations[0].city}, ${productionLocations[0].country || country}`
+    : country;
 
   const handleCardClick = () => {
     navigate(`/projects/${id}`);
   };
 
-  const primaryLocation = getPrimaryLocation();
+  const handleBookmarkClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onBookmark?.(id, !isBookmarked);
+  };
 
   return (
-    <div
-      className="group card-base card-hover h-96 flex flex-col animate-entrance relative cursor-pointer"
+    <Card 
+      className={`overflow-hidden transition-all duration-300 hover:shadow-lg ${className}`}
+      hoverable
       onClick={handleCardClick}
-      tabIndex={0}
       role="button"
+      tabIndex={0}
       aria-label={`View details for ${projectName}`}
-      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') handleCardClick(); }}
+      onKeyDown={e => { 
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleCardClick();
+        }
+      }}
     >
-      {/* Bookmark Button */}
-      {onBookmark && (
-        <button
-          onClick={handleBookmarkClick}
-          className={`absolute top-3 right-3 z-10 p-2 rounded-full transition-all duration-300 ${
-            isBookmarked 
-              ? 'bg-red-500 text-white shadow-lg' 
-              : 'bg-white/80 text-gray-600 hover:bg-white hover:text-red-500'
-          } backdrop-blur-sm`}
-          title={isBookmarked ? "Remove from favorites" : "Add to favorites"}
-        >
-          <svg 
-            className={`w-5 h-5 transition-all duration-300 ${isBookmarked ? 'fill-current' : 'stroke-current fill-none'}`}
-            viewBox="0 0 24 24"
-            strokeWidth={isBookmarked ? 0 : 2}
-          >
-            <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
-          </svg>
-        </button>
-      )}
-
-      {/* Image Section - Fixed Height */}
-      <div className="h-48 card-image-container">
+      {/* Cover Image */}
+      <div className="relative h-48 bg-gray-100 overflow-hidden">
         {coverImageUrl ? (
           <img
             src={coverImageUrl}
-            alt={projectName}
-            className="card-image"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = '/movie-production-avatar.svg';
-            }}
+            alt={`${projectName} cover`}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            loading="lazy"
           />
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-            <img
-              src="/movie-production-avatar.svg"
-              alt="Movie Production"
-              className="w-16 h-16 opacity-50"
-            />
+          <div className="w-full h-full bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
+            <Film size={48} className="text-gray-300" />
           </div>
         )}
-      </div>
-
-      {/* Content Section - Flexible Height */}
-      <div className="card-padding flex-1 flex flex-col">
-        {/* Project Name */}
-        <h3 className="heading-card mb-3 group-hover:text-gray-700 transition-colors" style={{ color: '#fff', fontWeight: 700, textShadow: '0 1px 4px rgba(0,0,0,0.18)' }}>
-          {projectName}
-        </h3>
-
-        {/* Company & Location */}
-        {(productionCompany || primaryLocation) && (
-          <p className="body-small mb-3" style={{ color: 'rgba(255,255,255,0.85)' }}>
-            {productionCompany && primaryLocation ? `${productionCompany} • ${primaryLocation}` : productionCompany || primaryLocation}
-          </p>
-        )}
-
-        {/* Director & Producer (for All Projects page) */}
-        {showDetails && (director || producer) && (
-          <div className="space-y-1 mb-3">
-            {director && (
-              <p className="meta-text" style={{ color: 'rgba(255,255,255,0.85)' }}>
-                <span className="font-medium">Director:</span> {director}
-              </p>
-            )}
-            {producer && (
-              <p className="meta-text" style={{ color: 'rgba(255,255,255,0.85)' }}>
-                <span className="font-medium">Producer:</span> {producer}
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Summary (single field) */}
-        {summary && (
-          <div className="mb-4 flex-1 text-gray-100 leading-relaxed line-clamp-3" style={{ color: 'rgba(255,255,255,0.85)', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>
-            {summary}
-          </div>
-        )}
-
-        {/* Genres (for All Projects page) */}
-        {showDetails && genres && genres.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-4">
-            {genres.slice(0, 3).map((genre, index) => (
-              <span
-                key={index}
-                className="badge-base badge-gray"
-                style={{ color: '#fff', background: 'rgba(255,255,255,0.12)' }}
-              >
-                {genre}
-              </span>
-            ))}
-            {genres.length > 3 && (
-              <span className="badge-base badge-gray" style={{ color: '#fff', background: 'rgba(255,255,255,0.12)' }}>
-                +{genres.length - 3}
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* Bottom Section - Status Badge */}
-        <div className="mt-auto flex items-end">
-          <span className={`badge-base ${getStatusBadgeColor(status)}`} style={{ color: '#fff', background: 'rgba(102,126,234,0.18)' }}>
-            {formatStatus(status)}
-          </span>
+        
+        {/* Status Badge */}
+        <div 
+          className={`absolute top-4 left-4 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2 ${statusStyles.bg} ${statusStyles.text}`}
+        >
+          {statusStyles.icon}
+          <span>{formatStatusText(status)}</span>
         </div>
+        
+        {/* Bookmark Button */}
+      {onBookmark && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="absolute top-4 right-4 z-10 p-2 rounded-full bg-white/80 backdrop-blur-sm shadow-md hover:bg-white transition-colors"
+          onClick={handleBookmarkClick}
+          aria-label={isBookmarked ? 'Remove from bookmarks' : 'Add to bookmarks'}
+        >
+          {isBookmarked ? (
+            <BookmarkCheck className="w-5 h-5 text-yellow-500" fill="currentColor" />
+          ) : (
+            <Bookmark className="w-5 h-5 text-gray-400" />
+          )}
+        </Button>
+      )}
+      
       </div>
-    </div>
+
+      {/* Card Content */}
+      <CardBody className="flex-1 flex flex-col">
+        <div className="flex-1">
+          <CardTitle className="mb-2 line-clamp-2">{projectName}</CardTitle>
+          
+          {/* Production Company */}
+          {productionCompany && (
+            <CardDescription className="flex items-center text-sm mb-3">
+              <Film size={14} className="mr-1.5 text-gray-400" />
+              {productionCompany}
+            </CardDescription>
+          )}
+          
+          {/* Location */}
+          {primaryLocation && (
+            <div className="flex items-center text-sm text-gray-500 mb-3">
+              <MapPin size={14} className="mr-1.5 text-gray-400" />
+              {primaryLocation}
+            </div>
+          )}
+          
+          {/* Summary */}
+          {summary && (
+            <p className="text-sm text-gray-600 mb-4 line-clamp-3">{summary}</p>
+          )}
+          
+          {/* Genres */}
+          {genres.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-3 mb-4">
+              {genres.slice(0, 3).map((genre, index) => (
+                <span
+                  key={`${genre}-${index}`}
+                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                >
+                  {genre}
+                </span>
+              ))}
+              {genres.length > 3 && (
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+                  +{genres.length - 3} more
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+        
+        {/* Dates and Status */}
+        <div className="pt-4 mt-auto border-t border-gray-100">
+          <div className="flex items-center justify-between text-sm text-gray-500">
+            <div className="flex items-center">
+              <Calendar size={14} className="mr-1.5 text-gray-400" />
+              {startDate ? formatDate(startDate) : 'TBD'}
+            </div>
+            <div className="flex items-center">
+              <span className={`inline-flex items-center text-xs font-medium px-2.5 py-0.5 rounded-full ${statusStyles.bg} ${statusStyles.text}`}>
+                {statusStyles.icon}
+                <span className="ml-1">{formatStatusText(status)}</span>
+              </span>
+            </div>
+          </div>
+        </div>
+      </CardBody>
+    </Card>
   );
 };
 

@@ -1,18 +1,24 @@
 import React, { forwardRef } from 'react';
-import { motion, HTMLMotionProps } from 'framer-motion';
-import { useTheme } from '../../theme/ThemeProvider';
+import { motion, HTMLMotionProps, Variants } from 'framer-motion';
+import clsx from 'clsx';
 
-// Define our custom props
+// Card variant types
+export type CardVariant = 'elevated' | 'outline' | 'filled' | 'unstyled';
+type RoundedSize = 'none' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'full';
+type ShadowSize = 'none' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'inner';
+
+// Base card props
 type CardBaseProps = {
-  variant?: 'elevated' | 'outline' | 'filled' | 'unstyled';
+  variant?: CardVariant;
   hoverable?: boolean;
-  rounded?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'full' | 'none';
-  shadow?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'none' | 'inner';
+  rounded?: RoundedSize;
+  shadow?: ShadowSize;
   children: React.ReactNode;
   className?: string;
+  padding?: 'none' | 'sm' | 'md' | 'lg';
 };
 
-// Create a type that combines our custom props with div HTML attributes and motion props
+// Combine all card props
 type CardProps = CardBaseProps &
   Omit<React.HTMLAttributes<HTMLDivElement>, 'onAnimationStart' | 'onDragStart' | 'onDragEnd' | 'onDrag'> &
   Omit<HTMLMotionProps<'div'>, 'onAnimationStart' | 'onDragStart' | 'onDragEnd' | 'onDrag'>;
@@ -22,48 +28,78 @@ const Card = forwardRef<HTMLDivElement, CardProps>(({
   hoverable = false,
   rounded = 'lg',
   shadow = 'md',
+  padding = 'md',
   className = '',
   children,
   ...props
 }, ref) => {
-  const { theme } = useTheme();
-
   // Base card classes
-  const baseClasses = [
+  const baseClasses = clsx(
+    // Base styles
     'transition-all duration-200',
     'overflow-hidden',
-    'focus:outline-none',
-    variant !== 'unstyled' && 'bg-white dark:bg-neutral-800',
-    variant === 'outline' && 'border border-gray-200 dark:border-neutral-700',
-    variant === 'filled' && 'bg-gray-50 dark:bg-neutral-800/50',
+    'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2',
+    
+    // Variant styles
+    variant === 'elevated' && 'bg-white border border-gray-100',
+    variant === 'outline' && 'bg-white border border-gray-200',
+    variant === 'filled' && 'bg-gray-50',
+    variant === 'unstyled' && 'bg-transparent',
+    
+    // Shadow
     shadow === 'sm' && 'shadow-sm',
-    shadow === 'md' && 'shadow-md',
-    shadow === 'lg' && 'shadow-lg',
-    shadow === 'xl' && 'shadow-xl',
-    shadow === '2xl' && 'shadow-2xl',
+    shadow === 'md' && 'shadow',
+    shadow === 'lg' && 'shadow-md',
+    shadow === 'xl' && 'shadow-lg',
+    shadow === '2xl' && 'shadow-xl',
     shadow === 'inner' && 'shadow-inner',
-    shadow === 'none' && 'shadow-none',
+    
+    // Rounded corners
     rounded === 'sm' && 'rounded-sm',
-    rounded === 'md' && 'rounded-md',
+    rounded === 'md' && 'rounded',
     rounded === 'lg' && 'rounded-lg',
     rounded === 'xl' && 'rounded-xl',
     rounded === '2xl' && 'rounded-2xl',
     rounded === 'full' && 'rounded-full',
-    rounded === 'none' && 'rounded-none',
-    hoverable && 'hover:shadow-lg hover:-translate-y-0.5 dark:hover:shadow-neutral-800/50',
-    className,
-  ]
-    .filter(Boolean)
-    .join(' ');
+    
+    // Padding
+    padding === 'sm' && 'p-3',
+    padding === 'md' && 'p-4',
+    padding === 'lg' && 'p-6',
+    
+    // Hover effects
+    hoverable && [
+      'hover:shadow-lg',
+      'hover:-translate-y-0.5',
+      'transform transition-transform duration-200',
+      'hover:ring-2 hover:ring-blue-100',
+    ],
+    
+    // Custom class names
+    className
+  );
+
+  // Animation variants with proper typing
+  const variants: Variants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: { duration: 0.3 }
+    }
+  };
+
+  // Hover animation
+  const hoverAnimation = hoverable ? { scale: 1.01 } : {};
 
   return (
     <motion.div
       ref={ref}
       className={baseClasses}
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      whileHover={hoverable ? { scale: 1.01 } : undefined}
+      initial="hidden"
+      animate="visible"
+      whileHover={hoverAnimation}
+      variants={variants}
       {...props}
     >
       {children}
@@ -74,16 +110,22 @@ const Card = forwardRef<HTMLDivElement, CardProps>(({
 Card.displayName = 'Card';
 
 // Card Components
-interface CardHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
+// Card Header Component
+export interface CardHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
+  withBorder?: boolean;
   className?: string;
   children: React.ReactNode;
 }
 
 export const CardHeader = forwardRef<HTMLDivElement, CardHeaderProps>(
-  ({ className = '', children, ...props }, ref) => (
+  ({ className = '', withBorder = true, children, ...props }, ref) => (
     <div
       ref={ref}
-      className={`px-6 py-4 border-b border-gray-100 dark:border-neutral-700 ${className}`}
+      className={clsx(
+        'px-4 py-3',
+        withBorder && 'border-b border-gray-100',
+        className
+      )}
       {...props}
     >
       {children}
@@ -93,31 +135,52 @@ export const CardHeader = forwardRef<HTMLDivElement, CardHeaderProps>(
 
 CardHeader.displayName = 'CardHeader';
 
-interface CardBodyProps extends React.HTMLAttributes<HTMLDivElement> {
+// Card Body Component
+export interface CardBodyProps extends React.HTMLAttributes<HTMLDivElement> {
+  padding?: 'none' | 'sm' | 'md' | 'lg';
   className?: string;
   children: React.ReactNode;
 }
 
 export const CardBody = forwardRef<HTMLDivElement, CardBodyProps>(
-  ({ className = '', children, ...props }, ref) => (
-    <div ref={ref} className={`p-6 ${className}`} {...props}>
-      {children}
-    </div>
-  )
+  ({ className = '', padding = 'md', children, ...props }, ref) => {
+    const paddingClass = {
+      none: 'p-0',
+      sm: 'p-3',
+      md: 'p-4',
+      lg: 'p-6',
+    }[padding];
+
+    return (
+      <div 
+        ref={ref} 
+        className={clsx(paddingClass, className)} 
+        {...props}
+      >
+        {children}
+      </div>
+    );
+  }
 );
 
 CardBody.displayName = 'CardBody';
 
-interface CardFooterProps extends React.HTMLAttributes<HTMLDivElement> {
+// Card Footer Component
+export interface CardFooterProps extends React.HTMLAttributes<HTMLDivElement> {
+  withBorder?: boolean;
   className?: string;
   children: React.ReactNode;
 }
 
 export const CardFooter = forwardRef<HTMLDivElement, CardFooterProps>(
-  ({ className = '', children, ...props }, ref) => (
+  ({ className = '', withBorder = true, children, ...props }, ref) => (
     <div
       ref={ref}
-      className={`px-6 py-4 bg-gray-50 dark:bg-neutral-800/50 border-t border-gray-100 dark:border-neutral-700 ${className}`}
+      className={clsx(
+        'px-4 py-3',
+        withBorder && 'border-t border-gray-100',
+        className
+      )}
       {...props}
     >
       {children}
@@ -126,5 +189,46 @@ export const CardFooter = forwardRef<HTMLDivElement, CardFooterProps>(
 );
 
 CardFooter.displayName = 'CardFooter';
+
+// Card Title Component
+export interface CardTitleProps extends React.HTMLAttributes<HTMLHeadingElement> {
+  as?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
+  className?: string;
+  children: React.ReactNode;
+}
+
+export const CardTitle = forwardRef<HTMLHeadingElement, CardTitleProps>(
+  ({ as: Tag = 'h3', className = '', children, ...props }, ref) => (
+    <Tag 
+      ref={ref} 
+      className={clsx('text-lg font-semibold text-gray-900', className)}
+      {...props}
+    >
+      {children}
+    </Tag>
+  )
+);
+
+CardTitle.displayName = 'CardTitle';
+
+// Card Description Component
+export interface CardDescriptionProps extends React.HTMLAttributes<HTMLParagraphElement> {
+  className?: string;
+  children: React.ReactNode;
+}
+
+export const CardDescription = forwardRef<HTMLParagraphElement, CardDescriptionProps>(
+  ({ className = '', children, ...props }, ref) => (
+    <p 
+      ref={ref} 
+      className={clsx('text-sm text-gray-600 mt-1', className)}
+      {...props}
+    >
+      {children}
+    </p>
+  )
+);
+
+CardDescription.displayName = 'CardDescription';
 
 export default Card;
