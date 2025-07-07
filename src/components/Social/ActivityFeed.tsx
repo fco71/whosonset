@@ -282,6 +282,24 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
     const displayName = getUserDisplayName(activity.userId) || 'Unknown User';
     const avatarUrl = getUserAvatar(activity.userId);
     const liked = likedActivities[activity.id] || false;
+
+    if (activity.type === 'follow_made') {
+      return (
+        <div className="activity-card crew-card">
+          <img
+            src={avatarUrl || '/bust-avatar.svg'}
+            alt={displayName}
+            className="activity-avatar"
+            onError={e => (e.currentTarget.src = '/bust-avatar.svg')}
+          />
+          <div className="follower-info crew-info">
+            <span className="follower-name crew-name">{displayName}</span>
+            <span className="follower-title crew-title">started following you</span>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="activity-card card">
         <div className="activity-header">
@@ -298,9 +316,6 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
             <div className="activity-time" title={new Date(activity.createdAt).toLocaleString()}>
               {formatTimeAgo(new Date(activity.createdAt))}
             </div>
-          </div>
-          <div className="activity-type-badge" title={activity.type.replace('_', ' ')}>
-            {getActivityIcon(activity.type)}
           </div>
         </div>
         
@@ -352,7 +367,6 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
           <div className="user-name skeleton-text"></div>
           <div className="activity-time skeleton-text-small"></div>
         </div>
-        <div className="activity-type-badge skeleton-badge"></div>
       </div>
       <div className="activity-content">
         <div className="activity-title skeleton-text"></div>
@@ -371,23 +385,6 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
     return Array.from({ length: 3 }, (_, index) => (
       <ActivitySkeleton key={`skeleton-${index}`} />
     ));
-  };
-
-  const getActivityIcon = (type: string) => {
-    switch (type) {
-      case 'project_created':
-        return '🎬';
-      case 'project_joined':
-        return '👥';
-      case 'profile_updated':
-        return '📝';
-      case 'follow_made':
-        return '👤';
-      case 'achievement_earned':
-        return '🏆';
-      default:
-        return '📢';
-    }
   };
 
   const formatTimeAgo = (date: Date) => {

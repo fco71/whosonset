@@ -40,6 +40,8 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [followingProfiles, setFollowingProfiles] = useState<Record<string, UserProfile | null>>({});
   const [error, setError] = useState<string | null>(null);
+  const [followersSearch, setFollowersSearch] = useState('');
+  const [followingSearch, setFollowingSearch] = useState('');
   // Memoize the props to prevent unnecessary re-renders
   const memoizedProps = useMemo(() => ({
     currentUserId,
@@ -287,49 +289,90 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
         
         {activeTab === 'followers' && (
           <div className="followers-tab">
-            <h3>Followers ({followers.length})</h3>
+            <h3>Followers</h3>
+            <div className="search-container">
+              <input
+                type="text"
+                placeholder="Search followers..."
+                value={followersSearch}
+                onChange={e => setFollowersSearch(e.target.value)}
+                className="search-input"
+              />
+            </div>
             <div className="followers-list">
-              {followers.map(follow => (
-                <div key={follow.id} className="follower-item card">
-                  <img
-                    src={"/bust-avatar.svg"}
-                    alt={`User ${follow.followerId.slice(-4)}`}
-                    className="follower-avatar"
-                    onError={e => (e.currentTarget.src = "/bust-avatar.svg")}
-                  />
-                  <span className="follower-name">{`User ${follow.followerId.slice(-4)}`}</span>
-                </div>
-              ))}
+              {followers
+                .filter(follow => {
+                  const profile = followingProfiles[follow.followerId];
+                  return (
+                    (profile?.displayName || `User ${follow.followerId.slice(-4)}`)
+                      .toLowerCase()
+                      .includes(followersSearch.toLowerCase())
+                  );
+                })
+                .map(follow => {
+                  const profile = followingProfiles[follow.followerId];
+                  return (
+                    <div key={follow.id} className="follower-item crew-card">
+                      <img
+                        src={profile?.avatarUrl || "/bust-avatar.svg"}
+                        alt={profile?.displayName || `User ${follow.followerId.slice(-4)}`}
+                        className="follower-avatar crew-avatar"
+                        onError={e => (e.currentTarget.src = "/bust-avatar.svg")}
+                      />
+                      <div className="follower-info crew-info">
+                        <span className="follower-name crew-name">{profile?.displayName || `User ${follow.followerId.slice(-4)}`}</span>
+                        <span className="follower-title crew-title">{profile?.jobTitle || ''}</span>
+                        <span className="follower-location crew-location">{profile?.location || ''}</span>
+                      </div>
+                      <button className="message-btn"><span>💬</span> Message</button>
+                    </div>
+                  );
+                })}
             </div>
           </div>
         )}
         
         {activeTab === 'following' && (
           <div className="following-tab">
-            <h3>Following ({following.length})</h3>
+            <h3>Following</h3>
+            <div className="search-container">
+              <input
+                type="text"
+                placeholder="Search following..."
+                value={followingSearch}
+                onChange={e => setFollowingSearch(e.target.value)}
+                className="search-input"
+              />
+            </div>
             <div className="following-list">
-              {following.map(follow => {
-                const profile = followingProfiles[follow.followingId];
-                return (
-                  <div key={`following-${follow.id}`} className="following-item card">
-                    <img
-                      src={profile?.avatarUrl || "/bust-avatar.svg"}
-                      alt={profile?.displayName || `User ${follow.followingId.slice(-6)}`}
-                      className="following-avatar"
-                      onError={e => (e.currentTarget.src = "/bust-avatar.svg")}
-                    />
-                    <span className="following-name">
-                      {profile?.displayName || `User ${follow.followingId.slice(-6)}`}
-                    </span>
-                    <QuickMessage
-                      currentUserId={currentUserId}
-                      targetUserId={follow.followingId}
-                      targetUserName={profile?.displayName || `User ${follow.followingId.slice(-6)}`}
-                      className="ml-2"
-                    />
-                  </div>
-                );
-              })}
+              {following
+                .filter(follow => {
+                  const profile = followingProfiles[follow.followingId];
+                  return (
+                    (profile?.displayName || `User ${follow.followingId.slice(-6)}`)
+                      .toLowerCase()
+                      .includes(followingSearch.toLowerCase())
+                  );
+                })
+                .map(follow => {
+                  const profile = followingProfiles[follow.followingId];
+                  return (
+                    <div key={`following-${follow.id}`} className="following-item crew-card">
+                      <img
+                        src={profile?.avatarUrl || "/bust-avatar.svg"}
+                        alt={profile?.displayName || `User ${follow.followingId.slice(-6)}`}
+                        className="following-avatar crew-avatar"
+                        onError={e => (e.currentTarget.src = "/bust-avatar.svg")}
+                      />
+                      <div className="follower-info crew-info">
+                        <span className="follower-name crew-name">{profile?.displayName || `User ${follow.followingId.slice(-6)}`}</span>
+                        <span className="follower-title crew-title">{profile?.jobTitle || ''}</span>
+                        <span className="follower-location crew-location">{profile?.location || ''}</span>
+                      </div>
+                      <button className="message-btn"><span>💬</span> Message</button>
+                    </div>
+                  );
+                })}
             </div>
           </div>
         )}
@@ -432,7 +475,7 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
         {activeTab === 'members' && (
           <div className="members-tab">
             <div className="members-header">
-              <h3>Crew Directory ({filteredProfiles.length})</h3>
+              <h3>Crew Directory</h3>
               <div className="search-container">
                 <input
                   type="text"
@@ -445,52 +488,22 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
             </div>
             <div className="members-grid">
               {filteredProfiles.map((profile) => (
-                <div key={`member-${profile.uid}`} className="member-card">
-                  <div className="member-avatar">
-                    <img 
-                      src={profile.profileImageUrl || "/bust-avatar.svg"} 
-                      alt={profile.name}
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.src = "/bust-avatar.svg";
-                      }}
-                    />
-                    <button 
-                      className="bookmark-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // TODO: Implement bookmark functionality
-                        toast.success('Bookmark added!');
-                      }}
-                      title="Add to favorites"
-                    >
-                      📖
-                    </button>
+                <div key={`member-${profile.uid}`} className="member-card crew-card">
+                  <img 
+                    src={profile.profileImageUrl || "/bust-avatar.svg"} 
+                    alt={profile.name}
+                    className="member-avatar crew-avatar"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = "/bust-avatar.svg";
+                    }}
+                  />
+                  <div className="member-info crew-info">
+                    <span className="member-name crew-name">{profile.name}</span>
+                    <span className="member-title crew-title">{profile.jobTitles?.[0]?.title || 'Professional'}</span>
+                    <span className="member-location crew-location">{profile.residences?.[0]?.city}, {profile.residences?.[0]?.country}</span>
                   </div>
-                  <div className="member-info">
-                    <h4>{profile.name}</h4>
-                    <p className="member-title">
-                      {profile.jobTitles?.[0]?.title || 'Professional'}
-                    </p>
-                    <p className="member-location">
-                      {profile.residences?.[0]?.city}, {profile.residences?.[0]?.country}
-                    </p>
-                  </div>
-                  <div className="member-actions">
-                    <FollowButton 
-                      currentUserId={currentUserId}
-                      targetUserId={profile.uid}
-                    />
-                    <button 
-                      className="message-btn"
-                      onClick={() => {
-                        setSelectedProfile(profile);
-                        setActiveTab('messaging');
-                      }}
-                    >
-                      💬
-                    </button>
-                  </div>
+                  <button className="message-btn"><span>💬</span> Message</button>
                 </div>
               ))}
             </div>

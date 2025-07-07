@@ -471,4 +471,28 @@
 .activity-controls .filter-select option {
   color: #1f2937;
   background: #fff;
+}
+
+.activity-card.card {
+  min-height: unset;
+  padding: 18px 20px;
+  margin-bottom: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 480px;
+}
+
+.activity-card .activity-header {
+  margin-bottom: 0;
+}
+
+.activity-card .activity-actions {
+  margin-top: 8px;
+  justify-content: flex-start;
+}
+
+// Remove any .profile-icon, .attachment-icon, or similar unused icon styles
+.profile-icon, .attachment-icon {
+  display: none !important;
 } 

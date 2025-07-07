@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { SocialService } from '../../utilities/socialService';
+import { toast } from 'react-hot-toast';
 
 interface FollowButtonProps {
   currentUserId: string;
@@ -48,12 +49,22 @@ const FollowButton: React.FC<FollowButtonProps> = ({
 
     try {
       setLoading(true);
+      if (followStatus === 'pending' || followStatus === 'following') {
+        toast('Follow request already sent or you are already following.');
+        return;
+      }
       console.log('[FollowButton] Sending follow request from', currentUserId, 'to', targetUserId);
       await SocialService.sendFollowRequest(currentUserId, targetUserId);
       console.log('[FollowButton] Follow request sent successfully');
       setFollowStatus('pending');
-    } catch (error) {
-      console.error('[FollowButton] Error sending follow request:', error);
+    } catch (error: any) {
+      if (error?.message && error.message.includes('already exists')) {
+        setFollowStatus('pending');
+        toast('Follow request already sent.');
+      } else {
+        console.error('[FollowButton] Error sending follow request:', error);
+        toast.error('Error sending follow request.');
+      }
     } finally {
       setLoading(false);
     }
@@ -112,10 +123,14 @@ const FollowButton: React.FC<FollowButtonProps> = ({
         );
       case 'pending':
         return (
-          <span className={`bg-yellow-100 text-yellow-800 font-medium rounded-full tracking-wider ${getSizeClasses()} ${className} flex items-center gap-2`} title="Request sent, waiting for approval">
+          <button
+            disabled
+            className={`bg-yellow-100 text-yellow-800 font-medium rounded-full tracking-wider ${getSizeClasses()} ${className} flex items-center gap-2 cursor-not-allowed`}
+            title="Request sent, waiting for approval"
+          >
             <span>⏳</span>
             Request Sent
-          </span>
+          </button>
         );
       default:
         return (
