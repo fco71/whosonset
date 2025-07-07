@@ -221,7 +221,7 @@ const NetworkingHub: React.FC = () => {
   const renderFeedItem = (item: SocialFeedItem) => (
     <div key={item.id} className="feed-item">
       <div className="feed-item-header">
-        <img src={item.author.avatar} alt={item.author.displayName} className="author-avatar" />
+        <img src={item.author.avatar || '/bust-avatar.svg'} alt={item.author.displayName || `User ${item.author.userId?.slice(-4) || ''}`} className="author-avatar" onError={e => (e.currentTarget.src = '/bust-avatar.svg')} />
         <div className="author-info">
           <h4>{item.author.displayName}</h4>
           <span className="author-bio">{item.author.bio}</span>
@@ -255,7 +255,7 @@ const NetworkingHub: React.FC = () => {
   const renderProfileCard = (profile: SocialProfile) => (
     <div key={profile.id} className="profile-card">
       <div className="profile-header">
-        <img src={profile.avatar} alt={profile.displayName} className="profile-avatar" />
+        <img src={profile.avatar || '/bust-avatar.svg'} alt={profile.displayName || `User ${profile.userId?.slice(-4) || ''}`} className="profile-avatar" onError={e => (e.currentTarget.src = '/bust-avatar.svg')} />
         <div className="profile-info">
           <h4>{profile.displayName}</h4>
           <p className="profile-bio">{profile.bio}</p>
@@ -282,7 +282,7 @@ const NetworkingHub: React.FC = () => {
   const renderGroupCard = (group: IndustryGroup) => (
     <div key={group.id} className="group-card">
       <div className="group-header">
-        <img src={group.avatar} alt={group.name} className="group-avatar" />
+        <img src={group.avatar || '/bust-avatar.svg'} alt={group.name || `Group ${group.id?.slice(-4) || ''}`} className="group-avatar" onError={e => (e.currentTarget.src = '/bust-avatar.svg')} />
         <div className="group-info">
           <h4>{group.name}</h4>
           <p className="group-description">{group.description}</p>

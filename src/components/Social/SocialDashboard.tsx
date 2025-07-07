@@ -290,9 +290,14 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
             <h3>Followers ({followers.length})</h3>
             <div className="followers-list">
               {followers.map(follow => (
-                <div key={follow.id} className="follower-item">
-                  <img src="/default-avatar.png" alt="User" className="follower-avatar" />
-                  <span className="follower-name">User {follow.followerId.slice(-4)}</span>
+                <div key={follow.id} className="follower-item card">
+                  <img
+                    src={"/bust-avatar.svg"}
+                    alt={`User ${follow.followerId.slice(-4)}`}
+                    className="follower-avatar"
+                    onError={e => (e.currentTarget.src = "/bust-avatar.svg")}
+                  />
+                  <span className="follower-name">{`User ${follow.followerId.slice(-4)}`}</span>
                 </div>
               ))}
             </div>
@@ -306,10 +311,10 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
               {following.map(follow => {
                 const profile = followingProfiles[follow.followingId];
                 return (
-                  <div key={`following-${follow.id}`} className="following-item">
+                  <div key={`following-${follow.id}`} className="following-item card">
                     <img
                       src={profile?.avatarUrl || "/bust-avatar.svg"}
-                      alt={profile?.displayName || 'User'}
+                      alt={profile?.displayName || `User ${follow.followingId.slice(-6)}`}
                       className="following-avatar"
                       onError={e => (e.currentTarget.src = "/bust-avatar.svg")}
                     />

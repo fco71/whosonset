@@ -286,25 +286,12 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
       <div className="activity-item" key={activity.id}>
         <div className="activity-header">
           <div className="user-avatar">
-            {avatarUrl ? (
-              <img 
-                src={avatarUrl} 
-                alt={displayName}
-                loading="lazy"
-                onError={(e) => {
-                  e.currentTarget.src = '/bust-avatar.svg';
-                }}
-              />
-            ) : (
-              <img 
-                src="/bust-avatar.svg" 
-                alt={displayName}
-                loading="lazy"
-                onError={(e) => {
-                  e.currentTarget.src = '/bust-avatar.svg';
-                }}
-              />
-            )}
+            <img
+              src={avatarUrl || '/bust-avatar.svg'}
+              alt={displayName}
+              className="activity-avatar"
+              onError={e => (e.currentTarget.src = '/bust-avatar.svg')}
+            />
           </div>
           <div className="activity-info">
             <div className="user-name" style={{ fontWeight: 600, color: '#1f2937', fontSize: 15 }}>{displayName}</div>

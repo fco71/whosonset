@@ -208,7 +208,12 @@ const ProfileView: React.FC = () => {
       {/* Profile Header */}
       <div className="profile-header">
         <div className="profile-avatar">
-          <img src={profile.avatar} alt={profile.displayName} />
+          <img
+            src={profile?.avatar || '/bust-avatar.svg'}
+            alt={profile?.displayName || `User ${profile?.userId?.slice(-4) || ''}`}
+            className="profile-avatar"
+            onError={e => (e.currentTarget.src = '/bust-avatar.svg')}
+          />
           {profile.verified && <span className="verified-badge">✓</span>}
         </div>
         
