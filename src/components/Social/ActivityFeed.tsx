@@ -280,81 +280,26 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
   // Memoized activity item component for better performance
   const ActivityItem = useMemo(() => React.memo(({ activity }: { activity: ActivityFeedItem }) => {
     const profile = userProfiles.get(activity.userId);
-    const displayName = profile?.displayName || `User ${activity.userId.slice(-4)}`;
+    const displayName = profile?.displayName || '';
     const avatarUrl = profile?.avatarUrl || '/bust-avatar.svg';
     const liked = likedActivities[activity.id] || false;
 
-    if (activity.type === 'follow_made') {
-      return (
-        <div className="activity-card crew-card">
-          <img
-            src={avatarUrl}
-            alt={displayName}
-            className="activity-avatar"
-            onError={e => (e.currentTarget.src = '/bust-avatar.svg')}
-          />
-          <div className="follower-info crew-info">
-            <span className="follower-name crew-name">{displayName}</span>
-            <span className="follower-title crew-title">started following you</span>
-          </div>
-        </div>
-      );
-    }
-
+    // Use the member card style for all activities
     return (
-      <div className="activity-card card">
-        <div className="activity-header">
-          <div className="user-avatar">
-            <img
-              src={avatarUrl || '/bust-avatar.svg'}
-              alt={displayName}
-              className="activity-avatar"
-              onError={e => (e.currentTarget.src = '/bust-avatar.svg')}
-            />
-          </div>
-          <div className="activity-info">
-            <div className="user-name" style={{ fontWeight: 600, color: '#1f2937', fontSize: 15 }}>{displayName}</div>
-            <div className="activity-time" title={new Date(activity.createdAt).toLocaleString()}>
-              {formatTimeAgo(new Date(activity.createdAt))}
-            </div>
-          </div>
+      <div className="member-card crew-card" style={{ display: 'flex', alignItems: 'center', background: '#fff', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', padding: '18px 22px', marginBottom: '18px', minWidth: 0, maxWidth: 520, border: '1px solid #e5e7eb', gap: '18px' }}>
+        <img
+          src={avatarUrl}
+          alt={displayName || `User ${activity.userId.slice(-4)}`}
+          className="member-avatar crew-avatar"
+          style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', border: '2px solid #e5e7eb' }}
+          onError={e => (e.currentTarget.src = '/bust-avatar.svg')}
+        />
+        <div className="member-info crew-info" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span className="member-name crew-name" style={{ fontSize: 16, fontWeight: 600, color: '#374151' }}>{displayName || `User ${activity.userId.slice(-4)}`}</span>
+          <span className="member-title crew-title" style={{ fontSize: 14, color: '#6b7280' }}>{activity.title}</span>
+          <span className="member-location crew-location" style={{ fontSize: 13, color: '#9ca3af' }}>{activity.description}</span>
         </div>
-        
-        <div className="activity-content">
-          <h3 className="activity-title">{activity.title}</h3>
-          <p className="activity-description">{activity.description}</p>
-          
-          {activity.imageUrl && (
-            <div className="activity-image">
-              <img 
-                src={activity.imageUrl} 
-                alt="Activity"
-                loading="lazy"
-              />
-            </div>
-          )}
-        </div>
-        
-        <div className="activity-actions">
-          <button
-            onClick={() => handleLike(activity.id)}
-            className={`action-button like-btn${liked ? ' liked' : ''}`}
-            aria-label={liked ? 'Unlike' : 'Like'}
-            title={liked ? 'Unlike' : 'Like'}
-          >
-            <span className="icon" aria-hidden="true">
-              {liked ? (
-                <svg width="18" height="18" viewBox="0 0 20 20" fill="#ef4444" xmlns="http://www.w3.org/2000/svg"><path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"/></svg>
-              ) : (
-                <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#6b7280" strokeWidth="1.5" xmlns="http://www.w3.org/2000/svg"><path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"/></svg>
-              )}
-            </span>
-            <span className="count">{activity.likes}</span>
-          </button>
-          
-          <button className="action-button" aria-label="Comment"><span className="icon">💬</span> <span className="count">{activity.comments || 0}</span></button>
-          <button className="action-button" aria-label="Share"><span className="icon">🔄</span></button>
-        </div>
+        {/* No message button */}
       </div>
     );
   }), [getUserDisplayName, getUserAvatar, handleLike, likedActivities]);

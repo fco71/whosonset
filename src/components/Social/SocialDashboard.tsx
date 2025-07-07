@@ -345,19 +345,25 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
                 .map(follow => {
                   const profile = followingProfiles[follow.followerId];
                   return (
-                    <div key={follow.id} className="follower-item crew-card">
+                    <div key={follow.id} className="follower-item crew-card" style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
                       <img
                         src={profile?.avatarUrl || "/bust-avatar.svg"}
                         alt={profile?.displayName || `User ${follow.followerId.slice(-4)}`}
                         className="follower-avatar crew-avatar"
                         onError={e => (e.currentTarget.src = "/bust-avatar.svg")}
                       />
-                      <div className="follower-info crew-info">
+                      <div className="follower-info crew-info" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
                         <span className="follower-name crew-name">{profile?.displayName || `User ${follow.followerId.slice(-4)}`}</span>
+                        {profile?.displayName && (
+                          <span className="follower-handle crew-handle" style={{ fontSize: 13, color: '#6b7280' }}>@{profile.displayName}</span>
+                        )}
                         <span className="follower-title crew-title">{profile?.jobTitle || ''}</span>
                         <span className="follower-location crew-location">{profile?.location || ''}</span>
                       </div>
-                      <button className="message-btn"><span>💬</span> Message</button>
+                      <div className="follower-actions" style={{ display: 'flex', gap: 10 }}>
+                        <FollowButton currentUserId={currentUserId} targetUserId={follow.followerId} />
+                        <button className="message-btn"><span>💬</span> Message</button>
+                      </div>
                     </div>
                   );
                 })}
@@ -390,19 +396,25 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
                 .map(follow => {
                   const profile = followingProfiles[follow.followingId];
                   return (
-                    <div key={`following-${follow.id}`} className="following-item crew-card">
+                    <div key={`following-${follow.id}`} className="following-item crew-card" style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
                       <img
                         src={profile?.avatarUrl || "/bust-avatar.svg"}
                         alt={profile?.displayName || `User ${follow.followingId.slice(-6)}`}
                         className="following-avatar crew-avatar"
                         onError={e => (e.currentTarget.src = "/bust-avatar.svg")}
                       />
-                      <div className="follower-info crew-info">
+                      <div className="follower-info crew-info" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
                         <span className="follower-name crew-name">{profile?.displayName || `User ${follow.followingId.slice(-6)}`}</span>
+                        {profile?.displayName && (
+                          <span className="follower-handle crew-handle" style={{ fontSize: 13, color: '#6b7280' }}>@{profile.displayName}</span>
+                        )}
                         <span className="follower-title crew-title">{profile?.jobTitle || ''}</span>
                         <span className="follower-location crew-location">{profile?.location || ''}</span>
                       </div>
-                      <button className="message-btn"><span>💬</span> Message</button>
+                      <div className="following-actions" style={{ display: 'flex', gap: 10 }}>
+                        <FollowButton currentUserId={currentUserId} targetUserId={follow.followingId} />
+                        <button className="message-btn"><span>💬</span> Message</button>
+                      </div>
                     </div>
                   );
                 })}
