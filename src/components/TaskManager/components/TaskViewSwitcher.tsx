@@ -12,7 +12,7 @@ interface TaskViewSwitcherProps {
 
 const viewModes = [
   { 
-    mode: 'board' as const, 
+    mode: 'kanban' as const, 
     label: 'Board', 
     icon: <LayoutGrid className="h-4 w-4" /> 
   },

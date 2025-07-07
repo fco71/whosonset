@@ -398,7 +398,7 @@ const SocialPage: React.FC = () => {
             key={user.id} 
             profile={user} 
             action={renderActionButton(user)}
-            showBio={activeTab !== 'notifications'}
+            showBio={activeTab !== 'notifications' as TabType}
           />
         ))}
       </div>

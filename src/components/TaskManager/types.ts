@@ -91,6 +91,10 @@ export interface Column {
   id: string;
   title: string;
   taskIds: string[];
+  status: TaskStatus;
+  color: string;
+  icon: string;
+  tasks: Task[]; // For runtime use in KanbanView
 }
 
 export interface KanbanBoardData {

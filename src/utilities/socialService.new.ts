@@ -29,8 +29,8 @@ interface FollowData {
 }
 
 export class SocialService {
-  // Cache for frequently accessed data
-  private static profileCache = new Map<string, Profile>();
+  // Cache for frequently accessed data with separate timestamp tracking
+  private static profileCache = new Map<string, { profile: Profile; cachedAt: number }>();
   private static readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
   /**
@@ -53,12 +53,28 @@ export class SocialService {
       }
 
       const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate(),
-        updatedAt: doc.data().updatedAt?.toDate(),
-      })) as CrewProfile[];
+      return querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          uid: data.uid || doc.id,
+          name: data.name || '',
+          username: data.username || '',
+          bio: data.bio,
+          profileImageUrl: data.profileImageUrl,
+          jobTitles: data.jobTitles || [],
+          residences: data.residences || [],
+          projects: data.projects || [],
+          education: data.education || [],
+          contactInfo: data.contactInfo,
+          otherInfo: data.otherInfo,
+          isPublished: Boolean(data.isPublished),
+          availability: data.availability,
+          languages: data.languages || [],
+          createdAt: data.createdAt?.toDate(),
+          updatedAt: data.updatedAt?.toDate(),
+        } as CrewProfile;
+      });
     } catch (error) {
       console.error('Error getting crew profiles:', error);
       return [];
@@ -219,12 +235,28 @@ export class SocialService {
       );
       
       const querySnapshot = await getDocs(q);
-      const profiles = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate(),
-        updatedAt: doc.data().updatedAt?.toDate(),
-      })) as CrewProfile[];
+      const profiles = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          uid: data.uid || doc.id,
+          name: data.name || '',
+          username: data.username || '',
+          bio: data.bio,
+          profileImageUrl: data.profileImageUrl,
+          jobTitles: data.jobTitles || [],
+          residences: data.residences || [],
+          projects: data.projects || [],
+          education: data.education || [],
+          contactInfo: data.contactInfo,
+          otherInfo: data.otherInfo,
+          isPublished: Boolean(data.isPublished),
+          availability: data.availability,
+          languages: data.languages || [],
+          createdAt: data.createdAt?.toDate(),
+          updatedAt: data.updatedAt?.toDate(),
+        } as CrewProfile;
+      });
       
       // Shuffle and return the first few profiles
       return profiles.sort(() => 0.5 - Math.random()).slice(0, 5);
@@ -238,27 +270,38 @@ export class SocialService {
    * Get a user's profile by ID
    */
   static async getProfile(userId: string): Promise<Profile | null> {
-    // Check cache first
-    if (this.profileCache.has(userId)) {
-      const cached = this.profileCache.get(userId);
-      if (cached && Date.now() - (cached as any).cachedAt < this.CACHE_TTL) {
-        return cached;
-      }
-    }
-
     try {
+      // Check cache first
+      const cached = this.profileCache.get(userId);
+      if (cached && Date.now() - cached.cachedAt < this.CACHE_TTL) {
+        return cached.profile;
+      }
+
       // Try to get crew profile first
       const crewDoc = await getDoc(doc(db, 'crewProfiles', userId));
       if (crewDoc.exists()) {
-        const profile = {
+        const data = crewDoc.data();
+        const profile: Profile = {
           id: crewDoc.id,
-          ...crewDoc.data(),
-          type: 'crew',
-        } as Profile;
+          uid: data.uid || crewDoc.id,
+          name: data.name || '',
+          username: data.username || '',
+          bio: data.bio,
+          profileImageUrl: data.profileImageUrl,
+          jobTitles: data.jobTitles || [],
+          residences: data.residences || [],
+          projects: data.projects || [],
+          education: data.education || [],
+          contactInfo: data.contactInfo,
+          otherInfo: data.otherInfo,
+          isPublished: Boolean(data.isPublished),
+          availability: data.availability,
+          languages: data.languages || []
+        };
         
-        // Cache the result
+        // Cache the result with timestamp
         this.profileCache.set(userId, {
-          ...profile,
+          profile,
           cachedAt: Date.now(),
         });
         
@@ -268,18 +311,17 @@ export class SocialService {
       // If not a crew profile, try to get a regular user profile
       const userDoc = await getDoc(doc(db, 'users', userId));
       if (userDoc.exists()) {
-        const data = userDoc.data();
-        const profile = {
+        const data = userDoc.data() || {};
+        const profile: Profile = {
           id: userDoc.id,
           displayName: data.displayName || data.email?.split('@')[0] || 'User',
           email: data.email,
           photoURL: data.photoURL,
-          type: 'user',
-        } as Profile;
+        };
         
-        // Cache the result
+        // Cache the result with timestamp
         this.profileCache.set(userId, {
-          ...profile,
+          profile,
           cachedAt: Date.now(),
         });
         

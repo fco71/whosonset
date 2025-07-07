@@ -1,11 +1,7 @@
 import React from 'react';
 import { TaskBoardProps } from '../types';
-import KanbanView from './KanbanView';
-import ListView from './ListView';
-import CalendarView from './CalendarView';
-import TimelineView from './TimelineView';
-import TaskFilters from '../components/TaskFilters';
-import TaskViewSwitcher from '../components/TaskViewSwitcher';
+import { KanbanView, ListView, CalendarView, TimelineView } from './index';
+import { TaskFilters, TaskViewSwitcher } from '../components';
 import { Skeleton } from '../../ui/Skeleton';
 
 const TaskBoard: React.FC<TaskBoardProps> = ({
@@ -21,6 +17,8 @@ const TaskBoard: React.FC<TaskBoardProps> = ({
   isLoading,
   error
 }) => {
+  const [selectedDate, setSelectedDate] = React.useState<Date>(new Date());
+
   const renderView = () => {
     if (isLoading) {
       return (
@@ -54,7 +52,13 @@ const TaskBoard: React.FC<TaskBoardProps> = ({
       case 'list':
         return <ListView {...viewProps} />;
       case 'calendar':
-        return <CalendarView {...viewProps} />;
+        return (
+          <CalendarView
+            {...viewProps}
+            selectedDate={selectedDate}
+            onDateSelect={setSelectedDate}
+          />
+        );
       case 'timeline':
         return <TimelineView {...viewProps} />;
       default:
@@ -67,9 +71,9 @@ const TaskBoard: React.FC<TaskBoardProps> = ({
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
         <div className="w-full sm:w-auto">
           <TaskFilters
-            filters={filterOptions}
+            filterOptions={filterOptions}
             onFilterChange={onFilterChange}
-            onReset={() => onFilterChange({
+            onClearFilters={() => onFilterChange({
               searchTerm: '',
               statuses: [],
               priorities: [],

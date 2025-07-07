@@ -1,6 +1,22 @@
 import React from 'react';
-import { format } from 'date-fns';
+import { format, isDate } from 'date-fns';
 import { Task } from '../types';
+
+// Type guard for Firestore Timestamp
+interface FirestoreTimestamp {
+  toDate: () => Date;
+  seconds?: number;
+  nanoseconds?: number;
+}
+
+const isFirestoreTimestamp = (value: unknown): value is FirestoreTimestamp => {
+  return (
+    value !== null &&
+    typeof value === 'object' &&
+    'toDate' in value &&
+    typeof (value as FirestoreTimestamp).toDate === 'function'
+  );
+};
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 
@@ -20,12 +36,32 @@ const CalendarView: React.FC<CalendarViewProps> = ({
   const tasksByDate = tasks.reduce<Record<string, Task[]>>((acc, task) => {
     if (!task.dueDate) return acc;
     
-    const dateKey = format(task.dueDate.toDate(), 'yyyy-MM-dd');
-    if (!acc[dateKey]) {
-      acc[dateKey] = [];
+    try {
+      // Handle Firestore Timestamp, Date, or string dates
+      let dueDate: Date;
+      const dueDateValue = task.dueDate as unknown;
+      
+      if (isDate(dueDateValue)) {
+        dueDate = dueDateValue;
+      } else if (isFirestoreTimestamp(dueDateValue)) {
+        dueDate = dueDateValue.toDate();
+      } else if (typeof dueDateValue === 'string' || typeof dueDateValue === 'number') {
+        dueDate = new Date(dueDateValue);
+      } else {
+        console.warn('Unhandled dueDate type:', typeof dueDateValue, dueDateValue);
+        return acc;
+      }
+      
+      const dateKey = format(dueDate, 'yyyy-MM-dd');
+      if (!acc[dateKey]) {
+        acc[dateKey] = [];
+      }
+      acc[dateKey].push(task);
+      return acc;
+    } catch (error) {
+      console.error('Error processing task due date:', error);
+      return acc;
     }
-    acc[dateKey].push(task);
-    return acc;
   }, {});
 
   const daysInMonth = (year: number, month: number) => {
@@ -86,22 +122,22 @@ const CalendarView: React.FC<CalendarViewProps> = ({
           )}
         </div>
         <div className="space-y-1">
-          {dayTasks.slice(0, 2).map((task) => (
+          {dayTasks.slice(0, 2).map((taskItem) => (
             <div
-              key={task.id}
+              key={taskItem.id}
               className={cn(
                 'text-xs p-1 rounded truncate',
-                task.priority === 'high' && 'bg-red-100 text-red-800',
-                task.priority === 'medium' && 'bg-yellow-100 text-yellow-800',
-                task.priority === 'low' && 'bg-green-100 text-green-800',
-                !['high', 'medium', 'low'].includes(task.priority) && 'bg-gray-100 text-gray-800'
+                taskItem.priority === 'high' && 'bg-red-100 text-red-800',
+                taskItem.priority === 'medium' && 'bg-yellow-100 text-yellow-800',
+                taskItem.priority === 'low' && 'bg-green-100 text-green-800',
+                (!taskItem.priority || !['high', 'medium', 'low'].includes(taskItem.priority)) && 'bg-gray-100 text-gray-800'
               )}
               onClick={(e) => {
                 e.stopPropagation();
-                onTaskSelect(task);
+                onTaskSelect(taskItem);
               }}
             >
-              {task.title}
+              {taskItem.title}
             </div>
           ))}
           {dayTasks.length > 2 && (

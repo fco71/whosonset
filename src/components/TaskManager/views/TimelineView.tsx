@@ -87,15 +87,6 @@ const TimelineView: React.FC<TimelineViewProps> = ({
   };
 
   const groupedTasks = groupTasksByDate(tasks);
-  // Type guard to check if a value is a Firestore Timestamp
-  const isFirestoreTimestamp = (value: unknown): value is { toDate: () => Date } => {
-    return value !== null && 
-           typeof value === 'object' && 
-           value !== undefined &&
-           'toDate' in value && 
-           typeof (value as { toDate: unknown }).toDate === 'function';
-  };
-
   // Type guard to check if a value is a valid date
   const isValidDate = (date: unknown): date is Date => {
     return date instanceof Date && !isNaN(date.getTime());
@@ -105,21 +96,28 @@ const TimelineView: React.FC<TimelineViewProps> = ({
     const dueDate = task.dueDate;
     if (!dueDate) return new Date(0);
     
-    // Handle string dates
-    if (typeof dueDate === 'string') {
-      const parsedDate = parseISO(dueDate);
-      return isValidDate(parsedDate) ? parsedDate : new Date(0);
-    }
-    
-    // Handle Firestore Timestamp
-    if (isFirestoreTimestamp(dueDate)) {
-      const date = dueDate.toDate();
-      return isValidDate(date) ? date : new Date(0);
-    }
-    
-    // Already a Date object
-    if (isValidDate(dueDate)) {
-      return dueDate;
+    try {
+      // Handle string dates
+      if (typeof dueDate === 'string') {
+        const parsedDate = parseISO(dueDate);
+        return isValidDate(parsedDate) ? parsedDate : new Date(0);
+      }
+      
+      // Handle Date objects
+      if (isValidDate(dueDate)) {
+        return dueDate;
+      }
+      
+      // Handle objects with toDate method (like Firestore Timestamp)
+      if (dueDate && typeof dueDate === 'object') {
+        const dateLike = dueDate as { toDate?: () => unknown };
+        if (typeof dateLike.toDate === 'function') {
+          const date = dateLike.toDate();
+          return isValidDate(date) ? date : new Date(0);
+        }
+      }
+    } catch (error) {
+      console.error('Error parsing task due date:', error);
     }
     
     // Fallback for any other case
@@ -183,16 +181,27 @@ const TimelineView: React.FC<TimelineViewProps> = ({
               const getTaskDueDate = (dueDate: unknown): Date | null => {
                 if (!dueDate) return null;
                 
-                if (typeof dueDate === 'string') {
-                  return parseISO(dueDate);
-                }
-                
-                if (isFirestoreTimestamp(dueDate)) {
-                  return dueDate.toDate();
-                }
-                
-                if (dueDate instanceof Date) {
-                  return dueDate;
+                try {
+                  // Handle string dates
+                  if (typeof dueDate === 'string') {
+                    return parseISO(dueDate);
+                  }
+                  
+                  // Handle Date objects
+                  if (dueDate instanceof Date) {
+                    return dueDate;
+                  }
+                  
+                  // Handle objects with toDate method (like Firestore Timestamp)
+                  if (typeof dueDate === 'object' && dueDate !== null) {
+                    const dateLike = dueDate as { toDate?: () => unknown };
+                    if (typeof dateLike.toDate === 'function') {
+                      const date = dateLike.toDate();
+                      return date instanceof Date ? date : null;
+                    }
+                  }
+                } catch (error) {
+                  console.error('Error parsing task due date:', error);
                 }
                 
                 return null;
@@ -258,7 +267,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({
                       </p>
                     )}
                     
-                    {(task.tags?.length > 0 || isOverdue) && (
+                    {((task.tags && task.tags.length > 0) || isOverdue) && (
                       <div className="mt-2 flex flex-wrap gap-2">
                         {isOverdue && (
                           <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">

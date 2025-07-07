@@ -2,13 +2,99 @@ import React, { useState } from 'react';
 import { Task } from '../types';
 import { Button } from '../../ui/Button';
 import { Input } from '../../ui/Input';
-// Importing UI components with default imports since they might not have named exports
-import Textarea from '../../ui/Textarea';
-import Label from '../../ui/Label';
-import Select from '../../ui/Select';
-import Checkbox from '../../ui/Checkbox';
-import Calendar from '../../ui/Calendar';
 import { format, parseISO } from 'date-fns';
+
+// Simple Select component
+interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
+  options: { value: string; label: string }[];
+  value: string;
+  onValueChange: (value: string) => void;
+  placeholder?: string;
+  className?: string;
+}
+
+const Select: React.FC<SelectProps> = ({
+  options,
+  value,
+  onValueChange,
+  placeholder,
+  className = '',
+  ...props
+}) => (
+  <select
+    className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+    value={value}
+    onChange={(e) => onValueChange(e.target.value)}
+    {...props}
+  >
+    {placeholder && <option value="">{placeholder}</option>}
+    {options.map((option) => (
+      <option key={option.value} value={option.value}>
+        {option.label}
+      </option>
+    ))}
+  </select>
+);
+
+// Simple UI components for the form
+const Textarea = React.forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttributes<HTMLTextAreaElement>>(
+  ({ className, ...props }, ref) => (
+    <textarea
+      className={`flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+      ref={ref}
+      {...props}
+    />
+  )
+);
+Textarea.displayName = 'Textarea';
+
+const Label: React.FC<React.LabelHTMLAttributes<HTMLLabelElement>> = ({
+  className,
+  ...props
+}) => (
+  <label
+    className={`text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${className}`}
+    {...props}
+  />
+);
+
+const Checkbox = React.forwardRef<
+  HTMLInputElement,
+  React.InputHTMLAttributes<HTMLInputElement>
+>(({ className, ...props }, ref) => (
+  <input
+    type="checkbox"
+    className={`h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 ${className}`}
+    ref={ref}
+    {...props}
+  />
+));
+Checkbox.displayName = 'Checkbox';
+
+interface CalendarProps {
+  selected?: Date;
+  onSelect?: (date: Date | undefined) => void;
+  className?: string;
+}
+
+const Calendar: React.FC<CalendarProps> = ({
+  selected,
+  onSelect,
+  className,
+}) => {
+  return (
+    <div className={className}>
+      <Input
+        type="date"
+        value={selected ? format(selected, 'yyyy-MM-dd') : ''}
+        onChange={(e) => {
+          const date = e.target.value ? new Date(e.target.value) : undefined;
+          onSelect?.(date);
+        }}
+      />
+    </div>
+  );
+};
 
 interface TaskFormProps {
   task?: Task;
@@ -27,18 +113,25 @@ const TaskForm: React.FC<TaskFormProps> = ({
   const [description, setDescription] = useState(task?.description || '');
   const [priority, setPriority] = useState<Task['priority']>(task?.priority || 'medium');
   const [status, setStatus] = useState<Task['status']>(task?.status || 'pending');
-  const [dueDate, setDueDate] = useState<Date | undefined>(
-    task?.dueDate ? new Date(task.dueDate) : undefined
-  );
+  // Handle dueDate with proper typing (Date | null | undefined)
+  const [dueDate, setDueDate] = useState<Date | null | undefined>(() => {
+    if (!task?.dueDate) return null;
+    try {
+      return task.dueDate instanceof Date ? task.dueDate : new Date(task.dueDate);
+    } catch (e) {
+      console.error('Invalid date format for dueDate:', task.dueDate, e);
+      return null;
+    }
+  });
   const [tags, setTags] = useState<string[]>(task?.tags || []);
   const [newTag, setNewTag] = useState('');
 
-  const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setStatus(e.target.value as Task['status']);
+  const handleStatusChange = (value: string) => {
+    setStatus(value as Task['status']);
   };
 
-  const handlePriorityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setPriority(e.target.value as Task['priority']);
+  const handlePriorityChange = (value: string) => {
+    setPriority(value as Task['priority']);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -51,6 +144,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // Create a new task data object with proper typing
     const taskData: Partial<Task> = {
       ...(task || {}),
       title,
@@ -58,12 +152,12 @@ const TaskForm: React.FC<TaskFormProps> = ({
       priority,
       status,
       tags,
-      updatedAt: new Date().toISOString(),
+      updatedAt: new Date()
     };
     
-    if (dueDate) {
-      taskData.dueDate = dueDate.toISOString();
-    }
+    // Set dueDate with proper type handling
+    // The Task interface expects Date | null | undefined
+    taskData.dueDate = dueDate || null;
     
     onSubmit(taskData);
   };
@@ -79,7 +173,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
     setTags(tags.filter(tag => tag !== tagToRemove));
   };
 
-  // Ensure proper typing for event handlers
+  // Event handlers with proper typing
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTitle(e.target.value);
   };
@@ -117,7 +211,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
           <Label>Priority</Label>
           <Select
             value={priority}
-            onChange={(e) => setPriority(e.target.value as Task['priority'])}
+            onValueChange={(value) => setPriority(value as Task['priority'])}
             options={[
               { value: 'low', label: 'Low' },
               { value: 'medium', label: 'Medium' },
@@ -133,7 +227,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
           <Label>Status</Label>
           <Select
             value={status}
-            onChange={(e) => setStatus(e.target.value as Task['status'])}
+            onValueChange={(value) => setStatus(value as Task['status'])}
             options={[
               { value: 'pending', label: 'Pending' },
               { value: 'in_progress', label: 'In Progress' },
@@ -151,9 +245,8 @@ const TaskForm: React.FC<TaskFormProps> = ({
         <Label>Due Date</Label>
         <div className="flex items-center space-x-2">
           <Calendar
-            mode="single"
-            selected={dueDate}
-            onSelect={setDueDate}
+            selected={dueDate || undefined}
+            onSelect={(date) => setDueDate(date || null)}
             className="rounded-md border"
           />
           {dueDate && (

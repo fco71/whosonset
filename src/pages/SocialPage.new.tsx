@@ -1,17 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { SocialService } from '../utilities/socialService';
-import { Profile, getProfileId, getDisplayName, getPhotoUrl, isCrewProfile } from '../types/Profile';
+import { Profile, getProfileId, getDisplayName, getPhotoUrl, isCrewProfile, isUserProfile } from '../types/Profile';
 import { Button } from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/Avatar';
 import { Skeleton } from '../components/ui/Skeleton';
 import { Search, UserCheck, Users, UserPlus, UserX, Bell, Check, X, MoreHorizontal } from 'lucide-react';
+import { UserProfile } from '../utilities/userUtils';
+import { CrewProfile } from '../types/CrewProfile';
 
 type TabType = 'following' | 'followers' | 'discover' | 'requests' | 'notifications';
 
 interface UserCardProps {
-  profile: Profile & { photoURL?: string; bio?: string };
+  profile: Profile & { bio?: string };
   action?: React.ReactNode;
   showBio?: boolean;
   className?: string;
@@ -23,7 +25,7 @@ const UserCard = React.memo(({ profile, action, showBio = true, className = '' }
       <div className="flex items-start justify-between">
         <div className="flex items-start space-x-3">
           <Avatar className="h-12 w-12">
-            <AvatarImage src={getPhotoUrl(profile)} alt={getDisplayName(profile)} />
+            <AvatarImage src={getPhotoUrl(profile) || ''} alt={getDisplayName(profile)} />
             <AvatarFallback className="bg-blue-50 text-blue-600">
               {getDisplayName(profile)
                 .split(' ')
@@ -92,21 +94,30 @@ const SocialPage: React.FC = () => {
     try {
       const crewProfiles = await SocialService.getCrewProfiles();
       
-      // Convert to Profile type with proper type safety
+      // Convert crew profiles to Profile type with proper type safety
       const profiles = crewProfiles.map(profile => {
-        const id = ('id' in profile ? profile.id : profile.uid || `crew-${Math.random().toString(36).substr(2, 9)}`) as string;
-        const displayName = ('name' in profile ? profile.name : 'displayName' in profile ? profile.displayName : 'Unknown User') as string;
-        const photoURL = ('profileImageUrl' in profile ? profile.profileImageUrl : 'photoURL' in profile ? profile.photoURL : '') as string;
-        const bio = ('bio' in profile ? profile.bio : '') as string;
+        // Type guard to check if profile is a CrewProfile
+        if ('jobTitles' in profile) {
+          const crewProfile = profile as CrewProfile;
+          return {
+            ...crewProfile,
+            id: crewProfile.uid || `crew-${Math.random().toString(36).substr(2, 9)}`,
+            bio: crewProfile.bio || '',
+          };
+        }
         
+        // At this point, we know it's a UserProfile
+        const userProfile = profile as UserProfile;
         return {
-          ...profile,
-          id,
-          uid: 'uid' in profile ? profile.uid : id,
-          displayName,
-          photoURL,
-          bio,
-        } as Profile;
+          ...userProfile,
+          id: userProfile.id || `user-${Math.random().toString(36).substr(2, 9)}`,
+          displayName: userProfile.displayName || 
+                     (userProfile.firstName ? 
+                       userProfile.firstName + (userProfile.lastName ? ` ${userProfile.lastName}` : '') : 
+                       (userProfile.email ? userProfile.email.split('@')[0] : 'Unknown User')),
+          avatarUrl: userProfile.avatarUrl || '',
+          bio: userProfile.bio || ''
+        };
       });
       
       // Set sample data for demonstration
@@ -130,11 +141,13 @@ const SocialPage: React.FC = () => {
   };
 
   const handleFollowChange = async (userId: string, follow: boolean) => {
+    if (!userId || !user?.uid) return;
+    
     try {
       if (follow) {
-        await SocialService.sendFollowRequest(userId);
+        await SocialService.sendFollowRequest(user.uid, userId);
       } else {
-        await SocialService.unfollow(userId);
+        await SocialService.unfollow(user.uid, userId);
       }
       await loadData(); // Refresh data after change
     } catch (error) {
@@ -143,8 +156,12 @@ const SocialPage: React.FC = () => {
   };
 
   const handleFollowRequest = async (userId: string, action: 'accept' | 'reject') => {
+    if (!userId) return;
+    
     try {
-      await SocialService.respondToFollowRequest(userId, action === 'accept');
+      // Convert action to the expected status string
+      const status = action === 'accept' ? 'accepted' : 'rejected';
+      await SocialService.respondToFollowRequest(userId, status);
       await loadData(); // Refresh data after change
     } catch (error) {
       console.error(`Error ${action}ing follow request:`, error);
@@ -404,7 +421,7 @@ const SocialPage: React.FC = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         <Avatar className="h-12 w-12">
-                          <AvatarImage src={getPhotoUrl(profile)} alt={getDisplayName(profile)} />
+                          <AvatarImage src={getPhotoUrl(profile) || ''} alt={getDisplayName(profile)} />
                           <AvatarFallback className="bg-blue-50 text-blue-600">
                             {getDisplayName(profile)
                               .split(' ')

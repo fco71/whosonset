@@ -91,14 +91,35 @@ const TaskCard: React.FC<TaskCardProps> = ({
     onStatusChange(task.id, newStatus);
   };
   
-  const formatDueDate = (dateString?: string) => {
-    if (!dateString) return null;
-    const date = new Date(dateString);
+  const formatDueDate = (dateValue?: string | Date | { toDate: () => Date } | null) => {
+    if (!dateValue) return null;
     
-    if (isToday(date)) return `Today, ${format(date, 'h:mm a')}`;
-    if (isTomorrow(date)) return `Tomorrow, ${format(date, 'h:mm a')}`;
-    if (isThisWeek(date)) return format(date, 'EEEE, h:mm a');
-    return format(date, 'MMM d, yyyy h:mm a');
+    let date: Date;
+    
+    try {
+      if (dateValue instanceof Date) {
+        date = dateValue;
+      } else if (typeof dateValue === 'object' && dateValue !== null && 'toDate' in dateValue) {
+        // Handle Firestore Timestamp
+        date = dateValue.toDate();
+      } else if (typeof dateValue === 'string') {
+        date = new Date(dateValue);
+      } else {
+        console.warn('Unhandled date type:', typeof dateValue, dateValue);
+        return null;
+      }
+      
+      // Check if date is valid
+      if (isNaN(date.getTime())) return 'Invalid date';
+      
+      if (isToday(date)) return `Today, ${format(date, 'h:mm a')}`;
+      if (isTomorrow(date)) return `Tomorrow, ${format(date, 'h:mm a')}`;
+      if (isThisWeek(date)) return format(date, 'EEEE, h:mm a');
+      return format(date, 'MMM d, yyyy h:mm a');
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Invalid date';
+    }
   };
   
   const isOverdue = task.dueDate && isPast(new Date(task.dueDate)) && task.status !== 'completed';

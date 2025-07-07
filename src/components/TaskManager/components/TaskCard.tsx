@@ -56,6 +56,11 @@ const TaskCard: React.FC<TaskCardProps> = ({
 
   const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'completed';
   
+  // Safely get priority color with fallback
+  const priorityColor = task.priority && priorityColors[task.priority] 
+    ? priorityColors[task.priority as keyof typeof priorityColors] 
+    : priorityColors.low;
+
   const cardContent = (
     <div
       className={cn(
@@ -79,15 +84,17 @@ const TaskCard: React.FC<TaskCardProps> = ({
         </div>
         
         <div className="flex space-x-1">
-          <Badge 
-            variant="outline" 
-            className={cn(
-              'text-xs font-medium',
-              priorityColors[task.priority] || priorityColors.low
-            )}
-          >
-            {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-          </Badge>
+          {task.priority && (
+            <Badge 
+              variant="outline" 
+              className={cn(
+                'text-xs font-medium',
+                priorityColor
+              )}
+            >
+              {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+            </Badge>
+          )}
         </div>
       </div>
 
@@ -97,16 +104,18 @@ const TaskCard: React.FC<TaskCardProps> = ({
         </p>
       )}
 
-      <div className="flex flex-wrap gap-2 mb-3">
-        {task.tags?.map((tag) => (
-          <span 
-            key={tag} 
-            className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800"
-          >
-            {tag}
-          </span>
-        ))}
-      </div>
+      {task.tags && task.tags.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-3">
+          {task.tags.map((tag) => (
+            <span 
+              key={tag} 
+              className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800"
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
+      )}
 
       <div className="flex items-center justify-between text-xs text-gray-500">
         <div className="flex items-center space-x-2">
@@ -117,14 +126,14 @@ const TaskCard: React.FC<TaskCardProps> = ({
             </div>
           )}
           
-          {task.comments?.length > 0 && (
+          {task.comments && task.comments.length > 0 && (
             <div className="flex items-center">
               <MessageSquare className="h-3.5 w-3.5 mr-1" />
               {task.comments.length}
             </div>
           )}
           
-          {task.attachments?.length > 0 && (
+          {task.attachments && task.attachments.length > 0 && (
             <div className="flex items-center">
               <Paperclip className="h-3.5 w-3.5 mr-1" />
               {task.attachments.length}
@@ -132,27 +141,29 @@ const TaskCard: React.FC<TaskCardProps> = ({
           )}
         </div>
         
-        <div className="flex -space-x-2">
-          {task.assignedTeamMembers?.slice(0, 3).map((member, i) => (
-            <Avatar key={i} className="h-6 w-6 border-2 border-white">
-              <AvatarImage src={member.avatar} alt={member.userId} />
-              <AvatarFallback className="text-xs">
-                {member.userId?.charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-          ))}
-          {task.assignedTeamMembers?.length > 3 && (
-            <div className="h-6 w-6 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center text-xs text-gray-500">
-              +{task.assignedTeamMembers.length - 3}
-            </div>
-          )}
-        </div>
+        {task.assignedTeamMembers && task.assignedTeamMembers.length > 0 && (
+          <div className="flex -space-x-2">
+            {task.assignedTeamMembers.slice(0, 3).map((member, i) => (
+              <Avatar key={member.userId || i} className="h-6 w-6 border-2 border-white">
+                <AvatarImage src={member.avatar} alt={member.userId || ''} />
+                <AvatarFallback className="text-xs">
+                  {member.userId ? member.userId.charAt(0).toUpperCase() : '?'}
+                </AvatarFallback>
+              </Avatar>
+            ))}
+            {task.assignedTeamMembers.length > 3 && (
+              <div className="h-6 w-6 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center text-xs text-gray-500">
+                +{task.assignedTeamMembers.length - 3}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
 
   // If we're in a draggable context, wrap with Draggable
-  if (typeof index === 'number') {
+  if (index !== undefined) {
     return (
       <Draggable draggableId={task.id} index={index}>
         {(provided, snapshot) => (
