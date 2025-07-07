@@ -42,6 +42,8 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [followersSearch, setFollowersSearch] = useState('');
   const [followingSearch, setFollowingSearch] = useState('');
+  const [outgoingRequests, setOutgoingRequests] = useState<FollowRequest[]>([]);
+  const [testResults, setTestResults] = useState<string>('');
   // Memoize the props to prevent unnecessary re-renders
   const memoizedProps = useMemo(() => ({
     currentUserId,
@@ -142,6 +144,27 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
     fetchProfiles();
   }, [following]);
 
+  useEffect(() => {
+    if (!memoizedProps.currentUserId) return;
+    // Subscribe to outgoing requests
+    const unsubOutgoing = SocialService.subscribeToOutgoingFollowRequests(
+      memoizedProps.currentUserId,
+      (requests: FollowRequest[]) => setOutgoingRequests(requests)
+    );
+    return () => {
+      if (unsubOutgoing) unsubOutgoing();
+    };
+  }, [memoizedProps.currentUserId]);
+
+  // Add debugging useEffect
+  useEffect(() => {
+    console.log('[SocialDashboard] followRequests state updated:', followRequests);
+  }, [followRequests]);
+
+  useEffect(() => {
+    console.log('[SocialDashboard] outgoingRequests state updated:', outgoingRequests);
+  }, [outgoingRequests]);
+
   const filteredProfiles = crewProfiles.filter(profile =>
     profile.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     profile.jobTitles.some(job => job.title.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -192,6 +215,11 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
     }
   };
 
+  // Add debugging for activeTab
+  useEffect(() => {
+    console.log('[SocialDashboard] Active tab changed to:', activeTab);
+  }, [activeTab]);
+
   if (error) {
     return (
       <div className="social-dashboard">
@@ -217,6 +245,11 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
 
   return (
     <div className="social-dashboard">
+      {/* Debug info - remove after fixing */}
+      <div style={{ background: '#f0f9ff', padding: '4px 8px', fontSize: '12px', color: '#0369a1', marginBottom: '8px' }}>
+        Current tab: {activeTab} | User ID: {currentUserId}
+      </div>
+      
       <div className="dashboard-header">
         <h1>Social Hub</h1>
         <div className="header-actions">
@@ -379,7 +412,60 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
         
         {activeTab === 'requests' && (
           <div className="requests-tab">
+            {/* Debug info - remove after fixing */}
+            <div style={{ background: '#f3f4f6', padding: '8px', marginBottom: '16px', fontSize: '12px', color: '#374151' }}>
+              Debug: Incoming: {followRequests.length}, Outgoing: {outgoingRequests.length}
+              <button 
+                onClick={async () => {
+                  try {
+                    setTestResults('Testing...');
+                    console.log('[Debug] Testing manual fetch...');
+                    
+                    // Test followRequests collection - get ALL documents
+                    const allRequestsQuery = query(collection(db, 'followRequests'));
+                    const allRequestsSnapshot = await getDocs(allRequestsQuery);
+                    const allRequests = allRequestsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    console.log('[Debug] ALL documents in followRequests:', allRequests);
+                    
+                    // Test follows collection - get ALL documents  
+                    const allFollowsQuery = query(collection(db, 'follows'));
+                    const allFollowsSnapshot = await getDocs(allFollowsQuery);
+                    const allFollows = allFollowsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    console.log('[Debug] ALL documents in follows:', allFollows);
+                    
+                    // Filter for current user in both collections
+                    const userRequests = allRequests.filter((req: any) => 
+                      req.toUserId === currentUserId || req.fromUserId === currentUserId
+                    );
+                    const userFollows = allFollows.filter((follow: any) => 
+                      follow.followingId === currentUserId || follow.followerId === currentUserId
+                    );
+                    
+                    console.log('[Debug] User-related requests:', userRequests);
+                    console.log('[Debug] User-related follows:', userFollows);
+                    
+                    setTestResults(`✅ Test complete! 
+                    Total followRequests: ${allRequests.length}, User-related: ${userRequests.length}
+                    Total follows: ${allFollows.length}, User-related: ${userFollows.length}`);
+                  } catch (error) {
+                    console.error('[Debug] Manual fetch error:', error);
+                    setTestResults(`❌ Test failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                  }
+                }}
+                style={{ marginLeft: '8px', padding: '4px 8px', fontSize: '10px', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+              >
+                Test Fetch
+              </button>
+              {testResults && (
+                <div style={{ marginTop: '8px', padding: '4px', background: '#e5e7eb', borderRadius: '4px' }}>
+                  {testResults}
+                </div>
+              )}
+            </div>
+            
             <h3>Follow Requests ({followRequests.length})</h3>
+            {/* Incoming Requests */}
+            <h4 style={{ color: '#1f2937', fontWeight: 600, fontSize: 18, margin: '18px 0 8px 0' }}>Incoming Requests</h4>
             {followRequests.length === 0 ? (
               <div className="empty-state" style={{ color: '#374151', fontWeight: 500, fontSize: 16, background: 'rgba(55,65,81,0.04)', borderRadius: 8, padding: 24 }}>
                 No pending follow requests
@@ -417,7 +503,8 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
                           padding: '8px 16px',
                           borderRadius: '6px',
                           cursor: 'pointer',
-                          fontWeight: '500'
+                          fontWeight: '500',
+                          marginRight: 8
                         }}
                       >
                         ✓ Accept
@@ -443,6 +530,41 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
                         targetUserName={request.fromUserName || `User ${request.fromUserId.slice(-6)}`}
                         className="ml-auto"
                       />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {/* Outgoing Requests */}
+            <h4 style={{ color: '#1f2937', fontWeight: 600, fontSize: 18, margin: '18px 0 8px 0' }}>Pending Outgoing Requests</h4>
+            {outgoingRequests.length === 0 ? (
+              <div className="empty-state" style={{ color: '#374151', fontWeight: 500, fontSize: 16, background: 'rgba(55,65,81,0.04)', borderRadius: 8, padding: 24 }}>
+                No pending outgoing requests
+              </div>
+            ) : (
+              <div className="requests-list">
+                {outgoingRequests.map(request => (
+                  <div key={request.id} className="request-item">
+                    <div className="request-user-info">
+                      <img 
+                        src="/bust-avatar.svg" 
+                        alt="User"
+                        className="request-avatar"
+                        onError={(e) => {
+                          e.currentTarget.src = "/bust-avatar.svg";
+                        }}
+                      />
+                      <div className="request-user-details">
+                        <span className="request-username">
+                          {request.toUserName || `User ${request.toUserId.slice(-6)}`}
+                        </span>
+                        <span className="request-handle">
+                          @{request.toUserId.slice(-8)}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="request-actions">
+                      <span style={{ color: '#f59e42', fontWeight: 500 }}>Pending</span>
                     </div>
                   </div>
                 ))}

@@ -279,15 +279,16 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
 
   // Memoized activity item component for better performance
   const ActivityItem = useMemo(() => React.memo(({ activity }: { activity: ActivityFeedItem }) => {
-    const displayName = getUserDisplayName(activity.userId) || 'Unknown User';
-    const avatarUrl = getUserAvatar(activity.userId);
+    const profile = userProfiles.get(activity.userId);
+    const displayName = profile?.displayName || `User ${activity.userId.slice(-4)}`;
+    const avatarUrl = profile?.avatarUrl || '/bust-avatar.svg';
     const liked = likedActivities[activity.id] || false;
 
     if (activity.type === 'follow_made') {
       return (
         <div className="activity-card crew-card">
           <img
-            src={avatarUrl || '/bust-avatar.svg'}
+            src={avatarUrl}
             alt={displayName}
             className="activity-avatar"
             onError={e => (e.currentTarget.src = '/bust-avatar.svg')}

@@ -90,7 +90,8 @@ export class SocialService {
       const requestsQuery = query(
         collection(db, 'followRequests'),
         where('fromUserId', '==', fromUserId),
-        where('toUserId', '==', toUserId)
+        where('toUserId', '==', toUserId),
+        where('status', '==', 'pending')
       );
       const snapshot = await getDocs(requestsQuery);
       
@@ -115,13 +116,7 @@ export class SocialService {
       const batch = writeBatch(db);
       const requestRef = doc(db, 'followRequests', requestId);
       
-      // Update request status
-      batch.update(requestRef, { 
-        status, 
-        updatedAt: serverTimestamp() 
-      });
-
-      // Get the request data
+      // Get the request data first
       const requestDoc = await getDoc(requestRef);
       if (!requestDoc.exists()) {
         throw new Error('Follow request not found');
@@ -166,6 +161,9 @@ export class SocialService {
           isPublic: true
         });
       }
+
+      // Delete the request instead of updating status
+      batch.delete(requestRef);
 
       await batch.commit();
 
@@ -876,6 +874,43 @@ export class SocialService {
     } catch (error) {
       console.error('Error sending collaboration request:', error);
       throw error;
+    }
+  }
+
+  static subscribeToOutgoingFollowRequests(userId: string, callback: (requests: FollowRequest[]) => void) {
+    try {
+      console.log('[SocialService] Setting up outgoing follow requests listener for user:', userId);
+      const requestsQuery = query(
+        collection(db, 'followRequests'),
+        where('fromUserId', '==', userId)
+        // Temporarily remove orderBy to avoid index requirement
+        // orderBy('createdAt', 'desc')
+      );
+
+      return onSnapshot(requestsQuery, (snapshot) => {
+        try {
+          const requests = snapshot.docs
+            .map(doc => ({
+              id: doc.id,
+              ...doc.data(),
+              createdAt: doc.data().createdAt?.toDate(),
+              updatedAt: doc.data().updatedAt?.toDate()
+            } as FollowRequest))
+            .filter(request => request.status === 'pending') // Filter in memory
+            .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()); // Sort in memory
+          console.log('[SocialService] Outgoing follow requests updated:', requests.length);
+          callback(requests);
+        } catch (error) {
+          console.error('[SocialService] Error processing outgoing follow requests snapshot:', error);
+          callback([]);
+        }
+      }, (error) => {
+        console.error('[SocialService] Outgoing follow requests listener error:', error);
+        callback([]);
+      });
+    } catch (error) {
+      console.error('[SocialService] Error setting up outgoing follow requests listener:', error);
+      return () => {};
     }
   }
 } 
