@@ -24,15 +24,24 @@ const UserCard = React.memo(({ profile, action, showBio = true, className = '' }
   const displayName = getDisplayName(profile);
   const photoUrl = getPhotoUrl(profile);
   const jobTitle = profile.jobTitles?.[0]?.title || profile.jobTitle;
+  const [isHovered, setIsHovered] = React.useState(false);
   
   return (
-    <div className={`bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow ${className}`}>
-      <div className="p-4">
-        <div className="flex items-start justify-between">
-          <div className="flex items-start space-x-3">
-            <Avatar className="h-12 w-12">
-              <AvatarImage src={photoUrl} alt={displayName} />
-              <AvatarFallback className="bg-blue-50 text-blue-600">
+    <div 
+      className={`relative bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden transition-all duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-lg ${className}`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {/* Profile header with gradient overlay on hover */}
+      <div className="relative h-20 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-700 dark:to-gray-800 overflow-hidden">
+        {isHovered && (
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 dark:from-blue-400/10 dark:to-indigo-400/10 transition-opacity duration-300" />
+        )}
+        <div className="absolute -bottom-8 left-4">
+          <div className="relative h-20 w-20 rounded-full border-4 border-white dark:border-gray-800 bg-white dark:bg-gray-700 overflow-hidden shadow-md">
+            <Avatar className="h-full w-full">
+              <AvatarImage src={photoUrl} alt={displayName} className="object-cover" />
+              <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-medium">
                 {displayName
                   .split(' ')
                   .map(n => n[0])
@@ -40,26 +49,56 @@ const UserCard = React.memo(({ profile, action, showBio = true, className = '' }
                   .toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            <div className="flex-1 min-w-0">
-              <h3 className="font-medium text-gray-900 truncate">{displayName}</h3>
-              {showBio && profile.bio && (
-                <p className="text-sm text-gray-500 line-clamp-2">{profile.bio}</p>
-              )}
-              {jobTitle && (
-                <p className="text-xs text-gray-500 mt-1">
-                  {jobTitle}
-                </p>
+          </div>
+        </div>
+      </div>
+      
+      <div className="pt-12 px-4 pb-4">
+        <div className="flex items-start justify-between">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white truncate">{displayName}</h3>
+              {profile.verified && (
+                <Badge variant="outline" className="ml-2 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800 text-xs">
+                  Verified
+                </Badge>
               )}
             </div>
+            
+            {jobTitle && (
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mt-1">
+                {jobTitle}
+              </p>
+            )}
+            
+            {showBio && profile.bio && (
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 line-clamp-2">
+                {profile.bio}
+              </p>
+            )}
+            
+            <div className="mt-3 flex flex-wrap gap-2">
+              {profile.skills?.slice(0, 3).map((skill, index) => (
+                <Badge 
+                  key={index} 
+                  variant="secondary" 
+                  className="text-xs font-medium bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600"
+                >
+                  {skill}
+                </Badge>
+              ))}
+            </div>
           </div>
-          {action && <div className="flex-shrink-0 ml-2">{action}</div>}
+          <div className="mt-4 flex justify-end">
+            {action}
+          </div>
         </div>
       </div>
     </div>
   );
 });
 
-// TabButton component
+// TabButton component with improved styling and animations
 const TabButton: React.FC<TabButtonProps> = ({ 
   active, 
   onClick, 
@@ -68,33 +107,58 @@ const TabButton: React.FC<TabButtonProps> = ({
   children 
 }) => (
   <button
+    type="button"
     onClick={onClick}
-    className={`flex items-center gap-2 px-4 py-3 font-medium text-sm rounded-lg transition-all relative ${
+    className={`group relative flex items-center px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
       active 
-        ? 'text-blue-600 bg-blue-50' 
-        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+        ? 'text-white bg-gradient-to-r from-blue-600 to-indigo-600 shadow-md' 
+        : 'text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700/50'
     }`}
   >
-    <Icon className={`h-4 w-4 ${active ? 'text-blue-600' : 'text-gray-500'}`} />
-    <span>{children}</span>
+    <Icon className={`h-4 w-4 mr-2 transition-transform duration-200 ${active ? 'scale-110' : 'group-hover:scale-110'}`} />
+    <span className="relative">
+      {children}
+      {active && (
+        <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-white/80 rounded-full" />
+      )}
+    </span>
     {count !== undefined && count > 0 && (
-      <span className="ml-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
-        {count > 99 ? '99+' : count}
+      <span 
+        className={`ml-2 px-2 py-0.5 text-xs font-medium rounded-full transition-all duration-200 ${
+          active 
+            ? 'bg-white/20 text-white' 
+            : 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/70'
+        }`}
+      >
+        {count}
       </span>
     )}
   </button>
 );
 
-// Skeleton loader for user cards
+// Skeleton loader for user cards with shimmer effect
 const UserCardSkeleton = () => (
-  <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-    <div className="p-4">
-      <div className="flex items-start space-x-3">
-        <Skeleton className="h-12 w-12 rounded-full" />
-        <div className="flex-1 space-y-2">
-          <Skeleton className="h-4 w-3/4" />
-          <Skeleton className="h-3 w-full" />
-          <Skeleton className="h-3 w-1/2" />
+  <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden relative group">
+    {/* Shimmer effect */}
+    <div className="absolute inset-0 bg-gradient-to-r from-gray-100 via-gray-50 to-gray-100 dark:from-gray-800 dark:via-gray-700/50 dark:to-gray-800 animate-pulse opacity-20 group-hover:opacity-30 transition-opacity duration-300" />
+    
+    <div className="relative z-10 p-4">
+      <div className="flex items-start space-x-4">
+        <div className="relative">
+          <Skeleton className="h-14 w-14 rounded-full" />
+          <Skeleton className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full border-2 border-white dark:border-gray-800" />
+        </div>
+        <div className="flex-1 space-y-2.5">
+          <div className="flex items-center space-x-2">
+            <Skeleton className="h-5 w-32 rounded-md" />
+            <Skeleton className="h-4 w-12 rounded-full" />
+          </div>
+          <Skeleton className="h-4 w-24 rounded-md" />
+          <Skeleton className="h-3 w-40 rounded-md" />
+          <div className="flex space-x-2 pt-1">
+            <Skeleton className="h-6 w-20 rounded-full" />
+            <Skeleton className="h-6 w-16 rounded-full" />
+          </div>
         </div>
       </div>
     </div>
@@ -106,6 +170,8 @@ const SocialPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('following');
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   
   // State for different data types
   const [following, setFollowing] = useState<SocialUser[]>([]);
@@ -113,6 +179,31 @@ const SocialPage: React.FC = () => {
   const [suggestedUsers, setSuggestedUsers] = useState<SocialUser[]>([]);
   const [followRequests, setFollowRequests] = useState<SocialUser[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  
+  // Animation variants for framer-motion
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.1
+      }
+    }
+  };
+  
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { 
+      opacity: 1, 
+      y: 0,
+      transition: {
+        type: 'spring',
+        stiffness: 100,
+        damping: 12
+      }
+    }
+  };
 
   // Load data based on active tab
   const loadData = useCallback(async () => {

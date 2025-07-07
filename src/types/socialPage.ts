@@ -12,11 +12,15 @@ export interface SocialUser {
   isFollowing?: boolean;
   isFollower?: boolean;
   status?: 'pending' | 'accepted' | 'rejected';
+  verified?: boolean;
+  skills?: string[];
   // Profile compatibility
   name?: string;
   username?: string;
   profileImageUrl?: string;
   jobTitles?: Array<{ title: string; department?: string }>;
+  // Add any other properties that might be needed
+  [key: string]: any; // For any additional dynamic properties
 }
 
 export interface FollowData {
