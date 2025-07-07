@@ -450,4 +450,25 @@
       }
     }
   }
+}
+
+.activity-controls .search-input, .activity-controls .filter-select {
+  color: #1f2937;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  font-size: 16px;
+  font-weight: 400;
+  padding: 10px 16px;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.activity-controls .search-input::placeholder {
+  color: #6b7280;
+  opacity: 1;
+}
+
+.activity-controls .filter-select option {
+  color: #1f2937;
+  background: #fff;
 } 

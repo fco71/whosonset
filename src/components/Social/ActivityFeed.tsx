@@ -283,7 +283,7 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
     const avatarUrl = getUserAvatar(activity.userId);
     const liked = likedActivities[activity.id] || false;
     return (
-      <div className="activity-item" key={activity.id}>
+      <div className="activity-card card">
         <div className="activity-header">
           <div className="user-avatar">
             <img
@@ -336,17 +336,8 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
             <span className="count">{activity.likes}</span>
           </button>
           
-          <button className="action-button" aria-label="Comments" title="Comments">
-            <span className="icon" aria-hidden="true">
-              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#6b7280" strokeWidth="1.5" xmlns="http://www.w3.org/2000/svg"><path d="M18 10c0 3.866-3.582 7-8 7a8.96 8.96 0 01-3.39-.62L2 17l1.62-3.39A7.96 7.96 0 012 10c0-3.866 3.582-7 8-7s8 3.134 8 7z"/></svg>
-            </span>
-            <span className="count">{activity.comments}</span>
-          </button>
-          <button className="action-button" aria-label="Share" title="Share">
-            <span className="icon" aria-hidden="true">
-              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#6b7280" strokeWidth="1.5" xmlns="http://www.w3.org/2000/svg"><path d="M15 8V5a3 3 0 00-6 0v3m6 0a3 3 0 01-6 0m6 0v7a3 3 0 01-6 0V8"/></svg>
-            </span>
-          </button>
+          <button className="action-button" aria-label="Comment"><span className="icon">💬</span> <span className="count">{activity.comments || 0}</span></button>
+          <button className="action-button" aria-label="Share"><span className="icon">🔄</span></button>
         </div>
       </div>
     );
@@ -354,7 +345,7 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
 
   // Loading skeleton component for better perceived performance
   const ActivitySkeleton = useMemo(() => () => (
-    <div className="activity-item skeleton">
+    <div className="activity-card card skeleton">
       <div className="activity-header">
         <div className="user-avatar skeleton-avatar"></div>
         <div className="activity-info">
