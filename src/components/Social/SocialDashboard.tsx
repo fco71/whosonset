@@ -412,57 +412,6 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
         
         {activeTab === 'requests' && (
           <div className="requests-tab">
-            {/* Debug info - remove after fixing */}
-            <div style={{ background: '#f3f4f6', padding: '8px', marginBottom: '16px', fontSize: '12px', color: '#374151' }}>
-              Debug: Incoming: {followRequests.length}, Outgoing: {outgoingRequests.length}
-              <button 
-                onClick={async () => {
-                  try {
-                    setTestResults('Testing...');
-                    console.log('[Debug] Testing manual fetch...');
-                    
-                    // Test followRequests collection - get ALL documents
-                    const allRequestsQuery = query(collection(db, 'followRequests'));
-                    const allRequestsSnapshot = await getDocs(allRequestsQuery);
-                    const allRequests = allRequestsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    console.log('[Debug] ALL documents in followRequests:', allRequests);
-                    
-                    // Test follows collection - get ALL documents  
-                    const allFollowsQuery = query(collection(db, 'follows'));
-                    const allFollowsSnapshot = await getDocs(allFollowsQuery);
-                    const allFollows = allFollowsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    console.log('[Debug] ALL documents in follows:', allFollows);
-                    
-                    // Filter for current user in both collections
-                    const userRequests = allRequests.filter((req: any) => 
-                      req.toUserId === currentUserId || req.fromUserId === currentUserId
-                    );
-                    const userFollows = allFollows.filter((follow: any) => 
-                      follow.followingId === currentUserId || follow.followerId === currentUserId
-                    );
-                    
-                    console.log('[Debug] User-related requests:', userRequests);
-                    console.log('[Debug] User-related follows:', userFollows);
-                    
-                    setTestResults(`✅ Test complete! 
-                    Total followRequests: ${allRequests.length}, User-related: ${userRequests.length}
-                    Total follows: ${allFollows.length}, User-related: ${userFollows.length}`);
-                  } catch (error) {
-                    console.error('[Debug] Manual fetch error:', error);
-                    setTestResults(`❌ Test failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-                  }
-                }}
-                style={{ marginLeft: '8px', padding: '4px 8px', fontSize: '10px', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-              >
-                Test Fetch
-              </button>
-              {testResults && (
-                <div style={{ marginTop: '8px', padding: '4px', background: '#e5e7eb', borderRadius: '4px' }}>
-                  {testResults}
-                </div>
-              )}
-            </div>
-            
             <h3>Follow Requests ({followRequests.length})</h3>
             {/* Incoming Requests */}
             <h4 style={{ color: '#1f2937', fontWeight: 600, fontSize: 18, margin: '18px 0 8px 0' }}>Incoming Requests</h4>
@@ -473,26 +422,37 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
             ) : (
               <div className="requests-list">
                 {followRequests.map(request => (
-                  <div key={request.id} className="request-item">
-                    <div className="request-user-info">
-                      <img 
-                        src="/bust-avatar.svg" 
-                        alt="User"
-                        className="request-avatar"
-                        onError={(e) => {
-                          e.currentTarget.src = "/bust-avatar.svg";
-                        }}
-                      />
-                      <div className="request-user-details">
-                        <span className="request-username">
-                          {request.fromUserName || `User ${request.fromUserId.slice(-6)}`}
-                        </span>
-                        <span className="request-handle">
-                          @{request.fromUserId.slice(-8)}
-                        </span>
-                      </div>
+                  <div key={request.id} className="request-item" style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    background: '#fff',
+                    borderRadius: '16px',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                    padding: '18px 22px',
+                    marginBottom: '18px',
+                    minWidth: 0,
+                    maxWidth: 520,
+                    border: '1px solid #e5e7eb',
+                    gap: '18px'
+                  }}>
+                    <img 
+                      src="/bust-avatar.svg" 
+                      alt="User"
+                      className="request-avatar"
+                      style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', border: '2px solid #e5e7eb' }}
+                      onError={(e) => {
+                        e.currentTarget.src = "/bust-avatar.svg";
+                      }}
+                    />
+                    <div className="request-user-details" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <span className="request-username" style={{ fontSize: 16, fontWeight: 600, color: '#374151' }}>
+                        {request.fromUserName || `User ${request.fromUserId.slice(-6)}`}
+                      </span>
+                      <span className="request-handle" style={{ fontSize: 13, color: '#6b7280' }}>
+                        @{request.fromUserId.slice(-8)}
+                      </span>
                     </div>
-                    <div className="request-actions">
+                    <div className="request-actions" style={{ display: 'flex', gap: 10 }}>
                       <button 
                         onClick={() => handleFollowRequestResponse(request.id, 'accepted')}
                         className="accept-btn"
@@ -504,7 +464,7 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
                           borderRadius: '6px',
                           cursor: 'pointer',
                           fontWeight: '500',
-                          marginRight: 8
+                          marginRight: 0
                         }}
                       >
                         ✓ Accept
@@ -519,7 +479,8 @@ const SocialDashboard: React.FC<SocialDashboardProps> = ({
                           padding: '8px 16px',
                           borderRadius: '6px',
                           cursor: 'pointer',
-                          fontWeight: '500'
+                          fontWeight: '500',
+                          marginRight: 0
                         }}
                       >
                         ✕ Reject
