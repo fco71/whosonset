@@ -205,11 +205,15 @@ const EnhancedTasksHub: React.FC<EnhancedTasksHubProps> = ({ projectId }) => {
         projectId: projectId,
         createdBy: currentUser.uid,
         assignedTeamMembers: taskData.assignedTeamMembers || [],
-        dueDate: taskData.dueDate || null,
+        dueDate: taskData.dueDate || '',
         createdAt: new Date(),
         updatedAt: new Date(),
         tags: taskData.tags || [],
-        // Add other default values as needed
+        subtasks: taskData.subtasks || [],
+        reminders: taskData.reminders || [],
+        attachments: taskData.attachments || [],
+        comments: taskData.comments || [],
+        dependencies: taskData.dependencies || [],
       };
 
       await addDoc(collection(db, 'collaborativeTasks'), newTask);

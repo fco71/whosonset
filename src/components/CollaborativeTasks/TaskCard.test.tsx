@@ -6,20 +6,19 @@ import TaskCard from './TaskCard';
 import { Task, TaskTeamMember } from '../TaskManager/types';
 
 describe('TaskCard', () => {
-  const mockTeamMember: TaskTeamMember = {
+  // Extend TaskTeamMember for test to allow assignedAt
+  interface TestTaskTeamMember extends TaskTeamMember {
+    assignedAt?: Date;
+  }
+  const mockTeamMember: TestTaskTeamMember = {
     userId: 'user-1',
     role: 'lead',
-    assignedAt: new Date().toISOString(),
-    assignedBy: 'system',
-    status: 'accepted',
-    subtasks: [],
+    assignedAt: new Date(),
     name: 'Test User',
-    email: 'test@example.com',
-    estimatedHours: 2,
-    actualHours: 1.5,
-    notes: 'Test assignment'
+    email: 'test@example.com'
   };
 
+  // Remove 'dependencies' from mockTask
   const mockTask: Task = {
     id: 'task-1',
     projectId: 'project-1',
@@ -27,16 +26,14 @@ describe('TaskCard', () => {
     description: 'This is a test task',
     status: 'pending',
     priority: 'medium',
-    dueDate: new Date(Date.now() + 86400000).toISOString(), // Tomorrow
+    dueDate: new Date(Date.now() + 86400000), // Tomorrow
     createdBy: 'user-1',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
     assignees: [mockTeamMember],
     assignedTeamMembers: [mockTeamMember],
     comments: [],
-    reminders: [],
-    subtasks: [],
-    dependencies: [],
+    subTasks: [],
     tags: ['test', 'important'],
     attachments: [],
     category: 'production'

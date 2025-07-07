@@ -28,7 +28,7 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     setIsLoading(true);
     const unsubscribe = onSnapshot(
-      doc(db, 'users', currentUser.uid, 'projects', currentUser.activeProjectId || ''),
+      doc(db, 'users', currentUser.uid, 'projects', (currentUser as any).activeProjectId || ''),
       (doc) => {
         if (doc.exists()) {
           setCurrentProject({ id: doc.id, ...doc.data() });
@@ -45,7 +45,7 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
     );
 
     return () => unsubscribe();
-  }, [currentUser?.uid, currentUser?.activeProjectId]);
+  }, [currentUser?.uid, (currentUser as any)?.activeProjectId]);
 
   const value = {
     currentProject,
