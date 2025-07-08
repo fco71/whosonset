@@ -912,6 +912,7 @@
                   font-size: 0.875rem;
                   transition: all 0.15s ease;
                   background: white;
+                  color: #222 !important;
 
                   &:focus {
                     outline: none;
@@ -920,7 +921,8 @@
                   }
 
                   &::placeholder {
-                    color: #999;
+                    color: #555 !important;
+                    opacity: 1 !important;
                   }
                 }
 

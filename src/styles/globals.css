@@ -414,7 +414,8 @@ h3, .heading-tertiary {
 }
 
 .form-input::placeholder {
-  color: var(--text-tertiary);
+  color: #555 !important;
+  opacity: 1 !important;
 }
 
 .form-input:focus {
@@ -689,12 +690,14 @@ button:disabled {
   cursor: not-allowed;
 }
 
-select, input, textarea {
-  font-family: inherit;
+input, textarea, select, .form-input, .form-select, .form-textarea {
+  background-color: #fff !important;
+  color: #222 !important;
 }
 
-select:focus, input:focus, textarea:focus {
-  outline: none;
+input:disabled, textarea:disabled, select:disabled, .form-input:disabled, .form-select:disabled, .form-textarea:disabled {
+  background-color: #f3f6fa !important;
+  color: #888 !important;
 }
 
 /* ===== RESPONSIVE TYPOGRAPHY ===== */

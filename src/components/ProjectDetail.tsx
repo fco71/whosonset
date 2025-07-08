@@ -437,7 +437,14 @@ const ProjectDetail: React.FC = () => {
                             <div><label htmlFor="projectName" className="block text-sm font-medium">Project Name</label><input type="text" id="projectName" name="projectName" value={formState.projectName || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" /></div>
                             <div><label htmlFor="country" className="block text-sm font-medium">Country</label><input type="text" id="country" name="country" value={formState.country || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" /></div>
                             <div><label htmlFor="productionCompany" className="block text-sm font-medium">Production Company</label><input type="text" id="productionCompany" name="productionCompany" value={formState.productionCompany || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" /></div>
-                            <div><label htmlFor="status" className="block text-sm font-medium">Status</label><select id="status" name="status" value={formState.status || 'Pre-Production'} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2"><option value="Pre-Production">Pre-Production</option><option value="Development">Development</option><option value="Production">Production</option><option value="Post-Production">Post-Production</option><option value="Completed">Completed</option><option value="Cancelled">Cancelled</option></select></div>
+                            <div><label htmlFor="status" className="block text-sm font-medium">Status</label><select id="status" name="status" value={formState.status || 'Pre-Production'} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2">
+  <option value="Pre-Production">Pre-Production</option>
+  <option value="Development">Development</option>
+  <option value="Production">Production</option>
+  <option value="Post-Production">Post-Production</option>
+  <option value="Completed">Completed</option>
+  <option value="Cancelled">Cancelled</option>
+</select></div>
                         </div>
                     </div>
                     <div>

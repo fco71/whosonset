@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import debounce from 'lodash/debounce';
 
 export interface UserAutocompleteOption {
   id: string;
@@ -33,9 +34,14 @@ const UserAutocomplete: React.FC<UserAutocompleteProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (inputValue.trim()) {
-      onSearch(inputValue);
-    }
+    // Debounce search to avoid jitter
+    const debouncedSearch = debounce((val: string) => {
+      if (val.trim()) {
+        onSearch(val);
+      }
+    }, 250);
+    debouncedSearch(inputValue);
+    return () => debouncedSearch.cancel();
   }, [inputValue, onSearch]);
 
   useEffect(() => {
@@ -91,7 +97,11 @@ const UserAutocomplete: React.FC<UserAutocompleteProps> = ({
       onChange([...value, user]);
     }
     setInputValue('');
-    setShowDropdown(false);
+    // Keep dropdown open and refocus input for quick multi-add
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+    setShowDropdown(true);
   };
 
   const handleRemove = (userId: string) => {
@@ -102,26 +112,80 @@ const UserAutocomplete: React.FC<UserAutocompleteProps> = ({
     <div className="user-autocomplete" style={{ position: 'relative' }}>
       <div className="selected-users" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
         {value.map((user) => (
-          <div key={user.id} className="user-chip" style={{ display: 'flex', alignItems: 'center', background: '#f3f4f6', borderRadius: '16px', padding: '0.25rem 0.75rem', fontSize: '0.85em' }}>
-            {user.avatar && <img src={user.avatar} alt={user.name} style={{ width: 24, height: 24, borderRadius: '50%', marginRight: 6 }} />}
-            <span>{user.name}</span>
-            <button onClick={() => handleRemove(user.id)} style={{ marginLeft: 8, background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: '1.1em' }} title="Remove">×</button>
-          </div>
+          <span
+            key={user.id}
+            className="user-chip-modern"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              background: '#f3f6fa',
+              borderRadius: '999px',
+              padding: '0.25rem 0.75rem 0.25rem 0.5rem',
+              margin: '0 0.25rem 0.25rem 0',
+              fontSize: '0.95em',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+              border: '1px solid #e0e6ed',
+            }}
+          >
+            {user.avatar && (
+              <img src={user.avatar} alt={user.name} style={{ width: 22, height: 22, borderRadius: '50%', marginRight: 6 }} />
+            )}
+            <span style={{ fontWeight: 500, color: '#222' }}>{user.name}</span>
+            <button
+              onClick={() => handleRemove(user.id)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#888',
+                marginLeft: 8,
+                fontSize: '1.1em',
+                cursor: 'pointer',
+                lineHeight: 1,
+                padding: 0,
+              }}
+              aria-label={`Remove ${user.name}`}
+            >
+              &times;
+            </button>
+          </span>
         ))}
       </div>
       <input
         ref={inputRef}
-        type="text"
+        className="form-input user-autocomplete-input"
         value={inputValue}
         onChange={handleInputChange}
         onFocus={() => setShowDropdown(true)}
-        onKeyDown={handleKeyDown}
         placeholder={placeholder}
-        className="form-input"
-        style={{ width: '100%' }}
+        style={{
+          minWidth: 220,
+          maxWidth: 340,
+          border: '1.5px solid #d0d7e2',
+          borderRadius: 8,
+          padding: '0.5rem 0.75rem',
+          fontSize: '1em',
+          background: '#fff',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.03)',
+        }}
       />
       {showDropdown && (
-        <div ref={dropdownRef} className="autocomplete-dropdown" style={{ position: 'absolute', zIndex: 10, background: 'white', border: '1px solid #e5e7eb', borderRadius: 8, width: '100%', marginTop: 2, maxHeight: 220, overflowY: 'auto', boxShadow: '0 4px 16px rgba(0,0,0,0.08)' }}>
+        <div
+          className="autocomplete-dropdown-modern"
+          style={{
+            position: 'absolute',
+            zIndex: 10,
+            background: '#fff',
+            border: '1.5px solid #d0d7e2',
+            borderRadius: 8,
+            boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+            marginTop: 4,
+            minWidth: 220,
+            maxWidth: 340,
+            maxHeight: 220,
+            overflowY: 'auto',
+            overflowX: 'hidden',
+          }}
+        >
           {loading ? (
             <div className="autocomplete-loading" style={{ padding: '1rem', textAlign: 'center', color: '#888' }}>Searching...</div>
           ) : options.length === 0 && inputValue.trim() ? (
@@ -130,19 +194,23 @@ const UserAutocomplete: React.FC<UserAutocompleteProps> = ({
             options.map((user, idx) => (
               <div
                 key={user.id}
-                className={`autocomplete-option${idx === highlightedIndex ? ' highlighted' : ''}`}
+                className={`autocomplete-option-modern${highlightedIndex === idx ? ' highlighted' : ''}`}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   padding: '0.5rem 1rem',
-                  background: idx === highlightedIndex ? '#f0f9ff' : 'white',
                   cursor: 'pointer',
-                  borderBottom: '1px solid #f3f4f6',
+                  background: highlightedIndex === idx ? '#f0f6ff' : '#fff',
+                  fontWeight: 500,
+                  color: '#222',
+                  borderBottom: idx !== options.length - 1 ? '1px solid #f3f6fa' : 'none',
                 }}
                 onMouseDown={() => handleSelect(user)}
                 onMouseEnter={() => setHighlightedIndex(idx)}
               >
-                {user.avatar && <img src={user.avatar} alt={user.name} style={{ width: 28, height: 28, borderRadius: '50%', marginRight: 10 }} />}
+                {user.avatar && (
+                  <img src={user.avatar} alt={user.name} style={{ width: 22, height: 22, borderRadius: '50%', marginRight: 10 }} />
+                )}
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 500 }}>{user.name}</div>
                   <div style={{ fontSize: '0.85em', color: '#888' }}>{user.email}</div>

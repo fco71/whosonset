@@ -36,6 +36,7 @@ interface ProjectFormProps {
 
 const ProjectForm: React.FC<ProjectFormProps> = (props) => {
   const statusOptions = [
+    { value: "Development", label: "Development" },
     { value: "Pre-Production", label: "Pre-Production" },
     { value: "Filming", label: "Filming" },
     { value: "Post-Production", label: "Post-Production" },
