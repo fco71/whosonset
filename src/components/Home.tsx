@@ -90,10 +90,10 @@ const Home: React.FC = () => {
             <div className="section-gradient border-b border-gray-100">
                 <div className="container-base section-padding-large">
                     <div className="text-center mb-16 animate-fade">
-                        <h1 className="heading-primary mb-6 animate-slide">
+                        <h1 className="heading-primary mb-6 animate-slide" style={{ color: '#222', opacity: 1 }}>
                             whosonset
                         </h1>
-                        <h2 className="heading-secondary mb-8 animate-slide">
+                        <h2 className="heading-secondary mb-8 animate-slide" style={{ color: '#444', opacity: 1 }}>
                             Film Industry Hub
                         </h2>
                         <p className="body-large max-w-2xl mx-auto animate-slide">

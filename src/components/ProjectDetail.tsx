@@ -472,7 +472,7 @@ const ProjectDetail: React.FC = () => {
                     <div>
                         <h3 className="text-xl font-semibold mb-4 border-b pb-1">Media</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-                            <div><label htmlFor="coverImage" className="block text-sm font-medium">Cover Image</label><input type="file" id="coverImage" accept="image/*" onChange={handleCoverImageChange} className="mt-1" />{coverImageBlobUrl ? <img src={coverImageBlobUrl} alt="New Cover Preview" className="w-36 h-auto mt-2 rounded shadow object-cover" /> : formState.coverImageUrl ? <img src={formState.coverImageUrl} alt="Current Cover" className="w-36 h-auto mt-2 rounded shadow object-cover" /> : null}</div>
+                            <div><label htmlFor="coverImage" className="block text-sm font-medium">Cover Image</label><input type="file" id="coverImage" accept="image/*" onChange={handleCoverImageChange} className="mt-1" />{coverImageBlobUrl ? <img src={coverImageBlobUrl} alt="New Cover Preview" className="w-36 h-auto mt-2 rounded shadow object-cover" onError={e => { console.log('ProjectDetail: Failed to load blob:', coverImageBlobUrl); e.currentTarget.src = '/default-avatar.svg'; }} /> : formState.coverImageUrl ? <img src={formState.coverImageUrl} alt="Current Cover" className="w-36 h-auto mt-2 rounded shadow object-cover" onError={e => { e.currentTarget.src = '/default-avatar.svg'; }} /> : null}</div>
                             {/* Removed Poster Image input */}
                         </div>
                     </div>

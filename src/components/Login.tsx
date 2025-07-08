@@ -20,17 +20,27 @@ const Login: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return; // Prevent double submission
     setLoading(true);
     setError('');
 
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
+
+    if (!trimmedEmail || !trimmedPassword) {
+      setError('Please enter both email and password.');
+      setLoading(false);
+      return;
+    }
+
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      await signInWithEmailAndPassword(auth, trimmedEmail, trimmedPassword);
       navigate('/');
     } catch (error: any) {
       console.error('Login error:', error);
       setError(
         error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password'
-          ? 'Invalid email or password'
+          ? 'Invalid email or password.'
           : error.code === 'auth/too-many-requests'
           ? 'Too many failed attempts. Please try again later.'
           : 'An error occurred during login. Please try again.'
@@ -41,16 +51,33 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <div className="min-h-screen bg-gradient-to-br from-white to-blue-50 flex items-center justify-center py-20 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-12">
         {/* Header */}
-        <div className="text-center">
+        <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome back</h1>
           <p className="text-gray-600">Sign in to your account to continue</p>
         </div>
 
         {/* Login Form */}
-        <div className="card-modern">
+        <div
+          className="card-modern"
+          style={{
+            background: '#fff',
+            borderRadius: 18,
+            boxShadow: '0 6px 32px rgba(0,0,0,0.08)',
+            padding: '2.5rem 2rem',
+            marginTop: 24,
+            marginBottom: 24,
+            border: '1.5px solid #f3f6fa',
+            minWidth: 340,
+            maxWidth: 420,
+            width: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '2rem',
+          }}
+        >
           <Form onSubmit={handleSubmit} className="space-y-6">
             {/* Error Message */}
             {error && (
@@ -67,7 +94,8 @@ const Login: React.FC = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
-                leftIcon={<Mail size={16} />}
+                size="lg"
+                variant="filled"
                 required
                 autoComplete="email"
               />
@@ -79,7 +107,8 @@ const Login: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
-                  leftIcon={<Lock size={16} />}
+                  size="lg"
+                  variant="filled"
                   rightIcon={
                     <button
                       type="button"
@@ -87,7 +116,7 @@ const Login: React.FC = () => {
                       className="text-gray-400 hover:text-gray-600 transition-colors"
                       aria-label={showPassword ? 'Hide password' : 'Show password'}
                     >
-                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   }
                   required
@@ -99,7 +128,7 @@ const Login: React.FC = () => {
             {/* Submit Button */}
             <Button
               type="submit"
-              className="w-full"
+              className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-semibold shadow-md hover:from-blue-600 hover:to-indigo-600 transition-all duration-200 border-0 rounded-lg text-lg py-3"
               disabled={loading}
             >
               {loading ? (
@@ -128,7 +157,7 @@ const Login: React.FC = () => {
         </div>
 
         {/* Footer */}
-        <div className="text-center">
+        <div className="text-center mt-10">
           <p className="text-xs text-gray-500">
             By signing in, you agree to our{' '}
             <Link to="/terms" className="text-blue-600 hover:text-blue-500">
