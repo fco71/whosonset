@@ -1,626 +1,450 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { collection, query, where, orderBy, getDocs, onSnapshot } from 'firebase/firestore';
-import { db } from '../../firebase';
-import { FollowRequest, SocialNotification, ActivityFeedItem, Follow } from '../../types/Social';
-import { CrewProfile } from '../../types/CrewProfile';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 import { SocialService } from '../../utilities/socialService';
-import { UserUtils, UserProfile } from '../../utilities/userUtils';
-import QuickMessage from './QuickMessage';
-import FollowButton from './FollowButton';
-import ActivityFeed from './ActivityFeed';
-import ChatInterface from '../Chat/ChatInterface';
-import { SocialAnalytics } from './SocialAnalytics';
-import { AdvancedMessaging } from './AdvancedMessaging';
-import NotificationBell from './NotificationBell';
-import { performanceMonitor } from '../../utilities/performanceUtils';
-import './SocialDashboard.scss';
-import { toast } from 'react-hot-toast';
-import { Unsubscribe } from 'firebase/auth';
+import { FollowRequest, Follow } from '../../types/Social';
+import { Button } from '../ui/Button';
+import { 
+  Users, 
+  UserPlus, 
+  UserCheck, 
+  UserX, 
+  MessageCircle,
+  Search,
+  Filter,
+  Heart,
+  Star
+} from 'lucide-react';
 
-interface SocialDashboardProps {
-  currentUserId: string;
-  currentUserName: string;
-  currentUserAvatar?: string;
-}
-
-const SocialDashboard: React.FC<SocialDashboardProps> = ({ 
-  currentUserId, 
-  currentUserName,
-  currentUserAvatar 
-}) => {
-  // State management with proper types
-  const [activeTab, setActiveTab] = useState<'overview' | 'followers' | 'following' | 'requests' | 'notifications' | 'members' | 'messaging'>('overview');
+const SocialDashboard: React.FC = () => {
+  const { currentUser } = useAuth();
+  const [activeTab, setActiveTab] = useState<'requests' | 'following' | 'followers'>('requests');
   const [followRequests, setFollowRequests] = useState<FollowRequest[]>([]);
-  const [notifications, setNotifications] = useState<SocialNotification[]>([]);
-  const [followers, setFollowers] = useState<Follow[]>([]);
-  const [following, setFollowing] = useState<Follow[]>([]);
-  const [crewProfiles, setCrewProfiles] = useState<CrewProfile[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedProfile, setSelectedProfile] = useState<CrewProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [followingProfiles, setFollowingProfiles] = useState<Record<string, UserProfile | null>>({});
-  const [error, setError] = useState<string | null>(null);
-  const [followersSearch, setFollowersSearch] = useState('');
-  const [followingSearch, setFollowingSearch] = useState('');
   const [outgoingRequests, setOutgoingRequests] = useState<FollowRequest[]>([]);
-  const [testResults, setTestResults] = useState<string>('');
-  // Memoize the props to prevent unnecessary re-renders
-  const memoizedProps = useMemo(() => ({
-    currentUserId,
-    currentUserName,
-    currentUserAvatar: currentUserAvatar || '/default-avatar.svg' // Provide fallback avatar
-  }), [currentUserId, currentUserName, currentUserAvatar]);
+  const [following, setFollowing] = useState<Follow[]>([]);
+  const [followers, setFollowers] = useState<Follow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  // Only log when props actually change
   useEffect(() => {
-    console.log('[SocialDashboard] Component rendered with props:', memoizedProps);
-  }, [memoizedProps]);
-
-  // Set up all listeners when component mounts or userId changes
-  useEffect(() => {
-    if (!memoizedProps.currentUserId) {
-      setIsLoading(false);
-      return () => {};
+    if (currentUser) {
+      loadSocialData();
     }
+  }, [currentUser]);
 
-    console.log('[SocialDashboard] Setting up real-time listeners for user:', memoizedProps.currentUserId);
+  const loadSocialData = () => {
+    if (!currentUser) return;
     
-    let unsubscribeFunctions: (() => void)[] = [];
-    let isMounted = true;
+    setLoading(true);
+    setError('');
     
-    const setupListeners = async () => {
-      try {
-        // Set up listeners using static methods
-        const [unsubRequests, unsubNotifications, unsubFollowers, unsubFollowing] = await Promise.all([
-          SocialService.subscribeToFollowRequests(memoizedProps.currentUserId, (requests: FollowRequest[]) => {
-            if (isMounted) setFollowRequests(requests);
-          }),
-          SocialService.subscribeToNotifications(memoizedProps.currentUserId, (notifications: SocialNotification[]) => {
-            if (isMounted) setNotifications(notifications);
-          }),
-          SocialService.subscribeToFollowers(memoizedProps.currentUserId, (followersData: Follow[]) => {
-            if (isMounted) setFollowers(followersData);
-          }),
-          SocialService.subscribeToFollowing(memoizedProps.currentUserId, (followingData: Follow[]) => {
-            if (isMounted) setFollowing(followingData);
-          })
-        ]);
-        
-        unsubscribeFunctions = [
-          unsubRequests,
-          unsubNotifications,
-          unsubFollowers,
-          unsubFollowing
-        ].filter(Boolean) as (() => void)[];
-        
-        // Load crew profiles
-        const profiles = await SocialService.getCrewProfiles();
-        if (isMounted) setCrewProfiles(profiles);
-        
-        if (isMounted) setIsLoading(false);
-      } catch (error) {
-        console.error('Error setting up listeners:', error);
-        if (isMounted) {
-          setError('Failed to load social data. Please try again.');
-          setIsLoading(false);
-        }
-      }
-    };
-    
-    setupListeners();
-    
-    // Cleanup function
-    return () => {
-      console.log('[SocialDashboard] Cleaning up listeners');
-      isMounted = false;
-      unsubscribeFunctions.forEach(unsubscribe => {
-        if (typeof unsubscribe === 'function') {
-          try {
-            unsubscribe();
-          } catch (err) {
-            console.error('Error during cleanup:', err);
-          }
-        }
+    try {
+      // Set up real-time subscriptions
+      SocialService.subscribeToFollowRequests(currentUser.uid, (requests) => {
+        setFollowRequests(requests);
+        setLoading(false);
       });
-    };
-  }, [memoizedProps.currentUserId]);
-
-  useEffect(() => {
-    // Fetch profiles for all following users with error handling
-    const fetchProfiles = async () => {
-      try {
-        const ids = following.map(f => f.followingId);
-        if (ids.length === 0) return;
-        const profilesMap = await UserUtils.getMultipleUserProfiles(ids);
-        const profiles: Record<string, UserProfile | null> = {};
-        ids.forEach(id => {
-          profiles[id] = profilesMap.get(id) || null;
-        });
-        setFollowingProfiles(profiles);
-      } catch (error) {
-        console.error('[SocialDashboard] Error fetching following profiles:', error);
-      }
-    };
-    fetchProfiles();
-  }, [following]);
-
-  useEffect(() => {
-    if (!memoizedProps.currentUserId) return;
-    // Subscribe to outgoing requests
-    const unsubOutgoing = SocialService.subscribeToOutgoingFollowRequests(
-      memoizedProps.currentUserId,
-      (requests: FollowRequest[]) => setOutgoingRequests(requests)
-    );
-    return () => {
-      if (unsubOutgoing) unsubOutgoing();
-    };
-  }, [memoizedProps.currentUserId]);
-
-  // Add debugging useEffect
-  useEffect(() => {
-    console.log('[SocialDashboard] followRequests state updated:', followRequests);
-  }, [followRequests]);
-
-  useEffect(() => {
-    console.log('[SocialDashboard] outgoingRequests state updated:', outgoingRequests);
-  }, [outgoingRequests]);
-
-  const filteredProfiles = crewProfiles.filter(profile =>
-    profile.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    profile.jobTitles.some(job => job.title.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
-
-  const handleTabChange = (tab: 'overview' | 'followers' | 'following' | 'requests' | 'notifications' | 'members' | 'messaging') => {
-    setActiveTab(tab);
-  };
-
-  const handleNotificationClick = (notification: SocialNotification) => {
-    try {
-      // Mark notification as read
-      SocialService.markNotificationAsRead(notification.id);
       
-      // Navigate based on notification type
-      switch (notification.type) {
-        case 'follow_request':
-          setActiveTab('requests');
-          break;
-        case 'follow_accepted':
-          setActiveTab('followers');
-          break;
-        case 'message':
-          setActiveTab('messaging');
-          break;
-        default:
-          setActiveTab('notifications');
-      }
-    } catch (error) {
-      console.error('[SocialDashboard] Error handling notification click:', error);
-      toast.error('Failed to process notification');
+      SocialService.subscribeToOutgoingFollowRequests(currentUser.uid, (requests) => {
+        setOutgoingRequests(requests);
+      });
+      
+      SocialService.subscribeToFollowing(currentUser.uid, (follows) => {
+        setFollowing(follows);
+      });
+      
+      SocialService.subscribeToFollowers(currentUser.uid, (follows) => {
+        setFollowers(follows);
+      });
+    } catch (err) {
+      console.error('Error loading social data:', err);
+      setError('Failed to load social data. Please try again.');
+      setLoading(false);
     }
   };
 
-  const handleFollowRequestResponse = async (requestId: string, response: 'accepted' | 'rejected') => {
+  const handleFollowRequest = async (requesterId: string, action: 'accept' | 'reject') => {
+    if (!currentUser) return;
+    
     try {
-      await SocialService.respondToFollowRequest(requestId, response);
-      // Remove the request from the list after response
-      setFollowRequests(prev => prev.filter(req => req.id !== requestId));
-      // Mark related notifications as read
-      setNotifications(prev => prev.filter(notif => 
-        !(notif.type === 'follow_request' && notif.relatedEventId === requestId)
-      ));
-      toast.success(`Follow request ${response}`);
-    } catch (error) {
-      console.error('Error responding to follow request:', error);
-      toast.error('Failed to respond to follow request');
+      const request = followRequests.find(req => req.fromUserId === requesterId);
+      if (request) {
+        await SocialService.respondToFollowRequest(request.id, action === 'accept' ? 'accepted' : 'rejected');
+      }
+    } catch (err) {
+      console.error(`Error ${action}ing follow request:`, err);
+      setError(`Failed to ${action} request. Please try again.`);
     }
   };
 
-  // Add debugging for activeTab
-  useEffect(() => {
-    console.log('[SocialDashboard] Active tab changed to:', activeTab);
-  }, [activeTab]);
+  const handleUnfollow = async (userId: string) => {
+    if (!currentUser) return;
+    
+    try {
+      await SocialService.unfollow(currentUser.uid, userId);
+    } catch (err) {
+      console.error('Error unfollowing user:', err);
+      setError('Failed to unfollow user. Please try again.');
+    }
+  };
 
-  if (error) {
-    return (
-      <div className="social-dashboard">
-        <div className="error-state">
-          <h3>Something went wrong</h3>
-          <p>{error}</p>
-          <button onClick={() => window.location.reload()}>Retry</button>
-        </div>
-      </div>
-    );
-  }
+  const handleFollow = async (userId: string) => {
+    if (!currentUser) return;
+    
+    try {
+      await SocialService.sendFollowRequest(currentUser.uid, userId);
+    } catch (err) {
+      console.error('Error following user:', err);
+      setError('Failed to follow user. Please try again.');
+    }
+  };
 
-  if (isLoading) {
+  // Helper function to get user data for display
+  const getUserData = (item: FollowRequest | Follow, type: 'request' | 'following' | 'follower') => {
+    let userId = '';
+    let userName = '';
+    
+    if (type === 'request') {
+      const request = item as FollowRequest;
+      userId = request.fromUserId;
+      userName = request.fromUserName || 'Unknown User';
+    } else if (type === 'following') {
+      const follow = item as Follow;
+      userId = follow.followingId;
+      userName = 'User'; // We'll need to fetch user details
+    } else {
+      const follow = item as Follow;
+      userId = follow.followerId;
+      userName = 'User'; // We'll need to fetch user details
+    }
+    
+    return {
+      id: userId,
+      displayName: userName,
+      avatar: '', // We'll need to fetch user avatar
+      department: 'Film Industry'
+    };
+  };
+
+  const getTabData = () => {
+    switch (activeTab) {
+      case 'requests':
+        return {
+          title: 'Follow Requests',
+          icon: <UserPlus className="w-5 h-5" />,
+          data: followRequests,
+          emptyMessage: 'No pending follow requests',
+          showActions: true
+        };
+      case 'following':
+        return {
+          title: 'Following',
+          icon: <UserCheck className="w-5 h-5" />,
+          data: following,
+          emptyMessage: 'Not following anyone yet',
+          showActions: false
+        };
+      case 'followers':
+        return {
+          title: 'Followers',
+          icon: <Users className="w-5 h-5" />,
+          data: followers,
+          emptyMessage: 'No followers yet',
+          showActions: false
+        };
+      default:
+        return {
+          title: 'Follow Requests',
+          icon: <UserPlus className="w-5 h-5" />,
+          data: followRequests,
+          emptyMessage: 'No pending follow requests',
+          showActions: true
+        };
+    }
+  };
+
+  const tabData = getTabData();
+
+  if (loading) {
     return (
-      <div className="social-dashboard">
-        <div className="loading-spinner">
-          <div className="spinner"></div>
-          <p>Loading social dashboard...</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+        <div className="max-w-6xl mx-auto p-6">
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-8">
+            <div className="flex items-center justify-center py-16">
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600"></div>
+              <span className="ml-4 text-lg text-gray-700 font-medium">Loading your social connections...</span>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="social-dashboard">
-      {/* Debug info - remove after fixing */}
-      <div style={{ background: '#f0f9ff', padding: '4px 8px', fontSize: '12px', color: '#0369a1', marginBottom: '8px' }}>
-        Current tab: {activeTab} | User ID: {currentUserId}
-      </div>
-      
-      <div className="dashboard-header">
-        <h1>Social Hub</h1>
-        <div className="header-actions">
-          <NotificationBell currentUserId={currentUserId} />
-          <div className="stats">
-            <span>{followers.length} Followers</span>
-            <span>{following.length} Following</span>
-            {followRequests.length > 0 && (
-              <span className="requests-badge">{followRequests.length} Requests</span>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+      <div className="max-w-6xl mx-auto p-6">
+        {/* Header */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-8 mb-8">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent mb-2">
+                Social Dashboard
+              </h1>
+              <p className="text-gray-600 text-lg">Connect with your film industry network</p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <div className="px-4 py-2 bg-blue-50 border border-blue-200 rounded-full">
+                <span className="text-blue-700 font-semibold">{followRequests.length} Pending</span>
+              </div>
+              <div className="px-4 py-2 bg-green-50 border border-green-200 rounded-full">
+                <span className="text-green-700 font-semibold">{following.length} Following</span>
+              </div>
+              <div className="px-4 py-2 bg-purple-50 border border-purple-200 rounded-full">
+                <span className="text-purple-700 font-semibold">{followers.length} Followers</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+            <p className="text-red-700 font-medium">{error}</p>
+          </div>
+        )}
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-6 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm font-medium">Pending Requests</p>
+                <p className="text-3xl font-bold text-gray-900">{followRequests.length}</p>
+              </div>
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
+                <UserPlus className="w-6 h-6 text-white" />
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-6 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm font-medium">Outgoing Requests</p>
+                <p className="text-3xl font-bold text-gray-900">{outgoingRequests.length}</p>
+              </div>
+              <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center">
+                <UserX className="w-6 h-6 text-white" />
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-6 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm font-medium">Following</p>
+                <p className="text-3xl font-bold text-gray-900">{following.length}</p>
+              </div>
+              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center">
+                <UserCheck className="w-6 h-6 text-white" />
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-6 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm font-medium">Followers</p>
+                <p className="text-3xl font-bold text-gray-900">{followers.length}</p>
+              </div>
+              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                <Users className="w-6 h-6 text-white" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-6 mb-8">
+          <nav className="flex flex-wrap gap-3 justify-center">
+            <button
+              onClick={() => setActiveTab('requests')}
+              className={`px-6 py-3 rounded-xl font-semibold text-sm flex items-center gap-2 transition-all duration-300 ${
+                activeTab === 'requests'
+                  ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg transform scale-105'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-105'
+              }`}
+            >
+              <UserPlus className="w-4 h-4" />
+              <span>Requests ({followRequests.length})</span>
+            </button>
+            
+            <button
+              onClick={() => setActiveTab('following')}
+              className={`px-6 py-3 rounded-xl font-semibold text-sm flex items-center gap-2 transition-all duration-300 ${
+                activeTab === 'following'
+                  ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg transform scale-105'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-105'
+              }`}
+            >
+              <UserCheck className="w-4 h-4" />
+              <span>Following ({following.length})</span>
+            </button>
+            
+            <button
+              onClick={() => setActiveTab('followers')}
+              className={`px-6 py-3 rounded-xl font-semibold text-sm flex items-center gap-2 transition-all duration-300 ${
+                activeTab === 'followers'
+                  ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg transform scale-105'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-105'
+              }`}
+            >
+              <Users className="w-4 h-4" />
+              <span>Followers ({followers.length})</span>
+            </button>
+          </nav>
+        </div>
+
+        {/* Tab Content */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl">
+          <div className="p-8">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-8">
+              <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                  <div className="text-white">
+                    {tabData.icon}
+                  </div>
+                </div>
+                <span>{tabData.title}</span>
+              </h2>
+              
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    type="text"
+                    placeholder="Search users..."
+                    className="pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/50 backdrop-blur-sm"
+                  />
+                </div>
+                <Button variant="ghost" size="sm" className="bg-white/50 backdrop-blur-sm">
+                  <Filter className="w-5 h-5" />
+                </Button>
+              </div>
+            </div>
+
+            {/* User List */}
+            {tabData.data.length === 0 ? (
+              <div className="text-center py-16">
+                <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <div className="text-gray-400">
+                    {tabData.icon}
+                  </div>
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">No users found</h3>
+                <p className="text-gray-600 text-lg">{tabData.emptyMessage}</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {tabData.data.map((item) => {
+                  const userData = getUserData(item, activeTab === 'requests' ? 'request' : activeTab === 'following' ? 'following' : 'follower');
+                  return (
+                    <div 
+                      key={userData.id} 
+                      className="bg-white/60 backdrop-blur-sm border border-gray-200 rounded-2xl p-6 hover:bg-white/80 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="relative">
+                            <img
+                              src={userData.avatar || '/bust-avatar.svg'}
+                              alt={userData.displayName || 'User'}
+                              className="w-16 h-16 rounded-full object-cover border-4 border-white shadow-lg"
+                              onError={e => (e.currentTarget.src = '/bust-avatar.svg')}
+                            />
+                            <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-to-br from-green-400 to-green-600 rounded-full border-2 border-white flex items-center justify-center">
+                              <div className="w-2 h-2 bg-white rounded-full"></div>
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <h3 className="text-xl font-bold text-gray-900 mb-1">
+                              {userData.displayName || 'Unknown User'}
+                            </h3>
+                            <p className="text-gray-600 mb-1">{userData.department || 'Film Industry'}</p>
+                            <div className="flex items-center gap-2 text-sm text-gray-500">
+                              <span className="flex items-center gap-1">
+                                <Star className="w-4 h-4 text-yellow-500" />
+                                <span>4.8</span>
+                              </span>
+                              <span>•</span>
+                              <span className="flex items-center gap-1">
+                                <Heart className="w-4 h-4 text-red-500" />
+                                <span>24</span>
+                              </span>
+                              <span>•</span>
+                              <span className="text-blue-600 font-medium">
+                                {activeTab === 'requests' ? 'Wants to follow you' : 
+                                 activeTab === 'following' ? 'You are following' : 
+                                 'Following you'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-3">
+                          {activeTab === 'requests' && (
+                            <>
+                              <Button
+                                onClick={() => handleFollowRequest(userData.id, 'accept')}
+                                className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-2 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105"
+                              >
+                                Accept
+                              </Button>
+                              <Button
+                                onClick={() => handleFollowRequest(userData.id, 'reject')}
+                                className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-6 py-2 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105"
+                              >
+                                Reject
+                              </Button>
+                            </>
+                          )}
+                          
+                          {activeTab === 'following' && (
+                            <Button
+                              onClick={() => handleUnfollow(userData.id)}
+                              className="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white px-6 py-2 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105"
+                            >
+                              Unfollow
+                            </Button>
+                          )}
+                          
+                          {activeTab === 'followers' && (
+                            <Button
+                              onClick={() => handleFollow(userData.id)}
+                              className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-2 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105"
+                            >
+                              Follow Back
+                            </Button>
+                          )}
+                          
+                          <Button 
+                            className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-6 py-2 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 flex items-center gap-2"
+                          >
+                            <MessageCircle className="w-4 h-4" />
+                            Message
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
         </div>
-      </div>
-
-      <div className="tabs">
-        <button
-          className={`tab ${activeTab === 'overview' ? 'active' : ''}`}
-          onClick={() => handleTabChange('overview')}
-        >
-          📰 Activity Feed
-        </button>
-        <button
-          className={`tab ${activeTab === 'followers' ? 'active' : ''}`}
-          onClick={() => handleTabChange('followers')}
-        >
-          👥 Followers
-        </button>
-        <button
-          className={`tab ${activeTab === 'following' ? 'active' : ''}`}
-          onClick={() => handleTabChange('following')}
-        >
-          👤 Following
-        </button>
-        <button
-          className={`tab ${activeTab === 'requests' ? 'active' : ''}`}
-          onClick={() => handleTabChange('requests')}
-        >
-          📨 Requests
-        </button>
-        <button
-          className={`tab ${activeTab === 'notifications' ? 'active' : ''}`}
-          onClick={() => handleTabChange('notifications')}
-        >
-          🔔 Notifications
-        </button>
-        <button
-          className={`tab ${activeTab === 'members' ? 'active' : ''}`}
-          onClick={() => handleTabChange('members')}
-        >
-          👥 Members
-        </button>
-        <button
-          className={`tab ${activeTab === 'messaging' ? 'active' : ''}`}
-          onClick={() => handleTabChange('messaging')}
-        >
-          💬 Messaging
-        </button>
-      </div>
-
-      <div className="dashboard-content">
-        {activeTab === 'overview' && (
-          <div className="overview-tab">
-            <ActivityFeed 
-              currentUserId={currentUserId}
-              currentUserName={currentUserName}
-              currentUserAvatar={currentUserAvatar}
-            />
-          </div>
-        )}
-        
-        {activeTab === 'followers' && (
-          <div className="followers-tab">
-            <h3>Followers</h3>
-            <div className="search-container">
-              <input
-                type="text"
-                placeholder="Search followers..."
-                value={followersSearch}
-                onChange={e => setFollowersSearch(e.target.value)}
-                className="search-input"
-              />
-            </div>
-            <div className="followers-list">
-              {followers
-                .filter(follow => {
-                  const profile = followingProfiles[follow.followerId];
-                  return (
-                    (profile?.displayName || `User ${follow.followerId.slice(-4)}`)
-                      .toLowerCase()
-                      .includes(followersSearch.toLowerCase())
-                  );
-                })
-                .map(follow => {
-                  const profile = followingProfiles[follow.followerId];
-                  return (
-                    <div key={follow.id} className="follower-item crew-card" style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
-                      <img
-                        src={profile?.avatarUrl || "/bust-avatar.svg"}
-                        alt={profile?.displayName || `User ${follow.followerId.slice(-4)}`}
-                        className="follower-avatar crew-avatar"
-                        onError={e => (e.currentTarget.src = "/bust-avatar.svg")}
-                      />
-                      <div className="follower-info crew-info" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <span className="follower-name crew-name">{profile?.displayName || `User ${follow.followerId.slice(-4)}`}</span>
-                        {profile?.displayName && (
-                          <span className="follower-handle crew-handle" style={{ fontSize: 13, color: '#6b7280' }}>@{profile.displayName}</span>
-                        )}
-                        <span className="follower-title crew-title">{profile?.jobTitle || ''}</span>
-                        <span className="follower-location crew-location">{profile?.location || ''}</span>
-                      </div>
-                      <div className="follower-actions" style={{ display: 'flex', gap: 10 }}>
-                        <FollowButton currentUserId={currentUserId} targetUserId={follow.followerId} />
-                        <button className="message-btn"><span>💬</span> Message</button>
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
-          </div>
-        )}
-        
-        {activeTab === 'following' && (
-          <div className="following-tab">
-            <h3>Following</h3>
-            <div className="search-container">
-              <input
-                type="text"
-                placeholder="Search following..."
-                value={followingSearch}
-                onChange={e => setFollowingSearch(e.target.value)}
-                className="search-input"
-              />
-            </div>
-            <div className="following-list">
-              {following
-                .filter(follow => {
-                  const profile = followingProfiles[follow.followingId];
-                  return (
-                    (profile?.displayName || `User ${follow.followingId.slice(-6)}`)
-                      .toLowerCase()
-                      .includes(followingSearch.toLowerCase())
-                  );
-                })
-                .map(follow => {
-                  const profile = followingProfiles[follow.followingId];
-                  return (
-                    <div key={`following-${follow.id}`} className="following-item crew-card" style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
-                      <img
-                        src={profile?.avatarUrl || "/bust-avatar.svg"}
-                        alt={profile?.displayName || `User ${follow.followingId.slice(-6)}`}
-                        className="following-avatar crew-avatar"
-                        onError={e => (e.currentTarget.src = "/bust-avatar.svg")}
-                      />
-                      <div className="follower-info crew-info" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <span className="follower-name crew-name">{profile?.displayName || `User ${follow.followingId.slice(-6)}`}</span>
-                        {profile?.displayName && (
-                          <span className="follower-handle crew-handle" style={{ fontSize: 13, color: '#6b7280' }}>@{profile.displayName}</span>
-                        )}
-                        <span className="follower-title crew-title">{profile?.jobTitle || ''}</span>
-                        <span className="follower-location crew-location">{profile?.location || ''}</span>
-                      </div>
-                      <div className="following-actions" style={{ display: 'flex', gap: 10 }}>
-                        <FollowButton currentUserId={currentUserId} targetUserId={follow.followingId} />
-                        <button className="message-btn"><span>💬</span> Message</button>
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
-          </div>
-        )}
-        
-        {activeTab === 'requests' && (
-          <div className="requests-tab">
-            <h3>Follow Requests ({followRequests.length})</h3>
-            {/* Incoming Requests */}
-            <h4 style={{ color: '#1f2937', fontWeight: 600, fontSize: 18, margin: '18px 0 8px 0' }}>Incoming Requests</h4>
-            {followRequests.length === 0 ? (
-              <div className="empty-state" style={{ color: '#374151', fontWeight: 500, fontSize: 16, background: 'rgba(55,65,81,0.04)', borderRadius: 8, padding: 24 }}>
-                No pending follow requests
-              </div>
-            ) : (
-              <div className="requests-list">
-                {followRequests.map(request => (
-                  <div key={request.id} className="request-item" style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    background: '#fff',
-                    borderRadius: '16px',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                    padding: '18px 22px',
-                    marginBottom: '18px',
-                    minWidth: 0,
-                    maxWidth: 520,
-                    border: '1px solid #e5e7eb',
-                    gap: '18px'
-                  }}>
-                    <img 
-                      src="/bust-avatar.svg" 
-                      alt="User"
-                      className="request-avatar"
-                      style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', border: '2px solid #e5e7eb' }}
-                      onError={(e) => {
-                        e.currentTarget.src = "/bust-avatar.svg";
-                      }}
-                    />
-                    <div className="request-user-details" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                      <span className="request-username" style={{ fontSize: 16, fontWeight: 600, color: '#374151' }}>
-                        {request.fromUserName || `User ${request.fromUserId.slice(-6)}`}
-                      </span>
-                      <span className="request-handle" style={{ fontSize: 13, color: '#6b7280' }}>
-                        @{request.fromUserId.slice(-8)}
-                      </span>
-                    </div>
-                    <div className="request-actions" style={{ display: 'flex', gap: 10 }}>
-                      <button 
-                        onClick={() => handleFollowRequestResponse(request.id, 'accepted')}
-                        className="accept-btn"
-                        style={{
-                          backgroundColor: '#10b981',
-                          color: 'white',
-                          border: 'none',
-                          padding: '8px 16px',
-                          borderRadius: '6px',
-                          cursor: 'pointer',
-                          fontWeight: '500',
-                          marginRight: 0
-                        }}
-                      >
-                        ✓ Accept
-                      </button>
-                      <button 
-                        onClick={() => handleFollowRequestResponse(request.id, 'rejected')}
-                        className="reject-btn"
-                        style={{
-                          backgroundColor: '#ef4444',
-                          color: 'white',
-                          border: 'none',
-                          padding: '8px 16px',
-                          borderRadius: '6px',
-                          cursor: 'pointer',
-                          fontWeight: '500',
-                          marginRight: 0
-                        }}
-                      >
-                        ✕ Reject
-                      </button>
-                      <QuickMessage 
-                        currentUserId={currentUserId}
-                        targetUserId={request.fromUserId}
-                        targetUserName={request.fromUserName || `User ${request.fromUserId.slice(-6)}`}
-                        className="ml-auto"
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-            {/* Outgoing Requests */}
-            <h4 style={{ color: '#1f2937', fontWeight: 600, fontSize: 18, margin: '18px 0 8px 0' }}>Pending Outgoing Requests</h4>
-            {outgoingRequests.length === 0 ? (
-              <div className="empty-state" style={{ color: '#374151', fontWeight: 500, fontSize: 16, background: 'rgba(55,65,81,0.04)', borderRadius: 8, padding: 24 }}>
-                No pending outgoing requests
-              </div>
-            ) : (
-              <div className="requests-list">
-                {outgoingRequests.map(request => (
-                  <div key={request.id} className="request-item">
-                    <div className="request-user-info">
-                      <img 
-                        src="/bust-avatar.svg" 
-                        alt="User"
-                        className="request-avatar"
-                        onError={(e) => {
-                          e.currentTarget.src = "/bust-avatar.svg";
-                        }}
-                      />
-                      <div className="request-user-details">
-                        <span className="request-username">
-                          {request.toUserName || `User ${request.toUserId.slice(-6)}`}
-                        </span>
-                        <span className="request-handle">
-                          @{request.toUserId.slice(-8)}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="request-actions">
-                      <span style={{ color: '#f59e42', fontWeight: 500 }}>Pending</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-        
-        {activeTab === 'notifications' && (
-          <div className="notifications-tab">
-            <h3>Notifications ({notifications.length})</h3>
-            {notifications.length === 0 ? (
-              <div className="empty-state" style={{ color: '#374151', fontWeight: 500, fontSize: 16, background: 'rgba(55,65,81,0.04)', borderRadius: 8, padding: 24 }}>
-                No notifications
-              </div>
-            ) : (
-              <div className="notifications-list">
-                {notifications.map((notif) => (
-                  <div key={notif.id} className="notification-item" style={{ color: '#374151', fontWeight: 500, fontSize: 16, background: 'rgba(55,65,81,0.04)', borderRadius: 8, padding: 16, marginBottom: 12 }}>
-                    <div>{notif.title}</div>
-                    <div style={{ color: '#6b7280', fontWeight: 400, fontSize: 14 }}>{notif.message || notif.title}</div>
-                    <div style={{ color: '#9ca3af', fontSize: 13, marginTop: 4 }}>{notif.createdAt && new Date(notif.createdAt).toLocaleDateString()}</div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-        
-        {activeTab === 'members' && (
-          <div className="members-tab">
-            <div className="members-header">
-              <h3>Crew Directory</h3>
-              <div className="search-container">
-                <input
-                  type="text"
-                  placeholder="Search crew members..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="search-input"
-                />
-              </div>
-            </div>
-            <div className="members-grid">
-              {filteredProfiles.map((profile) => (
-                <div key={`member-${profile.uid}`} className="member-card crew-card">
-                  <img 
-                    src={profile.profileImageUrl || "/bust-avatar.svg"} 
-                    alt={profile.name}
-                    className="member-avatar crew-avatar"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.src = "/bust-avatar.svg";
-                    }}
-                  />
-                  <div className="member-info crew-info">
-                    <span className="member-name crew-name">{profile.name}</span>
-                    <span className="member-title crew-title">{profile.jobTitles?.[0]?.title || 'Professional'}</span>
-                    <span className="member-location crew-location">{profile.residences?.[0]?.city}, {profile.residences?.[0]?.country}</span>
-                  </div>
-                  <button className="message-btn"><span>💬</span> Message</button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-        
-        {activeTab === 'messaging' && (
-          <div className="messaging-tab">
-            <h3>Direct Messages</h3>
-            <div className="messaging-container">
-              <ChatInterface 
-                currentUserId={currentUserId}
-                currentUserName={currentUserName}
-                currentUserAvatar={currentUserAvatar}
-              />
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
 };
 
-// Memoize the component to prevent unnecessary re-renders
-export default React.memo(SocialDashboard);
+export default SocialDashboard;

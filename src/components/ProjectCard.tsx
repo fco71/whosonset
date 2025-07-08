@@ -109,7 +109,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
 
   return (
     <Card 
-      className={`overflow-hidden transition-all duration-300 hover:shadow-lg ${className}`}
+      className={`card-modern overflow-hidden ${className}`}
       hoverable
       onClick={handleCardClick}
       role="button"
@@ -146,22 +146,21 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
         </div>
         
         {/* Bookmark Button */}
-      {onBookmark && (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="absolute top-4 right-4 z-10 p-2 rounded-full bg-white/80 backdrop-blur-sm shadow-md hover:bg-white transition-colors"
-          onClick={handleBookmarkClick}
-          aria-label={isBookmarked ? 'Remove from bookmarks' : 'Add to bookmarks'}
-        >
-          {isBookmarked ? (
-            <BookmarkCheck className="w-5 h-5 text-yellow-500" fill="currentColor" />
-          ) : (
-            <Bookmark className="w-5 h-5 text-gray-400" />
-          )}
-        </Button>
-      )}
-      
+        {onBookmark && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="absolute top-4 right-4 z-10 p-2 rounded-full bg-white/80 backdrop-blur-sm shadow-md hover:bg-white transition-colors"
+            onClick={handleBookmarkClick}
+            aria-label={isBookmarked ? 'Remove from bookmarks' : 'Add to bookmarks'}
+          >
+            {isBookmarked ? (
+              <BookmarkCheck className="w-5 h-5 text-yellow-500" fill="currentColor" />
+            ) : (
+              <Bookmark className="w-5 h-5 text-gray-400" />
+            )}
+          </Button>
+        )}
       </div>
 
       {/* Card Content */}
@@ -202,29 +201,35 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                 </span>
               ))}
               {genres.length > 3 && (
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
                   +{genres.length - 3} more
                 </span>
               )}
             </div>
           )}
         </div>
-        
-        {/* Dates and Status */}
-        <div className="pt-4 mt-auto border-t border-gray-100">
-          <div className="flex items-center justify-between text-sm text-gray-500">
-            <div className="flex items-center">
-              <Calendar size={14} className="mr-1.5 text-gray-400" />
-              {startDate ? formatDate(startDate) : 'TBD'}
-            </div>
-            <div className="flex items-center">
-              <span className={`inline-flex items-center text-xs font-medium px-2.5 py-0.5 rounded-full ${statusStyles.bg} ${statusStyles.text}`}>
-                {statusStyles.icon}
-                <span className="ml-1">{formatStatusText(status)}</span>
+
+        {/* Card Footer */}
+        <CardFooter className="pt-4 border-t border-gray-100">
+          <div className="flex items-center justify-between w-full">
+            {/* Dates */}
+            <div className="flex items-center text-xs text-gray-500">
+              <Calendar size={12} className="mr-1" />
+              <span>
+                {startDate ? formatDate(startDate) : 'TBD'} - {endDate ? formatDate(endDate) : 'TBD'}
               </span>
             </div>
+            
+            {/* View Details Button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+            >
+              View Details →
+            </Button>
           </div>
-        </div>
+        </CardFooter>
       </CardBody>
     </Card>
   );

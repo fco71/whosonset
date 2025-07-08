@@ -1,9 +1,9 @@
 /**
- * DESIGN SYSTEM FOUNDATION
- * ========================
+ * CONSOLIDATED DESIGN SYSTEM
+ * =========================
  * 
- * Comprehensive design system for consistent UI/UX across the application
- * This establishes the foundation for Phase 1: Foundation & Polish
+ * Single source of truth for all design tokens, components, and utilities
+ * This replaces the duplicate definitions in globals.css
  */
 
 // ============================================================================
@@ -92,6 +92,42 @@
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+  /* Spacing */
+  --space-0: 0;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+  --space-24: 6rem;
+
+  /* Border Radius */
+  --radius-none: 0;
+  --radius-sm: 0.125rem;
+  --radius-base: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+  --radius-3xl: 1.5rem;
+  --radius-full: 9999px;
+
+  /* Transitions */
+  --duration-75: 75ms;
+  --duration-100: 100ms;
+  --duration-150: 150ms;
+  --duration-200: 200ms;
+  --duration-300: 300ms;
+  --duration-500: 500ms;
+  --duration-700: 700ms;
+  --duration-1000: 1000ms;
 }
 
 // Dark mode support
@@ -336,6 +372,88 @@ $ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 // ============================================================================
+// UNIFIED COMPONENT CLASSES
+// ============================================================================
+
+// Modern Card Design System
+.card-modern {
+  @include card-base;
+  padding: $space-6;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+}
+
+.card-compact {
+  @include card-base;
+  padding: $space-4;
+}
+
+.card-interactive {
+  @include card-base;
+  cursor: pointer;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+}
+
+// Modern Button System
+.btn-primary {
+  @include button-primary;
+  padding: $space-3 $space-6;
+  font-size: $text-sm;
+  font-weight: $font-weight-medium;
+}
+
+.btn-secondary {
+  @include button-secondary;
+  padding: $space-3 $space-6;
+  font-size: $text-sm;
+  font-weight: $font-weight-medium;
+}
+
+.btn-ghost {
+  @include button-ghost;
+  padding: $space-2 $space-4;
+  font-size: $text-sm;
+}
+
+.btn-sm {
+  padding: $space-2 $space-4;
+  font-size: $text-xs;
+}
+
+.btn-lg {
+  padding: $space-4 $space-8;
+  font-size: $text-base;
+}
+
+// Modern Form System
+.form-input {
+  @include input-base;
+}
+
+.form-textarea {
+  @include input-base;
+  resize: vertical;
+  min-height: 100px;
+}
+
+.form-select {
+  @include input-base;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right $space-2 center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: $space-10;
+  appearance: none;
+}
+
+// ============================================================================
 // UTILITY CLASSES
 // ============================================================================
 
@@ -452,18 +570,80 @@ $breakpoint-2xl: 1536px;
 }
 
 // ============================================================================
-// ACCESSIBILITY
+// ANIMATIONS
 // ============================================================================
 
-// Focus styles
-.focus-visible {
-  &:focus-visible {
-    outline: 2px solid var(--border-focus);
-    outline-offset: 2px;
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-// Screen reader only
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.4s ease-out;
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+// ============================================================================
+// LAYOUT UTILITIES
+// ============================================================================
+
+.container-base {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 $space-8;
+}
+
+.container-narrow {
+  max-width: 768px;
+  margin: 0 auto;
+  padding: 0 $space-8;
+}
+
+.section-padding {
+  padding: $space-16 0;
+}
+
+.section-padding-large {
+  padding: $space-24 0;
+}
+
+// ============================================================================
+// ACCESSIBILITY
+// ============================================================================
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -476,10 +656,7 @@ $breakpoint-2xl: 1536px;
   border: 0;
 }
 
-// High contrast mode
-@media (prefers-contrast: high) {
-  :root {
-    --border-primary: var(--neutral-900);
-    --border-secondary: var(--neutral-700);
-  }
+.focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
 } 

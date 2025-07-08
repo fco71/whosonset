@@ -108,7 +108,7 @@ const App: React.FC = () => {
                         <Route path="/projects/add" element={<PrivateRoute><AddProject /></PrivateRoute>} />
                         <Route path="/projects/:projectId/manage" element={<PrivateRoute><ProjectDashboardWrapper /></PrivateRoute>} />
                         <Route path="/crew" element={<ProducerView />} />
-                        <Route path="/social" element={<PrivateRoute><SocialDashboard currentUserId={authUser?.uid || ''} currentUserName={authUser?.displayName || authUser?.email || `User ${authUser?.uid?.slice(-4) || 'Unknown'}`} currentUserAvatar={authUser?.photoURL} /></PrivateRoute>} />
+                        <Route path="/social" element={<PrivateRoute><SocialDashboard /></PrivateRoute>} />
                         <Route path="/social/test" element={<PrivateRoute><SocialTestPage currentUserId={authUser?.uid || ''} currentUserName={authUser?.displayName || authUser?.email || 'User'} currentUserAvatar={authUser?.photoURL} /></PrivateRoute>} />
                         <Route path="/collaboration" element={<PrivateRoute><CollaborationHub /></PrivateRoute>} />
                         <Route path="/video-conference" element={<PrivateRoute><VideoConferenceHub /></PrivateRoute>} />
