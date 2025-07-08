@@ -416,7 +416,7 @@ const SocialDashboard: React.FC = () => {
                             <>
                               <Button
                                 onClick={() => handleFollowRequest(userData.id, 'accept')}
-                                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-full text-sm font-medium border border-blue-600 transition-colors"
+                                className="btn-accept"
                               >
                                 Accept
                               </Button>
@@ -439,8 +439,7 @@ const SocialDashboard: React.FC = () => {
                           {activeTab === 'followers' && !isAlreadyFollowing && (
                             <Button
                               onClick={() => handleFollow(userData.id)}
-                              className="bg-blue-700 hover:bg-blue-800 text-white px-5 py-2 rounded-full text-base font-bold border border-blue-700 shadow-lg transition-all duration-200 focus:ring-2 focus:ring-blue-400 focus:outline-none"
-                              style={{ boxShadow: '0 2px 8px 0 rgba(37, 99, 235, 0.15)' }}
+                              className="btn-follow-back"
                             >
                               Follow Back
                             </Button>

@@ -399,6 +399,25 @@ h3, .heading-tertiary {
   cursor: not-allowed;
 }
 
+.btn-accept, .btn-follow-back {
+  background: #2563eb !important;
+  color: #fff !important;
+  font-weight: 600;
+  border-radius: 999px;
+  box-shadow: 0 2px 8px rgba(37,99,235,0.08);
+  padding: 0.5rem 1.5rem;
+  font-size: 1rem;
+  border: none;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+
+.btn-accept:disabled, .btn-follow-back:disabled {
+  background: #e5e7eb !important;
+  color: #888 !important;
+  opacity: 1 !important;
+  box-shadow: none;
+}
+
 /* Form System */
 .form-input {
   width: 100%;

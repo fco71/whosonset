@@ -366,6 +366,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       return;
     }
     setIsSearchingUsers(true);
+    // Do NOT clear userSearchResults here; keep previous results while loading
     try {
       let allResults: UserSearchResult[] = [];
       if (approvedContacts.length > 0) {
@@ -1128,7 +1129,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                     <label>Search Users</label>
                     <UserAutocomplete
                       value={newWorkspaceData.selectedMembers}
-                      onChange={(users) => setNewWorkspaceData(prev => ({ ...prev, selectedMembers: users }))}
+                      onChange={(users: UserAutocompleteOption[]) => setNewWorkspaceData(prev => ({ ...prev, selectedMembers: users }))}
                       onSearch={handleUserSearchChange}
                       options={userSearchResults}
                       loading={isSearchingUsers}
@@ -1198,28 +1199,18 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                 </div>
               )}
             </div>
-            <div className="modal-footer">
-              <button 
-                onClick={() => {
-                  if (workspaceCreationStep === 'details') {
-                    setShowCreateWorkspaceModal(false);
-                    setWorkspaceCreationStep('details');
-                  } else if (workspaceCreationStep === 'members') {
-                    setWorkspaceCreationStep('details');
-                  } else if (workspaceCreationStep === 'settings') {
-                    setWorkspaceCreationStep('members');
-                  }
-                }} 
-                className="btn-secondary"
-              >
-                {workspaceCreationStep === 'details' ? 'Cancel' : 'Back'}
-              </button>
-              <button 
-                onClick={handleCreateWorkspaceStep} 
-                className="btn-primary"
-              >
-                {workspaceCreationStep === 'settings' ? 'Create Workspace' : 'Next'}
-              </button>
+            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', padding: '1.5rem 2rem 1rem 2rem' }}>
+              <button className="btn-secondary" onClick={() => {
+                if (workspaceCreationStep === 'details') {
+                  setShowCreateWorkspaceModal(false);
+                  setWorkspaceCreationStep('details');
+                } else if (workspaceCreationStep === 'members') {
+                  setWorkspaceCreationStep('details');
+                } else if (workspaceCreationStep === 'settings') {
+                  setWorkspaceCreationStep('members');
+                }
+              }}>Cancel</button>
+              <button className="btn-primary" onClick={handleCreateWorkspaceStep}>{workspaceCreationStep === 'settings' ? 'Create Workspace' : 'Next'}</button>
             </div>
           </div>
         </div>
@@ -1249,10 +1240,10 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                     role: m.role,
                     company: ''
                   })) : []}
-                  onChange={(users) => {
+                  onChange={(users: UserAutocompleteOption[]) => {
                     // Only add new users
-                    const newUsers = users.filter(u => !(selectedWorkspace && selectedWorkspace.members.some(m => m.userId === u.id)));
-                    newUsers.forEach(user => addUserToWorkspace(user));
+                    const newUsers = users.filter((u: UserAutocompleteOption) => !(selectedWorkspace && selectedWorkspace.members.some(m => m.userId === u.id)));
+                    newUsers.forEach((user: UserAutocompleteOption) => addUserToWorkspace(user));
                     setShowAddMemberModal(false);
                     setUserSearchQuery('');
                     setUserSearchResults([]);
@@ -1337,9 +1328,9 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                 />
               </div>
             </div>
-            <div className="modal-footer">
-              <button onClick={() => setShowSettingsModal(false)} className="btn-secondary">Cancel</button>
-              <button onClick={handleUpdateWorkspaceSettings} className="btn-primary">Save Settings</button>
+            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', padding: '1.5rem 2rem 1rem 2rem' }}>
+              <button className="btn-secondary" onClick={() => setShowSettingsModal(false)}>Cancel</button>
+              <button className="btn-primary" onClick={handleUpdateWorkspaceSettings}>Save Settings</button>
             </div>
           </div>
         </div>
@@ -1472,7 +1463,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                   Private Channel
                 </label>
               </div>
-              <div className="modal-footer">
+              <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', padding: '1.5rem 2rem 1rem 2rem' }}>
                 <button type="button" className="btn-secondary" onClick={() => setShowCreateChannelModal(false)}>Cancel</button>
                 <button type="submit" className="btn-primary">Create</button>
               </div>
@@ -1556,7 +1547,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                   placeholder="e.g. draft, scene 1, character"
                 />
               </div>
-              <div className="modal-footer">
+              <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', padding: '1.5rem 2rem 1rem 2rem' }}>
                 <button type="button" className="btn-secondary" onClick={() => setShowCreateDocumentModal(false)}>Cancel</button>
                 <button type="submit" className="btn-primary">Create</button>
               </div>
@@ -1624,7 +1615,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                   rows={2}
                 />
               </div>
-              <div className="modal-footer">
+              <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', padding: '1.5rem 2rem 1rem 2rem' }}>
                 <button type="button" className="btn-secondary" onClick={() => setShowCreateWhiteboardModal(false)}>Cancel</button>
                 <button type="submit" className="btn-primary">Create</button>
               </div>
