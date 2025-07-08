@@ -30,12 +30,19 @@ const SocialDashboard: React.FC = () => {
   const [userDataMap, setUserDataMap] = useState<Map<string, UserData>>(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  // Add a set to track who the current user is following
+  const [followingSet, setFollowingSet] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (currentUser) {
       loadSocialData();
     }
   }, [currentUser]);
+
+  // Update followingSet whenever following changes
+  useEffect(() => {
+    setFollowingSet(new Set(following.map(f => f.followingId)));
+  }, [following]);
 
   // Fetch user data for a given user ID
   const fetchUserData = async (userId: string): Promise<UserData> => {
@@ -340,7 +347,7 @@ const SocialDashboard: React.FC = () => {
               
               <div className="flex items-center gap-3">
                 <div className="relative">
-                  <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-blue-600 w-5 h-5" />
                   <input
                     type="text"
                     placeholder="Search users..."
@@ -368,6 +375,8 @@ const SocialDashboard: React.FC = () => {
               <div className="space-y-3">
                 {tabData.data.map((item) => {
                   const userData = getUserData(item, activeTab === 'requests' ? 'request' : activeTab === 'following' ? 'following' : 'follower');
+                  // For followers tab, check if we already follow this user
+                  const isAlreadyFollowing = activeTab === 'followers' && followingSet.has(userData.id);
                   return (
                     <div 
                       key={userData.id} 
@@ -402,46 +411,47 @@ const SocialDashboard: React.FC = () => {
                           </div>
                         </div>
                         
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
                           {activeTab === 'requests' && (
                             <>
                               <Button
                                 onClick={() => handleFollowRequest(userData.id, 'accept')}
-                                className="bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded text-xs font-medium transition-colors"
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-full text-sm font-medium border border-blue-600 transition-colors"
                               >
                                 Accept
                               </Button>
                               <Button
                                 onClick={() => handleFollowRequest(userData.id, 'reject')}
-                                className="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded text-xs font-medium transition-colors"
+                                className="bg-white hover:bg-gray-100 text-blue-600 px-3 py-1 rounded-full text-sm font-medium border border-blue-600 transition-colors"
                               >
                                 Reject
                               </Button>
                             </>
                           )}
-                          
                           {activeTab === 'following' && (
                             <button
                               onClick={() => handleUnfollow(userData.id)}
-                              className="text-gray-400 hover:text-red-500 text-xs underline hover:no-underline transition-colors mr-2"
+                              className="bg-white hover:bg-gray-100 text-gray-500 px-3 py-1 rounded-full text-sm font-medium border border-gray-300 transition-colors mr-2"
                             >
-                              unfollow
+                              Unfollow
                             </button>
                           )}
-                          
-                          {activeTab === 'followers' && (
+                          {activeTab === 'followers' && !isAlreadyFollowing && (
                             <Button
                               onClick={() => handleFollow(userData.id)}
-                              className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105"
+                              className="bg-blue-700 hover:bg-blue-800 text-white px-5 py-2 rounded-full text-base font-bold border border-blue-700 shadow-lg transition-all duration-200 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                              style={{ boxShadow: '0 2px 8px 0 rgba(37, 99, 235, 0.15)' }}
                             >
                               Follow Back
                             </Button>
                           )}
-                          
-                          <Button 
-                            className="bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1.5 rounded text-xs font-medium transition-colors flex items-center gap-1 shadow-sm"
+                          {activeTab === 'followers' && isAlreadyFollowing && (
+                            <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold border border-green-200">Following</span>
+                          )}
+                          <Button
+                            className="bg-white hover:bg-gray-100 text-blue-600 px-3 py-1 rounded-full text-sm font-medium border border-blue-600 transition-colors flex items-center gap-1"
                           >
-                            <MessageCircle className="w-3 h-3" />
+                            <MessageCircle className="w-4 h-4" />
                             Message
                           </Button>
                         </div>
