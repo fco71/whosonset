@@ -57,8 +57,7 @@ import ProjectAnalytics from './components/Analytics/ProjectAnalytics';
 // Collaboration components
 import CollaborationHub from './components/Collaboration/CollaborationHub';
 
-// Video Conference components
-import VideoConferenceHub from './components/VideoConference/VideoConferenceHub';
+// Video Conference components will be implemented as needed
 
 import { AnimatePresence } from 'framer-motion';
 import Navigation from './components/Navigation';
@@ -111,7 +110,6 @@ const App: React.FC = () => {
                         <Route path="/social" element={<PrivateRoute><SocialDashboard /></PrivateRoute>} />
                         <Route path="/social/test" element={<PrivateRoute><SocialTestPage currentUserId={authUser?.uid || ''} currentUserName={authUser?.displayName || authUser?.email || 'User'} currentUserAvatar={authUser?.photoURL} /></PrivateRoute>} />
                         <Route path="/collaboration" element={<PrivateRoute><CollaborationHub /></PrivateRoute>} />
-                        <Route path="/video-conference" element={<PrivateRoute><VideoConferenceHub /></PrivateRoute>} />
                         <Route path="/collections" element={<PrivateRoute><CollectionsHubPage /></PrivateRoute>} />
                         <Route path="/favorites" element={<PrivateRoute><FavoritesPage /></PrivateRoute>} />
                         <Route path="/saved-crew" element={<PrivateRoute><SavedCrewProfilesPage /></PrivateRoute>} />

@@ -1,7 +1,8 @@
 import React, { Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from './theme/ThemeProvider';
+import { useAuth } from './contexts/AuthContext';
 import '@fontsource/inter/400.css';
 import '@fontsource/inter/500.css';
 import '@fontsource/inter/600.css';
@@ -19,10 +20,12 @@ import SavedCrewProfilesPage from './pages/SavedCrewProfilesPage';
 import SavedProjectsPage from './pages/SavedProjectsPage';
 import CollectionsHubPage from './pages/CollectionsHubPage';
 import SocialPage from './pages/SocialPage.v2';
+import SettingsPage from './pages/SettingsPage';
 
 const fontFamily = 'Inter, sans-serif';
 
 function App() {
+  const { currentUser } = useAuth();
   return (
     <ThemeProvider>
       <div className="min-h-screen bg-background text-foreground" style={{ fontFamily }}>
@@ -39,6 +42,7 @@ function App() {
                 <Route path="/saved-projects" element={<SavedProjectsPage />} />
                 <Route path="/collections" element={<CollectionsHubPage />} />
                 <Route path="/social" element={<SocialPage />} />
+                <Route path="/settings" element={currentUser ? <SettingsPage /> : <Navigate to="/login" />} />
               </Routes>
             </main>
             
