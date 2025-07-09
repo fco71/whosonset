@@ -2,6 +2,15 @@ import { JobTitleEntry } from './JobTitleEntry';
 import { ProjectEntry } from './ProjectEntry';
 
 // Unified CrewProfile interface for the entire application
+export interface EducationEntry {
+  institution?: string;
+  country?: string;
+  degree?: string;
+  fieldOfStudy?: string;
+  endDate?: string;   // YYYY-MM format or 'Present'
+  isCurrent?: boolean;
+}
+
 export interface CrewProfile {
   uid: string;
   name: string;
@@ -11,7 +20,7 @@ export interface CrewProfile {
   jobTitles: JobTitleEntry[];
   residences: Residence[];
   projects?: ProjectEntry[];
-  education?: string[];
+  education?: EducationEntry[];
   contactInfo?: ContactInfo;
   otherInfo?: string;
   isPublished: boolean;
@@ -51,7 +60,7 @@ export interface CrewProfileFormData {
   jobTitles: JobTitleEntry[];
   residences: Residence[];
   projects: ProjectEntry[];
-  education: string[];
+  education: EducationEntry[];
   contactInfo?: ContactInfo;
   otherInfo?: string;
   isPublished?: boolean;

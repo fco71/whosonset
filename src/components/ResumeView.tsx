@@ -13,6 +13,16 @@ interface Project {
   description: string;
 }
 
+// Support both string and structured education entries during transition
+type EducationEntry = string | {
+  institution?: string;
+  country?: string;
+  degree?: string;
+  fieldOfStudy?: string;
+  endDate?: string;
+  isCurrent?: boolean;
+};
+
 interface CrewProfileData {
   name: string;
   profileImageUrl?: string;
@@ -20,7 +30,7 @@ interface CrewProfileData {
   jobTitles: JobTitleEntry[];
   projects?: Project[];
   residences?: Residence[];
-  education?: string[];
+  education?: EducationEntry[];
   contactInfo?: ContactInfo;
   otherInfo?: string;
   languages?: string[];
@@ -319,22 +329,71 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
             )}
 
             {/* Education */}
-            {profile.education && profile.education.filter(edu => edu.trim()).length > 0 && (
+            {profile.education && profile.education.length > 0 && (
               <div style={sectionStyle}>
                 <h2 style={sectionTitleStyle}>Education</h2>
                 <ul style={jobTitlesListStyle}>
                   {profile.education
-                    .filter(edu => edu.trim())
+                    .filter(edu => {
+                      // Handle both string and object formats
+                      if (typeof edu === 'string') return edu.trim() !== '';
+                      // Only show if there's at least one piece of information
+                      return edu.institution || edu.degree || edu.fieldOfStudy || edu.endDate || edu.isCurrent;
+                    })
                     .slice(0, 2)
-                    .map((edu, i) => (
-                      <li key={i} style={jobTitleItemStyle}>
-                        {edu}
-                      </li>
-                    ))}
+                    .map((edu, i) => {
+                      // Handle string format (legacy)
+                      if (typeof edu === 'string') {
+                        return (
+                          <li key={i} style={{ ...jobTitleItemStyle, marginBottom: '4mm' }}>
+                            <div style={{ color: '#444' }}>{edu}</div>
+                          </li>
+                        );
+                      }
+                      
+                      // Handle new structured format
+                      const dateInfo = [];
+                      
+                      // Only show end date or current status
+                      if (edu.isCurrent) {
+                        dateInfo.push('Present');
+                      } else if (edu.endDate) {
+                        const endDate = new Date(edu.endDate).toLocaleDateString('en-US', { year: 'numeric' });
+                        dateInfo.push(endDate);
+                      }
+                      
+                      // Build the title line (bold)
+                      const titleParts = [
+                        edu.degree,
+                        edu.fieldOfStudy
+                      ].filter(Boolean);
+                      
+                      // Build the subtitle line (regular)
+                      const subtitleParts = [
+                        edu.institution,
+                        edu.country,
+                        dateInfo.length > 0 ? dateInfo.join(', ') : null
+                      ].filter(Boolean);
+                      
+                      return (
+                        <li key={i} style={{ ...jobTitleItemStyle, marginBottom: '4mm' }}>
+                          {titleParts.length > 0 && (
+                            <div style={{ fontWeight: 'bold', color: '#333' }}>
+                              {titleParts.join(' in ')}
+                            </div>
+                          )}
+                          {subtitleParts.length > 0 && (
+                            <div style={{ color: '#555' }}>
+                              {subtitleParts.join(', ')}
+                            </div>
+                          )}
+                        </li>
+                      );
+                    })}
                 </ul>
-                {profile.education.filter(edu => edu.trim()).length > 2 && (
+                {profile.education.length > 2 && (
                   <p style={{ fontSize: '9pt', color: '#666', fontStyle: 'italic', margin: '1mm 0 0 0' }}>
-                    (Showing top 2 education entries - prioritize most relevant first)
+                    (Showing 2 most recent - prioritize most relevant first)
                   </p>
                 )}
               </div>

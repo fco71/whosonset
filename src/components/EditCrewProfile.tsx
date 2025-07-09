@@ -6,6 +6,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import { ProjectEntry } from '../types/ProjectEntry';
 import { JobTitleEntry } from '../types/JobTitleEntry';
+import { EducationEntry } from '../types/CrewProfile';
 import { JOB_SUBCATEGORIES } from '../types/JobSubcategories';
 import { CrewProfileFormData, Residence, ContactInfo } from '../types/CrewProfile';
 import ResumeView from './ResumeView';
@@ -35,25 +36,51 @@ const EditCrewProfile: React.FC = () => {
   // --- MODIFIED: Use state to track the user, which is more reliable on load ---
   const [user, setUser] = useState<User | null>(null);
 
-  const [form, setForm] = useState<CrewProfileFormData>({
+  // Initialize form with default values that match CrewProfileFormData interface
+  const getInitialFormData = (): CrewProfileFormData => ({
     name: '',
     bio: '',
     profileImageUrl: '',
     jobTitles: [{ department: '', title: '', subcategories: [] }],
     residences: [{ country: '', city: '' }],
-    projects: [{ projectName: '', role: '', description: '' }],
+    projects: [],
     education: [],
-    contactInfo: {
-      email: '',
-      phone: '',
+    contactInfo: { 
+      email: '', 
+      phone: '', 
       website: '',
-      instagram: '',
+      instagram: ''
     },
+    languages: [],
     otherInfo: '',
     isPublished: false,
-    availability: 'available',
-    languages: [],
+    availability: 'available'
   });
+
+  const [form, setForm] = useState<CrewProfileFormData>(getInitialFormData());
+
+  // Helper function to ensure education entries have all required fields with proper defaults
+  const ensureEducationFields = (eduArray: any[] = []): EducationEntry[] => {
+    if (!Array.isArray(eduArray) || eduArray.length === 0) {
+      return [{
+        institution: '',
+        country: '',
+        degree: '',
+        fieldOfStudy: '',
+        endDate: '',
+        isCurrent: false
+      }];
+    }
+    
+    return eduArray.map(edu => ({
+      institution: edu?.institution || '',
+      country: edu?.country || '',
+      degree: edu?.degree || '',
+      fieldOfStudy: edu?.fieldOfStudy || '',
+      endDate: edu?.endDate || '',
+      isCurrent: Boolean(edu?.isCurrent)
+    }));
+  };
 
   const [departments, setDepartments] = useState<JobDepartment[]>([]);
   const [countryOptions, setCountryOptions] = useState<{ name: string; cities: string[] }[]>([]);
@@ -187,25 +214,26 @@ const EditCrewProfile: React.FC = () => {
             }
           }) || [];
 
-          setForm({
+          // Ensure all required fields are present and properly formatted
+          const formData: CrewProfileFormData = {
+            // Required fields with defaults
             name: data.name || '',
             bio: data.bio || '',
             profileImageUrl: data.profileImageUrl || '',
-            jobTitles: migratedJobTitles,
-            residences: data.residences || [{ country: '', city: '' }],
-            projects: data.projects || [{ projectName: '', role: '', description: '' }],
-            education: data.education || [],
-            contactInfo: {
-              email: user.email || data.contactInfo?.email || '', // Use auth email as primary
-              phone: data.contactInfo?.phone || '',
-              website: data.contactInfo?.website || '',
-              instagram: data.contactInfo?.instagram || '',
-            },
+            // Arrays with type safety
+            jobTitles: data.jobTitles?.length ? migratedJobTitles : [{ department: '', title: '', subcategories: [] }],
+            residences: data.residences?.length ? data.residences : [{ country: '', city: '' }],
+            projects: data.projects?.length ? data.projects : [],
+            education: data.education?.length ? ensureEducationFields(data.education) : [],
+            // Optional fields with defaults
+            contactInfo: data.contactInfo || { email: '', phone: '', website: '', instagram: '' },
+            languages: data.languages?.length ? data.languages : [],
             otherInfo: data.otherInfo || '',
             isPublished: data.isPublished || false,
-            availability: data.availability || 'available',
-            languages: data.languages || [],
-          });
+            availability: data.availability || 'available'
+          };
+          
+          setForm(formData);
           setIsPublished(data.isPublished || false);
           console.log("DEBUG: Form state updated with profile data");
         } else {
@@ -237,10 +265,23 @@ const EditCrewProfile: React.FC = () => {
     });
   };
 
+  // Get default education entry
+  const getDefaultEducationEntry = (): EducationEntry => ({
+    institution: '',
+    country: '',
+    degree: '',
+    fieldOfStudy: '',
+    endDate: '',
+    isCurrent: false
+  });
+
   // --- Handlers ---
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setForm(f => ({ ...f, [name]: value }));
+    setForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   // --- THIS IS THE CORRECTED LINE ---
@@ -352,19 +393,46 @@ const EditCrewProfile: React.FC = () => {
   const removeProject = (i: number) =>
     setForm(f => ({ ...f, projects: f.projects.filter((_, idx) => idx !== i) }));
 
-  const updateEducation = (i: number, value: string) => {
+  const updateEducation = (i: number, field: keyof EducationEntry, value: string | boolean) => {
     setForm(f => {
       const education = [...f.education];
-      education[i] = value;
+      // Ensure the education entry exists
+      education[i] = {
+        ...education[i],
+        [field]: value
+      };
+      
+      // If isCurrent is true, clear the endDate
+      if (field === 'isCurrent' && value === true) {
+        education[i].endDate = '';
+      }
+      
       return { ...f, education };
     });
   };
 
-  const addEducation = () =>
-    setForm(f => ({ ...f, education: [...f.education, ''] }));
+  const addEducation = () => {
+    setForm(f => ({
+      ...f,
+      education: [
+        ...f.education,
+        {
+          institution: '',
+          country: '',
+          degree: '',
+          fieldOfStudy: '',
+          endDate: '',
+          isCurrent: false
+        }
+      ]
+    }));
+  };
 
   const removeEducation = (i: number) =>
-    setForm(f => ({ ...f, education: f.education.filter((_, idx) => idx !== i) }));
+    setForm(f => ({
+      ...f,
+      education: f.education.filter((_, idx) => idx !== i)
+    }));
 
   const updateLanguage = (i: number, value: string) => {
     setForm(f => {
@@ -774,31 +842,98 @@ const EditCrewProfile: React.FC = () => {
                 <div className="mb-8">
                   <h3 className="text-lg font-light text-gray-900 mb-4 tracking-wide">Education</h3>
                   {form.education.map((edu, i) => (
-                    <div key={i} className="mb-3 flex items-center gap-3">
-                      <input
-                        value={edu}
-                        onChange={e => updateEducation(i, e.target.value)}
-                        placeholder="e.g., Bachelor of Arts in Film Studies, UCLA"
-                        className="flex-1 p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02] text-sm"
-                        maxLength={80}
-                      />
+                    <div key={i} className="mb-6 p-4 border border-gray-200 rounded-lg bg-white">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Institution</label>
+                          <input
+                            value={edu.institution || ''}
+                            onChange={e => updateEducation(i, 'institution', e.target.value)}
+                            placeholder="e.g., University of California, Los Angeles"
+                            className="w-full p-2 border border-gray-200 rounded focus:border-gray-400 focus:outline-none text-gray-900 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Country</label>
+                          <input
+                            value={edu.country || ''}
+                            onChange={e => updateEducation(i, 'country', e.target.value)}
+                            placeholder="e.g., United States"
+                            className="w-full p-2 border border-gray-200 rounded focus:border-gray-400 focus:outline-none text-gray-900 text-sm"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Degree</label>
+                          <input
+                            value={edu.degree || ''}
+                            onChange={e => updateEducation(i, 'degree', e.target.value)}
+                            placeholder="e.g., Bachelor of Arts"
+                            className="w-full p-2 border border-gray-200 rounded focus:border-gray-400 focus:outline-none text-gray-900 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Field of Study</label>
+                          <input
+                            value={edu.fieldOfStudy || ''}
+                            onChange={e => updateEducation(i, 'fieldOfStudy', e.target.value)}
+                            placeholder="e.g., Film Studies"
+                            className="w-full p-2 border border-gray-200 rounded focus:border-gray-400 focus:outline-none text-gray-900 text-sm"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            {edu.isCurrent ? 'Graduation Year' : 'End Date'}
+                          </label>
+                          <input
+                            type={edu.isCurrent ? 'text' : 'month'}
+                            value={edu.isCurrent ? 'Present' : (edu.endDate || '')}
+                            onChange={e => updateEducation(i, 'endDate', e.target.value)}
+                            disabled={edu.isCurrent}
+                            className="w-full p-2 border border-gray-200 rounded focus:border-gray-400 focus:outline-none text-gray-900 text-sm disabled:bg-gray-50"
+                            placeholder="Graduation date"
+                          />
+                        </div>
+                        <div className="flex items-end">
+                          <label className="flex items-center text-sm text-gray-700 cursor-pointer h-full">
+                            <input
+                              type="checkbox"
+                              checked={!!edu.isCurrent}
+                              onChange={e => updateEducation(i, 'isCurrent', e.target.checked)}
+                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            />
+                            <span className="ml-2">Currently studying</span>
+                          </label>
+                        </div>
+                      </div>
                       {form.education.length > 1 && (
-                        <button 
-                          type="button" 
-                          onClick={() => removeEducation(i)} 
-                          className="text-red-600 hover:text-red-700 text-sm font-medium transition-colors"
-                        >
-                          Remove
-                        </button>
+                        <div className="flex justify-end mt-2">
+                          <button
+                            type="button"
+                            onClick={() => removeEducation(i)}
+                            className="text-red-600 hover:text-red-700 text-sm font-medium transition-colors flex items-center"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            Remove Education
+                          </button>
+                        </div>
                       )}
                     </div>
                   ))}
-                  <button 
-                    type="button" 
-                    onClick={addEducation} 
-                    className="text-gray-600 hover:text-gray-800 font-medium text-sm transition-colors"
+                  <button
+                    type="button"
+                    onClick={addEducation}
+                    className="mt-2 flex items-center text-blue-600 hover:text-blue-700 font-medium text-sm transition-colors"
                   >
-                    + Add Education
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Add Another Education
                   </button>
                 </div>
 
