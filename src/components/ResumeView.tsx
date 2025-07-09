@@ -16,7 +16,7 @@ interface Project {
 // Support both string and structured education entries during transition
 type EducationEntry = string | {
   institution?: string;
-  country?: string;
+  place?: string;  // Can be city, country, or both (e.g., 'New York' or 'Spain' or 'New York, USA')
   degree?: string;
   fieldOfStudy?: string;
   endDate?: string;
@@ -362,16 +362,16 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
                         dateInfo.push(endDate);
                       }
                       
-                      // Build the title line (bold)
+                      // Build the title line (bold) - only show degree in bold
                       const titleParts = [
-                        edu.degree,
-                        edu.fieldOfStudy
+                        edu.degree
                       ].filter(Boolean);
                       
-                      // Build the subtitle line (regular)
+                      // Build the subtitle line (regular) - include field of study, institution, place, and dates
                       const subtitleParts = [
+                        edu.fieldOfStudy,
                         edu.institution,
-                        edu.country,
+                        edu.place,
                         dateInfo.length > 0 ? dateInfo.join(', ') : null
                       ].filter(Boolean);
                       
@@ -379,7 +379,7 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
                         <li key={i} style={{ ...jobTitleItemStyle, marginBottom: '4mm' }}>
                           {titleParts.length > 0 && (
                             <div style={{ fontWeight: 'bold', color: '#333' }}>
-                              {titleParts.join(' in ')}
+                              {titleParts.join('')}
                             </div>
                           )}
                           {subtitleParts.length > 0 && (

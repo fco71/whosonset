@@ -64,7 +64,7 @@ const EditCrewProfile: React.FC = () => {
     if (!Array.isArray(eduArray) || eduArray.length === 0) {
       return [{
         institution: '',
-        country: '',
+        place: '',
         degree: '',
         fieldOfStudy: '',
         endDate: '',
@@ -72,9 +72,10 @@ const EditCrewProfile: React.FC = () => {
       }];
     }
     
+    // Migrate from 'country' to 'place' if needed
     return eduArray.map(edu => ({
       institution: edu?.institution || '',
-      country: edu?.country || '',
+      place: edu?.place || edu?.country || '', // Fallback to country for backward compatibility
       degree: edu?.degree || '',
       fieldOfStudy: edu?.fieldOfStudy || '',
       endDate: edu?.endDate || '',
@@ -268,7 +269,7 @@ const EditCrewProfile: React.FC = () => {
   // Get default education entry
   const getDefaultEducationEntry = (): EducationEntry => ({
     institution: '',
-    country: '',
+    place: '',
     degree: '',
     fieldOfStudy: '',
     endDate: '',
@@ -418,7 +419,7 @@ const EditCrewProfile: React.FC = () => {
         ...f.education,
         {
           institution: '',
-          country: '',
+          place: '',
           degree: '',
           fieldOfStudy: '',
           endDate: '',
@@ -854,12 +855,13 @@ const EditCrewProfile: React.FC = () => {
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Country</label>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Place</label>
                           <input
-                            value={edu.country || ''}
-                            onChange={e => updateEducation(i, 'country', e.target.value)}
-                            placeholder="e.g., United States"
+                            type="text"
+                            value={edu.place}
+                            onChange={e => updateEducation(i, 'place', e.target.value)}
                             className="w-full p-2 border border-gray-200 rounded focus:border-gray-400 focus:outline-none text-gray-900 text-sm"
+                            placeholder="e.g., Spain or New York"
                           />
                         </div>
                       </div>

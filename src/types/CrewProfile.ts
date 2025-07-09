@@ -4,7 +4,7 @@ import { ProjectEntry } from './ProjectEntry';
 // Unified CrewProfile interface for the entire application
 export interface EducationEntry {
   institution?: string;
-  country?: string;
+  place?: string;  // Can be city, country, or both (e.g., 'New York' or 'Spain' or 'New York, USA')
   degree?: string;
   fieldOfStudy?: string;
   endDate?: string;   // YYYY-MM format or 'Present'
