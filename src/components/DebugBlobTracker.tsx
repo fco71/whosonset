@@ -31,24 +31,69 @@ if (!window.__originalCreateObjectURL) {
   URL.createObjectURL = function(blob: Blob | MediaSource) {
     const url = window.__originalCreateObjectURL!.call(URL, blob);
     blobUrls.add(url);
-    const logInfo: Record<string, any> = { stack: new Error().stack };
     
-    // Only include type and size if available (they exist on Blob but not MediaSource)
+    // Get the stack trace for debugging
+    const stack = new Error().stack || '';
+    
+    // Create a more detailed log entry
+    const logInfo: Record<string, any> = {
+      timestamp: new Date().toISOString(),
+      stack: stack.split('\n').slice(2).join('\n'), // Skip the first two lines of the stack trace
+    };
+    
+    // Add blob metadata
     if ('type' in blob) {
       logInfo.type = blob.type;
       logInfo.size = blob.size;
+      logInfo.isMediaSource = false;
+      
+      // If it's an image, try to get dimensions
+      if (blob.type.startsWith('image/')) {
+        const img = new Image();
+        img.onload = () => {
+          logInfo.dimensions = { width: img.width, height: img.height };
+          debugLog('Blob URL created (image dimensions loaded):', url, logInfo);
+        };
+        img.onerror = () => {
+          debugLog('Blob URL created (failed to load image):', url, logInfo);
+        };
+        img.src = url;
+      }
     } else {
       logInfo.sourceType = 'MediaSource';
     }
     
-    debugLog('Blob URL created:', url, logInfo);
+    // Log creation with timestamp
+    console.groupCollapsed(`[BlobTracker] Blob URL created: ${url.substring(0, 50)}...`);
+    console.log('URL:', url);
+    console.log('Type:', logInfo.type || 'unknown');
+    console.log('Size:', logInfo.size ? `${logInfo.size} bytes` : 'unknown');
+    console.log('Created at:', logInfo.timestamp);
+    console.log('Stack trace:', logInfo.stack);
+    console.groupEnd();
+    
     return url;
   };
 
   // Override URL.revokeObjectURL to track blob URL cleanup
   URL.revokeObjectURL = function(url: string) {
-    debugLog('Blob URL revoked:', url);
+    const wasTracked = blobUrls.has(url);
     blobUrls.delete(url);
+    
+    console.groupCollapsed(`[BlobTracker] Blob URL ${wasTracked ? 'revoked' : 'revoked (not tracked)'}: ${url.substring(0, 50)}...`);
+    console.log('URL:', url);
+    console.log('Revoked at:', new Date().toISOString());
+    console.log('Was tracked:', wasTracked);
+    
+    if (wasTracked) {
+      debugLog('Blob URL revoked:', url);
+    } else {
+      console.warn('Revoked untracked blob URL. This may indicate a memory leak.');
+      console.log('Current tracked URLs:', Array.from(blobUrls));
+    }
+    
+    console.groupEnd();
+    
     return window.__originalRevokeObjectURL!.call(URL, url);
   };
 

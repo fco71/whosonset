@@ -1,7 +1,7 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Clock, MapPin, Film, Calendar, Bookmark, BookmarkCheck } from 'lucide-react';
+import { Clock, MapPin, Film, Calendar, Bookmark, BookmarkCheck, ImageOff } from 'lucide-react';
 import Card, { CardHeader, CardBody, CardFooter, CardTitle, CardDescription } from "./ui/Card";
 import { Button } from "./ui/Button";
 
@@ -82,7 +82,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
   director,
   producer,
   genres = [],
-  coverImageUrl,
+  coverImageUrl: initialCoverImageUrl,
   startDate,
   endDate,
   showDetails = false,
@@ -90,6 +90,44 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
   isBookmarked = false,
   className = '',
 }) => {
+  // State to manage the cover image URL with error handling
+  const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
+
+  // Track the last processed URL to prevent duplicate processing
+  const lastProcessedUrlRef = useRef<string | null>(null);
+
+  // Handle image URL changes and validate
+  useEffect(() => {
+    // Skip if no URL or if we've already processed this URL
+    if (!initialCoverImageUrl || initialCoverImageUrl === lastProcessedUrlRef.current) {
+      return;
+    }
+
+    // Update the last processed URL
+    lastProcessedUrlRef.current = initialCoverImageUrl;
+
+    // For blob URLs, we'll use a placeholder instead
+    if (initialCoverImageUrl.startsWith('blob:')) {
+      // Only log in development to avoid cluttering production logs
+      if (process.env.NODE_ENV === 'development') {
+        console.debug('Using placeholder for blob URL');
+      }
+      setCoverImageUrl(null);
+      setImageError(true);
+      return;
+    }
+
+    // For non-blob URLs, use them directly
+    setCoverImageUrl(initialCoverImageUrl);
+    setImageError(false);
+  }, [initialCoverImageUrl]);
+
+  const handleImageError = () => {
+    console.warn(`[ProjectCard] Failed to load image: ${coverImageUrl}`);
+    setCoverImageUrl(null);
+    setImageError(true);
+  };
   const navigate = useNavigate();
   const statusStyles = getStatusStyles(status);
   
@@ -124,16 +162,32 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
     >
       {/* Cover Image */}
       <div className="relative h-48 bg-gray-100 overflow-hidden">
-        {coverImageUrl ? (
-          <img
-            src={coverImageUrl}
-            alt={`${projectName} cover`}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-            loading="lazy"
-          />
+        {coverImageUrl && !imageError ? (
+          <>
+            <img
+              src={coverImageUrl}
+              alt={`${projectName} cover`}
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              loading="lazy"
+              onError={handleImageError}
+            />
+            {coverImageUrl.startsWith('blob:') && (
+              <div className="absolute inset-0 border-2 border-yellow-400 border-dashed pointer-events-none" />
+            )}
+          </>
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
-            <Film size={48} className="text-gray-300" />
+          <div className="w-full h-full bg-gradient-to-br from-blue-50 to-purple-50 flex flex-col items-center justify-center text-center p-4">
+            {imageError ? (
+              <>
+                <ImageOff size={32} className="text-gray-400 mb-2" />
+                <p className="text-xs text-gray-400">Image not available</p>
+              </>
+            ) : (
+              <>
+                <Film size={32} className="text-gray-300 mb-2" />
+                <p className="text-xs text-gray-400">No cover image</p>
+              </>
+            )}
           </div>
         )}
         
