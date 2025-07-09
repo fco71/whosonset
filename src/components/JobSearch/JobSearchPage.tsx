@@ -138,47 +138,56 @@ const JobSearchPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-8">
-      <div className="container mx-auto px-4">
-        <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 mb-4">
+    <div className="min-h-screen bg-white py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Find Your Next Opportunity
           </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+          <p className="text-gray-600 max-w-2xl mx-auto">
             Discover the best film industry jobs that match your skills and aspirations
           </p>
         </div>
-        
-        <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm p-6 mb-6">
-          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-            <div className="relative w-full md:max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between mb-6">
+            <div className="relative w-full md:max-w-xl">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
                 type="text"
                 placeholder="Search jobs by title, company, or keywords..."
-                className="pl-10 w-full"
+                className="pl-10 w-full text-sm"
                 value={filters.search || ''}
                 onChange={(e) => handleFilterChange({ ...filters, search: e.target.value })}
               />
             </div>
-            <div className="flex items-center space-x-2 w-full md:w-auto">
+            <div className="flex items-center gap-3 w-full md:w-auto">
               <Button 
                 variant="outline" 
                 onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center space-x-2 w-full md:w-auto justify-center"
+                className="flex items-center gap-2"
               >
-                <Filter className="w-4 h-4" />
-                <span>{showFilters ? 'Hide' : 'Show'} Filters</span>
+                {showFilters ? (
+                  <>
+                    <X size={16} />
+                    Hide Filters
+                  </>
+                ) : (
+                  <>
+                    <Filter size={16} />
+                    Filters
+                  </>
+                )}
               </Button>
-              <Button className="whitespace-nowrap w-full md:w-auto">
-                <Plus className="w-4 h-4 mr-2" />
+              <Button className="whitespace-nowrap">
+                <Plus size={16} className="mr-2" />
                 Post a Job
               </Button>
             </div>
           </div>
 
           {showFilters && (
-            <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-800">
+            <div className="pt-6 border-t border-gray-100">
               <JobSearchFilters
                 filters={filters}
                 onFilterChange={handleFilterChange}
@@ -186,13 +195,6 @@ const JobSearchPage: React.FC = () => {
             </div>
           )}
         </div>
-        <span className="text-sm text-gray-600">Sort by:</span>
-        <select className="text-sm border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-          <option value="recent">Most Recent</option>
-          <option value="title">Job Title</option>
-          <option value="company">Company</option>
-          <option value="location">Location</option>
-        </select>
       </div>
 
       {loading ? (
