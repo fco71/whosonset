@@ -104,6 +104,7 @@ export interface JobPosting {
 }
 
 export interface JobSearchFilter {
+  search?: string;
   keywords?: string;
   department?: string;
   jobTitle?: string;
@@ -115,13 +116,11 @@ export interface JobSearchFilter {
   datePosted?: 'today' | 'week' | 'month' | 'all';
   experienceLevel?: 'entry' | 'mid' | 'senior' | 'executive';
   contractType?: 'full_time' | 'part_time' | 'contract' | 'freelance' | 'internship';
-  // Enhanced filters
   hasBenefits?: boolean;
   allowsRemote?: boolean;
   projectDuration?: 'short_term' | 'long_term' | 'ongoing';
   teamSize?: 'small' | 'medium' | 'large';
   travelRequired?: boolean;
-  // Application status filter (for applicants)
   applicationStatus?: 'pending' | 'reviewed' | 'shortlisted' | 'interviewed' | 'hired' | 'rejected';
 }
 
