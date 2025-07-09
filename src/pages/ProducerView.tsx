@@ -265,18 +265,26 @@ const ProducerView: React.FC = () => {
               Search
             </label>
             <div className="flex gap-2">
-              <input
-                type="text"
-                value={filters.searchQuery || ''}
-                onChange={(e) => handleFilterChange('searchQuery', e.target.value)}
-                placeholder="Search by name, role, or skills..."
-                className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02] h-12"
-                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-              />
+              <div className="w-full">
+                <label htmlFor="search-crew" className="sr-only">Search crew members</label>
+                <input
+                  type="text"
+                  id="search-crew"
+                  name="searchCrew"
+                  value={filters.searchQuery || ''}
+                  onChange={(e) => handleFilterChange('searchQuery', e.target.value)}
+                  placeholder="Search by name, role, or skills..."
+                  className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02] h-12"
+                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                />
+              </div>
               <button
+                type="button"
                 onClick={handleSearch}
                 disabled={isSearching}
                 className="px-6 h-12 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label={isSearching ? 'Searching...' : 'Search crew members'}
+                aria-disabled={isSearching}
               >
                 {isSearching ? '🔍' : 'Search'}
               </button>
@@ -287,13 +295,19 @@ const ProducerView: React.FC = () => {
           <div className="flex flex-col md:flex-row md:items-end gap-4 md:gap-6 animate-fade-in-delay">
             {/* Department Filter */}
             <div className="flex-1 min-w-[180px]">
-              <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
+              <label 
+                htmlFor="department-filter"
+                className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider"
+              >
                 Department
               </label>
               <select
+                id="department-filter"
+                name="department"
                 value={filters.department}
                 onChange={(e) => handleFilterChange('department', e.target.value)}
                 className="w-full p-3 h-11 text-base bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light leading-tight transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
+                aria-label="Filter by department"
               >
                 <option value="">All Departments</option>
                 {departments.map(dept => (
@@ -306,14 +320,21 @@ const ProducerView: React.FC = () => {
 
             {/* Job Title Filter */}
             <div className="flex-1 min-w-[160px]">
-              <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
+              <label 
+                htmlFor="role-filter"
+                className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider"
+              >
                 Role
               </label>
               <select
+                id="role-filter"
+                name="role"
                 value={filters.jobTitle}
                 onChange={(e) => handleFilterChange('jobTitle', e.target.value)}
                 className="w-full p-3 h-11 text-base bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light leading-tight transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
                 disabled={!filters.department}
+                aria-label="Filter by role"
+                aria-disabled={!filters.department}
               >
                 <option value="">All Roles</option>
                 {getAvailableJobTitles().map(title => (
@@ -326,13 +347,19 @@ const ProducerView: React.FC = () => {
 
             {/* Country Filter */}
             <div className="flex-1 min-w-[160px]">
-              <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
+              <label 
+                htmlFor="country-filter"
+                className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider"
+              >
                 Country
               </label>
               <select
+                id="country-filter"
+                name="country"
                 value={filters.country}
                 onChange={(e) => handleFilterChange('country', e.target.value)}
                 className="w-full p-3 h-11 text-base bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light leading-tight transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
+                aria-label="Filter by country"
               >
                 <option value="">All Countries</option>
                 {countries.map(country => (
@@ -345,13 +372,19 @@ const ProducerView: React.FC = () => {
 
             {/* Availability Filter */}
             <div className="flex-1 min-w-[140px]">
-              <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
+              <label 
+                htmlFor="availability-filter"
+                className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider"
+              >
                 Availability
               </label>
               <select
+                id="availability-filter"
+                name="availability"
                 value={filters.availability}
                 onChange={(e) => handleFilterChange('availability', e.target.value)}
                 className="w-full p-3 h-11 text-base bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light leading-tight transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
+                aria-label="Filter by availability"
               >
                 <option value="">All Status</option>
                 <option value="available">Available</option>

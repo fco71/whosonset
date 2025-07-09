@@ -70,17 +70,25 @@ const JobSearchFilters: React.FC<JobSearchFiltersProps> = ({ filters, onFilterCh
       <h3 className="text-lg font-light text-gray-900 tracking-wide">Filters</h3>
       
       <div className="space-y-3">
-        <label className="block text-xs font-medium text-gray-700 uppercase tracking-wider">
+        <label 
+          htmlFor="department-filter"
+          className="block text-xs font-medium text-gray-700 uppercase tracking-wider"
+        >
           Department
         </label>
         <select
+          id="department-filter"
+          name="department"
           value={filters.department || ''}
           onChange={(e) => handleFilterChange('department', e.target.value || undefined)}
           className="w-full p-3 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02] text-sm"
+          aria-label="Filter by department"
         >
           <option value="">All Departments</option>
           {departments.map(dept => (
-            <option key={dept} value={dept}>{dept}</option>
+            <option key={dept} value={dept}>
+              {dept}
+            </option>
           ))}
         </select>
       </div>

@@ -181,11 +181,15 @@ const JobSearchPage: React.FC = () => {
         <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
           <div className="flex-1">
             <div className="relative">
+              <label htmlFor="job-search" className="sr-only">Search jobs</label>
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
                 type="text"
+                id="job-search"
+                name="jobSearch"
                 placeholder="Search jobs by title, company, or keywords..."
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                aria-label="Search for job opportunities"
               />
             </div>
           </div>

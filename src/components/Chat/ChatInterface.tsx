@@ -671,19 +671,26 @@ If you don't see the microphone icon, check your browser settings.`;
 
       {/* Main input */}
       <div className="input-container">
+        <label htmlFor="chat-message-input" className="sr-only">Type your message</label>
         <input
           ref={inputRef}
+          id="chat-message-input"
+          name="chatMessage"
           type="text"
           onChange={handleInputChange}
           onKeyPress={handleKeyPress}
           placeholder="Type a message..."
           className="message-input-field"
           disabled={sendingRef.current}
+          aria-label="Type your message"
+          aria-disabled={sendingRef.current}
         />
         <button
           onClick={handleSend}
           disabled={sendingRef.current}
           className="send-button"
+          aria-label="Send message"
+          aria-disabled={sendingRef.current}
         >
           {sendingRef.current ? 'Sending...' : 'Send'}
         </button>
