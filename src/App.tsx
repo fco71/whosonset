@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from './theme/ThemeProvider';
@@ -7,6 +7,9 @@ import '@fontsource/inter/500.css';
 import '@fontsource/inter/600.css';
 import '@fontsource/inter/700.css';
 import './App.module.scss';
+
+// Import debug component directly for now to ensure it loads
+import DebugBlobTracker from './components/DebugBlobTracker';
 
 // Import pages
 import ProducerView from './pages/ProducerView';
@@ -41,6 +44,11 @@ function App() {
             
             {/* Footer would go here */}
           </div>
+          
+          {/* Debug tools - always show in development */}
+          {process.env.NODE_ENV === 'development' && (
+            <DebugBlobTracker showAll={true} />
+          )}
           
           <Toaster 
             position="top-right" 

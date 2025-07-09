@@ -61,6 +61,17 @@ const EditCrewProfile: React.FC = () => {
   const [message, setMessage] = useState<string | null>(null);
   const [isPublished, setIsPublished] = useState(false);
 
+  // Clean up any blob URLs when component unmounts
+  useEffect(() => {
+    return () => {
+      // Clean up any blob URLs in the form state
+      if (form.profileImageUrl?.startsWith('blob:')) {
+        console.log('[ProfileImage] Cleaning up blob URL on unmount:', form.profileImageUrl);
+        URL.revokeObjectURL(form.profileImageUrl);
+      }
+    };
+  }, [form.profileImageUrl]);
+
   // PDF download functionality
   const resumeRef = useRef<HTMLDivElement | null>(null);
 
@@ -234,12 +245,55 @@ const EditCrewProfile: React.FC = () => {
 
   // --- THIS IS THE CORRECTED LINE ---
   const handleProfileImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!user || !e.target.files?.[0]) return;
+    if (!user || !e.target.files?.[0]) {
+      console.log('[ProfileImage] No file selected or user not authenticated');
+      return;
+    }
+
     const file = e.target.files[0];
-    const storageRef = ref(storage, `profileImages/${user.uid}`);
-    await uploadBytes(storageRef, file);
-    const url = await getDownloadURL(storageRef);
-    setForm(f => ({ ...f, profileImageUrl: url }));
+    console.log('[ProfileImage] Selected file:', { 
+      name: file.name, 
+      type: file.type, 
+      size: file.size 
+    });
+
+    // Create a blob URL for preview (temporary)
+    const blobUrl = URL.createObjectURL(file);
+    console.log('[ProfileImage] Created blob URL for preview:', blobUrl);
+    
+    try {
+      // Set the blob URL for immediate preview
+      setForm(f => ({ ...f, profileImageUrl: blobUrl }));
+      
+      // Upload to Firebase Storage
+      const storageRef = ref(storage, `profileImages/${user.uid}/${Date.now()}_${file.name}`);
+      console.log('[ProfileImage] Starting upload to Firebase Storage...');
+      
+      await uploadBytes(storageRef, file);
+      console.log('[ProfileImage] File uploaded successfully');
+      
+      // Get the persistent download URL
+      const downloadUrl = await getDownloadURL(storageRef);
+      console.log('[ProfileImage] Got download URL:', downloadUrl);
+      
+      // Update the form with the persistent URL
+      setForm(f => ({ ...f, profileImageUrl: downloadUrl }));
+      
+      // Revoke the temporary blob URL
+      URL.revokeObjectURL(blobUrl);
+      console.log('[ProfileImage] Revoked temporary blob URL');
+      
+    } catch (error) {
+      console.error('[ProfileImage] Error uploading image:', error);
+      // Revert to the previous image URL if there was an error
+      setForm(f => ({ ...f, profileImageUrl: '' }));
+      
+      // Revoke the blob URL on error
+      URL.revokeObjectURL(blobUrl);
+      
+      // Show error message to user
+      setMessage('Failed to upload image. Please try again.');
+    }
   };
 
   const updateJobEntry = (i: number, field: 'department' | 'title' | 'subcategories', value: string | JobTitleEntry[]) => {

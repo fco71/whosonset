@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { ProjectEntry } from '../types/ProjectEntry';
 import { JobTitleEntry } from '../types/JobTitleEntry';
 import { Residence, ContactInfo } from '../types/CrewProfile';
+import { useManagedUrl } from '../hooks/useBlobUrl';
 
 // Import html2pdf using require to bypass TypeScript issues
 const html2pdf = require('html2pdf.js');
@@ -30,7 +31,10 @@ interface ResumeViewProps {
   editable?: boolean; // for future use
 }
 
-const ResumeView: React.FC<ResumeViewProps> = ({ profile }) => {
+const ResumeView: React.FC<ResumeViewProps> = (props) => {
+  const { profile } = props;
+  const managedProfileImageUrl = useManagedUrl(profile?.profileImageUrl);
+  
   const containerStyle: React.CSSProperties = {
     width: '210mm',
     height: '297mm',
@@ -56,6 +60,8 @@ const ResumeView: React.FC<ResumeViewProps> = ({ profile }) => {
     borderBottom: '2pt solid #333',
     paddingBottom: '3mm',
   };
+
+
 
   const profileImageStyle: React.CSSProperties = {
     width: '30mm',
@@ -233,12 +239,17 @@ const ResumeView: React.FC<ResumeViewProps> = ({ profile }) => {
           <div style={scrollableContentStyle}>
             {/* Header */}
             <div style={headerStyle}>
-              {profile.profileImageUrl && (
+              {managedProfileImageUrl && (
                 <img 
-                  src={profile.profileImageUrl} 
+                  src={managedProfileImageUrl} 
                   alt="Profile" 
                   style={profileImageStyle}
                   crossOrigin="anonymous"
+                  onError={(e) => {
+                    // Fallback to empty image if the URL is invalid
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                  }}
                 />
               )}
               <div>
