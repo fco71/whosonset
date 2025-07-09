@@ -261,7 +261,7 @@ const ProducerView: React.FC = () => {
 
           {/* Search Box on Top */}
           <div className="w-full mb-6 animate-fade-in-delay">
-            <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
+            <label htmlFor="search-crew" className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
               Search
             </label>
             <div className="flex gap-2">
@@ -360,6 +360,7 @@ const ProducerView: React.FC = () => {
                 onChange={(e) => handleFilterChange('country', e.target.value)}
                 className="w-full p-3 h-11 text-base bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light leading-tight transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
                 aria-label="Filter by country"
+                autoComplete="country"
               >
                 <option value="">All Countries</option>
                 {countries.map(country => (
