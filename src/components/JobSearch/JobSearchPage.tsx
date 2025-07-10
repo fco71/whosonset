@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '../../firebase';
 import JobCard from './JobCard';
@@ -27,6 +28,7 @@ const JobSearchPage: React.FC = () => {
   const [error, setError] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<JobSearchFilter>({});
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadJobs();
@@ -180,7 +182,10 @@ const JobSearchPage: React.FC = () => {
                     </>
                   )}
                 </Button>
-                <Button className="whitespace-nowrap h-12 px-6">
+                <Button 
+                  className="whitespace-nowrap h-12 px-6"
+                  onClick={() => navigate('/post-job')}
+                >
                   <Plus size={18} className="mr-2" />
                   Post a Job
                 </Button>
