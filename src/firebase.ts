@@ -1,8 +1,28 @@
 // src/firebase.ts
 import { initializeApp } from "firebase/app";
-import { getAuth, Auth } from "firebase/auth";
-import { getFirestore, Firestore, connectFirestoreEmulator, enableNetwork, disableNetwork, initializeFirestore } from "firebase/firestore";
-import { getStorage, FirebaseStorage } from "firebase/storage";
+import { getAuth } from "firebase/auth";
+import { 
+  Firestore as FirestoreType, 
+  initializeFirestore, 
+  enableNetwork,
+  serverTimestamp,
+  collection,
+  addDoc,
+  doc,
+  updateDoc,
+  deleteDoc,
+  getDocs,
+  query,
+  where,
+  orderBy,
+  limit,
+  getDoc,
+  Timestamp,
+  DocumentData,
+  QueryDocumentSnapshot,
+  FieldValue
+} from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
   apiKey:     process.env.REACT_APP_FIREBASE_API_KEY,
@@ -42,4 +62,30 @@ window.addEventListener('unhandledrejection', (event) => {
   }
 });
 
-export { app, auth, db, storage, handleFirestoreError };
+// Export Firestore utilities
+export { 
+  app, 
+  auth, 
+  db, 
+  storage, 
+  handleFirestoreError,
+  serverTimestamp,
+  collection,
+  addDoc,
+  doc,
+  updateDoc,
+  deleteDoc,
+  getDocs,
+  query,
+  where,
+  orderBy,
+  limit,
+  getDoc,
+  Timestamp,
+  DocumentData,
+  QueryDocumentSnapshot,
+  FieldValue
+};
+
+// Export types
+export type { FirestoreType as Firestore };

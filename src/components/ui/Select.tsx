@@ -62,21 +62,21 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
 
     // Variant classes
     const variantClasses = {
-      outline: `bg-white dark:bg-neutral-800 border ${
+      outline: `bg-white dark:bg-neutral-50 border ${
         error
-          ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
-          : 'border-gray-300 dark:border-neutral-600 focus:border-primary-500 focus:ring-primary-500'
-      }`,
-      filled: `bg-gray-50 dark:bg-neutral-700/30 border border-transparent ${
+          ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500'
+          : 'border-gray-200 dark:border-gray-300 focus:border-primary-500 focus:ring-1 focus:ring-primary-500/50'
+      } shadow-sm hover:border-gray-300 dark:hover:border-gray-400 transition-colors`,
+      filled: `bg-gray-50 dark:bg-gray-100 border border-gray-200 dark:border-gray-300 ${
         error
-          ? 'focus:border-red-500 focus:ring-red-500'
-          : 'focus:border-primary-500 focus:ring-primary-500'
-      }`,
+          ? 'focus:border-red-500 focus:ring-1 focus:ring-red-500'
+          : 'focus:border-primary-500 focus:ring-1 focus:ring-primary-500/50'
+      } hover:bg-gray-100 dark:hover:bg-gray-200 transition-colors`,
       flushed: `bg-transparent border-0 border-b ${
         error
           ? 'border-red-500 focus:border-red-500'
-          : 'border-gray-300 dark:border-neutral-600 focus:border-primary-500'
-      } rounded-none px-0`,
+          : 'border-gray-200 dark:border-gray-300 focus:border-primary-500'
+      } rounded-none px-0 hover:border-gray-300 dark:hover:border-gray-400 transition-colors`,
       unstyled: 'bg-transparent border-0 p-0 focus:ring-0',
     }[variant];
 
@@ -124,11 +124,17 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
         <div className="relative">
           <div
             className={`relative flex items-center ${sizeClasses} ${variantClasses} ${
-              isFocused ? 'ring-1 ring-primary-500' : ''
-            } rounded-md transition-all duration-200 ${
-              disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'
+              isFocused ? 'ring-1 ring-primary-500/50' : ''
+            } rounded-md transition-all duration-150 ${
+              disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:shadow-sm'
             } ${className}`}
             onClick={() => !disabled && setIsOpen(!isOpen)}
+            onKeyDown={(e) => !disabled && (e.key === 'Enter' || e.key === ' ') && setIsOpen(!isOpen)}
+            role="button"
+            tabIndex={disabled ? -1 : 0}
+            aria-haspopup="listbox"
+            aria-expanded={isOpen}
+            aria-disabled={disabled}
           >
             {leftIcon && (
               <div className="absolute left-3 flex items-center justify-center text-gray-400 dark:text-gray-400">
@@ -139,38 +145,46 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
             <span
               className={`flex-1 text-left truncate ${
                 leftIcon ? 'pl-9' : 'pl-3'
-              } pr-8 text-gray-900 dark:text-white`}
+              } pr-8 text-gray-800 dark:text-gray-800`}
             >
-              {selectedOption?.label || placeholder}
+              {selectedOption?.label || <span className="text-gray-500">{placeholder}</span>}
             </span>
 
             <FiChevronDown
-              className={`absolute right-3 h-4 w-4 text-gray-400 dark:text-gray-400 transition-transform duration-200 ${
+              className={`absolute right-3 h-4 w-4 text-gray-500 dark:text-gray-500 transition-transform duration-200 ${
                 isOpen ? 'transform rotate-180' : ''
               }`}
+              aria-hidden="true"
             />
           </div>
 
           {isOpen && (
-            <div className="absolute z-10 w-full mt-1 bg-white dark:bg-neutral-800 rounded-md shadow-lg border border-gray-200 dark:border-neutral-700 max-h-60 overflow-auto">
+            <div 
+              className="absolute z-10 w-full mt-1 bg-white dark:bg-white rounded-md shadow-lg border border-gray-200 dark:border-gray-200 max-h-60 overflow-auto py-1 focus:outline-none"
+              role="listbox"
+              tabIndex={-1}
+            >
               {options.map((option) => (
                 <div
                   key={option.value}
-                  className={`px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-neutral-700 cursor-pointer ${
+                  className={`px-3 py-2 text-sm text-gray-800 dark:text-gray-800 hover:bg-gray-50 dark:hover:bg-gray-100 cursor-pointer transition-colors ${
                     option.disabled
                       ? 'opacity-50 cursor-not-allowed'
                       : 'cursor-pointer'
                   } ${
                     selectedOption?.value === option.value
-                      ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-200'
+                      ? 'bg-blue-50 dark:bg-blue-50 text-blue-700 dark:text-blue-800 font-medium'
                       : ''
                   }`}
                   onClick={() => handleOptionClick(option)}
+                  role="option"
+                  aria-selected={selectedOption?.value === option.value}
+                  aria-disabled={option.disabled}
                 >
-                  <div className="flex items-center">
-                    <span className="flex-1">{option.label}</span>
+                  <div className="flex items-center justify-between">
+                    <span className="truncate">{option.label}</span>
                     {selectedOption?.value === option.value && (
-                      <FiCheck className="h-4 w-4 text-primary-600 dark:text-primary-400" />
+                      <FiCheck className="h-4 w-4 text-blue-600 dark:text-blue-700 flex-shrink-0 ml-2" />
                     )}
                   </div>
                 </div>

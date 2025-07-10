@@ -100,7 +100,14 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
   // Handle image URL changes and validate
   useEffect(() => {
     // Skip if no URL or if we've already processed this URL
-    if (!initialCoverImageUrl || initialCoverImageUrl === lastProcessedUrlRef.current) {
+    if (!initialCoverImageUrl) {
+      setCoverImageUrl(null);
+      setImageError(true);
+      return;
+    }
+
+    // If URL hasn't changed, no need to reprocess
+    if (initialCoverImageUrl === lastProcessedUrlRef.current) {
       return;
     }
 
@@ -109,7 +116,6 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
 
     // For blob URLs, we'll use a placeholder instead
     if (initialCoverImageUrl.startsWith('blob:')) {
-      // Only log in development to avoid cluttering production logs
       if (process.env.NODE_ENV === 'development') {
         console.debug('Using placeholder for blob URL');
       }
@@ -121,6 +127,23 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
     // For non-blob URLs, use them directly
     setCoverImageUrl(initialCoverImageUrl);
     setImageError(false);
+
+    // Preload the image to check if it's valid
+    const img = new Image();
+    img.src = initialCoverImageUrl;
+    img.onload = () => {
+      // If we're still on the same URL, mark as loaded
+      if (initialCoverImageUrl === lastProcessedUrlRef.current) {
+        setImageError(false);
+      }
+    };
+    img.onerror = () => {
+      if (initialCoverImageUrl === lastProcessedUrlRef.current) {
+        console.warn(`[ProjectCard] Failed to load image: ${initialCoverImageUrl}`);
+        setCoverImageUrl(null);
+        setImageError(true);
+      }
+    };
   }, [initialCoverImageUrl]);
 
   const handleImageError = () => {
@@ -163,31 +186,21 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
       {/* Cover Image */}
       <div className="relative h-48 bg-gray-100 overflow-hidden">
         {coverImageUrl && !imageError ? (
-          <>
-            <img
-              src={coverImageUrl}
-              alt={`${projectName} cover`}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-              loading="lazy"
-              onError={handleImageError}
-            />
-            {coverImageUrl.startsWith('blob:') && (
-              <div className="absolute inset-0 border-2 border-yellow-400 border-dashed pointer-events-none" />
-            )}
-          </>
+          <img
+            key={coverImageUrl} // Force re-render when URL changes
+            src={coverImageUrl}
+            alt={`${projectName} cover`}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            loading="lazy"
+            onError={handleImageError}
+            onLoad={() => setImageError(false)}
+          />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-blue-50 to-purple-50 flex flex-col items-center justify-center text-center p-4">
-            {imageError ? (
-              <>
-                <ImageOff size={32} className="text-gray-400 mb-2" />
-                <p className="text-xs text-gray-400">Image not available</p>
-              </>
-            ) : (
-              <>
-                <Film size={32} className="text-gray-300 mb-2" />
-                <p className="text-xs text-gray-400">No cover image</p>
-              </>
-            )}
+            <ImageOff size={32} className="text-gray-400 mb-2" />
+            <p className="text-xs text-gray-500">
+              {initialCoverImageUrl ? 'Failed to load image' : 'No image available'}
+            </p>
           </div>
         )}
         
