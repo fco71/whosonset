@@ -1,0 +1,29 @@
+# Conversation Log - July 9
+
+## Current Context
+- Working on restoring screenplay collaboration hub functionality
+- Currently on commit e9047af ("Improving jul 4 v8")
+- Need to verify if this is the correct commit
+
+## Identified Issues
+1. **Screenplay Interface Issues**
+   - Duplicate properties in Screenplay interface
+   - Inconsistent date handling for uploadedAt/lastModified
+
+2. **Upload Functionality**
+   - Need to verify file upload
+   - Team member assignment during upload
+
+3. **Viewer Component**
+   - Date display formatting needs to handle multiple formats
+   - Team collaboration features need verification
+
+## Next Steps
+1. Confirm correct commit/branch for development
+2. Verify current state of screenplay functionality
+3. Address TypeScript errors systematically
+4. Test upload and viewing workflow
+
+## Notes
+- User prefers careful, non-breaking changes
+- Focus on stability and core functionality first
