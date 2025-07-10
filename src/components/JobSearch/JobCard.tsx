@@ -97,41 +97,45 @@ const JobCard: React.FC<JobCardProps> = ({
 
   return (
     <Card 
+      variant="elevated"
       className={cn(
-        'group transition-all duration-200 hover:shadow-lg overflow-hidden',
-        'hover:-translate-y-0.5',
+        'overflow-hidden border border-gray-100',
+        'transition-all duration-200',
         className
       )}
       hoverable
     >
-      <CardHeader className="relative pb-2">
-        <div className="flex items-start justify-between gap-2">
+      <CardHeader className="relative pb-4 border-b border-gray-100">
+        <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-2 mb-2">
               <h3 className="text-lg font-semibold text-gray-900 truncate">
                 {job.title}
               </h3>
               {job.isUrgent && (
-                <span className="px-2 py-0.5 bg-red-100 text-red-800 text-xs font-medium rounded-full whitespace-nowrap">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
                   Urgent
                 </span>
               )}
             </div>
             
-            <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-600">
               <span className="flex items-center">
-                <Briefcase className="w-3.5 h-3.5 mr-1" />
-                {job.department}
+                <Briefcase className="w-4 h-4 mr-1.5 text-gray-400 flex-shrink-0" />
+                <span className="truncate">{job.department}</span>
               </span>
-              <span className="text-gray-300">•</span>
+              <span className="text-gray-300 hidden sm:inline">•</span>
               <span className="flex items-center">
-                <MapPin className="w-3.5 h-3.5 mr-1" />
-                {job.location}
+                <MapPin className="w-4 h-4 mr-1.5 text-gray-400 flex-shrink-0" />
+                <span className="truncate">{job.location}</span>
               </span>
               {job.isRemote && (
                 <>
-                  <span className="text-gray-300">•</span>
-                  <span className="text-blue-600">Remote</span>
+                  <span className="text-gray-300 hidden sm:inline">•</span>
+                  <span className="inline-flex items-center text-blue-600">
+                    <span className="w-1 h-1 rounded-full bg-blue-400 mr-1.5"></span>
+                    Remote
+                  </span>
                 </>
               )}
             </div>
@@ -140,14 +144,14 @@ const JobCard: React.FC<JobCardProps> = ({
           {onSave && (
             <button
               type="button"
-              className="h-8 w-8 rounded-full hover:bg-gray-100 flex items-center justify-center"
+              className="h-8 w-8 rounded-full hover:bg-gray-50 flex items-center justify-center text-gray-400 hover:text-blue-600 transition-colors"
               onClick={handleSave}
               aria-label={isSaved ? 'Unsave job' : 'Save job'}
             >
               {isSaved ? (
-                <BookmarkCheck className="h-4 w-4 text-yellow-500 fill-current" />
+                <BookmarkCheck className="h-5 w-5 text-blue-600 fill-current" />
               ) : (
-                <Bookmark className="h-4 w-4 text-gray-400" />
+                <Bookmark className="h-5 w-5" />
               )}
             </button>
           )}
@@ -155,9 +159,9 @@ const JobCard: React.FC<JobCardProps> = ({
         
         {/* Match score */}
         {showMatchScore && job.matchScore !== undefined && (
-          <div className="absolute top-2 right-2">
+          <div className="absolute -top-2 -right-2">
             <span className={cn(
-              'text-xs font-medium px-2 py-0.5 rounded-full',
+              'inline-flex items-center text-xs font-medium px-2.5 py-1 rounded-full shadow-sm',
               getMatchScoreColor(job.matchScore)
             )}>
               {Math.round(job.matchScore * 100)}% Match
@@ -166,40 +170,56 @@ const JobCard: React.FC<JobCardProps> = ({
         )}
       </CardHeader>
       
-      <CardBody className="py-3">
+      <CardBody className="py-4">
         {/* Description */}
-        <p className="text-sm text-gray-600 mb-4 line-clamp-3">
+        <p className="text-gray-600 mb-5 line-clamp-3">
           {job.description}
         </p>
         
         {/* Details */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4 text-sm">
-          <div className="flex items-center">
-            <DollarSign className="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" />
-            <span className="font-medium text-gray-700 mr-1">Salary:</span>
-            <span>{formatSalary(job.salary)}</span>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4 text-sm">
+          <div className="flex items-start">
+            <div className="bg-blue-50 p-1.5 rounded-md mr-3 flex-shrink-0">
+              <DollarSign className="w-4 h-4 text-blue-600" />
+            </div>
+            <div>
+              <div className="font-medium text-gray-500 text-xs uppercase tracking-wider mb-0.5">Salary</div>
+              <div className="text-gray-900">{formatSalary(job.salary)}</div>
+            </div>
           </div>
           
-          <div className="flex items-center">
-            <Calendar className="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" />
-            <span className="font-medium text-gray-700 mr-1">Posted:</span>
-            <span>{postedDate}</span>
+          <div className="flex items-start">
+            <div className="bg-blue-50 p-1.5 rounded-md mr-3 flex-shrink-0">
+              <Calendar className="w-4 h-4 text-blue-600" />
+            </div>
+            <div>
+              <div className="font-medium text-gray-500 text-xs uppercase tracking-wider mb-0.5">Posted</div>
+              <div className="text-gray-900">{postedDate}</div>
+            </div>
           </div>
           
-          <div className="flex items-center">
-            <Clock className="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" />
-            <span className="font-medium text-gray-700 mr-1">Type:</span>
-            <span className={cn('text-xs px-2 py-0.5 rounded-full', contractType.color)}>
-              {contractType.text}
-            </span>
+          <div className="flex items-start">
+            <div className="bg-blue-50 p-1.5 rounded-md mr-3 flex-shrink-0">
+              <Clock className="w-4 h-4 text-blue-600" />
+            </div>
+            <div>
+              <div className="font-medium text-gray-500 text-xs uppercase tracking-wider mb-0.5">Type</div>
+              <span className={cn('inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium', contractType.color)}>
+                {contractType.text}
+              </span>
+            </div>
           </div>
           
-          <div className="flex items-center">
-            <Briefcase className="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" />
-            <span className="font-medium text-gray-700 mr-1">Level:</span>
-            <span className={cn('text-xs px-2 py-0.5 rounded-full', experienceLevel.color)}>
-              {experienceLevel.text}
-            </span>
+          <div className="flex items-start">
+            <div className="bg-blue-50 p-1.5 rounded-md mr-3 flex-shrink-0">
+              <Briefcase className="w-4 h-4 text-blue-600" />
+            </div>
+            <div>
+              <div className="font-medium text-gray-500 text-xs uppercase tracking-wider mb-0.5">Level</div>
+              <span className={cn('inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium', experienceLevel.color)}>
+                {experienceLevel.text}
+              </span>
+            </div>
           </div>
         </div>
         
@@ -234,23 +254,26 @@ const JobCard: React.FC<JobCardProps> = ({
         )}
       </CardBody>
       
-      <CardFooter className="pt-4 border-t border-gray-100">
+      <CardFooter className="pt-4 border-t border-gray-100 bg-gray-50">
         <div className="flex items-center justify-between w-full">
           <Button 
-            variant="outline" 
+            variant="primary"
             size="sm" 
-            className="flex items-center gap-1"
+            className="flex items-center gap-2 px-5 h-10"
             onClick={handleApply}
           >
+            <span>Apply Now</span>
             <ExternalLink className="w-4 h-4" />
-            Apply Now
           </Button>
           
           <Link 
             to={`/jobs/${job.id}`}
-            className="text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-3 py-1.5 rounded-md transition-colors"
+            className="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline flex items-center"
           >
-            View Details
+            View details
+            <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
           </Link>
         </div>
       </CardFooter>

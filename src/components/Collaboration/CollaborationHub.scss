@@ -219,8 +219,34 @@
         }
       }
 
+      // Screenplays Tab
+      .screenplays-tab {
+        .screenplays-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 2rem;
+
+          h2 {
+            margin: 0;
+            font-size: 1.375rem;
+            font-weight: 600;
+            color: #1a1a1a !important;
+          }
+
+          p {
+            display: none; // Hide the description to match Workspaces exactly
+          }
+        }
+      }
+
       // Workspaces Tab
       .workspaces-tab {
+        // Force Screenplays title to be visible
+        .workspaces-header h2.collab-screenplay-title {
+          color: #1a1a1a !important;
+          opacity: 1 !important;
+        }
         .workspaces-header {
           display: flex;
           justify-content: space-between;
@@ -231,7 +257,7 @@
             margin: 0;
             font-size: 1.375rem;
             font-weight: 600;
-            color: #1a1a1a;
+            color: #1a1a1a !important; // Force dark color for visibility
           }
 
           .create-workspace-btn {

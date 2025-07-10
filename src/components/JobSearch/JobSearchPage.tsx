@@ -12,7 +12,7 @@ import {
   Plus,
   X
 } from 'lucide-react';
-import Card from '../ui/Card';
+import Card, { CardBody } from '../ui/Card';
 import { Input } from '../ui/Input';
 import { Skeleton } from '../ui/Skeleton';
 
@@ -138,95 +138,119 @@ const JobSearchPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white py-8">
+    <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-3xl font-bold text-gray-900 mb-3">
             Find Your Next Opportunity
           </h1>
-          <p className="text-gray-600 max-w-2xl mx-auto">
+          <p className="text-gray-600 max-w-2xl mx-auto text-lg">
             Discover the best film industry jobs that match your skills and aspirations
           </p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between mb-6">
-            <div className="relative w-full md:max-w-xl">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                type="text"
-                placeholder="Search jobs by title, company, or keywords..."
-                className="pl-10 w-full text-sm"
-                value={filters.search || ''}
-                onChange={(e) => handleFilterChange({ ...filters, search: e.target.value })}
-              />
+        <Card className="mb-8">
+          <CardBody>
+            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between mb-6">
+              <div className="relative w-full md:max-w-2xl">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Input
+                  type="text"
+                  placeholder="Search jobs by title, company, or keywords..."
+                  className="pl-10 w-full h-12 text-base"
+                  value={filters.search || ''}
+                  onChange={(e) => handleFilterChange({ ...filters, search: e.target.value })}
+                />
+              </div>
+              <div className="flex items-center gap-3 w-full md:w-auto">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="flex items-center gap-2 h-12 px-4"
+                >
+                  {showFilters ? (
+                    <>
+                      <X size={18} />
+                      <span>Hide Filters</span>
+                    </>
+                  ) : (
+                    <>
+                      <Filter size={18} />
+                      <span>Filters</span>
+                    </>
+                  )}
+                </Button>
+                <Button className="whitespace-nowrap h-12 px-6">
+                  <Plus size={18} className="mr-2" />
+                  Post a Job
+                </Button>
+              </div>
             </div>
-            <div className="flex items-center gap-3 w-full md:w-auto">
-              <Button 
-                variant="outline" 
-                onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center gap-2"
-              >
-                {showFilters ? (
-                  <>
-                    <X size={16} />
-                    Hide Filters
-                  </>
-                ) : (
-                  <>
-                    <Filter size={16} />
-                    Filters
-                  </>
-                )}
-              </Button>
-              <Button className="whitespace-nowrap">
-                <Plus size={16} className="mr-2" />
-                Post a Job
-              </Button>
-            </div>
-          </div>
 
-          {showFilters && (
-            <div className="pt-6 border-t border-gray-100">
-              <JobSearchFilters
-                filters={filters}
-                onFilterChange={handleFilterChange}
-              />
-            </div>
-          )}
-        </div>
+            {showFilters && (
+              <div className="pt-6 border-t border-gray-100">
+                <JobSearchFilters
+                  filters={filters}
+                  onFilterChange={handleFilterChange}
+                />
+                <div className="mt-4 flex justify-end">
+                  <Button 
+                    variant="ghost" 
+                    onClick={clearFilters}
+                    disabled={!Object.keys(filters).length}
+                    className="text-sm"
+                  >
+                    Clear all filters
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardBody>
+        </Card>
       </div>
 
       {loading ? (
-        <div className="card-modern text-center py-12">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Briefcase className="w-8 h-8 text-gray-400" />
+        <div className="flex flex-col items-center justify-center py-16 px-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+          <p className="text-gray-600">Loading jobs...</p>
+        </div>
+      ) : filteredJobs.length === 0 ? (
+        <Card className="text-center py-12">
+          <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Briefcase className="w-8 h-8 text-blue-600" />
           </div>
           <h3 className="text-lg font-medium text-gray-900 mb-2">No jobs found</h3>
-          <p className="text-gray-600 mb-4">
+          <p className="text-gray-600 mb-6 max-w-md mx-auto">
             {Object.values(filters).some(filter => filter !== '' && filter !== false)
               ? 'Try adjusting your filters to see more results.'
               : 'Check back later for new opportunities.'
             }
           </p>
           {Object.values(filters).some(filter => filter !== '' && filter !== false) && (
-            <Button variant="secondary" onClick={clearFilters}>
+            <Button 
+              variant="outline" 
+              onClick={clearFilters}
+              className="mx-auto"
+            >
               Clear Filters
             </Button>
           )}
-        </div>
+        </Card>
       ) : (
-        <div className="space-y-4">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-1">
           {filteredJobs.map((job) => (
-            <JobCard key={job.id} job={job} />
+            <JobCard key={job.id} job={job} className="transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5" />
           ))}
         </div>
       )}
 
       {/* Load More */}
       {filteredJobs.length > 0 && (
-        <div className="text-center mt-8">
-          <Button variant="secondary" size="lg">
+        <div className="flex justify-center mt-10">
+          <Button 
+            variant="outline" 
+            className="px-8 py-3 text-base font-medium"
+          >
             Load More Jobs
           </Button>
         </div>
