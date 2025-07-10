@@ -733,11 +733,16 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     const file = e.target.files?.[0];
     if (file) {
       setScreenplayFile(file);
+      // Auto-upload the file after selection
+      await uploadScreenplay(file);
     }
+    // Reset the input to allow selecting the same file again if needed
+    e.target.value = '';
   };
 
-  const uploadScreenplay = async () => {
-    if (!screenplayFile) {
+  const uploadScreenplay = async (file?: File) => {
+    const fileToUpload = file || screenplayFile;
+    if (!fileToUpload) {
       toast.error('Please select a file first');
       return;
     }
@@ -745,35 +750,42 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     setUploadingScreenplay(true);
     try {
       // Upload to Firebase Storage
-      const storageRef = ref(storage, `screenplays/${Date.now()}_${screenplayFile.name}`);
-      const snapshot = await uploadBytes(storageRef, screenplayFile);
+      const storageRef = ref(storage, `screenplays/${Date.now()}_${fileToUpload.name}`);
+      const snapshot = await uploadBytes(storageRef, fileToUpload);
       const downloadURL = await getDownloadURL(snapshot.ref);
       
       // Save screenplay metadata to Firestore
       const screenplayData = {
-        name: screenplayFile.name,
+        name: fileToUpload.name,
         url: downloadURL,
-        type: screenplayFile.type,
+        type: fileToUpload.type,
         projectId: projectId || 'default-project',
         uploadedBy: currentUser?.uid || 'unknown',
         uploadedAt: new Date(),
         teamMembers: teamMembers.map(member => member.id),
-        size: screenplayFile.size
+        size: fileToUpload.size
       };
       
       const docRef = await addDoc(collection(db, 'screenplays'), screenplayData);
       
       const uploadedFile = {
         id: docRef.id,
-        name: screenplayFile.name,
+        name: fileToUpload.name,
         url: downloadURL,
-        type: screenplayFile.type,
-        size: screenplayFile.size
+        type: fileToUpload.type,
+        size: fileToUpload.size
       };
       
       setUploadedScreenplay(uploadedFile);
       setScreenplayFile(null);
-      toast.success(`${screenplayFile.name} uploaded successfully!`);
+      
+      // Add to user's screenplays list
+      setUserScreenplays(prev => [...prev, {
+        ...uploadedFile,
+        uploadedAt: { seconds: Math.floor(Date.now() / 1000) } // Firestore timestamp format
+      }]);
+      
+      toast.success(`${fileToUpload.name} uploaded successfully!`);
       
       // Load team members for this project
       loadTeamMembers();
@@ -1699,7 +1711,10 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
               )}
             </div>
             <button
-              onClick={uploadScreenplay}
+              onClick={(e) => {
+                e.preventDefault();
+                uploadScreenplay();
+              }}
               disabled={!screenplayFile || uploadingScreenplay}
               className="btn-primary"
               aria-label="Upload screenplay"
@@ -1842,12 +1857,19 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         <div className="screenplay-selector">
           <div className="selector-header">
             <h3>Screenplays</h3>
-            <button 
-              className="btn-primary"
-              onClick={() => document.getElementById('screenplay-upload')?.click()}
-            >
-              <span>📄</span> Upload Screenplay
-            </button>
+            <div className="relative">
+              <button 
+                className="btn-primary"
+                onClick={() => document.getElementById('screenplay-upload')?.click()}
+              >
+                <span>📄</span> Upload Screenplay
+              </button>
+              {uploadingScreenplay && (
+                <div className="absolute inset-0 flex items-center justify-center bg-blue-600 rounded-md">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                </div>
+              )}
+            </div>
           </div>
           
           <input
