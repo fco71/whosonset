@@ -95,7 +95,7 @@ export const createJobPosting = async (
   try {
     const jobPosting: Omit<FirestoreJobPosting, 'id'> = {
       ...jobData,
-      status: 'draft',
+      status: 'published',
       postedById: userId,
       applicationCount: 0,
       views: 0,

@@ -158,15 +158,50 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
     }
   }, [retryCount]);
 
+  // Get a placeholder image URL based on the project name or genre
+  const getPlaceholderImage = (): string => {
+    // You can customize this to return different placeholder images
+    // based on project name, genre, or other properties
+    const placeholders = [
+      'https://via.placeholder.com/400x225?text=Project+Image',
+      'https://via.placeholder.com/400x225?text=No+Image+Available',
+      'https://via.placeholder.com/400x225?text=Project+Photo'
+    ];
+    
+    // Pick a placeholder based on project name for consistency
+    const index = projectName.length % placeholders.length;
+    return placeholders[index];
+  };
+
   const loadImage = (url: string, isRetry = false) => {
-    // For blob URLs, we'll use a placeholder instead
+    // For blob URLs, use a placeholder instead
     if (url.startsWith('blob:')) {
       if (process.env.NODE_ENV === 'development') {
         console.debug('Using placeholder for blob URL');
       }
-      setCoverImageUrl(null);
-      setImageError(true);
+      setCoverImageUrl(getPlaceholderImage());
+      setImageError(false);
       return;
+    }
+
+    // For Firebase Storage URLs, check if they're valid
+    if (url.includes('firebasestorage.googleapis.com')) {
+      try {
+        const urlObj = new URL(url);
+        const path = urlObj.pathname.split('/o/')[1];
+        
+        if (!path) {
+          console.warn('[ProjectCard] Invalid Firebase Storage URL format');
+          setCoverImageUrl(getPlaceholderImage());
+          setImageError(false);
+          return;
+        }
+      } catch (error) {
+        console.warn('[ProjectCard] Error parsing URL:', error);
+        setCoverImageUrl(getPlaceholderImage());
+        setImageError(false);
+        return;
+      }
     }
 
     // For non-blob URLs, use them directly
@@ -184,7 +219,16 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
     
     img.src = urlWithTimestamp;
     
+    // Set a timeout for the image load
+    const loadTimeout = setTimeout(() => {
+      if (!img.complete && url === lastProcessedUrlRef.current) {
+        console.warn(`[ProjectCard] Image load timed out: ${url}`);
+        handleImageLoadError(url, isRetry);
+      }
+    }, 5000); // 5 second timeout
+    
     img.onload = () => {
+      clearTimeout(loadTimeout);
       // If we're still on the same URL, mark as loaded
       if (url === lastProcessedUrlRef.current) {
         setImageError(false);
@@ -193,22 +237,27 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
     };
     
     img.onerror = () => {
-      if (url === lastProcessedUrlRef.current) {
-        console.warn(`[ProjectCard] Failed to load image: ${url}`);
-        
-        // If this wasn't a retry and we haven't exceeded max retries, schedule a retry
-        if (!isRetry && retryCount < maxRetries) {
-          console.log(`[ProjectCard] Scheduling retry in 1 second...`);
-          retryTimeoutRef.current = setTimeout(() => {
-            setRetryCount(prev => prev + 1);
-          }, 1000);
-        } else {
-          // If we've exhausted retries or this was a retry attempt, show error
-          setCoverImageUrl(null);
-          setImageError(true);
-        }
-      }
+      clearTimeout(loadTimeout);
+      handleImageLoadError(url, isRetry);
     };
+  };
+
+  const handleImageLoadError = (url: string, isRetry: boolean) => {
+    if (url === lastProcessedUrlRef.current) {
+      console.warn(`[ProjectCard] Failed to load image: ${url}`);
+      
+      // If this wasn't a retry and we haven't exceeded max retries, schedule a retry
+      if (!isRetry && retryCount < maxRetries) {
+        console.log(`[ProjectCard] Scheduling retry in 1 second...`);
+        retryTimeoutRef.current = setTimeout(() => {
+          setRetryCount(prev => prev + 1);
+        }, 1000);
+      } else {
+        // If we've exhausted retries or this was a retry attempt, use placeholder
+        setCoverImageUrl(getPlaceholderImage());
+        setImageError(false); // Don't show error state since we have a fallback
+      }
+    }
   };
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
@@ -225,12 +274,14 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
     
     // Only update state if this is the current URL we're trying to load
     if (coverImageUrl && target.src.includes(coverImageUrl)) {
-      setImageError(true);
-      
       // If we haven't retried yet, schedule a retry
       if (retryCount < maxRetries) {
         console.log(`[ProjectCard] Scheduling retry from onError handler...`);
         setRetryCount(prev => prev + 1);
+      } else {
+        // If we've exhausted retries, use placeholder
+        setCoverImageUrl(getPlaceholderImage());
+        setImageError(false);
       }
     }
   };

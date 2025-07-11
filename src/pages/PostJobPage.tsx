@@ -5,7 +5,7 @@ import { Input } from '../components/ui/Input';
 import { Textarea } from '../components/ui/Textarea';
 import Select, { SingleValue, ActionMeta } from 'react-select';
 import Card, { CardHeader, CardTitle, CardDescription, CardBody } from '../components/ui/Card';
-import { createJobPosting } from '../services/api/jobService';
+import { createJobPosting, getJobPostingById } from '../services/api/jobService';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'react-toastify';
 
@@ -24,8 +24,8 @@ interface JobFormData {
   title: string;
   department: string;
   location: string;
-  jobType: string;
-  experienceLevel: string;
+  jobType: JobType;
+  experienceLevel: ExperienceLevel;
   isRemote: boolean;
   
   // Details
@@ -33,20 +33,27 @@ interface JobFormData {
   requirements: string;
   responsibilities: string;
   benefits: string;
-  skills: string;
+  skills: string; // Will be converted to string[]
   
   // Compensation
   salaryMin: string;
   salaryMax: string;
-  
-  // Contact Info
-  contactName: string;
-  contactEmail: string;
+  salaryPeriod: 'year' | 'month' | 'week' | 'day' | 'hour';
+  showSalary: boolean;
   
   // Project Info
   projectName: string;
   projectLink: string;
-  projectType: string;
+  projectType: ProjectType;
+  
+  // Timeline
+  startDate: string;
+  deadline: string;
+  
+  // Contact
+  contactName: string;
+  contactEmail: string;
+  contactPhone: string;
   
   // Additional
   isPaid: boolean;
@@ -80,41 +87,35 @@ const PostJobPage: React.FC = (): JSX.Element => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   
-  // Form state
+  // Initialize form state with default values
   const [formData, setFormData] = useState<JobFormData>({
-    // Basic Info
     title: '',
     department: '',
     location: '',
-    jobType: '',
-    experienceLevel: '',
+    jobType: 'full_time',
+    experienceLevel: 'entry',
     isRemote: false,
-    
-    // Details
     description: '',
     requirements: '',
     responsibilities: '',
     benefits: '',
     skills: '',
-    
-    // Compensation
     salaryMin: '',
     salaryMax: '',
-    
-    // Contact Info
-    contactName: '',
-    contactEmail: '',
-    
-    // Project Info
+    salaryPeriod: 'year',
+    showSalary: true,
     projectName: '',
     projectLink: '',
     projectType: 'other',
-    
-    // Additional
-    isPaid: true,
+    startDate: new Date().toISOString().split('T')[0],
+    deadline: '',
+    contactName: '',
+    contactEmail: '',
+    contactPhone: '',
+    isPaid: false,
     isUnion: false,
     visaSponsorship: false,
-    relocationAssistance: false,
+    relocationAssistance: false
   });
 
   // Form validation and handlers
@@ -332,73 +333,102 @@ const PostJobPage: React.FC = (): JSX.Element => {
       
       // Create job data object that matches JobPostingBase interface
       const jobData = {
-        // Basic Info
+        // Required fields from JobPostingBase
         title: formData.title,
         department: formData.department,
         location: formData.location,
-        jobType: formData.jobType as JobType,
-        experienceLevel: formData.experienceLevel as ExperienceLevel,
-        isRemote: formData.isRemote,
+        jobType: (formData.jobType || 'full_time') as 'full_time' | 'part_time' | 'contract' | 'freelance' | 'temporary' | 'internship' | 'volunteer',
+        experienceLevel: (formData.experienceLevel || 'entry') as 'intern' | 'entry' | 'associate' | 'mid' | 'senior' | 'lead' | 'manager' | 'director' | 'executive',
+        isRemote: formData.isRemote || false,
         
         // Details
-        description: formData.description,
-        requirements: formData.requirements,
-        responsibilities: formData.responsibilities,
-        benefits: formData.benefits,
-        skills: formData.skills ? formData.skills.split(',').map((s: string) => s.trim()).filter(Boolean) : [],
+        description: formData.description || '',
+        requirements: formData.requirements || '',
+        responsibilities: formData.responsibilities || '',
+        benefits: formData.benefits || '',
+        skills: formData.skills ? formData.skills.split(',').map(s => s.trim()).filter(Boolean) : [],
         
-        // Compensation
+        // Compensation - ensure no undefined values for Firestore
         salaryMin: formData.salaryMin ? parseFloat(formData.salaryMin) : 0,
         salaryMax: formData.salaryMax ? parseFloat(formData.salaryMax) : 0,
-        salaryPeriod: 'year' as const, // Ensure type is 'year' literal
-        showSalary: true, // Default value
+        salaryPeriod: 'year' as const,
+        showSalary: true,
         
         // Project Info
-        projectName: formData.projectName,
-        projectLink: formData.projectLink,
-        projectType: formData.projectType as ProjectType,
+        projectName: formData.projectName || '',
+        projectLink: formData.projectLink || '',
+        projectType: (formData.projectType || 'other') as 'feature' | 'short' | 'tv' | 'commercial' | 'music_video' | 'corporate' | 'documentary' | 'other',
+        projectId: formData.projectName || '',
         
-        // Timeline
-        startDate: new Date().toISOString().split('T')[0], // Today's date as default
+        // Timeline - ensure valid dates and add time frame
+        startDate: formData.startDate || new Date().toISOString().split('T')[0],
+        deadline: formData.deadline || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Default 30 days from now
+        timeFrame: '30 days', // Could be made configurable if needed
         
         // Contact
         contactName: formData.contactName,
         contactEmail: formData.contactEmail,
+        contactPhone: formData.contactPhone || '',
         
         // Additional
-        isPaid: formData.isPaid,
-        isUnion: formData.isUnion,
-        visaSponsorship: formData.visaSponsorship,
-        relocationAssistance: formData.relocationAssistance,
+        isPaid: formData.isPaid || false,
+        isUnion: formData.isUnion || false,
+        visaSponsorship: formData.visaSponsorship || false,
+        relocationAssistance: formData.relocationAssistance || false,
         
-        // Metadata
-        createdAt: new Date().toISOString(),
-        createdBy: currentUser.uid,
-        status: 'active' as const
+        // System fields
+        postedAt: new Date(),
+        postedBy: formData.contactName,
+        applicationsCount: 0,
+        views: 0,
+        saves: 0,
+        shares: 0,
+        shortlistedCount: 0,
+        interviewedCount: 0,
+        hiredCount: 0,
+        status: 'published'
       };
       
-      console.log('Job data prepared:', jobData);
+      console.log('Job data prepared:', JSON.stringify(jobData, null, 2));
       
-      console.log('Calling createJobPosting API...');
-      const jobId = await createJobPosting(jobData, '');
-      
-      if (!jobId) {
-        throw new Error('Failed to get job ID after creation');
+      try {
+        console.log('Calling createJobPosting API with user ID:', currentUser.uid);
+        const jobId = await createJobPosting(jobData, currentUser.uid);
+        
+        if (!jobId) {
+          throw new Error('createJobPosting returned null/undefined job ID');
+        }
+        
+        console.log('Job created successfully with ID:', jobId);
+        
+        // Verify the job was saved by fetching it back
+        try {
+          const savedJob = await getJobPostingById(jobId);
+          console.log('Successfully retrieved saved job:', savedJob);
+        } catch (fetchError) {
+          console.error('Error fetching saved job:', fetchError);
+        }
+        
+        console.log('Job posted successfully with ID:', jobId);
+        toast.success('Job posted successfully!');
+        
+        // Redirect to the job details page
+        navigate(`/jobs/${jobId}`);
+        
+      } catch (error: unknown) {
+        console.error('Error posting job:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to post job. Please try again.';
+        toast.error(errorMessage);
+      } finally {
+        setIsSubmitting(false);
       }
-      
-      console.log('Job posted successfully with ID:', jobId);
-      toast.success('Job posted successfully!');
-      
-      // Redirect to the job details page
-      navigate(`/jobs/${jobId}`);
-      
-    } catch (error: unknown) {
-      console.error('Error posting job:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to post job. Please try again.';
-      toast.error(errorMessage);
-    } finally {
-      setIsSubmitting(false);
-    }
+      } catch (error: unknown) {
+        console.error('Error in job posting flow:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to complete job posting process.';
+        toast.error(errorMessage);
+      } finally {
+        setIsSubmitting(false);
+      }
   };
 
   return (

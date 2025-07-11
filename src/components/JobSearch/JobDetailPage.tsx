@@ -21,13 +21,46 @@ const JobDetailPage: React.FC = () => {
   const loadJobDetails = async () => {
     try {
       setIsLoading(true);
-      const jobDoc = await getDoc(doc(db, 'jobPostings', jobId!));
+      const jobDoc = await getDoc(doc(db, 'jobs', jobId!));
       
       if (jobDoc.exists()) {
-        setJob({
+        const data = jobDoc.data();
+        // Map the Firestore document to the JobPosting interface
+        const jobData: JobPosting = {
           id: jobDoc.id,
-          ...jobDoc.data()
-        } as JobPosting);
+          title: data.title || '',
+          department: data.department || '',
+          jobTitle: data.jobTitle || data.title || '',
+          description: data.description || '',
+          requirements: Array.isArray(data.requirements) ? data.requirements : [],
+          responsibilities: Array.isArray(data.responsibilities) ? data.responsibilities : [],
+          location: data.location || '',
+          startDate: data.startDate || '',
+          endDate: data.endDate || '',
+          salary: data.salary || undefined,
+          isRemote: data.isRemote || false,
+          isUrgent: data.isUrgent || false,
+          postedBy: data.postedBy || '',
+          postedAt: data.postedAt?.toDate() || new Date(),
+          deadline: data.deadline || '',
+          status: data.status || 'active',
+          applicationsCount: data.applicationsCount || 0,
+          tags: Array.isArray(data.tags) ? data.tags : [],
+          experienceLevel: data.experienceLevel || 'entry',
+          contractType: data.contractType || 'full_time',
+          benefits: Array.isArray(data.benefits) ? data.benefits : [],
+          perks: Array.isArray(data.perks) ? data.perks : [],
+          views: data.views || 0,
+          saves: data.saves || 0,
+          shares: data.shares || 0,
+          shortlistedCount: data.shortlistedCount || 0,
+          interviewedCount: data.interviewedCount || 0,
+          hiredCount: data.hiredCount || 0,
+          projectId: data.projectId || '',
+          // Add any other fields that might be missing
+          ...data
+        };
+        setJob(jobData);
       } else {
         setError('Job not found');
       }
@@ -39,13 +72,20 @@ const JobDetailPage: React.FC = () => {
     }
   };
 
-  const formatSalary = (salary: any) => {
-    if (!salary) return 'Salary not specified';
+  const formatSalary = (salary: { min?: number; max?: number; currency?: string } | undefined) => {
+    if (!salary || (salary.min === undefined && salary.max === undefined)) return 'Salary not specified';
     const { min, max, currency = 'USD' } = salary;
-    if (min === max) {
-      return `${currency} ${min.toLocaleString()}`;
+    if (min !== undefined && max !== undefined) {
+      if (min === max) {
+        return `${currency} ${min.toLocaleString()}`;
+      }
+      return `${currency} ${min.toLocaleString()} - ${max.toLocaleString()}`;
+    } else if (min !== undefined) {
+      return `From ${currency} ${min.toLocaleString()}`;
+    } else if (max !== undefined) {
+      return `Up to ${currency} ${max.toLocaleString()}`;
     }
-    return `${currency} ${min.toLocaleString()} - ${max.toLocaleString()}`;
+    return 'Salary not specified';
   };
 
   const formatDate = (date: any) => {
