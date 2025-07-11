@@ -204,6 +204,22 @@ const PostJobPage: React.FC = (): JSX.Element => {
     { value: 'other', label: 'Other' },
   ];
   
+  // Handle form field changes
+  const handleChange = (field: keyof JobFormData, value: string | boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: typeof value === 'boolean' ? value : value.trimStart()
+    }));
+    
+    // Clear error for this field if it exists
+    if (errors[field as keyof typeof errors]) {
+      setErrors(prev => ({
+        ...prev,
+        [field]: undefined
+      }));
+    }
+  };
+
   // Convert boolean to string for form fields
   const getFieldValue = (fieldName: keyof JobFormData): string => {
     const value = formData[fieldName];
@@ -218,15 +234,17 @@ const PostJobPage: React.FC = (): JSX.Element => {
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
     
-    // Required fields
-    if (!formData.title.trim()) newErrors.title = 'Job title is required';
-    if (!formData.department.trim()) newErrors.department = 'Department is required';
-    if (!formData.location.trim()) newErrors.location = 'Location is required';
-    if (!formData.description.trim()) newErrors.description = 'Job description is required';
-    if (!formData.contactName.trim()) newErrors.contactName = 'Contact name is required';
+    // Required fields with more specific error messages
+    if (!formData.title.trim()) newErrors.title = 'Please enter a job title';
+    if (!formData.department.trim()) newErrors.department = 'Please select a department';
+    if (!formData.location.trim()) newErrors.location = 'Please enter a location';
+    if (!formData.description.trim()) newErrors.description = 'Please enter a job description';
+    if (!formData.contactName.trim()) newErrors.contactName = 'Please enter a contact name';
+    
+    // Email validation with better error messages
     if (!formData.contactEmail.trim()) {
-      newErrors.contactEmail = 'Contact email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.contactEmail)) {
+      newErrors.contactEmail = 'Please enter an email address';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contactEmail)) {
       newErrors.contactEmail = 'Please enter a valid email address';
     }
     
@@ -277,17 +295,20 @@ const PostJobPage: React.FC = (): JSX.Element => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     
-    // Validate all fields
+    // First validate all fields
     const isValid = validateForm();
     
     if (!isValid) {
-      // Scroll to the first error
-      const firstError = Object.keys(errors)[0];
+      // Find the first error and scroll to it
+      const firstError = Object.keys(errors).find(key => errors[key as keyof FormErrors]);
       if (firstError) {
         const element = document.querySelector(`[name="${firstError}"]`);
         if (element) {
           element.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
+      } else {
+        // If no specific field error but form is invalid, show general error
+        toast.error('Please fill in all required fields');
       }
       return;
     }
@@ -395,25 +416,171 @@ const PostJobPage: React.FC = (): JSX.Element => {
         )}
         
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="bg-white shadow overflow-hidden sm:rounded-lg p-6">
-            <div className="space-y-6">
-              {/* Form fields will go here */}
-              <div className="pt-4">
-                <div className="mt-6">
-                  <Button 
-                    type="submit" 
-                    disabled={isSubmitting}
-                    className="w-full sm:w-auto bg-primary hover:bg-primary-dark text-white font-medium py-2.5 px-6 rounded-md text-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-light disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isSubmitting ? 'Posting...' : 'Publish Job'}
-                  </Button>
-                  {Object.keys(errors).length > 0 && (
-                    <div className="mt-2 text-sm text-red-600">
-                      Please fix the errors in the form before submitting.
-                    </div>
-                  )}
+          <div className="bg-white shadow overflow-hidden sm:rounded-lg p-6 space-y-6">
+            {/* Job Title */}
+            <div>
+              <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+                Job Title *
+              </label>
+              <Input
+                id="title"
+                name="title"
+                type="text"
+                value={formData.title}
+                onChange={(e) => handleChange('title', e.target.value)}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                placeholder="e.g. Gaffer, Key Grip, Production Designer"
+              />
+              {errors.title && <p className="mt-1 text-sm text-red-600">{errors.title}</p>}
+            </div>
+
+            {/* Department */}
+            <div>
+              <label htmlFor="department" className="block text-sm font-medium text-gray-700">
+                Department *
+              </label>
+              <select
+                id="department"
+                name="department"
+                value={formData.department}
+                onChange={(e) => handleChange('department', e.target.value)}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              >
+                <option value="">Select a department</option>
+                {departmentOptions.map((dept) => (
+                  <option key={dept.value} value={dept.value}>
+                    {dept.label}
+                  </option>
+                ))}
+              </select>
+              {errors.department && <p className="mt-1 text-sm text-red-600">{errors.department}</p>}
+            </div>
+
+            {/* Location */}
+            <div>
+              <label htmlFor="location" className="block text-sm font-medium text-gray-700">
+                Location *
+              </label>
+              <Input
+                id="location"
+                name="location"
+                type="text"
+                value={formData.location}
+                onChange={(e) => handleChange('location', e.target.value)}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                placeholder="e.g. Los Angeles, CA or Remote"
+              />
+              {errors.location && <p className="mt-1 text-sm text-red-600">{errors.location}</p>}
+            </div>
+
+            {/* Job Type */}
+            <div>
+              <label htmlFor="jobType" className="block text-sm font-medium text-gray-700">
+                Job Type
+              </label>
+              <select
+                id="jobType"
+                name="jobType"
+                value={formData.jobType}
+                onChange={(e) => handleChange('jobType', e.target.value)}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              >
+                <option value="">Select job type</option>
+                <option value="full-time">Full-time</option>
+                <option value="part-time">Part-time</option>
+                <option value="contract">Contract</option>
+                <option value="freelance">Freelance</option>
+              </select>
+            </div>
+
+            {/* Job Description */}
+            <div>
+              <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                Job Description *
+              </label>
+              <Textarea
+                id="description"
+                name="description"
+                rows={4}
+                value={formData.description}
+                onChange={(e) => handleChange('description', e.target.value)}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                placeholder="Detailed description of the job"
+              />
+              {errors.description && <p className="mt-1 text-sm text-red-600">{errors.description}</p>}
+            </div>
+
+            {/* Contact Information */}
+            <div className="pt-4 border-t border-gray-200">
+              <h3 className="text-lg font-medium text-gray-900">Contact Information</h3>
+              <p className="mt-1 text-sm text-gray-500">How should applicants contact you?</p>
+              
+              <div className="mt-4 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+                <div className="sm:col-span-3">
+                  <label htmlFor="contactName" className="block text-sm font-medium text-gray-700">
+                    Contact Name *
+                  </label>
+                  <Input
+                    type="text"
+                    name="contactName"
+                    id="contactName"
+                    value={formData.contactName}
+                    onChange={(e) => handleChange('contactName', e.target.value)}
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  />
+                  {errors.contactName && <p className="mt-1 text-sm text-red-600">{errors.contactName}</p>}
+                </div>
+
+                <div className="sm:col-span-3">
+                  <label htmlFor="contactEmail" className="block text-sm font-medium text-gray-700">
+                    Contact Email *
+                  </label>
+                  <Input
+                    type="email"
+                    name="contactEmail"
+                    id="contactEmail"
+                    value={formData.contactEmail}
+                    onChange={(e) => handleChange('contactEmail', e.target.value)}
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  />
+                  {errors.contactEmail && <p className="mt-1 text-sm text-red-600">{errors.contactEmail}</p>}
                 </div>
               </div>
+            </div>
+
+            {/* Submit Button */}
+            <div className="pt-5">
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  onClick={() => navigate(-1)}
+                  className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isSubmitting || !formData.title || !formData.department || !formData.location || !formData.description || !formData.contactName || !formData.contactEmail}
+                  className="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Publishing...
+                    </>
+                  ) : 'Publish Job'}
+                </Button>
+              </div>
+              {Object.keys(errors).length > 0 && (
+                <div className="mt-4 p-3 bg-red-50 rounded-md">
+                  <p className="text-sm text-red-600">
+                    Please fix the errors in the form before submitting.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </form>
