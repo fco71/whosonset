@@ -160,29 +160,68 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
 
   // Get a placeholder image URL based on the project name or genre
   const getPlaceholderImage = (): string => {
-    // You can customize this to return different placeholder images
-    // based on project name, genre, or other properties
-    const placeholders = [
-      'https://via.placeholder.com/400x225?text=Project+Image',
-      'https://via.placeholder.com/400x225?text=No+Image+Available',
-      'https://via.placeholder.com/400x225?text=Project+Photo'
-    ];
-    
-    // Pick a placeholder based on project name for consistency
-    const index = projectName.length % placeholders.length;
-    return placeholders[index];
+    // Use a simple SVG data URL as a placeholder to avoid external dependencies
+    const placeholderSvg = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 225'%3E%3Crect width='100%25' height='100%25' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' font-family='sans-serif' font-size='16' text-anchor='middle' dominant-baseline='middle' fill='%23999'%3E${encodeURIComponent(projectName || 'Project Image')}%3C/text%3E%3C/svg%3E`;
+    return placeholderSvg;
   };
 
   const loadImage = (url: string, isRetry = false) => {
-    // For blob URLs, use a placeholder instead
-    if (url.startsWith('blob:')) {
+    // Skip if no URL or invalid URL
+    if (!url || typeof url !== 'string') {
+      setCoverImageUrl(getPlaceholderImage());
+      setImageError(true);
+      return;
+    }
+
+    // For blob URLs or invalid URLs, use a placeholder
+    if (url.startsWith('blob:') || !url.startsWith('http')) {
       if (process.env.NODE_ENV === 'development') {
-        console.debug('Using placeholder for blob URL');
+        console.debug('Using placeholder for invalid or blob URL');
       }
       setCoverImageUrl(getPlaceholderImage());
       setImageError(false);
       return;
     }
+    
+    // Set a timeout for image loading (5 seconds)
+    const timeoutId = setTimeout(() => {
+      console.warn(`[ProjectCard] Image load timed out: ${url}`);
+      setCoverImageUrl(getPlaceholderImage());
+      setImageError(true);
+      
+      // Retry logic
+      if (!isRetry && retryCount < maxRetries) {
+        console.log(`[ProjectCard] Retrying image load (attempt ${retryCount + 1}/${maxRetries})`);
+        setRetryCount(prev => prev + 1);
+      }
+    }, 5000);
+    
+    // Create a new image object to test loading
+    const testImage = new Image();
+    
+    // Handle successful load
+    testImage.onload = () => {
+      clearTimeout(timeoutId);
+      setCoverImageUrl(url);
+      setImageError(false);
+    };
+    
+    // Handle image load errors
+    testImage.onerror = () => {
+      clearTimeout(timeoutId);
+      console.warn(`[ProjectCard] Failed to load image: ${url}`);
+      setCoverImageUrl(getPlaceholderImage());
+      setImageError(true);
+      
+      // Retry logic
+      if (!isRetry && retryCount < maxRetries) {
+        console.log(`[ProjectCard] Retrying image load (attempt ${retryCount + 1}/${maxRetries})`);
+        setRetryCount(prev => prev + 1);
+      }
+    };
+    
+    // Start loading the image
+    testImage.src = url;
 
     // For Firebase Storage URLs, check if they're valid
     if (url.includes('firebasestorage.googleapis.com')) {
@@ -193,9 +232,15 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
         if (!path) {
           console.warn('[ProjectCard] Invalid Firebase Storage URL format');
           setCoverImageUrl(getPlaceholderImage());
-          setImageError(false);
+          setImageError(true);
           return;
         }
+        
+        // Add a timestamp to prevent caching issues
+        const timestamp = new Date().getTime();
+        const cacheBustedUrl = url.includes('?') 
+          ? `${url}&t=${timestamp}`
+          : `${url}?t=${timestamp}`;
       } catch (error) {
         console.warn('[ProjectCard] Error parsing URL:', error);
         setCoverImageUrl(getPlaceholderImage());

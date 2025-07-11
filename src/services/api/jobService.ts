@@ -70,6 +70,7 @@ export interface FirestoreJobPosting extends JobPostingBase {
   updatedAt: Timestamp | FieldValue;
   status: 'draft' | 'published' | 'closed' | 'archived';
   postedById: string;
+  createdBy: string; // Added for tracking who created the job
   applicationCount: number;
   views: number;
 }
@@ -81,6 +82,7 @@ export interface JobPosting extends JobPostingBase {
   updatedAt: Date;
   status: 'draft' | 'published' | 'closed' | 'archived';
   postedById: string;
+  createdBy: string; // Added for tracking who created the job
   applicationCount: number;
   views: number;
 }
@@ -93,17 +95,20 @@ export const createJobPosting = async (
   userId: string
 ): Promise<string> => {
   try {
+    console.log('Creating job posting with user ID:', userId);
+    
     const jobPosting: Omit<FirestoreJobPosting, 'id'> = {
       ...jobData,
       status: 'published',
-      postedById: userId,
+      postedById: userId, // Ensure this is set from the function parameter
+      createdBy: userId,  // Also set createdBy for backward compatibility
       applicationCount: 0,
       views: 0,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
 
-    const docRef = await addDoc(collection(db, 'jobs'), jobPosting);
+    const docRef = await addDoc(collection(db, 'jobPostings'), jobPosting);
     return docRef.id;
   } catch (error) {
     console.error('Error creating job posting:', error);
@@ -114,7 +119,8 @@ export const createJobPosting = async (
 // Update an existing job posting
 export const updateJobPosting = async (jobId: string, jobData: Partial<JobPostingBase>): Promise<void> => {
   try {
-    const jobRef = doc(db, 'jobs', jobId);
+    console.log('Updating job with ID:', jobId, 'in collection: jobPostings');
+    const jobRef = doc(db, 'jobPostings', jobId);
     const updateData: Partial<FirestoreJobPosting> = {
       ...jobData,
       updatedAt: serverTimestamp()
@@ -130,7 +136,8 @@ export const updateJobPosting = async (jobId: string, jobData: Partial<JobPostin
 // Delete a job posting
 export const deleteJobPosting = async (jobId: string): Promise<void> => {
   try {
-    const jobRef = doc(db, 'jobs', jobId);
+    console.log('Deleting job with ID:', jobId, 'from collection: jobPostings');
+    const jobRef = doc(db, 'jobPostings', jobId);
     await deleteDoc(jobRef);
   } catch (error) {
     console.error('Error deleting job posting:', error);
@@ -147,63 +154,80 @@ export const getJobPostings = async (filters: {
   isRemote?: boolean;
   postedBy?: string;
   limit?: number;
-}) => {
+} = {}): Promise<JobPosting[]> => {
   try {
-    const jobsRef = collection(db, 'jobs');
+    const jobsRef = collection(db, 'jobPostings');
     let q = query(jobsRef);
     
-    if (filters.status) {
+    if (filters?.status) {
       q = query(q, where('status', '==', filters.status));
     }
-    if (filters.department) {
+    
+    if (filters?.department) {
       q = query(q, where('department', '==', filters.department));
     }
-    if (filters.jobType) {
+    
+    if (filters?.jobType) {
       q = query(q, where('jobType', '==', filters.jobType));
     }
-    if (filters.experienceLevel) {
+    
+    if (filters?.experienceLevel) {
       q = query(q, where('experienceLevel', '==', filters.experienceLevel));
     }
-    if (filters.isRemote !== undefined) {
+    
+    if (filters?.isRemote !== undefined) {
       q = query(q, where('isRemote', '==', filters.isRemote));
     }
-    if (filters.postedBy) {
-      q = query(q, where('postedById', '==', filters.postedBy));
+    
+    if (filters?.postedBy) {
+      if (filters.postedBy) {
+        q = query(q, where('postedById', '==', filters.postedBy));
+      }
+      // If postedBy is empty, don't filter by it
     }
     
-    // Default to published jobs if no status filter is provided
+    if (filters?.limit) {
+      q = query(q, limit(filters.limit));
+    }
+    
+    // Always filter by status if provided, default to 'published' if not specified
     if (!filters.status) {
       q = query(q, where('status', '==', 'published'));
     }
     
-    // Apply ordering and limit
+    // Order by creation date, newest first
     q = query(q, orderBy('createdAt', 'desc'));
-    if (filters.limit) {
-      q = query(q, limit(filters.limit));
-    }
     
     const querySnapshot = await getDocs(q);
     const jobs: JobPosting[] = [];
+    
     querySnapshot.forEach((doc) => {
-      const data = doc.data() as Omit<FirestoreJobPosting, 'id'>;
+      const data = doc.data() as Omit<JobPosting, 'id' | 'createdAt' | 'updatedAt'> & {
+        createdAt: Timestamp;
+        updatedAt: Timestamp;
+      };
+      
       jobs.push({
-        ...data,
         id: doc.id,
-        createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
-        updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date()
+        ...data,
+        createdBy: data.createdBy || data.postedById || '', // Fallback to postedById if createdBy doesn't exist
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date(),
       });
     });
+    
     return jobs;
   } catch (error) {
-    console.error('Error fetching job postings:', error);
-    throw new Error('Failed to fetch job postings');
+    console.error('Error getting job postings:', error);
+    throw new Error('Failed to get job postings');
   }
 };
 
 // Get a single job posting by ID
 export const getJobPostingById = async (jobId: string): Promise<JobPosting | null> => {
   try {
-    const docRef = doc(db, 'jobs', jobId);
+    console.log('Fetching job with ID:', jobId, 'from collection: jobPostings');
+    const docRef = doc(db, 'jobPostings', jobId);
     const docSnap = await getDoc(docRef);
     
     if (docSnap.exists()) {

@@ -21,7 +21,8 @@ const JobDetailPage: React.FC = () => {
   const loadJobDetails = async () => {
     try {
       setIsLoading(true);
-      const jobDoc = await getDoc(doc(db, 'jobs', jobId!));
+      console.log('Loading job details for ID:', jobId, 'from collection: jobPostings');
+      const jobDoc = await getDoc(doc(db, 'jobPostings', jobId!));
       
       if (jobDoc.exists()) {
         const data = jobDoc.data();

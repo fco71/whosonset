@@ -540,6 +540,41 @@ const PostJobPage: React.FC = (): JSX.Element => {
               {errors.description && <p className="mt-1 text-sm text-red-600">{errors.description}</p>}
             </div>
 
+            {/* Date Range */}
+            <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2">
+              <div>
+                <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">
+                  Start Date *
+                </label>
+                <Input
+                  type="date"
+                  name="startDate"
+                  id="startDate"
+                  value={formData.startDate}
+                  min={new Date().toISOString().split('T')[0]}
+                  onChange={(e) => handleChange('startDate', e.target.value)}
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                />
+                {errors.startDate && <p className="mt-1 text-sm text-red-600">{errors.startDate}</p>}
+              </div>
+
+              <div>
+                <label htmlFor="deadline" className="block text-sm font-medium text-gray-700">
+                  Application Deadline *
+                </label>
+                <Input
+                  type="date"
+                  name="deadline"
+                  id="deadline"
+                  value={formData.deadline}
+                  min={formData.startDate || new Date().toISOString().split('T')[0]}
+                  onChange={(e) => handleChange('deadline', e.target.value)}
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                />
+                {errors.deadline && <p className="mt-1 text-sm text-red-600">{errors.deadline}</p>}
+              </div>
+            </div>
+
             {/* Contact Information */}
             <div className="pt-4 border-t border-gray-200">
               <h3 className="text-lg font-medium text-gray-900">Contact Information</h3>

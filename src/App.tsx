@@ -21,6 +21,8 @@ import SavedProjectsPage from './pages/SavedProjectsPage';
 import CollectionsHubPage from './pages/CollectionsHubPage';
 import SocialPage from './pages/SocialPage.v2';
 import SettingsPage from './pages/SettingsPage';
+import JobsPage from './pages/JobsPage';
+import PostJobPage from './pages/PostJobPage';
 
 const fontFamily = 'Inter, sans-serif';
 
@@ -43,6 +45,8 @@ function App() {
                 <Route path="/collections" element={<CollectionsHubPage />} />
                 <Route path="/social" element={<SocialPage />} />
                 <Route path="/settings" element={currentUser ? <SettingsPage /> : <Navigate to="/login" />} />
+                <Route path="/jobs" element={<JobsPage />} />
+                <Route path="/post-job" element={currentUser ? <PostJobPage /> : <Navigate to="/login" />} />
               </Routes>
             </main>
             
