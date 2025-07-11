@@ -93,13 +93,42 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
   // State to manage the cover image URL with error handling
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const maxRetries = 2; // Maximum number of retry attempts
 
   // Track the last processed URL to prevent duplicate processing
   const lastProcessedUrlRef = useRef<string | null>(null);
+  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Navigation and other component logic
+  const navigate = useNavigate();
+  const statusStyles = getStatusStyles(status);
+  
+  // Get primary production location
+  const primaryLocation = productionLocations?.[0]?.city 
+    ? `${productionLocations[0].city}, ${productionLocations[0].country || country}`
+    : country;
+
+  // Handle card click
+  const handleCardClick = () => {
+    navigate(`/projects/${id}`);
+  };
+
+  // Handle bookmark click
+  const handleBookmarkClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onBookmark?.(id, !isBookmarked);
+  };
 
   // Handle image URL changes and validate
   useEffect(() => {
-    // Skip if no URL or if we've already processed this URL
+    // Clear any pending retry timeouts when URL changes
+    if (retryTimeoutRef.current) {
+      clearTimeout(retryTimeoutRef.current);
+      retryTimeoutRef.current = null;
+    }
+
+    // Skip if no URL
     if (!initialCoverImageUrl) {
       setCoverImageUrl(null);
       setImageError(true);
@@ -111,11 +140,27 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
       return;
     }
 
+    // Reset retry count when URL changes
+    setRetryCount(0);
+    
     // Update the last processed URL
     lastProcessedUrlRef.current = initialCoverImageUrl;
+    loadImage(initialCoverImageUrl);
+  }, [initialCoverImageUrl]);
 
+  // Handle retry logic when image loading fails
+  useEffect(() => {
+    if (retryCount > 0 && retryCount <= maxRetries) {
+      console.log(`[ProjectCard] Retrying image load (attempt ${retryCount}/${maxRetries})`);
+      if (initialCoverImageUrl) {
+        loadImage(initialCoverImageUrl, true);
+      }
+    }
+  }, [retryCount]);
+
+  const loadImage = (url: string, isRetry = false) => {
     // For blob URLs, we'll use a placeholder instead
-    if (initialCoverImageUrl.startsWith('blob:')) {
+    if (url.startsWith('blob:')) {
       if (process.env.NODE_ENV === 'development') {
         console.debug('Using placeholder for blob URL');
       }
@@ -125,47 +170,69 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
     }
 
     // For non-blob URLs, use them directly
-    setCoverImageUrl(initialCoverImageUrl);
+    setCoverImageUrl(url);
     setImageError(false);
 
     // Preload the image to check if it's valid
     const img = new Image();
-    img.src = initialCoverImageUrl;
+    
+    // Add a timestamp to the URL to prevent caching issues
+    const timestamp = new Date().getTime();
+    const urlWithTimestamp = url.includes('?') 
+      ? `${url}&t=${timestamp}` 
+      : `${url}?t=${timestamp}`;
+    
+    img.src = urlWithTimestamp;
+    
     img.onload = () => {
       // If we're still on the same URL, mark as loaded
-      if (initialCoverImageUrl === lastProcessedUrlRef.current) {
+      if (url === lastProcessedUrlRef.current) {
         setImageError(false);
+        setRetryCount(0); // Reset retry count on success
       }
     };
+    
     img.onerror = () => {
-      if (initialCoverImageUrl === lastProcessedUrlRef.current) {
-        console.warn(`[ProjectCard] Failed to load image: ${initialCoverImageUrl}`);
-        setCoverImageUrl(null);
-        setImageError(true);
+      if (url === lastProcessedUrlRef.current) {
+        console.warn(`[ProjectCard] Failed to load image: ${url}`);
+        
+        // If this wasn't a retry and we haven't exceeded max retries, schedule a retry
+        if (!isRetry && retryCount < maxRetries) {
+          console.log(`[ProjectCard] Scheduling retry in 1 second...`);
+          retryTimeoutRef.current = setTimeout(() => {
+            setRetryCount(prev => prev + 1);
+          }, 1000);
+        } else {
+          // If we've exhausted retries or this was a retry attempt, show error
+          setCoverImageUrl(null);
+          setImageError(true);
+        }
       }
     };
-  }, [initialCoverImageUrl]);
-
-  const handleImageError = () => {
-    console.warn(`[ProjectCard] Failed to load image: ${coverImageUrl}`);
-    setCoverImageUrl(null);
-    setImageError(true);
-  };
-  const navigate = useNavigate();
-  const statusStyles = getStatusStyles(status);
-  
-  // Get primary production location
-  const primaryLocation = productionLocations?.[0]?.city 
-    ? `${productionLocations[0].city}, ${productionLocations[0].country || country}`
-    : country;
-
-  const handleCardClick = () => {
-    navigate(`/projects/${id}`);
   };
 
-  const handleBookmarkClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onBookmark?.(id, !isBookmarked);
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const target = e.target as HTMLImageElement;
+    console.warn(`[ProjectCard] Image error:`, {
+      src: target.src,
+      currentSrc: target.currentSrc,
+      naturalWidth: target.naturalWidth,
+      naturalHeight: target.naturalHeight,
+      complete: target.complete,
+      width: target.width,
+      height: target.height
+    });
+    
+    // Only update state if this is the current URL we're trying to load
+    if (coverImageUrl && target.src.includes(coverImageUrl)) {
+      setImageError(true);
+      
+      // If we haven't retried yet, schedule a retry
+      if (retryCount < maxRetries) {
+        console.log(`[ProjectCard] Scheduling retry from onError handler...`);
+        setRetryCount(prev => prev + 1);
+      }
+    }
   };
 
   return (
@@ -198,6 +265,11 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-blue-50 to-purple-50 flex flex-col items-center justify-center text-center p-4">
             <ImageOff size={32} className="text-gray-400 mb-2" />
+            <p className="text-sm text-gray-500">
+              {retryCount > 0 && retryCount <= maxRetries 
+                ? `Loading image... (${retryCount}/${maxRetries})` 
+                : 'Image not available'}
+            </p>
             <p className="text-xs text-gray-500">
               {initialCoverImageUrl ? 'Failed to load image' : 'No image available'}
             </p>

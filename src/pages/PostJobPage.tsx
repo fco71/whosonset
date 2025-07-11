@@ -9,6 +9,10 @@ import { createJobPosting } from '../services/api/jobService';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'react-toastify';
 
+type JobType = 'full_time' | 'part_time' | 'contract' | 'freelance' | 'temporary' | 'internship' | 'volunteer';
+type ExperienceLevel = 'intern' | 'entry' | 'associate' | 'mid' | 'senior' | 'lead' | 'manager' | 'director' | 'executive';
+type ProjectType = 'feature' | 'short' | 'tv' | 'commercial' | 'music_video' | 'corporate' | 'documentary' | 'other';
+
 interface SelectOption {
   value: string;
   label: string;
@@ -72,6 +76,7 @@ declare global {
 const PostJobPage: React.FC = (): JSX.Element => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
+  const [isFormValid, setIsFormValid] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   
@@ -117,24 +122,34 @@ const PostJobPage: React.FC = (): JSX.Element => {
     const value = formData[fieldName];
     const newErrors = { ...errors };
     
-    // Basic validation - require field if it's a required field
-    const requiredFields: (keyof JobFormData)[] = ['title', 'description', 'requirements'];
-    if (requiredFields.includes(fieldName) && !value) {
-      newErrors[fieldName] = 'This field is required';
-      setErrors(newErrors);
-      return false;
+    // Clear previous error
+    delete newErrors[fieldName];
+    
+    // Required fields validation
+    if (['title', 'department', 'location', 'description', 'contactName', 'contactEmail'].includes(fieldName)) {
+      if (!value || (typeof value === 'string' && value.trim() === '')) {
+        newErrors[fieldName] = 'This field is required';
+      }
     }
     
-    // Clear any existing error for this field
-    if (newErrors[fieldName]) {
-      delete newErrors[fieldName];
-      setErrors(newErrors);
+    // Email validation
+    if (fieldName === 'contactEmail' && value && !/\S+@\S+\.\S+/.test(value as string)) {
+      newErrors[fieldName] = 'Please enter a valid email address';
     }
     
-    return true;
+    // Numeric validation for salary
+    if ((fieldName === 'salaryMin' || fieldName === 'salaryMax') && value) {
+      const numValue = parseFloat(value as string);
+      if (isNaN(numValue) || numValue < 0) {
+        newErrors[fieldName] = 'Please enter a valid number';
+      }
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   }, [formData, errors]);
   
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>): void => {
     const { name, type } = e.target as HTMLInputElement;
     const value = type === 'checkbox' 
       ? (e.target as HTMLInputElement).checked 
@@ -145,29 +160,15 @@ const PostJobPage: React.FC = (): JSX.Element => {
       [name]: value
     }));
     
-    // Clear error for the field being edited
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: undefined
-      }));
+    // Clear error when user starts typing
+    if (errors[name as keyof FormErrors]) {
+      const newErrors = { ...errors };
+      delete newErrors[name as keyof FormErrors];
+      setErrors(newErrors);
     }
   };
   
-  const handleSelectChange = (name: keyof JobFormData) => (option: SingleValue<SelectOption>) => {
-    setFormData(prev => ({
-      ...prev,
-      [name]: option?.value || ''
-    }));
-    
-    // Clear error for the field being edited
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: undefined
-      }));
-    }
-  };
+
   
   const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name } = e.target;
@@ -212,21 +213,91 @@ const PostJobPage: React.FC = (): JSX.Element => {
     }
     return String(value);
   };
+  
+  // Validate all fields
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {};
+    
+    // Required fields
+    if (!formData.title.trim()) newErrors.title = 'Job title is required';
+    if (!formData.department.trim()) newErrors.department = 'Department is required';
+    if (!formData.location.trim()) newErrors.location = 'Location is required';
+    if (!formData.description.trim()) newErrors.description = 'Job description is required';
+    if (!formData.contactName.trim()) newErrors.contactName = 'Contact name is required';
+    if (!formData.contactEmail.trim()) {
+      newErrors.contactEmail = 'Contact email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.contactEmail)) {
+      newErrors.contactEmail = 'Please enter a valid email address';
+    }
+    
+    // Numeric validation for salary
+    if (formData.salaryMin && isNaN(parseFloat(formData.salaryMin))) {
+      newErrors.salaryMin = 'Please enter a valid number';
+    }
+    if (formData.salaryMax && isNaN(parseFloat(formData.salaryMax))) {
+      newErrors.salaryMax = 'Please enter a valid number';
+    }
+    
+    setErrors(newErrors);
+    
+    // Log validation errors for debugging
+    if (Object.keys(newErrors).length > 0) {
+      console.log('Validation errors:', newErrors);
+    }
+    
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // Handle select changes - consolidated implementation
+  const handleSelectChange = (name: keyof JobFormData) => (option: SingleValue<SelectOption>) => {
+    if (option) {
+      setFormData(prev => ({
+        ...prev,
+        [name]: option.value
+      }));
+    }
+    
+    // Clear error for the field being edited
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: undefined
+      }));
+    }
+    
+    // Clear error for the field being edited
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: undefined
+      }));
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     
-    // Validate form
-    const isValid = Object.keys(formData).every(field => 
-      validateField(field as keyof JobFormData)
-    );
+    // Validate all fields
+    const isValid = validateForm();
     
     if (!isValid) {
-      toast.error('Please fill in all required fields');
+      // Scroll to the first error
+      const firstError = Object.keys(errors)[0];
+      if (firstError) {
+        const element = document.querySelector(`[name="${firstError}"]`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
       return;
     }
     
-    setIsSubmitting(true);
+    if (!currentUser) {
+      const errorMsg = 'You must be logged in to post a job';
+      console.error(errorMsg);
+      toast.error(errorMsg);
+      return;
+    }
     
     if (!currentUser) {
       toast.error('You must be logged in to post a job');
@@ -236,9 +307,7 @@ const PostJobPage: React.FC = (): JSX.Element => {
     setIsSubmitting(true);
     
     try {
-      if (!currentUser) {
-        throw new Error('You must be logged in to post a job');
-      }
+      console.log('Current user:', currentUser.uid);
       
       // Create job data object that matches JobPostingBase interface
       const jobData = {
@@ -246,8 +315,8 @@ const PostJobPage: React.FC = (): JSX.Element => {
         title: formData.title,
         department: formData.department,
         location: formData.location,
-        jobType: formData.jobType as 'full_time' | 'part_time' | 'contract' | 'freelance' | 'temporary' | 'internship' | 'volunteer',
-        experienceLevel: formData.experienceLevel as 'intern' | 'entry' | 'associate' | 'mid' | 'senior' | 'lead' | 'manager' | 'director' | 'executive',
+        jobType: formData.jobType as JobType,
+        experienceLevel: formData.experienceLevel as ExperienceLevel,
         isRemote: formData.isRemote,
         
         // Details
@@ -255,7 +324,7 @@ const PostJobPage: React.FC = (): JSX.Element => {
         requirements: formData.requirements,
         responsibilities: formData.responsibilities,
         benefits: formData.benefits,
-        skills: formData.skills ? formData.skills.split(',').map(s => s.trim()).filter(Boolean) : [],
+        skills: formData.skills ? formData.skills.split(',').map((s: string) => s.trim()).filter(Boolean) : [],
         
         // Compensation
         salaryMin: formData.salaryMin ? parseFloat(formData.salaryMin) : 0,
@@ -266,7 +335,7 @@ const PostJobPage: React.FC = (): JSX.Element => {
         // Project Info
         projectName: formData.projectName,
         projectLink: formData.projectLink,
-        projectType: formData.projectType as 'feature' | 'short' | 'tv' | 'commercial' | 'music_video' | 'corporate' | 'documentary' | 'other',
+        projectType: formData.projectType as ProjectType,
         
         // Timeline
         startDate: new Date().toISOString().split('T')[0], // Today's date as default
@@ -279,15 +348,27 @@ const PostJobPage: React.FC = (): JSX.Element => {
         isPaid: formData.isPaid,
         isUnion: formData.isUnion,
         visaSponsorship: formData.visaSponsorship,
-        relocationAssistance: formData.relocationAssistance
+        relocationAssistance: formData.relocationAssistance,
+        
+        // Metadata
+        createdAt: new Date().toISOString(),
+        createdBy: currentUser.uid,
+        status: 'active' as const
       };
       
-      // Call the API to create the job posting
-      // Note: The second parameter is for reCAPTCHA token which is optional
+      console.log('Job data prepared:', jobData);
+      
+      console.log('Calling createJobPosting API...');
       const jobId = await createJobPosting(jobData, '');
       
-      // Show success message and redirect
+      if (!jobId) {
+        throw new Error('Failed to get job ID after creation');
+      }
+      
+      console.log('Job posted successfully with ID:', jobId);
       toast.success('Job posted successfully!');
+      
+      // Redirect to the job details page
       navigate(`/jobs/${jobId}`);
       
     } catch (error: unknown) {
@@ -318,13 +399,20 @@ const PostJobPage: React.FC = (): JSX.Element => {
             <div className="space-y-6">
               {/* Form fields will go here */}
               <div className="pt-4">
-                <Button 
-                  type="submit" 
-                  disabled={isSubmitting}
-                  className="w-full sm:w-auto"
-                >
-                  {isSubmitting ? 'Posting...' : 'Publish Job'}
-                </Button>
+                <div className="mt-6">
+                  <Button 
+                    type="submit" 
+                    disabled={isSubmitting}
+                    className="w-full sm:w-auto bg-primary hover:bg-primary-dark text-white font-medium py-2.5 px-6 rounded-md text-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-light disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isSubmitting ? 'Posting...' : 'Publish Job'}
+                  </Button>
+                  {Object.keys(errors).length > 0 && (
+                    <div className="mt-2 text-sm text-red-600">
+                      Please fix the errors in the form before submitting.
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
