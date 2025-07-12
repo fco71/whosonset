@@ -28,7 +28,6 @@ const JobCard = ({ job }: { job: JobPosting }) => {
       <div className="flex justify-between items-start">
         <div>
           <h3 className="text-xl font-semibold text-gray-900 mb-1">{job.title || 'Untitled Position'}</h3>
-          
           <div className="flex flex-wrap gap-2 mt-2">
             {hasValue(job.department) && (
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
@@ -46,7 +45,6 @@ const JobCard = ({ job }: { job: JobPosting }) => {
               </span>
             )}
           </div>
-          
           {hasValue(job.location) && (
             <div className="mt-2 flex items-center text-sm text-gray-500">
               <svg className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
@@ -55,14 +53,45 @@ const JobCard = ({ job }: { job: JobPosting }) => {
               {job.location}
             </div>
           )}
-          
           {hasValue(job.description) && (
             <p className="mt-3 text-gray-600 line-clamp-2">
               {job.description}
             </p>
           )}
+          {/* Requirements */}
+          {hasValue(job.requirements) && (
+            <div className="mt-2">
+              <span className="block text-xs font-semibold text-gray-700">Requirements:</span>
+              <span className="block text-gray-600 text-xs">
+                {Array.isArray(job.requirements)
+                  ? job.requirements.join(', ')
+                  : job.requirements}
+              </span>
+            </div>
+          )}
+          {/* Responsibilities */}
+          {hasValue(job.responsibilities) && (
+            <div className="mt-2">
+              <span className="block text-xs font-semibold text-gray-700">Responsibilities:</span>
+              <span className="block text-gray-600 text-xs">
+                {Array.isArray(job.responsibilities)
+                  ? job.responsibilities.join(', ')
+                  : job.responsibilities}
+              </span>
+            </div>
+          )}
+          {/* Benefits */}
+          {hasValue(job.benefits) && (
+            <div className="mt-2">
+              <span className="block text-xs font-semibold text-gray-700">Benefits:</span>
+              <span className="block text-gray-600 text-xs">
+                {Array.isArray(job.benefits)
+                  ? job.benefits.join(', ')
+                  : job.benefits}
+              </span>
+            </div>
+          )}
         </div>
-        
         <div className="flex-shrink-0 ml-4">
           <Link 
             to={`/jobs/${job.id}`} 
@@ -72,7 +101,6 @@ const JobCard = ({ job }: { job: JobPosting }) => {
           </Link>
         </div>
       </div>
-      
       <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between items-center text-sm text-gray-500">
         <div className="flex items-center">
           <svg className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -80,7 +108,6 @@ const JobCard = ({ job }: { job: JobPosting }) => {
           </svg>
           <span>Posted {formatDate(job.createdAt)}</span>
         </div>
-        
         {hasValue(job.salaryMin) && hasValue(job.salaryMax) && (
           <div className="text-sm font-medium text-gray-900">
             ${(job.salaryMin || 0).toLocaleString()} - ${(job.salaryMax || 0).toLocaleString()}
@@ -423,33 +450,33 @@ export default function JobsPage() {
           </div>
         )}
         
-        {/* Debug panel - only show in development */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="mt-12 p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <h3 className="text-sm font-medium text-gray-700 mb-3">Debug Information</h3>
-            <div className="text-xs font-mono bg-black text-green-400 p-3 rounded overflow-x-auto">
-              <div>Jobs in state: {jobs.length}</div>
-              <div className="mt-2">
-                <button 
-                  onClick={fetchJobs}
-                  className="text-blue-400 hover:text-blue-300 underline"
-                >
-                  Refresh Jobs
-                </button>
-                {' | '}
-                <button 
-                  onClick={createTestJob}
-                  className="text-blue-400 hover:text-blue-300 underline ml-2"
-                >
-                  Create Test Job
-                </button>
-              </div>
-              <div className="mt-2 text-gray-500">
-                Check browser console for detailed logs
-              </div>
+        {/* Debug panel - always visible for troubleshooting */}
+        <div className="mt-12 p-4 bg-yellow-50 rounded-lg border border-yellow-300">
+          <h3 className="text-sm font-bold text-yellow-900 mb-3">Debug Information (Visible to All Users)</h3>
+          <div className="text-xs font-mono bg-black text-green-400 p-3 rounded overflow-x-auto">
+            <div className="mb-2">Jobs in state: <span className="text-white">{jobs.length}</span></div>
+            <div className="mb-2">Error: <span className="text-red-400">{error ? error : 'None'}</span></div>
+            <div className="mb-2">Raw jobs array:</div>
+            <pre className="whitespace-pre-wrap text-xs text-green-200 bg-black p-2 rounded mt-2 max-h-96 overflow-y-auto">{JSON.stringify(jobs, null, 2)}</pre>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <button 
+                onClick={fetchJobs}
+                className="text-blue-400 hover:text-blue-300 underline"
+              >
+                Refresh Jobs
+              </button>
+              <button 
+                onClick={createTestJob}
+                className="text-blue-400 hover:text-blue-300 underline ml-2"
+              >
+                Create Test Job
+              </button>
+            </div>
+            <div className="mt-2 text-gray-500">
+              This debug panel is always visible for troubleshooting. If you see jobs here but not in the main list, there may be a display or mapping issue.
             </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

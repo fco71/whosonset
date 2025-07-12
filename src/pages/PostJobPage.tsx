@@ -27,40 +27,34 @@ interface JobFormData {
   jobType: JobType;
   experienceLevel: ExperienceLevel;
   isRemote: boolean;
-  
   // Details
   description: string;
   requirements: string;
   responsibilities: string;
   benefits: string;
-  skills: string; // Will be converted to string[]
-  
+  skills: string;
   // Compensation
   salaryMin: string;
   salaryMax: string;
   salaryPeriod: 'year' | 'month' | 'week' | 'day' | 'hour';
   showSalary: boolean;
-  
   // Project Info
   projectName: string;
   projectLink: string;
   projectType: ProjectType;
-  
   // Timeline
   startDate: string;
-
-  
   // Contact
   contactName: string;
   contactEmail: string;
   contactPhone: string;
-  
   // Additional
   isPaid: boolean;
   isUnion: boolean;
   visaSponsorship: boolean;
   relocationAssistance: boolean;
 }
+// ...existing code...
 
 // Define form errors interface
 interface FormErrors {
@@ -91,6 +85,18 @@ const PostJobPage: React.FC = (): JSX.Element => {
       navigate('/login', { state: { from: '/post-job' } });
     }
   }, [currentUser, navigate]);
+
+  // Block UI for unauthenticated users
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        <div className="max-w-md w-full bg-white shadow rounded-lg p-8 text-center">
+          <h2 className="text-2xl font-bold mb-4 text-gray-900">Sign in required</h2>
+          <p className="text-gray-600 mb-6">You must be signed in to post a job. Please <a href="/login" className="text-blue-600 hover:underline">sign in</a> or <a href="/register" className="text-blue-600 hover:underline">register</a> to continue.</p>
+        </div>
+      </div>
+    );
+  }
   
   const [isFormValid, setIsFormValid] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -502,12 +508,13 @@ const PostJobPage: React.FC = (): JSX.Element => {
                 className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
               >
                 <option value="">Select job type</option>
-                <option value="full-time">Full-time</option>
-                <option value="part-time">Part-time</option>
+                <option value="full_time">Full-time</option>
+                <option value="part_time">Part-time</option>
                 <option value="contract">Contract</option>
                 <option value="freelance">Freelance</option>
               </select>
             </div>
+
 
             {/* Job Description */}
             <div>
@@ -524,6 +531,57 @@ const PostJobPage: React.FC = (): JSX.Element => {
                 placeholder="Detailed description of the job"
               />
               {errors.description && <p className="mt-1 text-sm text-red-600">{errors.description}</p>}
+            </div>
+
+            {/* Requirements */}
+            <div>
+              <label htmlFor="requirements" className="block text-sm font-medium text-gray-700">
+                Requirements
+              </label>
+              <Textarea
+                id="requirements"
+                name="requirements"
+                rows={3}
+                value={formData.requirements}
+                onChange={(e) => handleChange('requirements', e.target.value)}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                placeholder="List the requirements for this job"
+              />
+              {errors.requirements && <p className="mt-1 text-sm text-red-600">{errors.requirements}</p>}
+            </div>
+
+            {/* Responsibilities */}
+            <div>
+              <label htmlFor="responsibilities" className="block text-sm font-medium text-gray-700">
+                Responsibilities
+              </label>
+              <Textarea
+                id="responsibilities"
+                name="responsibilities"
+                rows={3}
+                value={formData.responsibilities}
+                onChange={(e) => handleChange('responsibilities', e.target.value)}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                placeholder="List the responsibilities for this job"
+              />
+              {errors.responsibilities && <p className="mt-1 text-sm text-red-600">{errors.responsibilities}</p>}
+            </div>
+
+            {/* Benefits & Perks */}
+            <div>
+              <label htmlFor="benefits" className="block text-sm font-medium text-gray-700">
+                Benefits &amp; Perks
+              </label>
+              <Textarea
+                id="benefits"
+                name="benefits"
+                rows={3}
+                value={formData.benefits}
+                onChange={(e) => handleChange('benefits', e.target.value)}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                placeholder="List the benefits and perks for this job"
+              />
+              {errors.benefits && <p className="mt-1 text-sm text-red-600">{errors.benefits}</p>}
             </div>
 
             {/* Date Range */}
