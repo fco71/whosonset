@@ -19,52 +19,67 @@ const JobDetailPage: React.FC = () => {
   }, [jobId]);
 
   const loadJobDetails = async () => {
+    if (!jobId) {
+      setError('No job ID provided');
+      setIsLoading(false);
+      return;
+    }
+
     try {
       setIsLoading(true);
-      console.log('Loading job details for ID:', jobId, 'from collection: jobPostings');
-      const jobDoc = await getDoc(doc(db, 'jobPostings', jobId!));
+      setError(null);
+      console.log('Loading job details for ID:', jobId, 'from collection: jobs');
       
-      if (jobDoc.exists()) {
-        const data = jobDoc.data();
-        // Map the Firestore document to the JobPosting interface
-        const jobData: JobPosting = {
-          id: jobDoc.id,
-          title: data.title || '',
-          department: data.department || '',
-          jobTitle: data.jobTitle || data.title || '',
-          description: data.description || '',
-          requirements: Array.isArray(data.requirements) ? data.requirements : [],
-          responsibilities: Array.isArray(data.responsibilities) ? data.responsibilities : [],
-          location: data.location || '',
-          startDate: data.startDate || '',
-          endDate: data.endDate || '',
-          salary: data.salary || undefined,
-          isRemote: data.isRemote || false,
-          isUrgent: data.isUrgent || false,
-          postedBy: data.postedBy || '',
-          postedAt: data.postedAt?.toDate() || new Date(),
-          deadline: data.deadline || '',
-          status: data.status || 'active',
-          applicationsCount: data.applicationsCount || 0,
-          tags: Array.isArray(data.tags) ? data.tags : [],
-          experienceLevel: data.experienceLevel || 'entry',
-          contractType: data.contractType || 'full_time',
-          benefits: Array.isArray(data.benefits) ? data.benefits : [],
-          perks: Array.isArray(data.perks) ? data.perks : [],
-          views: data.views || 0,
-          saves: data.saves || 0,
-          shares: data.shares || 0,
-          shortlistedCount: data.shortlistedCount || 0,
-          interviewedCount: data.interviewedCount || 0,
-          hiredCount: data.hiredCount || 0,
-          projectId: data.projectId || '',
-          // Add any other fields that might be missing
-          ...data
-        };
-        setJob(jobData);
-      } else {
-        setError('Job not found');
+      const jobDoc = await getDoc(doc(db, 'jobs', jobId));
+      
+      if (!jobDoc.exists()) {
+        throw new Error('Job not found');
       }
+      
+      const data = jobDoc.data();
+      console.log('Raw job data from Firestore:', data);
+      
+      // Map the Firestore document to the JobPosting interface
+      const jobData: JobPosting = {
+        id: jobDoc.id,
+        title: data.title || '',
+        department: data.department || '',
+        jobTitle: data.title || '', // Use title as jobTitle if not specified
+        description: data.description || '',
+        requirements: typeof data.requirements === 'string' ? [data.requirements] : 
+                     Array.isArray(data.requirements) ? data.requirements : [],
+        responsibilities: typeof data.responsibilities === 'string' ? [data.responsibilities] :
+                         Array.isArray(data.responsibilities) ? data.responsibilities : [],
+        location: data.location || '',
+        startDate: data.startDate || '',
+        endDate: data.deadline || data.endDate || '', // Map deadline to endDate if needed
+        salary: {
+          min: data.salaryMin || 0,
+          max: data.salaryMax || 0,
+          currency: 'USD'
+        },
+        isRemote: data.isRemote || false,
+        isUrgent: false, // Default to false if not specified
+        postedBy: data.postedBy || data.contactName || '',
+        postedAt: data.postedAt?.toDate() || new Date(),
+        deadline: data.deadline || '',
+        status: data.status || 'published',
+        applicationsCount: data.applicationCount || 0,
+        tags: Array.isArray(data.skills) ? data.skills : [],
+        experienceLevel: data.experienceLevel || 'entry',
+        contractType: data.contractType || 'full_time',
+        benefits: Array.isArray(data.benefits) ? data.benefits : [],
+        perks: Array.isArray(data.perks) ? data.perks : [],
+        views: data.views || 0,
+        saves: data.saves || 0,
+        shares: data.shares || 0,
+        shortlistedCount: data.shortlistedCount || 0,
+        interviewedCount: data.interviewedCount || 0,
+        hiredCount: data.hiredCount || 0,
+        projectId: data.projectId || ''
+      };
+      
+      setJob(jobData);
     } catch (error) {
       console.error('Error loading job details:', error);
       setError('Failed to load job details');

@@ -48,7 +48,7 @@ interface JobFormData {
   
   // Timeline
   startDate: string;
-  deadline: string;
+
   
   // Contact
   contactName: string;
@@ -83,6 +83,15 @@ declare global {
 const PostJobPage: React.FC = (): JSX.Element => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
+  
+  // Redirect to login if not authenticated
+  React.useEffect(() => {
+    if (!currentUser) {
+      console.log('User not authenticated, redirecting to login');
+      navigate('/login', { state: { from: '/post-job' } });
+    }
+  }, [currentUser, navigate]);
+  
   const [isFormValid, setIsFormValid] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -108,7 +117,6 @@ const PostJobPage: React.FC = (): JSX.Element => {
     projectLink: '',
     projectType: 'other',
     startDate: new Date().toISOString().split('T')[0],
-    deadline: '',
     contactName: '',
     contactEmail: '',
     contactPhone: '',
@@ -321,11 +329,6 @@ const PostJobPage: React.FC = (): JSX.Element => {
       return;
     }
     
-    if (!currentUser) {
-      toast.error('You must be logged in to post a job');
-      return;
-    }
-    
     setIsSubmitting(true);
     
     try {
@@ -351,19 +354,16 @@ const PostJobPage: React.FC = (): JSX.Element => {
         // Compensation - ensure no undefined values for Firestore
         salaryMin: formData.salaryMin ? parseFloat(formData.salaryMin) : 0,
         salaryMax: formData.salaryMax ? parseFloat(formData.salaryMax) : 0,
-        salaryPeriod: 'year' as const,
-        showSalary: true,
+        salaryPeriod: formData.salaryPeriod || 'year',
+        showSalary: formData.showSalary !== undefined ? formData.showSalary : true,
         
         // Project Info
         projectName: formData.projectName || '',
         projectLink: formData.projectLink || '',
         projectType: (formData.projectType || 'other') as 'feature' | 'short' | 'tv' | 'commercial' | 'music_video' | 'corporate' | 'documentary' | 'other',
-        projectId: formData.projectName || '',
         
-        // Timeline - ensure valid dates and add time frame
+        // Timeline
         startDate: formData.startDate || new Date().toISOString().split('T')[0],
-        deadline: formData.deadline || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Default 30 days from now
-        timeFrame: '30 days', // Could be made configurable if needed
         
         // Contact
         contactName: formData.contactName,
@@ -377,58 +377,44 @@ const PostJobPage: React.FC = (): JSX.Element => {
         relocationAssistance: formData.relocationAssistance || false,
         
         // System fields
-        postedAt: new Date(),
-        postedBy: formData.contactName,
-        applicationsCount: 0,
-        views: 0,
-        saves: 0,
-        shares: 0,
-        shortlistedCount: 0,
-        interviewedCount: 0,
-        hiredCount: 0,
-        status: 'published'
+        status: 'published' as const,
+        postedById: currentUser.uid,
+        createdBy: formData.contactName,
+        applicationCount: 0,
+        views: 0
       };
       
       console.log('Job data prepared:', JSON.stringify(jobData, null, 2));
       
+      console.log('Calling createJobPosting API with user ID:', currentUser.uid);
+      const jobId = await createJobPosting(jobData, currentUser.uid);
+      
+      if (!jobId) {
+        throw new Error('Failed to create job: No job ID returned');
+      }
+      
+      console.log('Job created successfully with ID:', jobId);
+      
+      // Verify the job was saved by fetching it back
       try {
-        console.log('Calling createJobPosting API with user ID:', currentUser.uid);
-        const jobId = await createJobPosting(jobData, currentUser.uid);
-        
-        if (!jobId) {
-          throw new Error('createJobPosting returned null/undefined job ID');
-        }
-        
-        console.log('Job created successfully with ID:', jobId);
-        
-        // Verify the job was saved by fetching it back
-        try {
-          const savedJob = await getJobPostingById(jobId);
-          console.log('Successfully retrieved saved job:', savedJob);
-        } catch (fetchError) {
-          console.error('Error fetching saved job:', fetchError);
-        }
-        
-        console.log('Job posted successfully with ID:', jobId);
-        toast.success('Job posted successfully!');
-        
-        // Redirect to the job details page
-        navigate(`/jobs/${jobId}`);
-        
-      } catch (error: unknown) {
-        console.error('Error posting job:', error);
-        const errorMessage = error instanceof Error ? error.message : 'Failed to post job. Please try again.';
-        toast.error(errorMessage);
-      } finally {
-        setIsSubmitting(false);
+        const savedJob = await getJobPostingById(jobId);
+        console.log('Successfully retrieved saved job:', savedJob);
+      } catch (fetchError) {
+        console.error('Error fetching saved job:', fetchError);
       }
-      } catch (error: unknown) {
-        console.error('Error in job posting flow:', error);
-        const errorMessage = error instanceof Error ? error.message : 'Failed to complete job posting process.';
-        toast.error(errorMessage);
-      } finally {
-        setIsSubmitting(false);
-      }
+      
+      toast.success('Job posted successfully!');
+      
+      // Redirect to the job details page
+      navigate(`/jobs/${jobId}`);
+      
+    } catch (error: unknown) {
+      console.error('Error in job posting flow:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to complete job posting process.';
+      toast.error(errorMessage);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -556,22 +542,6 @@ const PostJobPage: React.FC = (): JSX.Element => {
                   className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 />
                 {errors.startDate && <p className="mt-1 text-sm text-red-600">{errors.startDate}</p>}
-              </div>
-
-              <div>
-                <label htmlFor="deadline" className="block text-sm font-medium text-gray-700">
-                  Application Deadline *
-                </label>
-                <Input
-                  type="date"
-                  name="deadline"
-                  id="deadline"
-                  value={formData.deadline}
-                  min={formData.startDate || new Date().toISOString().split('T')[0]}
-                  onChange={(e) => handleChange('deadline', e.target.value)}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                />
-                {errors.deadline && <p className="mt-1 text-sm text-red-600">{errors.deadline}</p>}
               </div>
             </div>
 

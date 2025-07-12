@@ -23,6 +23,7 @@ import SocialPage from './pages/SocialPage.v2';
 import SettingsPage from './pages/SettingsPage';
 import JobsPage from './pages/JobsPage';
 import PostJobPage from './pages/PostJobPage';
+import DebugJobsPage from './pages/DebugJobsPage';
 
 const fontFamily = 'Inter, sans-serif';
 
@@ -47,6 +48,8 @@ function App() {
                 <Route path="/settings" element={currentUser ? <SettingsPage /> : <Navigate to="/login" />} />
                 <Route path="/jobs" element={<JobsPage />} />
                 <Route path="/post-job" element={currentUser ? <PostJobPage /> : <Navigate to="/login" />} />
+                {/* Debug route - accessible at /debug-jobs */}
+                <Route path="/debug-jobs" element={<DebugJobsPage />} />
               </Routes>
             </main>
             
