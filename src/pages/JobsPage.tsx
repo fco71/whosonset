@@ -5,115 +5,104 @@ import { getJobPostings, createJobPosting, JobPosting } from '../services/api/jo
 import { getFirestore, collection, query, getDocs, where } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 
-// Enhanced card component for job display with better field handling
-const JobCard = ({ job }: { job: JobPosting }) => {
-  // Format date to a readable format
-  const formatDate = (date: Date | string) => {
-    if (!date) return 'No date specified';
-    const d = new Date(date);
-    return isNaN(d.getTime()) ? 'Invalid date' : d.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
 
-  // Check if a field has a value
-  const hasValue = (value: any) => {
-    return value !== undefined && value !== null && value !== '' && !(Array.isArray(value) && value.length === 0);
-  };
+import { useNavigate } from 'react-router-dom';
+const hasValue = (value: any) => value !== undefined && value !== null && value !== '' && !(Array.isArray(value) && value.length === 0);
+const formatDate = (date: Date | string) => {
+  if (!date) return 'No date specified';
+  const d = new Date(date);
+  return isNaN(d.getTime()) ? 'Invalid date' : d.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+};
 
+interface JobCardProps {
+  job: JobPosting;
+  currentUserId?: string;
+  onEdit?: (job: JobPosting) => void;
+}
+
+const JobCard: React.FC<JobCardProps> = ({ job, currentUserId, onEdit }) => {
+  const navigate = useNavigate();
   return (
-    <div className="border border-gray-200 rounded-lg p-6 mb-4 shadow-sm hover:shadow-md transition-shadow bg-white">
-      <div className="flex justify-between items-start">
-        <div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-1">{job.title || 'Untitled Position'}</h3>
-          <div className="flex flex-wrap gap-2 mt-2">
-            {hasValue(job.department) && (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                {job.department}
-              </span>
-            )}
-            {hasValue(job.jobType) && (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                {job.jobType.replace('_', ' ')}
-              </span>
-            )}
-            {job.isRemote && (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                Remote
-              </span>
-            )}
-          </div>
-          {hasValue(job.location) && (
-            <div className="mt-2 flex items-center text-sm text-gray-500">
-              <svg className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-              </svg>
-              {job.location}
-            </div>
+    <div
+      className="group bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-200 border border-gray-200 flex flex-col items-center p-5 relative cursor-pointer max-w-xs mx-auto"
+      onClick={() => navigate(`/jobs/${job.id}`)}
+      style={{ minHeight: 220 }}
+    >
+      {currentUserId && job.postedById === currentUserId && (
+        <button
+          className="absolute top-3 right-3 p-2 bg-white/80 backdrop-blur-sm rounded-full shadow hover:bg-indigo-50 transition-all duration-200 z-10"
+          title="Edit Job"
+          onClick={e => { e.stopPropagation(); onEdit ? onEdit(job) : navigate(`/edit-job/${job.id}`); }}
+        >
+          <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536M9 13l6-6 3 3-6 6H9v-3z" /></svg>
+        </button>
+      )}
+      <div className="flex flex-col items-center gap-2 w-full">
+        <h3 className="font-bold text-lg text-gray-900 text-center mb-1 truncate w-full">{job.title || 'Untitled Position'}</h3>
+        <div className="flex flex-wrap gap-2 justify-center mb-1">
+          {hasValue(job.department) && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
+              {job.department}
+            </span>
           )}
-          {hasValue(job.description) && (
-            <p className="mt-3 text-gray-600 line-clamp-2">
-              {job.description}
-            </p>
+          {hasValue(job.jobType) && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+              {job.jobType.replace('_', ' ')}
+            </span>
           )}
-          {/* Requirements */}
-          {hasValue(job.requirements) && (
-            <div className="mt-2">
-              <span className="block text-xs font-semibold text-gray-700">Requirements:</span>
-              <span className="block text-gray-600 text-xs">
-                {Array.isArray(job.requirements)
-                  ? job.requirements.join(', ')
-                  : job.requirements}
-              </span>
-            </div>
-          )}
-          {/* Responsibilities */}
-          {hasValue(job.responsibilities) && (
-            <div className="mt-2">
-              <span className="block text-xs font-semibold text-gray-700">Responsibilities:</span>
-              <span className="block text-gray-600 text-xs">
-                {Array.isArray(job.responsibilities)
-                  ? job.responsibilities.join(', ')
-                  : job.responsibilities}
-              </span>
-            </div>
-          )}
-          {/* Benefits */}
-          {hasValue(job.benefits) && (
-            <div className="mt-2">
-              <span className="block text-xs font-semibold text-gray-700">Benefits:</span>
-              <span className="block text-gray-600 text-xs">
-                {Array.isArray(job.benefits)
-                  ? job.benefits.join(', ')
-                  : job.benefits}
-              </span>
-            </div>
+          {job.isRemote && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-800">
+              Remote
+            </span>
           )}
         </div>
-        <div className="flex-shrink-0 ml-4">
-          <Link 
-            to={`/jobs/${job.id}`} 
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            View Details
-          </Link>
-        </div>
-      </div>
-      <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between items-center text-sm text-gray-500">
-        <div className="flex items-center">
-          <svg className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-          <span>Posted {formatDate(job.createdAt)}</span>
-        </div>
-        {hasValue(job.salaryMin) && hasValue(job.salaryMax) && (
-          <div className="text-sm font-medium text-gray-900">
-            ${(job.salaryMin || 0).toLocaleString()} - ${(job.salaryMax || 0).toLocaleString()}
-            <span className="text-gray-500 text-xs ml-1">/year</span>
+        {hasValue(job.location) && (
+          <div className="text-xs text-gray-500 mb-1 flex items-center gap-1">
+            <svg className="h-4 w-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" /></svg>
+            {job.location}
           </div>
         )}
+        {/* Only show salary if showSalary is true and at least one value is present and > 0 */}
+        {job.showSalary && ((job.salaryMin && job.salaryMin > 0) || (job.salaryMax && job.salaryMax > 0)) && (
+          <div className="text-xs font-semibold text-gray-900 mb-1">
+            {job.salaryMin && job.salaryMax && job.salaryMin > 0 && job.salaryMax > 0
+              ? `$${job.salaryMin.toLocaleString()} - $${job.salaryMax.toLocaleString()}`
+              : job.salaryMin && job.salaryMin > 0
+                ? `$${job.salaryMin.toLocaleString()}`
+                : job.salaryMax && job.salaryMax > 0
+                  ? `$${job.salaryMax.toLocaleString()}`
+                  : ''}
+            <span className="text-gray-500 text-xs ml-1">/{job.salaryPeriod || 'year'}</span>
+          </div>
+        )}
+        {hasValue(job.description) && (
+          <p className="text-xs text-gray-700 text-center line-clamp-2 mb-1">{job.description}</p>
+        )}
+        <div className="flex flex-wrap gap-2 justify-center mt-1">
+          {hasValue(job.requirements) && (
+            <span className="inline-block bg-gray-100 text-gray-600 rounded px-2 py-0.5 text-[11px]">Req: {Array.isArray(job.requirements) ? job.requirements.join(', ') : job.requirements}</span>
+          )}
+          {hasValue(job.responsibilities) && (
+            <span className="inline-block bg-gray-100 text-gray-600 rounded px-2 py-0.5 text-[11px]">Resp: {Array.isArray(job.responsibilities) ? job.responsibilities.join(', ') : job.responsibilities}</span>
+          )}
+          {hasValue(job.benefits) && (
+            <span className="inline-block bg-gray-100 text-gray-600 rounded px-2 py-0.5 text-[11px]">Benefits: {Array.isArray(job.benefits) ? job.benefits.join(', ') : job.benefits}</span>
+          )}
+        </div>
+      </div>
+      <div className="flex justify-between items-center w-full mt-3 text-xs text-gray-400">
+        <span>Posted {formatDate(job.createdAt)}</span>
+        <Link
+          to={`/jobs/${job.id}`}
+          className="text-indigo-600 hover:underline font-medium"
+          onClick={e => e.stopPropagation()}
+        >
+          Details
+        </Link>
       </div>
     </div>
   );
@@ -374,23 +363,14 @@ export default function JobsPage() {
               {jobs.length} {jobs.length === 1 ? 'job' : 'jobs'} available
             </p>
           </div>
-          
-          {auth.currentUser && (
-            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-              <Button
-                variant="outline"
-                onClick={createTestJob}
-                className="w-full sm:w-auto"
-              >
-                Create Test Job
+          {/* Only show Post a Job button if user is signed in */}
+          {auth.currentUser ? (
+            <Link to="/post-job" className="w-full sm:w-auto">
+              <Button className="w-full">
+                Post a Job
               </Button>
-              <Link to="/post-job" className="w-full sm:w-auto">
-                <Button className="w-full">
-                  Post a Job
-                </Button>
-              </Link>
-            </div>
-          )}
+            </Link>
+          ) : null}
         </div>
 
         {jobs.length === 0 ? (
@@ -414,15 +394,11 @@ export default function JobsPage() {
             </p>
             <div className="mt-6">
               {auth.currentUser ? (
-                <div className="space-x-3">
-                  <Button onClick={createTestJob} variant="outline">
-                    Create Test Job
-                  </Button>
-                  <Link to="/post-job">
-                    <Button>Post a Job</Button>
-                  </Link>
-                </div>
-              ) : (
+                <Link to="/post-job">
+                  <Button>Post a Job</Button>
+                </Link>
+              ) : null}
+              {!auth.currentUser && (
                 <p className="text-sm text-gray-600">
                   <Link to="/login" className="text-blue-600 hover:underline">Sign in</Link> to post a job
                 </p>
@@ -444,7 +420,7 @@ export default function JobsPage() {
             
             <div className="space-y-4">
               {jobs.map((job) => (
-                <JobCard key={job.id} job={job} />
+                <JobCard key={job.id} job={job} currentUserId={auth.currentUser?.uid} />
               ))}
             </div>
           </div>

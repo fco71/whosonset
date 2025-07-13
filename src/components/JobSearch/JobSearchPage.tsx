@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '../../firebase';
@@ -22,6 +23,7 @@ interface Job extends JobPosting {
 }
 
 const JobSearchPage: React.FC = () => {
+  const auth = useAuth();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [filteredJobs, setFilteredJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
@@ -183,13 +185,15 @@ const JobSearchPage: React.FC = () => {
                     </>
                   )}
                 </Button>
-                <Button 
-                  className="whitespace-nowrap h-12 px-6"
-                  onClick={() => navigate('/post-job')}
-                >
-                  <Plus size={18} className="mr-2" />
-                  Post a Job
-                </Button>
+                {auth.currentUser && (
+                  <Button 
+                    className="whitespace-nowrap h-12 px-6"
+                    onClick={() => navigate('/post-job')}
+                  >
+                    <Plus size={18} className="mr-2" />
+                    Post a Job
+                  </Button>
+                )}
               </div>
             </div>
 
