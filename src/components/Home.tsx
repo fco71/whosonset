@@ -6,6 +6,11 @@ import { onAuthStateChanged } from 'firebase/auth';
 import ProjectCard from './ProjectCard';
 import { FavoritesService } from '../utilities/favoritesService';
 
+
+import CrewProfileCard from './CrewProfileCard';
+import { CrewProfile } from '../types/CrewProfile';
+import { getHighlightedProjects, getHighlightedCrew, ProjectEntry } from '../utilities/highlightUtils';
+
 interface Project {
     id: string;
     projectName: string;
@@ -20,10 +25,17 @@ interface Project {
 }
 
 const Home: React.FC = () => {
-    const [projects, setProjects] = useState<Project[]>([]);
+    const [projects, setProjects] = useState<ProjectEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const [user, setUser] = useState<any>(null);
     const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
+
+    // Search/filter state for projects
+    const [projectSearch, setProjectSearch] = useState('');
+    const [projectDept, setProjectDept] = useState('');
+
+    const [crew, setCrew] = useState<CrewProfile[]>([]);
+    const [crewLoading, setCrewLoading] = useState(true);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -34,6 +46,28 @@ const Home: React.FC = () => {
         });
 
         return () => unsubscribe();
+    }, []);
+
+    // Fetch highlighted projects and crew for homepage
+    useEffect(() => {
+        setLoading(true);
+        setCrewLoading(true);
+        const fetchHighlights = async () => {
+            try {
+                const [highlightedProjects, highlightedCrew] = await Promise.all([
+                    getHighlightedProjects(),
+                    getHighlightedCrew()
+                ]);
+                setProjects(highlightedProjects);
+                setCrew(highlightedCrew);
+            } catch (error) {
+                console.error('Error fetching highlights:', error);
+            } finally {
+                setLoading(false);
+                setCrewLoading(false);
+            }
+        };
+        fetchHighlights();
     }, []);
 
     const loadFavorites = async () => {
@@ -65,10 +99,15 @@ const Home: React.FC = () => {
             const projectsCollectionRef = collection(db, 'Projects');
             try {
                 const querySnapshot = await getDocs(projectsCollectionRef);
-                const projectsData: Project[] = querySnapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data() as Omit<Project, 'id'>,
-                }));
+                const projectsData: ProjectEntry[] = querySnapshot.docs.map(doc => {
+                    const data = doc.data() as Omit<Project, 'id'> & { createdAt?: any; views?: number };
+                    return {
+                        id: doc.id,
+                        ...data,
+                        createdAt: data.createdAt || null,
+                        views: typeof data.views === 'number' ? data.views : 0,
+                    };
+                });
                 setProjects(projectsData.slice(0, 6)); // Show only 6 recent projects
             } catch (error: any) {
                 console.error('Error fetching projects:', error.message);
@@ -112,57 +151,121 @@ const Home: React.FC = () => {
                 </div>
             </div>
 
-            {/* Recent Projects Section */}
+            {/* Highlighted Projects Section */}
             <div className="section-gray">
                 <div className="container-base section-padding">
                     <div className="mb-12 animate-fade">
-                        <h3 className="heading-tertiary">
-                            Recent Projects
-                        </h3>
+                        <h3 className="heading-tertiary">Project Highlights</h3>
                     </div>
-
-                    {projects.length === 0 ? (
+                    {/* Search and filter UI */}
+                    <div className="flex flex-col sm:flex-row gap-4 mb-8 animate-fade">
+                        <input
+                            type="text"
+                            className="input-base w-full sm:w-1/2"
+                            placeholder="Search projects by name or company..."
+                            value={projectSearch}
+                            onChange={e => setProjectSearch(e.target.value)}
+                            aria-label="Search projects"
+                        />
+                        <select
+                            className="input-base w-full sm:w-1/4"
+                            value={projectDept}
+                            onChange={e => setProjectDept(e.target.value)}
+                            aria-label="Filter by department"
+                        >
+                            <option value="">All Departments</option>
+                            <option value="Camera">Camera</option>
+                            <option value="Lighting">Lighting</option>
+                            <option value="Sound">Sound</option>
+                            <option value="Art Department">Art Department</option>
+                            <option value="Wardrobe">Wardrobe</option>
+                            <option value="Hair & Makeup">Hair & Makeup</option>
+                            <option value="Production">Production</option>
+                            <option value="Post-Production">Post-Production</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    {loading ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-pulse">
+                            {[...Array(4)].map((_, i) => (
+                                <div key={i} className="bg-gray-100 rounded-xl h-64" />
+                            ))}
+                        </div>
+                    ) : projects.length === 0 ? (
                         <div className="text-center py-24 animate-fade">
                             <div className="text-8xl mb-8 opacity-20 animate-bounce-slow">🎬</div>
-                            <h3 className="heading-card mb-4">
-                                No projects yet
-                            </h3>
-                            <p className="body-medium max-w-md mx-auto">
-                                Be the first to add a project to the platform
-                            </p>
+                            <h3 className="heading-card mb-4">No projects yet</h3>
+                            <p className="body-medium max-w-md mx-auto">Be the first to add a project to the platform</p>
                         </div>
                     ) : (
                         <div className="grid-cards">
-                            {projects.map((project, index) => (
-                                <div 
-                                    key={project.id}
-                                    style={{ animationDelay: `${index * 0.1}s` }}
-                                >
-                                    <ProjectCard
-                                        id={project.id}
-                                        projectName={project.projectName}
-                                        productionCompany={project.productionCompany}
-                                        country={project.country}
-                                        productionLocations={project.productionLocations}
-                                        status={project.status}
-                                        summary={project.synopsis}
-                                        coverImageUrl={project.coverImageUrl}
-                                        showDetails={false}
-                                        onBookmark={user ? handleBookmark : undefined}
-                                        isBookmarked={favoriteIds.includes(project.id)}
-                                    />
-                                </div>
+                            {projects
+                                .filter(project =>
+                                    (!projectSearch ||
+                                        project.projectName.toLowerCase().includes(projectSearch.toLowerCase()) ||
+                                        (project.productionCompany && project.productionCompany.toLowerCase().includes(projectSearch.toLowerCase()))
+                                    ) &&
+                                    (!projectDept || (project.department && project.department === projectDept))
+                                )
+                                .map((project, index) => (
+                                    <div key={project.id} style={{ animationDelay: `${index * 0.1}s` }}>
+                                        <ProjectCard
+                                            id={project.id}
+                                            projectName={project.projectName}
+                                            productionCompany={project.productionCompany}
+                                            country={project.country}
+                                            productionLocations={project.productionLocations}
+                                            status={project.status}
+                                            summary={project.synopsis}
+                                            coverImageUrl={project.coverImageUrl}
+                                            showDetails={false}
+                                            onBookmark={user ? handleBookmark : undefined}
+                                            isBookmarked={favoriteIds.includes(project.id)}
+                                        />
+                                    </div>
+                                ))}
+                        </div>
+                    )}
+                    {projects.length > 0 && (
+                        <div className="text-center mt-12 animate-fade">
+                            <Link to="/projects" className="btn-secondary">View All Projects →</Link>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Highlighted Crew Section */}
+            <div className="section-white border-b border-gray-100">
+                <div className="container-base section-padding">
+                    <div className="mb-12 animate-fade text-center">
+                        <h3 className="heading-tertiary mb-2">Crew Highlights</h3>
+                        <p className="body-medium max-w-2xl mx-auto text-gray-500">
+                            Meet some of the talented professionals on whosonset
+                        </p>
+                    </div>
+                    {crewLoading ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-pulse">
+                            {[...Array(4)].map((_, i) => (
+                                <div key={i} className="bg-gray-100 rounded-xl h-64" />
+                            ))}
+                        </div>
+                    ) : crew.length === 0 ? (
+                        <div className="text-center py-16 animate-fade">
+                            <div className="text-7xl mb-6 opacity-20">🎬</div>
+                            <h4 className="heading-card mb-2">No crew profiles yet</h4>
+                            <p className="body-medium max-w-md mx-auto">Be the first to create a crew profile!</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-fade">
+                            {crew.map((profile, index) => (
+                                <CrewProfileCard key={profile.uid} profile={profile} index={index} />
                             ))}
                         </div>
                     )}
-
-                    {projects.length > 0 && (
-                        <div className="text-center mt-12 animate-fade">
-                            <Link 
-                                to="/projects" 
-                                className="btn-secondary"
-                            >
-                                View All Projects →
+                    {crew.length > 0 && (
+                        <div className="text-center mt-10 animate-fade">
+                            <Link to="/social" className="btn-secondary">
+                                View All Crew →
                             </Link>
                         </div>
                     )}
