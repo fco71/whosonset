@@ -391,14 +391,32 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
       {/* Card Content */}
       <CardBody className="flex-1 flex flex-col">
         <div className="flex-1">
-          {/* Project Name (always visible, clear) */}
-          <div
-            className="text-lg font-semibold text-gray-900 mb-1 leading-tight truncate"
-            title={projectName && projectName.trim() ? projectName : 'Untitled Project'}
-            style={{ minHeight: 24, background: '#ffeeba', border: '2px solid #f00', padding: '2px 6px', borderRadius: 4 }}
-          >
-            {projectName && projectName.trim() ? projectName : 'Untitled Project'}
-          </div>
+          {/* Project Name (always visible, using CardTitle) */}
+          <>
+            {/* Debug: log projectName to console */}
+            {(() => { console.log('ProjectCard projectName:', projectName); return null; })()}
+            <div
+              className="text-lg font-semibold mb-2 leading-snug truncate shadow-sm"
+              title={projectName && projectName.trim() ? projectName : 'Untitled Project'}
+              style={{
+                minHeight: 22,
+                letterSpacing: '-0.01em',
+                background: 'rgba(255,255,255,0.85)',
+                color: '#222',
+                padding: '6px 12px',
+                borderRadius: 8,
+                marginBottom: 8,
+                boxShadow: '0 1px 4px 0 rgba(0,0,0,0.04)',
+                maxWidth: '95%',
+                marginLeft: 'auto',
+                marginRight: 'auto',
+                fontWeight: 500,
+                zIndex: 2
+              }}
+            >
+              {projectName && projectName.trim() ? projectName : 'Untitled Project'}
+            </div>
+          </>
           {/* Status Badge (below project name, left-aligned) */}
           <div className={`inline-flex items-center gap-2 px-2 py-0.5 rounded-full text-xs font-medium mb-2 ${statusStyles.bg} ${statusStyles.text}`}
             style={{ minHeight: 24 }}>
