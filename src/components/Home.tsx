@@ -343,7 +343,7 @@ const Home: React.FC = () => {
                                     const imageUrl = profile.profileImageUrl || '/default-avatar.svg';
                                     const availability = profile.availability || '';
                                     return (
-                                        <Link to={`/crew/${profile.uid}`} key={profile.uid} className="group flex items-center bg-white rounded-2xl border border-gray-100 shadow-lg px-5 py-4 gap-4 hover:shadow-xl transition-shadow duration-200 cursor-pointer" style={{minHeight: 68, textDecoration: 'none'}}>
+                                        <a href={`/resume/${profile.uid}`} target="_blank" rel="noopener noreferrer" key={profile.uid} className="group flex items-center bg-white rounded-2xl border border-gray-100 shadow-lg px-5 py-4 gap-4 hover:shadow-xl transition-shadow duration-200 cursor-pointer" style={{minHeight: 68, textDecoration: 'none'}}>
                                             <img src={imageUrl} alt={profile.name} className="w-14 h-14 rounded-full object-cover border-2 border-gray-200" style={{flexShrink: 0}} onError={e => { (e.target as HTMLImageElement).src = '/default-avatar.svg'; }} />
                                             <div className="flex-1 min-w-0">
                                                 <div className="font-semibold text-gray-900 truncate group-hover:text-blue-700" style={{fontSize: 17, letterSpacing: '-0.01em'}}>{profile.name}</div>
@@ -352,7 +352,7 @@ const Home: React.FC = () => {
                                             {availability && (
                                                 <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${availability.toLowerCase() === 'available' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>{availability}</span>
                                             )}
-                                        </Link>
+                                        </a>
                                     );
                                 })}
                         </div>

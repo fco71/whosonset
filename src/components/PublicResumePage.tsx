@@ -71,6 +71,18 @@ const PublicResumePage: React.FC<PublicResumePageProps> = () => {
     fetchResume();
   }, [uid]);
 
+
+  // Always call hooks in the same order
+  useEffect(() => {
+    if (profile) {
+      console.log('[PublicResumePage] Rendering ResumeView with profile:', {
+        hasProfileImage: !!profile?.profileImageUrl,
+        isBlobUrl: profile?.profileImageUrl?.startsWith('blob:'),
+        profileId: uid
+      });
+    }
+  }, [profile, uid]);
+
   if (status === LOADING_STATES.LOADING) {
     return (
       <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
@@ -126,15 +138,6 @@ const PublicResumePage: React.FC<PublicResumePageProps> = () => {
   if (!profile) {
     return null; // Should be handled by error state, but TypeScript needs this check
   }
-
-  // Log when we're about to render the ResumeView
-  useEffect(() => {
-    console.log('[PublicResumePage] Rendering ResumeView with profile:', {
-      hasProfileImage: !!profile?.profileImageUrl,
-      isBlobUrl: profile?.profileImageUrl?.startsWith('blob:'),
-      profileId: uid
-    });
-  }, [profile, uid]);
 
   return (
     <>
