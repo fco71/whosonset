@@ -118,7 +118,7 @@ const Home: React.FC = () => {
     }
 
     return (
-        <div className="min-h-screen bg-white" role="main">
+        <div className="min-h-screen" style={{ background: '#f6f7fa' }} role="main">
             {/* Hero Section */}
             <div style={{ borderBottom: '1px solid #f3f4f6', background: 'linear-gradient(180deg, #f9fafb 0%, #fff 100%)' }} aria-label="Hero section">
                 <div className="container-base section-padding-large">
@@ -146,8 +146,8 @@ const Home: React.FC = () => {
             </div>
 
             {/* Highlighted Projects Section */}
-            <div style={{ background: '#f9fafb' }} aria-label="Project Highlights">
-                <div className="container-base section-padding" style={{paddingLeft: 24, paddingRight: 24}}>
+            <div style={{ background: 'transparent' }} aria-label="Project Highlights">
+                <div className="container-base section-padding" style={{paddingLeft: 32, paddingRight: 32, maxWidth: 1200, margin: '0 auto'}}>
                     <div className="mb-12 animate-fade">
                         <h3 className="heading-tertiary text-2xl font-bold tracking-tight text-gray-900" id="project-highlights-heading" style={{ letterSpacing: '-0.01em' }}>
                             Project Highlights
@@ -232,7 +232,7 @@ const Home: React.FC = () => {
                             </div>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" aria-live="polite" aria-labelledby="project-highlights-heading" style={{marginLeft: 0, marginRight: 0}}>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" aria-live="polite" aria-labelledby="project-highlights-heading" style={{marginLeft: 0, marginRight: 0}}>
                             {projects
                                 .filter(project =>
                                     (!projectSearch ||
@@ -243,19 +243,21 @@ const Home: React.FC = () => {
                                 )
                                 .map((project, index) => (
                                     <div key={project.id} style={{ animationDelay: `${index * 0.1}s` }}>
-                                        <ProjectCard
-                                            id={project.id}
-                                            projectName={project.projectName || 'Untitled Project'}
-                                            productionCompany={project.productionCompany}
-                                            country={project.country}
-                                            productionLocations={project.productionLocations}
-                                            status={project.status}
-                                            summary={project.synopsis}
-                                            coverImageUrl={project.coverImageUrl}
-                                            showDetails={false}
-                                            onBookmark={user ? handleBookmark : () => alert('Please log in to bookmark projects.')}
-                                            isBookmarked={favoriteIds.includes(project.id)}
-                                        />
+                                        <div className="rounded-3xl shadow-lg bg-white hover:shadow-xl transition-shadow duration-200 border border-gray-100" style={{overflow: 'hidden'}}>
+                                            <ProjectCard
+                                                id={project.id}
+                                                projectName={project.projectName || 'Untitled Project'}
+                                                productionCompany={project.productionCompany}
+                                                country={project.country}
+                                                productionLocations={project.productionLocations}
+                                                status={project.status}
+                                                summary={project.synopsis}
+                                                coverImageUrl={project.coverImageUrl}
+                                                showDetails={false}
+                                                onBookmark={user ? handleBookmark : () => alert('Please log in to bookmark projects.')}
+                                                isBookmarked={favoriteIds.includes(project.id)}
+                                            />
+                                        </div>
                                     </div>
                                 ))}
                         </div>
@@ -269,8 +271,8 @@ const Home: React.FC = () => {
             </div>
 
             {/* Highlighted Crew Section */}
-            <div style={{ background: '#fff', borderBottom: '1px solid #f3f4f6', paddingTop: 32 }} aria-label="Crew Highlights">
-                <div className="container-base section-padding">
+            <div style={{ background: 'transparent', borderBottom: '1px solid #f3f4f6', paddingTop: 32 }} aria-label="Crew Highlights">
+                <div className="container-base section-padding" style={{paddingLeft: 32, paddingRight: 32, maxWidth: 1200, margin: '0 auto'}}>
                     <div className="mb-12 animate-fade text-center">
                         <h3 className="heading-tertiary mb-2" id="crew-highlights-heading">Crew Highlights</h3>
                         <p className="body-medium max-w-2xl mx-auto text-gray-500">
@@ -319,7 +321,7 @@ const Home: React.FC = () => {
                             <p className="body-medium max-w-md mx-auto">Be the first to create a crew profile!</p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade" aria-live="polite" aria-labelledby="crew-highlights-heading" style={{paddingLeft: 8, paddingRight: 8}}>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade" aria-live="polite" aria-labelledby="crew-highlights-heading" style={{paddingLeft: 0, paddingRight: 0}}>
                             {crew
                                 .filter(profile => {
                                     // Search by name
@@ -341,11 +343,11 @@ const Home: React.FC = () => {
                                     const imageUrl = profile.profileImageUrl || '/default-avatar.svg';
                                     const availability = profile.availability || '';
                                     return (
-                                        <Link to={`/crew/${profile.uid}`} key={profile.uid} className="group flex items-center bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3 gap-4 hover:shadow-md transition-shadow duration-200 cursor-pointer" style={{minHeight: 64, textDecoration: 'none'}}>
-                                            <img src={imageUrl} alt={profile.name} className="w-12 h-12 rounded-full object-cover border border-gray-200" style={{flexShrink: 0}} onError={e => { (e.target as HTMLImageElement).src = '/default-avatar.svg'; }} />
+                                        <Link to={`/crew/${profile.uid}`} key={profile.uid} className="group flex items-center bg-white rounded-2xl border border-gray-100 shadow-lg px-5 py-4 gap-4 hover:shadow-xl transition-shadow duration-200 cursor-pointer" style={{minHeight: 68, textDecoration: 'none'}}>
+                                            <img src={imageUrl} alt={profile.name} className="w-14 h-14 rounded-full object-cover border-2 border-gray-200" style={{flexShrink: 0}} onError={e => { (e.target as HTMLImageElement).src = '/default-avatar.svg'; }} />
                                             <div className="flex-1 min-w-0">
-                                                <div className="font-semibold text-gray-900 truncate group-hover:text-blue-700" style={{fontSize: 16}}>{profile.name}</div>
-                                                <div className="text-xs text-gray-500 truncate">{mainTitle}{mainLocation ? ' · ' + mainLocation : ''}</div>
+                                                <div className="font-semibold text-gray-900 truncate group-hover:text-blue-700" style={{fontSize: 17, letterSpacing: '-0.01em'}}>{profile.name}</div>
+                                                <div className="text-xs text-gray-500 truncate" style={{fontWeight: 500}}>{mainTitle}{mainLocation ? ' · ' + mainLocation : ''}</div>
                                             </div>
                                             {availability && (
                                                 <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${availability.toLowerCase() === 'available' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>{availability}</span>
