@@ -238,7 +238,7 @@ const Home: React.FC = () => {
                             {projects
                                 .filter(project =>
                                     (!projectSearch ||
-                                        project.projectName.toLowerCase().includes(projectSearch.toLowerCase()) ||
+                                        (project.projectName && project.projectName.toLowerCase().includes(projectSearch.toLowerCase())) ||
                                         (project.productionCompany && project.productionCompany.toLowerCase().includes(projectSearch.toLowerCase()))
                                     ) &&
                                     (!projectDept || (project.department && project.department === projectDept))
@@ -255,7 +255,7 @@ const Home: React.FC = () => {
                                             summary={project.synopsis}
                                             coverImageUrl={project.coverImageUrl}
                                             showDetails={false}
-                                            onBookmark={user ? handleBookmark : undefined}
+                                            onBookmark={user ? handleBookmark : () => alert('Please log in to bookmark projects.')}
                                             isBookmarked={favoriteIds.includes(project.id)}
                                         />
                                     </div>
@@ -321,7 +321,7 @@ const Home: React.FC = () => {
                             <p className="body-medium max-w-md mx-auto">Be the first to create a crew profile!</p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-fade" aria-live="polite" aria-labelledby="crew-highlights-heading">
+                        <div className="grid-cards animate-fade" aria-live="polite" aria-labelledby="crew-highlights-heading">
                             {crew
                                 .filter(profile => {
                                     // Search by name

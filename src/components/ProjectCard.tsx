@@ -338,7 +338,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
       onClick={handleCardClick}
       role="button"
       tabIndex={0}
-      aria-label={`View details for ${projectName}`}
+      aria-label={`View details for ${projectName || 'Untitled Project'}`}
       onKeyDown={e => { 
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
@@ -346,13 +346,19 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
         }
       }}
     >
+      {/* Project Title always visible at top */}
+      <CardHeader withBorder={false} className="bg-white/90 z-20 relative px-4 py-3">
+        <CardTitle className="mb-0 text-lg font-bold text-gray-900 truncate" as="h3">
+          {projectName && projectName.trim() ? projectName : 'Untitled Project'}
+        </CardTitle>
+      </CardHeader>
       {/* Cover Image */}
       <div className="relative h-48 bg-gray-100 overflow-hidden">
         {coverImageUrl && !imageError ? (
           <img
             key={coverImageUrl} // Force re-render when URL changes
             src={coverImageUrl}
-            alt={`${projectName} cover`}
+            alt={`${projectName || 'Untitled Project'} cover`}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             loading="lazy"
             onError={handleImageError}
@@ -371,7 +377,6 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
             </p>
           </div>
         )}
-        
         {/* Status Badge */}
         <div 
           className={`absolute top-4 left-4 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2 ${statusStyles.bg} ${statusStyles.text}`}
@@ -379,7 +384,6 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
           {statusStyles.icon}
           <span>{formatStatusText(status)}</span>
         </div>
-        
         {/* Bookmark Button */}
         {onBookmark && (
           <Button
@@ -397,12 +401,9 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
           </Button>
         )}
       </div>
-
       {/* Card Content */}
       <CardBody className="flex-1 flex flex-col">
         <div className="flex-1">
-          <CardTitle className="mb-2 line-clamp-2">{projectName}</CardTitle>
-          
           {/* Production Company */}
           {productionCompany && (
             <CardDescription className="flex items-center text-sm mb-3">
@@ -410,7 +411,6 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
               {productionCompany}
             </CardDescription>
           )}
-          
           {/* Location */}
           {primaryLocation && (
             <div className="flex items-center text-sm text-gray-500 mb-3">
@@ -418,12 +418,10 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
               {primaryLocation}
             </div>
           )}
-          
           {/* Summary */}
           {summary && (
             <p className="text-sm text-gray-600 mb-4 line-clamp-3">{summary}</p>
           )}
-          
           {/* Genres */}
           {genres.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-3 mb-4">
@@ -443,7 +441,6 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
             </div>
           )}
         </div>
-
         {/* Card Footer */}
         <CardFooter className="pt-4 border-t border-gray-100">
           <div className="flex items-center justify-between w-full">
@@ -454,7 +451,6 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                 {startDate ? formatDate(startDate) : 'TBD'} - {endDate ? formatDate(endDate) : 'TBD'}
               </span>
             </div>
-            
             {/* View Details Button */}
             <Button
               variant="ghost"
