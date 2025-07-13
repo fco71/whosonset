@@ -1,0 +1,10 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /project-images/{allPaths=**} {
+      allow read: if true; // Public read for project images (for testing)
+    }
+    // Add more rules as needed for other folders
+  }
+}

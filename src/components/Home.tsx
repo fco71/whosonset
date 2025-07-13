@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
 import ProjectCard from './ProjectCard';
 import { FavoritesService } from '../utilities/favoritesService';
+import GridSkeleton from './GridSkeleton';
 
 
 import CrewProfileCard from './CrewProfileCard';
@@ -24,6 +25,19 @@ interface Project {
     coverImageUrl: string;
 }
 
+const DEPARTMENT_OPTIONS = [
+    { value: '', label: 'All Departments' },
+    { value: 'Camera', label: 'Camera' },
+    { value: 'Lighting', label: 'Lighting' },
+    { value: 'Sound', label: 'Sound' },
+    { value: 'Art Department', label: 'Art Department' },
+    { value: 'Wardrobe', label: 'Wardrobe' },
+    { value: 'Hair & Makeup', label: 'Hair & Makeup' },
+    { value: 'Production', label: 'Production' },
+    { value: 'Post-Production', label: 'Post-Production' },
+    { value: 'Other', label: 'Other' },
+];
+
 const Home: React.FC = () => {
     const [projects, setProjects] = useState<ProjectEntry[]>([]);
     const [loading, setLoading] = useState(true);
@@ -36,6 +50,9 @@ const Home: React.FC = () => {
 
     const [crew, setCrew] = useState<CrewProfile[]>([]);
     const [crewLoading, setCrewLoading] = useState(true);
+    // Search/filter state for crew
+    const [crewSearch, setCrewSearch] = useState('');
+    const [crewDept, setCrewDept] = useState('');
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -94,45 +111,22 @@ const Home: React.FC = () => {
         }
     };
 
-    useEffect(() => {
-        const fetchProjects = async () => {
-            const projectsCollectionRef = collection(db, 'Projects');
-            try {
-                const querySnapshot = await getDocs(projectsCollectionRef);
-                const projectsData: ProjectEntry[] = querySnapshot.docs.map(doc => {
-                    const data = doc.data() as Omit<Project, 'id'> & { createdAt?: any; views?: number };
-                    return {
-                        id: doc.id,
-                        ...data,
-                        createdAt: data.createdAt || null,
-                        views: typeof data.views === 'number' ? data.views : 0,
-                    };
-                });
-                setProjects(projectsData.slice(0, 6)); // Show only 6 recent projects
-            } catch (error: any) {
-                console.error('Error fetching projects:', error.message);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchProjects();
-    }, []);
+    // Removed redundant fetchProjects useEffect. All project highlights now come from highlightUtils.
 
     if (loading) {
         return <LoadingSkeleton />;
     }
 
     return (
-        <div className="min-h-screen bg-white">
+        <div className="min-h-screen bg-white" role="main">
             {/* Hero Section */}
-            <div className="section-gradient border-b border-gray-100">
+            <div className="section-gradient border-b border-gray-100" aria-label="Hero section">
                 <div className="container-base section-padding-large">
                     <div className="text-center mb-16 animate-fade">
-                        <h1 className="heading-primary mb-6 animate-slide" style={{ color: '#222', opacity: 1 }}>
+                        <h1 className="heading-primary mb-6 animate-slide">
                             whosonset
                         </h1>
-                        <h2 className="heading-secondary mb-8 animate-slide" style={{ color: '#444', opacity: 1 }}>
+                        <h2 className="heading-secondary mb-8 animate-slide">
                             Film Industry Hub
                         </h2>
                         <p className="body-large max-w-2xl mx-auto animate-slide">
@@ -152,53 +146,100 @@ const Home: React.FC = () => {
             </div>
 
             {/* Highlighted Projects Section */}
-            <div className="section-gray">
+            <div className="section-gray" aria-label="Project Highlights">
                 <div className="container-base section-padding">
                     <div className="mb-12 animate-fade">
-                        <h3 className="heading-tertiary">Project Highlights</h3>
+                        <h3 className="heading-tertiary text-2xl font-bold tracking-tight text-gray-900" id="project-highlights-heading" style={{ letterSpacing: '-0.01em' }}>
+                            Project Highlights
+                        </h3>
+                        {/* Debug: Show number of projects fetched */}
+                        <div style={{ fontSize: '0.9rem', color: '#888', marginTop: 4, marginBottom: 0 }}>
+                            <span>Fetched: {projects.length} projects</span>
+                        </div>
                     </div>
                     {/* Search and filter UI */}
-                    <div className="flex flex-col sm:flex-row gap-4 mb-8 animate-fade">
-                        <input
-                            type="text"
-                            className="input-base w-full sm:w-1/2"
-                            placeholder="Search projects by name or company..."
-                            value={projectSearch}
-                            onChange={e => setProjectSearch(e.target.value)}
-                            aria-label="Search projects"
-                        />
-                        <select
-                            className="input-base w-full sm:w-1/4"
-                            value={projectDept}
-                            onChange={e => setProjectDept(e.target.value)}
-                            aria-label="Filter by department"
-                        >
-                            <option value="">All Departments</option>
-                            <option value="Camera">Camera</option>
-                            <option value="Lighting">Lighting</option>
-                            <option value="Sound">Sound</option>
-                            <option value="Art Department">Art Department</option>
-                            <option value="Wardrobe">Wardrobe</option>
-                            <option value="Hair & Makeup">Hair & Makeup</option>
-                            <option value="Production">Production</option>
-                            <option value="Post-Production">Post-Production</option>
-                            <option value="Other">Other</option>
-                        </select>
+                    <div className="flex flex-col sm:flex-row gap-3 mb-8 animate-fade items-center" aria-label="Project search and filter">
+                        <div className="relative w-full sm:w-1/2">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                                <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                            </span>
+                            <input
+                                type="text"
+                                className="input-base pl-10 pr-3 py-2 w-full rounded-md border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 bg-white text-gray-900 placeholder-gray-400 shadow-sm transition"
+                                placeholder="Search projects by name or company..."
+                                value={projectSearch}
+                                onChange={e => setProjectSearch(e.target.value)}
+                                aria-label="Search projects by name or company"
+                                id="project-search-input"
+                            />
+                        </div>
+                        <div className="relative w-full sm:w-1/4">
+                            <select
+                                className="input-base w-full rounded-md border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 bg-white text-gray-900 py-2 pl-3 pr-8 shadow-sm transition appearance-none"
+                                value={projectDept}
+                                onChange={e => setProjectDept(e.target.value)}
+                                aria-label="Filter projects by department"
+                                id="project-department-select"
+                            >
+                                {DEPARTMENT_OPTIONS.map(opt => (
+                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                ))}
+                            </select>
+                            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+                            </span>
+                        </div>
                     </div>
                     {loading ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-pulse">
-                            {[...Array(4)].map((_, i) => (
-                                <div key={i} className="bg-gray-100 rounded-xl h-64" />
-                            ))}
-                        </div>
+                        <GridSkeleton count={4} height="h-64" />
                     ) : projects.length === 0 ? (
-                        <div className="text-center py-24 animate-fade">
+                        <div className="text-center py-24 animate-fade" aria-live="polite">
                             <div className="text-8xl mb-8 opacity-20 animate-bounce-slow">🎬</div>
                             <h3 className="heading-card mb-4">No projects yet</h3>
                             <p className="body-medium max-w-md mx-auto">Be the first to add a project to the platform</p>
+                            {/* Fallback: Show example projects if none fetched */}
+                            <div className="mt-8">
+                                <div className="heading-card mb-2 text-gray-700">Example Projects</div>
+                                <div className="grid-cards">
+                                    {[{
+                                        id: 'example1',
+                                        projectName: 'Sample Feature Film',
+                                        productionCompany: 'Demo Productions',
+                                        country: 'USA',
+                                        productionLocations: [{ country: 'USA', city: 'Los Angeles' }],
+                                        status: 'In Production',
+                                        synopsis: 'A thrilling adventure in the heart of Hollywood.',
+                                        coverImageUrl: '',
+                                    }, {
+                                        id: 'example2',
+                                        projectName: 'Indie Short',
+                                        productionCompany: 'Indie Studio',
+                                        country: 'UK',
+                                        productionLocations: [{ country: 'UK', city: 'London' }],
+                                        status: 'Completed',
+                                        synopsis: 'A touching story of friendship and dreams.',
+                                        coverImageUrl: '',
+                                    }].map((project, index) => (
+                                        <div key={project.id} style={{ animationDelay: `${index * 0.1}s` }}>
+                                            <ProjectCard
+                                                id={project.id}
+                                                projectName={project.projectName}
+                                                productionCompany={project.productionCompany}
+                                                country={project.country}
+                                                productionLocations={project.productionLocations}
+                                                status={project.status}
+                                                summary={project.synopsis}
+                                                coverImageUrl={project.coverImageUrl}
+                                                showDetails={false}
+                                                isBookmarked={false}
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
                     ) : (
-                        <div className="grid-cards">
+                        <div className="grid-cards" aria-live="polite" aria-labelledby="project-highlights-heading">
                             {projects
                                 .filter(project =>
                                     (!projectSearch ||
@@ -235,31 +276,75 @@ const Home: React.FC = () => {
             </div>
 
             {/* Highlighted Crew Section */}
-            <div className="section-white border-b border-gray-100">
+            <div className="section-white border-b border-gray-100" aria-label="Crew Highlights">
                 <div className="container-base section-padding">
                     <div className="mb-12 animate-fade text-center">
-                        <h3 className="heading-tertiary mb-2">Crew Highlights</h3>
+                        <h3 className="heading-tertiary mb-2" id="crew-highlights-heading">Crew Highlights</h3>
                         <p className="body-medium max-w-2xl mx-auto text-gray-500">
                             Meet some of the talented professionals on whosonset
                         </p>
                     </div>
-                    {crewLoading ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-pulse">
-                            {[...Array(4)].map((_, i) => (
-                                <div key={i} className="bg-gray-100 rounded-xl h-64" />
-                            ))}
+                    {/* Search and filter UI for crew */}
+                    <div className="flex flex-col sm:flex-row gap-3 mb-8 animate-fade items-center" aria-label="Crew search and filter">
+                        <div className="relative w-full sm:w-1/2">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                                <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                            </span>
+                            <input
+                                type="text"
+                                className="input-base pl-10 pr-3 py-2 w-full rounded-md border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 bg-white text-gray-900 placeholder-gray-400 shadow-sm transition"
+                                placeholder="Search crew by name, title, or location..."
+                                value={crewSearch}
+                                onChange={e => setCrewSearch(e.target.value)}
+                                aria-label="Search crew by name, title, or location"
+                                id="crew-search-input"
+                            />
                         </div>
+                        <div className="relative w-full sm:w-1/4">
+                            <select
+                                className="input-base w-full rounded-md border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 bg-white text-gray-900 py-2 pl-3 pr-8 shadow-sm transition appearance-none"
+                                value={crewDept}
+                                onChange={e => setCrewDept(e.target.value)}
+                                aria-label="Filter crew by department"
+                                id="crew-department-select"
+                            >
+                                {DEPARTMENT_OPTIONS.map(opt => (
+                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                ))}
+                            </select>
+                            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+                            </span>
+                        </div>
+                    </div>
+                    {crewLoading ? (
+                        <GridSkeleton count={4} height="h-64" />
                     ) : crew.length === 0 ? (
-                        <div className="text-center py-16 animate-fade">
+                        <div className="text-center py-16 animate-fade" aria-live="polite">
                             <div className="text-7xl mb-6 opacity-20">🎬</div>
                             <h4 className="heading-card mb-2">No crew profiles yet</h4>
                             <p className="body-medium max-w-md mx-auto">Be the first to create a crew profile!</p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-fade">
-                            {crew.map((profile, index) => (
-                                <CrewProfileCard key={profile.uid} profile={profile} index={index} />
-                            ))}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-fade" aria-live="polite" aria-labelledby="crew-highlights-heading">
+                            {crew
+                                .filter(profile => {
+                                    // Search by name
+                                    const matchesName = !crewSearch || (profile.name && profile.name.toLowerCase().includes(crewSearch.toLowerCase()));
+                                    // Search by job title
+                                    const matchesJobTitle = !crewSearch || (profile.jobTitles && profile.jobTitles.some(jt => jt.title.toLowerCase().includes(crewSearch.toLowerCase())));
+                                    // Search by city or country
+                                    const matchesResidence = !crewSearch || (profile.residences && profile.residences.some(res =>
+                                        (res.city && res.city.toLowerCase().includes(crewSearch.toLowerCase())) ||
+                                        (res.country && res.country.toLowerCase().includes(crewSearch.toLowerCase()))
+                                    ));
+                                    // Department filter
+                                    const matchesDept = !crewDept || (profile.jobTitles && profile.jobTitles.some(jt => jt.department === crewDept));
+                                    return (matchesName || matchesJobTitle || matchesResidence) && matchesDept;
+                                })
+                                .map((profile, index) => (
+                                    <CrewProfileCard key={profile.uid} profile={profile} index={index} />
+                                ))}
                         </div>
                     )}
                     {crew.length > 0 && (
