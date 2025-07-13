@@ -346,14 +346,24 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
         }
       }}
     >
-      {/* Project Title always visible at top */}
-      <CardHeader withBorder={false} className="bg-white/90 z-20 relative px-4 py-3">
-        <CardTitle className="mb-0 text-lg font-bold text-gray-900 truncate" as="h3">
-          {projectName && projectName.trim() ? projectName : 'Untitled Project'}
-        </CardTitle>
-      </CardHeader>
-      {/* Cover Image */}
+      {/* Cover Image with subtle project name overlay */}
       <div className="relative h-48 bg-gray-100 overflow-hidden">
+        {/* Bookmark Button - Top Right */}
+        {onBookmark && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="absolute top-4 right-4 z-10 p-2 rounded-full bg-white/80 backdrop-blur-sm shadow-md hover:bg-white transition-colors"
+            onClick={handleBookmarkClick}
+            aria-label={isBookmarked ? 'Remove from bookmarks' : 'Add to bookmarks'}
+          >
+            {isBookmarked ? (
+              <BookmarkCheck className="w-5 h-5 text-yellow-500" fill="currentColor" />
+            ) : (
+              <Bookmark className="w-5 h-5 text-gray-400" />
+            )}
+          </Button>
+        )}
         {coverImageUrl && !imageError ? (
           <img
             key={coverImageUrl} // Force re-render when URL changes
@@ -377,33 +387,24 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
             </p>
           </div>
         )}
-        {/* Status Badge */}
-        <div 
-          className={`absolute top-4 left-4 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2 ${statusStyles.bg} ${statusStyles.text}`}
-        >
-          {statusStyles.icon}
-          <span>{formatStatusText(status)}</span>
-        </div>
-        {/* Bookmark Button */}
-        {onBookmark && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="absolute top-4 right-4 z-10 p-2 rounded-full bg-white/80 backdrop-blur-sm shadow-md hover:bg-white transition-colors"
-            onClick={handleBookmarkClick}
-            aria-label={isBookmarked ? 'Remove from bookmarks' : 'Add to bookmarks'}
-          >
-            {isBookmarked ? (
-              <BookmarkCheck className="w-5 h-5 text-yellow-500" fill="currentColor" />
-            ) : (
-              <Bookmark className="w-5 h-5 text-gray-400" />
-            )}
-          </Button>
-        )}
       </div>
       {/* Card Content */}
       <CardBody className="flex-1 flex flex-col">
         <div className="flex-1">
+          {/* Project Name (always visible, clear) */}
+          <div
+            className="text-lg font-semibold text-gray-900 mb-1 leading-tight truncate"
+            title={projectName && projectName.trim() ? projectName : 'Untitled Project'}
+            style={{ minHeight: 24, background: '#ffeeba', border: '2px solid #f00', padding: '2px 6px', borderRadius: 4 }}
+          >
+            {projectName && projectName.trim() ? projectName : 'Untitled Project'}
+          </div>
+          {/* Status Badge (below project name, left-aligned) */}
+          <div className={`inline-flex items-center gap-2 px-2 py-0.5 rounded-full text-xs font-medium mb-2 ${statusStyles.bg} ${statusStyles.text}`}
+            style={{ minHeight: 24 }}>
+            {statusStyles.icon}
+            <span>{formatStatusText(status)}</span>
+          </div>
           {/* Production Company */}
           {productionCompany && (
             <CardDescription className="flex items-center text-sm mb-3">
