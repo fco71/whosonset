@@ -120,7 +120,7 @@ const Home: React.FC = () => {
     return (
         <div className="min-h-screen bg-white" role="main">
             {/* Hero Section */}
-            <div className="section-gradient border-b border-gray-100" aria-label="Hero section">
+            <div style={{ borderBottom: '1px solid #f3f4f6', background: 'linear-gradient(180deg, #f9fafb 0%, #fff 100%)' }} aria-label="Hero section">
                 <div className="container-base section-padding-large">
                     <div className="text-center mb-16 animate-fade">
                         <h1 className="heading-primary mb-6 animate-slide">
@@ -146,7 +146,7 @@ const Home: React.FC = () => {
             </div>
 
             {/* Highlighted Projects Section */}
-            <div className="section-gray" aria-label="Project Highlights">
+            <div style={{ background: '#f9fafb' }} aria-label="Project Highlights">
                 <div className="container-base section-padding">
                     <div className="mb-12 animate-fade">
                         <h3 className="heading-tertiary text-2xl font-bold tracking-tight text-gray-900" id="project-highlights-heading" style={{ letterSpacing: '-0.01em' }}>
@@ -158,24 +158,22 @@ const Home: React.FC = () => {
                         </div>
                     </div>
                     {/* Search and filter UI */}
-                    <div className="flex flex-col sm:flex-row gap-3 mb-8 animate-fade items-center" aria-label="Project search and filter">
-                        <div className="relative w-full sm:w-1/2">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                    <div className="flex flex-col sm:flex-row gap-4 mb-8 animate-fade items-center" aria-label="Project search and filter">
+                        <div className="relative w-full sm:w-2/3 max-w-xl mx-auto" style={{ background: '#fff', borderRadius: 12, boxShadow: '0 1px 4px 0 rgba(0,0,0,0.04)', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', padding: '0.5rem 1rem' }}>
+                            <span className="mr-2 text-gray-400">
                                 <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
                             </span>
                             <input
                                 type="text"
-                                className="input-base pl-10 pr-3 py-2 w-full rounded-md border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 bg-white text-gray-900 placeholder-gray-400 shadow-sm transition"
+                                style={{ border: 'none', outline: 'none', background: 'transparent', flex: 1, fontSize: 16, color: '#111827', padding: '0.5rem 0' }}
                                 placeholder="Search projects by name or company..."
                                 value={projectSearch}
                                 onChange={e => setProjectSearch(e.target.value)}
                                 aria-label="Search projects by name or company"
                                 id="project-search-input"
                             />
-                        </div>
-                        <div className="relative w-full sm:w-1/4">
                             <select
-                                className="input-base w-full rounded-md border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 bg-white text-gray-900 py-2 pl-3 pr-8 shadow-sm transition appearance-none"
+                                style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: 15, color: '#6b7280', marginLeft: 12 }}
                                 value={projectDept}
                                 onChange={e => setProjectDept(e.target.value)}
                                 aria-label="Filter projects by department"
@@ -185,9 +183,6 @@ const Home: React.FC = () => {
                                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                                 ))}
                             </select>
-                            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-                                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
-                            </span>
                         </div>
                     </div>
                     {loading ? (
@@ -252,7 +247,7 @@ const Home: React.FC = () => {
                                     <div key={project.id} style={{ animationDelay: `${index * 0.1}s` }}>
                                         <ProjectCard
                                             id={project.id}
-                                            projectName={project.projectName}
+                                            projectName={project.projectName || 'Untitled Project'}
                                             productionCompany={project.productionCompany}
                                             country={project.country}
                                             productionLocations={project.productionLocations}
@@ -276,7 +271,7 @@ const Home: React.FC = () => {
             </div>
 
             {/* Highlighted Crew Section */}
-            <div className="section-white border-b border-gray-100" aria-label="Crew Highlights">
+            <div style={{ background: '#fff', borderBottom: '1px solid #f3f4f6' }} aria-label="Crew Highlights">
                 <div className="container-base section-padding">
                     <div className="mb-12 animate-fade text-center">
                         <h3 className="heading-tertiary mb-2" id="crew-highlights-heading">Crew Highlights</h3>
@@ -357,53 +352,7 @@ const Home: React.FC = () => {
                 </div>
             </div>
 
-            {/* Social Features Promotion Section */}
-            <div className="section-light border-b border-gray-100">
-                <div className="container-base section-padding">
-                    <div className="text-center mb-12 animate-fade">
-                        <div className="text-6xl mb-6">🤝</div>
-                        <h3 className="heading-tertiary mb-4">
-                            Connect with Industry Professionals
-                        </h3>
-                        <p className="body-medium max-w-2xl mx-auto">
-                            Build your network, discover talented crew members, and stay updated with industry activities
-                        </p>
-                    </div>
-
-                    <div className="grid-features mb-12">
-                        <div className="text-center p-6 rounded-xl bg-gray-50 hover:bg-gray-100 transition-all duration-300">
-                            <div className="text-4xl mb-4">👥</div>
-                            <h4 className="heading-card mb-3">Follow & Connect</h4>
-                            <p className="body-medium">
-                                Send follow requests to professionals you admire and build meaningful connections
-                            </p>
-                        </div>
-                        <div className="text-center p-6 rounded-xl bg-gray-50 hover:bg-gray-100 transition-all duration-300">
-                            <div className="text-4xl mb-4">💬</div>
-                            <h4 className="heading-card mb-3">Direct Messaging</h4>
-                            <p className="body-medium">
-                                Message your followers directly to discuss projects, opportunities, and collaborations
-                            </p>
-                        </div>
-                        <div className="text-center p-6 rounded-xl bg-gray-50 hover:bg-gray-100 transition-all duration-300">
-                            <div className="text-4xl mb-4">📢</div>
-                            <h4 className="heading-card mb-3">Activity Feed</h4>
-                            <p className="body-medium">
-                                Stay updated with the latest activities and announcements from your network
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="text-center animate-fade">
-                        <Link 
-                            to="/social" 
-                            className="btn-primary"
-                        >
-                            Join the Community
-                        </Link>
-                    </div>
-                </div>
-            </div>
+            {/* Social Features Promotion Section Removed */}
         </div>
     );
 };
