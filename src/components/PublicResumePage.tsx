@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import ResumeView from './ResumeView';
+import CrewProfileHeader from './CrewProfileHeader';
 
 // Define a more specific type for the profile data
 interface CrewProfile {
@@ -141,8 +142,10 @@ const PublicResumePage: React.FC<PublicResumePageProps> = () => {
 
   return (
     <>
-      <ResumeView profile={profile as any} />
-      
+      <div className="max-w-3xl mx-auto px-4 pt-8">
+        <CrewProfileHeader profile={profile} />
+        <ResumeView profile={profile as any} />
+      </div>
       {/* Debug info - only shown in development */}
       {process.env.NODE_ENV === 'development' && (
         <div style={{
