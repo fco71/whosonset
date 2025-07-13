@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import FollowButton from './Social/FollowButton';
 import { FavoritesService } from '../utilities/favoritesService';
 import { useAuth } from '../contexts/AuthContext';
+import EmailButton from './MessageButton';
 
 interface CrewProfileHeaderProps {
   profile: any;
@@ -39,6 +40,8 @@ const CrewProfileHeader: React.FC<CrewProfileHeaderProps> = ({ profile }) => {
   const imageUrl = profile.profileImageUrl || '/default-avatar.svg';
   const availability = profile.availability || '';
 
+  const canMessage = !!profile.contactInfo?.email && currentUser && currentUser.uid !== profile.uid;
+
   return (
     <div className="flex flex-col md:flex-row items-center gap-6 bg-white rounded-2xl shadow-lg px-8 py-6 mb-8 border border-gray-100 animate-fade-in">
       <img
@@ -57,17 +60,25 @@ const CrewProfileHeader: React.FC<CrewProfileHeaderProps> = ({ profile }) => {
       </div>
       <div className="flex flex-col gap-2 items-center md:items-end">
         {currentUser && currentUser.uid !== profile.uid && (
-          <FollowButton currentUserId={currentUser.uid} targetUserId={profile.uid} size="sm" />
-        )}
-        {currentUser && currentUser.uid !== profile.uid && (
-          <button
-            onClick={handleBookmark}
-            disabled={bookmarking}
-            className={`mt-2 px-4 py-2 rounded-lg border text-sm font-medium transition-all duration-200 ${isBookmarked ? 'bg-yellow-100 text-yellow-800 border-yellow-300' : 'bg-white text-gray-700 border-gray-300 hover:bg-yellow-50'}`}
-            title={isBookmarked ? 'Remove from bookmarks' : 'Add to bookmarks'}
-          >
-            {bookmarking ? 'Saving...' : isBookmarked ? 'Bookmarked' : 'Bookmark'}
-          </button>
+          <div className="flex gap-2 items-center">
+            <FollowButton currentUserId={currentUser.uid} targetUserId={profile.uid} size="sm" />
+            <button
+              onClick={handleBookmark}
+              disabled={bookmarking}
+              className={`p-2 rounded-full border border-gray-200 bg-white hover:bg-yellow-50 transition-all duration-200 ${isBookmarked ? 'text-yellow-500' : 'text-gray-400'} ${bookmarking ? 'opacity-50' : ''}`}
+              title={isBookmarked ? 'Remove from bookmarks' : 'Add to bookmarks'}
+              style={{ lineHeight: 0 }}
+            >
+              {isBookmarked ? (
+                <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className="w-6 h-6"><path d="M5 5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16l-7-3.5L5 21V5z"/></svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16l-7-3.5L5 21V5z"/></svg>
+              )}
+            </button>
+            {canMessage && (
+              <EmailButton email={profile.contactInfo.email} />
+            )}
+          </div>
         )}
       </div>
     </div>

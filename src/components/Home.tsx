@@ -6,6 +6,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import ProjectCard from './ProjectCard';
 import { FavoritesService } from '../utilities/favoritesService';
 import GridSkeleton from './GridSkeleton';
+import { CrewFavoritesService } from '../utilities/crewFavoritesService';
 
 
 import CrewProfileCard from './CrewProfileCard';
@@ -53,15 +54,19 @@ const Home: React.FC = () => {
     // Search/filter state for crew
     const [crewSearch, setCrewSearch] = useState('');
     const [crewDept, setCrewDept] = useState('');
+    // Crew favorites state
+    const [favoriteCrewIds, setFavoriteCrewIds] = useState<string[]>([]);
+    // Toggle for showing only bookmarked crew
+    const [showOnlyBookmarkedCrew, setShowOnlyBookmarkedCrew] = useState(false);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             setUser(user);
             if (user) {
                 loadFavorites();
+                loadCrewFavorites();
             }
         });
-
         return () => unsubscribe();
     }, []);
 
@@ -108,6 +113,30 @@ const Home: React.FC = () => {
             }
         } catch (error) {
             console.error('Error toggling favorite:', error);
+        }
+    };
+
+    // Crew favorites logic
+    const loadCrewFavorites = async () => {
+        try {
+            const ids = await CrewFavoritesService.getFavoriteCrewIds();
+            setFavoriteCrewIds(ids);
+        } catch (error) {
+            console.error('Error loading crew favorites:', error);
+        }
+    };
+
+    const handleCrewBookmark = async (crewId: string, isBookmarked: boolean, crewData: any) => {
+        try {
+            if (isBookmarked) {
+                await CrewFavoritesService.removeFromFavorites(crewId);
+                setFavoriteCrewIds(prev => prev.filter(id => id !== crewId));
+            } else {
+                await CrewFavoritesService.addToFavorites(crewId, crewData);
+                setFavoriteCrewIds(prev => [...prev, crewId]);
+            }
+        } catch (error) {
+            console.error('Error toggling crew favorite:', error);
         }
     };
 
@@ -296,6 +325,18 @@ const Home: React.FC = () => {
                             />
                         </div>
                         <div className="relative w-full sm:w-1/4">
+                        {/* Toggle for bookmarked crew */}
+                        {user && (
+                            <button
+                                className={`ml-2 px-4 py-2 rounded-md border text-sm font-medium transition focus:outline-none ${showOnlyBookmarkedCrew ? 'bg-yellow-100 border-yellow-400 text-yellow-800' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+                                style={{minWidth: 120}}
+                                onClick={() => setShowOnlyBookmarkedCrew(v => !v)}
+                                aria-pressed={showOnlyBookmarkedCrew}
+                                aria-label={showOnlyBookmarkedCrew ? 'Show all crew' : 'Show only bookmarked crew'}
+                            >
+                                {showOnlyBookmarkedCrew ? 'Bookmarked Only' : 'All Crew'}
+                            </button>
+                        )}
                             <select
                                 className="input-base w-full rounded-md border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 bg-white text-gray-900 py-2 pl-3 pr-8 shadow-sm transition appearance-none"
                                 value={crewDept}
@@ -324,6 +365,8 @@ const Home: React.FC = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade" aria-live="polite" aria-labelledby="crew-highlights-heading" style={{paddingLeft: 0, paddingRight: 0}}>
                             {crew
                                 .filter(profile => {
+                                    // Bookmarked filter
+                                    if (showOnlyBookmarkedCrew && !favoriteCrewIds.includes(profile.uid)) return false;
                                     // Search by name
                                     const matchesName = !crewSearch || (profile.name && profile.name.toLowerCase().includes(crewSearch.toLowerCase()));
                                     // Search by job title
@@ -342,17 +385,32 @@ const Home: React.FC = () => {
                                     const mainLocation = profile.residences && profile.residences.length > 0 ? `${profile.residences[0].city ? profile.residences[0].city + ', ' : ''}${profile.residences[0].country || ''}` : '';
                                     const imageUrl = profile.profileImageUrl || '/default-avatar.svg';
                                     const availability = profile.availability || '';
+                                    const isBookmarked = favoriteCrewIds.includes(profile.uid);
                                     return (
-                                        <a href={`/resume/${profile.uid}`} target="_blank" rel="noopener noreferrer" key={profile.uid} className="group flex items-center bg-white rounded-2xl border border-gray-100 shadow-lg px-5 py-4 gap-4 hover:shadow-xl transition-shadow duration-200 cursor-pointer" style={{minHeight: 68, textDecoration: 'none'}}>
-                                            <img src={imageUrl} alt={profile.name} className="w-14 h-14 rounded-full object-cover border-2 border-gray-200" style={{flexShrink: 0}} onError={e => { (e.target as HTMLImageElement).src = '/default-avatar.svg'; }} />
-                                            <div className="flex-1 min-w-0">
-                                                <div className="font-semibold text-gray-900 truncate group-hover:text-blue-700" style={{fontSize: 17, letterSpacing: '-0.01em'}}>{profile.name}</div>
-                                                <div className="text-xs text-gray-500 truncate" style={{fontWeight: 500}}>{mainTitle}{mainLocation ? ' · ' + mainLocation : ''}</div>
-                                            </div>
-                                            {availability && (
-                                                <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${availability.toLowerCase() === 'available' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>{availability}</span>
+                                        <div key={profile.uid} className="relative group flex items-center bg-white rounded-2xl border border-gray-100 shadow-lg px-5 py-4 gap-4 hover:shadow-xl transition-shadow duration-200 cursor-pointer" style={{minHeight: 68, textDecoration: 'none'}}>
+                                            <a href={`/resume/${profile.uid}`} target="_blank" rel="noopener noreferrer" className="flex items-center flex-1 min-w-0 gap-4" style={{textDecoration: 'none'}}>
+                                                <img src={imageUrl} alt={profile.name} className="w-14 h-14 rounded-full object-cover border-2 border-gray-200" style={{flexShrink: 0}} onError={e => { (e.target as HTMLImageElement).src = '/default-avatar.svg'; }} />
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="font-semibold text-gray-900 truncate group-hover:text-blue-700" style={{fontSize: 17, letterSpacing: '-0.01em'}}>{profile.name}</div>
+                                                    <div className="text-xs text-gray-500 truncate" style={{fontWeight: 500}}>{mainTitle}{mainLocation ? ' · ' + mainLocation : ''}</div>
+                                                </div>
+                                                {availability && (
+                                                    <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${availability.toLowerCase() === 'available' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>{availability}</span>
+                                                )}
+                                            </a>
+                                            {/* Bookmark button */}
+                                            {user && (
+                                                <button
+                                                    onClick={e => { e.preventDefault(); handleCrewBookmark(profile.uid, isBookmarked, profile); }}
+                                                    className="absolute top-3 right-3 p-2 bg-white/80 backdrop-blur-sm rounded-full shadow-lg hover:bg-white transition-all duration-300 hover:scale-110"
+                                                    title={isBookmarked ? 'Remove from bookmarks' : 'Add to bookmarks'}
+                                                >
+                                                    <svg className={`w-5 h-5 ${isBookmarked ? 'text-yellow-500 fill-current' : 'text-gray-400'}`} fill={isBookmarked ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                                                    </svg>
+                                                </button>
                                             )}
-                                        </a>
+                                        </div>
                                     );
                                 })}
                         </div>
