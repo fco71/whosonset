@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { JobPosting } from '../../types/JobApplication';
 
 const JobDetailPage: React.FC = () => {
+  const auth = useAuth();
   const { jobId } = useParams<{ jobId: string }>();
   const navigate = useNavigate();
   
@@ -160,6 +162,9 @@ const JobDetailPage: React.FC = () => {
     );
   }
 
+  // Determine if the current user is the job poster
+  const isJobPoster = job && auth.currentUser && (job.postedBy === auth.currentUser.uid);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto px-8 py-16">
@@ -288,32 +293,31 @@ const JobDetailPage: React.FC = () => {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Apply Card */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 sticky top-8">
-              <div className="text-center mb-6">
-                <h3 className="text-xl font-light text-gray-900 mb-2">Interested in this position?</h3>
-                <p className="text-gray-600 text-sm">
-                  {job.applicationsCount} other{job.applicationsCount !== 1 ? 's have' : ' has'} applied
-                </p>
+            {/* Apply Card (only for non-owners) */}
+            {!isJobPoster && (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 sticky top-8">
+                <div className="text-center mb-6">
+                  <h3 className="text-xl font-light text-gray-900 mb-2">Interested in this position?</h3>
+                  <p className="text-gray-600 text-sm">
+                    {job.applicationsCount} other{job.applicationsCount !== 1 ? 's have' : ' has'} applied
+                  </p>
+                </div>
+                <div className="space-y-4">
+                  <Link
+                    to={`/jobs/${job.id}/apply`}
+                    className="w-full px-6 py-4 bg-gray-900 text-white font-light rounded-lg hover:bg-gray-800 transition-all duration-300 hover:scale-105 text-center block"
+                  >
+                    Apply Now
+                  </Link>
+                  <button className="w-full px-6 py-3 border border-gray-200 text-gray-700 font-light rounded-lg hover:bg-gray-50 transition-colors">
+                    Save Job
+                  </button>
+                  <button className="w-full px-6 py-3 border border-gray-200 text-gray-700 font-light rounded-lg hover:bg-gray-50 transition-colors">
+                    Share Job
+                  </button>
+                </div>
               </div>
-              
-              <div className="space-y-4">
-                <Link
-                  to={`/jobs/${job.id}/apply`}
-                  className="w-full px-6 py-4 bg-gray-900 text-white font-light rounded-lg hover:bg-gray-800 transition-all duration-300 hover:scale-105 text-center block"
-                >
-                  Apply Now
-                </Link>
-                
-                <button className="w-full px-6 py-3 border border-gray-200 text-gray-700 font-light rounded-lg hover:bg-gray-50 transition-colors">
-                  Save Job
-                </button>
-                
-                <button className="w-full px-6 py-3 border border-gray-200 text-gray-700 font-light rounded-lg hover:bg-gray-50 transition-colors">
-                  Share Job
-                </button>
-              </div>
-            </div>
+            )}
 
             {/* Job Details */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
@@ -397,18 +401,18 @@ const JobDetailPage: React.FC = () => {
             {/* Posted Info */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
               <h3 className="text-lg font-light text-gray-900 mb-4">Posted Information</h3>
-              
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Posted</span>
                   <span className="text-gray-900">{formatDate(job.postedAt)}</span>
                 </div>
-                
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Applications</span>
-                  <span className="text-gray-900">{job.applicationsCount}</span>
-                </div>
-                
+                {/* Only show application count to non-owners */}
+                {!isJobPoster && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Applications</span>
+                    <span className="text-gray-900">{job.applicationsCount}</span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span className="text-gray-600">Status</span>
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${

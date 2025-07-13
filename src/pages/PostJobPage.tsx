@@ -584,6 +584,70 @@ const PostJobPage: React.FC = (): JSX.Element => {
               {errors.benefits && <p className="mt-1 text-sm text-red-600">{errors.benefits}</p>}
             </div>
 
+            {/* Compensation Section */}
+            <fieldset className="border border-gray-200 rounded-md p-4 mb-4">
+              <legend className="text-base font-medium text-gray-900 px-2">Compensation</legend>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+                <div>
+                  <label htmlFor="salaryMin" className="block text-sm font-medium text-gray-700">Minimum Salary</label>
+                  <Input
+                    id="salaryMin"
+                    name="salaryMin"
+                    type="number"
+                    min="0"
+                    value={formData.salaryMin}
+                    onChange={e => handleChange('salaryMin', e.target.value)}
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    placeholder="e.g. 50000"
+                  />
+                  {errors.salaryMin && <p className="mt-1 text-sm text-red-600">{errors.salaryMin}</p>}
+                </div>
+                <div>
+                  <label htmlFor="salaryMax" className="block text-sm font-medium text-gray-700">Maximum Salary</label>
+                  <Input
+                    id="salaryMax"
+                    name="salaryMax"
+                    type="number"
+                    min="0"
+                    value={formData.salaryMax}
+                    onChange={e => handleChange('salaryMax', e.target.value)}
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    placeholder="e.g. 70000"
+                  />
+                  {errors.salaryMax && <p className="mt-1 text-sm text-red-600">{errors.salaryMax}</p>}
+                </div>
+                <div>
+                  <label htmlFor="salaryPeriod" className="block text-sm font-medium text-gray-700">Salary Period</label>
+                  <select
+                    id="salaryPeriod"
+                    name="salaryPeriod"
+                    value={formData.salaryPeriod}
+                    onChange={e => handleChange('salaryPeriod', e.target.value)}
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  >
+                    <option value="year">Per Year</option>
+                    <option value="month">Per Month</option>
+                    <option value="week">Per Week</option>
+                    <option value="day">Per Day</option>
+                    <option value="hour">Per Hour</option>
+                  </select>
+                </div>
+                <div className="flex items-center mt-6">
+                  <input
+                    id="showSalary"
+                    name="showSalary"
+                    type="checkbox"
+                    checked={formData.showSalary}
+                    onChange={e => handleChange('showSalary', e.target.checked)}
+                    className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                  />
+                  <label htmlFor="showSalary" className="ml-2 block text-sm text-gray-700">
+                    Show salary on job posting
+                  </label>
+                </div>
+              </div>
+            </fieldset>
+
             {/* Date Range */}
             <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2">
               <div>

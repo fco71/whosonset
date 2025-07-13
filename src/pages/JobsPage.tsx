@@ -28,10 +28,11 @@ const JobCard: React.FC<JobCardProps> = ({ job, currentUserId, onEdit }) => {
   const navigate = useNavigate();
   return (
     <div
-      className="group bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-200 border border-gray-200 flex flex-col items-center p-5 relative cursor-pointer max-w-xs mx-auto"
+      className="group card-base card-hover animate-entrance flex flex-col items-center relative cursor-pointer max-w-xs mx-auto bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-200 border border-gray-200 p-4"
+      style={{ minHeight: 220, padding: 24, alignItems: 'center' }}
       onClick={() => navigate(`/jobs/${job.id}`)}
-      style={{ minHeight: 220 }}
     >
+      {/* Edit button for job owner */}
       {currentUserId && job.postedById === currentUserId && (
         <button
           className="absolute top-3 right-3 p-2 bg-white/80 backdrop-blur-sm rounded-full shadow hover:bg-indigo-50 transition-all duration-200 z-10"
@@ -41,59 +42,72 @@ const JobCard: React.FC<JobCardProps> = ({ job, currentUserId, onEdit }) => {
           <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536M9 13l6-6 3 3-6 6H9v-3z" /></svg>
         </button>
       )}
-      <div className="flex flex-col items-center gap-2 w-full">
-        <h3 className="font-bold text-lg text-gray-900 text-center mb-1 truncate w-full">{job.title || 'Untitled Position'}</h3>
-        <div className="flex flex-wrap gap-2 justify-center mb-1">
-          {hasValue(job.department) && (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
-              {job.department}
-            </span>
-          )}
-          {hasValue(job.jobType) && (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800">
-              {job.jobType.replace('_', ' ')}
-            </span>
-          )}
-          {job.isRemote && (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-800">
-              Remote
-            </span>
-          )}
-        </div>
-        {hasValue(job.location) && (
-          <div className="text-xs text-gray-500 mb-1 flex items-center gap-1">
-            <svg className="h-4 w-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" /></svg>
-            {job.location}
-          </div>
-        )}
-        {/* Only show salary if showSalary is true and at least one value is present and > 0 */}
-        {job.showSalary && ((job.salaryMin && job.salaryMin > 0) || (job.salaryMax && job.salaryMax > 0)) && (
-          <div className="text-xs font-semibold text-gray-900 mb-1">
-            {job.salaryMin && job.salaryMax && job.salaryMin > 0 && job.salaryMax > 0
-              ? `$${job.salaryMin.toLocaleString()} - $${job.salaryMax.toLocaleString()}`
-              : job.salaryMin && job.salaryMin > 0
-                ? `$${job.salaryMin.toLocaleString()}`
-                : job.salaryMax && job.salaryMax > 0
-                  ? `$${job.salaryMax.toLocaleString()}`
-                  : ''}
-            <span className="text-gray-500 text-xs ml-1">/{job.salaryPeriod || 'year'}</span>
-          </div>
-        )}
-        {hasValue(job.description) && (
-          <p className="text-xs text-gray-700 text-center line-clamp-2 mb-1">{job.description}</p>
-        )}
-        <div className="flex flex-wrap gap-2 justify-center mt-1">
-          {hasValue(job.requirements) && (
-            <span className="inline-block bg-gray-100 text-gray-600 rounded px-2 py-0.5 text-[11px]">Req: {Array.isArray(job.requirements) ? job.requirements.join(', ') : job.requirements}</span>
-          )}
-          {hasValue(job.responsibilities) && (
-            <span className="inline-block bg-gray-100 text-gray-600 rounded px-2 py-0.5 text-[11px]">Resp: {Array.isArray(job.responsibilities) ? job.responsibilities.join(', ') : job.responsibilities}</span>
-          )}
-          {hasValue(job.benefits) && (
-            <span className="inline-block bg-gray-100 text-gray-600 rounded px-2 py-0.5 text-[11px]">Benefits: {Array.isArray(job.benefits) ? job.benefits.join(', ') : job.benefits}</span>
-          )}
-        </div>
+      {/* Avatar/Icon */}
+      <div className="h-20 w-20 rounded-full bg-gray-100 flex items-center justify-center mb-3 border-2 border-gray-200 overflow-hidden">
+        <img
+          src={'/movie-production-avatar.svg'}
+          alt={job.title || 'Job'}
+          className="object-cover w-full h-full"
+          onError={e => { (e.target as HTMLImageElement).src = '/movie-production-avatar.svg'; }}
+        />
       </div>
+      {/* Title */}
+      <h3 className="font-semibold text-lg text-gray-900 text-center mb-1 truncate w-full">{job.title || 'Untitled Position'}</h3>
+      {/* Department, Job Type, Remote badges */}
+      <div className="flex flex-wrap gap-2 justify-center mb-2">
+        {hasValue(job.department) && (
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
+            {job.department}
+          </span>
+        )}
+        {hasValue(job.jobType) && (
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+            {job.jobType.replace('_', ' ')}
+          </span>
+        )}
+        {job.isRemote && (
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-800">
+            Remote
+          </span>
+        )}
+      </div>
+      {/* Location */}
+      {hasValue(job.location) && (
+        <div className="text-xs text-gray-500 mb-1 flex items-center gap-1 justify-center">
+          <svg className="h-4 w-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" /></svg>
+          {job.location}
+        </div>
+      )}
+      {/* Salary */}
+      {job.showSalary && ((job.salaryMin && job.salaryMin > 0) || (job.salaryMax && job.salaryMax > 0)) && (
+        <div className="text-xs font-semibold text-gray-900 mb-1">
+          {job.salaryMin && job.salaryMax && job.salaryMin > 0 && job.salaryMax > 0
+            ? `$${job.salaryMin.toLocaleString()} - $${job.salaryMax.toLocaleString()}`
+            : job.salaryMin && job.salaryMin > 0
+              ? `$${job.salaryMin.toLocaleString()}`
+              : job.salaryMax && job.salaryMax > 0
+                ? `$${job.salaryMax.toLocaleString()}`
+                : ''}
+          <span className="text-gray-500 text-xs ml-1">/{job.salaryPeriod || 'year'}</span>
+        </div>
+      )}
+      {/* Short Description */}
+      {hasValue(job.description) && (
+        <p className="text-xs text-gray-700 text-center line-clamp-2 mb-1">{job.description}</p>
+      )}
+      {/* Requirements, Responsibilities, Benefits (compact) */}
+      <div className="flex flex-wrap gap-2 justify-center mt-1">
+        {hasValue(job.requirements) && (
+          <span className="inline-block bg-gray-100 text-gray-600 rounded px-2 py-0.5 text-[11px]">Req: {Array.isArray(job.requirements) ? job.requirements.join(', ') : job.requirements}</span>
+        )}
+        {hasValue(job.responsibilities) && (
+          <span className="inline-block bg-gray-100 text-gray-600 rounded px-2 py-0.5 text-[11px]">Resp: {Array.isArray(job.responsibilities) ? job.responsibilities.join(', ') : job.responsibilities}</span>
+        )}
+        {hasValue(job.benefits) && (
+          <span className="inline-block bg-gray-100 text-gray-600 rounded px-2 py-0.5 text-[11px]">Benefits: {Array.isArray(job.benefits) ? job.benefits.join(', ') : job.benefits}</span>
+        )}
+      </div>
+      {/* Footer: Posted date and Details link */}
       <div className="flex justify-between items-center w-full mt-3 text-xs text-gray-400">
         <span>Posted {formatDate(job.createdAt)}</span>
         <Link
