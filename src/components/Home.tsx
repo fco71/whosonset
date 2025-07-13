@@ -147,15 +147,13 @@ const Home: React.FC = () => {
 
             {/* Highlighted Projects Section */}
             <div style={{ background: '#f9fafb' }} aria-label="Project Highlights">
-                <div className="container-base section-padding">
+                <div className="container-base section-padding" style={{paddingLeft: 24, paddingRight: 24}}>
                     <div className="mb-12 animate-fade">
                         <h3 className="heading-tertiary text-2xl font-bold tracking-tight text-gray-900" id="project-highlights-heading" style={{ letterSpacing: '-0.01em' }}>
                             Project Highlights
                         </h3>
-                        {/* Debug: Show number of projects fetched */}
-                        <div style={{ fontSize: '0.9rem', color: '#888', marginTop: 4, marginBottom: 0 }}>
-                            <span>Fetched: {projects.length} projects</span>
-                        </div>
+                        {/* Add spacing below heading for visual balance */}
+                        <div style={{ height: 18 }} />
                     </div>
                     {/* Search and filter UI */}
                     <div className="flex flex-col sm:flex-row gap-4 mb-8 animate-fade items-center" aria-label="Project search and filter">
@@ -234,7 +232,7 @@ const Home: React.FC = () => {
                             </div>
                         </div>
                     ) : (
-                        <div className="grid-cards" aria-live="polite" aria-labelledby="project-highlights-heading">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" aria-live="polite" aria-labelledby="project-highlights-heading" style={{marginLeft: 0, marginRight: 0}}>
                             {projects
                                 .filter(project =>
                                     (!projectSearch ||
@@ -263,7 +261,7 @@ const Home: React.FC = () => {
                         </div>
                     )}
                     {projects.length > 0 && (
-                        <div className="text-center mt-12 animate-fade">
+                        <div className="text-center mt-12 animate-fade" style={{ paddingBottom: 36 }}>
                             <Link to="/projects" className="btn-secondary">View All Projects →</Link>
                         </div>
                     )}
@@ -271,7 +269,7 @@ const Home: React.FC = () => {
             </div>
 
             {/* Highlighted Crew Section */}
-            <div style={{ background: '#fff', borderBottom: '1px solid #f3f4f6' }} aria-label="Crew Highlights">
+            <div style={{ background: '#fff', borderBottom: '1px solid #f3f4f6', paddingTop: 32 }} aria-label="Crew Highlights">
                 <div className="container-base section-padding">
                     <div className="mb-12 animate-fade text-center">
                         <h3 className="heading-tertiary mb-2" id="crew-highlights-heading">Crew Highlights</h3>
@@ -280,8 +278,8 @@ const Home: React.FC = () => {
                         </p>
                     </div>
                     {/* Search and filter UI for crew */}
-                    <div className="flex flex-col sm:flex-row gap-3 mb-8 animate-fade items-center" aria-label="Crew search and filter">
-                        <div className="relative w-full sm:w-1/2">
+                    <div className="flex flex-col sm:flex-row gap-3 mb-8 animate-fade items-center" aria-label="Crew search and filter" style={{paddingLeft: 8, paddingRight: 8}}>
+                        <div className="relative w-full sm:w-1/2" style={{marginLeft: 'auto', marginRight: 'auto', maxWidth: 420}}>
                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
                                 <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
                             </span>
@@ -321,7 +319,7 @@ const Home: React.FC = () => {
                             <p className="body-medium max-w-md mx-auto">Be the first to create a crew profile!</p>
                         </div>
                     ) : (
-                        <div className="grid-cards animate-fade" aria-live="polite" aria-labelledby="crew-highlights-heading">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade" aria-live="polite" aria-labelledby="crew-highlights-heading" style={{paddingLeft: 8, paddingRight: 8}}>
                             {crew
                                 .filter(profile => {
                                     // Search by name
@@ -337,9 +335,24 @@ const Home: React.FC = () => {
                                     const matchesDept = !crewDept || (profile.jobTitles && profile.jobTitles.some(jt => jt.department === crewDept));
                                     return (matchesName || matchesJobTitle || matchesResidence) && matchesDept;
                                 })
-                                .map((profile, index) => (
-                                    <CrewProfileCard key={profile.uid} profile={profile} index={index} />
-                                ))}
+                                .map((profile, index) => {
+                                    const mainTitle = profile.jobTitles && profile.jobTitles.length > 0 ? profile.jobTitles[0].title : '';
+                                    const mainLocation = profile.residences && profile.residences.length > 0 ? `${profile.residences[0].city ? profile.residences[0].city + ', ' : ''}${profile.residences[0].country || ''}` : '';
+                                    const imageUrl = profile.profileImageUrl || '/default-avatar.svg';
+                                    const availability = profile.availability || '';
+                                    return (
+                                        <Link to={`/crew/${profile.uid}`} key={profile.uid} className="group flex items-center bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3 gap-4 hover:shadow-md transition-shadow duration-200 cursor-pointer" style={{minHeight: 64, textDecoration: 'none'}}>
+                                            <img src={imageUrl} alt={profile.name} className="w-12 h-12 rounded-full object-cover border border-gray-200" style={{flexShrink: 0}} onError={e => { (e.target as HTMLImageElement).src = '/default-avatar.svg'; }} />
+                                            <div className="flex-1 min-w-0">
+                                                <div className="font-semibold text-gray-900 truncate group-hover:text-blue-700" style={{fontSize: 16}}>{profile.name}</div>
+                                                <div className="text-xs text-gray-500 truncate">{mainTitle}{mainLocation ? ' · ' + mainLocation : ''}</div>
+                                            </div>
+                                            {availability && (
+                                                <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${availability.toLowerCase() === 'available' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>{availability}</span>
+                                            )}
+                                        </Link>
+                                    );
+                                })}
                         </div>
                     )}
                     {crew.length > 0 && (

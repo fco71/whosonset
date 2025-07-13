@@ -332,8 +332,9 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
   };
 
   return (
-    <Card 
-      className={`card-modern overflow-hidden ${className}`}
+    <Card
+      className={`bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300 flex flex-col ${className}`}
+      style={{ padding: 20, minHeight: 340, maxWidth: 370, margin: 'auto', boxSizing: 'border-box' }}
       hoverable
       onClick={handleCardClick}
       role="button"
@@ -396,24 +397,24 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
             {/* Debug: log projectName to console */}
             {(() => { console.log('ProjectCard projectName:', projectName); return null; })()}
             <div
-              className="text-xl font-semibold mb-3 leading-snug truncate"
+              className="text-base font-medium mb-2 leading-tight truncate"
               title={projectName && projectName.trim() ? projectName : 'Untitled Project'}
               style={{
-                minHeight: 28,
+                minHeight: 20,
                 letterSpacing: '-0.01em',
-                background: 'linear-gradient(90deg, #f8fafc 0%, #f1f5f9 100%)',
-                color: '#1a202c',
-                padding: '10px 18px',
-                borderRadius: 12,
-                marginBottom: 12,
-                boxShadow: '0 2px 12px 0 rgba(0,0,0,0.07)',
-                border: '1px solid #e2e8f0',
-                maxWidth: '92%',
+                background: 'rgba(250,252,255,0.92)',
+                color: '#23272f',
+                padding: '5px 10px',
+                borderRadius: 8,
+                marginBottom: 8,
+                boxShadow: '0 1px 4px 0 rgba(0,0,0,0.03)',
+                border: '1px solid #e5e7eb',
+                maxWidth: '96%',
                 marginLeft: 'auto',
                 marginRight: 'auto',
-                fontWeight: 600,
+                fontWeight: 500,
                 zIndex: 2,
-                textShadow: '0 1px 8px rgba(255,255,255,0.7)'
+                textShadow: 'none'
               }}
             >
               {projectName && projectName.trim() ? projectName : 'Untitled Project'}
