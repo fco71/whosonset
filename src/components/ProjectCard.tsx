@@ -396,22 +396,24 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
             {/* Debug: log projectName to console */}
             {(() => { console.log('ProjectCard projectName:', projectName); return null; })()}
             <div
-              className="text-lg font-semibold mb-2 leading-snug truncate shadow-sm"
+              className="text-xl font-semibold mb-3 leading-snug truncate"
               title={projectName && projectName.trim() ? projectName : 'Untitled Project'}
               style={{
-                minHeight: 22,
+                minHeight: 28,
                 letterSpacing: '-0.01em',
-                background: 'rgba(255,255,255,0.85)',
-                color: '#222',
-                padding: '6px 12px',
-                borderRadius: 8,
-                marginBottom: 8,
-                boxShadow: '0 1px 4px 0 rgba(0,0,0,0.04)',
-                maxWidth: '95%',
+                background: 'linear-gradient(90deg, #f8fafc 0%, #f1f5f9 100%)',
+                color: '#1a202c',
+                padding: '10px 18px',
+                borderRadius: 12,
+                marginBottom: 12,
+                boxShadow: '0 2px 12px 0 rgba(0,0,0,0.07)',
+                border: '1px solid #e2e8f0',
+                maxWidth: '92%',
                 marginLeft: 'auto',
                 marginRight: 'auto',
-                fontWeight: 500,
-                zIndex: 2
+                fontWeight: 600,
+                zIndex: 2,
+                textShadow: '0 1px 8px rgba(255,255,255,0.7)'
               }}
             >
               {projectName && projectName.trim() ? projectName : 'Untitled Project'}
