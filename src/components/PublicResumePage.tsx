@@ -48,12 +48,16 @@ const PublicResumePage: React.FC<PublicResumePageProps> = () => {
           throw new Error('Profile not found');
         }
 
-        const profileData = docSnap.data() as CrewProfile;
+        let profileData = docSnap.data() as CrewProfile;
+        // Fallback: use photoURL if profileImageUrl is missing
+        if (!profileData.profileImageUrl && profileData.photoURL) {
+          profileData = { ...profileData, profileImageUrl: profileData.photoURL };
+        }
         console.log('[PublicResumePage] Fetched profile data:', {
           hasProfileImage: !!profileData.profileImageUrl,
           profileImageUrl: profileData.profileImageUrl,
           isBlobUrl: profileData.profileImageUrl?.startsWith('blob:'),
-          profileData: { ...profileData, profileImageUrl: '...' } // Don't log the full URL in case it's sensitive
+          profileData: { ...profileData, profileImageUrl: '...' }
         });
 
         if (!profileData.isPublished) {

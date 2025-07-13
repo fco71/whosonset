@@ -7,8 +7,8 @@ import ProjectForm from './ProjectForm';
 import { storage } from '../firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
-// Country list for dropdown
-const COUNTRIES = [
+// Country list for dropdown (deduplicated)
+const COUNTRIES = Array.from(new Set([
   'United States', 'Canada', 'United Kingdom', 'Australia', 'Germany', 'France', 'Italy', 'Spain', 'Netherlands', 'Belgium',
   'Switzerland', 'Austria', 'Sweden', 'Norway', 'Denmark', 'Finland', 'Iceland', 'Ireland', 'Portugal', 'Greece',
   'Poland', 'Czech Republic', 'Hungary', 'Slovakia', 'Slovenia', 'Croatia', 'Serbia', 'Bulgaria', 'Romania', 'Ukraine',
@@ -37,7 +37,7 @@ const COUNTRIES = [
   'Sierra Leone', 'Guinea', 'Guinea-Bissau', 'Senegal', 'The Gambia', 'Mauritania', 'Mali', 'Burkina Faso', 'Algeria',
   'Tunisia', 'Libya', 'Morocco', 'Western Sahara', 'Angola', 'Zambia', 'Zimbabwe', 'Botswana', 'Namibia', 'South Africa',
   'Lesotho', 'Eswatini', 'Mozambique', 'Madagascar', 'Comoros', 'Mauritius', 'Seychelles'
-].sort();
+])).sort();
 
 interface ProductionLocation {
   country: string;
@@ -59,6 +59,7 @@ const AddProject: React.FC = () => {
   const [director, setDirector] = useState('');
   const [producer, setProducer] = useState('');
   const [coverImageUrl, setCoverImageUrl] = useState('');
+  const [imageUploading, setImageUploading] = useState(false);
   const [projectWebsite, setProjectWebsite] = useState('');
   const [productionBudget, setProductionBudget] = useState('');
   const [productionCompanyContact, setProductionCompanyContact] = useState('');
@@ -80,46 +81,58 @@ const AddProject: React.FC = () => {
     setProductionLocations(productionLocations.filter(loc => loc.country !== country));
   };
 
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (user) {
-      try {
-        const projectsCollectionRef = collection(db, 'Projects');
-        const safeCoverUrl = coverImageUrl.startsWith('http') ? coverImageUrl : '';
-
-        await addDoc(projectsCollectionRef, {
-          projectName,
-          productionLocations,
-          productionCompany,
-          status,
-          logline,
-          synopsis,
-          startDate,
-          endDate,
-          genre,
-          director,
-          producer,
-          coverImageUrl: safeCoverUrl,
-          projectWebsite,
-          productionBudget,
-          productionCompanyContact,
-          owner_uid: user.uid,
-          createdAt: serverTimestamp(),
-        });
-
-        console.log('Project added successfully!');
-        navigate('/');
-      } catch (error: any) {
-        console.error('Error adding project:', error.message);
-      }
-    } else {
+    if (!user) {
       console.log('User not logged in.');
       navigate('/login');
+      return;
+    }
+    try {
+      const projectsCollectionRef = collection(db, 'Projects');
+      // Step 1: Create the project document with minimal info, get the new doc ref
+      const docRef = await addDoc(projectsCollectionRef, {
+        projectName,
+        productionLocations,
+        productionCompany,
+        status,
+        logline,
+        synopsis,
+        startDate,
+        endDate,
+        genre,
+        director,
+        producer,
+        projectWebsite,
+        productionBudget,
+        productionCompanyContact,
+        owner_uid: user.uid,
+        createdAt: serverTimestamp(),
+      });
+
+      // Step 2: If there is a coverImageUrl, update the document with it
+      if (coverImageUrl && coverImageUrl.startsWith('http')) {
+        await import('firebase/firestore').then(({ updateDoc }) =>
+          updateDoc(docRef, { coverImageUrl })
+        );
+      }
+
+      console.log('Project added successfully!');
+      navigate('/');
+    } catch (error: any) {
+      console.error('Error adding project:', error.message);
     }
   };
 
   const handleCoverImageUploaded = (url: string) => {
     setCoverImageUrl(url);
+    setImageUploading(false);
+  };
+
+  // Called by ImageUploader when upload starts
+  const handleImageUploadStart = () => {
+    setImageUploading(true);
   };
 
   const handleCancel = () => {
@@ -257,6 +270,8 @@ const AddProject: React.FC = () => {
                 productionCompanyContact={productionCompanyContact}
                 setProductionCompanyContact={setProductionCompanyContact}
                 handleCoverImageUploaded={handleCoverImageUploaded}
+                handleImageUploadStart={handleImageUploadStart}
+                imageUploading={imageUploading}
               />
 
               <div className="flex flex-col sm:flex-row justify-end gap-4 pt-6 border-t border-gray-200">
@@ -270,8 +285,10 @@ const AddProject: React.FC = () => {
                 <button
                   type="submit"
                   className="btn-primary"
+                  disabled={imageUploading}
+                  title={imageUploading ? 'Please wait for image upload to finish' : ''}
                 >
-                  Add Project
+                  {imageUploading ? 'Uploading Image...' : 'Add Project'}
                 </button>
               </div>
             </form>

@@ -53,43 +53,33 @@ const getStatusStyles = (status: ProjectStatus) => {
     'post_production': { bg: 'bg-purple-100', text: 'text-purple-800', icon: <Film size={14} /> },
     'post-production': { bg: 'bg-purple-100', text: 'text-purple-800', icon: <Film size={14} /> },
     'development': { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: <Clock size={14} /> },
-    'completed': { bg: 'bg-green-100', text: 'text-green-800', icon: <Calendar size={14} /> },
+    'completed': { bg: 'bg-gray-200', text: 'text-gray-800', icon: <Film size={14} /> },
     'cancelled': { bg: 'bg-red-100', text: 'text-red-800', icon: <Clock size={14} /> },
   };
-
-  const normalizedStatus = status.toLowerCase().replace('-', '_');
-  return statusMap[normalizedStatus] || { bg: 'bg-gray-100', text: 'text-gray-800', icon: <Clock size={14} /> };
+  return statusMap[status] || { bg: 'bg-gray-100', text: 'text-gray-800', icon: <Clock size={14} /> };
 };
 
-/**
- * Format status text for display
- */
-const formatStatusText = (status: string): string => {
-  return status
-    .split('_')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-};
+const ProjectCard: React.FC<ProjectCardProps> = (props) => {
+  const {
+    id,
+    projectName,
+    productionCompany,
+    country,
+    productionLocations,
+    status = 'development',
+    summary,
+    director,
+    producer,
+    genres = [],
+    coverImageUrl: initialCoverImageUrl,
+    startDate,
+    endDate,
+    showDetails = false,
+    onBookmark,
+    isBookmarked = false,
+    className = '',
+  } = props;
 
-const ProjectCard: React.FC<ProjectCardProps> = ({
-  id,
-  projectName,
-  productionCompany,
-  country,
-  productionLocations,
-  status = 'development',
-  summary,
-  director,
-  producer,
-  genres = [],
-  coverImageUrl: initialCoverImageUrl,
-  startDate,
-  endDate,
-  showDetails = false,
-  onBookmark,
-  isBookmarked = false,
-  className = '',
-}) => {
   // State to manage the cover image URL with error handling
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
@@ -174,6 +164,11 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
       return;
     }
 
+    // Normalize Firebase Storage URLs to use .appspot.com
+    if (url.includes('firebasestorage.googleapis.com') && url.includes('.firebasestorage.app')) {
+      url = url.replace('.firebasestorage.app', '.appspot.com');
+    }
+
     // For blob URLs or invalid URLs, use a placeholder
     if (url.startsWith('blob:') || !url.startsWith('http')) {
       if (process.env.NODE_ENV === 'development') {
@@ -183,109 +178,44 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
       setImageError(false);
       return;
     }
-    
+
     // Set a timeout for image loading (5 seconds)
     const timeoutId = setTimeout(() => {
       console.warn(`[ProjectCard] Image load timed out: ${url}`);
       setCoverImageUrl(getPlaceholderImage());
       setImageError(true);
-      
       // Retry logic
       if (!isRetry && retryCount < maxRetries) {
         console.log(`[ProjectCard] Retrying image load (attempt ${retryCount + 1}/${maxRetries})`);
         setRetryCount(prev => prev + 1);
       }
     }, 5000);
-    
+
     // Create a new image object to test loading
     const testImage = new Image();
-    
+
     // Handle successful load
     testImage.onload = () => {
       clearTimeout(timeoutId);
       setCoverImageUrl(url);
       setImageError(false);
     };
-    
+
     // Handle image load errors
     testImage.onerror = () => {
       clearTimeout(timeoutId);
       console.warn(`[ProjectCard] Failed to load image: ${url}`);
       setCoverImageUrl(getPlaceholderImage());
       setImageError(true);
-      
       // Retry logic
       if (!isRetry && retryCount < maxRetries) {
         console.log(`[ProjectCard] Retrying image load (attempt ${retryCount + 1}/${maxRetries})`);
         setRetryCount(prev => prev + 1);
       }
     };
-    
+
     // Start loading the image
     testImage.src = url;
-
-    // For Firebase Storage URLs, check if they're valid
-    if (url.includes('firebasestorage.googleapis.com')) {
-      try {
-        const urlObj = new URL(url);
-        const path = urlObj.pathname.split('/o/')[1];
-        
-        if (!path) {
-          console.warn('[ProjectCard] Invalid Firebase Storage URL format');
-          setCoverImageUrl(getPlaceholderImage());
-          setImageError(true);
-          return;
-        }
-        
-        // Add a timestamp to prevent caching issues
-        const timestamp = new Date().getTime();
-        const cacheBustedUrl = url.includes('?') 
-          ? `${url}&t=${timestamp}`
-          : `${url}?t=${timestamp}`;
-      } catch (error) {
-        console.warn('[ProjectCard] Error parsing URL:', error);
-        setCoverImageUrl(getPlaceholderImage());
-        setImageError(false);
-        return;
-      }
-    }
-
-    // For non-blob URLs, use them directly
-    setCoverImageUrl(url);
-    setImageError(false);
-
-    // Preload the image to check if it's valid
-    const img = new Image();
-    
-    // Add a timestamp to the URL to prevent caching issues
-    const timestamp = new Date().getTime();
-    const urlWithTimestamp = url.includes('?') 
-      ? `${url}&t=${timestamp}` 
-      : `${url}?t=${timestamp}`;
-    
-    img.src = urlWithTimestamp;
-    
-    // Set a timeout for the image load
-    const loadTimeout = setTimeout(() => {
-      if (!img.complete && url === lastProcessedUrlRef.current) {
-        console.warn(`[ProjectCard] Image load timed out: ${url}`);
-        handleImageLoadError(url, isRetry);
-      }
-    }, 5000); // 5 second timeout
-    
-    img.onload = () => {
-      clearTimeout(loadTimeout);
-      // If we're still on the same URL, mark as loaded
-      if (url === lastProcessedUrlRef.current) {
-        setImageError(false);
-        setRetryCount(0); // Reset retry count on success
-      }
-    };
-    
-    img.onerror = () => {
-      clearTimeout(loadTimeout);
-      handleImageLoadError(url, isRetry);
-    };
   };
 
   const handleImageLoadError = (url: string, isRetry: boolean) => {
@@ -332,6 +262,29 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
     }
   };
 
+  // Helper to format status text
+  const formatStatusText = (status: ProjectStatus) => {
+    switch (status) {
+      case 'in_production':
+      case 'production':
+        return 'In Production';
+      case 'pre_production':
+      case 'pre-production':
+        return 'Pre-Production';
+      case 'post_production':
+      case 'post-production':
+        return 'Post-Production';
+      case 'development':
+        return 'Development';
+      case 'completed':
+        return 'Completed';
+      case 'cancelled':
+        return 'Cancelled';
+      default:
+        return status ? status.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'Unknown';
+    }
+  };
+
   return (
     <Card
       className={`bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300 flex flex-col ${className}`}
@@ -349,24 +302,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
       }}
     >
       {/* Cover Image with subtle project name overlay */}
-      <div className="relative h-48 bg-gray-100 overflow-hidden">
-        {/* Bookmark Button - Top Right */}
-        {onBookmark && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="absolute top-4 right-4 z-10 p-2 rounded-full bg-white/80 backdrop-blur-sm shadow-md hover:bg-white transition-colors"
-            onClick={handleBookmarkClick}
-            aria-label={isBookmarked ? 'Remove from bookmarks' : 'Add to bookmarks'}
-            tabIndex={0}
-          >
-            {isBookmarked ? (
-              <BookmarkCheck className="w-5 h-5 text-yellow-500" fill="currentColor" />
-            ) : (
-              <Bookmark className="w-5 h-5 text-gray-400" />
-            )}
-          </Button>
-        )}
+      <div style={{ width: '100%', height: 180, position: 'relative', borderRadius: 12, overflow: 'hidden', marginBottom: 12, background: '#f8fafc' }}>
         {coverImageUrl && !imageError ? (
           <img
             key={coverImageUrl} // Force re-render when URL changes

@@ -26,6 +26,7 @@ type EducationEntry = string | {
 interface CrewProfileData {
   name: string;
   profileImageUrl?: string;
+  photoURL?: string; // Fallback for legacy data
   bio?: string;
   jobTitles: JobTitleEntry[];
   projects?: Project[];
@@ -43,7 +44,8 @@ interface ResumeViewProps {
 
 const ResumeView: React.FC<ResumeViewProps> = (props) => {
   const { profile } = props;
-  const managedProfileImageUrl = useManagedUrl(profile?.profileImageUrl);
+  // Fallback: use photoURL if profileImageUrl is missing
+  const managedProfileImageUrl = useManagedUrl(profile?.profileImageUrl || profile?.photoURL);
   
   const containerStyle: React.CSSProperties = {
     width: '210mm',

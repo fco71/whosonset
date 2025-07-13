@@ -104,13 +104,14 @@ const Home: React.FC = () => {
     const handleBookmark = async (projectId: string, isBookmarked: boolean) => {
         try {
             const project = projects.find(p => p.id === projectId);
-            if (isBookmarked) {
-                await FavoritesService.removeFromFavorites(projectId);
-                setFavoriteIds(prev => prev.filter(id => id !== projectId));
-            } else {
-                await FavoritesService.addToFavorites(projectId, project);
-                setFavoriteIds(prev => [...prev, projectId]);
-            }
+            const newStatus = await FavoritesService.toggleFavorite(projectId, project);
+            setFavoriteIds(prev => {
+                if (newStatus) {
+                    return [...prev, projectId];
+                } else {
+                    return prev.filter(id => id !== projectId);
+                }
+            });
         } catch (error) {
             console.error('Error toggling favorite:', error);
         }

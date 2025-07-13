@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import FollowButton from './Social/FollowButton';
-import { FavoritesService } from '../utilities/favoritesService';
+import { CrewFavoritesService } from '../utilities/crewFavoritesService';
 import { useAuth } from '../contexts/AuthContext';
 import EmailButton from './MessageButton';
 
@@ -16,7 +16,7 @@ const CrewProfileHeader: React.FC<CrewProfileHeaderProps> = ({ profile }) => {
   useEffect(() => {
     const checkFavorite = async () => {
       if (currentUser && profile?.uid) {
-        setIsBookmarked(await FavoritesService.isFavorite(profile.uid));
+        setIsBookmarked(await CrewFavoritesService.isFavorite(profile.uid));
       }
     };
     checkFavorite();
@@ -26,7 +26,7 @@ const CrewProfileHeader: React.FC<CrewProfileHeaderProps> = ({ profile }) => {
     if (!currentUser) return;
     setBookmarking(true);
     try {
-      const newStatus = await FavoritesService.toggleFavorite(profile.uid, profile);
+      const newStatus = await CrewFavoritesService.toggleFavorite(profile.uid, profile);
       setIsBookmarked(newStatus);
     } finally {
       setBookmarking(false);
@@ -37,7 +37,8 @@ const CrewProfileHeader: React.FC<CrewProfileHeaderProps> = ({ profile }) => {
   const mainLocation = profile.residences?.[0]
     ? `${profile.residences[0].city ? profile.residences[0].city + ', ' : ''}${profile.residences[0].country || ''}`
     : '';
-  const imageUrl = profile.profileImageUrl || '/default-avatar.svg';
+  // Fallback: use photoURL if profileImageUrl is missing
+  const imageUrl = profile.profileImageUrl || profile.photoURL || '/default-avatar.svg';
   const availability = profile.availability || '';
 
   const canMessage = !!profile.contactInfo?.email && currentUser && currentUser.uid !== profile.uid;

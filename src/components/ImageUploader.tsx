@@ -13,6 +13,7 @@ import getCroppedImg from './getCroppedImg';
 
 interface ImageUploaderProps {
   onImageUploaded: (url: string) => void;
+  onUploadStart?: () => void;
   aspectRatio?: number;
   maxWidth?: number;
   maxHeight?: number;
@@ -22,6 +23,7 @@ interface ImageUploaderProps {
 
 const ImageUploader: React.FC<ImageUploaderProps> = ({ 
   onImageUploaded, 
+  onUploadStart,
   aspectRatio = 16 / 9,
   maxWidth = 800,
   maxHeight = 600,
@@ -183,6 +185,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
   };
 
   const uploadImage = async (imageFile: File) => {
+    if (onUploadStart) onUploadStart();
     const storage = getStorage(app);
     const timestamp = Date.now();
     const fileName = `image-${timestamp}-${Math.random().toString(36).substring(2)}.jpg`;
@@ -293,8 +296,17 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
 
       {/* Crop modal */}
       {showCrop && imageSrc && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-4 rounded-lg max-w-4xl max-h-[90vh] overflow-auto">
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onClick={e => e.stopPropagation()} // Prevent overlay click from bubbling
+          onKeyDown={e => e.stopPropagation()} // Prevent ESC from bubbling
+        >
+          <div
+            className="bg-white p-4 rounded-lg max-w-4xl max-h-[90vh] overflow-auto"
+            onClick={e => e.stopPropagation()} // Prevent modal content click from bubbling
+            onKeyDown={e => e.stopPropagation()} // Prevent ESC from bubbling
+            tabIndex={-1}
+          >
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold">Crop Image</h3>
               <div className="flex gap-2">
@@ -314,7 +326,6 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
                 </button>
               </div>
             </div>
-            
             <div className="mb-4">
               <label className="block text-sm font-medium mb-2">Zoom: {zoom.toFixed(2)}x</label>
               <input
@@ -327,7 +338,6 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
                 className="w-full"
               />
             </div>
-
             <div className="flex justify-center">
               <ReactCrop
                 crop={crop}

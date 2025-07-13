@@ -32,6 +32,8 @@ interface ProjectFormProps {
   productionCompanyContact: string;
   setProductionCompanyContact: (value: string) => void;
   handleCoverImageUploaded: (url: string) => void;
+  handleImageUploadStart: () => void;
+  imageUploading: boolean;
 }
 
 const ProjectForm: React.FC<ProjectFormProps> = (props) => {
@@ -151,7 +153,10 @@ const ProjectForm: React.FC<ProjectFormProps> = (props) => {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Cover Image
             </label>
-            <ImageUploader onImageUploaded={props.handleCoverImageUploaded} />
+            <ImageUploader 
+              onImageUploaded={props.handleCoverImageUploaded}
+              onUploadStart={props.handleImageUploadStart}
+            />
             {props.coverImageUrl && (
               <p className="text-sm text-green-600 mt-2">
                 ✓ Cover image uploaded successfully

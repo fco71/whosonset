@@ -53,13 +53,14 @@ const FormInput = forwardRef<HTMLInputElement, FormInputProps>(({
   );
 
   return (
-    <div className={clsx('space-y-1', { 'w-full': fullWidth })}>
+    <div className={clsx('space-y-1', { 'w-full': fullWidth }, 'relative z-10')}>
       {label && (
         <label 
           htmlFor={inputId}
           className="block text-sm font-medium text-gray-700 mb-1"
         >
           {label}
+          {props.required && <span className="text-red-500 ml-1">*</span>}
         </label>
       )}
       
@@ -262,13 +263,14 @@ const FormSelect = forwardRef<HTMLSelectElement, FormSelectProps>(({
         </label>
       )}
       
-      <select
-        ref={ref}
-        id={selectId}
-        className={selectClasses}
-        onChange={handleChange}
-        {...props}
-      >
+      <div className="relative">
+        <select
+          ref={ref}
+          id={selectId}
+          className={clsx(selectClasses, 'appearance-none pr-8')}
+          onChange={handleChange}
+          {...props}
+        >
         {placeholder && (
           <option value="" disabled>
             {placeholder}
@@ -283,7 +285,12 @@ const FormSelect = forwardRef<HTMLSelectElement, FormSelectProps>(({
             {option.label}
           </option>
         ))}
-      </select>
+        </select>
+        {/* Custom dropdown arrow */}
+        <span className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+          <svg width="20" height="20" fill="none" viewBox="0 0 20 20"><path d="M7 8l3 3 3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </span>
+      </div>
       
       {(error || helperText) && (
         <div className="flex items-start space-x-2">

@@ -25,6 +25,8 @@ interface Project {
   director?: string;
   producer?: string;
   coverImageUrl?: string;
+  photoURL?: string; // Fallback for legacy data
+  imageUrl?: string; // Fallback for legacy data
   genres?: string[];
   country?: string;
   productionLocations?: Array<{ country: string; city?: string }>;
@@ -313,7 +315,7 @@ const AllProjects: React.FC = () => {
                       summary={project.synopsis}
                       director={project.director}
                       producer={project.producer}
-                      coverImageUrl={project.coverImageUrl}
+                      coverImageUrl={project.coverImageUrl || project.photoURL || project.imageUrl}
                       genres={project.genres}
                       showDetails={true}
                       onBookmark={authUser ? handleBookmark : undefined}
