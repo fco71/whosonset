@@ -117,6 +117,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
   // Handle bookmark click
   const handleBookmarkClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    e.preventDefault(); // Prevent navigation if inside a link
     onBookmark?.(id, !isBookmarked);
   };
 
@@ -357,6 +358,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
             className="absolute top-4 right-4 z-10 p-2 rounded-full bg-white/80 backdrop-blur-sm shadow-md hover:bg-white transition-colors"
             onClick={handleBookmarkClick}
             aria-label={isBookmarked ? 'Remove from bookmarks' : 'Add to bookmarks'}
+            tabIndex={0}
           >
             {isBookmarked ? (
               <BookmarkCheck className="w-5 h-5 text-yellow-500" fill="currentColor" />

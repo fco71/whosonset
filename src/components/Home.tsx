@@ -324,19 +324,25 @@ const Home: React.FC = () => {
                                 id="crew-search-input"
                             />
                         </div>
-                        <div className="relative w-full sm:w-1/4">
-                        {/* Toggle for bookmarked crew */}
-                        {user && (
-                            <button
-                                className={`ml-2 px-4 py-2 rounded-md border text-sm font-medium transition focus:outline-none ${showOnlyBookmarkedCrew ? 'bg-yellow-100 border-yellow-400 text-yellow-800' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}`}
-                                style={{minWidth: 120}}
-                                onClick={() => setShowOnlyBookmarkedCrew(v => !v)}
-                                aria-pressed={showOnlyBookmarkedCrew}
-                                aria-label={showOnlyBookmarkedCrew ? 'Show all crew' : 'Show only bookmarked crew'}
-                            >
-                                {showOnlyBookmarkedCrew ? 'Bookmarked Only' : 'All Crew'}
-                            </button>
-                        )}
+                        <div className="relative w-full sm:w-1/4 flex items-center gap-2">
+                            {/* Toggle for bookmarked crew */}
+                            {user && (
+                                <label className="flex items-center cursor-pointer select-none mr-2" style={{minWidth: 120}}>
+                                    <span className="text-xs font-medium text-gray-700 mr-2">Bookmarked</span>
+                                    <span className="relative inline-block w-10 align-middle select-none transition duration-200 ease-in">
+                                        <input
+                                            type="checkbox"
+                                            checked={showOnlyBookmarkedCrew}
+                                            onChange={() => setShowOnlyBookmarkedCrew(v => !v)}
+                                            className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-2 border-gray-300 appearance-none cursor-pointer transition-all duration-200 checked:bg-yellow-400 checked:border-yellow-500"
+                                            style={{ left: 0, top: 0 }}
+                                            aria-pressed={showOnlyBookmarkedCrew}
+                                            aria-label={showOnlyBookmarkedCrew ? 'Show all crew' : 'Show only bookmarked crew'}
+                                        />
+                                        <span className="toggle-bg block w-10 h-6 rounded-full bg-gray-200 transition-all duration-200" />
+                                    </span>
+                                </label>
+                            )}
                             <select
                                 className="input-base w-full rounded-md border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 bg-white text-gray-900 py-2 pl-3 pr-8 shadow-sm transition appearance-none"
                                 value={crewDept}
@@ -388,27 +394,29 @@ const Home: React.FC = () => {
                                     const isBookmarked = favoriteCrewIds.includes(profile.uid);
                                     return (
                                         <div key={profile.uid} className="relative group flex items-center bg-white rounded-2xl border border-gray-100 shadow-lg px-5 py-4 gap-4 hover:shadow-xl transition-shadow duration-200 cursor-pointer" style={{minHeight: 68, textDecoration: 'none'}}>
+                                            {/* Bookmark button - upper right */}
+                                            {user && (
+                                                <button
+                                                    onClick={e => { e.preventDefault(); handleCrewBookmark(profile.uid, isBookmarked, profile); }}
+                                                    className="absolute top-2 right-2 z-20 hover:scale-110 transition-transform duration-200"
+                                                    style={{background: 'none', border: 'none', padding: 0, lineHeight: 1, boxShadow: 'none'}}
+                                                    title={isBookmarked ? 'Remove from bookmarks' : 'Add to bookmarks'}
+                                                >
+                                                    <svg className={`w-6 h-6 ${isBookmarked ? 'text-yellow-500 fill-current' : 'text-gray-400'}`} fill={isBookmarked ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                                                    </svg>
+                                                </button>
+                                            )}
                                             <a href={`/resume/${profile.uid}`} target="_blank" rel="noopener noreferrer" className="flex items-center flex-1 min-w-0 gap-4" style={{textDecoration: 'none'}}>
                                                 <img src={imageUrl} alt={profile.name} className="w-14 h-14 rounded-full object-cover border-2 border-gray-200" style={{flexShrink: 0}} onError={e => { (e.target as HTMLImageElement).src = '/default-avatar.svg'; }} />
                                                 <div className="flex-1 min-w-0">
                                                     <div className="font-semibold text-gray-900 truncate group-hover:text-blue-700" style={{fontSize: 17, letterSpacing: '-0.01em'}}>{profile.name}</div>
                                                     <div className="text-xs text-gray-500 truncate" style={{fontWeight: 500}}>{mainTitle}{mainLocation ? ' · ' + mainLocation : ''}</div>
                                                 </div>
-                                                {availability && (
-                                                    <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${availability.toLowerCase() === 'available' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>{availability}</span>
-                                                )}
                                             </a>
-                                            {/* Bookmark button */}
-                                            {user && (
-                                                <button
-                                                    onClick={e => { e.preventDefault(); handleCrewBookmark(profile.uid, isBookmarked, profile); }}
-                                                    className="absolute top-3 right-3 p-2 bg-white/80 backdrop-blur-sm rounded-full shadow-lg hover:bg-white transition-all duration-300 hover:scale-110"
-                                                    title={isBookmarked ? 'Remove from bookmarks' : 'Add to bookmarks'}
-                                                >
-                                                    <svg className={`w-5 h-5 ${isBookmarked ? 'text-yellow-500 fill-current' : 'text-gray-400'}`} fill={isBookmarked ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                                                    </svg>
-                                                </button>
+                                            {/* Availability badge - lower right */}
+                                            {availability && (
+                                                <span className={`absolute bottom-2 right-2 px-2 py-1 rounded-full text-xs font-medium ${availability.toLowerCase() === 'available' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>{availability}</span>
                                             )}
                                         </div>
                                     );
