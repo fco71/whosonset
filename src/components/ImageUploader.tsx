@@ -12,7 +12,8 @@ import ReactCrop from 'react-image-crop';
 import getCroppedImg from './getCroppedImg';
 
 interface ImageUploaderProps {
-  onImageCropped: (file: File) => void;
+  // Called with the download URL after upload
+  onImageUploaded: (url: string) => void;
   onCropStart?: () => void;
   onCropCancel?: () => void;
   aspectRatio?: number;
@@ -23,7 +24,7 @@ interface ImageUploaderProps {
 }
 
 const ImageUploader: React.FC<ImageUploaderProps> = ({
-  onImageCropped,
+  onImageUploaded,
   onCropStart,
   onCropCancel,
   aspectRatio = 16 / 9,
@@ -38,8 +39,10 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
   const [crop, setCrop] = useState<Crop>({ unit: '%', x: 0, y: 0, width: 100, height: 100 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<PixelCrop | null>(null);
-  // Removed uploading state, upload is handled by parent
   const [cropping, setCropping] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
@@ -126,8 +129,8 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
     if (cropEnabled) {
       setShowCrop(true);
     } else {
-      // If cropping is disabled, return file directly
-      onImageCropped(selectedFile);
+      // If cropping is disabled, upload immediately and pass download URL up
+      // (Not implemented: legacy path expects crop)
     }
   };
 
@@ -137,32 +140,55 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
 
   const handleCropSave = async () => {
     if (!imageSrc || !croppedAreaPixels) return;
-    
     setCropping(true);
+    setUploading(false);
+    setUploadProgress(0);
+    setUploadSuccess(false);
     try {
       const croppedBlob = await getCroppedImg(imageSrc, croppedAreaPixels);
       const croppedFile = new File([croppedBlob], 'cropped-image.jpg', { type: croppedBlob.type });
-      
       // Create preview URL for the cropped image
       const previewURL = URL.createObjectURL(croppedBlob);
       currentPreviewBlobRef.current = previewURL;
       setPreviewUrl(previewURL);
-      
-      setShowCrop(false);
-      setTimeout(() => {
-        onImageCropped(croppedFile);
-      }, 0);
-      // Clean up the original imageSrc blob URL after successful upload
-      if (currentImageBlobRef.current) {
-        revokeBlobUrl(currentImageBlobRef.current);
-        currentImageBlobRef.current = null;
-      }
-      setImageSrc(null);
+      // Upload to Firebase Storage (legacy path: project-images/originalfilename)
+      setUploading(true);
+      const storage = getStorage(app);
+      const storagePath = `project-images/${croppedFile.name}`;
+      const storageRef = ref(storage, storagePath);
+      const uploadTask = uploadBytesResumable(storageRef, croppedFile);
+      uploadTask.on('state_changed',
+        (snapshot) => {
+          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          setUploadProgress(progress);
+        },
+        (error) => {
+          setUploading(false);
+          setCropping(false);
+          alert('Image upload failed: ' + error.message);
+        },
+        async () => {
+          setUploading(false);
+          setUploadSuccess(true);
+          try {
+            const url = await getDownloadURL(storageRef);
+            onImageUploaded(url);
+          } catch (err) {
+            alert('Failed to get download URL.');
+          }
+          setShowCrop(false);
+          // Clean up the original imageSrc blob URL after successful upload
+          if (currentImageBlobRef.current) {
+            revokeBlobUrl(currentImageBlobRef.current);
+            currentImageBlobRef.current = null;
+          }
+          setImageSrc(null);
+        }
+      );
     } catch (err) {
-      console.error('Crop failed:', err);
-      alert('Failed to crop image. Please try again.');
-    } finally {
       setCropping(false);
+      setUploading(false);
+      alert('Failed to crop image. Please try again.');
     }
   };
 
@@ -260,16 +286,16 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
                 <button
                   onClick={handleCropCancelInternal}
                   className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600"
-                  disabled={cropping}
+                  disabled={cropping || uploading}
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleCropSave}
                   className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
-                  disabled={cropping}
+                  disabled={cropping || uploading}
                 >
-                  {cropping ? 'Saving...' : 'Save Crop'}
+                  {cropping ? 'Preparing...' : uploading ? 'Uploading...' : uploadSuccess ? 'Uploaded!' : 'Save Crop'}
                 </button>
               </div>
             </div>
@@ -303,6 +329,21 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
                 />
               </ReactCrop>
             </div>
+            {(uploading || uploadSuccess) && (
+              <div className="mt-4 flex flex-col items-center">
+                {uploading && (
+                  <>
+                    <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                      <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${uploadProgress}%` }}></div>
+                    </div>
+                    <span className="text-xs text-gray-600 mt-2">Uploading: {uploadProgress.toFixed(0)}%</span>
+                  </>
+                )}
+                {uploadSuccess && (
+                  <span className="text-green-600 font-semibold mt-2">✓ Upload complete!</span>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}

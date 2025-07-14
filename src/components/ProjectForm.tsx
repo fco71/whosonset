@@ -31,7 +31,6 @@ interface ProjectFormProps {
   setProductionBudget: (value: string) => void;
   productionCompanyContact: string;
   setProductionCompanyContact: (value: string) => void;
-  onImageCropped: (file: File) => void;
   onImageCropStart?: () => void;
   onImageCropCancel?: () => void;
 }
@@ -153,8 +152,8 @@ const ProjectForm: React.FC<ProjectFormProps> = (props) => {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Cover Image
             </label>
-            <ImageUploader 
-              onImageCropped={props.onImageCropped}
+            <ImageUploader
+              onImageUploaded={props.setCoverImageUrl}
               onCropStart={props.onImageCropStart}
               onCropCancel={props.onImageCropCancel}
             />
