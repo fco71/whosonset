@@ -137,29 +137,32 @@ const RegisterForm: React.FC = () => {
         uploadedImageUrl = await getDownloadURL(storageRef);
       }
 
+      // Always ensure name and image are set
+      const safeName = form.name && form.name.trim() !== '' ? form.name : 'Unknown Crew';
+      const safeProfileImageUrl = uploadedImageUrl && uploadedImageUrl.trim() !== '' ? uploadedImageUrl : '/default-avatar.png';
+
       // 3. Create the main document in 'users' collection
       await setDoc(doc(db, 'users', userId), {
         uid: userId,
         email: firebaseUser.email,
-        displayName: form.name, // Use the name from the form
-        photoURL: uploadedImageUrl,
+        displayName: safeName, // Use the safe name
+        photoURL: safeProfileImageUrl,
         roles: ['user'],
         user_type: form.userType,
       });
 
-      // 4. Create the detailed profile in 'crewProfiles' if they are Crew
-      if (form.userType === 'Crew') {
-        await setDoc(doc(db, "crewProfiles", userId), {
-          uid: userId,
-          name: form.name,
-          bio: form.bio,
-          profileImageUrl: uploadedImageUrl,
-          jobTitles: form.jobTitles.filter(j => j.department && j.title), // Only save completed entries
-          residences: form.residences.filter(r => r.country && r.city),
-          // Add any other default fields here
-          availability: 'available',
-        });
-      }
+      // 4. Create the detailed profile in 'crewProfiles' for all users
+      await setDoc(doc(db, "crewProfiles", userId), {
+        uid: userId,
+        name: safeName,
+        bio: form.bio,
+        profileImageUrl: safeProfileImageUrl,
+        jobTitles: form.jobTitles.filter(j => j.department && j.title), // Only save completed entries
+        residences: form.residences.filter(r => r.country && r.city),
+        // Add any other default fields here
+        availability: 'available',
+        isPublished: true,
+      });
 
       console.log('User registered successfully!');
       navigate('/edit-profile'); // Optional: redirect to their new profile page

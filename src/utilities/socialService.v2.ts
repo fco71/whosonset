@@ -341,35 +341,50 @@ export class SocialService {
     }
 
     try {
-      // Try to get crew profile first
+      // Only use crewProfiles, just like crew cards
       const crewDoc = await getDoc(doc(db, 'crewProfiles', userId));
       if (crewDoc.exists()) {
-        const profile = this.mapProfileData(crewDoc);
-        this.cacheProfile(profile);
-        return profile;
-      }
-
-      // If not a crew profile, try to get a regular user profile
-      const userDoc = await getDoc(doc(db, 'users', userId));
-      if (userDoc.exists()) {
-        const data = userDoc.data() || {};
-        const profile: SocialUser = {
-          id: userDoc.id,
-          name: data.name,
-          displayName: data.displayName || data.name || data.email?.split('@')[0] || 'User',
-          username: data.username,
-          photoURL: data.photoURL || data.profileImageUrl,
-          bio: data.bio,
+        const data = crewDoc.data() || {};
+        // Always provide a valid name and image if possible
+        const name = data.name || data.displayName || 'Unnamed Crew';
+        const displayName = data.displayName || data.name || 'Unnamed Crew';
+        const photoURL = data.photoURL || data.profileImageUrl || data.avatarUrl || '/default-avatar.png';
+        const profileImageUrl = data.profileImageUrl || data.photoURL || data.avatarUrl || '/default-avatar.png';
+        if (!data.name || !data.profileImageUrl) {
+          console.warn('[SocialService] crewProfiles doc missing name or profileImageUrl for', userId, data);
+        }
+        const user: SocialUser = {
+          id: userId,
+          name,
+          displayName,
+          username: data.username || '',
+          photoURL,
+          profileImageUrl,
+          bio: data.bio || '',
+          jobTitle: data.jobTitles?.[0]?.title,
+          location: data.location,
           jobTitles: data.jobTitles,
           isFollowing: false,
           isFollower: false,
         };
-        
-        this.cacheProfile(profile);
-        return profile;
+        this.cacheProfile(user);
+        return user;
       }
-
-      return null;
+      // If no crew profile, fallback to a default SocialUser
+      const fallback: SocialUser = {
+        id: userId,
+        name: 'Unknown Crew',
+        displayName: 'Unknown Crew',
+        username: '',
+        photoURL: '/default-avatar.png',
+        profileImageUrl: '/default-avatar.png',
+        bio: '',
+        jobTitles: [],
+        isFollowing: false,
+        isFollower: false,
+      };
+      console.warn('[SocialService] No crewProfiles doc found for', userId);
+      return fallback;
     } catch (error) {
       console.error('Error getting profile:', error);
       return null;
@@ -428,14 +443,18 @@ export class SocialService {
   private static mapProfileData(doc: QueryDocumentSnapshot | DocumentSnapshot): SocialUser {
     const data = doc.data() as Record<string, any>;
     const id = doc.id;
-    
-    // Map common fields
+
+    // Prefer photoURL, fallback to profileImageUrl, then avatarUrl
+    const photoURL = data.photoURL || data.profileImageUrl || data.avatarUrl || undefined;
+    const profileImageUrl = data.profileImageUrl || data.photoURL || data.avatarUrl || undefined;
+
     const user: SocialUser = {
       id,
       name: data.name || data.displayName,
       displayName: data.displayName || data.name || 'User',
       username: data.username,
-      photoURL: data.photoURL || data.profileImageUrl,
+      photoURL,
+      profileImageUrl, // always set for compatibility
       bio: data.bio,
       jobTitle: data.jobTitles?.[0]?.title,
       location: data.location,
@@ -443,7 +462,7 @@ export class SocialService {
       isFollowing: false,
       isFollower: false,
     };
-    
+
     return user;
   }
 

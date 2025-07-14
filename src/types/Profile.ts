@@ -29,18 +29,37 @@ export function isUserProfile(profile: Profile): profile is (UserProfile & BaseP
 
 // Helper function to get a display name from any profile type
 export function getDisplayName(profile: Profile): string {
+  // Try all possible name/display fields for maximum compatibility
   if (isCrewProfile(profile)) {
-    return profile.name || 'Unknown Crew';
+    return (
+      (profile as any).name ||
+      (profile as any).displayName ||
+      'Unknown Crew'
+    );
   }
-  return profile.displayName || profile.firstName || profile.email?.split('@')[0] || 'Unknown User';
+  return (
+    (profile as any).displayName ||
+    (profile as any).name ||
+    (profile as any).firstName ||
+    (profile as any).username ||
+    (typeof (profile as any).email === 'string' ? (profile as any).email.split('@')[0] : undefined) ||
+    'Unknown User'
+  );
 }
 
 // Helper function to get a photo URL from any profile type
 export function getPhotoUrl(profile: Profile): string | undefined {
+  // Try all possible image fields for maximum compatibility, fallback to default
+  let url = undefined;
   if (isCrewProfile(profile)) {
-    return profile.profileImageUrl;
+    url = (profile as any).profileImageUrl || (profile as any).photoURL || (profile as any).avatarUrl;
+  } else {
+    url = (profile as any).avatarUrl || (profile as any).photoURL || (profile as any).profileImageUrl;
   }
-  return profile.avatarUrl || profile.photoURL;
+  if (!url || typeof url !== 'string' || url.trim() === '') {
+    return '/default-avatar.png';
+  }
+  return url;
 }
 
 // Helper to get the ID from any profile type

@@ -53,7 +53,7 @@ const EditCrewProfile: React.FC = () => {
     },
     languages: [],
     otherInfo: '',
-    isPublished: false,
+    isPublished: true,
     availability: 'available'
   });
 
@@ -87,7 +87,7 @@ const EditCrewProfile: React.FC = () => {
   const [countryOptions, setCountryOptions] = useState<{ name: string; cities: string[] }[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [isPublished, setIsPublished] = useState(false);
+  const [isPublished, setIsPublished] = useState(true);
 
   // Clean up any blob URLs when component unmounts
   useEffect(() => {
@@ -463,10 +463,21 @@ const EditCrewProfile: React.FC = () => {
     try {
       const docRef = doc(db, 'crewProfiles', user.uid);
       console.log("DEBUG: Saving to document:", docRef.path);
-      
+
+      // Always ensure name and profileImageUrl are set
+      const safeName = form.name && form.name.trim() !== '' ? form.name : 'Unknown Crew';
+      let safeProfileImageUrl = form.profileImageUrl && form.profileImageUrl.trim() !== '' ? form.profileImageUrl : '/default-avatar.png';
+      // Prevent saving blob: URLs
+      if (safeProfileImageUrl.startsWith('blob:')) {
+        // If the current image is a blob, fallback to previous or default
+        safeProfileImageUrl = '/default-avatar.png';
+      }
+
       // Ensure email is included in the saved data
       const dataToSave = {
         ...form,
+        name: safeName,
+        profileImageUrl: safeProfileImageUrl,
         uid: user.uid,
         email: user.email || form.contactInfo?.email || '', // Use auth email as primary, fallback to contact info
         contactInfo: {
@@ -477,7 +488,7 @@ const EditCrewProfile: React.FC = () => {
         isPublished, // Save publish state
         updatedAt: new Date()
       };
-      
+
       await setDoc(docRef, dataToSave, { merge: true });
       console.log("DEBUG: Save successful!");
       setMessage('Profile saved!');
@@ -951,15 +962,24 @@ const EditCrewProfile: React.FC = () => {
                     className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
                   />
                   {form.profileImageUrl && (
-                    <div className="mt-4 flex items-center gap-4">
-                      <img src={form.profileImageUrl} className="h-20 w-20 rounded-full object-cover border-2 border-gray-200" />
-                      <button 
-                        onClick={() => setForm(f => ({ ...f, profileImageUrl: '' }))} 
-                        className="text-red-600 hover:text-red-700 text-sm font-medium transition-colors" 
-                        type="button"
-                      >
-                        Remove
-                      </button>
+                    <div className="mt-4 flex flex-col gap-2">
+                      <div className="flex items-center gap-4">
+                        {!form.profileImageUrl.startsWith('blob:') ? (
+                          <img src={form.profileImageUrl} className="h-20 w-20 rounded-full object-cover border-2 border-gray-200" />
+                        ) : (
+                          <div className="text-xs text-red-500">Image preview only. Please click Save to update your profile image.</div>
+                        )}
+                        <button 
+                          onClick={() => setForm(f => ({ ...f, profileImageUrl: '' }))} 
+                          className="text-red-600 hover:text-red-700 text-sm font-medium transition-colors" 
+                          type="button"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                      <div className="text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded px-3 py-2 mt-2">
+                        <strong>Reminder:</strong> After uploading your profile image, please scroll down and press <b>Save</b> to update your public profile.
+                      </div>
                     </div>
                   )}
                 </div>

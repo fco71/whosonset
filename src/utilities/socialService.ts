@@ -115,8 +115,14 @@ export class SocialService {
     try {
       const batch = writeBatch(db);
       const requestRef = doc(db, 'followRequests', requestId);
-      
-      // Get the request data first
+
+      // Update request status instead of deleting
+      batch.update(requestRef, {
+        status,
+        updatedAt: serverTimestamp()
+      });
+
+      // Get the request data
       const requestDoc = await getDoc(requestRef);
       if (!requestDoc.exists()) {
         throw new Error('Follow request not found');
@@ -161,9 +167,6 @@ export class SocialService {
           isPublic: true
         });
       }
-
-      // Delete the request instead of updating status
-      batch.delete(requestRef);
 
       await batch.commit();
 
@@ -896,7 +899,7 @@ export class SocialService {
               createdAt: doc.data().createdAt?.toDate(),
               updatedAt: doc.data().updatedAt?.toDate()
             } as FollowRequest))
-            .filter(request => request.status === 'pending') // Filter in memory
+            .filter(request => request.status === 'pending' && request.createdAt) // Filter in memory, only with valid createdAt
             .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()); // Sort in memory
           console.log('[SocialService] Outgoing follow requests updated:', requests.length);
           callback(requests);
