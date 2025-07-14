@@ -164,10 +164,8 @@ const ProjectCard: React.FC<ProjectCardProps> = (props) => {
       return;
     }
 
-    // Normalize Firebase Storage URLs to use .appspot.com
-    if (url.includes('firebasestorage.googleapis.com') && url.includes('.firebasestorage.app')) {
-      url = url.replace('.firebasestorage.app', '.appspot.com');
-    }
+    // Log the exact URL being loaded
+    console.log('[ProjectCard] Attempting to load image URL:', url);
 
     // For blob URLs or invalid URLs, use a placeholder
     if (url.startsWith('blob:') || !url.startsWith('http')) {

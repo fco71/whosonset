@@ -12,8 +12,9 @@ import ReactCrop from 'react-image-crop';
 import getCroppedImg from './getCroppedImg';
 
 interface ImageUploaderProps {
-  onImageUploaded: (url: string) => void;
-  onUploadStart?: () => void;
+  onImageCropped: (file: File) => void;
+  onCropStart?: () => void;
+  onCropCancel?: () => void;
   aspectRatio?: number;
   maxWidth?: number;
   maxHeight?: number;
@@ -21,9 +22,10 @@ interface ImageUploaderProps {
   placeholder?: string;
 }
 
-const ImageUploader: React.FC<ImageUploaderProps> = ({ 
-  onImageUploaded, 
-  onUploadStart,
+const ImageUploader: React.FC<ImageUploaderProps> = ({
+  onImageCropped,
+  onCropStart,
+  onCropCancel,
   aspectRatio = 16 / 9,
   maxWidth = 800,
   maxHeight = 600,
@@ -36,8 +38,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
   const [crop, setCrop] = useState<Crop>({ unit: '%', x: 0, y: 0, width: 100, height: 100 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<PixelCrop | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  // Removed uploading state, upload is handled by parent
   const [cropping, setCropping] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -125,8 +126,8 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
     if (cropEnabled) {
       setShowCrop(true);
     } else {
-      // If cropping is disabled, upload directly
-      uploadImage(selectedFile);
+      // If cropping is disabled, return file directly
+      onImageCropped(selectedFile);
     }
   };
 
@@ -147,9 +148,10 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
       currentPreviewBlobRef.current = previewURL;
       setPreviewUrl(previewURL);
       
-      await uploadImage(croppedFile);
       setShowCrop(false);
-      
+      setTimeout(() => {
+        onImageCropped(croppedFile);
+      }, 0);
       // Clean up the original imageSrc blob URL after successful upload
       if (currentImageBlobRef.current) {
         revokeBlobUrl(currentImageBlobRef.current);
@@ -184,55 +186,16 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
     setCroppedAreaPixels(null);
   };
 
-  const uploadImage = async (imageFile: File) => {
-    if (onUploadStart) onUploadStart();
-    const storage = getStorage(app);
-    const timestamp = Date.now();
-    const fileName = `image-${timestamp}-${Math.random().toString(36).substring(2)}.jpg`;
-    const storageRef = ref(storage, `uploads/${fileName}`);
-    const uploadTask = uploadBytesResumable(storageRef, imageFile);
-
-    setUploading(true);
-    setUploadProgress(0);
-
-    uploadTask.on(
-      'state_changed',
-      (snapshot) => {
-        const progress = Math.round(
-          (snapshot.bytesTransferred / snapshot.totalBytes) * 100
-        );
-        setUploadProgress(progress);
-      },
-      (error) => {
-        console.error('Upload error:', error);
-        setUploading(false);
-        setUploadProgress(null);
-        alert('Upload failed. Please try again.');
-      },
-      () => {
-        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-          onImageUploaded(downloadURL);
-          setUploading(false);
-          setUploadProgress(null);
-          
-          // Clean up blob URLs after successful upload
-          if (currentImageBlobRef.current) {
-            revokeBlobUrl(currentImageBlobRef.current);
-            currentImageBlobRef.current = null;
-          }
-          if (currentPreviewBlobRef.current) {
-            revokeBlobUrl(currentPreviewBlobRef.current);
-            currentPreviewBlobRef.current = null;
-          }
-          setImageSrc(null);
-          setPreviewUrl(null);
-        });
-      }
-    );
-  };
+  // Removed uploadImage logic; parent handles upload after project creation
 
   const handleUploadClick = () => {
+    if (onCropStart) onCropStart();
     fileInputRef.current?.click();
+  };
+
+  const handleCropCancelInternal = () => {
+    if (typeof onCropCancel === 'function') onCropCancel();
+    handleCropCancel();
   };
 
   return (
@@ -250,26 +213,10 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
       <button
         type="button"
         onClick={handleUploadClick}
-        disabled={uploading}
-        className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+        className="btn-primary"
       >
-        {uploading ? 'Uploading...' : placeholder}
+        {placeholder}
       </button>
-
-      {/* Upload progress */}
-      {uploading && uploadProgress !== null && (
-        <div className="mt-4">
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${uploadProgress}%` }}
-            ></div>
-          </div>
-          <p className="text-sm text-gray-600 mt-2 text-center">
-            Uploading... {uploadProgress}%
-          </p>
-        </div>
-      )}
 
       {/* Image preview */}
       {previewUrl && !showCrop && (
@@ -311,7 +258,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
               <h3 className="text-lg font-semibold">Crop Image</h3>
               <div className="flex gap-2">
                 <button
-                  onClick={handleCropCancel}
+                  onClick={handleCropCancelInternal}
                   className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600"
                   disabled={cropping}
                 >

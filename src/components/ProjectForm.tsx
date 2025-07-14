@@ -31,9 +31,9 @@ interface ProjectFormProps {
   setProductionBudget: (value: string) => void;
   productionCompanyContact: string;
   setProductionCompanyContact: (value: string) => void;
-  handleCoverImageUploaded: (url: string) => void;
-  handleImageUploadStart: () => void;
-  imageUploading: boolean;
+  onImageCropped: (file: File) => void;
+  onImageCropStart?: () => void;
+  onImageCropCancel?: () => void;
 }
 
 const ProjectForm: React.FC<ProjectFormProps> = (props) => {
@@ -154,8 +154,9 @@ const ProjectForm: React.FC<ProjectFormProps> = (props) => {
               Cover Image
             </label>
             <ImageUploader 
-              onImageUploaded={props.handleCoverImageUploaded}
-              onUploadStart={props.handleImageUploadStart}
+              onImageCropped={props.onImageCropped}
+              onCropStart={props.onImageCropStart}
+              onCropCancel={props.onImageCropCancel}
             />
             {props.coverImageUrl && (
               <p className="text-sm text-green-600 mt-2">

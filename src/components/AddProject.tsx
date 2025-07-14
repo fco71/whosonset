@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, doc as firestoreDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { v4 as uuidv4 } from 'uuid';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import ProjectForm from './ProjectForm';
 import { storage } from '../firebase';
@@ -60,6 +61,8 @@ const AddProject: React.FC = () => {
   const [producer, setProducer] = useState('');
   const [coverImageUrl, setCoverImageUrl] = useState('');
   const [imageUploading, setImageUploading] = useState(false);
+  const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);
+  const [isCropping, setIsCropping] = useState(false);
   const [projectWebsite, setProjectWebsite] = useState('');
   const [productionBudget, setProductionBudget] = useState('');
   const [productionCompanyContact, setProductionCompanyContact] = useState('');
@@ -90,9 +93,11 @@ const AddProject: React.FC = () => {
       return;
     }
     try {
-      const projectsCollectionRef = collection(db, 'Projects');
-      // Step 1: Create the project document with minimal info, get the new doc ref
-      const docRef = await addDoc(projectsCollectionRef, {
+      // Step 1: Use the project name as the document ID (legacy behavior)
+      const legacyProjectId = projectName.trim().replace(/\s+/g, '_');
+      const projectRef = firestoreDoc(db, 'Projects', legacyProjectId);
+      console.log('[AddProject] Creating Firestore doc:', legacyProjectId);
+      await setDoc(projectRef, {
         projectName,
         productionLocations,
         productionCompany,
@@ -110,27 +115,66 @@ const AddProject: React.FC = () => {
         owner_uid: user.uid,
         createdAt: serverTimestamp(),
       });
-
-      // Step 2: If there is a coverImageUrl, update the document with it
-      if (coverImageUrl && coverImageUrl.startsWith('http')) {
-        await import('firebase/firestore').then(({ updateDoc }) =>
-          updateDoc(docRef, { coverImageUrl })
-        );
+      console.log('[AddProject] Firestore doc created.');
+      // Step 2: If there is a pending image file, upload it to the legacy path (project-images/originalfilename)
+      if (pendingImageFile) {
+        setImageUploading(true);
+        const storagePath = `project-images/${pendingImageFile.name}`;
+        const storageRef = ref(storage, storagePath);
+        console.log('[AddProject] Uploading image to:', storagePath);
+        try {
+          const uploadResult = await uploadBytes(storageRef, pendingImageFile);
+          console.log('[AddProject] uploadBytes result:', uploadResult);
+        } catch (uploadErr) {
+          console.error('[AddProject] uploadBytes error:', uploadErr);
+          throw uploadErr;
+        }
+        let url = '';
+        try {
+          url = await getDownloadURL(storageRef);
+          console.log('[AddProject] Got download URL:', url);
+        } catch (urlErr) {
+          console.error('[AddProject] getDownloadURL error:', urlErr);
+          throw urlErr;
+        }
+        try {
+          await updateDoc(projectRef, { coverImageUrl: url });
+          setCoverImageUrl(url); // Update preview to use the real download URL
+          console.log('[AddProject] Firestore updated with coverImageUrl:', url);
+        } catch (firestoreErr) {
+          console.error('[AddProject] updateDoc error:', firestoreErr);
+          throw firestoreErr;
+        }
+        setImageUploading(false);
+        setPendingImageFile(null);
+        setIsCropping(false);
       }
-
-      console.log('Project added successfully!');
+      console.log('Project added successfully! Navigating home.');
       navigate('/');
     } catch (error: any) {
-      console.error('Error adding project:', error.message);
+      console.error('Error adding project:', error);
+      setImageUploading(false);
+      setPendingImageFile(null);
+      setIsCropping(false);
     }
   };
 
-  const handleCoverImageUploaded = (url: string) => {
-    setCoverImageUrl(url);
-    setImageUploading(false);
+  const handleImageCropped = (file: File) => {
+    setPendingImageFile(file);
+    setIsCropping(false);
   };
 
-  // Called by ImageUploader when upload starts
+  // Pass this to ImageUploader to set cropping state
+  const handleImageCropStart = () => {
+    setIsCropping(true);
+  };
+
+  // Reset all image states on crop cancel
+  const handleImageCropCancel = () => {
+    setIsCropping(false);
+    setPendingImageFile(null);
+  };
+
   const handleImageUploadStart = () => {
     setImageUploading(true);
   };
@@ -156,15 +200,6 @@ const AddProject: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="section-gradient border-b border-gray-100">
-        <div className="container-base section-padding-large">
-          <div className="text-center mb-16 animate-fade">
-            <h1 className="heading-primary mb-6 animate-slide">Add</h1>
-            <h2 className="heading-secondary mb-8 animate-slide">New Project</h2>
-            <p className="body-large max-w-2xl mx-auto animate-slide">
-              Share your film project with the community. Add all the details that matter.
-            </p>
-          </div>
-        </div>
       </div>
 
       <div className="section-light">
@@ -269,9 +304,9 @@ const AddProject: React.FC = () => {
                 setProductionBudget={setProductionBudget}
                 productionCompanyContact={productionCompanyContact}
                 setProductionCompanyContact={setProductionCompanyContact}
-                handleCoverImageUploaded={handleCoverImageUploaded}
-                handleImageUploadStart={handleImageUploadStart}
-                imageUploading={imageUploading}
+                onImageCropped={handleImageCropped}
+                onImageCropStart={handleImageCropStart}
+                onImageCropCancel={handleImageCropCancel}
               />
 
               <div className="flex flex-col sm:flex-row justify-end gap-4 pt-6 border-t border-gray-200">
@@ -285,18 +320,26 @@ const AddProject: React.FC = () => {
                 <button
                   type="submit"
                   className="btn-primary"
-                  disabled={imageUploading}
-                  title={imageUploading ? 'Please wait for image upload to finish' : ''}
+                  disabled={imageUploading || isCropping}
+                  title={imageUploading ? 'Please wait for image upload to finish' : isCropping ? 'Please finish cropping the image' : ''}
                 >
-                  {imageUploading ? 'Uploading Image...' : 'Add Project'}
+                  {imageUploading ? 'Uploading Image...' : isCropping ? 'Cropping Image...' : 'Add Project'}
                 </button>
               </div>
+              {(imageUploading || isCropping) && (
+                <div className="flex items-center gap-2 mt-4 text-blue-600">
+                  <svg className="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                  </svg>
+                  <span>{imageUploading ? 'Uploading image, please wait...' : 'Cropping image, please wait...'}</span>
+                </div>
+              )}
             </form>
           </div>
         </div>
       </div>
     </div>
   );
-};
-
+}
 export default AddProject;
