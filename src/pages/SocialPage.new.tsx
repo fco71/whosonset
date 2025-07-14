@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { SocialService } from '../utilities/socialService';
+import { SocialService } from '../utilities/socialService.v2';
 import { Profile, getProfileId, getDisplayName, getPhotoUrl, isCrewProfile, isUserProfile } from '../types/Profile';
 import { Button } from '../components/ui/Button';
 import Input from '../components/ui/Input';
@@ -94,37 +94,17 @@ const SocialPage: React.FC = () => {
     try {
       const crewProfiles = await SocialService.getCrewProfiles();
       
-      // Convert crew profiles to Profile type with proper type safety
-      const profiles = crewProfiles.map(profile => {
-        // Type guard to check if profile is a CrewProfile
-        if ('jobTitles' in profile) {
-          const crewProfile = profile as CrewProfile;
-          return {
-            ...crewProfile,
-            id: crewProfile.uid || `crew-${Math.random().toString(36).substr(2, 9)}`,
-            bio: crewProfile.bio || '',
-          };
-        }
-        
-        // At this point, we know it's a UserProfile
-        const userProfile = profile as UserProfile;
-        return {
-          ...userProfile,
-          id: userProfile.id || `user-${Math.random().toString(36).substr(2, 9)}`,
-          displayName: userProfile.displayName || 
-                     (userProfile.firstName ? 
-                       userProfile.firstName + (userProfile.lastName ? ` ${userProfile.lastName}` : '') : 
-                       (userProfile.email ? userProfile.email.split('@')[0] : 'Unknown User')),
-          avatarUrl: userProfile.avatarUrl || '',
-          bio: userProfile.bio || ''
-        };
-      });
+      // Convert crew profiles to SocialUser type (no casting needed)
+      const profiles = crewProfiles;
       
       // Set sample data for demonstration
       setFollowing(profiles.slice(0, 5));
       setFollowers(profiles.slice(5, 10));
       setSuggestedUsers(profiles.slice(10, 15));
-      setFollowRequests(profiles.slice(15, 20));
+
+      // Fetch real pending follow requests for the current user
+      const requests = await SocialService.getFollowRequests(user.uid);
+      setFollowRequests(requests);
     } catch (error) {
       console.error('Error loading social data:', error);
     } finally {
@@ -159,9 +139,9 @@ const SocialPage: React.FC = () => {
     if (!userId) return;
     
     try {
-      // Convert action to the expected status string
-      const status = action === 'accept' ? 'accepted' : 'rejected';
-      await SocialService.respondToFollowRequest(userId, status);
+      // Use boolean for accept/reject as required by SocialService v2
+      const accept = action === 'accept';
+      await SocialService.respondToFollowRequest(userId, accept);
       await loadData(); // Refresh data after change
     } catch (error) {
       console.error(`Error ${action}ing follow request:`, error);
