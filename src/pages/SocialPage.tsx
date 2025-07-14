@@ -4,6 +4,8 @@ import { Search, UserCheck, Users, UserPlus, UserX, Bell, Check, X, MoreHorizont
 import { useAuth } from '../contexts/AuthContext';
 import { SocialService } from '../utilities/socialService';
 import { getProfileId, getDisplayName, getPhotoUrl, isCrewProfile } from '../types/Profile';
+import ChatInterface from '../components/Chat/ChatInterface';
+import { SocialNotification } from '../types/Social';
 
 // Define a discriminated union type for profiles
 type BaseProfile = {
@@ -74,7 +76,15 @@ const TabButton = ({
 const SocialPage = () => {
   const auth = useAuth();
   const user = auth?.currentUser; // Access currentUser instead of user
-  const [activeTab, setActiveTab] = useState<'connections' | 'requests' | 'discover' | 'notifications'>('connections');
+  const [activeTab, setActiveTab] = useState<'connections' | 'requests' | 'discover' | 'notifications' | 'messages'>('connections');
+  const [notifications, setNotifications] = useState<SocialNotification[]>([]);
+  const [showNotifications, setShowNotifications] = useState(true);
+  // Real-time notifications listener
+  useEffect(() => {
+    if (!user?.uid) return;
+    const unsub = SocialService.subscribeToNotifications(user.uid, setNotifications);
+    return () => { if (unsub) unsub(); };
+  }, [user?.uid]);
   const [searchQuery, setSearchQuery] = useState('');
   // Define the profile state with proper typing
   const [allProfiles, setAllProfiles] = useState<AppProfile[]>([]);
@@ -156,7 +166,8 @@ const SocialPage = () => {
       connections: [...connections],
       requests: [...connectionRequests, ...sentRequests],
       discover: [...filteredProfiles],
-      notifications: []
+      notifications: [],
+      messages: []
     }[activeTab] || [];
 
     if (!searchQuery.trim()) return items;
@@ -369,12 +380,41 @@ const SocialPage = () => {
         );
 
       case 'notifications':
-      default:
+        if (!showNotifications) return null;
         return (
-          <div className="text-center py-12">
-            <Bell className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-gray-700 mb-2">No new notifications</h2>
-            <p className="text-gray-500">Your notifications will appear here.</p>
+          <div className="relative max-w-xl mx-auto bg-white rounded-xl shadow p-6 border border-gray-200">
+            <button
+              className="absolute top-2 right-2 text-gray-400 hover:text-red-500 text-xl"
+              onClick={() => setShowNotifications(false)}
+              title="Close notifications"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <h2 className="text-xl font-semibold mb-4">Notifications</h2>
+            {notifications.length === 0 ? (
+              <div className="text-center py-8">
+                <Bell className="h-10 w-10 mx-auto text-gray-300" />
+                <h3 className="mt-2 text-sm font-medium text-gray-900">No notifications</h3>
+                <p className="mt-1 text-xs text-gray-500">Your notifications will appear here.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {notifications.map(n => (
+                  <div key={n.id} className={`p-4 rounded-lg border ${n.isRead ? 'bg-gray-50 border-gray-200' : 'bg-blue-50 border-blue-200'}`}>
+                    <div className="font-medium text-gray-800 text-sm">{n.title || 'Notification'}</div>
+                    <div className="text-xs text-gray-600">{n.message}</div>
+                    <div className="text-xs text-gray-400 mt-1">{n.createdAt ? new Date(n.createdAt).toLocaleString() : ''}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      case 'messages':
+        return (
+          <div className="max-w-3xl mx-auto bg-white rounded-xl shadow p-4 border border-gray-200">
+            <h2 className="text-xl font-semibold mb-4">Messages</h2>
+            <ChatInterface currentUserId={user?.uid || ''} currentUserName={user?.email?.split('@')[0] || 'User'} />
           </div>
         );
     }
@@ -442,6 +482,7 @@ const SocialPage = () => {
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-7xl">
+      <div style={{background:'#ffeeba',padding:'12px',borderRadius:'8px',marginBottom:'16px',textAlign:'center',fontWeight:'bold',color:'#856404'}}>DEBUG: SocialPage loaded</div>
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
@@ -487,8 +528,15 @@ const SocialPage = () => {
           Discover
         </TabButton>
         <TabButton 
+          active={activeTab === 'messages'}
+          onClick={() => setActiveTab('messages')}
+          icon={MoreHorizontal}
+        >
+          Messages
+        </TabButton>
+        <TabButton 
           active={activeTab === 'notifications'}
-          onClick={() => setActiveTab('notifications')}
+          onClick={() => { setActiveTab('notifications'); setShowNotifications(true); }}
           icon={Bell}
         >
           Notifications

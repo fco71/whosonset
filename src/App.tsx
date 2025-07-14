@@ -11,6 +11,7 @@ import './App.module.scss';
 
 // Import debug component directly for now to ensure it loads
 import DebugBlobTracker from './components/DebugBlobTracker';
+import Navigation from './components/Navigation';
 
 // Import pages
 import ProducerView from './pages/ProducerView';
@@ -19,7 +20,7 @@ import FavoritesPage from './pages/FavoritesPage';
 import SavedCrewProfilesPage from './pages/SavedCrewProfilesPage';
 import SavedProjectsPage from './pages/SavedProjectsPage';
 import CollectionsHubPage from './pages/CollectionsHubPage';
-import SocialPage from './pages/SocialPage.v2';
+import SocialPage from './pages/SocialPage';
 import SettingsPage from './pages/SettingsPage';
 import JobsPage from './pages/JobsPage';
 import PostJobPage from './pages/PostJobPage';
@@ -34,8 +35,7 @@ function App() {
       <div className="min-h-screen bg-background text-foreground" style={{ fontFamily }}>
         <Router>
           <div className="min-h-screen bg-gray-50 text-gray-900">
-            {/* Navigation would go here */}
-            
+            <Navigation authUser={currentUser} userSignOut={() => { window.location.href = '/login'; }} />
             <main className="container mx-auto px-4 py-8">
               <Routes>
                 <Route path="/" element={<ProducerView />} />
