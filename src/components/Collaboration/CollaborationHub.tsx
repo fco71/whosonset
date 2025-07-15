@@ -142,7 +142,6 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 
   // Screenplay upload state
   const [screenplayFile, setScreenplayFile] = useState<File | null>(null);
-  const [screenplayUrl, setScreenplayUrl] = useState('');
   const [uploadingScreenplay, setUploadingScreenplay] = useState(false);
   const [uploadedScreenplay, setUploadedScreenplay] = useState<{
     id: string;
@@ -151,7 +150,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     type: string;
     size?: number;
   } | null>(null);
-  
+
   // Screenplay collaboration state
   const [screenplayAnnotations, setScreenplayAnnotations] = useState<{
     id: string;
@@ -179,37 +178,28 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const [approvedContacts, setApprovedContacts] = useState<string[]>([]);
 
   useEffect(() => {
-    console.log('CollaborationHub mounted with projectId:', projectId);
-    console.log('Current user:', currentUser);
-    
-    try {
-      loadWorkspaces();
-      loadTeamMembers();
-      if (!currentUser) return;
-      const fetchScreenplays = async () => {
-        try {
-          const screenplaysRef = collection(db, 'screenplays');
-          // Query 1: uploadedBy == currentUser.uid
-          const q1 = query(screenplaysRef, where('uploadedBy', '==', currentUser.uid));
-          const snap1 = await getDocs(q1);
-          // Query 2: teamMembers array-contains currentUser.uid
-          const q2 = query(screenplaysRef, where('teamMembers', 'array-contains', currentUser.uid));
-          const snap2 = await getDocs(q2);
-          // Merge and deduplicate
-          const allScreenplays = [...snap1.docs, ...snap2.docs];
-          const uniqueScreenplays = Array.from(
-            new Map(allScreenplays.map(doc => [doc.id, { id: doc.id, ...doc.data() }])).values()
-          );
-          setUserScreenplays(uniqueScreenplays);
-        } catch (err) {
-          console.error('Error fetching user screenplays:', err);
-        }
-      };
-      fetchScreenplays();
-    } catch (err) {
-      console.error('Error in CollaborationHub useEffect:', err);
-      setError('Failed to initialize Collaboration Hub');
-    }
+    // Load workspaces and team members
+    loadWorkspaces();
+    loadTeamMembers();
+    if (!currentUser) return;
+    // Load all screenplays for this user (uploaded or as team member)
+    const fetchScreenplays = async () => {
+      try {
+        const screenplaysRef = collection(db, 'screenplays');
+        const q1 = query(screenplaysRef, where('uploadedBy', '==', currentUser.uid));
+        const snap1 = await getDocs(q1);
+        const q2 = query(screenplaysRef, where('teamMembers', 'array-contains', currentUser.uid));
+        const snap2 = await getDocs(q2);
+        const allScreenplays = [...snap1.docs, ...snap2.docs];
+        const uniqueScreenplays = Array.from(
+          new Map(allScreenplays.map(doc => [doc.id, { id: doc.id, ...doc.data() }])).values()
+        );
+        setUserScreenplays(uniqueScreenplays);
+      } catch (err) {
+        console.error('Error fetching user screenplays:', err);
+      }
+    };
+    fetchScreenplays();
   }, [currentUser, projectId]);
 
   useEffect(() => {
@@ -242,120 +232,21 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 
   const loadWorkspaces = async () => {
     try {
-      console.log('Loading workspaces...');
       setLoading(true);
       setError(null);
-      
-      // Mock data for demonstration
-      const mockWorkspaces: CollaborationWorkspace[] = [
-        {
-          id: '1',
-          projectId: projectId || 'default-project',
-          name: 'Production Team',
-          description: 'Main workspace for production team collaboration',
-          type: 'project',
-          members: [
-            { userId: currentUser?.uid || 'default-user', role: 'admin', joinedAt: new Date(), permissions: ['read', 'write'], isOnline: true, lastSeen: new Date() },
-            { userId: 'user-2', role: 'member', joinedAt: new Date(), permissions: ['read', 'write'], isOnline: true, lastSeen: new Date() },
-            { userId: 'user-3', role: 'member', joinedAt: new Date(), permissions: ['read'], isOnline: false, lastSeen: new Date(Date.now() - 3600000) }
-          ],
-          channels: [],
-          documents: [
-            {
-              id: 'doc-1',
-              workspaceId: '1',
-              title: 'Script Draft v2.1',
-              content: 'Main screenplay with latest revisions',
-              type: 'script',
-              version: 2,
-              collaborators: [
-                { userId: currentUser?.uid || 'default-user', role: 'editor', isTyping: false, lastActivity: new Date() }
-              ],
-              changes: [],
-              createdAt: new Date(),
-              updatedAt: new Date(),
-              lastEditedBy: currentUser?.uid || 'default-user'
-            },
-            {
-              id: 'doc-2',
-              workspaceId: '1',
-              title: 'Production Schedule',
-              content: 'Detailed shooting schedule',
-              type: 'schedule',
-              version: 1,
-              collaborators: [
-                { userId: currentUser?.uid || 'default-user', role: 'editor', isTyping: false, lastActivity: new Date() }
-              ],
-              changes: [],
-              createdAt: new Date(),
-              updatedAt: new Date(),
-              lastEditedBy: currentUser?.uid || 'default-user'
-            }
-          ],
-          whiteboards: [
-            {
-              id: 'wb-1',
-              workspaceId: '1',
-              name: 'Storyboard v1',
-              elements: [],
-              collaborators: [
-                { userId: currentUser?.uid || 'default-user', cursor: { x: 0, y: 0 }, isDrawing: false, lastActivity: new Date() }
-              ],
-              createdAt: new Date(),
-              updatedAt: new Date()
-            },
-            {
-              id: 'wb-2',
-              workspaceId: '1',
-              name: 'Set Layout',
-              elements: [],
-              collaborators: [
-                { userId: currentUser?.uid || 'default-user', cursor: { x: 0, y: 0 }, isDrawing: false, lastActivity: new Date() }
-              ],
-              createdAt: new Date(),
-              updatedAt: new Date()
-            }
-          ],
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          settings: {
-            allowGuestAccess: false,
-            requireApproval: true,
-            autoArchive: false,
-            retentionDays: 365,
-            maxFileSize: 100 * 1024 * 1024, // 100MB
-            allowedFileTypes: ['pdf', 'doc', 'docx', 'txt', 'jpg', 'png']
-          }
-        },
-        {
-          id: '2',
-          projectId: projectId || 'default-project',
-          name: 'Camera Department',
-          description: 'Camera and lighting team workspace',
-          type: 'department',
-          members: [
-            { userId: currentUser?.uid || 'default-user', role: 'member', joinedAt: new Date(), permissions: ['read', 'write'], isOnline: true, lastSeen: new Date() }
-          ],
-          channels: [],
-          documents: [],
-          whiteboards: [],
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          settings: {
-            allowGuestAccess: false,
-            requireApproval: false,
-            autoArchive: false,
-            retentionDays: 365,
-            maxFileSize: 100 * 1024 * 1024,
-            allowedFileTypes: ['pdf', 'doc', 'docx', 'txt', 'jpg', 'png']
-          }
-        }
-      ];
-      
-      console.log('Setting workspaces:', mockWorkspaces);
-      setWorkspaces(mockWorkspaces);
-      if (mockWorkspaces.length > 0) {
-        setSelectedWorkspace(mockWorkspaces[0]);
+      // Load real workspaces from Firestore
+      const workspacesRef = collection(db, 'workspaces');
+      let q = query(workspacesRef);
+      if (projectId) {
+        q = query(workspacesRef, where('projectId', '==', projectId));
+      }
+      const snap = await getDocs(q);
+      const workspaceList = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as CollaborationWorkspace[];
+      setWorkspaces(workspaceList);
+      if (workspaceList.length > 0) {
+        setSelectedWorkspace(workspaceList[0]);
+      } else {
+        setSelectedWorkspace(null);
       }
     } catch (error) {
       console.error('Error loading workspaces:', error);
@@ -729,92 +620,92 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     setShowVideoCallModal(true);
   };
 
+  // Screenplay upload handlers (reference version)
   const handleScreenplayUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setScreenplayFile(file);
-      // Auto-upload the file after selection
-      await uploadScreenplay(file);
+      setUploadingScreenplay(true);
+      try {
+        const storageRef = ref(storage, `screenplays/${Date.now()}_${file.name}`);
+        const snapshot = await uploadBytes(storageRef, file);
+        const downloadURL = await getDownloadURL(snapshot.ref);
+        const screenplayData = {
+          name: file.name,
+          url: downloadURL,
+          type: file.type,
+          projectId: projectId || 'default-project',
+          uploadedBy: currentUser?.uid || 'unknown',
+          uploadedAt: new Date(),
+          teamMembers: teamMembers.map(member => member.id),
+          size: file.size
+        };
+        const docRef = await addDoc(collection(db, 'screenplays'), screenplayData);
+        const uploadedFile = {
+          id: docRef.id,
+          name: file.name,
+          url: downloadURL,
+          type: file.type,
+          size: file.size
+        };
+        setUploadedScreenplay(uploadedFile);
+        setScreenplayFile(null);
+        setUserScreenplays(prev => [...prev, {
+          ...uploadedFile,
+          uploadedAt: { seconds: Math.floor(Date.now() / 1000) }
+        }]);
+        toast.success(`${file.name} uploaded successfully!`);
+        loadTeamMembers();
+      } catch (error) {
+        console.error('Error uploading screenplay:', error);
+        toast.error('Failed to upload screenplay');
+      } finally {
+        setUploadingScreenplay(false);
+      }
     }
-    // Reset the input to allow selecting the same file again if needed
     e.target.value = '';
-  };
-
-  const uploadScreenplay = async (file?: File) => {
-    const fileToUpload = file || screenplayFile;
-    if (!fileToUpload) {
-      toast.error('Please select a file first');
-      return;
-    }
-
-    setUploadingScreenplay(true);
-    try {
-      // Upload to Firebase Storage
-      const storageRef = ref(storage, `screenplays/${Date.now()}_${fileToUpload.name}`);
-      const snapshot = await uploadBytes(storageRef, fileToUpload);
-      const downloadURL = await getDownloadURL(snapshot.ref);
-      
-      // Save screenplay metadata to Firestore
-      const screenplayData = {
-        name: fileToUpload.name,
-        url: downloadURL,
-        type: fileToUpload.type,
-        projectId: projectId || 'default-project',
-        uploadedBy: currentUser?.uid || 'unknown',
-        uploadedAt: new Date(),
-        teamMembers: teamMembers.map(member => member.id),
-        size: fileToUpload.size
-      };
-      
-      const docRef = await addDoc(collection(db, 'screenplays'), screenplayData);
-      
-      const uploadedFile = {
-        id: docRef.id,
-        name: fileToUpload.name,
-        url: downloadURL,
-        type: fileToUpload.type,
-        size: fileToUpload.size
-      };
-      
-      setUploadedScreenplay(uploadedFile);
-      setScreenplayFile(null);
-      
-      // Add to user's screenplays list
-      setUserScreenplays(prev => [...prev, {
-        ...uploadedFile,
-        uploadedAt: { seconds: Math.floor(Date.now() / 1000) } // Firestore timestamp format
-      }]);
-      
-      toast.success(`${fileToUpload.name} uploaded successfully!`);
-      
-      // Load team members for this project
-      loadTeamMembers();
-    } catch (error) {
-      console.error('Error uploading screenplay:', error);
-      toast.error('Failed to upload screenplay');
-    } finally {
-      setUploadingScreenplay(false);
-    }
   };
 
   const loadTeamMembers = async () => {
     try {
-      // Mock team members for demonstration
-      const mockTeamMembers = [
-        { id: 'user-1', name: 'John Director', email: 'john@example.com', role: 'Director' },
-        { id: 'user-2', name: 'Sarah Producer', email: 'sarah@example.com', role: 'Producer' },
-        { id: 'user-3', name: 'Mike DP', email: 'mike@example.com', role: 'DP' },
-        { id: currentUser?.uid || 'current-user', name: currentUser?.displayName || 'You', email: currentUser?.email || '', role: 'Team Member' }
-      ];
-      setTeamMembers(mockTeamMembers);
+      if (!selectedWorkspace) {
+        setTeamMembers([]);
+        return;
+      }
+      // Load real team members from Firestore users collection
+      const memberIds = selectedWorkspace.members?.map(m => m.userId) || [];
+      if (memberIds.length === 0) {
+        setTeamMembers([]);
+        return;
+      }
+      const usersRef = collection(db, 'users');
+      const chunks = [];
+      for (let i = 0; i < memberIds.length; i += 10) {
+        chunks.push(memberIds.slice(i, i + 10));
+      }
+      let allMembers: any[] = [];
+      for (const chunk of chunks) {
+        const q = query(usersRef, where('id', 'in', chunk));
+        const snap = await getDocs(q);
+        allMembers = allMembers.concat(snap.docs.map(doc => ({
+          id: doc.id,
+          name: doc.data().displayName || doc.data().name || `User ${doc.id.slice(-4)}`,
+          email: doc.data().email || '',
+          role: doc.data().role || 'User',
+          avatar: doc.data().avatarUrl || doc.data().avatar || '',
+          isOnline: doc.data().isOnline || false
+        })));
+      }
+      setTeamMembers(allMembers);
     } catch (error) {
       console.error('Error loading team members:', error);
+      setTeamMembers([]);
     }
   };
 
+  // Add annotation to screenplay (reference version)
   const addAnnotation = async () => {
     if (!newAnnotation.trim() || !uploadedScreenplay) return;
-
     try {
       const annotationData = {
         screenplayId: uploadedScreenplay.id,
@@ -824,10 +715,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         timestamp: new Date(),
         projectId: projectId || 'default-project'
       };
-
       await addDoc(collection(db, 'screenplayAnnotations'), annotationData);
-      
-      // Add to local state
       setScreenplayAnnotations(prev => [...prev, {
         id: Date.now().toString(),
         userId: currentUser?.uid || 'unknown',
@@ -835,7 +723,6 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         annotation: newAnnotation.trim(),
         timestamp: new Date()
       }]);
-      
       setNewAnnotation('');
       setShowScreenplayViewer(true);
       toast.success('Annotation added successfully!');
@@ -845,9 +732,9 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     }
   };
 
+  // Load screenplay annotations (reference version)
   const loadAnnotations = async () => {
     if (!uploadedScreenplay) return;
-
     try {
       const q = query(
         collection(db, 'screenplayAnnotations'),
@@ -859,7 +746,6 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         id: doc.id,
         ...doc.data()
       })) as any[];
-      
       setScreenplayAnnotations(annotations);
     } catch (error) {
       console.error('Error loading annotations:', error);
@@ -892,13 +778,9 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     // 4. Add analytics and insights
   };
 
+  // No-op: upload is handled by handleScreenplayUpload
   function handleUploadScreenplay() {
-    if (typeof uploadScreenplay === 'function') {
-      uploadScreenplay();
-    } else {
-      // TODO: Implement upload logic or open upload modal
-      alert('Upload functionality not yet implemented.');
-    }
+    // Upload is handled by handleScreenplayUpload via file input
   }
 
   const handleDeleteScreenplay = async (screenplayId: string) => {
@@ -937,6 +819,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     }
   };
 
+  // Open screenplay viewer modal (reference version)
   const openScreenplayViewer = (screenplay: any) => {
     setSelectedScreenplayId(screenplay.id);
     setShowScreenplayModal(true);
@@ -1710,20 +1593,12 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                 </div>
               )}
             </div>
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                uploadScreenplay();
-              }}
-              disabled={!screenplayFile || uploadingScreenplay}
-              className="btn-primary"
-              aria-label="Upload screenplay"
-            >
+            <label htmlFor="screenplay-upload-input" className="btn-primary" style={{ cursor: uploadingScreenplay ? 'not-allowed' : 'pointer', opacity: uploadingScreenplay ? 0.7 : 1 }}>
               {uploadingScreenplay && (
                 <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
               )}
               {uploadingScreenplay ? 'Uploading...' : 'Upload Screenplay'}
-            </button>
+            </label>
             {uploadedScreenplay && (
               <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-2">
                 <div className="flex items-center gap-2 mb-2">

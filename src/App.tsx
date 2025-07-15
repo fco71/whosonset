@@ -22,6 +22,7 @@ import SavedCrewProfilesPage from './pages/SavedCrewProfilesPage';
 import SavedProjectsPage from './pages/SavedProjectsPage';
 import CollectionsHubPage from './pages/CollectionsHubPage';
 import SocialPage from './pages/SocialPage';
+import CollaborationPage from './pages/CollaborationPage';
 import SettingsPage from './pages/SettingsPage';
 import JobsPage from './pages/JobsPage';
 import PostJobPage from './pages/PostJobPage';
@@ -47,6 +48,7 @@ function App() {
                 <Route path="/saved-projects" element={<SavedProjectsPage />} />
                 <Route path="/collections" element={<CollectionsHubPage />} />
                 <Route path="/social" element={<SocialPage />} />
+                <Route path="/collaboration" element={<CollaborationPage />} />
                 <Route path="/settings" element={currentUser ? <SettingsPage /> : <Navigate to="/login" />} />
                 <Route path="/jobs" element={<JobsPage />} />
                 <Route path="/post-job" element={currentUser ? <PostJobPage /> : <Navigate to="/login" />} />
