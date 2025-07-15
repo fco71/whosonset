@@ -1,3 +1,5 @@
+// ...existing code...
+console.log('DEBUG: App.tsx loaded, SocialPage import is:', SocialPage);
 import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
@@ -10,7 +12,6 @@ import '@fontsource/inter/700.css';
 import './App.module.scss';
 
 // Import debug component directly for now to ensure it loads
-import DebugBlobTracker from './components/DebugBlobTracker';
 import Navigation from './components/Navigation';
 
 // Import pages
@@ -41,6 +42,7 @@ function App() {
                 <Route path="/" element={<ProducerView />} />
                 <Route path="/my-projects" element={<MyProjectsPage />} />
                 <Route path="/favorites" element={<FavoritesPage />} />
+// ...existing code...
                 <Route path="/saved-crew" element={<SavedCrewProfilesPage />} />
                 <Route path="/saved-projects" element={<SavedProjectsPage />} />
                 <Route path="/collections" element={<CollectionsHubPage />} />
@@ -56,10 +58,6 @@ function App() {
             {/* Footer would go here */}
           </div>
           
-          {/* Debug tools - always show in development */}
-          {process.env.NODE_ENV === 'development' && (
-            <DebugBlobTracker showAll={true} />
-          )}
           
           <Toaster 
             position="top-right" 

@@ -1,551 +1,180 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Link } from 'react-router-dom';
-import { Search, UserCheck, Users, UserPlus, UserX, Bell, Check, X, MoreHorizontal } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Users, UserCheck, UserPlus, Search, Bell } from 'lucide-react';
+import Input from '../components/ui/Input';
 import { useAuth } from '../contexts/AuthContext';
-import { SocialService } from '../utilities/socialService';
-import { getProfileId, getDisplayName, getPhotoUrl, isCrewProfile } from '../types/Profile';
-import ChatInterface from '../components/Chat/ChatInterface';
-import { SocialNotification } from '../types/Social';
+import { SocialService } from '../utilities/socialService.v2';
+import { SocialUser } from '../types/socialPage';
 
-// Define a discriminated union type for profiles
-type BaseProfile = {
-  id: string;
-  displayName: string;
-  photoURL?: string;
-  bio?: string;
-};
 
-type CrewProfile = BaseProfile & {
-  type: 'crew';
-  uid: string;
-  name: string;
-  username: string;
-  jobTitles: string[];
-  residences: string[];
-  isPublished: boolean;
-};
+const TABS = [
+  { key: 'following', label: 'Following', icon: UserCheck },
+  { key: 'followers', label: 'Followers', icon: Users },
+  { key: 'discover', label: 'Discover', icon: Search },
+  { key: 'requests', label: 'Requests', icon: UserPlus },
+  { key: 'notifications', label: 'Notifications', icon: Bell },
+];
 
-type UserProfile = BaseProfile & {
-  type: 'user';
-  email: string;
-  phoneNumber?: string;
-};
+const SocialPage: React.FC = () => {
 
-type AppProfile = CrewProfile | UserProfile;
-
-import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
-import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/Avatar';
-import { Badge } from '../components/ui/Badge';
-import { Skeleton } from '../components/ui/Skeleton';
-
-type TabValue = 'following' | 'followers' | 'discover' | 'requests' | 'notifications';
-
-// Enhanced tab component with better styling
-const TabButton = ({ 
-  active, 
-  onClick, 
-  children,
-  count,
-  icon: Icon
-}: { 
-  active: boolean; 
-  onClick: () => void; 
-  children: React.ReactNode;
-  count?: number;
-  icon: React.ComponentType<{ className?: string }>;
-}) => (
-  <button
-    onClick={onClick}
-    className={`flex items-center gap-2 px-4 py-3 font-medium text-sm rounded-lg transition-all relative ${
-      active 
-        ? 'text-blue-600 bg-blue-50' 
-        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-    }`}
-  >
-    <Icon className={`h-4 w-4 ${active ? 'text-blue-600' : 'text-gray-500'}`} />
-    <span>{children}</span>
-    {count !== undefined && count > 0 && (
-      <span className="ml-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
-        {count}
-      </span>
-    )}
-  </button>
-);
-
-const SocialPage = () => {
-  const auth = useAuth();
-  const user = auth?.currentUser; // Access currentUser instead of user
-  const [activeTab, setActiveTab] = useState<'connections' | 'requests' | 'discover' | 'notifications' | 'messages'>('connections');
-  const [notifications, setNotifications] = useState<SocialNotification[]>([]);
-  const [showNotifications, setShowNotifications] = useState(true);
-  // Real-time notifications listener
-  useEffect(() => {
-    if (!user?.uid) return;
-    const unsub = SocialService.subscribeToNotifications(user.uid, setNotifications);
-    return () => { if (unsub) unsub(); };
-  }, [user?.uid]);
+  const { currentUser } = useAuth();
+  const [activeTab, setActiveTab] = useState('following');
   const [searchQuery, setSearchQuery] = useState('');
-  // Define the profile state with proper typing
-  const [allProfiles, setAllProfiles] = useState<AppProfile[]>([]);
-  const [filteredProfiles, setFilteredProfiles] = useState<AppProfile[]>([]);
-  const [connectionRequests, setConnectionRequests] = useState<AppProfile[]>([]);
-  const [sentRequests, setSentRequests] = useState<AppProfile[]>([]);
-  const [connections, setConnections] = useState<AppProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [following, setFollowing] = useState<SocialUser[]>([]);
+  const [followers, setFollowers] = useState<SocialUser[]>([]);
+  const [suggestedUsers, setSuggestedUsers] = useState<SocialUser[]>([]);
+  const [followRequests, setFollowRequests] = useState<SocialUser[]>([]);
+  const [notifications, setNotifications] = useState<any[]>([]); // Adjust type if needed
 
-  // Load initial data
+  // UserCard skeleton
+  const UserCardSkeleton = () => (
+    <div className="p-4 bg-white rounded-lg border border-gray-200 flex flex-col items-center animate-pulse">
+      <div className="h-16 w-16 rounded-full bg-gray-200 mb-2" />
+      <div className="h-4 w-24 bg-gray-200 mb-1 rounded" />
+      <div className="h-3 w-16 bg-gray-100 rounded" />
+    </div>
+  );
+
+  // UserCard
+  const UserCard = ({ user }: { user: SocialUser }) => (
+    <div className="p-4 bg-white rounded-lg border border-gray-200 flex flex-col items-center">
+      <div className="h-16 w-16 rounded-full bg-gray-100 mb-2 flex items-center justify-center text-xl font-bold text-blue-500">
+        {user.displayName?.[0] || user.name?.[0] || '?'}
+      </div>
+      <div className="font-semibold text-gray-900 mb-1">{user.displayName || user.name}</div>
+      <div className="text-xs text-gray-500">{user.bio || user.email || ''}</div>
+    </div>
+  );
+
+  // Filter users by search
+  const filterUsers = (users: SocialUser[]) => {
+    if (!searchQuery.trim()) return users;
+    const q = searchQuery.toLowerCase();
+    return users.filter(u =>
+      (u.displayName || u.name || '').toLowerCase().includes(q) ||
+      (u.bio && u.bio.toLowerCase().includes(q))
+    );
+  };
+
+  // Load data for the current tab
   const loadData = useCallback(async () => {
-    const currentUser = auth?.currentUser;
     if (!currentUser?.uid) return;
-    
     setIsLoading(true);
     try {
-      // Fetch crew profiles from the social service
-      const profiles = await SocialService.getCrewProfiles();
-      
-      // Map the profiles to the correct shape
-      const mappedProfiles = profiles.map((profile: any) => {
-        const id = profile.id || '';
-        const displayName = profile.displayName || profile.name || 'Unknown User';
-        const photoURL = profile.photoURL || profile.profileImageUrl || '';
-        const bio = profile.bio || '';
-        
-        if (isCrewProfile(profile as any)) {
-          // Create a CrewProfile
-          const crewProfile: CrewProfile = {
-            id,
-            type: 'crew',
-            uid: (profile as any).uid || id,
-            displayName,
-            photoURL,
-            bio,
-            name: (profile as any).name || displayName,
-            username: (profile as any).username || 
-                     (profile as any).email ? String((profile as any).email).split('@')[0] : '',
-            jobTitles: Array.isArray((profile as any).jobTitles) ? [...(profile as any).jobTitles] : [],
-            residences: Array.isArray((profile as any).residences) ? [...(profile as any).residences] : [],
-            isPublished: (profile as any).isPublished !== undefined ? Boolean((profile as any).isPublished) : true,
-          };
-          return crewProfile;
-        } else {
-          // Create a UserProfile
-          const userProfile: UserProfile = {
-            id,
-            type: 'user',
-            displayName,
-            photoURL,
-            bio,
-            email: (profile as any).email || '',
-            phoneNumber: (profile as any).phoneNumber,
-          };
-          return userProfile;
-        }
-      });
-      
-      setAllProfiles(mappedProfiles);
-      setFilteredProfiles(mappedProfiles);
-      setConnectionRequests(mappedProfiles.slice(0, 2));
-      setSentRequests(mappedProfiles.slice(2, 4));
-      setConnections(mappedProfiles.slice(4, 8));
-    } catch (error) {
-      console.error('Error loading profiles:', error);
+      switch (activeTab) {
+        case 'following':
+          setFollowing(await SocialService.getFollowing(currentUser.uid));
+          break;
+        case 'followers':
+          setFollowers(await SocialService.getFollowers(currentUser.uid));
+          break;
+        case 'discover':
+          setSuggestedUsers(await SocialService.getSuggestedUsers(currentUser.uid));
+          break;
+        case 'requests':
+          setFollowRequests(await SocialService.getFollowRequests(currentUser.uid));
+          break;
+        case 'notifications':
+          setNotifications([]); // Implement if you have notifications
+          break;
+      }
+    } catch (e) {
+      // Optionally handle error
     } finally {
       setIsLoading(false);
     }
-  }, [auth]);
+  }, [activeTab, currentUser?.uid]);
 
-  // Load data on component mount and when active tab changes
   useEffect(() => {
     loadData();
-  }, [activeTab, user?.uid]);
+  }, [loadData]);
 
-  // Filter profiles based on search query and active tab
-  const filteredItems = useMemo(() => {
-    const items = {
-      connections: [...connections],
-      requests: [...connectionRequests, ...sentRequests],
-      discover: [...filteredProfiles],
-      notifications: [],
-      messages: []
-    }[activeTab] || [];
+  // Get current data for tab
+  let currentData: SocialUser[] = [];
+  if (activeTab === 'following') currentData = following;
+  if (activeTab === 'followers') currentData = followers;
+  if (activeTab === 'discover') currentData = suggestedUsers;
+  if (activeTab === 'requests') currentData = followRequests;
 
-    if (!searchQuery.trim()) return items;
-
-    const query = searchQuery.toLowerCase();
-    return items.filter((p) => {
-      const name = getDisplayName(p).toLowerCase();
-      const bio = p.bio ? p.bio.toLowerCase() : '';
-      return name.includes(query) || bio.includes(query);
-    });
-  }, [activeTab, connections, connectionRequests, sentRequests, filteredProfiles, searchQuery]);
-
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
-  };
-
-  // Handle tab change
-  const handleTabChange = (value: 'connections' | 'requests' | 'discover' | 'notifications') => {
-    setActiveTab(value);
-    setSearchQuery('');
-  };
-
-  // Handle follow/unfollow action
-  const handleFollowChange = async (profileId: string, follow: boolean) => {
-    if (!user?.uid) return;
-    
-    try {
-      if (follow) {
-        await SocialService.sendFollowRequest(user.uid, profileId);
-      } else {
-        await SocialService.unfollow(user.uid, profileId);
-      }
-      await loadData();
-    } catch (error) {
-      console.error('Error updating follow status:', error);
-    }
-  };
-
-  // Handle follow request response (accept/reject)
-  const handleFollowRequest = (userId: string, action: 'accept' | 'reject') => {
-    // In a real app, you would update the database here
-    console.log(`${action}ing follow request from ${userId}`);
-    
-    // Update local state
-    if (action === 'accept') {
-      const request = connectionRequests.find(p => getProfileId(p) === userId);
-      if (request) {
-        setConnections(prev => [...prev, request]);
-        setConnectionRequests(prev => prev.filter(p => getProfileId(p) !== userId));
-      }
-    } else {
-      setConnectionRequests(prev => prev.filter(p => getProfileId(p) !== userId));
-    }
-  };
-
-  // Helper function to render user cards
-  const renderUserCard = (profile: AppProfile, action?: React.ReactNode) => (
-    <div key={getProfileId(profile)} className="flex items-center justify-between p-4 border rounded-lg">
-      <div className="flex items-center space-x-4">
-        <img 
-          src={getPhotoUrl(profile)} 
-          alt={getDisplayName(profile)}
-          className="h-12 w-12 rounded-full object-cover"
-        />
-        <div>
-          <p className="font-medium text-gray-900">{getDisplayName(profile)}</p>
-          {profile.bio && <p className="text-sm text-gray-500 line-clamp-1">{profile.bio}</p>}
-        </div>
-      </div>
-      {action}
-    </div>
-  );
-
-  // Render content based on active tab
-  const renderTabContent = () => {
-    if (!user) {
-      return (
-        <div className="text-center py-12">
-          <p className="text-gray-500">Please sign in to view this page</p>
-        </div>
-      );
-    }
-
+  // Render user list or skeletons/empty
+  const renderContent = () => {
     if (isLoading) {
       return (
-        <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <UserCardSkeleton key={i} />
+          ))}
         </div>
       );
     }
-
-    switch (activeTab) {
-      case 'connections':
-        return (
-          <div>
-            <h2 className="text-xl font-semibold mb-4">Your Connections</h2>
-            {connections.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {connections.map((profile: AppProfile) => (
-                  <UserCard
-                    key={getProfileId(profile)}
-                    profile={profile}
-                    action={
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="whitespace-nowrap"
-                        onClick={() => handleFollowChange(getProfileId(profile), false)}
-                      >
-                        <UserX className="h-4 w-4 mr-2" />
-                        Unfollow
-                      </Button>
-                    }
-                  />
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-500">You don't have any connections yet.</p>
-            )}
+    const filtered = filterUsers(currentData);
+    if (!filtered.length) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-[200px] text-gray-400">
+          <span className="mb-2">
+            {activeTab === 'following' && <UserCheck className="h-10 w-10" />}
+            {activeTab === 'followers' && <Users className="h-10 w-10" />}
+            {activeTab === 'discover' && <Search className="h-10 w-10" />}
+            {activeTab === 'requests' && <UserPlus className="h-10 w-10" />}
+            {activeTab === 'notifications' && <Bell className="h-10 w-10" />}
+          </span>
+          <div className="text-lg font-semibold text-gray-700 mb-1">
+            {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
           </div>
-        );
-
-      case 'requests':
-        return (
-          <div className="space-y-4">
-            {connectionRequests.length > 0 && (
-              <div>
-                <h3 className="text-lg font-medium mb-2">Connection Requests</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                  {connectionRequests.map((profile: AppProfile) => (
-                    <UserCard
-                      key={getProfileId(profile)}
-                      profile={profile}
-                      action={
-                        <Button
-                          variant="default"
-                          size="sm"
-                          className="whitespace-nowrap"
-                          onClick={() => handleFollowRequest(getProfileId(profile), 'accept')}
-                        >
-                          <UserCheck className="h-4 w-4 mr-2" />
-                          Accept
-                        </Button>
-                      }
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-            
-            {sentRequests.length > 0 && (
-              <div>
-                <h3 className="text-lg font-medium mb-2">Sent Requests</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {sentRequests.map((profile: AppProfile) => (
-                    <UserCard
-                      key={getProfileId(profile)}
-                      profile={profile}
-                      action={
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="whitespace-nowrap"
-                          onClick={() => handleFollowRequest(getProfileId(profile), 'reject')}
-                        >
-                          <UserX className="h-4 w-4 mr-2" />
-                          Cancel
-                        </Button>
-                      }
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-            
-            {connectionRequests.length === 0 && sentRequests.length === 0 && (
-              <p className="text-gray-500">No pending requests.</p>
-            )}
+          <div className="text-sm text-gray-500">
+            {activeTab === 'discover'
+              ? 'Try searching for someone to connect with.'
+              : `No ${activeTab} found.`}
           </div>
-        );
-
-      case 'discover':
-        return (
-          <div>
-            <h2 className="text-xl font-semibold mb-4">Discover People</h2>
-            {filteredProfiles.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredProfiles.map((profile: AppProfile) => (
-                  <UserCard
-                    key={getProfileId(profile)}
-                    profile={profile}
-                    action={
-                      <Button
-                        variant="default"
-                        size="sm"
-                        className="whitespace-nowrap"
-                        onClick={() => handleFollowChange(getProfileId(profile), true)}
-                      >
-                        <UserPlus className="h-4 w-4 mr-2" />
-                        Follow
-                      </Button>
-                    }
-                  />
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-500">No suggestions found.</p>
-            )}
-          </div>
-        );
-
-      case 'notifications':
-        if (!showNotifications) return null;
-        return (
-          <div className="relative max-w-xl mx-auto bg-white rounded-xl shadow p-6 border border-gray-200">
-            <button
-              className="absolute top-2 right-2 text-gray-400 hover:text-red-500 text-xl"
-              onClick={() => setShowNotifications(false)}
-              title="Close notifications"
-            >
-              <X className="w-6 h-6" />
-            </button>
-            <h2 className="text-xl font-semibold mb-4">Notifications</h2>
-            {notifications.length === 0 ? (
-              <div className="text-center py-8">
-                <Bell className="h-10 w-10 mx-auto text-gray-300" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">No notifications</h3>
-                <p className="mt-1 text-xs text-gray-500">Your notifications will appear here.</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {notifications.map(n => (
-                  <div key={n.id} className={`p-4 rounded-lg border ${n.isRead ? 'bg-gray-50 border-gray-200' : 'bg-blue-50 border-blue-200'}`}>
-                    <div className="font-medium text-gray-800 text-sm">{n.title || 'Notification'}</div>
-                    <div className="text-xs text-gray-600">{n.message}</div>
-                    <div className="text-xs text-gray-400 mt-1">{n.createdAt ? new Date(n.createdAt).toLocaleString() : ''}</div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      case 'messages':
-        return (
-          <div className="max-w-3xl mx-auto bg-white rounded-xl shadow p-4 border border-gray-200">
-            <h2 className="text-xl font-semibold mb-4">Messages</h2>
-            <ChatInterface currentUserId={user?.uid || ''} currentUserName={user?.email?.split('@')[0] || 'User'} />
-          </div>
-        );
+        </div>
+      );
     }
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {filtered.map(user => (
+          <UserCard key={user.id} user={user} />
+        ))}
+      </div>
+    );
   };
 
-  // User card component
-  const UserCard = ({ profile, action, showBio = true }: { 
-    profile: AppProfile; 
-    action?: React.ReactNode;
-    showBio?: boolean;
-  }) => (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
-      <div className="p-4">
-        <div className="flex items-start justify-between">
-          <div className="flex items-start space-x-3">
-            <Avatar className="h-12 w-12">
-              <AvatarImage src={getPhotoUrl(profile)} alt={getDisplayName(profile)} />
-              <AvatarFallback>
-                {getDisplayName(profile)
-                  .split(' ')
-                  .map(n => n[0])
-                  .join('')
-                  .toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <h3 className="font-medium text-gray-900">{getDisplayName(profile)}</h3>
-              {showBio && profile.bio && (
-                <p className="text-sm text-gray-500 line-clamp-2">{profile.bio}</p>
-              )}
-              {isCrewProfile(profile) && profile.jobTitles?.[0]?.title && (
-                <p className="text-xs text-gray-500 mt-1">
-                  {profile.jobTitles[0].title}
-                </p>
-              )}
-            </div>
-          </div>
-          {action && <div className="flex-shrink-0 ml-2">{action}</div>}
+  return (
+    <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-1">Social</h1>
+          <p className="text-gray-600 text-base">Connect with other professionals in your network.</p>
+        </div>
+        <div className="mt-4 sm:mt-0 w-full sm:w-auto relative">
+          <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search className="h-4 w-4 text-gray-400" />
+          </span>
+          <Input
+            type="text"
+            placeholder="Search people..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            className="w-full sm:w-64 pl-10"
+            aria-label="Search for people to connect with"
+          />
         </div>
       </div>
-    </div>
-  );
-
-  // Loading skeleton
-  if (isLoading) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="bg-white rounded-xl border border-gray-200 p-4">
-              <div className="flex items-center space-x-3">
-                <Skeleton className="h-12 w-12 rounded-full" />
-                <div className="flex-1 space-y-2">
-                  <Skeleton className="h-4 w-3/4" />
-                  <Skeleton className="h-3 w-full" />
-                  <Skeleton className="h-3 w-1/2" />
-                </div>
-              </div>
-            </div>
+      <div className="mb-6">
+        <div className="flex space-x-2 overflow-x-auto pb-1 -mx-2 px-2">
+          {TABS.map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-300 ${activeTab === tab.key ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md scale-105' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-105'}`}
+            >
+              <tab.icon className="w-4 h-4" />
+              <span>{tab.label}</span>
+            </button>
           ))}
         </div>
       </div>
-    );
-  }
-
-  return (
-    <div className="container mx-auto px-4 py-6 max-w-7xl">
-      <div style={{background:'#ffeeba',padding:'12px',borderRadius:'8px',marginBottom:'16px',textAlign:'center',fontWeight:'bold',color:'#856404'}}>DEBUG: SocialPage loaded</div>
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Social Network</h1>
-          <p className="text-gray-500">Connect with crew members and discover new professionals</p>
-        </div>
-        <div className="w-full md:w-96">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              type="text"
-              placeholder="Search people..."
-              className="pl-10 w-full"
-              value={searchQuery}
-              onChange={handleSearchChange}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex space-x-4 mb-6 overflow-x-auto pb-2">
-        <TabButton 
-          active={activeTab === 'connections'}
-          onClick={() => setActiveTab('connections')}
-          icon={UserCheck}
-        >
-          Connections
-        </TabButton>
-        <TabButton 
-          active={activeTab === 'requests'}
-          onClick={() => setActiveTab('requests')}
-          count={connectionRequests.length}
-          icon={UserX}
-        >
-          Requests
-        </TabButton>
-        <TabButton 
-          active={activeTab === 'discover'}
-          onClick={() => setActiveTab('discover')}
-          icon={UserPlus}
-        >
-          Discover
-        </TabButton>
-        <TabButton 
-          active={activeTab === 'messages'}
-          onClick={() => setActiveTab('messages')}
-          icon={MoreHorizontal}
-        >
-          Messages
-        </TabButton>
-        <TabButton 
-          active={activeTab === 'notifications'}
-          onClick={() => { setActiveTab('notifications'); setShowNotifications(true); }}
-          icon={Bell}
-        >
-          Notifications
-        </TabButton>
-      </div>
-
-      {/* Content */}
-      <div className="space-y-6">
-        {renderTabContent()}
+      <div className="py-8">
+        {renderContent()}
       </div>
     </div>
   );
