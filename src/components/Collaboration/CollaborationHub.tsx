@@ -1546,257 +1546,69 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         <h2>Screenplays</h2>
         <p>Upload and collaborate on screenplay breakdowns</p>
       </div>
-      
       <div className="screenplays-content">
-        {/* Screenplay Upload Section */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Upload Screenplay</h3>
-          {/* Step Indicator */}
-          <div className="flex items-center gap-2 mb-4 text-sm text-gray-500">
-            <span className={`font-semibold ${!screenplayFile ? 'text-blue-600' : ''}`}>1. Select File</span>
-            <span>→</span>
-            <span className={`font-semibold ${screenplayFile && !uploadedScreenplay ? 'text-blue-600' : ''}`}>2. Upload</span>
-            <span>→</span>
-            <span className={`font-semibold ${uploadedScreenplay ? 'text-green-600' : ''}`}>3. Success</span>
-          </div>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="screenplay-upload-input">
-                Select Screenplay File
-              </label>
-              <input
-                id="screenplay-upload-input"
-                type="file"
-                accept=".pdf"
-                className="w-full bg-white text-gray-900 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                onChange={handleScreenplayUpload}
-                aria-label="Select PDF screenplay file"
-                disabled={uploadingScreenplay}
-              />
-              <p className="text-sm text-gray-500 mt-1">
-                Supported formats: PDF (.pdf)
-              </p>
-              {screenplayFile && (
-                <div className="flex items-center gap-2 mt-2 text-blue-800 bg-blue-50 border border-blue-200 rounded-lg p-2">
-                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z" /></svg>
-                  <span className="font-medium">{screenplayFile.name}</span>
-                  <span className="text-xs text-gray-500">({(screenplayFile.size/1024/1024).toFixed(2)} MB)</span>
-                  <button
-                    type="button"
-                    className="ml-2 text-xs text-blue-600 underline hover:text-blue-800 focus:outline-none"
-                    onClick={() => setScreenplayFile(null)}
-                    aria-label="Change file"
-                    disabled={uploadingScreenplay}
-                  >
-                    Change file
-                  </button>
-                </div>
-              )}
-            </div>
-            <label htmlFor="screenplay-upload-input" className="btn-primary" style={{ cursor: uploadingScreenplay ? 'not-allowed' : 'pointer', opacity: uploadingScreenplay ? 0.7 : 1 }}>
-              {uploadingScreenplay && (
-                <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-              )}
-              {uploadingScreenplay ? 'Uploading...' : 'Upload Screenplay'}
-            </label>
-            {uploadedScreenplay && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-2">
-                <div className="flex items-center gap-2 mb-2">
-                  <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                  <span className="text-green-800 font-semibold">{uploadedScreenplay.name} uploaded successfully!</span>
-                </div>
-                <div className="flex gap-2">
-                  <button onClick={() => openScreenplayViewer(uploadedScreenplay)} className="btn-primary text-sm">View</button>
-                  <button onClick={loadAnnotations} className="btn-secondary text-sm">Annotate</button>
-                  <button onClick={() => { setUploadedScreenplay(null); setScreenplayFile(null); }} className="btn-secondary text-sm">Upload another</button>
-                </div>
-              </div>
-            )}
-          </div>
+          <label htmlFor="screenplay-upload" style={{
+            display: 'inline-block',
+            background: '#1976d2',
+            color: '#fff',
+            padding: '0.75rem 2rem',
+            borderRadius: '6px',
+            fontWeight: 600,
+            cursor: uploadingScreenplay ? 'not-allowed' : 'pointer',
+            opacity: uploadingScreenplay ? 0.6 : 1,
+            boxShadow: '0 2px 8px rgba(25, 118, 210, 0.08)',
+            marginBottom: 16
+          }}>
+            {uploadingScreenplay ? 'Uploading...' : 'Upload Screenplay'}
+            <input
+              id="screenplay-upload"
+              type="file"
+              accept=".pdf,.doc,.docx,.txt"
+              style={{ display: 'none' }}
+              onChange={handleScreenplayUpload}
+              disabled={uploadingScreenplay}
+            />
+          </label>
         </div>
-
-        {/* Uploaded Screenplay Display */}
-        {uploadedScreenplay && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <div>
-                  <h4 className="text-lg font-semibold text-green-800">{uploadedScreenplay.name}</h4>
-                  <p className="text-green-600">Successfully uploaded</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setUploadedScreenplay(null)}
-                className="text-green-600 hover:text-green-800"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <div className="flex gap-3">
-              <button 
-                onClick={() => openScreenplayViewer(uploadedScreenplay)}
-                className="btn-primary"
-              >
-                View Screenplay
-              </button>
-              <button 
-                onClick={loadAnnotations}
-                className="btn-secondary"
-              >
-                View Annotations ({screenplayAnnotations.length})
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Team Collaboration Section */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Team Collaboration</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Team Members */}
-            <div>
-              <h4 className="font-medium text-gray-900 mb-3">Team Members</h4>
-              <div className="space-y-2">
-                {teamMembers.map((member) => (
-                  <div key={member.id} className="card-standard">
-                    <div className="flex items-center gap-3">
-                      <div className="avatar-list relative">
-                        {member.avatar ? (
-                          <img src={member.avatar} alt={member.name} className="w-full h-full rounded-full object-cover" />
-                        ) : (
-                          <span>{member.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()}</span>
-                        )}
-                        {member.isOnline && (
-                          <span className="online-indicator"></span>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="collaborator-name leading-tight truncate">{member.name}</p>
-                        <p className="text-xs text-gray-500 leading-tight">{member.role}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Annotations Section */}
-            <div>
-              <h4 className="font-medium text-gray-900 mb-3">Recent Annotations</h4>
-              <div className="space-y-3 max-h-64 overflow-y-auto">
-                {screenplayAnnotations.length > 0 ? (
-                  screenplayAnnotations.slice(0, 5).map((annotation) => (
-                    <div key={annotation.id} className="card-standard">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="collaborator-name">{annotation.userName}</span>
-                        <span className="text-xs text-gray-500">
-                          {formatTimeAgo(annotation.timestamp)}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-700">{annotation.annotation}</p>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-gray-500 text-sm">No annotations yet. Be the first to annotate!</p>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Screenplay Breakdown Section */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Screenplay Breakdown</h3>
-          {uploadedScreenplay ? (
-            <div>
-              <p className="text-gray-600 mb-4">
-                Now you can create breakdown elements for props, cast, locations, and more.
-              </p>
-              <ScreenplayBreakdown projectId={projectId || 'default-project'} />
-            </div>
-          ) : (
-            <div className="text-center py-8 text-gray-500">
-              <div className="text-6xl mb-4 opacity-20">📄</div>
-              <p className="text-lg font-medium mb-2">No screenplay uploaded</p>
-              <p className="text-sm">Upload a screenplay file above to start creating breakdown elements.</p>
-            </div>
-          )}
-        </div>
-
-        {/* Screenplay Selector */}
-        <div className="screenplay-selector">
-          <div className="selector-header">
-            <h3>Screenplays</h3>
-            <div className="relative">
-              <button 
-                className="btn-primary"
-                onClick={() => document.getElementById('screenplay-upload')?.click()}
-              >
-                <span>📄</span> Upload Screenplay
-              </button>
-              {uploadingScreenplay && (
-                <div className="absolute inset-0 flex items-center justify-center bg-blue-600 rounded-md">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                </div>
-              )}
-            </div>
-          </div>
-          
-          <input
-            id="screenplay-upload"
-            type="file"
-            accept=".pdf"
-            onChange={handleScreenplayUpload}
-            style={{ display: 'none' }}
-          />
-          
+        <div className="screenplays-list bg-white rounded-lg shadow-md p-6">
           {userScreenplays.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">📄</div>
-              <h4>No screenplays uploaded yet</h4>
-              <p>Upload a PDF screenplay to start collaborating with your team.</p>
-              <button 
-                className="btn-primary"
-                onClick={() => document.getElementById('screenplay-upload')?.click()}
-              >
-                Upload Your First Screenplay
-              </button>
+            <div style={{ color: '#888', textAlign: 'center', padding: '2rem 0' }}>
+              No screenplays uploaded yet.
             </div>
           ) : (
-            <div className="screenplay-grid">
-              {userScreenplays.map((screenplay) => (
-                <div key={screenplay.id} className="screenplay-card">
-                  <div className="card-thumbnail">
-                    <span className="pdf-icon">📄</span>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+              {userScreenplays.map(screenplay => (
+                <li key={screenplay.id} style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '0.75rem 0',
+                  borderBottom: '1px solid #eee'
+                }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{ fontWeight: 600, color: '#222' }}>{screenplay.name}</span>
+                    <span style={{ color: '#888', fontSize: '0.95em', marginLeft: 12 }}>{screenplay.type}</span>
                   </div>
-                  <div className="card-content">
-                    <h4 className="screenplay-name">{screenplay.name}</h4>
-                    <p className="upload-date" style={{ color: 'rgba(255,255,255,0.7)' }}>
-                      Uploaded {screenplay.uploadedAt ? new Date(screenplay.uploadedAt.seconds * 1000).toLocaleDateString() : 'Unknown'}
-                    </p>
-                    <div className="card-actions">
-                      <button 
-                        className="btn-primary"
-                        onClick={() => openScreenplayViewer(screenplay)}
-                      >
-                        Open Viewer
-                      </button>
-                      <button 
-                        className="btn-danger"
-                        onClick={() => handleDeleteScreenplay(screenplay.id)}
-                      >
-                        Delete
-                      </button>
-                    </div>
+                  <div style={{ display: 'flex', gap: 12 }}>
+                    <button
+                      className="btn-secondary"
+                      style={{ padding: '0.4rem 1rem', fontSize: '0.95em' }}
+                      onClick={() => openScreenplayViewer(screenplay)}
+                    >
+                      View
+                    </button>
+                    <button
+                      className="btn-danger"
+                      style={{ padding: '0.4rem 1rem', fontSize: '0.95em' }}
+                      onClick={() => handleDeleteScreenplay(screenplay.id)}
+                    >
+                      Delete
+                    </button>
                   </div>
-                </div>
+                </li>
               ))}
-            </div>
+            </ul>
           )}
         </div>
       </div>
