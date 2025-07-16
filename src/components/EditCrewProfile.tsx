@@ -6,9 +6,27 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import { ProjectEntry } from '../types/ProjectEntry';
 import { JobTitleEntry } from '../types/JobTitleEntry';
-import { EducationEntry } from '../types/CrewProfile';
+import { 
+  EducationEntry, 
+  EducationLevel, 
+  CrewProfileFormData, 
+  Residence, 
+  ContactInfo 
+} from '../types/CrewProfile';
+
+// Default education entry with all fields
+const getDefaultEducationEntry = (): Omit<EducationEntry, 'isCurrent'> => ({
+  institution: '',
+  place: '',
+  degree: '',
+  level: undefined,
+  fieldOfStudy: '',
+  startDate: '',
+  endDate: '',
+  grade: '',
+  description: ''
+});
 import { JOB_SUBCATEGORIES } from '../types/JobSubcategories';
-import { CrewProfileFormData, Residence, ContactInfo } from '../types/CrewProfile';
 import ResumeView from './ResumeView';
 import LocationSelector from './LocationSelector';
 
@@ -63,22 +81,16 @@ const EditCrewProfile: React.FC = () => {
   const ensureEducationFields = (eduArray: any[] = []): EducationEntry[] => {
     if (!Array.isArray(eduArray) || eduArray.length === 0) {
       return [{
-        institution: '',
-        place: '',
-        degree: '',
-        fieldOfStudy: '',
-        endDate: '',
+        ...getDefaultEducationEntry(),
         isCurrent: false
       }];
     }
     
-    // Migrate from 'country' to 'place' if needed
+    // Ensure all education entries have all required fields with proper defaults
     return eduArray.map(edu => ({
-      institution: edu?.institution || '',
+      ...getDefaultEducationEntry(),
+      ...edu,
       place: edu?.place || edu?.country || '', // Fallback to country for backward compatibility
-      degree: edu?.degree || '',
-      fieldOfStudy: edu?.fieldOfStudy || '',
-      endDate: edu?.endDate || '',
       isCurrent: Boolean(edu?.isCurrent)
     }));
   };
@@ -266,15 +278,68 @@ const EditCrewProfile: React.FC = () => {
     });
   };
 
-  // Get default education entry
+  // Get default education entry with enhanced fields
   const getDefaultEducationEntry = (): EducationEntry => ({
     institution: '',
     place: '',
     degree: '',
+    level: undefined,
     fieldOfStudy: '',
+    startDate: '',
     endDate: '',
+    grade: '',
+    description: '',
     isCurrent: false
   });
+
+  // Education level options for the dropdown
+  const educationLevels = [
+    { value: 'high_school', label: 'High School' },
+    { value: 'associate', label: 'Associate Degree' },
+    { value: 'bachelor', label: "Bachelor's Degree" },
+    { value: 'master', label: "Master's Degree" },
+    { value: 'phd', label: 'PhD/Doctorate' },
+    { value: 'professional_certification', label: 'Professional Certification' },
+    { value: 'other', label: 'Other' }
+  ];
+
+  // Format date for display (YYYY-MM to Month YYYY)
+  const formatDate = (dateString: string): string => {
+    if (!dateString) return '';
+    if (dateString === 'Present') return 'Present';
+    
+    const [year, month] = dateString.split('-');
+    const date = new Date(parseInt(year), parseInt(month) - 1);
+    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  };
+
+  // Validate education entry
+  const validateEducation = (edu: EducationEntry): { isValid: boolean; errors: Record<string, string> } => {
+    const errors: Record<string, string> = {};
+    
+    if (!edu.institution?.trim()) {
+      errors.institution = 'Institution name is required';
+    }
+    
+    if (edu.startDate && !/^\d{4}-\d{2}$/.test(edu.startDate)) {
+      errors.startDate = 'Invalid start date format (YYYY-MM)';
+    }
+    
+    if (!edu.isCurrent && !edu.endDate) {
+      errors.endDate = 'End date is required if not currently studying';
+    } else if (edu.endDate && edu.endDate !== 'Present' && !/^\d{4}-\d{2}$/.test(edu.endDate)) {
+      errors.endDate = 'Invalid end date format (YYYY-MM)';
+    }
+    
+    if (edu.startDate && edu.endDate && edu.endDate !== 'Present' && edu.startDate > edu.endDate) {
+      errors.endDate = 'End date must be after start date';
+    }
+    
+    return {
+      isValid: Object.keys(errors).length === 0,
+      errors
+    };
+  };
 
   // --- Handlers ---
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -421,8 +486,12 @@ const EditCrewProfile: React.FC = () => {
           institution: '',
           place: '',
           degree: '',
+          level: undefined,
           fieldOfStudy: '',
+          startDate: '',
           endDate: '',
+          grade: '',
+          description: '',
           isCurrent: false
         }
       ]
@@ -850,104 +919,243 @@ const EditCrewProfile: React.FC = () => {
                   </button>
                 </div>
 
-                {/* Education Section */}
+                {/* Enhanced Education Section */}
                 <div className="mb-8">
-                  <h3 className="text-lg font-light text-gray-900 mb-4 tracking-wide">Education</h3>
-                  {form.education.map((edu, i) => (
-                    <div key={i} className="mb-6 p-4 border border-gray-200 rounded-lg bg-white">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Institution</label>
-                          <input
-                            value={edu.institution || ''}
-                            onChange={e => updateEducation(i, 'institution', e.target.value)}
-                            placeholder="e.g., University of California, Los Angeles"
-                            className="w-full p-2 border border-gray-200 rounded focus:border-gray-400 focus:outline-none text-gray-900 text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Place</label>
-                          <input
-                            type="text"
-                            value={edu.place}
-                            onChange={e => updateEducation(i, 'place', e.target.value)}
-                            className="w-full p-2 border border-gray-200 rounded focus:border-gray-400 focus:outline-none text-gray-900 text-sm"
-                            placeholder="e.g., Spain or New York"
-                          />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Degree</label>
-                          <input
-                            value={edu.degree || ''}
-                            onChange={e => updateEducation(i, 'degree', e.target.value)}
-                            placeholder="e.g., Bachelor of Arts"
-                            className="w-full p-2 border border-gray-200 rounded focus:border-gray-400 focus:outline-none text-gray-900 text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Field of Study</label>
-                          <input
-                            value={edu.fieldOfStudy || ''}
-                            onChange={e => updateEducation(i, 'fieldOfStudy', e.target.value)}
-                            placeholder="e.g., Film Studies"
-                            className="w-full p-2 border border-gray-200 rounded focus:border-gray-400 focus:outline-none text-gray-900 text-sm"
-                          />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">
-                            {edu.isCurrent ? 'Graduation Year' : 'End Date'}
-                          </label>
-                          <input
-                            type={edu.isCurrent ? 'text' : 'month'}
-                            value={edu.isCurrent ? 'Present' : (edu.endDate || '')}
-                            onChange={e => updateEducation(i, 'endDate', e.target.value)}
-                            disabled={edu.isCurrent}
-                            className="w-full p-2 border border-gray-200 rounded focus:border-gray-400 focus:outline-none text-gray-900 text-sm disabled:bg-gray-50"
-                            placeholder="Graduation date"
-                          />
-                        </div>
-                        <div className="flex items-end">
-                          <label className="flex items-center text-sm text-gray-700 cursor-pointer h-full">
-                            <input
-                              type="checkbox"
-                              checked={!!edu.isCurrent}
-                              onChange={e => updateEducation(i, 'isCurrent', e.target.checked)}
-                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                            />
-                            <span className="ml-2">Currently studying</span>
-                          </label>
-                        </div>
-                      </div>
-                      {form.education.length > 1 && (
-                        <div className="flex justify-end mt-2">
-                          <button
-                            type="button"
-                            onClick={() => removeEducation(i)}
-                            className="text-red-600 hover:text-red-700 text-sm font-medium transition-colors flex items-center"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                            Remove Education
-                          </button>
-                        </div>
-                      )}
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-light text-gray-900 tracking-wide">Education</h3>
+                    <span className="text-sm text-gray-500">
+                      {form.education.length} {form.education.length === 1 ? 'entry' : 'entries'}
+                    </span>
+                  </div>
+                  
+                  {form.education.length === 0 ? (
+                    <div className="text-center py-8 px-4 border-2 border-dashed border-gray-200 rounded-lg">
+                      <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                      </svg>
+                      <h4 className="mt-2 text-sm font-medium text-gray-900">No education added</h4>
+                      <p className="mt-1 text-sm text-gray-500">Add your education history to showcase your background</p>
+                      <button
+                        type="button"
+                        onClick={addEducation}
+                        className="mt-4 inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                      >
+                        <svg className="-ml-0.5 mr-1.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        Add Education
+                      </button>
                     </div>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={addEducation}
-                    className="mt-2 flex items-center text-blue-600 hover:text-blue-700 font-medium text-sm transition-colors"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                    Add Another Education
-                  </button>
+                  ) : (
+                    <div className="space-y-4">
+                      {form.education.map((edu, i) => {
+                        const { errors } = validateEducation(edu);
+                        const hasErrors = Object.keys(errors).length > 0;
+                        
+                        return (
+                          <div 
+                            key={i} 
+                            className={`p-5 border rounded-lg bg-white transition-all duration-200 ${
+                              hasErrors ? 'border-red-300 bg-red-50' : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                          >
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                  Institution <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                  value={edu.institution}
+                                  onChange={e => updateEducation(i, 'institution', e.target.value)}
+                                  placeholder="e.g., University of California, Los Angeles"
+                                  className={`w-full p-2 border ${
+                                    errors.institution ? 'border-red-300' : 'border-gray-200'
+                                  } rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 text-sm`}
+                                />
+                                {errors.institution && (
+                                  <p className="mt-1 text-xs text-red-600">{errors.institution}</p>
+                                )}
+                              </div>
+                              
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                  Location
+                                </label>
+                                <input
+                                  type="text"
+                                  value={edu.place || ''}
+                                  onChange={e => updateEducation(i, 'place', e.target.value)}
+                                  className="w-full p-2 border border-gray-200 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 text-sm"
+                                  placeholder="e.g., Los Angeles, CA or Spain"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                  Degree/Qualification
+                                </label>
+                                <input
+                                  value={edu.degree || ''}
+                                  onChange={e => updateEducation(i, 'degree', e.target.value)}
+                                  placeholder="e.g., Bachelor of Arts"
+                                  className="w-full p-2 border border-gray-200 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 text-sm"
+                                />
+                              </div>
+                              
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                  Level of Education
+                                </label>
+                                <select
+                                  value={edu.level || ''}
+                                  onChange={e => updateEducation(i, 'level', e.target.value as EducationLevel)}
+                                  className="w-full p-2 border border-gray-200 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 text-sm bg-white"
+                                >
+                                  <option value="">Select level</option>
+                                  {educationLevels.map(level => (
+                                    <option key={level.value} value={level.value}>
+                                      {level.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                  Field of Study
+                                </label>
+                                <input
+                                  value={edu.fieldOfStudy || ''}
+                                  onChange={e => updateEducation(i, 'fieldOfStudy', e.target.value)}
+                                  placeholder="e.g., Film Studies, Computer Science"
+                                  className="w-full p-2 border border-gray-200 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 text-sm"
+                                />
+                              </div>
+                              
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                  Grade/GPA (optional)
+                                </label>
+                                <input
+                                  value={edu.grade || ''}
+                                  onChange={e => updateEducation(i, 'grade', e.target.value)}
+                                  placeholder="e.g., 3.8/4.0, First Class"
+                                  className="w-full p-2 border border-gray-200 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 text-sm"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                  Start Date
+                                </label>
+                                <input
+                                  type="month"
+                                  value={edu.startDate || ''}
+                                  onChange={e => updateEducation(i, 'startDate', e.target.value)}
+                                  className={`w-full p-2 border ${
+                                    errors.startDate ? 'border-red-300' : 'border-gray-200'
+                                  } rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 text-sm`}
+                                />
+                                {errors.startDate && (
+                                  <p className="mt-1 text-xs text-red-600">{errors.startDate}</p>
+                                )}
+                              </div>
+                              
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                  {edu.isCurrent ? 'Expected Graduation' : 'End Date'} 
+                                  {!edu.isCurrent && <span className="text-red-500">*</span>}
+                                </label>
+                                <div className="flex space-x-2">
+                                  <input
+                                    type={edu.isCurrent ? 'text' : 'month'}
+                                    value={edu.isCurrent ? 'Present' : (edu.endDate || '')}
+                                    onChange={e => updateEducation(i, 'endDate', e.target.value)}
+                                    disabled={edu.isCurrent}
+                                    className={`flex-1 p-2 border ${
+                                      errors.endDate ? 'border-red-300' : 'border-gray-200'
+                                    } rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 text-sm disabled:bg-gray-50`}
+                                  />
+                                  <label className="flex items-center px-3 py-2 border border-gray-200 rounded bg-white text-sm text-gray-700">
+                                    <input
+                                      type="checkbox"
+                                      checked={!!edu.isCurrent}
+                                      onChange={e => updateEducation(i, 'isCurrent', e.target.checked)}
+                                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                                    />
+                                    <span className="ml-2">Current</span>
+                                  </label>
+                                </div>
+                                {errors.endDate && (
+                                  <p className="mt-1 text-xs text-red-600">{errors.endDate}</p>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="mt-2">
+                              <label className="block text-xs font-medium text-gray-700 mb-1">
+                                Description (optional)
+                              </label>
+                              <textarea
+                                value={edu.description || ''}
+                                onChange={e => updateEducation(i, 'description', e.target.value)}
+                                placeholder="Notable achievements, coursework, or activities"
+                                rows={2}
+                                className="w-full p-2 border border-gray-200 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 text-sm"
+                              />
+                            </div>
+
+                            <div className="mt-4 flex justify-between items-center">
+                              <div>
+                                {hasErrors && (
+                                  <p className="text-xs text-red-600 flex items-center">
+                                    <svg className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                    </svg>
+                                    Please fix validation errors
+                                  </p>
+                                )}
+                              </div>
+                              
+                              <div className="flex space-x-2">
+                                {form.education.length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => removeEducation(i)}
+                                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
+                                  >
+                                    <svg className="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                    Remove
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      
+                      <div className="mt-2">
+                        <button
+                          type="button"
+                          onClick={addEducation}
+                          className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                        >
+                          <svg className="-ml-0.5 mr-1.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                          </svg>
+                          Add Another Education
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Profile Picture Section */}

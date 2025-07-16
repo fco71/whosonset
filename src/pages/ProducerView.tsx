@@ -232,193 +232,255 @@ const ProducerView: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
+      {/* Hero Section - Compact and focused */}
       <div className="bg-gradient-to-br from-gray-50 to-white border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-8 py-24">
-          <div className="text-center mb-16 animate-fade-in">
-            <h1 className="text-6xl font-light text-gray-900 mb-6 tracking-tight animate-slide-up">
-              Discover
-            </h1>
-            <h2 className="text-4xl font-light text-gray-600 mb-8 tracking-wide animate-slide-up-delay">
-              Creative Talent
-            </h2>
-            <p className="text-xl font-light text-gray-500 max-w-2xl mx-auto leading-relaxed animate-slide-up-delay-2">
-              Connect with exceptional crew members from around the world. 
-              Find the perfect collaborators for your next project.
-            </p>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
+          <div className="text-center animate-fade-in">
+            <div className="mb-6">
+              <h1 className="text-4xl md:text-5xl font-light text-gray-900 tracking-tight animate-slide-up">
+                Discover Creative Talent
+              </h1>
+              <div className="w-24 h-1 bg-indigo-500 mx-auto mt-4 mb-6 rounded-full"></div>
+              <p className="text-lg md:text-xl font-light text-gray-600 max-w-2xl mx-auto leading-relaxed animate-slide-up-delay">
+                Connect with exceptional crew members from around the world.
+              </p>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Filters Section */}
-      <div className="bg-white border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-8 py-12">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 animate-fade-in gap-4">
-            <div className="flex items-center gap-4 w-full md:w-auto">
-              <h3 className="text-2xl font-light text-gray-900 tracking-wide">Refine Search</h3>
+      {/* Filters Section - Improved layout and spacing */}
+      <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex flex-col md:flex-row items-start md:items-end justify-between mb-6 gap-4">
+            <div className="w-full">
+              <h3 className="text-xl font-medium text-gray-900 mb-2">Refine Your Search</h3>
+              <p className="text-sm text-gray-500">Find the perfect crew member for your project</p>
             </div>
           </div>
 
-          {/* Search Box on Top */}
-          <div className="w-full mb-6 animate-fade-in-delay">
-            <label htmlFor="search-crew" className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
-              Search
-            </label>
-            <div className="flex gap-2">
-              <div className="w-full">
-                <label htmlFor="search-crew" className="sr-only">Search crew members</label>
-                <input
-                  type="text"
-                  id="search-crew"
-                  name="searchCrew"
-                  value={filters.searchQuery || ''}
-                  onChange={(e) => handleFilterChange('searchQuery', e.target.value)}
-                  placeholder="Search by name, role, or skills..."
-                  className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02] h-12"
-                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                />
+          {/* Search Box - Enhanced */}
+          <div className="w-full mb-6">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                </svg>
               </div>
+              <input
+                type="text"
+                id="search-crew"
+                name="searchCrew"
+                value={filters.searchQuery || ''}
+                onChange={(e) => handleFilterChange('searchQuery', e.target.value)}
+                placeholder="Search by name, role, or skills..."
+                className="w-full pl-10 pr-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 transition-all duration-200"
+                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+              />
               <button
                 type="button"
                 onClick={handleSearch}
                 disabled={isSearching}
-                className="px-6 h-12 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                aria-label={isSearching ? 'Searching...' : 'Search crew members'}
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 px-4 py-1.5 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label={isSearching ? 'Searching...' : 'Search'}
                 aria-disabled={isSearching}
               >
-                {isSearching ? '🔍' : 'Search'}
+                {isSearching ? 'Searching...' : 'Search'}
               </button>
             </div>
           </div>
 
-          {/* Filters Row Below Search */}
-          <div className="flex flex-col md:flex-row md:items-end gap-4 md:gap-6 animate-fade-in-delay">
+          {/* Filters Row - Improved layout */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             {/* Department Filter */}
-            <div className="flex-1 min-w-[180px]">
+            <div className="w-full">
               <label 
                 htmlFor="department-filter"
-                className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider"
+                className="block text-sm font-medium text-gray-700 mb-1.5"
               >
                 Department
               </label>
-              <select
-                id="department-filter"
-                name="department"
-                value={filters.department}
-                onChange={(e) => handleFilterChange('department', e.target.value)}
-                className="w-full p-3 h-11 text-base bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light leading-tight transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
-                aria-label="Filter by department"
-              >
-                <option value="">All Departments</option>
-                {departments.map(dept => (
-                  <option key={dept.name} value={dept.name}>
-                    {dept.name}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                  id="department-filter"
+                  name="department"
+                  value={filters.department}
+                  onChange={(e) => handleFilterChange('department', e.target.value)}
+                  className="w-full pl-3 pr-10 py-2.5 text-base bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 appearance-none"
+                  aria-label="Filter by department"
+                >
+                  <option value="">All Departments</option>
+                  {departments.map(dept => (
+                    <option key={dept.name} value={dept.name}>
+                      {dept.name}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                  <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              </div>
             </div>
 
             {/* Job Title Filter */}
-            <div className="flex-1 min-w-[160px]">
+            <div className="w-full">
               <label 
                 htmlFor="role-filter"
-                className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider"
+                className="block text-sm font-medium text-gray-700 mb-1.5"
               >
                 Role
               </label>
-              <select
-                id="role-filter"
-                name="role"
-                value={filters.jobTitle}
-                onChange={(e) => handleFilterChange('jobTitle', e.target.value)}
-                className="w-full p-3 h-11 text-base bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light leading-tight transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
-                disabled={!filters.department}
-                aria-label="Filter by role"
-                aria-disabled={!filters.department}
-              >
-                <option value="">All Roles</option>
-                {getAvailableJobTitles().map(title => (
-                  <option key={title} value={title}>
-                    {title}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                  id="role-filter"
+                  name="role"
+                  value={filters.jobTitle}
+                  onChange={(e) => handleFilterChange('jobTitle', e.target.value)}
+                  className="w-full pl-3 pr-10 py-2.5 text-base bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 appearance-none disabled:opacity-50 disabled:bg-gray-50 disabled:cursor-not-allowed"
+                  disabled={!filters.department}
+                  aria-label="Filter by role"
+                  aria-disabled={!filters.department}
+                >
+                  <option value="">All Roles</option>
+                  {getAvailableJobTitles().map(title => (
+                    <option key={title} value={title}>
+                      {title}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                  <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              </div>
             </div>
 
             {/* Country Filter */}
-            <div className="flex-1 min-w-[160px]">
+            <div className="w-full">
               <label 
                 htmlFor="country-filter"
-                className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider"
+                className="block text-sm font-medium text-gray-700 mb-1.5"
               >
                 Country
               </label>
-              <select
-                id="country-filter"
-                name="country"
-                value={filters.country}
-                onChange={(e) => handleFilterChange('country', e.target.value)}
-                className="w-full p-3 h-11 text-base bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light leading-tight transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
-                aria-label="Filter by country"
-                autoComplete="country"
-              >
-                <option value="">All Countries</option>
-                {countries.map(country => (
-                  <option key={country.name} value={country.name}>
-                    {country.name}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                  id="country-filter"
+                  name="country"
+                  value={filters.country}
+                  onChange={(e) => handleFilterChange('country', e.target.value)}
+                  className="w-full pl-3 pr-10 py-2.5 text-base bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 appearance-none"
+                  aria-label="Filter by country"
+                  autoComplete="country"
+                >
+                  <option value="">All Countries</option>
+                  {countries.map(country => (
+                    <option key={country.name} value={country.name}>
+                      {country.name}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                  <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              </div>
             </div>
 
             {/* Availability Filter */}
-            <div className="flex-1 min-w-[140px]">
+            <div className="w-full">
               <label 
                 htmlFor="availability-filter"
-                className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider"
+                className="block text-sm font-medium text-gray-700 mb-1.5"
               >
                 Availability
               </label>
-              <select
-                id="availability-filter"
-                name="availability"
-                value={filters.availability}
-                onChange={(e) => handleFilterChange('availability', e.target.value)}
-                className="w-full p-3 h-11 text-base bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light leading-tight transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
-                aria-label="Filter by availability"
-              >
-                <option value="">All Status</option>
-                <option value="available">Available</option>
-                <option value="soon">Available Soon</option>
-                <option value="unavailable">Unavailable</option>
-              </select>
+              <div className="relative">
+                <select
+                  id="availability-filter"
+                  name="availability"
+                  value={filters.availability}
+                  onChange={(e) => handleFilterChange('availability', e.target.value)}
+                  className="w-full pl-3 pr-10 py-2.5 text-base bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 appearance-none"
+                  aria-label="Filter by availability"
+                >
+                  <option value="">All Status</option>
+                  <option value="available">Available</option>
+                  <option value="soon">Available Soon</option>
+                  <option value="unavailable">Unavailable</option>
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                  <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              </div>
             </div>
           </div>
-          {/* Reset link below filters */}
-          <div className="flex justify-end mt-2">
+          {/* Reset and Apply Buttons */}
+          <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-200">
             <button
               type="button"
               onClick={clearFilters}
-              className="text-gray-500 hover:underline text-sm font-medium bg-transparent border-none p-0 m-0 cursor-pointer"
-              style={{ minWidth: 0 }}
+              className="text-sm font-medium text-gray-600 hover:text-indigo-600 transition-colors duration-200 flex items-center"
             >
-              Reset
+              <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Reset Filters
+            </button>
+            <button
+              type="button"
+              onClick={handleSearch}
+              disabled={isSearching}
+              className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+            >
+              {isSearching ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Applying...
+                </>
+              ) : 'Apply Filters'}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Results Section */}
-      <div className="bg-gray-50">
-        <div className="max-w-7xl mx-auto px-8 py-16">
-          <div className="mb-12 animate-fade-in">
-            <div className="flex items-center justify-between">
-              <h3 className="text-3xl font-light text-gray-900 tracking-wide">
-                {filteredProfiles.length} {filteredProfiles.length === 1 ? 'Talent' : 'Talents'} Found
-              </h3>
-              {Object.values(appliedFilters).some(f => f) && (
-                <div className="text-sm font-light text-gray-500 tracking-wide">
-                  Showing filtered results
+      {/* Results Section - Enhanced */}
+      <div className="bg-gray-50 py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mb-10">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h2 className="text-2xl md:text-3xl font-light text-gray-900">
+                  {filteredProfiles.length} {filteredProfiles.length === 1 ? 'Talent' : 'Talents'} Found
+                </h2>
+                {Object.values(appliedFilters).some(f => f) && (
+                  <p className="mt-1 text-sm text-gray-500">
+                    Showing results matching your filters
+                  </p>
+                )}
+              </div>
+              
+              {filteredProfiles.length > 0 && (
+                <div className="flex-shrink-0">
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="inline-flex items-center px-3.5 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
+                  >
+                    <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Clear All Filters
+                  </button>
                 </div>
               )}
             </div>
@@ -426,26 +488,56 @@ const ProducerView: React.FC = () => {
 
           {/* Crew Profiles Grid */}
           {filteredProfiles.length === 0 ? (
-            <div className="text-center py-24 animate-fade-in">
-              <div className="text-8xl mb-8 opacity-20 animate-bounce-slow">🔍</div>
-              <h3 className="text-2xl font-light text-gray-900 mb-4 tracking-wide">
-                No talent found
-              </h3>
-              <p className="text-lg font-light text-gray-500 max-w-md mx-auto leading-relaxed">
-                Try adjusting your search criteria or check back later for new profiles
-              </p>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+              <div className="text-center py-16 px-4 sm:px-6 lg:px-8">
+                <div className="mx-auto flex items-center justify-center h-24 w-24 rounded-full bg-indigo-50 mb-6">
+                  <svg className="h-12 w-12 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No results found</h3>
+                <p className="text-gray-500 max-w-md mx-auto mb-6">
+                  We couldn't find any talent matching your criteria. Try adjusting your filters or search terms.
+                </p>
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
+                >
+                  Clear all filters
+                </button>
+              </div>
             </div>
           ) : (
-            <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 transition-all duration-500 ${isFiltering ? 'opacity-50 scale-95' : 'opacity-100 scale-100'}`}>
+            <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 transition-all duration-300 ${isFiltering ? 'opacity-50' : 'opacity-100'}`}>
               {filteredProfiles.map((profile, index) => (
-                <CrewProfileCard 
-                  key={profile.uid} 
-                  profile={profile} 
-                  index={index}
-                  isFiltering={isFiltering}
-                  currentUserId={currentUserId}
-                />
+                <div 
+                  key={profile.uid}
+                  className={`transform transition-all duration-300 ${isFiltering ? 'scale-95' : 'scale-100 hover:scale-[1.02]'}`}
+                  style={{
+                    transitionDelay: isFiltering ? '0ms' : `${Math.min(index * 30, 300)}ms`,
+                    opacity: isFiltering ? 0.7 : 1
+                  }}
+                >
+                  <CrewProfileCard 
+                    profile={profile}
+                    index={index}
+                    isFiltering={isFiltering}
+                    currentUserId={currentUserId}
+                  />
+                </div>
               ))}
+            </div>
+          )}
+          
+          {filteredProfiles.length > 0 && (
+            <div className="mt-10 flex justify-center">
+              <button
+                type="button"
+                className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
+              >
+                Load More
+              </button>
             </div>
           )}
         </div>

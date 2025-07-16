@@ -2,14 +2,59 @@ import { JobTitleEntry } from './JobTitleEntry';
 import { ProjectEntry } from './ProjectEntry';
 
 // Unified CrewProfile interface for the entire application
+export type EducationLevel = 
+  | 'high_school' 
+  | 'associate' 
+  | 'bachelor' 
+  | 'master' 
+  | 'phd' 
+  | 'professional_certification' 
+  | 'other';
+
 export interface EducationEntry {
-  institution?: string;
-  place?: string;  // Can be city, country, or both (e.g., 'New York' or 'Spain' or 'New York, USA')
+  /** Name of the educational institution */
+  institution: string;
+  
+  /** Location of the institution (city, country, or both) */
+  place?: string;
+  
+  /** Type of degree or certification */
   degree?: string;
+  
+  /** Level of education */
+  level?: EducationLevel;
+  
+  /** Field of study or major */
   fieldOfStudy?: string;
-  endDate?: string;   // YYYY-MM format or 'Present'
+  
+  /** End date in YYYY-MM format or 'Present' */
+  endDate?: string;
+  
+  /** Start date in YYYY-MM format */
+  startDate?: string;
+  
+  /** Whether the user is currently studying here */
   isCurrent?: boolean;
+  
+  /** Grade/GPA if applicable */
+  grade?: string;
+  
+  /** Additional notes or achievements */
+  description?: string;
 }
+
+/** Default empty education entry */
+export const DEFAULT_EDUCATION_ENTRY: Omit<EducationEntry, 'isCurrent'> = {
+  institution: '',
+  place: '',
+  degree: '',
+  level: undefined,
+  fieldOfStudy: '',
+  startDate: '',
+  endDate: '',
+  grade: '',
+  description: ''
+};
 
 export interface CrewProfile {
   uid: string;
