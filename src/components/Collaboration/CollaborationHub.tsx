@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   CollaborationWorkspace,
-  CollaborationChannel,
-  CollaborativeDocument,
-  Whiteboard,
   Task,
   VideoCall,
-  WorkspaceMember
+  WorkspaceMember,
+  CollaborationChannel,
+  CollaborativeDocument,
+  Whiteboard
 } from '../../types/Collaboration';
 import CollaborativeTasksHub from '../CollaborativeTasks/CollaborativeTasksHub';
 import ScreenplayBreakdown from '../ScreenplayBreakdown';
@@ -38,7 +38,7 @@ interface UserSearchResult {
 type WorkspaceCreationStep = 'details' | 'members' | 'settings';
 
 // Define TabType at the top of the file
-type TabType = 'workspaces' | 'channels' | 'documents' | 'whiteboards' | 'tasks' | 'screenplays';
+type TabType = 'workspaces' | 'tasks' | 'screenplays';
 
 // Error Boundary Component
 interface ErrorBoundaryProps {
@@ -87,14 +87,12 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreateWorkspaceModal, setShowCreateWorkspaceModal] = useState(false);
-  const [showCreateDocumentModal, setShowCreateDocumentModal] = useState(false);
-  const [showCreateWhiteboardModal, setShowCreateWhiteboardModal] = useState(false);
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showVideoCallModal, setShowVideoCallModal] = useState(false);
   const [showScreenplayViewer, setShowScreenplayViewer] = useState(false);
   const [showScreenplayModal, setShowScreenplayModal] = useState(false);
-  
+
   // Workspace creation state
   const [workspaceCreationStep, setWorkspaceCreationStep] = useState<WorkspaceCreationStep>('details');
   const [newWorkspaceData, setNewWorkspaceData] = useState({
@@ -111,34 +109,14 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       allowedFileTypes: ['pdf', 'doc', 'docx', 'txt', 'jpg', 'png']
     }
   });
-  
+
   // User search state
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [userSearchResults, setUserSearchResults] = useState<UserSearchResult[]>([]);
   const [isSearchingUsers, setIsSearchingUsers] = useState(false);
-  
-  // Document and whiteboard creation
-  const [newDocumentData, setNewDocumentData] = useState({
-    name: '',
-    type: 'notes',
-    tags: '',
-  });
-  const [newWhiteboardData, setNewWhiteboardData] = useState({
-    name: '',
-    description: '',
-  });
-  
+
   // Settings state
   const [workspaceSettings, setWorkspaceSettings] = useState(newWorkspaceData.settings);
-
-  const [showCreateChannelModal, setShowCreateChannelModal] = useState(false);
-  const [newChannelData, setNewChannelData] = useState({
-    name: '',
-    type: 'text',
-    isPrivate: false,
-  });
-
-  const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
 
   // Screenplay upload state
   const [screenplayFile, setScreenplayFile] = useState<File | null>(null);
@@ -343,8 +321,8 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       lastSeen: new Date()
     };
 
-    setWorkspaces(prev => prev.map(ws => 
-      ws.id === selectedWorkspace.id 
+    setWorkspaces(prev => prev.map(ws =>
+      ws.id === selectedWorkspace.id
         ? { ...ws, members: [...ws.members, newMember] }
         : ws
     ));
@@ -378,7 +356,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const handleCreateWorkspace = () => {
     try {
       console.log('Creating workspace with data:', newWorkspaceData);
-      
+
       const newWorkspace: CollaborationWorkspace = {
         id: Date.now().toString(),
         projectId: projectId || 'default-project',
@@ -386,13 +364,13 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         description: newWorkspaceData.description.trim(),
         type: newWorkspaceData.type,
         members: [
-          { 
-            userId: currentUser?.uid || 'default-user', 
-            role: 'admin', 
-            joinedAt: new Date(), 
-            permissions: ['read', 'write'], 
-            isOnline: true, 
-            lastSeen: new Date() 
+          {
+            userId: currentUser?.uid || 'default-user',
+            role: 'admin',
+            joinedAt: new Date(),
+            permissions: ['read', 'write'],
+            isOnline: true,
+            lastSeen: new Date()
           },
           ...newWorkspaceData.selectedMembers.map(user => ({
             userId: user.id,
@@ -404,9 +382,6 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
             lastSeen: new Date()
           }))
         ],
-        channels: [],
-        documents: [],
-        whiteboards: [],
         createdAt: new Date(),
         updatedAt: new Date(),
         settings: newWorkspaceData.settings
@@ -414,7 +389,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 
       setWorkspaces(prev => [...prev, newWorkspace]);
       setSelectedWorkspace(newWorkspace);
-      
+
       // Reset form
       setNewWorkspaceData({
         name: '',
@@ -455,150 +430,11 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     }));
   };
 
-  const handleCreateChannel = () => {
-    setShowCreateChannelModal(true);
-  };
-
-  const handleChannelFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedWorkspace) return;
-    if (!newChannelData.name.trim()) {
-      toast.error('Please enter a channel name');
-      return;
-    }
-    const newChannel: CollaborationChannel = {
-      id: Date.now().toString(),
-      workspaceId: selectedWorkspace.id,
-      name: newChannelData.name.trim(),
-      description: `Channel for ${newChannelData.name.trim()}`,
-      type: newChannelData.type as any,
-      members: [currentUser?.uid || 'default-user'],
-      messages: [],
-      isPrivate: newChannelData.isPrivate,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    setWorkspaces(prev => prev.map(ws =>
-      ws.id === selectedWorkspace.id
-        ? { ...ws, channels: [...ws.channels, newChannel] }
-        : ws
-    ));
-    setSelectedWorkspace(prev => prev ? {
-      ...prev,
-      channels: [...prev.channels, newChannel]
-    } : null);
-    setShowCreateChannelModal(false);
-    setNewChannelData({ name: '', type: 'text', isPrivate: false });
-    toast.success(`Channel "${newChannel.name}" created successfully!`);
-  };
-
-  const handleCreateDocument = () => {
-    setShowCreateDocumentModal(true);
-  };
-
-  const handleDocumentFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedWorkspace) return;
-    if (!newDocumentData.name.trim()) {
-      toast.error('Please enter a document name');
-      return;
-    }
-    const newDocument: CollaborativeDocument = {
-      id: Date.now().toString(),
-      workspaceId: selectedWorkspace.id,
-      title: newDocumentData.name.trim(),
-      content: '',
-      type: newDocumentData.type as any,
-      version: 1,
-      collaborators: [
-        { userId: currentUser?.uid || 'default-user', role: 'editor', isTyping: false, lastActivity: new Date() }
-      ],
-      changes: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      lastEditedBy: currentUser?.uid || 'default-user',
-    };
-    setWorkspaces(prev => prev.map(ws =>
-      ws.id === selectedWorkspace.id
-        ? { ...ws, documents: [...ws.documents, newDocument] }
-        : ws
-    ));
-    setSelectedWorkspace(prev => prev ? {
-      ...prev,
-      documents: [...prev.documents, newDocument]
-    } : null);
-    setShowCreateDocumentModal(false);
-    setNewDocumentData({ name: '', type: 'notes', tags: '' });
-    toast.success(`Document "${newDocument.title}" created successfully!`);
-  };
-
-  const handleCreateWhiteboard = () => {
-    setShowCreateWhiteboardModal(true);
-  };
-
-  const handleWhiteboardFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedWorkspace) return;
-    if (!newWhiteboardData.name.trim()) {
-      toast.error('Please enter a whiteboard name');
-      return;
-    }
-    const newWhiteboard: Whiteboard = {
-      id: Date.now().toString(),
-      workspaceId: selectedWorkspace.id,
-      name: newWhiteboardData.name.trim(),
-      elements: [],
-      collaborators: [
-        { userId: currentUser?.uid || 'default-user', cursor: { x: 0, y: 0 }, isDrawing: false, lastActivity: new Date() }
-      ],
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    setWorkspaces(prev => prev.map(ws =>
-      ws.id === selectedWorkspace.id
-        ? { ...ws, whiteboards: [...ws.whiteboards, newWhiteboard] }
-        : ws
-    ));
-    setSelectedWorkspace(prev => prev ? {
-      ...prev,
-      whiteboards: [...prev.whiteboards, newWhiteboard]
-    } : null);
-    setShowCreateWhiteboardModal(false);
-    setNewWhiteboardData({ name: '', description: '' });
-    toast.success(`Whiteboard "${newWhiteboard.name}" created successfully!`);
-  };
-
-  const handleJoinWorkspace = (workspaceId: string) => {
-    try {
-      console.log('Join workspace clicked:', workspaceId);
-      const workspace = workspaces.find(ws => ws.id === workspaceId);
-      if (workspace) {
-        setSelectedWorkspace(workspace);
-        toast.success(`Successfully joined workspace: ${workspace.name}`);
-      }
-    } catch (error) {
-      console.error('Error in handleJoinWorkspace:', error);
-    }
-  };
-
-  const handleWorkspaceSettings = (workspaceId: string) => {
-    try {
-      console.log('Workspace settings clicked:', workspaceId);
-      const workspace = workspaces.find(ws => ws.id === workspaceId);
-      if (workspace) {
-        setWorkspaceSettings(workspace.settings);
-        setShowSettingsModal(true);
-      }
-    } catch (error) {
-      console.error('Error in handleWorkspaceSettings:', error);
-    }
-  };
-
   const handleUpdateWorkspaceSettings = () => {
     if (!selectedWorkspace) return;
 
-    setWorkspaces(prev => prev.map(ws => 
-      ws.id === selectedWorkspace.id 
+    setWorkspaces(prev => prev.map(ws =>
+      ws.id === selectedWorkspace.id
         ? { ...ws, settings: workspaceSettings }
         : ws
     ));
@@ -618,6 +454,34 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       return;
     }
     setShowVideoCallModal(true);
+  };
+
+  // Handle joining a workspace
+  const handleJoinWorkspace = (workspaceId: string) => {
+    try {
+      console.log('Join workspace clicked:', workspaceId);
+      const workspace = workspaces.find(ws => ws.id === workspaceId);
+      if (workspace) {
+        setSelectedWorkspace(workspace);
+        toast.success(`Successfully joined workspace: ${workspace.name}`);
+      }
+    } catch (error) {
+      console.error('Error in handleJoinWorkspace:', error);
+    }
+  };
+
+  // Handle workspace settings
+  const handleWorkspaceSettings = (workspaceId: string) => {
+    try {
+      console.log('Workspace settings clicked:', workspaceId);
+      const workspace = workspaces.find(ws => ws.id === workspaceId);
+      if (workspace) {
+        setWorkspaceSettings(workspace.settings);
+        setShowSettingsModal(true);
+      }
+    } catch (error) {
+      console.error('Error in handleWorkspaceSettings:', error);
+    }
   };
 
   // Screenplay upload handlers (reference version)
@@ -770,7 +634,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     // You can add additional logic here to generate a comprehensive report
     // For now, we'll just show a toast notification
     toast.success('Generating screenplay breakdown report...');
-    
+
     // In a real implementation, you might want to:
     // 1. Collect all annotations and tags
     // 2. Generate a PDF report
@@ -799,7 +663,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 
   const loadUserScreenplays = async () => {
     if (!currentUser) return;
-    
+
     try {
       const screenplaysRef = collection(db, 'screenplays');
       // Query 1: uploadedBy == currentUser.uid
@@ -847,11 +711,11 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
           Create Workspace
         </button>
       </div>
-      
+
       <div className="workspaces-grid">
         {workspaces.map(workspace => (
-          <div 
-            key={workspace.id} 
+          <div
+            key={workspace.id}
             className={`workspace-card ${selectedWorkspace?.id === workspace.id ? 'selected' : ''}`}
             onClick={() => setSelectedWorkspace(workspace)}
           >
@@ -898,9 +762,9 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                 </div>
               </div>
             </div>
-            
+
             <p className="workspace-description" style={{ color: selectedWorkspace?.id === workspace.id ? '#666' : 'rgba(255,255,255,0.85)', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{workspace.description}</p>
-            
+
             <div className="workspace-stats">
               <div className="stat" style={{ color: selectedWorkspace?.id === workspace.id ? '#666' : 'rgba(255,255,255,0.85)' }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -921,9 +785,9 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                 <span className="stat-label" style={{ color: selectedWorkspace?.id === workspace.id ? '#666' : 'rgba(255,255,255,0.85)' }}>Online</span>
               </div>
             </div>
-            
+
             <div className="workspace-actions">
-              <button 
+              <button
                 className="btn-primary"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -937,7 +801,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                 </svg>
                 Join
               </button>
-              <button 
+              <button
                 className="btn-secondary"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -1219,9 +1083,9 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                 <input
                   type="number"
                   value={Math.round(workspaceSettings.maxFileSize / (1024 * 1024))}
-                  onChange={(e) => setWorkspaceSettings(prev => ({ 
-                    ...prev, 
-                    maxFileSize: (parseInt(e.target.value) || 100) * 1024 * 1024 
+                  onChange={(e) => setWorkspaceSettings(prev => ({
+                    ...prev,
+                    maxFileSize: (parseInt(e.target.value) || 100) * 1024 * 1024
                   }))}
                   className="form-input"
                   min="1"
@@ -1263,277 +1127,13 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     </div>
   );
 
-  const renderChannelsTab = () => (
-    <div className="channels-tab">
-      <div className="channels-header">
-        <h2>Channels</h2>
-        <button className="btn-primary" onClick={handleCreateChannel}>Create Channel</button>
-      </div>
-      
-      {selectedWorkspace ? (
-        <div className="channels-content">
-          <div className="channels-list">
-            {selectedWorkspace.channels.length === 0 ? (
-              <div className="no-channels">No channels yet. Create one to get started!</div>
-            ) : (
-              selectedWorkspace.channels.map((channel) => (
-                <div
-                  key={channel.id}
-                  className={`channel-item${selectedChannelId === channel.id ? ' selected' : ''}`}
-                  onClick={() => setSelectedChannelId(channel.id)}
-                  style={{ cursor: 'pointer', background: selectedChannelId === channel.id ? '#e3f2fd' : 'white', border: selectedChannelId === channel.id ? '1px solid #1976d2' : undefined }}
-                >
-                  <div className="channel-info">
-                    <span className="channel-icon">{channel.type === 'text' ? '#' : channel.type === 'voice' ? '🎤' : channel.type === 'video' ? '🎥' : '📢'}</span>
-                    <span className="channel-name">{channel.name}</span>
-                    <span className="channel-description">{channel.description}</span>
-                  </div>
-                  <div className="channel-stats">
-                    <span className="online-count">{channel.members.length} members</span>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-          <div className="channel-main-area" style={{ marginTop: '2rem', padding: '2rem', background: '#f9fafb', borderRadius: 8, minHeight: 200 }}>
-            {selectedChannelId ? (
-              (() => {
-                const channel = selectedWorkspace.channels.find(c => c.id === selectedChannelId);
-                if (!channel) return <div>Channel not found.</div>;
-                return (
-                  <div>
-                    <h3 style={{ marginBottom: 8 }}>{channel.type === 'text' ? '#' : channel.type === 'voice' ? '🎤' : channel.type === 'video' ? '🎥' : '📢'} {channel.name}</h3>
-                    <div style={{ color: '#666', marginBottom: 16 }}>{channel.description}</div>
-                    <div style={{ color: '#888', fontStyle: 'italic' }}>
-                      Welcome to <b>{channel.name}</b>!<br />
-                      (Channel chat/messages coming soon.)
-                    </div>
-                  </div>
-                );
-              })()
-            ) : (
-              <div style={{ color: '#888', fontStyle: 'italic' }}>Select a channel to view its details.</div>
-            )}
-          </div>
-        </div>
-      ) : (
-        <div className="no-workspace-selected">
-          <p>Please select a workspace to view channels</p>
-        </div>
-      )}
-
-      {showCreateChannelModal && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: 400, width: '90%' }}>
-            <div className="modal-header">
-              <h3>Create Channel</h3>
-              <button onClick={() => setShowCreateChannelModal(false)} className="close-btn">×</button>
-            </div>
-            <form className="modal-body" onSubmit={handleChannelFormSubmit}>
-              <div className="form-group">
-                <label>Channel Name *</label>
-                <input
-                  type="text"
-                  value={newChannelData.name}
-                  onChange={e => setNewChannelData(prev => ({ ...prev, name: e.target.value }))}
-                  className="form-input"
-                  placeholder="Enter channel name"
-                  autoFocus
-                />
-              </div>
-              <div className="form-group">
-                <label>Type</label>
-                <select
-                  value={newChannelData.type}
-                  onChange={e => setNewChannelData(prev => ({ ...prev, type: e.target.value }))}
-                  className="form-input"
-                >
-                  <option value="text">Text</option>
-                  <option value="voice">Voice</option>
-                  <option value="video">Video</option>
-                  <option value="announcement">Announcement</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={newChannelData.isPrivate}
-                    onChange={e => setNewChannelData(prev => ({ ...prev, isPrivate: e.target.checked }))}
-                  />
-                  Private Channel
-                </label>
-              </div>
-              <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', padding: '1.5rem 2rem 1rem 2rem' }}>
-                <button type="button" className="btn-secondary" onClick={() => setShowCreateChannelModal(false)}>Cancel</button>
-                <button type="submit" className="btn-primary">Create</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
-  const renderDocumentsTab = () => (
-    <div className="documents-tab">
-      <div className="tab-header">
-        <h3>Documents</h3>
-        <button className="btn-primary" onClick={handleCreateDocument}>Create Document</button>
-      </div>
-      
-      <div className="documents-grid">
-        {selectedWorkspace?.documents.map((doc) => (
-          <div key={doc.id} className="document-card">
-            <div className="document-header">
-              <h4 style={{ color: '#fff', fontWeight: 600 }}>{doc.title}</h4>
-              <span className="document-type">{doc.type}</span>
-            </div>
-            <div className="document-content">
-              <p style={{ color: 'rgba(255,255,255,0.85)', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>{doc.content.substring(0, 100)}...</p>
-            </div>
-            <div className="document-footer">
-              <div className="collaborators">
-                <span>Collaborators: {doc.collaborators.length}</span>
-              </div>
-              <div className="document-meta">
-                <span>v{doc.version}</span>
-                <span>{formatTimeAgo(doc.updatedAt)}</span>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {showCreateDocumentModal && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: 400, width: '90%' }}>
-            <div className="modal-header">
-              <h3>Create Document</h3>
-              <button onClick={() => setShowCreateDocumentModal(false)} className="close-btn">×</button>
-            </div>
-            <form className="modal-body" onSubmit={handleDocumentFormSubmit}>
-              <div className="form-group">
-                <label>Document Name *</label>
-                <input
-                  type="text"
-                  value={newDocumentData.name}
-                  onChange={e => setNewDocumentData(prev => ({ ...prev, name: e.target.value }))}
-                  className="form-input"
-                  placeholder="Enter document name"
-                  autoFocus
-                />
-              </div>
-              <div className="form-group">
-                <label>Type</label>
-                <select
-                  value={newDocumentData.type}
-                  onChange={e => setNewDocumentData(prev => ({ ...prev, type: e.target.value }))}
-                  className="form-input"
-                >
-                  <option value="script">Script</option>
-                  <option value="storyboard">Storyboard</option>
-                  <option value="schedule">Schedule</option>
-                  <option value="budget">Budget</option>
-                  <option value="notes">Notes</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Tags (comma separated)</label>
-                <input
-                  type="text"
-                  value={newDocumentData.tags}
-                  onChange={e => setNewDocumentData(prev => ({ ...prev, tags: e.target.value }))}
-                  className="form-input"
-                  placeholder="e.g. draft, scene 1, character"
-                />
-              </div>
-              <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', padding: '1.5rem 2rem 1rem 2rem' }}>
-                <button type="button" className="btn-secondary" onClick={() => setShowCreateDocumentModal(false)}>Cancel</button>
-                <button type="submit" className="btn-primary">Create</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
-  const renderWhiteboardsTab = () => (
-    <div className="whiteboards-tab">
-      <div className="tab-header">
-        <h3>Whiteboards</h3>
-        <button className="btn-primary" onClick={handleCreateWhiteboard}>Create Whiteboard</button>
-      </div>
-      
-      <div className="whiteboards-grid">
-        {selectedWorkspace?.whiteboards.map((wb) => (
-          <div key={wb.id} className="whiteboard-card">
-            <div className="whiteboard-header">
-              <h4 style={{ color: '#fff', fontWeight: 600 }}>{wb.name}</h4>
-            </div>
-            <div className="whiteboard-content">
-              <p style={{ color: 'rgba(255,255,255,0.85)' }}>Elements: {wb.elements.length}</p>
-            </div>
-            <div className="whiteboard-footer">
-              <div className="collaborators">
-                <span>Collaborators: {wb.collaborators.length}</span>
-              </div>
-              <div className="whiteboard-meta">
-                <span>{formatTimeAgo(wb.updatedAt)}</span>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {showCreateWhiteboardModal && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: 400, width: '90%' }}>
-            <div className="modal-header">
-              <h3>Create Whiteboard</h3>
-              <button onClick={() => setShowCreateWhiteboardModal(false)} className="close-btn">×</button>
-            </div>
-            <form className="modal-body" onSubmit={handleWhiteboardFormSubmit}>
-              <div className="form-group">
-                <label>Whiteboard Name *</label>
-                <input
-                  type="text"
-                  value={newWhiteboardData.name}
-                  onChange={e => setNewWhiteboardData(prev => ({ ...prev, name: e.target.value }))}
-                  className="form-input"
-                  placeholder="Enter whiteboard name"
-                  autoFocus
-                />
-              </div>
-              <div className="form-group">
-                <label>Description</label>
-                <textarea
-                  value={newWhiteboardData.description}
-                  onChange={e => setNewWhiteboardData(prev => ({ ...prev, description: e.target.value }))}
-                  className="form-input"
-                  placeholder="Describe the purpose or content of this whiteboard (optional)"
-                  rows={2}
-                />
-              </div>
-              <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', padding: '1.5rem 2rem 1rem 2rem' }}>
-                <button type="button" className="btn-secondary" onClick={() => setShowCreateWhiteboardModal(false)}>Cancel</button>
-                <button type="submit" className="btn-primary">Create</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
   const renderTasksTab = () => (
     <div className="tasks-tab">
       <div className="tasks-header">
         <h2>Tasks</h2>
         <p>Manage collaborative tasks and project workflows</p>
       </div>
-      
+
       <div className="tasks-content">
         <CollaborativeTasksHub projectId={projectId || 'default-project'} />
       </div>
@@ -1616,32 +1216,19 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   );
 
   const renderTabContent = () => {
-    try {
-      console.log('Rendering tab content for:', activeTab);
-      switch (activeTab as TabType) {
-        case 'workspaces':
-          return renderWorkspacesTab();
-        case 'channels':
-          return renderChannelsTab();
-        case 'documents':
-          return renderDocumentsTab();
-        case 'whiteboards':
-          return renderWhiteboardsTab();
-        case 'tasks':
-          return renderTasksTab();
-        case 'screenplays':
-          return renderScreenplaysTab();
-        default:
-          return renderWorkspacesTab();
-      }
-    } catch (error) {
-      console.error('Error rendering tab content:', error);
-      return (
-        <div className="error-content">
-          <h2>Error loading content</h2>
-          <p>Please try refreshing the page.</p>
-        </div>
-      );
+    switch (activeTab) {
+      case 'workspaces':
+        return renderWorkspacesTab();
+      case 'tasks':
+        return renderTasksTab();
+      case 'screenplays':
+        return renderScreenplaysTab();
+      default:
+        return (
+          <div className="error-content">
+            <p>Please try refreshing the page.</p>
+          </div>
+        );
     }
   };
 
@@ -1695,42 +1282,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                 <span className="nav-label">Workspaces</span>
               </button>
               
-              <button 
-                className={`nav-item ${activeTab === 'channels' ? 'active' : ''}`}
-                onClick={() => setActiveTab('channels')}
-              >
-                <svg className="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                </svg>
-                <span className="nav-label">Channels</span>
-              </button>
-              
-              <button 
-                className={`nav-item ${activeTab === 'documents' ? 'active' : ''}`}
-                onClick={() => setActiveTab('documents')}
-              >
-                <svg className="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                  <polyline points="14,2 14,8 20,8"/>
-                  <line x1="16" y1="13" x2="8" y2="13"/>
-                  <line x1="16" y1="17" x2="8" y2="17"/>
-                  <polyline points="10,9 9,9 8,9"/>
-                </svg>
-                <span className="nav-label">Documents</span>
-              </button>
-              
-              <button 
-                className={`nav-item ${activeTab === 'whiteboards' ? 'active' : ''}`}
-                onClick={() => setActiveTab('whiteboards')}
-              >
-                <svg className="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                  <circle cx="8.5" cy="8.5" r="1.5"/>
-                  <polyline points="21,15 16,10 5,21"/>
-                </svg>
-                <span className="nav-label">Whiteboards</span>
-              </button>
-              
+
               <button 
                 className={`nav-item ${activeTab === 'tasks' ? 'active' : ''}`}
                 onClick={() => setActiveTab('tasks')}

@@ -5,9 +5,9 @@ export interface CollaborationWorkspace {
   description: string;
   type: 'project' | 'department' | 'general';
   members: WorkspaceMember[];
-  channels: CollaborationChannel[];
-  documents: CollaborativeDocument[];
-  whiteboards: Whiteboard[];
+  channels?: CollaborationChannel[];  // Made optional
+  documents?: CollaborativeDocument[];  // Made optional
+  whiteboards?: Whiteboard[];  // Made optional
   createdAt: any;
   updatedAt: any;
   settings: WorkspaceSettings;
