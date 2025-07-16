@@ -1,7 +1,5 @@
-// ...existing code...
-console.log('DEBUG: App.tsx loaded, SocialPage import is:', SocialPage);
-import React, { Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from './theme/ThemeProvider';
 import { useAuth } from './contexts/AuthContext';
@@ -11,11 +9,12 @@ import '@fontsource/inter/600.css';
 import '@fontsource/inter/700.css';
 import './App.module.scss';
 
-// Import debug component directly for now to ensure it loads
+// Import components
 import Navigation from './components/Navigation';
 
-// Import pages
+// Import pages using relative paths
 import ProducerView from './pages/ProducerView';
+import HomePage from './pages/HomePage';
 import MyProjectsPage from './pages/MyProjectsPage';
 import FavoritesPage from './pages/FavoritesPage';
 import SavedCrewProfilesPage from './pages/SavedCrewProfilesPage';
@@ -26,7 +25,34 @@ import CollaborationPage from './pages/CollaborationPage';
 import SettingsPage from './pages/SettingsPage';
 import JobsPage from './pages/JobsPage';
 import PostJobPage from './pages/PostJobPage';
+import JobDetailPage from './pages/JobDetailPage';
 import DebugJobsPage from './pages/DebugJobsPage';
+import EditProfilePage from './pages/EditProfilePage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+
+// Protected Route Component for React Router v7
+const ProtectedRoute = ({ children, redirectTo = '/login' }: { children: React.ReactNode, redirectTo?: string }) => {
+  const { currentUser } = useAuth();
+  const location = useLocation();
+
+  if (!currentUser) {
+    return <Navigate to={redirectTo} state={{ from: location.pathname }} replace />;
+  }
+
+  return <>{children}</>;
+};
+
+// Public Route Component
+const PublicRoute = ({ children, redirectTo = '/' }: { children: React.ReactNode, redirectTo?: string }) => {
+  const { currentUser } = useAuth();
+  
+  if (currentUser) {
+    return <Navigate to={redirectTo} replace />;
+  }
+  
+  return <>{children}</>;
+};
 
 const fontFamily = 'Inter, sans-serif';
 
@@ -34,26 +60,95 @@ function App() {
   const { currentUser } = useAuth();
   return (
     <ThemeProvider>
-      <div className="min-h-screen bg-background text-foreground" style={{ fontFamily }}>
+      <div className="min-h-screen bg-background text-foreground" style={{ fontFamily: 'Inter, sans-serif' }}>
         <Router>
           <div className="min-h-screen bg-gray-50 text-gray-900">
-            <Navigation authUser={currentUser} userSignOut={() => { window.location.href = '/login'; }} />
+            <Navigation 
+              authUser={currentUser} 
+              userSignOut={() => { 
+                // Handle sign out logic here
+                window.location.href = '/login'; 
+              }} 
+            />
             <main className="container mx-auto px-4 py-8">
               <Routes>
-                <Route path="/" element={<ProducerView />} />
-                <Route path="/my-projects" element={<MyProjectsPage />} />
-                <Route path="/favorites" element={<FavoritesPage />} />
-// ...existing code...
-                <Route path="/saved-crew" element={<SavedCrewProfilesPage />} />
-                <Route path="/saved-projects" element={<SavedProjectsPage />} />
-                <Route path="/collections" element={<CollectionsHubPage />} />
-                <Route path="/social" element={<SocialPage />} />
-                <Route path="/collaboration" element={<CollaborationPage />} />
-                <Route path="/settings" element={currentUser ? <SettingsPage /> : <Navigate to="/login" />} />
+                {/* Public Routes */}
+                <Route index element={<HomePage />} />
+                <Route path="/crew" element={<ProducerView />} />
+                <Route path="/login" element={
+                  <PublicRoute>
+                    <LoginPage />
+                  </PublicRoute>
+                } />
+                <Route path="/register" element={
+                  <PublicRoute>
+                    <RegisterPage />
+                  </PublicRoute>
+                } />
+                
+                {/* Protected Routes */}
+                <Route path="/my-projects" element={
+                  <ProtectedRoute>
+                    <MyProjectsPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/favorites" element={
+                  <ProtectedRoute>
+                    <FavoritesPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/saved-crew" element={
+                  <ProtectedRoute>
+                    <SavedCrewProfilesPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/saved-projects" element={
+                  <ProtectedRoute>
+                    <SavedProjectsPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/collections" element={
+                  <ProtectedRoute>
+                    <CollectionsHubPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/social" element={
+                  <ProtectedRoute>
+                    <SocialPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/collaboration" element={
+                  <ProtectedRoute>
+                    <CollaborationPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/settings" element={
+                  <ProtectedRoute>
+                    <SettingsPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/edit-profile" element={
+                  <ProtectedRoute>
+                    <EditProfilePage />
+                  </ProtectedRoute>
+                } />
+                
+                {/* Job Related Routes */}
                 <Route path="/jobs" element={<JobsPage />} />
-                <Route path="/post-job" element={currentUser ? <PostJobPage /> : <Navigate to="/login" />} />
-                {/* Debug route - accessible at /debug-jobs */}
-                <Route path="/debug-jobs" element={<DebugJobsPage />} />
+                <Route path="/jobs/:id" element={<JobDetailPage />} />
+                <Route path="/post-job" element={
+                  <ProtectedRoute>
+                    <PostJobPage />
+                  </ProtectedRoute>
+                } />
+                
+                {/* Debug/Utility Routes */}
+                {process.env.NODE_ENV === 'development' && (
+                  <Route path="/debug-jobs" element={<DebugJobsPage />} />
+                )}
+                
+                {/* 404 Route - Keep this last */}
+                <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </main>
             

@@ -1,6 +1,6 @@
-// src/components/NavigationClean.tsx
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+// src/components/Navigation.tsx
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, User, ChevronDown } from 'lucide-react';
 
 interface NavigationProps {
@@ -9,8 +9,14 @@ interface NavigationProps {
 }
 
 const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
+    const location = useLocation();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+    const [activePath, setActivePath] = useState('/');
+
+    useEffect(() => {
+        setActivePath(location.pathname);
+    }, [location]);
 
     const toggleMobileMenu = () => {
         setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -31,18 +37,22 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
         setIsUserMenuOpen(false);
     };
 
-    const navigationLinks = [
+    const isActive = (path: string) => {
+        return activePath === path ? 'text-blue-700 font-semibold' : 'text-gray-800';
+    };
+
+        const navigationLinks = [
         { to: '/', label: 'Home' },
-        { to: '/projects', label: 'Projects' },
-        { to: '/jobs', label: 'Jobs' },
         { to: '/crew', label: 'Crew' },
+        { to: '/jobs', label: 'Jobs' },
+        { to: '/my-projects', label: 'Projects' },
+        { to: '/collaboration', label: 'Collaboration' },
     ];
 
     const authenticatedLinks = [
-        { to: '/my-projects', label: 'My Projects' },
-        { to: '/edit-profile', label: 'Resume Builder' },
         { to: '/social', label: 'Social' },
         { to: '/collaboration', label: 'Collaboration' },
+        { to: '/edit-profile', label: 'Resume Builder' },
     ];
 
     return (
@@ -67,7 +77,8 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                             <Link 
                                 key={link.to}
                                 to={link.to} 
-                                className="nav-link text-gray-800 text-base font-normal hover:text-blue-700 hover:underline underline-offset-4 transition-colors"
+                                className={`nav-link text-base font-normal hover:text-blue-700 hover:underline underline-offset-4 transition-colors ${isActive(link.to)}`}
+                                onClick={closeAllMenus}
                             >
                                 {link.label}
                             </Link>
@@ -76,7 +87,8 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                             <Link 
                                 key={link.to}
                                 to={link.to} 
-                                className="nav-link text-gray-800 text-base font-normal hover:text-blue-700 hover:underline underline-offset-4 transition-colors"
+                                className={`nav-link text-base font-normal hover:text-blue-700 hover:underline underline-offset-4 transition-colors ${isActive(link.to)}`}
+                                onClick={closeAllMenus}
                             >
                                 {link.label}
                             </Link>
@@ -113,20 +125,16 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                                     <div className="px-4 py-2 border-b border-gray-100">
                                         <p className="text-sm font-medium text-gray-900">{authUser.email}</p>
                                     </div>
-                                    <Link 
-                                        to="/profile" 
-                                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-700 transition-colors"
-                                        onClick={closeAllMenus}
-                                    >
-                                        Profile
-                                    </Link>
-                                    <Link 
-                                        to="/settings" 
-                                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-700 transition-colors"
-                                        onClick={closeAllMenus}
-                                    >
-                                        Settings
-                                    </Link>
+                                                                        {authenticatedLinks.map((link) => (
+                                        <Link 
+                                            key={link.to}
+                                            to={link.to} 
+                                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-700 transition-colors"
+                                            onClick={closeAllMenus}
+                                        >
+                                            {link.label}
+                                        </Link>
+                                    ))}
                                     <button 
                                         onClick={() => {
                                             userSignOut();

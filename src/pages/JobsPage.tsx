@@ -1,14 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { getJobPostings, createJobPosting, JobPosting } from '../services/api/jobService';
-import { getFirestore, collection, query, getDocs, where } from 'firebase/firestore';
+import { getFirestore, collection, query, getDocs, where, Timestamp } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 
+// Type guard to check if value is defined and not empty
+const hasValue = (value: any): boolean => 
+  value !== undefined && value !== null && value !== '' && !(Array.isArray(value) && value.length === 0);
 
-import { useNavigate } from 'react-router-dom';
-const hasValue = (value: any) => value !== undefined && value !== null && value !== '' && !(Array.isArray(value) && value.length === 0);
-const formatDate = (date: Date | string) => {
+// Format date for display
+const formatDate = (date: Date | string | undefined): string => {
   if (!date) return 'No date specified';
   const d = new Date(date);
   return isNaN(d.getTime()) ? 'Invalid date' : d.toLocaleDateString('en-US', {
@@ -18,13 +20,16 @@ const formatDate = (date: Date | string) => {
   });
 };
 
+
 interface JobCardProps {
   job: JobPosting;
   currentUserId?: string;
   onEdit?: (job: JobPosting) => void;
+  error?: string | null;
+  showIndexError?: boolean;
 }
 
-const JobCard: React.FC<JobCardProps> = ({ job, currentUserId, onEdit }) => {
+const JobCard: React.FC<JobCardProps> = ({ job, currentUserId, onEdit, error, showIndexError }) => {
   const navigate = useNavigate();
   return (
     <div
@@ -78,6 +83,36 @@ const JobCard: React.FC<JobCardProps> = ({ job, currentUserId, onEdit }) => {
           {job.location}
         </div>
       )}
+      {error && (
+        <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6 rounded-lg">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-red-700">{error}</p>
+              {showIndexError && (
+                <div className="mt-2">
+                  <p className="text-xs text-red-600">
+                    If you're the site administrator, please create the required Firestore index by following this link:
+                  </p>
+                  <a 
+                    href="https://console.firebase.google.com/v1/r/project/whosonsetdepez/firestore/indexes?create_composite=Cktwcm9qZWN0cy93aG9zb25zZXRkZXBlei9kYXRhYmFzZXMvKGRlZmF1bHQpL2NvbGxlY3Rpb25Hcm91cHMvam9icy9pbmRleGVzL18QARoKCgZzdGF0dXMQARoNCgljcmVhdGVkQXQQAhoMCghfX25hbWVfXxAC"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-blue-600 hover:underline mt-1 inline-block"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    Create Firestore Index
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       {/* Salary */}
       {job.showSalary && ((job.salaryMin && job.salaryMin > 0) || (job.salaryMax && job.salaryMax > 0)) && (
         <div className="text-xs font-semibold text-gray-900 mb-1">
@@ -122,12 +157,51 @@ const JobCard: React.FC<JobCardProps> = ({ job, currentUserId, onEdit }) => {
   );
 };
 
-export default function JobsPage() {
+const JobsPage: React.FC = () => {
+  const auth = useAuth();
+  const navigate = useNavigate();
+  
+  // State management
   const [jobs, setJobs] = useState<JobPosting[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const auth = useAuth();
-  
+  const [showIndexError, setShowIndexError] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedDepartment, setSelectedDepartment] = useState<string>('all');
+  const [selectedLocation, setSelectedLocation] = useState<string>('all');
+
+  // Extract unique departments and locations for filters
+  const departments = React.useMemo(() => {
+    const depts = new Set<string>();
+    jobs.forEach(job => {
+      if (job.department) depts.add(job.department);
+    });
+    return ['all', ...Array.from(depts).sort()];
+  }, [jobs]);
+
+  const locations = React.useMemo(() => {
+    const locs = new Set<string>();
+    jobs.forEach(job => {
+      if (job.location) locs.add(job.location);
+    });
+    return ['all', ...Array.from(locs).sort()];
+  }, [jobs]);
+
+  // Filter jobs based on search and filters
+  const filteredJobs = React.useMemo(() => {
+    return jobs.filter(job => {
+      const matchesSearch = !searchQuery || 
+        (job.title?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (job.postedById?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (job.description?.toLowerCase().includes(searchQuery.toLowerCase()));
+      
+      const matchesDepartment = selectedDepartment === 'all' || job.department === selectedDepartment;
+      const matchesLocation = selectedLocation === 'all' || job.location === selectedLocation;
+      
+      return matchesSearch && matchesDepartment && matchesLocation;
+    });
+  }, [jobs, searchQuery, selectedDepartment, selectedLocation]);
+
   // Debug: Log component mount and initial state
   useEffect(() => {
     console.log('JobsPage mounted');
@@ -142,7 +216,7 @@ export default function JobsPage() {
   }, [auth.currentUser]);
 
   // Check Firestore for jobs directly with enhanced logging
-  const checkFirestoreJobs = async () => {
+  const checkFirestoreJobs = useCallback(async (): Promise<JobPosting[]> => {
     console.group('=== checkFirestoreJobs() ===');
     console.log('Starting direct Firestore check...');
     
@@ -165,8 +239,25 @@ export default function JobsPage() {
           
           if (querySnapshot.size > 0) {
             const jobsData = querySnapshot.docs.map(doc => {
-              const data = doc.data();
+              const data = doc.data() as Partial<JobPosting> & { 
+                createdAt?: Timestamp | Date; 
+                updatedAt?: Timestamp | Date;
+              };
               console.log(`Document ${doc.id}:`, data);
+              
+              // Handle Timestamp or Date conversion with proper type checking
+              const getDateFromFirestore = (dateValue: Timestamp | Date | string | undefined): Date => {
+                if (!dateValue) return new Date();
+                if (dateValue instanceof Date) return dateValue;
+                if (typeof dateValue === 'string') return new Date(dateValue);
+                if (typeof dateValue === 'object' && 'toDate' in dateValue) {
+                  return (dateValue as Timestamp).toDate();
+                }
+                return new Date();
+              };
+              
+              const createdAt = getDateFromFirestore(data.createdAt);
+              const updatedAt = getDateFromFirestore(data.updatedAt);
               
               // Create a properly typed job object with defaults
               const job: JobPosting = {
@@ -195,13 +286,13 @@ export default function JobsPage() {
                 isUnion: data.isUnion || false,
                 visaSponsorship: data.visaSponsorship || false,
                 relocationAssistance: data.relocationAssistance || false,
-                status: data.status || 'published', // Default to published if not set
+                status: data.status || 'published',
                 postedById: data.postedById || '',
                 createdBy: data.createdBy || data.postedById || '',
                 applicationCount: data.applicationCount || 0,
                 views: data.views || 0,
-                createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
-                updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date()
+                createdAt,
+                updatedAt
               };
               
               console.log(`Processed job ${doc.id}:`, job);
@@ -226,46 +317,36 @@ export default function JobsPage() {
       console.groupEnd();
       return [];
     }
-  };
+  }, []);
 
   // Fetch jobs with enhanced error handling and logging
-  const fetchJobs = async () => {
+  const fetchJobs = useCallback(async () => {
     console.group('=== fetchJobs() ===');
     console.log('Starting job fetch...');
     setLoading(true);
+    setError(null);
+    setShowIndexError(false);
     
     try {
       console.log('Current auth state:', { 
         isAuthenticated: !!auth.currentUser,
         userId: auth.currentUser?.uid 
       });
-      console.log('Attempt 1: Fetching jobs with status: published');
-      const jobList = await getJobPostings({ status: 'published' });
-      console.log(`Found ${jobList.length} jobs via service`);
+      
+      console.log('Fetching jobs...');
+      const jobList = await getJobPostings();
+      console.log(`Found ${jobList.length} jobs`);
       
       if (jobList.length > 0) {
-        console.log('Jobs found via service, updating state');
+        console.log('Jobs found, updating state');
         setJobs(jobList);
         setError(null);
         return;
       }
       
-      // If no jobs found with status=published, try without status filter
-      console.log('No published jobs found. Trying without status filter...');
-      const allJobs = await getJobPostings({ status: 'all' });
-      console.log(`Found ${allJobs.length} total jobs (no status filter)`);
-      
-      if (allJobs.length > 0) {
-        console.log('Jobs found without status filter, updating state');
-        setJobs(allJobs);
-        setError(null);
-        return;
-      }
-      
-      // If still no jobs, try direct Firestore query
-      console.log('No jobs found via service, trying direct Firestore query...');
+      console.log('No jobs found, checking Firestore directly...');
       const directJobs = await checkFirestoreJobs();
-      console.log(`Found ${directJobs.length} jobs via direct Firestore query`);
+      console.log(`Found ${directJobs.length} jobs via direct query`);
       
       if (directJobs.length > 0) {
         console.log('Jobs found via direct query, updating state');
@@ -275,12 +356,20 @@ export default function JobsPage() {
       }
       
       // If we get here, no jobs were found
-      console.log('No jobs found in any collection');
+      console.log('No jobs found');
       setJobs([]);
       
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error in fetchJobs:', err);
-      setError('Failed to load jobs. Please check the console for details.');
+      
+      // Check if this is a Firestore index error
+      if (err.code === 'failed-precondition' && err.message.includes('index')) {
+        console.log('Firestore index error detected');
+        setShowIndexError(true);
+        setError('Database index is being created. Please wait a few minutes and refresh the page.');
+      } else {
+        setError('Failed to load jobs. Please try again later.');
+      }
       
       // Try direct Firestore as last resort
       try {
@@ -300,7 +389,7 @@ export default function JobsPage() {
       console.groupEnd();
       setLoading(false);
     }
-  };
+  }, [auth.currentUser, checkFirestoreJobs]);
 
   // Create a test job with proper typing
   const createTestJob = async () => {
@@ -369,105 +458,92 @@ export default function JobsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Job Board</h1>
-            <p className="mt-1 text-sm text-gray-600">
-              {jobs.length} {jobs.length === 1 ? 'job' : 'jobs'} available
-            </p>
-          </div>
-          {/* Only show Post a Job button if user is signed in */}
-          {auth.currentUser ? (
-            <Link to="/post-job" className="w-full sm:w-auto">
-              <Button className="w-full">
-                Post a Job
-              </Button>
-            </Link>
-          ) : null}
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Job Board</h1>
+          <p className="text-lg text-gray-600">Find your next opportunity in the film industry</p>
         </div>
-
-        {jobs.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm p-8 text-center border border-gray-200">
-            <svg 
-              className="mx-auto h-12 w-12 text-gray-400" 
-              fill="none" 
-              viewBox="0 0 24 24" 
-              stroke="currentColor"
-            >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={1.5} 
-                d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" 
-              />
-            </svg>
-            <h3 className="mt-4 text-lg font-medium text-gray-900">No jobs found</h3>
-            <p className="mt-1 text-sm text-gray-500 max-w-md mx-auto">
-              There are currently no job postings. Check back later or post a new job.
-            </p>
-            <div className="mt-6">
-              {auth.currentUser ? (
-                <Link to="/post-job">
-                  <Button>Post a Job</Button>
-                </Link>
-              ) : null}
-              {!auth.currentUser && (
-                <p className="text-sm text-gray-600">
-                  <Link to="/login" className="text-blue-600 hover:underline">Sign in</Link> to post a job
-                </p>
+        
+        {/* Main Content */}
+        <div className="space-y-8">
+          {/* Jobs List */}
+          <div className="bg-white rounded-xl shadow-md p-6">
+            <div className="space-y-4">
+              <div className="flex items-center text-sm text-gray-500 mb-4">
+                <svg className="h-5 w-5 text-gray-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <span>Showing {jobs.length} {jobs.length === 1 ? 'job' : 'jobs'}</span>
+              </div>
+              
+              {loading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+                  <p className="mt-2 text-gray-600">Loading jobs...</p>
+                </div>
+              ) : error ? (
+                <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm text-red-700">{error}</p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {jobs.map((job) => (
+                    <JobCard 
+                      key={job.id} 
+                      job={job} 
+                      currentUserId={auth.currentUser?.uid}
+                      onEdit={undefined}
+                      error={error}
+                      showIndexError={showIndexError}
+                    />
+                  ))}
+                </div>
               )}
             </div>
           </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="bg-white rounded-lg shadow-sm p-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-medium text-gray-900">
-                  Available Jobs
-                </h2>
-                <span className="text-sm text-gray-500">
-                  Showing {jobs.length} {jobs.length === 1 ? 'job' : 'jobs'}
-                </span>
+          
+          {/* Debug Panel */}
+          <div className="mt-8 p-4 bg-yellow-50 rounded-lg border border-yellow-300">
+            <h3 className="text-sm font-bold text-yellow-900 mb-3">Debug Information (Visible to All Users)</h3>
+            <div className="text-xs font-mono bg-black text-green-400 p-3 rounded overflow-x-auto">
+              <div className="mb-2">Jobs in state: <span className="text-white">{jobs.length}</span></div>
+              <div className="mb-2">Error: <span className="text-red-400">{error ? error : 'None'}</span></div>
+              <div className="mb-2">Raw jobs array:</div>
+              <pre className="whitespace-pre-wrap text-xs text-green-200 bg-black p-2 rounded mt-2 max-h-96 overflow-y-auto">
+                {JSON.stringify(jobs, null, 2)}
+              </pre>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button 
+                  onClick={fetchJobs}
+                  className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
+                >
+                  Refresh Jobs
+                </button>
+                <button 
+                  onClick={createTestJob}
+                  className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
+                >
+                  Create Test Job
+                </button>
               </div>
-            </div>
-            
-            <div className="space-y-4">
-              {jobs.map((job) => (
-                <JobCard key={job.id} job={job} currentUserId={auth.currentUser?.uid} />
-              ))}
-            </div>
-          </div>
-        )}
-        
-        {/* Debug panel - always visible for troubleshooting */}
-        <div className="mt-12 p-4 bg-yellow-50 rounded-lg border border-yellow-300">
-          <h3 className="text-sm font-bold text-yellow-900 mb-3">Debug Information (Visible to All Users)</h3>
-          <div className="text-xs font-mono bg-black text-green-400 p-3 rounded overflow-x-auto">
-            <div className="mb-2">Jobs in state: <span className="text-white">{jobs.length}</span></div>
-            <div className="mb-2">Error: <span className="text-red-400">{error ? error : 'None'}</span></div>
-            <div className="mb-2">Raw jobs array:</div>
-            <pre className="whitespace-pre-wrap text-xs text-green-200 bg-black p-2 rounded mt-2 max-h-96 overflow-y-auto">{JSON.stringify(jobs, null, 2)}</pre>
-            <div className="mt-2 flex flex-wrap gap-2">
-              <button 
-                onClick={fetchJobs}
-                className="text-blue-400 hover:text-blue-300 underline"
-              >
-                Refresh Jobs
-              </button>
-              <button 
-                onClick={createTestJob}
-                className="text-blue-400 hover:text-blue-300 underline ml-2"
-              >
-                Create Test Job
-              </button>
-            </div>
-            <div className="mt-2 text-gray-500">
-              This debug panel is always visible for troubleshooting. If you see jobs here but not in the main list, there may be a display or mapping issue.
+              <div className="mt-3 text-gray-500 text-xs">
+                This debug panel is always visible for troubleshooting. If you see jobs here but not in the main list, there may be a display or mapping issue.
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
   );
-}
+};
+
+export default JobsPage;
