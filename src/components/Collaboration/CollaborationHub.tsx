@@ -3,11 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import {
   CollaborationWorkspace,
   Task,
-  VideoCall,
-  WorkspaceMember,
-  CollaborationChannel,
-  CollaborativeDocument,
-  Whiteboard
+  WorkspaceMember
 } from '../../types/Collaboration';
 import CollaborativeTasksHub from '../CollaborativeTasks/CollaborativeTasksHub';
 import ScreenplayBreakdown from '../ScreenplayBreakdown';
@@ -32,6 +28,31 @@ interface UserSearchResult {
   avatar?: string;
   role?: string;
   company?: string;
+}
+
+// Screenplay interface
+interface Screenplay {
+  id: string;
+  name: string;
+  type: string;
+  url: string;
+  uploadedBy?: string;
+  teamMembers?: string[];
+  uploadedAt?: Date | { seconds: number; nanoseconds: number };
+  lastModified?: Date | { seconds: number; nanoseconds: number };
+  size?: number;
+}
+
+// Screenplay Annotation interface
+interface ScreenplayAnnotation {
+  id: string;
+  userId: string;
+  userName: string;
+  annotation: string;
+  timestamp: Date;
+  page?: string;
+  scene?: string;
+  screenplayId?: string;
 }
 
 // Workspace creation step
@@ -89,7 +110,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const [showCreateWorkspaceModal, setShowCreateWorkspaceModal] = useState(false);
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [showVideoCallModal, setShowVideoCallModal] = useState(false);
+  // Video call functionality will be added in a future update
   const [showScreenplayViewer, setShowScreenplayViewer] = useState(false);
   const [showScreenplayModal, setShowScreenplayModal] = useState(false);
 
@@ -121,24 +142,10 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   // Screenplay upload state
   const [screenplayFile, setScreenplayFile] = useState<File | null>(null);
   const [uploadingScreenplay, setUploadingScreenplay] = useState(false);
-  const [uploadedScreenplay, setUploadedScreenplay] = useState<{
-    id: string;
-    name: string;
-    url: string;
-    type: string;
-    size?: number;
-  } | null>(null);
+  const [uploadedScreenplay, setUploadedScreenplay] = useState<Screenplay | null>(null);
 
   // Screenplay collaboration state
-  const [screenplayAnnotations, setScreenplayAnnotations] = useState<{
-    id: string;
-    userId: string;
-    userName: string;
-    annotation: string;
-    timestamp: Date;
-    page?: string;
-    scene?: string;
-  }[]>([]);
+  const [screenplayAnnotations, setScreenplayAnnotations] = useState<ScreenplayAnnotation[]>([]);
   const [newAnnotation, setNewAnnotation] = useState('');
 
   const [teamMembers, setTeamMembers] = useState<{
@@ -150,7 +157,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     isOnline?: boolean;
   }[]>([]);
 
-  const [userScreenplays, setUserScreenplays] = useState<any[]>([]);
+  const [userScreenplays, setUserScreenplays] = useState<Screenplay[]>([]);
   const [selectedScreenplayId, setSelectedScreenplayId] = useState<string | null>(null);
 
   const [approvedContacts, setApprovedContacts] = useState<string[]>([]);
@@ -160,6 +167,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     loadWorkspaces();
     loadTeamMembers();
     if (!currentUser) return;
+    
     // Load all screenplays for this user (uploaded or as team member)
     const fetchScreenplays = async () => {
       try {
@@ -168,15 +176,37 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         const snap1 = await getDocs(q1);
         const q2 = query(screenplaysRef, where('teamMembers', 'array-contains', currentUser.uid));
         const snap2 = await getDocs(q2);
+        
+        // Combine and deduplicate screenplays
         const allScreenplays = [...snap1.docs, ...snap2.docs];
         const uniqueScreenplays = Array.from(
-          new Map(allScreenplays.map(doc => [doc.id, { id: doc.id, ...doc.data() }])).values()
-        );
+          new Map(
+            allScreenplays.map(doc => {
+              const data = doc.data();
+              // Ensure we have all required fields and handle timestamps
+              const screenplay: Screenplay = {
+                id: doc.id,
+                name: data.name || 'Untitled Screenplay',
+                type: data.type || 'pdf',
+                url: data.url || '',
+                uploadedBy: data.uploadedBy,
+                teamMembers: data.teamMembers || [],
+                size: data.size,
+                // Convert Firestore timestamps to Date objects
+                uploadedAt: data.uploadedAt?.toDate ? data.uploadedAt.toDate() : data.uploadedAt,
+                lastModified: data.lastModified?.toDate ? data.lastModified.toDate() : data.lastModified
+              };
+              return [doc.id, screenplay];
+            })
+          ).values()
+        ) as Screenplay[];
+        
         setUserScreenplays(uniqueScreenplays);
       } catch (err) {
         console.error('Error fetching user screenplays:', err);
       }
     };
+    
     fetchScreenplays();
   }, [currentUser, projectId]);
 
@@ -448,13 +478,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     toast.success('Workspace settings updated successfully!');
   };
 
-  const handleStartVideoCall = () => {
-    if (!selectedWorkspace) {
-      toast.error('Please select a workspace first');
-      return;
-    }
-    setShowVideoCallModal(true);
-  };
+  // Video call functionality will be added in a future update
 
   // Handle joining a workspace
   const handleJoinWorkspace = (workspaceId: string) => {
@@ -484,50 +508,58 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     }
   };
 
-  // Screenplay upload handlers (reference version)
+  // Screenplay upload handler
   const handleScreenplayUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setScreenplayFile(file);
-      setUploadingScreenplay(true);
-      try {
-        const storageRef = ref(storage, `screenplays/${Date.now()}_${file.name}`);
-        const snapshot = await uploadBytes(storageRef, file);
-        const downloadURL = await getDownloadURL(snapshot.ref);
-        const screenplayData = {
-          name: file.name,
-          url: downloadURL,
-          type: file.type,
-          projectId: projectId || 'default-project',
-          uploadedBy: currentUser?.uid || 'unknown',
-          uploadedAt: new Date(),
-          teamMembers: teamMembers.map(member => member.id),
-          size: file.size
-        };
-        const docRef = await addDoc(collection(db, 'screenplays'), screenplayData);
-        const uploadedFile = {
-          id: docRef.id,
-          name: file.name,
-          url: downloadURL,
-          type: file.type,
-          size: file.size
-        };
-        setUploadedScreenplay(uploadedFile);
-        setScreenplayFile(null);
-        setUserScreenplays(prev => [...prev, {
-          ...uploadedFile,
-          uploadedAt: { seconds: Math.floor(Date.now() / 1000) }
-        }]);
-        toast.success(`${file.name} uploaded successfully!`);
-        loadTeamMembers();
-      } catch (error) {
-        console.error('Error uploading screenplay:', error);
-        toast.error('Failed to upload screenplay');
-      } finally {
-        setUploadingScreenplay(false);
-      }
+    if (!file || !currentUser) return;
+
+    setScreenplayFile(file);
+    setUploadingScreenplay(true);
+
+    try {
+      // Upload file to storage
+      const storageRef = ref(storage, `screenplays/${Date.now()}_${file.name}`);
+      const snapshot = await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(snapshot.ref);
+      
+      // Create screenplay data with proper typing
+      const now = new Date();
+      const screenplayData: Omit<Screenplay, 'id'> = {
+        name: file.name,
+        type: file.type || 'application/octet-stream',
+        url: downloadURL,
+        uploadedBy: currentUser.uid,
+        teamMembers: [currentUser.uid],
+        size: file.size,
+        uploadedAt: now,
+        lastModified: now
+      };
+
+      // Save to Firestore
+      const docRef = await addDoc(collection(db, 'screenplays'), screenplayData);
+      
+      // Create the complete screenplay object with ID
+      const uploadedScreenplay: Screenplay = {
+        ...screenplayData,
+        id: docRef.id
+      };
+
+      // Update state
+      setUploadedScreenplay(uploadedScreenplay);
+      setScreenplayFile(null);
+      
+      // Update the screenplays list
+      setUserScreenplays(prev => [...prev, uploadedScreenplay]);
+      
+      toast.success(`${file.name} uploaded successfully!`);
+      loadTeamMembers();
+    } catch (error) {
+      console.error('Error uploading screenplay:', error);
+      toast.error('Failed to upload screenplay');
+    } finally {
+      setUploadingScreenplay(false);
+      e.target.value = '';
     }
-    e.target.value = '';
   };
 
   const loadTeamMembers = async () => {
@@ -672,11 +704,31 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       // Query 2: teamMembers array-contains currentUser.uid
       const q2 = query(screenplaysRef, where('teamMembers', 'array-contains', currentUser.uid));
       const snap2 = await getDocs(q2);
-      // Merge and deduplicate
+      
+      // Combine and deduplicate screenplays
       const allScreenplays = [...snap1.docs, ...snap2.docs];
       const uniqueScreenplays = Array.from(
-        new Map(allScreenplays.map(doc => [doc.id, { id: doc.id, ...doc.data() }])).values()
-      );
+        new Map(
+          allScreenplays.map(doc => {
+            const data = doc.data();
+            // Ensure we have all required fields and handle timestamps
+            const screenplay: Screenplay = {
+              id: doc.id,
+              name: data.name || 'Untitled Screenplay',
+              type: data.type || 'pdf',
+              url: data.url || '',
+              uploadedBy: data.uploadedBy,
+              teamMembers: data.teamMembers || [],
+              size: data.size,
+              // Convert Firestore timestamps to Date objects
+              uploadedAt: data.uploadedAt?.toDate ? data.uploadedAt.toDate() : data.uploadedAt,
+              lastModified: data.lastModified?.toDate ? data.lastModified.toDate() : data.lastModified
+            };
+            return [doc.id, screenplay];
+          })
+        ).values()
+      ) as Screenplay[];
+      
       setUserScreenplays(uniqueScreenplays);
     } catch (err) {
       console.error('Error fetching user screenplays:', err);
@@ -1101,29 +1153,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         </div>
       )}
 
-      {/* Video Call Modal */}
-      {showVideoCallModal && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: 400, width: '90%' }}>
-            <div className="modal-header">
-              <h3>Start Video Call</h3>
-              <button onClick={() => setShowVideoCallModal(false)} className="close-btn">×</button>
-            </div>
-            <div className="modal-body" style={{ textAlign: 'center', padding: '2rem 1rem' }}>
-              <div style={{ fontSize: '2.5rem', marginBottom: 16 }}>🎥</div>
-              <h4 style={{ marginBottom: 8 }}>Video Calls Coming Soon</h4>
-              <p style={{ color: '#666', marginBottom: 16 }}>
-                Group video calls and screen sharing will be available in a future update.<br />
-                Integration with Jitsi, Zoom, or Google Meet is planned.
-              </p>
-              <div style={{ color: '#aaa', fontSize: '0.95em', marginBottom: 16 }}>
-                (If you need this feature urgently, let us know!)
-              </div>
-              <button onClick={() => setShowVideoCallModal(false)} className="btn-primary" style={{ marginTop: 8 }}>Close</button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Video call functionality will be added in a future update */}
     </div>
   );
 
@@ -1264,7 +1294,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         <div className="collaboration-header">
           <h1>Collaboration Hub</h1>
           <div className="header-actions">
-            <button className="btn-primary" onClick={handleStartVideoCall}>Start Video Call</button>
+            {/* Video call functionality will be added in a future update */}
           </div>
         </div>
 
@@ -1338,17 +1368,28 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
             onWheel={(e) => e.stopPropagation()}
           >
             <div className="screenplay-modal">
-              {/* Removed parent modal-header and close button to avoid double X and large header */}
               <div className="modal-content">
-                <ScreenplayViewer
-                  screenplay={userScreenplays.find(s => s.id === selectedScreenplayId)}
-                  projectId={projectId || 'default-project'}
-                  onClose={() => {
-                    setShowScreenplayModal(false);
-                    setSelectedScreenplayId(null);
-                  }}
-                  onGenerateReport={handleGenerateReport}
-                />
+                {(() => {
+                  const selectedScreenplay = userScreenplays.find(s => s.id === selectedScreenplayId);
+                  if (!selectedScreenplay) return null;
+                  
+                  return (
+                    <ScreenplayViewer
+                      screenplay={{
+                        id: selectedScreenplay.id,
+                        name: selectedScreenplay.name,
+                        url: selectedScreenplay.url,
+                        type: selectedScreenplay.type
+                      }}
+                      projectId={projectId || 'default-project'}
+                      onClose={() => {
+                        setShowScreenplayModal(false);
+                        setSelectedScreenplayId(null);
+                      }}
+                      onGenerateReport={handleGenerateReport}
+                    />
+                  );
+                })()}
               </div>
             </div>
           </div>
