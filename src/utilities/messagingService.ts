@@ -385,7 +385,7 @@ export class MessagingService {
                 lastMessage: lastMessage?.content,
                 lastMessageTime,
                 unreadCount,
-                isOnline: false, // TODO: Implement presence
+                isOnline: (userProfile as any)?.isOnline || false, // Basic presence from user profile
                 lastSeen: undefined
               } as ConversationSummary;
             })

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, addDoc, updateDoc, deleteDoc, doc, query, where, getDocs } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, query, where, getDocs, getDoc } from 'firebase/firestore';
 import { db, auth } from '../../firebase';
 import { ProjectCrew } from '../../types/ProjectManagement';
 
@@ -49,9 +49,26 @@ const ProjectCrewManagement: React.FC<ProjectCrewManagementProps> = ({
     try {
       const crewQuery = query(collection(db, 'users'), where('userType', '==', 'crew'));
       const crewSnapshot = await getDocs(crewQuery);
-      const crewData = crewSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
+      const crewData = await Promise.all(crewSnapshot.docs.map(async (doc) => {
+        const userData = doc.data();
+        // Ensure we have a valid photo URL
+        let photoURL = userData.photoURL;
+        if (photoURL && photoURL.startsWith('blob:')) {
+          try {
+            // Verify the blob URL is still valid
+            await fetch(photoURL);
+          } catch (error) {
+            // If the blob URL is invalid, use a default avatar
+            photoURL = null;
+          }
+        }
+        
+        return {
+          id: doc.id,
+          displayName: userData.displayName || userData.email?.split('@')[0] || 'User',
+          email: userData.email,
+          photoURL: photoURL || null
+        };
       }));
       setAvailableCrew(crewData);
     } catch (error) {
@@ -344,9 +361,17 @@ const ProjectCrewManagement: React.FC<ProjectCrewManagementProps> = ({
           crew.map((member) => (
             <div key={member.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-300">
               <div className="flex justify-between items-start mb-4">
-                <div className="flex-1">
-                  <h4 className="text-lg font-medium text-gray-900 mb-1" style={{ color: '#fff', fontWeight: 600 }}>
-                    {member.crewMemberId}
+                <div className="flex items-center space-x-3">
+                <div className="flex-shrink-0">
+                  <div className="relative">
+                    <div className="h-10 w-10 rounded-full bg-gray-600 flex items-center justify-center text-white font-medium">
+                      {member.crewMemberId?.charAt(0)?.toUpperCase() || 'U'}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-lg font-medium text-white mb-1">
+                    {member.crewMemberId || 'Unknown Crew Member'}
                   </h4>
                   <p className="text-sm text-gray-600 mb-2" style={{ color: 'rgba(255,255,255,0.85)' }}>{member.role}</p>
                   <div className="flex gap-2">

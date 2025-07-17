@@ -135,186 +135,80 @@ export default function JobsPage() {
     try {
       console.log('Initializing Firestore...');
       const db = getFirestore();
-      
-      // Try both collections
-      const collectionsToCheck = ['jobPostings', 'jobs'];
-      
-      for (const collectionName of collectionsToCheck) {
-        try {
-          console.log(`Checking collection: ${collectionName}`);
-          const jobsRef = collection(db, collectionName);
-          const q = query(jobsRef);
-          
-          console.log('Executing query...');
-          const querySnapshot = await getDocs(q);
-          console.log(`Found ${querySnapshot.size} documents in ${collectionName}`);
-          
-          if (querySnapshot.size > 0) {
-            const jobsData = querySnapshot.docs.map(doc => {
-              const data = doc.data();
-              console.log(`Document ${doc.id}:`, data);
-              
-              // Create a properly typed job object with defaults
-              const job: JobPosting = {
-                id: doc.id,
-                title: data.title || 'Untitled Position',
-                department: data.department || 'General',
-                location: data.location || 'Location not specified',
-                jobType: data.jobType || 'full_time',
-                experienceLevel: data.experienceLevel || 'mid',
-                isRemote: data.isRemote || false,
-                description: data.description || '',
-                requirements: data.requirements || '',
-                responsibilities: data.responsibilities || '',
-                benefits: data.benefits || '',
-                skills: Array.isArray(data.skills) ? data.skills : [],
-                salaryMin: data.salaryMin,
-                salaryMax: data.salaryMax,
-                salaryPeriod: data.salaryPeriod || 'year',
-                showSalary: data.showSalary || false,
-                projectName: data.projectName || '',
-                projectType: data.projectType || 'other',
-                startDate: data.startDate || new Date().toISOString().split('T')[0],
-                contactName: data.contactName || '',
-                contactEmail: data.contactEmail || '',
-                isPaid: data.isPaid !== undefined ? data.isPaid : true,
-                isUnion: data.isUnion || false,
-                visaSponsorship: data.visaSponsorship || false,
-                relocationAssistance: data.relocationAssistance || false,
-                status: data.status || 'published', // Default to published if not set
-                postedById: data.postedById || '',
-                createdBy: data.createdBy || data.postedById || '',
-                applicationCount: data.applicationCount || 0,
-                views: data.views || 0,
-                createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
-                updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date()
-              };
-              
-              console.log(`Processed job ${doc.id}:`, job);
-              return job;
-            });
-            
-            console.log(`Found ${jobsData.length} valid jobs in ${collectionName}`);
-            console.groupEnd();
-            return jobsData;
-          }
-        } catch (collectionError) {
-          console.error(`Error querying collection ${collectionName}:`, collectionError);
-          // Continue to next collection
-        }
+      const jobsRef = collection(db, 'jobPostings');
+      const snapshot = await getDocs(jobsRef);
+
+      if (!snapshot.empty) {
+        const jobs = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data
+          };
+        });
+
+        return jobs;
+      } else {
+        return [];
       }
-      
-      console.log('No jobs found in any collection');
-      return [];
-      
     } catch (error) {
-      console.error('Error in checkFirestoreJobs:', error);
-      console.groupEnd();
+      setError(`Failed to load jobs: ${error instanceof Error ? error.message : 'Unknown error'}`);
       return [];
     }
   };
 
-  // Fetch jobs with enhanced error handling and logging
   const fetchJobs = async () => {
-    console.group('=== fetchJobs() ===');
-    console.log('Starting job fetch...');
     setLoading(true);
-    
+    setError(null);
+
     try {
-      console.log('Current auth state:', { 
-        isAuthenticated: !!auth.currentUser,
-        userId: auth.currentUser?.uid 
-      });
-      console.log('Attempt 1: Fetching jobs with status: published');
-      const jobList = await getJobPostings({ status: 'published' });
-      console.log(`Found ${jobList.length} jobs via service`);
-      
-      if (jobList.length > 0) {
-        console.log('Jobs found via service, updating state');
-        setJobs(jobList);
-        setError(null);
-        return;
-      }
-      
-      // If no jobs found with status=published, try without status filter
-      console.log('No published jobs found. Trying without status filter...');
-      const allJobs = await getJobPostings({ status: 'all' });
-      console.log(`Found ${allJobs.length} total jobs (no status filter)`);
-      
-      if (allJobs.length > 0) {
-        console.log('Jobs found without status filter, updating state');
-        setJobs(allJobs);
-        setError(null);
-        return;
-      }
-      
-      // If still no jobs, try direct Firestore query
-      console.log('No jobs found via service, trying direct Firestore query...');
-      const directJobs = await checkFirestoreJobs();
-      console.log(`Found ${directJobs.length} jobs via direct Firestore query`);
-      
-      if (directJobs.length > 0) {
-        console.log('Jobs found via direct query, updating state');
-        setJobs(directJobs);
-        setError(null);
-        return;
-      }
-      
-      // If we get here, no jobs were found
-      console.log('No jobs found in any collection');
-      setJobs([]);
-      
-    } catch (err) {
-      console.error('Error in fetchJobs:', err);
-      setError('Failed to load jobs. Please check the console for details.');
-      
-      // Try direct Firestore as last resort
-      try {
-        console.log('Attempting fallback to direct Firestore query...');
-        const directJobs = await checkFirestoreJobs();
-        if (directJobs.length > 0) {
-          console.log('Fallback query successful, updating state');
-          setJobs(directJobs);
-          setError(null);
+      const jobsData = await getJobPostings();
+
+      if (jobsData && jobsData.length > 0) {
+        setJobs(jobsData);
+      } else {
+        const firestoreJobs = await checkFirestoreJobs();
+
+        if (firestoreJobs.length > 0) {
+          setJobs(firestoreJobs as JobPosting[]);
+        } else {
+          setJobs([]);
         }
-      } catch (firestoreErr) {
-        console.error('Fallback Firestore query failed:', firestoreErr);
-        setError('Failed to load jobs. Please check your connection and try again.');
+      }
+    } catch (error) {
+      setError(`Failed to load jobs: ${error instanceof Error ? error.message : 'Unknown error'}`);
+
+      try {
+        const firestoreJobs = await checkFirestoreJobs();
+        if (firestoreJobs.length > 0) {
+          setJobs(firestoreJobs as JobPosting[]);
+          setError(null); // Clear error if fallback works
+        } else {
+          setJobs([]);
+        }
+      } catch (fallbackError) {
+        setJobs([]);
       }
     } finally {
-      console.log('Fetch jobs completed');
-      console.groupEnd();
       setLoading(false);
     }
   };
 
-  // Create a test job with proper typing
   const createTestJob = async () => {
-    console.log('Attempting to create test job...');
-    
     if (!auth.currentUser) {
-      const errorMsg = 'Cannot create test job: No user logged in';
-      console.error(errorMsg);
-      setError(errorMsg);
+      setError('Must be logged in to create a job');
       return;
     }
-    
-    console.log('Current user:', {
-      uid: auth.currentUser.uid,
-      email: auth.currentUser.email
-    });
-    
+
     try {
-      console.log('Creating test job...');
-      
       const testJob = {
-        title: `Test Job ${new Date().toLocaleString()}`,
+        title: 'Test Job - ' + new Date().toLocaleTimeString(),
+        description: 'This is a test job posting created for debugging purposes.',
         department: 'Camera',
-        location: 'New York, NY',
         jobType: 'full_time' as const,
         experienceLevel: 'mid' as const,
+        location: 'Los Angeles, CA',
         isRemote: false,
-        description: 'This is a test job posting',
         requirements: 'Test requirements',
         responsibilities: 'Test responsibilities',
         benefits: 'Test benefits',
@@ -333,22 +227,15 @@ export default function JobsPage() {
         visaSponsorship: false,
         relocationAssistance: false,
       };
-      
-      console.log('Creating job with data:', testJob);
-      
+
       const jobId = await createJobPosting(testJob, auth.currentUser.uid);
-      console.log('Test job created with ID:', jobId);
-      
-      // Refresh the jobs list
+
       await fetchJobs();
-      
     } catch (error) {
-      console.error('Error creating test job:', error);
       setError(`Failed to create test job: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
-  // Initial data load
   useEffect(() => {
     fetchJobs();
   }, []);

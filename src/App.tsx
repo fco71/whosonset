@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from './theme/ThemeProvider';
@@ -12,24 +12,24 @@ import './App.module.scss';
 // Import components
 import Navigation from './components/Navigation';
 
-// Import pages using relative paths
-import ProducerView from './pages/ProducerView';
-import HomePage from './pages/HomePage';
-import MyProjectsPage from './pages/MyProjectsPage';
-import FavoritesPage from './pages/FavoritesPage';
-import SavedCrewProfilesPage from './pages/SavedCrewProfilesPage';
-import SavedProjectsPage from './pages/SavedProjectsPage';
-import CollectionsHubPage from './pages/CollectionsHubPage';
-import SocialPage from './pages/SocialPage';
-import CollaborationPage from './pages/CollaborationPage';
-import SettingsPage from './pages/SettingsPage';
-import JobsPage from './pages/JobsPage';
-import PostJobPage from './pages/PostJobPage';
-import JobDetailPage from './pages/JobDetailPage';
-import DebugJobsPage from './pages/DebugJobsPage';
-import EditProfilePage from './pages/EditProfilePage';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
+// Lazy load pages for better performance
+const ProducerView = React.lazy(() => import('./pages/ProducerView'));
+const HomePage = React.lazy(() => import('./pages/HomePage'));
+const MyProjectsPage = React.lazy(() => import('./pages/MyProjectsPage'));
+const FavoritesPage = React.lazy(() => import('./pages/FavoritesPage'));
+const SavedCrewProfilesPage = React.lazy(() => import('./pages/SavedCrewProfilesPage'));
+const SavedProjectsPage = React.lazy(() => import('./pages/SavedProjectsPage'));
+const CollectionsHubPage = React.lazy(() => import('./pages/CollectionsHubPage'));
+const SocialPage = React.lazy(() => import('./pages/SocialPage'));
+const CollaborationPage = React.lazy(() => import('./pages/CollaborationPage'));
+const SettingsPage = React.lazy(() => import('./pages/SettingsPage'));
+const JobsPage = React.lazy(() => import('./pages/JobsPage'));
+const PostJobPage = React.lazy(() => import('./pages/PostJobPage'));
+const JobDetailPage = React.lazy(() => import('./pages/JobDetailPage'));
+const DebugJobsPage = React.lazy(() => import('./pages/DebugJobsPage'));
+const EditProfilePage = React.lazy(() => import('./pages/EditProfilePage'));
+const LoginPage = React.lazy(() => import('./pages/LoginPage'));
+const RegisterPage = React.lazy(() => import('./pages/RegisterPage'));
 
 // Protected Route Component for React Router v7
 const ProtectedRoute = ({ children, redirectTo = '/login' }: { children: React.ReactNode, redirectTo?: string }) => {
@@ -71,7 +71,12 @@ function App() {
               }} 
             />
             <main className="container mx-auto px-4 py-8">
-              <Routes>
+              <Suspense fallback={
+                <div className="flex items-center justify-center min-h-[400px]">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                </div>
+              }>
+                <Routes>
                 {/* Public Routes */}
                 <Route index element={<HomePage />} />
                 <Route path="/crew" element={<ProducerView />} />
@@ -147,9 +152,10 @@ function App() {
                   <Route path="/debug-jobs" element={<DebugJobsPage />} />
                 )}
                 
-                {/* 404 Route - Keep this last */}
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
+                  {/* 404 Route - Keep this last */}
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </Suspense>
             </main>
             
             {/* Footer would go here */}

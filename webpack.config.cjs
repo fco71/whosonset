@@ -1,27 +1,31 @@
-// webpack.config.js
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const Dotenv = require('dotenv-webpack');
+const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
+
+const isProduction = process.env.NODE_ENV === 'production';
 
 module.exports = {
-  mode: 'development',
+  mode: isProduction ? 'production' : 'development',
   entry: './src/index.tsx',
   output: {
     path: path.resolve(__dirname, 'dist'),
-    filename: 'bundle.js',
-    publicPath: '/', // ✅ Ensures proper SPA routing
+    filename: isProduction ? '[name].[contenthash:8].js' : '[name].bundle.js',
+    chunkFilename: isProduction ? '[id].[contenthash:8].chunk.js' : '[id].chunk.js',
+    publicPath: '/',
+    clean: true,
   },
-  devtool: 'inline-source-map',
+  devtool: isProduction ? 'source-map' : 'cheap-module-source-map',
   devServer: {
-    historyApiFallback: true, // ✅ Required for React Router to handle routes like /projects
+    historyApiFallback: true,
     static: {
-      directory: path.join(__dirname, 'public'), // ✅ Serves public/index.html
-      publicPath: '/', // ✅ Matches your output.publicPath
+      directory: path.join(__dirname, 'public'),
+      publicPath: '/',
     },
     compress: true,
     port: 8080,
-    open: false, // Optional: opens browser automatically
-    hot: true,  // Optional: hot reload support
+    open: false,
+    hot: true,
   },
   module: {
     rules: [
@@ -32,23 +36,13 @@ module.exports = {
       },
       {
         test: /\.css$/i,
-        include: path.resolve(__dirname, 'src'),
         use: ['style-loader', 'css-loader', 'postcss-loader'],
       },
       {
-        test: /\.css$/i,
-        include: path.resolve(__dirname, 'node_modules'),
-        use: ['style-loader', 'css-loader'],
-      },
-      {
         test: /\.s[ac]ss$/i,
-        include: path.resolve(__dirname, 'src'),
         use: [
           'style-loader',
-          {
-            loader: 'css-loader',
-            options: { importLoaders: 1 },
-          },
+          'css-loader',
           'postcss-loader',
           'sass-loader',
         ],
@@ -57,18 +51,55 @@ module.exports = {
   },
   resolve: {
     extensions: ['.tsx', '.ts', '.js'],
+    alias: {
+      '@': path.resolve(__dirname, 'src/'),
+    },
   },
   plugins: [
     new HtmlWebpackPlugin({
-      template: './public/index.html', // ✅ Must exist
+      template: './public/index.html',
+      minify: isProduction ? {
+        removeComments: true,
+        collapseWhitespace: true,
+        removeRedundantAttributes: true,
+      } : {},
     }),
-    new Dotenv({
-      path: './.env',
-      safe: false,
-      allowEmptyValues: true,
-      systemvars: true,
-      silent: true,
-      defaults: false,
+    new Dotenv(),
+    isProduction && new BundleAnalyzerPlugin({
+      analyzerMode: 'static',
+      reportFilename: '../bundle-analysis.html',
+      openAnalyzer: false,
     }),
-  ],
+  ].filter(Boolean),
+  optimization: {
+    splitChunks: {
+      chunks: 'all',
+      cacheGroups: {
+        vendor: {
+          test: /[\\/]node_modules[\\/](react|react-dom|react-router-dom|@firebase|firebase)[\\/]/,
+          name(module) {
+            // Get the package name from the module
+            const packageName = module.context.match(
+              /[\\/]node_modules[\\/](.*?)([\\/]|$)/
+            )?.[1];
+            // Return a consistent name for the chunk
+            return `vendor.${packageName.replace('@', '')}`;
+          },
+          chunks: 'all',
+          enforce: true,
+        },
+      },
+    },
+    runtimeChunk: {
+      name: 'runtime',
+    },
+    minimize: isProduction,
+    moduleIds: 'deterministic',
+    chunkIds: 'deterministic',
+  },
+  performance: {
+    hints: isProduction ? 'warning' : false,
+    maxEntrypointSize: 1024 * 1024, // 1MB
+    maxAssetSize: 1024 * 1024, // 1MB
+  },
 };

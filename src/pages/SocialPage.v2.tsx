@@ -233,8 +233,9 @@ const SocialPage: React.FC = () => {
           break;
           
         case 'notifications':
-          // TODO: Implement notifications
-          setNotifications([]);
+          // Basic notifications implementation
+          const userNotifications = await SocialService.getNotifications?.(currentUser.uid) || [];
+          setNotifications(userNotifications);
           break;
       }
     } catch (error) {

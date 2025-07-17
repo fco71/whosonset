@@ -96,7 +96,7 @@ export const createJobPosting = async (
   userId: string
 ): Promise<string> => {
   try {
-    console.log('Creating job posting with user ID:', userId);
+  
     
     const jobPosting: Omit<FirestoreJobPosting, 'id'> = {
       ...jobData,
@@ -120,7 +120,7 @@ export const createJobPosting = async (
 // Update an existing job posting
 export const updateJobPosting = async (jobId: string, jobData: Partial<JobPostingBase>): Promise<void> => {
   try {
-    console.log('Updating job with ID:', jobId, 'in collection: jobs');
+
     const jobRef = doc(db, 'jobs', jobId);
     const updateData: Partial<FirestoreJobPosting> = {
       ...jobData,
@@ -137,7 +137,7 @@ export const updateJobPosting = async (jobId: string, jobData: Partial<JobPostin
 // Delete a job posting
 export const deleteJobPosting = async (jobId: string): Promise<void> => {
   try {
-    console.log('Deleting job with ID:', jobId, 'from collection: jobs');
+
     const jobRef = doc(db, 'jobs', jobId);
     await deleteDoc(jobRef);
   } catch (error) {
@@ -160,75 +160,71 @@ export const getJobPostings = async (filters: {
   limit?: number;
 } = {}): Promise<JobPosting[]> => {
   try {
-    console.log('=== getJobPostings called ===');
-    console.log('Filters:', JSON.stringify(filters, null, 2));
+
     
     const jobsRef = collection(db, 'jobs');
-    console.log('Querying collection: jobs');
+
     
     let q = query(jobsRef);
-    console.log('Base query created');
+
     
     // Apply status filter if provided and not 'all'
     if (filters.status && filters.status !== 'all') {
-      console.log(`Filtering by status: ${filters.status}`);
+
       q = query(q, where('status', '==', filters.status));
     } else if (!filters.status) {
       // Default to published if no status is specified
-      console.log('Using default status filter: published');
+
       q = query(q, where('status', '==', 'published'));
     } else {
-      console.log('No status filter applied (showing all statuses)');
+
     }
     
     if (filters?.department) {
-      console.log('Adding department filter:', filters.department);
+
       q = query(q, where('department', '==', filters.department));
     }
     
     if (filters?.jobType) {
-      console.log('Adding jobType filter:', filters.jobType);
+
       q = query(q, where('jobType', '==', filters.jobType));
     }
     
     if (filters?.experienceLevel) {
-      console.log('Adding experienceLevel filter:', filters.experienceLevel);
+
       q = query(q, where('experienceLevel', '==', filters.experienceLevel));
     }
     
     if (filters?.isRemote !== undefined) {
-      console.log('Adding isRemote filter:', filters.isRemote);
+
       q = query(q, where('isRemote', '==', filters.isRemote));
     }
     
     if (filters?.postedBy) {
-      console.log('Adding postedBy filter:', filters.postedBy);
+
       if (filters.postedBy) {
         q = query(q, where('postedById', '==', filters.postedBy));
       }
     }
     
     if (filters?.limit) {
-      console.log('Adding limit:', filters.limit);
+
       q = query(q, limit(filters.limit));
     }
     
     // Order by creation date, newest first
-    console.log('Adding order by createdAt desc');
+
     q = query(q, orderBy('createdAt', 'desc'));
     
-    console.log('Executing query...');
+
     const querySnapshot = await getDocs(q);
-    console.log(`Query returned ${querySnapshot.size} documents`);
+
     
     const jobs: JobPosting[] = [];
     
     querySnapshot.forEach((doc) => {
       try {
         const docData = doc.data();
-        console.group(`Document ${doc.id}:`);
-        console.log('Raw document data:', docData);
-        
         // Ensure required fields exist with defaults
         const jobData: JobPosting = {
           id: doc.id,
@@ -265,9 +261,7 @@ export const getJobPostings = async (filters: {
           createdAt: docData.createdAt?.toDate ? docData.createdAt.toDate() : new Date(),
           updatedAt: docData.updatedAt?.toDate ? docData.updatedAt.toDate() : new Date()
         };
-        
-        console.log('Processed job data:', jobData);
-        console.groupEnd();
+
         
         jobs.push(jobData);
       } catch (error) {
@@ -275,7 +269,7 @@ export const getJobPostings = async (filters: {
       }
     });
     
-    console.log(`Returning ${jobs.length} jobs`);
+
     return jobs;
   } catch (error) {
     console.error('Error getting job postings:', error);
@@ -286,27 +280,27 @@ export const getJobPostings = async (filters: {
 // Get a single job posting by ID
 export const getJobPostingById = async (jobId: string): Promise<JobPosting | null> => {
   try {
-    console.log('Fetching job with ID:', jobId, 'from collection: jobs');
+
     const docRef = doc(db, 'jobs', jobId);
     const docSnap = await getDoc(docRef);
     
     if (!docSnap.exists()) {
-      console.log('Job not found in jobs collection, checking jobPostings as fallback...');
+
       // Fallback to check jobPostings collection for backward compatibility
       const legacyDocRef = doc(db, 'jobPostings', jobId);
       const legacyDocSnap = await getDoc(legacyDocRef);
       
       if (!legacyDocSnap.exists()) {
-        console.log('Job not found in any collection');
+
         return null;
       }
       
       const docData = legacyDocSnap.data();
-      console.log('Found job in legacy jobPostings collection:', docData);
+
       
       // Migrate the job to the new collection
       if (docData) {
-        console.log('Migrating job to jobs collection...');
+
         const newJobRef = doc(db, 'jobs', jobId);
         await setDoc(newJobRef, {
           ...docData,
@@ -315,7 +309,7 @@ export const getJobPostingById = async (jobId: string): Promise<JobPosting | nul
         
         // Delete the old document
         await deleteDoc(legacyDocRef);
-        console.log('Job migrated successfully');
+
       }
       
       // Return the job data with proper typing
