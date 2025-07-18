@@ -899,13 +899,60 @@
             &:hover .reaction-buttons {
               opacity: 1;
             }
+
+            // Delete message button
+            .delete-message-button {
+              position: absolute;
+              top: 50%;
+              transform: translateY(-50%);
+              background: white;
+              border: 1px solid #e5e7eb;
+              border-radius: 50%;
+              width: 20px;
+              height: 20px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              cursor: pointer;
+              font-size: 10px;
+              transition: all 0.2s ease;
+              box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+              opacity: 0;
+              z-index: 10;
+              color: #9ca3af;
+
+              &:hover {
+                transform: translateY(-50%) scale(1.1);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                color: #ef4444;
+                background: #fef2f2;
+                border-color: #fecaca;
+              }
+
+              &.sender-delete {
+                color: #ef4444;
+                &:hover {
+                  color: #dc2626;
+                  background: #fef2f2;
+                  border-color: #fecaca;
+                }
+              }
+            }
+
+            &:hover .delete-message-button {
+              opacity: 1;
+            }
           }
 
           &.received {
             .message-content {
-              margin-right: 40px;
+              margin-right: 60px;
               .reaction-buttons {
                 right: -32px;
+                left: auto;
+              }
+              .delete-message-button {
+                right: -60px;
                 left: auto;
               }
             }
@@ -913,10 +960,14 @@
 
           &.sent {
             .message-content {
-              margin-left: 40px;
+              margin-left: 60px;
               .reaction-buttons {
                 right: auto;
                 left: -32px;
+              }
+              .delete-message-button {
+                right: auto;
+                left: -60px;
               }
             }
           }

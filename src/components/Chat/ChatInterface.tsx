@@ -1705,17 +1705,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                       {/* Delete icon for all messages (sender and receiver) */}
                       <button
                         title={message.senderId === currentUserId ? "Delete message for everyone" : "Delete message from your chat"}
-                        style={{
-                          position: 'absolute',
-                          top: 8,
-                          right: 8,
-                          background: 'none',
-                          border: 'none',
-                          color: message.senderId === currentUserId ? '#ef4444' : '#6b7280',
-                          cursor: 'pointer',
-                          fontSize: 18,
-                          zIndex: 2
-                        }}
+                        className={`delete-message-button ${message.senderId === currentUserId ? 'sender-delete' : 'receiver-delete'}`}
                         onClick={async () => {
                           const isSender = message.senderId === currentUserId;
                           const confirmMessage = isSender 
