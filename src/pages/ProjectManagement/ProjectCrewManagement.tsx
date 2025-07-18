@@ -49,19 +49,10 @@ const ProjectCrewManagement: React.FC<ProjectCrewManagementProps> = ({
     try {
       const crewQuery = query(collection(db, 'users'), where('userType', '==', 'crew'));
       const crewSnapshot = await getDocs(crewQuery);
-      const crewData = await Promise.all(crewSnapshot.docs.map(async (doc) => {
+      const crewData = crewSnapshot.docs.map(doc => {
         const userData = doc.data();
-        // Ensure we have a valid photo URL
-        let photoURL = userData.photoURL;
-        if (photoURL && photoURL.startsWith('blob:')) {
-          try {
-            // Verify the blob URL is still valid
-            await fetch(photoURL);
-          } catch (error) {
-            // If the blob URL is invalid, use a default avatar
-            photoURL = null;
-          }
-        }
+        // Don't try to validate blob URLs - handle them at render time
+        const photoURL = userData.photoURL?.startsWith('blob:') ? null : userData.photoURL;
         
         return {
           id: doc.id,
@@ -69,7 +60,7 @@ const ProjectCrewManagement: React.FC<ProjectCrewManagementProps> = ({
           email: userData.email,
           photoURL: photoURL || null
         };
-      }));
+      });
       setAvailableCrew(crewData);
     } catch (error) {
       console.error('Error loading available crew:', error);
@@ -157,6 +148,33 @@ const ProjectCrewManagement: React.FC<ProjectCrewManagementProps> = ({
     ];
     const index = department.length % colors.length;
     return colors[index];
+  };
+
+  const renderCrewMemberAvatar = (member: ProjectCrew) => {
+    const crewMember = availableCrew.find(c => c.id === member.crewMemberId);
+    if (crewMember?.photoURL) {
+      return (
+        <img
+          src={crewMember.photoURL}
+          alt={member.crewMemberId || 'Crew member'}
+          className="h-10 w-10 rounded-full object-cover"
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.onerror = null;
+            target.style.display = 'none';
+            const fallback = document.createElement('div');
+            fallback.className = 'h-10 w-10 rounded-full bg-gray-600 flex items-center justify-center text-white font-medium';
+            fallback.textContent = member.crewMemberId?.charAt(0)?.toUpperCase() || 'U';
+            target.parentNode?.insertBefore(fallback, target.nextSibling);
+          }}
+        />
+      );
+    }
+    return (
+      <div className="h-10 w-10 rounded-full bg-gray-600 flex items-center justify-center text-white font-medium">
+        {member.crewMemberId?.charAt(0)?.toUpperCase() || 'U'}
+      </div>
+    );
   };
 
   return (
@@ -362,16 +380,15 @@ const ProjectCrewManagement: React.FC<ProjectCrewManagementProps> = ({
             <div key={member.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-300">
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center space-x-3">
-                <div className="flex-shrink-0">
-                  <div className="relative">
-                    <div className="h-10 w-10 rounded-full bg-gray-600 flex items-center justify-center text-white font-medium">
-                      {member.crewMemberId?.charAt(0)?.toUpperCase() || 'U'}
+                  <div className="flex-shrink-0">
+                    <div className="relative">
+                      {renderCrewMemberAvatar(member)}
                     </div>
                   </div>
                 </div>
                 <div className="flex-1 min-w-0">
                   <h4 className="text-lg font-medium text-white mb-1">
-                    {member.crewMemberId || 'Unknown Crew Member'}
+                    {availableCrew.find(c => c.id === member.crewMemberId)?.displayName || member.crewMemberId || 'Unknown Crew Member'}
                   </h4>
                   <p className="text-sm text-gray-600 mb-2" style={{ color: 'rgba(255,255,255,0.85)' }}>{member.role}</p>
                   <div className="flex gap-2">
