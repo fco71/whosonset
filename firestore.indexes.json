@@ -149,6 +149,16 @@
       ]
     },
     {
+      "collectionGroup": "directMessages",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "timestamp",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
       "collectionGroup": "favorites",
       "queryScope": "COLLECTION",
       "fields": [
@@ -370,9 +380,8 @@
       "fieldPath": "status",
       "indexes": [
         {
-          "order": "ASCENDING",
-          "queryScope": "COLLECTION",
-          "arrayConfig": "CONTAINS"
+          "arrayConfig": "CONTAINS",
+          "queryScope": "COLLECTION"
         }
       ]
     },

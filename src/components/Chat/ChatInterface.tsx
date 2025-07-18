@@ -818,16 +818,21 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   // Setup real-time conversation listener
   const setupConversationListener = () => {
-    if (conversationListenerRef.current) {
-      conversationListenerRef.current();
-    }
-
-    conversationListenerRef.current = MessagingService.subscribeToConversations(
-      currentUserId,
-      (conversations) => {
-        setConversations(conversations);
+    try {
+      if (conversationListenerRef.current) {
+        conversationListenerRef.current();
       }
-    );
+
+      conversationListenerRef.current = MessagingService.subscribeToConversations(
+        currentUserId,
+        (conversations) => {
+          setConversations(conversations);
+        }
+      );
+    } catch (error) {
+      console.error('Error setting up conversation listener:', error);
+      setError('Failed to load conversations. Please refresh the page.');
+    }
   };
 
   // Load conversation messages
@@ -936,10 +941,23 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   // Cleanup
   const cleanup = () => {
-    if (conversationListenerRef.current) conversationListenerRef.current();
-    if (messageListenerRef.current) messageListenerRef.current();
-    if (typingListenerRef.current) typingListenerRef.current();
-    MessagingService.cleanup();
+    try {
+      if (conversationListenerRef.current) {
+        conversationListenerRef.current();
+        conversationListenerRef.current = null;
+      }
+      if (messageListenerRef.current) {
+        messageListenerRef.current();
+        messageListenerRef.current = null;
+      }
+      if (typingListenerRef.current) {
+        typingListenerRef.current();
+        typingListenerRef.current = null;
+      }
+      MessagingService.cleanup();
+    } catch (error) {
+      console.error('Error during cleanup:', error);
+    }
   };
 
   // Search for users to start new chat
@@ -952,11 +970,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     setIsSearching(true);
     try {
       // Search only in crewProfiles collection (single source of truth)
+      // Use a simpler query to avoid complex index requirements
       const crewQuery = firestoreQuery(
         collection(db, 'crewProfiles'),
-        where('name', '>=', query),
-        where('name', '<=', query + '\uf8ff'),
-        limit(10)
+        where('isPublished', '==', true),
+        limit(20)
       );
 
       const crewSnapshot = await getDocs(crewQuery);
@@ -971,13 +989,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         type: 'crew';
       }> = [];
 
-      // Add crew members
+      // Filter crew members by name in memory
       crewSnapshot.docs.forEach(doc => {
         const data = doc.data() as any;
-        if (doc.id !== currentUserId) { // Don't show current user
+        const name = data.name || data.displayName || data.firstName || '';
+        
+        if (doc.id !== currentUserId && // Don't show current user
+            name.toLowerCase().includes(query.toLowerCase())) {
           results.push({
             id: doc.id,
-            name: data.name || data.displayName || data.firstName || `Crew Member ${doc.id.slice(-4)}`,
+            name: name || `Crew Member ${doc.id.slice(-4)}`,
             avatar: data.profileImageUrl || data.avatarUrl,
             role: data.jobTitles?.[0]?.title || data.role,
             company: data.company,
@@ -1125,7 +1146,19 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       MessagingService.setTypingStatus(currentUserId, selectedUser, false);
     } catch (error) {
       console.error('[SendMessage] Error sending message:', error);
-      setError('Failed to send message. Please try again.');
+      
+      // Provide specific error messages for file size issues
+      if (error instanceof Error) {
+        if (error.message.includes('exceeds maximum allowed size')) {
+          setError('File is too large. Please choose a file smaller than 1MB.');
+        } else if (error.message.includes('Cannot send message')) {
+          setError('Cannot send message to this user. They may not allow messages from non-followers.');
+        } else {
+          setError('Failed to send message. Please try again.');
+        }
+      } else {
+        setError('Failed to send message. Please try again.');
+      }
       
       // Remove optimistic message on error
       setMessages(prev => prev.filter(msg => msg.id !== `temp_${Date.now()}`));
@@ -1472,12 +1505,28 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                         </div>
                       ) : message.messageType === 'image' && message.fileUrl ? (
                         <div className="message-image">
-                          <img 
-                            src={message.fileUrl} 
-                            alt={message.fileName || 'Image'} 
-                            className="message-image-content"
-                            onClick={() => window.open(message.fileUrl, '_blank')}
-                          />
+                          {message.fileUrl.startsWith('FILE_TOO_LARGE:') ? (
+                            <div className="file-too-large-message">
+                              <div className="file-too-large-icon">📷</div>
+                              <div className="file-too-large-content">
+                                <div className="file-too-large-title">File Too Large</div>
+                                <div className="file-too-large-name">{message.fileName || 'Image'}</div>
+                                <div className="file-too-large-size">
+                                  {message.fileSize ? `${(message.fileSize / 1024 / 1024).toFixed(1)} MB` : 'Unknown size'}
+                                </div>
+                                <div className="file-too-large-message-text">
+                                  This file exceeds the 1MB size limit. Please compress the image or choose a smaller file.
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <img 
+                              src={message.fileUrl} 
+                              alt={message.fileName || 'Image'} 
+                              className="message-image-content"
+                              onClick={() => window.open(message.fileUrl, '_blank')}
+                            />
+                          )}
                           {message.content && <p className="image-caption">{message.content}</p>}
                         </div>
                       ) : message.messageType === 'file' && message.fileUrl ? (

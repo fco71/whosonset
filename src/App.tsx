@@ -29,6 +29,7 @@ const JobDetailPage = React.lazy(() => import('./pages/JobDetailPage'));
 const DebugJobsPage = React.lazy(() => import('./pages/DebugJobsPage'));
 const EditProfilePage = React.lazy(() => import('./pages/EditProfilePage'));
 const PublicResumePage = React.lazy(() => import('./components/PublicResumePage'));
+const ChatTestPage = React.lazy(() => import('./components/Chat/ChatTestPage'));
 const LoginPage = React.lazy(() => import('./pages/LoginPage'));
 const RegisterPage = React.lazy(() => import('./pages/RegisterPage'));
 
@@ -128,6 +129,11 @@ function App() {
                 <Route path="/social" element={
                   <ProtectedRoute>
                     <SocialPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/chat" element={
+                  <ProtectedRoute>
+                    <ChatTestPage />
                   </ProtectedRoute>
                 } />
                 <Route path="/collaboration" element={

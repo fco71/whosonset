@@ -9,7 +9,14 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
     
+    // Users collection - allow reading for messaging compatibility
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
     // Users can only read/write their own crew profiles
+    // Allow reading published profiles for messaging and social features
     match /crewProfiles/{profileId} {
       allow read: if resource.data.isPublished == true || 
                      (request.auth != null && resource.data.uid == request.auth.uid);
@@ -120,9 +127,20 @@ service cloud.firestore {
         resource.data.senderId == request.auth.uid;
     }
     
-    // Chat settings - users can only access their own settings
+    // Chat settings - users can read other users' settings for messaging permissions, but only write their own
     match /chatSettings/{settingId} {
-      allow read, write: if request.auth != null && 
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && 
+        resource.data.userId == request.auth.uid;
+    }
+    
+    // Typing indicators - users can read/write their own typing status
+    match /typingIndicators/{indicatorId} {
+      allow read: if request.auth != null && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.otherUserId == request.auth.uid
+      );
+      allow create, update, delete: if request.auth != null && 
         resource.data.userId == request.auth.uid;
     }
     

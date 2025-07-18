@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Search, UserCheck, Users, UserPlus, UserX, Bell, Check, X, MoreHorizontal, MessageCircle, Send, Plus } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { SocialService } from '../utilities/socialService';
@@ -75,6 +75,7 @@ const TabButton = ({
 const SocialPage = () => {
   const auth = useAuth();
   const user = auth?.currentUser; // Access currentUser instead of user
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'connections' | 'requests' | 'discover' | 'notifications'>('connections');
   const [searchQuery, setSearchQuery] = useState('');
   // Define the profile state with proper typing
@@ -392,12 +393,12 @@ const SocialPage = () => {
     }
   };
 
-  // Load conversations when component mounts
+  // Load conversations when component mounts or when message pane is opened
   useEffect(() => {
-    if (user?.uid) {
+    if (user?.uid && showMessagePane) {
       loadConversations();
     }
-  }, [user?.uid, loadConversations]);
+  }, [user?.uid, showMessagePane, loadConversations]);
 
   // Helper function to render user cards
   const renderUserCard = (profile: AppProfile, action?: React.ReactNode) => {
@@ -461,10 +462,10 @@ const SocialPage = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="whitespace-nowrap"
+                        className="whitespace-nowrap text-xs px-3 py-1.5"
                         onClick={() => handleFollowChange(getProfileId(profile), false)}
                       >
-                        <UserX className="h-4 w-4 mr-2" />
+                        <UserX className="h-3.5 w-3.5 mr-1.5" />
                         Unfollow
                       </Button>
                     }
@@ -620,10 +621,10 @@ const SocialPage = () => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50"
+                  className="h-9 w-9 p-0 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
                   onClick={() => handleStartConversation(getProfileId(profile))}
                 >
-                  <MessageCircle className="h-4 w-4" />
+                  <MessageCircle className="h-5 w-5" />
                 </Button>
               )}
             </div>
@@ -943,7 +944,10 @@ const SocialPage = () => {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setShowMessagePane(true)}
+            onClick={() => {
+              // Navigate to full messaging environment
+              navigate('/chat');
+            }}
             className="flex items-center space-x-2"
           >
             <MessageCircle className="h-4 w-4" />
