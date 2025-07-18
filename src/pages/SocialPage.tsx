@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, UserCheck, Users, UserPlus, UserX, Bell, Check, X, MoreHorizontal } from 'lucide-react';
+import { Search, UserCheck, Users, UserPlus, UserX, Bell, Check, X, MoreHorizontal, MessageCircle, Send, Plus } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { SocialService } from '../utilities/socialService';
+import { MessagingService, ConversationSummary } from '../utilities/messagingService';
 import { getProfileId, getDisplayName, getPhotoUrl, isCrewProfile } from '../types/Profile';
 
 // Define a discriminated union type for profiles
@@ -83,6 +84,12 @@ const SocialPage = () => {
   const [sentRequests, setSentRequests] = useState<AppProfile[]>([]);
   const [connections, setConnections] = useState<AppProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Messaging state
+  const [showMessagePane, setShowMessagePane] = useState(false);
+  const [showStartConversation, setShowStartConversation] = useState(false);
+  const [conversations, setConversations] = useState<ConversationSummary[]>([]);
+  const [messageSearchQuery, setMessageSearchQuery] = useState('');
 
   // Load initial data
   const loadData = useCallback(async () => {
@@ -342,6 +349,56 @@ const SocialPage = () => {
     }
   };
 
+  // Messaging functions
+  const loadConversations = useCallback(async () => {
+    if (!user?.uid) return;
+    
+    const unsubscribe = MessagingService.subscribeToConversations(
+      user.uid,
+      (conversations) => {
+        setConversations(conversations);
+      }
+    );
+
+    return unsubscribe;
+  }, [user?.uid]);
+
+  const handleStartConversation = (userId: string) => {
+    if (!userId) {
+      setShowStartConversation(true);
+      setShowMessagePane(false);
+    } else {
+      // Navigate to chat or open chat interface
+      setShowMessagePane(false);
+      setShowStartConversation(false);
+      console.log('Starting conversation with:', userId);
+    }
+  };
+
+  const formatTime = (date?: Date) => {
+    if (!date) return '';
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    
+    if (days === 0) {
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else if (days === 1) {
+      return 'Yesterday';
+    } else if (days < 7) {
+      return date.toLocaleDateString([], { weekday: 'short' });
+    } else {
+      return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    }
+  };
+
+  // Load conversations when component mounts
+  useEffect(() => {
+    if (user?.uid) {
+      loadConversations();
+    }
+  }, [user?.uid, loadConversations]);
+
   // Helper function to render user cards
   const renderUserCard = (profile: AppProfile, action?: React.ReactNode) => {
     const avatarUrl = profile.photoURL || (profile as any).profileImageUrl || '/bust-avatar.svg';
@@ -556,7 +613,20 @@ const SocialPage = () => {
                 )}
               </div>
             </div>
-            {action && <div className="flex-shrink-0 ml-2">{action}</div>}
+            <div className="flex-shrink-0 ml-2 flex items-center space-x-2">
+              {action}
+              {/* Add message button for connections */}
+              {activeTab === 'connections' && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50"
+                  onClick={() => handleStartConversation(getProfileId(profile))}
+                >
+                  <MessageCircle className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -585,6 +655,282 @@ const SocialPage = () => {
     );
   }
 
+  // Message Pane Component
+  const MessagePane = () => {
+    if (!showMessagePane) return null;
+
+    const filteredConversations = conversations.filter(conv => 
+      !messageSearchQuery.trim() || 
+      conv.userName.toLowerCase().includes(messageSearchQuery.toLowerCase()) ||
+      (conv.lastMessage && conv.lastMessage.toLowerCase().includes(messageSearchQuery.toLowerCase()))
+    );
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[80vh] flex flex-col">
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900">Messages</h3>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleStartConversation('')}
+                className="h-8 w-8 p-0"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowMessagePane(false)}
+                className="h-8 w-8 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Search */}
+          <div className="p-4 border-b border-gray-200">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                type="text"
+                placeholder="Search conversations..."
+                value={messageSearchQuery}
+                onChange={(e) => setMessageSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+
+          {/* Conversations List */}
+          <div className="flex-1 overflow-y-auto">
+            {filteredConversations.length === 0 ? (
+              <div className="p-8 text-center">
+                <MessageCircle className="h-12 w-12 mx-auto text-gray-300 mb-4" />
+                <h3 className="text-sm font-medium text-gray-900 mb-2">
+                  {messageSearchQuery ? 'No conversations found' : 'No messages yet'}
+                </h3>
+                <p className="text-xs text-gray-500">
+                  {messageSearchQuery 
+                    ? 'Try a different search term'
+                    : 'Start a conversation with someone to see messages here'
+                  }
+                </p>
+              </div>
+            ) : (
+              <div className="p-2">
+                {filteredConversations.map((conversation) => (
+                  <div
+                    key={conversation.userId}
+                    className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                    onClick={() => handleStartConversation(conversation.userId)}
+                  >
+                    <div className="relative">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={conversation.userAvatar} alt={conversation.userName} />
+                        <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white text-sm">
+                          {conversation.userName
+                            .split(' ')
+                            .map(n => n[0])
+                            .join('')
+                            .toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      {conversation.isOnline && (
+                        <div className="absolute -bottom-1 -right-1 h-3 w-3 bg-green-500 rounded-full border-2 border-white" />
+                      )}
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-medium text-gray-900 truncate">
+                          {conversation.userName}
+                        </h4>
+                        <div className="flex items-center space-x-2">
+                          {conversation.unreadCount > 0 && (
+                            <Badge className="h-5 w-5 p-0 text-xs bg-blue-600 text-white">
+                              {conversation.unreadCount}
+                            </Badge>
+                          )}
+                          <span className="text-xs text-gray-500">
+                            {formatTime(conversation.lastMessageTime)}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {conversation.lastMessage && (
+                        <p className="text-xs text-gray-600 truncate mt-1">
+                          {conversation.lastMessage}
+                        </p>
+                      )}
+                      
+                      {conversation.userRole && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          {conversation.userRole}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Start Conversation Modal Component
+  const StartConversationModal = () => {
+    if (!showStartConversation) return null;
+
+    const [searchResults, setSearchResults] = useState<AppProfile[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
+
+    const searchUsers = useCallback(async (query: string) => {
+      if (!query.trim() || !user?.uid) {
+        setSearchResults([]);
+        return;
+      }
+
+      setIsSearching(true);
+      try {
+        // Search through connections and discover profiles
+        const allUsers = [...connections, ...filteredProfiles];
+        const filtered = allUsers.filter(profile => 
+          getProfileId(profile) !== user.uid &&
+          (profile.displayName?.toLowerCase().includes(query.toLowerCase()) ||
+           (profile as any).name?.toLowerCase().includes(query.toLowerCase()) ||
+           (profile as any).email?.toLowerCase().includes(query.toLowerCase()))
+        );
+
+        setSearchResults(filtered.slice(0, 10));
+      } catch (error) {
+        console.error('Error searching users:', error);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, [connections, filteredProfiles, user?.uid]);
+
+    useEffect(() => {
+      const timeoutId = setTimeout(() => {
+        searchUsers(messageSearchQuery);
+      }, 300);
+
+      return () => clearTimeout(timeoutId);
+    }, [messageSearchQuery, searchUsers]);
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[80vh] flex flex-col">
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900">New Message</h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowStartConversation(false)}
+              className="h-8 w-8 p-0"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* Search */}
+          <div className="p-4 border-b border-gray-200">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                type="text"
+                placeholder="Search people..."
+                value={messageSearchQuery}
+                onChange={(e) => setMessageSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+
+          {/* Search Results */}
+          <div className="flex-1 overflow-y-auto">
+            {isSearching ? (
+              <div className="p-4 space-y-3">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="flex items-center space-x-3">
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-3 w-32" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : searchResults.length === 0 ? (
+              <div className="p-8 text-center">
+                <Search className="h-12 w-12 mx-auto text-gray-300 mb-4" />
+                <h3 className="text-sm font-medium text-gray-900 mb-2">
+                  {messageSearchQuery ? 'No people found' : 'Search for people to message'}
+                </h3>
+                <p className="text-xs text-gray-500">
+                  {messageSearchQuery 
+                    ? 'Try a different search term'
+                    : 'Start typing to search for people in your network'
+                  }
+                </p>
+              </div>
+            ) : (
+              <div className="p-2">
+                {searchResults.map((profile) => (
+                  <div
+                    key={getProfileId(profile)}
+                    className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                    onClick={() => {
+                      handleStartConversation(getProfileId(profile));
+                      setShowStartConversation(false);
+                    }}
+                  >
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={profile.photoURL || (profile as any).profileImageUrl} alt={profile.displayName} />
+                      <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white text-sm">
+                        {profile.displayName
+                          .split(' ')
+                          .map(n => n[0])
+                          .join('')
+                          .toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-medium text-gray-900 truncate">
+                        {profile.displayName}
+                      </h4>
+                      {profile.type === 'crew' && (profile as any).jobTitles?.[0]?.title && (
+                        <p className="text-xs text-gray-500 truncate">
+                          {(profile as any).jobTitles[0].title}
+                        </p>
+                      )}
+                    </div>
+                    
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                    >
+                      <Send className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="container mx-auto px-4 py-6 max-w-7xl">
       {/* Header */}
@@ -593,16 +939,27 @@ const SocialPage = () => {
           <h1 className="text-2xl font-bold text-gray-900">Social Network</h1>
           <p className="text-gray-500">Connect with crew members and discover new professionals</p>
         </div>
-        <div className="w-full md:w-96">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              type="text"
-              placeholder="Search people..."
-              className="pl-10 w-full"
-              value={searchQuery}
-              onChange={handleSearchChange}
-            />
+        <div className="flex items-center space-x-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowMessagePane(true)}
+            className="flex items-center space-x-2"
+          >
+            <MessageCircle className="h-4 w-4" />
+            <span>Messages</span>
+          </Button>
+          <div className="w-full md:w-96">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                type="text"
+                placeholder="Search people..."
+                className="pl-10 w-full"
+                value={searchQuery}
+                onChange={handleSearchChange}
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -644,6 +1001,12 @@ const SocialPage = () => {
       <div className="space-y-6">
         {renderTabContent()}
       </div>
+
+      {/* Message Pane */}
+      <MessagePane />
+
+      {/* Start Conversation Modal */}
+      <StartConversationModal />
     </div>
   );
 };

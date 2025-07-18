@@ -55,15 +55,16 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
 
   const loadUsers = async () => {
     try {
-      const usersQuery = query(collection(db, 'users'));
-      const snapshot = await getDocs(usersQuery);
+      // Use crewProfiles collection instead of users (single source of truth)
+      const crewQuery = query(collection(db, 'crewProfiles'), where('isPublished', '==', true));
+      const snapshot = await getDocs(crewQuery);
       const usersData: {[key: string]: {name: string, email: string, avatar?: string}} = {};
       snapshot.docs.forEach(doc => {
-        const userData = doc.data();
+        const crewData = doc.data();
         usersData[doc.id] = {
-          name: userData.displayName || userData.email || 'Unknown User',
-          email: userData.email || '',
-          avatar: userData.photoURL || undefined
+          name: crewData.name || crewData.displayName || crewData.email || 'Unknown Crew Member',
+          email: crewData.email || '',
+          avatar: crewData.profileImageUrl || crewData.photoURL || undefined
         };
       });
       setUsers(usersData);

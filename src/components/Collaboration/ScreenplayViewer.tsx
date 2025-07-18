@@ -1025,10 +1025,10 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     const fetchFollows = async () => {
       if (!currentUser) return;
       try {
-        // Get user's followers and following from social data
-        const userSnap = await getDocs(query(collection(db, 'users'), where('id', '==', currentUser.uid)));
-        if (!userSnap.empty) {
-          const data = userSnap.docs[0].data();
+        // Get user's followers and following from social data using crewProfiles
+        const crewSnap = await getDocs(query(collection(db, 'crewProfiles'), where('uid', '==', currentUser.uid)));
+        if (!crewSnap.empty) {
+          const data = crewSnap.docs[0].data();
           const followers = Array.isArray(data.followers) ? data.followers : [];
           const following = Array.isArray(data.following) ? data.following : [];
           setUserFollows(Array.from(new Set([...followers, ...following])));
@@ -1078,25 +1078,25 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     try {
       let allResults: Array<{ id: string; [key: string]: any }> = [];
       if (approvedContacts.length > 0) {
-        // Fetch all approved contacts' user docs in chunks of 10
-        const usersRef = collection(db, 'users');
+        // Fetch all approved contacts' crew profiles in chunks of 10
+        const crewRef = collection(db, 'crewProfiles');
         const approvedChunks = [];
         for (let i = 0; i < approvedContacts.length; i += 10) {
           approvedChunks.push(approvedContacts.slice(i, i + 10));
         }
         for (const chunk of approvedChunks) {
-          const q = query(usersRef, where('id', 'in', chunk));
+          const q = query(crewRef, where('uid', 'in', chunk));
           const snap = await getDocs(q);
           allResults = allResults.concat(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
         }
       } else {
-        // Fallback: search all users
-        const usersRef = collection(db, 'users');
-        const snap = await getDocs(usersRef);
-        console.log('[ScreenplayCollabModal] Fallback: found', snap.docs.length, 'users in Firestore');
+        // Fallback: search all crew profiles
+        const crewRef = collection(db, 'crewProfiles');
+        const snap = await getDocs(crewRef);
+        console.log('[ScreenplayCollabModal] Fallback: found', snap.docs.length, 'crew profiles in Firestore');
         allResults = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         if (allResults.length === 0) {
-          console.warn('[ScreenplayCollabModal] No users found in Firestore users collection.');
+          console.warn('[ScreenplayCollabModal] No crew profiles found in Firestore crewProfiles collection.');
         }
       }
       // Filter by search query
@@ -1108,10 +1108,10 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         )
         .map(user => ({
           id: user.id,
-          name: user.displayName || user.name || `User ${user.id.slice(-4)}`,
+          name: user.name || user.displayName || `Crew Member ${user.id.slice(-4)}`,
           email: user.email || '',
-          avatar: user.avatarUrl || user.avatar || '',
-          role: user.role || 'User',
+          avatar: user.profileImageUrl || user.avatarUrl || user.avatar || '',
+          role: user.jobTitles?.[0]?.title || user.role || 'Crew Member',
           isFollowing: userFollows.includes(user.id),
           connectionStatus: 'connected',
         }));

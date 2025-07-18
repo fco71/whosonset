@@ -47,17 +47,18 @@ const ProjectCrewManagement: React.FC<ProjectCrewManagementProps> = ({
 
   const loadAvailableCrew = async () => {
     try {
-      const crewQuery = query(collection(db, 'users'), where('userType', '==', 'crew'));
+      // Use crewProfiles collection instead of users (single source of truth)
+      const crewQuery = query(collection(db, 'crewProfiles'), where('isPublished', '==', true));
       const crewSnapshot = await getDocs(crewQuery);
       const crewData = crewSnapshot.docs.map(doc => {
-        const userData = doc.data();
+        const crewData = doc.data();
         // Don't try to validate blob URLs - handle them at render time
-        const photoURL = userData.photoURL?.startsWith('blob:') ? null : userData.photoURL;
+        const photoURL = crewData.profileImageUrl?.startsWith('blob:') ? null : crewData.profileImageUrl;
         
         return {
           id: doc.id,
-          displayName: userData.displayName || userData.email?.split('@')[0] || 'User',
-          email: userData.email,
+          displayName: crewData.name || crewData.displayName || crewData.email?.split('@')[0] || 'Crew Member',
+          email: crewData.email,
           photoURL: photoURL || null
         };
       });

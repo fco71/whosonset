@@ -75,17 +75,18 @@ const EnhancedTasksHub: React.FC<EnhancedTasksHubProps> = ({ projectId }) => {
   useEffect(() => {
     const loadUsers = async () => {
       try {
-        const usersQuery = query(collection(db, 'users'));
-        const snapshot = await getDocs(usersQuery);
+        // Use crewProfiles collection instead of users (single source of truth)
+        const crewQuery = query(collection(db, 'crewProfiles'), where('isPublished', '==', true));
+        const snapshot = await getDocs(crewQuery);
         const usersData: Record<string, UserData> = {};
         
         snapshot.docs.forEach((doc: any) => {
-          const userData = doc.data();
+          const crewData = doc.data();
           usersData[doc.id] = {
             id: doc.id,
-            name: userData.displayName || (userData.email ? userData.email.split('@')[0] : 'User'),
-            email: userData.email || '',
-            avatar: userData.photoURL
+            name: crewData.name || crewData.displayName || (crewData.email ? crewData.email.split('@')[0] : 'Crew Member'),
+            email: crewData.email || '',
+            avatar: crewData.profileImageUrl || crewData.photoURL
           };
         });
         

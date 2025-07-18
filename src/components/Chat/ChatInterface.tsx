@@ -951,15 +951,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
     setIsSearching(true);
     try {
-      // Search in users collection
-      const usersQuery = firestoreQuery(
-        collection(db, 'users'),
-        where('displayName', '>=', query),
-        where('displayName', '<=', query + '\uf8ff'),
-        limit(10)
-      );
-      
-      // Search in crewProfiles collection
+      // Search only in crewProfiles collection (single source of truth)
       const crewQuery = firestoreQuery(
         collection(db, 'crewProfiles'),
         where('name', '>=', query),
@@ -967,10 +959,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         limit(10)
       );
 
-      const [usersSnapshot, crewSnapshot] = await Promise.all([
-        getDocs(usersQuery),
-        getDocs(crewQuery)
-      ]);
+      const crewSnapshot = await getDocs(crewQuery);
 
       const results: Array<{
         id: string;
@@ -979,24 +968,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         role?: string;
         company?: string;
         location?: string;
-        type: 'user' | 'crew';
+        type: 'crew';
       }> = [];
-
-      // Add users
-      usersSnapshot.docs.forEach(doc => {
-        const data = doc.data() as any;
-        if (doc.id !== currentUserId) { // Don't show current user
-          results.push({
-            id: doc.id,
-            name: data.displayName || data.firstName || `User ${doc.id.slice(-4)}`,
-            avatar: data.avatarUrl,
-            role: data.role,
-            company: data.company,
-            location: data.location,
-            type: 'user'
-          });
-        }
-      });
 
       // Add crew members
       crewSnapshot.docs.forEach(doc => {
@@ -1004,11 +977,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         if (doc.id !== currentUserId) { // Don't show current user
           results.push({
             id: doc.id,
-            name: data.name || data.firstName || `Crew ${doc.id.slice(-4)}`,
-            avatar: data.avatarUrl,
-            role: data.role,
+            name: data.name || data.displayName || data.firstName || `Crew Member ${doc.id.slice(-4)}`,
+            avatar: data.profileImageUrl || data.avatarUrl,
+            role: data.jobTitles?.[0]?.title || data.role,
             company: data.company,
-            location: data.location,
+            location: data.residences?.[0]?.city || data.location,
             type: 'crew'
           });
         }
