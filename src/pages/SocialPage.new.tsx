@@ -137,9 +137,11 @@ const SocialPage = () => {
       
       setAllProfiles(mappedProfiles);
       setFilteredProfiles(mappedProfiles);
-      setConnectionRequests(mappedProfiles.slice(0, 2));
-      setSentRequests(mappedProfiles.slice(2, 4));
-      setConnections(mappedProfiles.slice(4, 8));
+      
+      // For new users, these should be empty (no fake connections)
+      setConnectionRequests([]);
+      setSentRequests([]);
+      setConnections([]);
     } catch (error) {
       console.error('Error loading profiles:', error);
     } finally {
@@ -428,8 +430,8 @@ const SocialPage = () => {
         <div className="flex items-start justify-between">
           <div className="flex items-start space-x-3">
             <Avatar className="h-12 w-12">
-              <AvatarImage src={getPhotoUrl(profile)} alt={getDisplayName(profile)} />
-              <AvatarFallback>
+              <AvatarImage src={getPhotoUrl(profile) || '/bust-avatar.svg'} alt={getDisplayName(profile)} />
+              <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-medium">
                 {getDisplayName(profile)
                   .split(' ')
                   .map(n => n[0])

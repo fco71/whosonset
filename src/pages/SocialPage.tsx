@@ -91,10 +91,10 @@ const SocialPage = () => {
     
     setIsLoading(true);
     try {
-      // Fetch crew profiles from the social service
+      // Only fetch crew profiles for discovery tab
       const profiles = await SocialService.getCrewProfiles();
       
-      // Map the profiles to the correct shape
+      // Map the profiles to the correct shape for discovery
       const mappedProfiles = profiles.map((profile: any) => {
         const id = profile.id || '';
         const displayName = profile.displayName || profile.name || 'Unknown User';
@@ -133,13 +133,146 @@ const SocialPage = () => {
         }
       });
       
+      // Set profiles for discovery only
       setAllProfiles(mappedProfiles);
       setFilteredProfiles(mappedProfiles);
-      setConnectionRequests(mappedProfiles.slice(0, 2));
-      setSentRequests(mappedProfiles.slice(2, 4));
-      setConnections(mappedProfiles.slice(4, 8));
+      
+      // Load ACTUAL user-specific social data
+      try {
+        // Helper function to fetch user profile data (emulating discover logic)
+        const fetchUserProfile = async (userId: string): Promise<AppProfile> => {
+          try {
+            // First try to get from crewProfiles collection (like discover does)
+            const { getDoc, doc } = await import('firebase/firestore');
+            const { db } = await import('../firebase');
+            
+            const crewDoc = await getDoc(doc(db, 'crewProfiles', userId));
+            if (crewDoc.exists()) {
+              const crewData = crewDoc.data();
+              // Use the same logic as discover section
+              const id = crewData.id || userId;
+              const displayName = crewData.displayName || crewData.name || 'Unknown User';
+              const photoURL = crewData.photoURL || crewData.profileImageUrl || '';
+              const bio = crewData.bio || '';
+              
+              return {
+                id,
+                type: 'crew' as const,
+                uid: userId,
+                displayName,
+                photoURL,
+                bio,
+                name: crewData.name || displayName,
+                username: crewData.username || (crewData.email ? String(crewData.email).split('@')[0] : ''),
+                jobTitles: Array.isArray(crewData.jobTitles) ? [...crewData.jobTitles] : [],
+                residences: Array.isArray(crewData.residences) ? [...crewData.residences] : [],
+                isPublished: crewData.isPublished !== undefined ? Boolean(crewData.isPublished) : true,
+              };
+            }
+            
+            // If not found in crewProfiles, try users collection
+            const userDoc = await getDoc(doc(db, 'users', userId));
+            if (userDoc.exists()) {
+              const userData = userDoc.data();
+              return {
+                id: userId,
+                type: 'user' as const,
+                displayName: userData.displayName || userData.name || `User ${userId.slice(0, 6)}`,
+                photoURL: userData.avatar || userData.photoURL || '',
+                bio: userData.bio || '',
+                email: userData.email || ''
+              };
+            }
+            
+            // Fallback if no profile found
+            return {
+              id: userId,
+              type: 'user' as const,
+              displayName: `User ${userId.slice(0, 6)}`,
+              photoURL: '',
+              bio: '',
+              email: ''
+            };
+          } catch (error) {
+            console.error('Error fetching user profile:', error);
+            return {
+              id: userId,
+              type: 'user' as const,
+              displayName: `User ${userId.slice(0, 6)}`,
+              photoURL: '',
+              bio: '',
+              email: ''
+            };
+          }
+        };
+        
+        // Load real follow requests (incoming) - use subscription once
+        const followRequestsPromise = new Promise<any[]>((resolve) => {
+          const unsubscribe = SocialService.subscribeToFollowRequests(currentUser.uid, (requests) => {
+            unsubscribe();
+            resolve(requests);
+          });
+        });
+        
+        const realFollowRequests = await followRequestsPromise;
+        const mappedRequests = await Promise.all(
+          realFollowRequests.map(async (req: any) => {
+            const userProfile = await fetchUserProfile(req.fromUserId);
+            return userProfile;
+          })
+        );
+        setConnectionRequests(mappedRequests);
+        
+        // Load real connections (people I'm following) - use subscription once
+        const followingPromise = new Promise<any[]>((resolve) => {
+          const unsubscribe = SocialService.subscribeToFollowing(currentUser.uid, (follows) => {
+            unsubscribe();
+            resolve(follows);
+          });
+        });
+        
+        const realConnections = await followingPromise;
+        const mappedConnections = await Promise.all(
+          realConnections.map(async (conn: any) => {
+            const userProfile = await fetchUserProfile(conn.followingId);
+            return userProfile;
+          })
+        );
+        setConnections(mappedConnections);
+        
+        // Load real sent requests (outgoing) - use subscription once
+        const outgoingRequestsPromise = new Promise<any[]>((resolve) => {
+          const unsubscribe = SocialService.subscribeToOutgoingFollowRequests(currentUser.uid, (requests) => {
+            unsubscribe();
+            resolve(requests);
+          });
+        });
+        
+        const realSentRequests = await outgoingRequestsPromise;
+        const mappedSentRequests = await Promise.all(
+          realSentRequests.map(async (req: any) => {
+            const userProfile = await fetchUserProfile(req.toUserId);
+            return userProfile;
+          })
+        );
+        setSentRequests(mappedSentRequests);
+        
+      } catch (socialError) {
+        console.log('Social data loading (expected for new users):', socialError);
+        // For new users, these should be empty
+        setConnectionRequests([]);
+        setSentRequests([]);
+        setConnections([]);
+      }
+      
     } catch (error) {
       console.error('Error loading profiles:', error);
+      // Clear all data on error
+      setAllProfiles([]);
+      setFilteredProfiles([]);
+      setConnectionRequests([]);
+      setSentRequests([]);
+      setConnections([]);
     } finally {
       setIsLoading(false);
     }
@@ -213,22 +346,33 @@ const SocialPage = () => {
   };
 
   // Helper function to render user cards
-  const renderUserCard = (profile: AppProfile, action?: React.ReactNode) => (
-    <div key={getProfileId(profile)} className="flex items-center justify-between p-4 border rounded-lg">
-      <div className="flex items-center space-x-4">
-        <img 
-          src={getPhotoUrl(profile)} 
-          alt={getDisplayName(profile)}
-          className="h-12 w-12 rounded-full object-cover"
-        />
-        <div>
-          <p className="font-medium text-gray-900">{getDisplayName(profile)}</p>
-          {profile.bio && <p className="text-sm text-gray-500 line-clamp-1">{profile.bio}</p>}
+  const renderUserCard = (profile: AppProfile, action?: React.ReactNode) => {
+    const avatarUrl = profile.photoURL || (profile as any).profileImageUrl || '/bust-avatar.svg';
+    const displayName = profile.displayName || (profile as any).name || 'User';
+    const jobTitle = profile.type === 'crew' ? (profile as any).jobTitles?.[0]?.title : undefined;
+    
+    return (
+      <div key={getProfileId(profile)} className="flex items-center justify-between p-4 border rounded-lg">
+        <div className="flex items-center space-x-4">
+          <img 
+            src={avatarUrl} 
+            alt={displayName}
+            className="h-12 w-12 rounded-full object-cover object-center flex-shrink-0"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.src = '/bust-avatar.svg';
+            }}
+          />
+          <div>
+            <p className="font-medium text-gray-900">{displayName}</p>
+            {jobTitle && <p className="text-sm text-gray-600 font-medium">{jobTitle}</p>}
+            {profile.bio && <p className="text-sm text-gray-500 line-clamp-1">{profile.bio}</p>}
+          </div>
         </div>
+        {action}
       </div>
-      {action}
-    </div>
-  );
+    );
+  };
 
   // Render content based on active tab
   const renderTabContent = () => {
@@ -385,38 +529,42 @@ const SocialPage = () => {
     profile: AppProfile; 
     action?: React.ReactNode;
     showBio?: boolean;
-  }) => (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
-      <div className="p-4">
-        <div className="flex items-start justify-between">
-          <div className="flex items-start space-x-3">
-            <Avatar className="h-12 w-12">
-              <AvatarImage src={getPhotoUrl(profile)} alt={getDisplayName(profile)} />
-              <AvatarFallback>
-                {getDisplayName(profile)
-                  .split(' ')
-                  .map(n => n[0])
-                  .join('')
-                  .toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <h3 className="font-medium text-gray-900">{getDisplayName(profile)}</h3>
-              {showBio && profile.bio && (
-                <p className="text-sm text-gray-500 line-clamp-2">{profile.bio}</p>
-              )}
-              {isCrewProfile(profile) && profile.jobTitles?.[0]?.title && (
-                <p className="text-xs text-gray-500 mt-1">
-                  {profile.jobTitles[0].title}
-                </p>
-              )}
+  }) => {
+    // Get the proper avatar and display name like crew cards do
+    const avatarUrl = profile.photoURL || (profile as any).profileImageUrl || '/bust-avatar.svg';
+    const displayName = profile.displayName || (profile as any).name || 'User';
+    const jobTitle = profile.type === 'crew' ? (profile as any).jobTitles?.[0]?.title : undefined;
+    
+    return (
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+        <div className="p-4">
+          <div className="flex items-start justify-between">
+            <div className="flex items-start space-x-3">
+              <img 
+                src={avatarUrl} 
+                alt={displayName}
+                className="h-12 w-12 rounded-full object-cover object-center flex-shrink-0"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = '/bust-avatar.svg';
+                }}
+              />
+              <div className="flex-1 min-w-0">
+                <h3 className="font-medium text-gray-900">{displayName}</h3>
+                {jobTitle && (
+                  <p className="text-sm text-gray-600 font-medium">{jobTitle}</p>
+                )}
+                {showBio && profile.bio && (
+                  <p className="text-sm text-gray-500 line-clamp-2 mt-1">{profile.bio}</p>
+                )}
+              </div>
             </div>
+            {action && <div className="flex-shrink-0 ml-2">{action}</div>}
           </div>
-          {action && <div className="flex-shrink-0 ml-2">{action}</div>}
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // Loading skeleton
   if (isLoading) {

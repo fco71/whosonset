@@ -28,6 +28,7 @@ const PostJobPage = React.lazy(() => import('./pages/PostJobPage'));
 const JobDetailPage = React.lazy(() => import('./pages/JobDetailPage'));
 const DebugJobsPage = React.lazy(() => import('./pages/DebugJobsPage'));
 const EditProfilePage = React.lazy(() => import('./pages/EditProfilePage'));
+const PublicResumePage = React.lazy(() => import('./components/PublicResumePage'));
 const LoginPage = React.lazy(() => import('./pages/LoginPage'));
 const RegisterPage = React.lazy(() => import('./pages/RegisterPage'));
 
@@ -57,7 +58,17 @@ const PublicRoute = ({ children, redirectTo = '/' }: { children: React.ReactNode
 const fontFamily = 'Inter, sans-serif';
 
 function App() {
-  const { currentUser } = useAuth();
+  const { currentUser, logout } = useAuth();
+  
+  const handleSignOut = async () => {
+    try {
+      await logout();
+      console.log('User signed out successfully');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
   return (
     <ThemeProvider>
       <div className="min-h-screen bg-background text-foreground" style={{ fontFamily: 'Inter, sans-serif' }}>
@@ -65,10 +76,7 @@ function App() {
           <div className="min-h-screen bg-gray-50 text-gray-900">
             <Navigation 
               authUser={currentUser} 
-              userSignOut={() => { 
-                // Handle sign out logic here
-                window.location.href = '/login'; 
-              }} 
+              userSignOut={handleSignOut} 
             />
             <main className="container mx-auto px-4 py-8">
               <Suspense fallback={
@@ -137,6 +145,9 @@ function App() {
                     <EditProfilePage />
                   </ProtectedRoute>
                 } />
+                
+                {/* Public Resume Routes */}
+                <Route path="/resume/:uid" element={<PublicResumePage />} />
                 
                 {/* Job Related Routes */}
                 <Route path="/jobs" element={<JobsPage />} />
