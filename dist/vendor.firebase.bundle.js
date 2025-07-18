@@ -46,10 +46,11 @@ __webpack_require__.d(__webpack_exports__, {
   xI: () => (/* reexport */ getAuth),
   hg: () => (/* reexport */ onAuthStateChanged),
   x9: () => (/* reexport */ signInWithEmailAndPassword),
-  CI: () => (/* reexport */ signOut)
+  CI: () => (/* reexport */ signOut),
+  r7: () => (/* reexport */ updateProfile)
 });
 
-// UNUSED EXPORTS: ActionCodeOperation, ActionCodeURL, AuthCredential, AuthErrorCodes, EmailAuthCredential, EmailAuthProvider, FacebookAuthProvider, FactorId, GithubAuthProvider, GoogleAuthProvider, OAuthCredential, OAuthProvider, OperationType, PhoneAuthCredential, PhoneAuthProvider, PhoneMultiFactorGenerator, ProviderId, RecaptchaVerifier, SAMLAuthProvider, SignInMethod, TotpMultiFactorGenerator, TotpSecret, TwitterAuthProvider, applyActionCode, beforeAuthStateChanged, browserCookiePersistence, browserLocalPersistence, browserPopupRedirectResolver, browserSessionPersistence, checkActionCode, confirmPasswordReset, connectAuthEmulator, debugErrorMap, deleteUser, fetchSignInMethodsForEmail, getAdditionalUserInfo, getIdToken, getIdTokenResult, getMultiFactorResolver, getRedirectResult, inMemoryPersistence, indexedDBLocalPersistence, initializeAuth, initializeRecaptchaConfig, isSignInWithEmailLink, linkWithCredential, linkWithPhoneNumber, linkWithPopup, linkWithRedirect, multiFactor, onIdTokenChanged, parseActionCodeURL, prodErrorMap, reauthenticateWithCredential, reauthenticateWithPhoneNumber, reauthenticateWithPopup, reauthenticateWithRedirect, reload, revokeAccessToken, sendEmailVerification, sendPasswordResetEmail, sendSignInLinkToEmail, setPersistence, signInAnonymously, signInWithCredential, signInWithCustomToken, signInWithEmailLink, signInWithPhoneNumber, signInWithPopup, signInWithRedirect, unlink, updateCurrentUser, updateEmail, updatePassword, updatePhoneNumber, updateProfile, useDeviceLanguage, validatePassword, verifyBeforeUpdateEmail, verifyPasswordResetCode
+// UNUSED EXPORTS: ActionCodeOperation, ActionCodeURL, AuthCredential, AuthErrorCodes, EmailAuthCredential, EmailAuthProvider, FacebookAuthProvider, FactorId, GithubAuthProvider, GoogleAuthProvider, OAuthCredential, OAuthProvider, OperationType, PhoneAuthCredential, PhoneAuthProvider, PhoneMultiFactorGenerator, ProviderId, RecaptchaVerifier, SAMLAuthProvider, SignInMethod, TotpMultiFactorGenerator, TotpSecret, TwitterAuthProvider, applyActionCode, beforeAuthStateChanged, browserCookiePersistence, browserLocalPersistence, browserPopupRedirectResolver, browserSessionPersistence, checkActionCode, confirmPasswordReset, connectAuthEmulator, debugErrorMap, deleteUser, fetchSignInMethodsForEmail, getAdditionalUserInfo, getIdToken, getIdTokenResult, getMultiFactorResolver, getRedirectResult, inMemoryPersistence, indexedDBLocalPersistence, initializeAuth, initializeRecaptchaConfig, isSignInWithEmailLink, linkWithCredential, linkWithPhoneNumber, linkWithPopup, linkWithRedirect, multiFactor, onIdTokenChanged, parseActionCodeURL, prodErrorMap, reauthenticateWithCredential, reauthenticateWithPhoneNumber, reauthenticateWithPopup, reauthenticateWithRedirect, reload, revokeAccessToken, sendEmailVerification, sendPasswordResetEmail, sendSignInLinkToEmail, setPersistence, signInAnonymously, signInWithCredential, signInWithCustomToken, signInWithEmailLink, signInWithPhoneNumber, signInWithPopup, signInWithRedirect, unlink, updateCurrentUser, updateEmail, updatePassword, updatePhoneNumber, useDeviceLanguage, validatePassword, verifyBeforeUpdateEmail, verifyPasswordResetCode
 
 // EXTERNAL MODULE: ./node_modules/@firebase/app/dist/esm/index.esm2017.js
 var index_esm2017 = __webpack_require__(8461);
@@ -6701,7 +6702,7 @@ async function updateProfile(user, { displayName, photoURL: photoUrl }) {
     if (displayName === undefined && photoUrl === undefined) {
         return;
     }
-    const userInternal = getModularInstance(user);
+    const userInternal = (0,dist_index_esm2017/* getModularInstance */.Ku)(user);
     const idToken = await userInternal.getIdToken();
     const profileRequest = {
         idToken,
@@ -17758,8 +17759,8 @@ __webpack_require__.d(__webpack_exports__, {
   hq: () => (/* reexport */ arrayUnion),
   rJ: () => (/* reexport */ collection),
   kd: () => (/* reexport */ deleteDoc),
-  H9: () => (/* reexport */ doc),
-  x7: () => (/* reexport */ getDoc),
+  doc: () => (/* reexport */ doc),
+  getDoc: () => (/* reexport */ getDoc),
   GG: () => (/* reexport */ getDocs),
   aU: () => (/* reexport */ getFirestore),
   GV: () => (/* reexport */ increment),

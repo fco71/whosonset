@@ -7,7 +7,7 @@ import {
   signOut,
   updateProfile
 } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -42,32 +42,91 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const signup = async (email: string, password: string, firstName?: string, lastName?: string) => {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const user = userCredential.user;
-    
-    // Create display name from first/last name or email fallback
-    const displayName = (firstName && lastName) 
-      ? `${firstName} ${lastName}`
-      : user.email?.split('@')[0] || 'User';
-    
-    // Update Firebase Auth profile
-    await updateProfile(user, {
-      displayName: displayName
-    });
-    
-    // Create user document in 'users' collection
-    await setDoc(doc(db, 'users', user.uid), {
-      uid: user.uid,
-      email: user.email,
-      displayName: displayName,
-      firstName: firstName || '',
-      lastName: lastName || '',
-      photoURL: user.photoURL || '',
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
-    });
-    
-    console.log('User created successfully with Firestore documents');
+    try {
+      console.log('[AuthContext] Starting signup process for:', email);
+      
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      
+      console.log('[AuthContext] Firebase Auth user created with UID:', user.uid);
+      
+      // Create display name from first/last name or email fallback
+      const displayName = (firstName && lastName) 
+        ? `${firstName} ${lastName}`
+        : user.email?.split('@')[0] || 'User';
+      
+      console.log('[AuthContext] Display name set to:', displayName);
+      
+      // Update Firebase Auth profile
+      await updateProfile(user, {
+        displayName: displayName
+      });
+      
+      console.log('[AuthContext] Firebase Auth profile updated');
+      
+      // Create ONLY the crew profile (this is the single source of truth)
+      const crewProfileData = {
+        uid: user.uid,
+        name: displayName, // This will autopopulate the resume name
+        email: user.email,
+        bio: '',
+        profileImageUrl: '/bust-avatar.svg', // This is what crewProfiles expects
+        username: user.email?.split('@')[0] || '',
+        jobTitles: [],
+        residences: [],
+        contactInfo: {
+          email: user.email || '',
+          phone: '',
+          website: '',
+          instagram: ''
+        },
+        languages: [],
+        projects: [],
+        education: [],
+        otherInfo: '',
+        availability: 'available',
+        isPublished: true,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      };
+      
+      console.log('[AuthContext] Creating crewProfiles document with data:', crewProfileData);
+      
+      await setDoc(doc(db, 'crewProfiles', user.uid), crewProfileData);
+      
+      console.log('[AuthContext] crewProfiles document created successfully');
+      
+      // Verify the document was created
+      try {
+        const verifyDoc = await getDoc(doc(db, 'crewProfiles', user.uid));
+        if (verifyDoc.exists()) {
+          console.log('[AuthContext] ✅ Verification: crewProfiles document exists in Firestore');
+        } else {
+          console.error('[AuthContext] ❌ Verification: crewProfiles document does not exist in Firestore');
+        }
+      } catch (verifyError) {
+        console.error('[AuthContext] ❌ Verification failed:', verifyError);
+      }
+      
+      // Create user collections document (for favorites, etc.)
+      const userCollectionsData = {
+        savedProjects: [],
+        savedCrew: [],
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      };
+      
+      console.log('[AuthContext] Creating UserCollections document');
+      
+      await setDoc(doc(db, 'UserCollections', user.uid), userCollectionsData);
+      
+      console.log('[AuthContext] UserCollections document created successfully');
+      console.log('[AuthContext] User created successfully with crewProfiles document only');
+      
+    } catch (error) {
+      console.error('[AuthContext] Error during signup:', error);
+      throw error;
+    }
   };
 
   const logout = async () => {

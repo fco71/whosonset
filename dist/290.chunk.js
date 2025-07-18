@@ -460,7 +460,7 @@ const CollaborativeTasksHub_CollaborativeTasksHub = ({ projectId }) => {
     };
     const handleUpdateTask = async (taskId, updates) => {
         try {
-            const taskRef = (0,index_esm/* doc */.H9)(firebase.db, 'collaborativeTasks', taskId);
+            const taskRef = (0,index_esm.doc)(firebase.db, 'collaborativeTasks', taskId);
             await (0,index_esm/* updateDoc */.mZ)(taskRef, {
                 ...updates,
                 updatedAt: new Date()
@@ -476,7 +476,7 @@ const CollaborativeTasksHub_CollaborativeTasksHub = ({ projectId }) => {
     const handleDeleteTask = async (taskId) => {
         if (window.confirm('Are you sure you want to delete this task?')) {
             try {
-                await (0,index_esm/* deleteDoc */.kd)((0,index_esm/* doc */.H9)(firebase.db, 'collaborativeTasks', taskId));
+                await (0,index_esm/* deleteDoc */.kd)((0,index_esm.doc)(firebase.db, 'collaborativeTasks', taskId));
                 setSelectedTask(null);
                 setShowTaskDetails(false);
                 setExpandedTaskId(null);
@@ -489,7 +489,7 @@ const CollaborativeTasksHub_CollaborativeTasksHub = ({ projectId }) => {
     };
     const handleCompleteTask = async (taskId) => {
         try {
-            const taskRef = (0,index_esm/* doc */.H9)(firebase.db, 'collaborativeTasks', taskId);
+            const taskRef = (0,index_esm.doc)(firebase.db, 'collaborativeTasks', taskId);
             await (0,index_esm/* updateDoc */.mZ)(taskRef, {
                 status: 'completed',
                 completedAt: new Date(),
@@ -503,7 +503,7 @@ const CollaborativeTasksHub_CollaborativeTasksHub = ({ projectId }) => {
     };
     const handleStartTask = async (taskId) => {
         try {
-            const taskRef = (0,index_esm/* doc */.H9)(firebase.db, 'collaborativeTasks', taskId);
+            const taskRef = (0,index_esm.doc)(firebase.db, 'collaborativeTasks', taskId);
             await (0,index_esm/* updateDoc */.mZ)(taskRef, {
                 status: 'in_progress',
                 startedAt: new Date(),
@@ -523,7 +523,7 @@ const CollaborativeTasksHub_CollaborativeTasksHub = ({ projectId }) => {
     };
     const handleRestoreTask = async (taskId) => {
         try {
-            const taskRef = (0,index_esm/* doc */.H9)(firebase.db, 'collaborativeTasks', taskId);
+            const taskRef = (0,index_esm.doc)(firebase.db, 'collaborativeTasks', taskId);
             await (0,index_esm/* updateDoc */.mZ)(taskRef, {
                 status: 'pending',
                 completedAt: null,
@@ -539,7 +539,7 @@ const CollaborativeTasksHub_CollaborativeTasksHub = ({ projectId }) => {
         if (!newComment.trim() || !firebase/* auth */.j2.currentUser)
             return;
         try {
-            const taskRef = (0,index_esm/* doc */.H9)(firebase.db, 'collaborativeTasks', taskId);
+            const taskRef = (0,index_esm.doc)(firebase.db, 'collaborativeTasks', taskId);
             const task = tasks.find(t => t.id === taskId);
             if (!task)
                 return;
@@ -1030,7 +1030,7 @@ const ScreenplayViewer_ScreenplayViewer = ({ screenplay, projectId, onClose, onG
                 // Update Firestore with the updated annotation data
                 const updatedAnnotation = updatedAnnotations.find(a => a.id === annotationId);
                 if (updatedAnnotation) {
-                    const annotationRef = (0,index_esm/* doc */.H9)(firebase.db, 'screenplayAnnotations', annotationId);
+                    const annotationRef = (0,index_esm.doc)(firebase.db, 'screenplayAnnotations', annotationId);
                     // Deep sanitize replies
                     const safeReplies = Array.isArray(updatedAnnotation.replies)
                         ? updatedAnnotation.replies
@@ -1074,7 +1074,7 @@ const ScreenplayViewer_ScreenplayViewer = ({ screenplay, projectId, onClose, onG
             const annotation = annotations.find(a => a.id === annotationId);
             if (annotation) {
                 const updatedReplies = annotation.replies?.filter(r => r.id !== replyId) || [];
-                const annotationRef = (0,index_esm/* doc */.H9)(firebase.db, 'screenplayAnnotations', annotationId);
+                const annotationRef = (0,index_esm.doc)(firebase.db, 'screenplayAnnotations', annotationId);
                 await (0,index_esm/* updateDoc */.mZ)(annotationRef, { replies: updatedReplies });
                 // Update local state
                 setAnnotations(prev => prev.map(a => a.id === annotationId
@@ -1260,7 +1260,7 @@ const ScreenplayViewer_ScreenplayViewer = ({ screenplay, projectId, onClose, onG
                 isOnline: true
             };
             // Update session with current user's presence
-            const sessionRef = (0,index_esm/* doc */.H9)(firebase.db, 'screenplaySessions', session.id);
+            const sessionRef = (0,index_esm.doc)(firebase.db, 'screenplaySessions', session.id);
             await (0,index_esm/* updateDoc */.mZ)(sessionRef, {
                 activeUsers: (0,index_esm/* arrayUnion */.hq)(userPresenceData),
                 updatedAt: new Date()
@@ -1284,7 +1284,7 @@ const ScreenplayViewer_ScreenplayViewer = ({ screenplay, projectId, onClose, onG
         if (!session || !currentUser)
             return;
         try {
-            const sessionRef = (0,index_esm/* doc */.H9)(firebase.db, 'screenplaySessions', session.id);
+            const sessionRef = (0,index_esm.doc)(firebase.db, 'screenplaySessions', session.id);
             await (0,index_esm/* updateDoc */.mZ)(sessionRef, {
                 activeUsers: (0,index_esm/* arrayRemove */.C3)({
                     userId: currentUser.uid,
@@ -1335,7 +1335,7 @@ const ScreenplayViewer_ScreenplayViewer = ({ screenplay, projectId, onClose, onG
         });
         // Enhanced real-time session sync with presence
         if (session) {
-            const sessionUnsubscribe = (0,index_esm/* onSnapshot */.aQ)((0,index_esm/* doc */.H9)(firebase.db, 'screenplaySessions', session.id), (doc) => {
+            const sessionUnsubscribe = (0,index_esm/* onSnapshot */.aQ)((0,index_esm.doc)(firebase.db, 'screenplaySessions', session.id), (doc) => {
                 if (doc.exists()) {
                     const sessionData = doc.data();
                     setSession(sessionData);
@@ -1547,7 +1547,7 @@ const ScreenplayViewer_ScreenplayViewer = ({ screenplay, projectId, onClose, onG
     const toggleElementResolved = async (elementId, type) => {
         try {
             const collectionName = type === 'annotation' ? 'screenplayAnnotations' : 'screenplayTags';
-            const elementRef = (0,index_esm/* doc */.H9)(firebase.db, collectionName, elementId);
+            const elementRef = (0,index_esm.doc)(firebase.db, collectionName, elementId);
             const element = type === 'annotation'
                 ? annotations.find(c => c.id === elementId)
                 : tags.find(t => t.id === elementId);
@@ -1564,7 +1564,7 @@ const ScreenplayViewer_ScreenplayViewer = ({ screenplay, projectId, onClose, onG
     const deleteElement = async (elementId, type) => {
         try {
             const collectionName = type === 'annotation' ? 'screenplayAnnotations' : 'screenplayTags';
-            await (0,index_esm/* deleteDoc */.kd)((0,index_esm/* doc */.H9)(firebase.db, collectionName, elementId));
+            await (0,index_esm/* deleteDoc */.kd)((0,index_esm.doc)(firebase.db, collectionName, elementId));
             dist/* toast */.oR.success(`${type === 'annotation' ? 'Annotation' : 'Tag'} deleted successfully!`);
         }
         catch (error) {
@@ -1722,7 +1722,7 @@ const ScreenplayViewer_ScreenplayViewer = ({ screenplay, projectId, onClose, onG
         if (!screenplay.id)
             return;
         console.log('Setting up real-time collaborators listener for screenplay:', screenplay.id);
-        const collaboratorsUnsubscribe = (0,index_esm/* onSnapshot */.aQ)((0,index_esm/* doc */.H9)(firebase.db, 'screenplays', screenplay.id), (doc) => {
+        const collaboratorsUnsubscribe = (0,index_esm/* onSnapshot */.aQ)((0,index_esm.doc)(firebase.db, 'screenplays', screenplay.id), (doc) => {
             if (doc.exists()) {
                 const data = doc.data();
                 const teamMembers = data.teamMembers || [];
@@ -1849,8 +1849,8 @@ const ScreenplayViewer_ScreenplayViewer = ({ screenplay, projectId, onClose, onG
             console.log('Adding collaborator:', user);
             console.log('Screenplay ID:', screenplay.id);
             // First check if the screenplay document exists
-            const screenplayRef = (0,index_esm/* doc */.H9)(firebase.db, 'screenplays', screenplay.id);
-            const screenplayDoc = await (0,index_esm/* getDoc */.x7)(screenplayRef);
+            const screenplayRef = (0,index_esm.doc)(firebase.db, 'screenplays', screenplay.id);
+            const screenplayDoc = await (0,index_esm.getDoc)(screenplayRef);
             if (!screenplayDoc.exists()) {
                 throw new Error('Screenplay document not found');
             }
@@ -1934,7 +1934,7 @@ const ScreenplayViewer_ScreenplayViewer = ({ screenplay, projectId, onClose, onG
             const toRemove = collaborators.find(c => c.id === userId);
             if (!toRemove)
                 return;
-            const screenplayRef = (0,index_esm/* doc */.H9)(firebase.db, 'screenplays', screenplay.id);
+            const screenplayRef = (0,index_esm.doc)(firebase.db, 'screenplays', screenplay.id);
             await (0,index_esm/* updateDoc */.mZ)(screenplayRef, {
                 teamMembers: (0,index_esm/* arrayRemove */.C3)(toRemove)
             });
@@ -2716,7 +2716,7 @@ const CollaborationHub_CollaborationHub = ({ projectId }) => {
     const handleDeleteScreenplay = async (screenplayId) => {
         if (window.confirm('Are you sure you want to delete this screenplay?')) {
             try {
-                await (0,index_esm/* deleteDoc */.kd)((0,index_esm/* doc */.H9)(firebase.db, 'screenplays', screenplayId));
+                await (0,index_esm/* deleteDoc */.kd)((0,index_esm.doc)(firebase.db, 'screenplays', screenplayId));
                 dist/* toast */.oR.success('Screenplay deleted successfully');
                 // Refresh the screenplays list
                 loadUserScreenplays();

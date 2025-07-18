@@ -35,6 +35,17 @@ const SocialDashboard: React.FC = () => {
 
   useEffect(() => {
     if (currentUser) {
+      // Clear the user cache to ensure new logic takes effect
+      const clearCache = async () => {
+        try {
+          const { UserUtils } = await import('../../utilities/userUtils');
+          UserUtils.refreshUserCache();
+        } catch (error) {
+          console.error('Error clearing user cache:', error);
+        }
+      };
+      clearCache();
+      
       loadSocialData();
     }
   }, [currentUser]);
@@ -44,7 +55,7 @@ const SocialDashboard: React.FC = () => {
     setFollowingSet(new Set(following.map(f => f.followingId)));
   }, [following]);
 
-  // Fetch user data for a given user ID
+  // Fetch user data for a given user ID using the updated userUtils
   const fetchUserData = async (userId: string): Promise<UserData> => {
     try {
       // Check if we already have this user's data
@@ -52,18 +63,16 @@ const SocialDashboard: React.FC = () => {
         return userDataMap.get(userId)!;
       }
 
-      // Fetch user data from Firestore
-      const { getDoc, doc } = await import('firebase/firestore');
-      const { db } = await import('../../firebase');
+      // Use the updated userUtils that prioritizes crewProfiles
+      const { UserUtils } = await import('../../utilities/userUtils');
+      const userProfile = await UserUtils.getUserProfile(userId);
       
-      const userDoc = await getDoc(doc(db, 'users', userId));
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
+      if (userProfile) {
         const userInfo: UserData = {
           id: userId,
-          displayName: userData.displayName || userData.name || `User ${userId.slice(0, 6)}`,
-          avatar: userData.avatar || userData.photoURL || '',
-          department: userData.department || userData.jobTitle || ''
+          displayName: userProfile.displayName || `User ${userId.slice(0, 6)}`,
+          avatar: userProfile.avatarUrl || '',
+          department: userProfile.jobTitle || ''
         };
         
         // Cache the user data

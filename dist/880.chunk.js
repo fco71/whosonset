@@ -48,7 +48,7 @@ class FavoritesService {
                 coverImageUrl: projectData.coverImageUrl,
             } : undefined
         };
-        await (0,esm_index_esm/* setDoc */.BN)((0,esm_index_esm/* doc */.H9)(firebase.db, this.COLLECTION_NAME, favoriteData.id), favoriteData);
+        await (0,esm_index_esm/* setDoc */.BN)((0,esm_index_esm.doc)(firebase.db, this.COLLECTION_NAME, favoriteData.id), favoriteData);
     }
     /**
      * Remove a project from user's favorites
@@ -59,7 +59,7 @@ class FavoritesService {
             throw new Error('User must be authenticated to remove favorites');
         }
         const favoriteId = `${user.uid}_${projectId}`;
-        await (0,esm_index_esm/* deleteDoc */.kd)((0,esm_index_esm/* doc */.H9)(firebase.db, this.COLLECTION_NAME, favoriteId));
+        await (0,esm_index_esm/* deleteDoc */.kd)((0,esm_index_esm.doc)(firebase.db, this.COLLECTION_NAME, favoriteId));
     }
     /**
      * Check if a project is in user's favorites

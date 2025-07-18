@@ -1,5 +1,5 @@
 "use strict";
-(self["webpackChunkwhosonset"] = self["webpackChunkwhosonset"] || []).push([[190],{
+(self["webpackChunkwhosonset"] = self["webpackChunkwhosonset"] || []).push([[140],{
 
 /***/ 774:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
@@ -117,7 +117,7 @@ Input.displayName = 'Input';
 
 /***/ }),
 
-/***/ 9190:
+/***/ 8140:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 // ESM COMPAT FLAG
@@ -239,7 +239,7 @@ function getPhotoUrl(profile) {
         url = profile.avatarUrl || profile.photoURL || profile.profileImageUrl;
     }
     if (!url || typeof url !== 'string' || url.trim() === '') {
-        return '/default-avatar.png';
+        return '/bust-avatar.svg';
     }
     return url;
 }
@@ -257,25 +257,6 @@ var Button = __webpack_require__(774);
 var Input = __webpack_require__(6680);
 // EXTERNAL MODULE: ./src/lib/utils.ts
 var utils = __webpack_require__(9973);
-;// ./src/components/ui/Avatar.tsx
-
-
-
-const Avatar = react.forwardRef(({ className, size = "md", ...props }, ref) => {
-    const sizeClasses = {
-        sm: "h-8 w-8 text-xs",
-        md: "h-10 w-10 text-sm",
-        lg: "h-12 w-12 text-base"
-    };
-    return ((0,jsx_runtime.jsx)("div", { ref: ref, className: (0,utils.cn)("relative flex items-center justify-center overflow-hidden rounded-full bg-gray-100", sizeClasses[size], className), ...props }));
-});
-Avatar.displayName = "Avatar";
-const AvatarImage = react.forwardRef(({ className, ...props }, ref) => ((0,jsx_runtime.jsx)("img", { ref: ref, className: (0,utils.cn)("h-full w-full object-cover", className), ...props })));
-AvatarImage.displayName = "AvatarImage";
-const AvatarFallback = react.forwardRef(({ className, ...props }, ref) => ((0,jsx_runtime.jsx)("div", { ref: ref, className: (0,utils.cn)("flex h-full w-full items-center justify-center bg-gray-100 text-gray-600", className), ...props })));
-AvatarFallback.displayName = "AvatarFallback";
-
-
 ;// ./src/components/ui/Skeleton.tsx
 
 
@@ -285,7 +266,6 @@ function Skeleton({ className, ...props }) {
 
 
 ;// ./src/pages/SocialPage.tsx
-
 
 
 
@@ -318,9 +298,9 @@ const SocialPage = () => {
             return;
         setIsLoading(true);
         try {
-            // Fetch crew profiles from the social service
+            // Only fetch crew profiles for discovery tab
             const profiles = await socialService/* SocialService */.l.getCrewProfiles();
-            // Map the profiles to the correct shape
+            // Map the profiles to the correct shape for discovery
             const mappedProfiles = profiles.map((profile) => {
                 const id = profile.id || '';
                 const displayName = profile.displayName || profile.name || 'Unknown User';
@@ -358,14 +338,130 @@ const SocialPage = () => {
                     return userProfile;
                 }
             });
+            // Set profiles for discovery only
             setAllProfiles(mappedProfiles);
             setFilteredProfiles(mappedProfiles);
-            setConnectionRequests(mappedProfiles.slice(0, 2));
-            setSentRequests(mappedProfiles.slice(2, 4));
-            setConnections(mappedProfiles.slice(4, 8));
+            // Load ACTUAL user-specific social data
+            try {
+                // Helper function to fetch user profile data (emulating discover logic)
+                const fetchUserProfile = async (userId) => {
+                    try {
+                        // First try to get from crewProfiles collection (like discover does)
+                        const { getDoc, doc } = await Promise.resolve(/* import() */).then(__webpack_require__.bind(__webpack_require__, 7594));
+                        const { db } = await Promise.resolve(/* import() */).then(__webpack_require__.bind(__webpack_require__, 9487));
+                        const crewDoc = await getDoc(doc(db, 'crewProfiles', userId));
+                        if (crewDoc.exists()) {
+                            const crewData = crewDoc.data();
+                            // Use the same logic as discover section
+                            const id = crewData.id || userId;
+                            const displayName = crewData.displayName || crewData.name || 'Unknown User';
+                            const photoURL = crewData.photoURL || crewData.profileImageUrl || '';
+                            const bio = crewData.bio || '';
+                            return {
+                                id,
+                                type: 'crew',
+                                uid: userId,
+                                displayName,
+                                photoURL,
+                                bio,
+                                name: crewData.name || displayName,
+                                username: crewData.username || (crewData.email ? String(crewData.email).split('@')[0] : ''),
+                                jobTitles: Array.isArray(crewData.jobTitles) ? [...crewData.jobTitles] : [],
+                                residences: Array.isArray(crewData.residences) ? [...crewData.residences] : [],
+                                isPublished: crewData.isPublished !== undefined ? Boolean(crewData.isPublished) : true,
+                            };
+                        }
+                        // If not found in crewProfiles, try users collection
+                        const userDoc = await getDoc(doc(db, 'users', userId));
+                        if (userDoc.exists()) {
+                            const userData = userDoc.data();
+                            return {
+                                id: userId,
+                                type: 'user',
+                                displayName: userData.displayName || userData.name || `User ${userId.slice(0, 6)}`,
+                                photoURL: userData.avatar || userData.photoURL || '',
+                                bio: userData.bio || '',
+                                email: userData.email || ''
+                            };
+                        }
+                        // Fallback if no profile found
+                        return {
+                            id: userId,
+                            type: 'user',
+                            displayName: `User ${userId.slice(0, 6)}`,
+                            photoURL: '',
+                            bio: '',
+                            email: ''
+                        };
+                    }
+                    catch (error) {
+                        console.error('Error fetching user profile:', error);
+                        return {
+                            id: userId,
+                            type: 'user',
+                            displayName: `User ${userId.slice(0, 6)}`,
+                            photoURL: '',
+                            bio: '',
+                            email: ''
+                        };
+                    }
+                };
+                // Load real follow requests (incoming) - use subscription once
+                const followRequestsPromise = new Promise((resolve) => {
+                    const unsubscribe = socialService/* SocialService */.l.subscribeToFollowRequests(currentUser.uid, (requests) => {
+                        unsubscribe();
+                        resolve(requests);
+                    });
+                });
+                const realFollowRequests = await followRequestsPromise;
+                const mappedRequests = await Promise.all(realFollowRequests.map(async (req) => {
+                    const userProfile = await fetchUserProfile(req.fromUserId);
+                    return userProfile;
+                }));
+                setConnectionRequests(mappedRequests);
+                // Load real connections (people I'm following) - use subscription once
+                const followingPromise = new Promise((resolve) => {
+                    const unsubscribe = socialService/* SocialService */.l.subscribeToFollowing(currentUser.uid, (follows) => {
+                        unsubscribe();
+                        resolve(follows);
+                    });
+                });
+                const realConnections = await followingPromise;
+                const mappedConnections = await Promise.all(realConnections.map(async (conn) => {
+                    const userProfile = await fetchUserProfile(conn.followingId);
+                    return userProfile;
+                }));
+                setConnections(mappedConnections);
+                // Load real sent requests (outgoing) - use subscription once
+                const outgoingRequestsPromise = new Promise((resolve) => {
+                    const unsubscribe = socialService/* SocialService */.l.subscribeToOutgoingFollowRequests(currentUser.uid, (requests) => {
+                        unsubscribe();
+                        resolve(requests);
+                    });
+                });
+                const realSentRequests = await outgoingRequestsPromise;
+                const mappedSentRequests = await Promise.all(realSentRequests.map(async (req) => {
+                    const userProfile = await fetchUserProfile(req.toUserId);
+                    return userProfile;
+                }));
+                setSentRequests(mappedSentRequests);
+            }
+            catch (socialError) {
+                console.log('Social data loading (expected for new users):', socialError);
+                // For new users, these should be empty
+                setConnectionRequests([]);
+                setSentRequests([]);
+                setConnections([]);
+            }
         }
         catch (error) {
             console.error('Error loading profiles:', error);
+            // Clear all data on error
+            setAllProfiles([]);
+            setFilteredProfiles([]);
+            setConnectionRequests([]);
+            setSentRequests([]);
+            setConnections([]);
         }
         finally {
             setIsLoading(false);
@@ -434,7 +530,15 @@ const SocialPage = () => {
         }
     };
     // Helper function to render user cards
-    const renderUserCard = (profile, action) => ((0,jsx_runtime.jsxs)("div", { className: "flex items-center justify-between p-4 border rounded-lg", children: [(0,jsx_runtime.jsxs)("div", { className: "flex items-center space-x-4", children: [(0,jsx_runtime.jsx)("img", { src: getPhotoUrl(profile), alt: getDisplayName(profile), className: "h-12 w-12 rounded-full object-cover" }), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("p", { className: "font-medium text-gray-900", children: getDisplayName(profile) }), profile.bio && (0,jsx_runtime.jsx)("p", { className: "text-sm text-gray-500 line-clamp-1", children: profile.bio })] })] }), action] }, getProfileId(profile)));
+    const renderUserCard = (profile, action) => {
+        const avatarUrl = profile.photoURL || profile.profileImageUrl || '/bust-avatar.svg';
+        const displayName = profile.displayName || profile.name || 'User';
+        const jobTitle = profile.type === 'crew' ? profile.jobTitles?.[0]?.title : undefined;
+        return ((0,jsx_runtime.jsxs)("div", { className: "flex items-center justify-between p-4 border rounded-lg", children: [(0,jsx_runtime.jsxs)("div", { className: "flex items-center space-x-4", children: [(0,jsx_runtime.jsx)("img", { src: avatarUrl, alt: displayName, className: "h-12 w-12 rounded-full object-cover object-center flex-shrink-0", onError: (e) => {
+                                const target = e.target;
+                                target.src = '/bust-avatar.svg';
+                            } }), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("p", { className: "font-medium text-gray-900", children: displayName }), jobTitle && (0,jsx_runtime.jsx)("p", { className: "text-sm text-gray-600 font-medium", children: jobTitle }), profile.bio && (0,jsx_runtime.jsx)("p", { className: "text-sm text-gray-500 line-clamp-1", children: profile.bio })] })] }), action] }, getProfileId(profile)));
+    };
     // Render content based on active tab
     const renderTabContent = () => {
         if (!user) {
@@ -456,11 +560,16 @@ const SocialPage = () => {
         }
     };
     // User card component
-    const UserCard = ({ profile, action, showBio = true }) => ((0,jsx_runtime.jsx)("div", { className: "bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow", children: (0,jsx_runtime.jsx)("div", { className: "p-4", children: (0,jsx_runtime.jsxs)("div", { className: "flex items-start justify-between", children: [(0,jsx_runtime.jsxs)("div", { className: "flex items-start space-x-3", children: [(0,jsx_runtime.jsxs)(Avatar, { className: "h-12 w-12", children: [(0,jsx_runtime.jsx)(AvatarImage, { src: getPhotoUrl(profile), alt: getDisplayName(profile) }), (0,jsx_runtime.jsx)(AvatarFallback, { children: getDisplayName(profile)
-                                            .split(' ')
-                                            .map(n => n[0])
-                                            .join('')
-                                            .toUpperCase() })] }), (0,jsx_runtime.jsxs)("div", { className: "flex-1 min-w-0", children: [(0,jsx_runtime.jsx)("h3", { className: "font-medium text-gray-900", children: getDisplayName(profile) }), showBio && profile.bio && ((0,jsx_runtime.jsx)("p", { className: "text-sm text-gray-500 line-clamp-2", children: profile.bio })), isCrewProfile(profile) && profile.jobTitles?.[0]?.title && ((0,jsx_runtime.jsx)("p", { className: "text-xs text-gray-500 mt-1", children: profile.jobTitles[0].title }))] })] }), action && (0,jsx_runtime.jsx)("div", { className: "flex-shrink-0 ml-2", children: action })] }) }) }));
+    const UserCard = ({ profile, action, showBio = true }) => {
+        // Get the proper avatar and display name like crew cards do
+        const avatarUrl = profile.photoURL || profile.profileImageUrl || '/bust-avatar.svg';
+        const displayName = profile.displayName || profile.name || 'User';
+        const jobTitle = profile.type === 'crew' ? profile.jobTitles?.[0]?.title : undefined;
+        return ((0,jsx_runtime.jsx)("div", { className: "bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow", children: (0,jsx_runtime.jsx)("div", { className: "p-4", children: (0,jsx_runtime.jsxs)("div", { className: "flex items-start justify-between", children: [(0,jsx_runtime.jsxs)("div", { className: "flex items-start space-x-3", children: [(0,jsx_runtime.jsx)("img", { src: avatarUrl, alt: displayName, className: "h-12 w-12 rounded-full object-cover object-center flex-shrink-0", onError: (e) => {
+                                        const target = e.target;
+                                        target.src = '/bust-avatar.svg';
+                                    } }), (0,jsx_runtime.jsxs)("div", { className: "flex-1 min-w-0", children: [(0,jsx_runtime.jsx)("h3", { className: "font-medium text-gray-900", children: displayName }), jobTitle && ((0,jsx_runtime.jsx)("p", { className: "text-sm text-gray-600 font-medium", children: jobTitle })), showBio && profile.bio && ((0,jsx_runtime.jsx)("p", { className: "text-sm text-gray-500 line-clamp-2 mt-1", children: profile.bio }))] })] }), action && (0,jsx_runtime.jsx)("div", { className: "flex-shrink-0 ml-2", children: action })] }) }) }));
+    };
     // Loading skeleton
     if (isLoading) {
         return ((0,jsx_runtime.jsx)("div", { className: "container mx-auto px-4 py-8", children: (0,jsx_runtime.jsx)("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4", children: [...Array(6)].map((_, i) => ((0,jsx_runtime.jsx)("div", { className: "bg-white rounded-xl border border-gray-200 p-4", children: (0,jsx_runtime.jsxs)("div", { className: "flex items-center space-x-3", children: [(0,jsx_runtime.jsx)(Skeleton, { className: "h-12 w-12 rounded-full" }), (0,jsx_runtime.jsxs)("div", { className: "flex-1 space-y-2", children: [(0,jsx_runtime.jsx)(Skeleton, { className: "h-4 w-3/4" }), (0,jsx_runtime.jsx)(Skeleton, { className: "h-3 w-full" }), (0,jsx_runtime.jsx)(Skeleton, { className: "h-3 w-1/2" })] })] }) }, i))) }) }));
@@ -562,4 +671,4 @@ function isValidEmail(email) {
 /***/ })
 
 }]);
-//# sourceMappingURL=190.chunk.js.map
+//# sourceMappingURL=140.chunk.js.map

@@ -1,29 +1,19 @@
 "use strict";
-(self["webpackChunkwhosonset"] = self["webpackChunkwhosonset"] || []).push([[312],{
+(self["webpackChunkwhosonset"] = self["webpackChunkwhosonset"] || []).push([[360],{
 
-/***/ 3312:
+/***/ 3542:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
-// ESM COMPAT FLAG
-__webpack_require__.r(__webpack_exports__);
 
 // EXPORTS
 __webpack_require__.d(__webpack_exports__, {
-  "default": () => (/* binding */ components_EditCrewProfile)
+  A: () => (/* binding */ components_ResumeView)
 });
 
 // EXTERNAL MODULE: ./node_modules/react/jsx-runtime.js
 var jsx_runtime = __webpack_require__(4848);
 // EXTERNAL MODULE: ./node_modules/react/index.js
 var react = __webpack_require__(6540);
-// EXTERNAL MODULE: ./node_modules/firebase/auth/dist/esm/index.esm.js + 2 modules
-var index_esm = __webpack_require__(474);
-// EXTERNAL MODULE: ./node_modules/firebase/firestore/dist/esm/index.esm.js + 3 modules
-var esm_index_esm = __webpack_require__(7594);
-// EXTERNAL MODULE: ./node_modules/firebase/storage/dist/esm/index.esm.js + 1 modules
-var dist_esm_index_esm = __webpack_require__(2539);
-// EXTERNAL MODULE: ./src/firebase.ts
-var firebase = __webpack_require__(9487);
 ;// ./src/hooks/useBlobUrl.ts
 
 /**
@@ -327,6 +317,34 @@ const ResumeView = (props) => {
 };
 /* harmony default export */ const components_ResumeView = (ResumeView);
 
+
+/***/ }),
+
+/***/ 7360:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+// ESM COMPAT FLAG
+__webpack_require__.r(__webpack_exports__);
+
+// EXPORTS
+__webpack_require__.d(__webpack_exports__, {
+  "default": () => (/* binding */ components_EditCrewProfile)
+});
+
+// EXTERNAL MODULE: ./node_modules/react/jsx-runtime.js
+var jsx_runtime = __webpack_require__(4848);
+// EXTERNAL MODULE: ./node_modules/react/index.js
+var react = __webpack_require__(6540);
+// EXTERNAL MODULE: ./node_modules/firebase/auth/dist/esm/index.esm.js + 2 modules
+var index_esm = __webpack_require__(474);
+// EXTERNAL MODULE: ./node_modules/firebase/firestore/dist/esm/index.esm.js + 3 modules
+var esm_index_esm = __webpack_require__(7594);
+// EXTERNAL MODULE: ./node_modules/firebase/storage/dist/esm/index.esm.js + 1 modules
+var dist_esm_index_esm = __webpack_require__(2539);
+// EXTERNAL MODULE: ./src/firebase.ts
+var firebase = __webpack_require__(9487);
+// EXTERNAL MODULE: ./src/components/ResumeView.tsx + 1 modules
+var ResumeView = __webpack_require__(3542);
 ;// ./src/components/LocationSelector.tsx
 
 
@@ -377,7 +395,7 @@ const getDefaultEducationEntry = () => ({
 
 
 // Import html2pdf using require to bypass TypeScript issues
-const EditCrewProfile_html2pdf = __webpack_require__(3833);
+const html2pdf = __webpack_require__(3833);
 const fetchJobDepartments = async () => {
     const snapshot = await (0,esm_index_esm/* getDocs */.GG)((0,esm_index_esm/* collection */.rJ)(firebase.db, "jobDepartments"));
     // This map assumes the data shape is correct in Firestore (i.e., has a 'titles' field)
@@ -449,7 +467,7 @@ const EditCrewProfile = () => {
     const handleDownloadPDF = () => {
         if (!resumeRef.current)
             return;
-        EditCrewProfile_html2pdf()
+        html2pdf()
             .from(resumeRef.current)
             .set({
             margin: [0.2, 0.2, 0.2, 0.2], // Even smaller margins
@@ -522,9 +540,9 @@ const EditCrewProfile = () => {
             }
             console.log("DEBUG: Loading profile for user:", user.uid);
             try {
-                const docRef = (0,esm_index_esm/* doc */.H9)(firebase.db, 'crewProfiles', user.uid);
+                const docRef = (0,esm_index_esm.doc)(firebase.db, 'crewProfiles', user.uid);
                 console.log("DEBUG: Document reference created:", docRef.path);
-                const docSnap = await (0,esm_index_esm/* getDoc */.x7)(docRef);
+                const docSnap = await (0,esm_index_esm.getDoc)(docRef);
                 console.log("DEBUG: Document snapshot retrieved, exists:", docSnap.exists());
                 if (docSnap.exists()) {
                     const data = docSnap.data();
@@ -811,7 +829,7 @@ const EditCrewProfile = () => {
         console.log("DEBUG: Form data to save:", form);
         setLoading(true);
         try {
-            const docRef = (0,esm_index_esm/* doc */.H9)(firebase.db, 'crewProfiles', user.uid);
+            const docRef = (0,esm_index_esm.doc)(firebase.db, 'crewProfiles', user.uid);
             console.log("DEBUG: Saving to document:", docRef.path);
             // Always ensure name and profileImageUrl are set
             const safeName = form.name && form.name.trim() !== '' ? form.name : 'Unknown Crew';
@@ -873,7 +891,7 @@ const EditCrewProfile = () => {
                                                                 navigator.clipboard.writeText(`${window.location.origin}/resume/${user.uid}`);
                                                                 setMessage('Link copied to clipboard!');
                                                                 setTimeout(() => setMessage(null), 3000);
-                                                            }, className: "px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors", children: "Copy" })] }), (0,jsx_runtime.jsx)("p", { className: "text-xs text-blue-700", children: "Share this link with potential employers or collaborators" })] })), (0,jsx_runtime.jsx)("button", { onClick: handleSave, disabled: loading, className: "w-full bg-gray-900 text-white py-4 rounded-lg hover:bg-gray-800 disabled:opacity-50 font-light tracking-wide transition-all duration-300 hover:scale-[1.02]", children: loading ? 'Saving…' : 'Save Profile' }), message && ((0,jsx_runtime.jsx)("p", { className: "text-center text-green-600 mt-4 font-medium", children: message })), (0,jsx_runtime.jsx)("hr", { className: "my-8 border-gray-200" }), (0,jsx_runtime.jsx)("h3", { className: "text-xl font-light text-gray-900 mb-6 tracking-wide", children: "Resume Preview" }), (0,jsx_runtime.jsx)("div", { ref: resumeRef, className: "bg-white border border-gray-200 rounded-lg overflow-hidden", children: (0,jsx_runtime.jsx)(components_ResumeView, { profile: {
+                                                            }, className: "px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors", children: "Copy" })] }), (0,jsx_runtime.jsx)("p", { className: "text-xs text-blue-700", children: "Share this link with potential employers or collaborators" })] })), (0,jsx_runtime.jsx)("button", { onClick: handleSave, disabled: loading, className: "w-full bg-gray-900 text-white py-4 rounded-lg hover:bg-gray-800 disabled:opacity-50 font-light tracking-wide transition-all duration-300 hover:scale-[1.02]", children: loading ? 'Saving…' : 'Save Profile' }), message && ((0,jsx_runtime.jsx)("p", { className: "text-center text-green-600 mt-4 font-medium", children: message })), (0,jsx_runtime.jsx)("hr", { className: "my-8 border-gray-200" }), (0,jsx_runtime.jsx)("h3", { className: "text-xl font-light text-gray-900 mb-6 tracking-wide", children: "Resume Preview" }), (0,jsx_runtime.jsx)("div", { ref: resumeRef, className: "bg-white border border-gray-200 rounded-lg overflow-hidden", children: (0,jsx_runtime.jsx)(ResumeView/* default */.A, { profile: {
                                                     ...form,
                                                     projects: form.projects?.map(project => ({
                                                         projectName: project.projectName,
@@ -888,4 +906,4 @@ const EditCrewProfile = () => {
 /***/ })
 
 }]);
-//# sourceMappingURL=312.chunk.js.map
+//# sourceMappingURL=360.chunk.js.map

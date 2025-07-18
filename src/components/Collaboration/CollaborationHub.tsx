@@ -275,41 +275,41 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     try {
       let allResults: UserSearchResult[] = [];
       if (approvedContacts.length > 0) {
-        // Fetch all approved contacts' user docs in chunks of 10
-        const usersRef = collection(db, 'users');
+        // Fetch all approved contacts' crew profiles in chunks of 10
+        const crewProfilesRef = collection(db, 'crewProfiles');
         const approvedChunks = [];
         for (let i = 0; i < approvedContacts.length; i += 10) {
           approvedChunks.push(approvedContacts.slice(i, i + 10));
         }
         for (const chunk of approvedChunks) {
-          const q = query(usersRef, where('id', 'in', chunk));
+          const q = query(crewProfilesRef, where('uid', 'in', chunk));
           const snap = await getDocs(q);
           allResults = allResults.concat(
             snap.docs.map(doc => ({
               id: doc.id,
-              name: doc.data().displayName || doc.data().name || `User ${doc.id.slice(-4)}`,
+              name: doc.data().name || doc.data().displayName || `Crew Member ${doc.id.slice(-4)}`,
               email: doc.data().email || '',
-              avatar: doc.data().avatarUrl || doc.data().avatar || '',
-              role: doc.data().role || 'User',
+              avatar: doc.data().profileImageUrl || doc.data().avatarUrl || '',
+              role: doc.data().jobTitles?.[0]?.title || 'Crew Member',
               company: doc.data().company || ''
             }))
           );
         }
       } else {
-        // Fallback: search all users
-        const usersRef = collection(db, 'users');
-        const snap = await getDocs(usersRef);
-        console.log('[CollabModal] Fallback: found', snap.docs.length, 'users in Firestore');
+        // Fallback: search all crew profiles
+        const crewProfilesRef = collection(db, 'crewProfiles');
+        const snap = await getDocs(crewProfilesRef);
+        console.log('[CollabModal] Fallback: found', snap.docs.length, 'crew profiles in Firestore');
         allResults = snap.docs.map(doc => ({
           id: doc.id,
-          name: doc.data().displayName || doc.data().name || `User ${doc.id.slice(-4)}`,
+          name: doc.data().name || doc.data().displayName || `Crew Member ${doc.id.slice(-4)}`,
           email: doc.data().email || '',
-          avatar: doc.data().avatarUrl || doc.data().avatar || '',
-          role: doc.data().role || 'User',
+          avatar: doc.data().profileImageUrl || doc.data().avatarUrl || '',
+          role: doc.data().jobTitles?.[0]?.title || 'Crew Member',
           company: doc.data().company || ''
         }));
         if (allResults.length === 0) {
-          console.warn('[CollabModal] No users found in Firestore users collection.');
+          console.warn('[CollabModal] No crew profiles found in Firestore crewProfiles collection.');
         }
       }
       // Filter by search query
@@ -568,27 +568,27 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         setTeamMembers([]);
         return;
       }
-      // Load real team members from Firestore users collection
+      // Load real team members from Firestore crewProfiles collection
       const memberIds = selectedWorkspace.members?.map(m => m.userId) || [];
       if (memberIds.length === 0) {
         setTeamMembers([]);
         return;
       }
-      const usersRef = collection(db, 'users');
+      const crewProfilesRef = collection(db, 'crewProfiles');
       const chunks = [];
       for (let i = 0; i < memberIds.length; i += 10) {
         chunks.push(memberIds.slice(i, i + 10));
       }
       let allMembers: any[] = [];
       for (const chunk of chunks) {
-        const q = query(usersRef, where('id', 'in', chunk));
+        const q = query(crewProfilesRef, where('uid', 'in', chunk));
         const snap = await getDocs(q);
         allMembers = allMembers.concat(snap.docs.map(doc => ({
           id: doc.id,
-          name: doc.data().displayName || doc.data().name || `User ${doc.id.slice(-4)}`,
+          name: doc.data().name || doc.data().displayName || `Crew Member ${doc.id.slice(-4)}`,
           email: doc.data().email || '',
-          role: doc.data().role || 'User',
-          avatar: doc.data().avatarUrl || doc.data().avatar || '',
+          role: doc.data().jobTitles?.[0]?.title || 'Crew Member',
+          avatar: doc.data().profileImageUrl || doc.data().avatarUrl || '',
           isOnline: doc.data().isOnline || false
         })));
       }

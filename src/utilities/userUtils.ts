@@ -24,28 +24,7 @@ export class UserUtils {
         return this.userCache.get(userId) || null;
       }
 
-      // Try to get from users collection first
-      const userDoc = await getDoc(doc(db, 'users', userId));
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        const profile: UserProfile = {
-          id: userId,
-          displayName: userData.displayName || userData.firstName || userData.email?.split('@')[0],
-          firstName: userData.firstName,
-          lastName: userData.lastName,
-          email: userData.email,
-          avatarUrl: userData.avatarUrl,
-          bio: userData.bio,
-          location: userData.location,
-          jobTitle: userData.jobTitle,
-          company: userData.company
-        };
-        
-        this.userCache.set(userId, profile);
-        return profile;
-      }
-
-      // Try crewProfiles collection as fallback
+      // Only use crewProfiles collection (single source of truth)
       const crewDoc = await getDoc(doc(db, 'crewProfiles', userId));
       if (crewDoc.exists()) {
         const crewData = crewDoc.data();
@@ -55,10 +34,10 @@ export class UserUtils {
           firstName: crewData.firstName,
           lastName: crewData.lastName,
           email: crewData.email,
-          avatarUrl: crewData.avatarUrl,
+          avatarUrl: crewData.profileImageUrl || crewData.avatarUrl, // Use profileImageUrl from crewProfiles
           bio: crewData.bio,
-          location: crewData.location,
-          jobTitle: crewData.jobTitle,
+          location: crewData.residences?.[0]?.city || crewData.location,
+          jobTitle: crewData.jobTitles?.[0]?.title || crewData.jobTitle,
           company: crewData.company
         };
         
@@ -120,78 +99,40 @@ export class UserUtils {
       const chunkPromises = chunks.map(async (chunk) => {
         const chunkProfiles = new Map<string, UserProfile>();
         
-        // Try users collection first for the entire chunk
-        const userPromises = chunk.map(async (userId) => {
+        // Only use crewProfiles collection for the entire chunk (single source of truth)
+        const crewPromises = chunk.map(async (userId) => {
           try {
-            const userDoc = await getDoc(doc(db, 'users', userId));
-            if (userDoc.exists()) {
-              const userData = userDoc.data();
+            const crewDoc = await getDoc(doc(db, 'crewProfiles', userId));
+            if (crewDoc.exists()) {
+              const crewData = crewDoc.data();
               const profile: UserProfile = {
                 id: userId,
-                displayName: userData.displayName || userData.firstName || userData.email?.split('@')[0],
-                firstName: userData.firstName,
-                lastName: userData.lastName,
-                email: userData.email,
-                avatarUrl: userData.avatarUrl,
-                bio: userData.bio,
-                location: userData.location,
-                jobTitle: userData.jobTitle,
-                company: userData.company
+                displayName: crewData.name || crewData.firstName || `Crew Member ${userId.slice(-4)}`,
+                firstName: crewData.firstName,
+                lastName: crewData.lastName,
+                email: crewData.email,
+                avatarUrl: crewData.profileImageUrl || crewData.avatarUrl, // Use profileImageUrl from crewProfiles
+                bio: crewData.bio,
+                location: crewData.residences?.[0]?.city || crewData.location,
+                jobTitle: crewData.jobTitles?.[0]?.title || crewData.jobTitle,
+                company: crewData.company
               };
               this.userCache.set(userId, profile);
               return { userId, profile };
             }
             return null;
           } catch (error) {
-            console.error(`Error fetching user ${userId}:`, error);
+            console.error(`Error fetching crew profile ${userId}:`, error);
             return null;
           }
         });
 
-        const userResults = await Promise.all(userPromises);
-        userResults.forEach(result => {
+        const crewResults = await Promise.all(crewPromises);
+        crewResults.forEach(result => {
           if (result) {
             chunkProfiles.set(result.userId, result.profile);
           }
         });
-
-        // For users not found in users collection, try crewProfiles
-        const notFoundIds = chunk.filter(userId => !chunkProfiles.has(userId));
-        if (notFoundIds.length > 0) {
-          const crewPromises = notFoundIds.map(async (userId) => {
-            try {
-              const crewDoc = await getDoc(doc(db, 'crewProfiles', userId));
-              if (crewDoc.exists()) {
-                const crewData = crewDoc.data();
-                const profile: UserProfile = {
-                  id: userId,
-                  displayName: crewData.name || crewData.firstName || `Crew Member ${userId.slice(-4)}`,
-                  firstName: crewData.firstName,
-                  lastName: crewData.lastName,
-                  email: crewData.email,
-                  avatarUrl: crewData.avatarUrl,
-                  bio: crewData.bio,
-                  location: crewData.location,
-                  jobTitle: crewData.jobTitle,
-                  company: crewData.company
-                };
-                this.userCache.set(userId, profile);
-                return { userId, profile };
-              }
-              return null;
-            } catch (error) {
-              console.error(`Error fetching crew profile ${userId}:`, error);
-              return null;
-            }
-          });
-
-          const crewResults = await Promise.all(crewPromises);
-          crewResults.forEach(result => {
-            if (result) {
-              chunkProfiles.set(result.userId, result.profile);
-            }
-          });
-        }
 
         // Cache null for users not found
         chunk.forEach(userId => {
@@ -276,5 +217,11 @@ export class UserUtils {
         console.log('[UserUtils] Would preload user:', userId);
       }
     });
+  }
+
+  // Force refresh of user cache to use new logic
+  static refreshUserCache() {
+    console.log('[UserUtils] Refreshing user cache with new crewProfiles-first logic');
+    this.userCache.clear();
   }
 } 

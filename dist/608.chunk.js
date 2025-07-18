@@ -42,7 +42,7 @@ const CrewProfileCard = ({ profile, index = 0, isFiltering = false, currentUserI
             return;
         setIsBookmarking(true);
         try {
-            const userRef = (0,index_esm/* doc */.H9)(firebase.db, 'users', currentUserId);
+            const userRef = (0,index_esm.doc)(firebase.db, 'users', currentUserId);
             if (isBookmarked) {
                 await (0,index_esm/* updateDoc */.mZ)(userRef, {
                     bookmarkedCrew: (0,index_esm/* arrayRemove */.C3)(profile.uid)

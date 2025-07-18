@@ -139,10 +139,10 @@ const SocialPage = () => {
       
       // Load ACTUAL user-specific social data
       try {
-        // Helper function to fetch user profile data (emulating discover logic)
+        // Helper function to fetch user profile data (using only crewProfiles)
         const fetchUserProfile = async (userId: string): Promise<AppProfile> => {
           try {
-            // First try to get from crewProfiles collection (like discover does)
+            // Only use crewProfiles collection (single source of truth)
             const { getDoc, doc } = await import('firebase/firestore');
             const { db } = await import('../firebase');
             
@@ -170,21 +170,7 @@ const SocialPage = () => {
               };
             }
             
-            // If not found in crewProfiles, try users collection
-            const userDoc = await getDoc(doc(db, 'users', userId));
-            if (userDoc.exists()) {
-              const userData = userDoc.data();
-              return {
-                id: userId,
-                type: 'user' as const,
-                displayName: userData.displayName || userData.name || `User ${userId.slice(0, 6)}`,
-                photoURL: userData.avatar || userData.photoURL || '',
-                bio: userData.bio || '',
-                email: userData.email || ''
-              };
-            }
-            
-            // Fallback if no profile found
+            // Fallback if no profile found in crewProfiles
             return {
               id: userId,
               type: 'user' as const,
@@ -280,6 +266,17 @@ const SocialPage = () => {
 
   // Load data on component mount and when active tab changes
   useEffect(() => {
+    // Clear the user cache to ensure new logic takes effect
+    const clearCache = async () => {
+      try {
+        const { UserUtils } = await import('../utilities/userUtils');
+        UserUtils.refreshUserCache();
+      } catch (error) {
+        console.error('Error clearing user cache:', error);
+      }
+    };
+    clearCache();
+    
     loadData();
   }, [activeTab, user?.uid]);
 

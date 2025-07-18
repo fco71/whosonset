@@ -2,13 +2,13 @@
 
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { auth } from '../firebase';
+import { useAuth } from '../contexts/AuthContext';
 import { Form, FormInput, FormFieldGroup } from './ui/Form';
 import { Button } from './ui/Button';
 import { Eye, EyeOff, Mail, Lock, User, AlertCircle, CheckCircle } from 'lucide-react';
 
 const Register: React.FC = () => {
+  const { signup } = useAuth();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -58,23 +58,27 @@ const Register: React.FC = () => {
     setSuccess('');
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
+      console.log('[Register] Calling signup with:', {
+        email: formData.email,
+        firstName: formData.firstName,
+        lastName: formData.lastName
+      });
+      
+      // Use the AuthContext signup method which creates crewProfiles document
+      await signup(
         formData.email,
-        formData.password
+        formData.password,
+        formData.firstName,
+        formData.lastName
       );
 
-      // Update user profile with display name
-      await updateProfile(userCredential.user, {
-        displayName: `${formData.firstName} ${formData.lastName}`
-      });
-
+      console.log('[Register] Signup completed successfully');
       setSuccess('Account created successfully! Redirecting...');
       setTimeout(() => {
         navigate('/');
       }, 1500);
     } catch (error: any) {
-      console.error('Registration error:', error);
+      console.error('[Register] Registration error:', error);
       setError(
         error.code === 'auth/email-already-in-use'
           ? 'An account with this email already exists'

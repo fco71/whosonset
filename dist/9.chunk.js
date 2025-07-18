@@ -125,7 +125,7 @@ const DebugJobsPage = () => {
                 // Try to get user data if postedById exists
                 if (data.postedById) {
                     try {
-                        const userDoc = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__/* .getDoc */ .x7)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__/* .doc */ .H9)(db, 'users', data.postedById));
+                        const userDoc = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__.getDoc)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__.doc)(db, 'users', data.postedById));
                         if (userDoc.exists()) {
                             // Explicitly type the user data
                             const userData = userDoc.data();

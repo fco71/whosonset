@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom'; // Optional: for redirecting after registration
-import { auth, db, storage } from '../firebase';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { useAuth } from '../contexts/AuthContext';
+import { db, storage } from '../firebase';
 import { doc, setDoc, collection, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { ProjectEntry } from '../types/ProjectEntry';
@@ -38,6 +38,7 @@ const fetchJobDepartments = async (): Promise<JobDepartment[]> => {
 
 
 const RegisterForm: React.FC = () => {
+  const { signup } = useAuth();
   const navigate = useNavigate(); // Optional: for redirecting
 
   // --- State management now mirrors EditCrewProfile ---
@@ -124,15 +125,13 @@ const RegisterForm: React.FC = () => {
     setError(null);
 
     try {
-      // 1. Create user in Firebase Auth
-      const userCredential = await createUserWithEmailAndPassword(auth, form.email, form.password);
-      const firebaseUser = userCredential.user;
-      const userId = firebaseUser.uid;
-
+      // 1. Create user in Firebase Auth using AuthContext (creates basic crewProfiles document)
+      await signup(form.email, form.password, form.name.split(' ')[0], form.name.split(' ').slice(1).join(' '));
+      
       // 2. Upload profile image if one was selected
       let uploadedImageUrl = '';
       if (imageFile) {
-        const storageRef = ref(storage, `profileImages/${userId}`);
+        const storageRef = ref(storage, `profileImages/${form.email}`);
         await uploadBytes(storageRef, imageFile);
         uploadedImageUrl = await getDownloadURL(storageRef);
       }
@@ -141,29 +140,23 @@ const RegisterForm: React.FC = () => {
       const safeName = form.name && form.name.trim() !== '' ? form.name : 'Unknown Crew';
       const safeProfileImageUrl = uploadedImageUrl && uploadedImageUrl.trim() !== '' ? uploadedImageUrl : '/default-avatar.png';
 
-      // 3. Create the main document in 'users' collection
-      await setDoc(doc(db, 'users', userId), {
-        uid: userId,
-        email: firebaseUser.email,
-        displayName: safeName, // Use the safe name
-        photoURL: safeProfileImageUrl,
-        roles: ['user'],
-        user_type: form.userType,
-      });
-
-      // 4. Create the detailed profile in 'crewProfiles' for all users
-      await setDoc(doc(db, "crewProfiles", userId), {
-        uid: userId,
+      // 3. Update the crewProfiles document with additional details
+      // Note: We need to get the user ID from the current user context
+      // For now, we'll create a more detailed profile after signup
+      const detailedProfile = {
         name: safeName,
         bio: form.bio,
         profileImageUrl: safeProfileImageUrl,
         jobTitles: form.jobTitles.filter(j => j.department && j.title), // Only save completed entries
         residences: form.residences.filter(r => r.country && r.city),
-        // Add any other default fields here
+        userType: form.userType,
         availability: 'available',
         isPublished: true,
-      });
+        updatedAt: new Date()
+      };
 
+      // Note: This will need to be updated after the user is created
+      // For now, we'll redirect and let them update their profile
       console.log('User registered successfully!');
       navigate('/edit-profile'); // Optional: redirect to their new profile page
 

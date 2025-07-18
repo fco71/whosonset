@@ -636,29 +636,16 @@ export class MessagingService {
 
   private static async getUserProfile(userId: string) {
     try {
-      // Try to get from users collection first
-      const userDoc = await getDoc(doc(db, 'users', userId));
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        return {
-          displayName: userData.displayName || userData.firstName || userData.lastName || `User ${userId.slice(-4)}`,
-          avatarUrl: userData.avatarUrl,
-          role: userData.role,
-          company: userData.company,
-          location: userData.location
-        };
-      }
-
-      // Try crewProfiles collection as fallback
+      // Only use crewProfiles collection (single source of truth)
       const crewDoc = await getDoc(doc(db, 'crewProfiles', userId));
       if (crewDoc.exists()) {
         const crewData = crewDoc.data();
         return {
           displayName: crewData.name || crewData.firstName || crewData.lastName || `Crew Member ${userId.slice(-4)}`,
-          avatarUrl: crewData.avatarUrl,
+          avatarUrl: crewData.profileImageUrl || crewData.avatarUrl, // Use profileImageUrl from crewProfiles
           role: crewData.role,
           company: crewData.company,
-          location: crewData.location
+          location: crewData.residences?.[0]?.city || crewData.location
         };
       }
 

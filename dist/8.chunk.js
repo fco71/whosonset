@@ -57,7 +57,7 @@ const MyProjectsPage = () => {
         if (!window.confirm('Are you sure you want to delete this project? This cannot be undone.'))
             return;
         try {
-            await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__/* .deleteDoc */ .kd)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__/* .doc */ .H9)(_firebase__WEBPACK_IMPORTED_MODULE_3__.db, 'Projects', projectId));
+            await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__/* .deleteDoc */ .kd)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_3__.db, 'Projects', projectId));
             setProjects(projects => projects.filter(p => p.id !== projectId));
         }
         catch (err) {

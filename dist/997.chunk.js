@@ -25,7 +25,7 @@ class UserUtils {
                 return this.userCache.get(userId) || null;
             }
             // Try to get from users collection first
-            const userDoc = await (0,index_esm/* getDoc */.x7)((0,index_esm/* doc */.H9)(firebase.db, 'users', userId));
+            const userDoc = await (0,index_esm.getDoc)((0,index_esm.doc)(firebase.db, 'users', userId));
             if (userDoc.exists()) {
                 const userData = userDoc.data();
                 const profile = {
@@ -44,7 +44,7 @@ class UserUtils {
                 return profile;
             }
             // Try crewProfiles collection as fallback
-            const crewDoc = await (0,index_esm/* getDoc */.x7)((0,index_esm/* doc */.H9)(firebase.db, 'crewProfiles', userId));
+            const crewDoc = await (0,index_esm.getDoc)((0,index_esm.doc)(firebase.db, 'crewProfiles', userId));
             if (crewDoc.exists()) {
                 const crewData = crewDoc.data();
                 const profile = {
@@ -111,7 +111,7 @@ class UserUtils {
                 // Try users collection first for the entire chunk
                 const userPromises = chunk.map(async (userId) => {
                     try {
-                        const userDoc = await (0,index_esm/* getDoc */.x7)((0,index_esm/* doc */.H9)(firebase.db, 'users', userId));
+                        const userDoc = await (0,index_esm.getDoc)((0,index_esm.doc)(firebase.db, 'users', userId));
                         if (userDoc.exists()) {
                             const userData = userDoc.data();
                             const profile = {
@@ -147,7 +147,7 @@ class UserUtils {
                 if (notFoundIds.length > 0) {
                     const crewPromises = notFoundIds.map(async (userId) => {
                         try {
-                            const crewDoc = await (0,index_esm/* getDoc */.x7)((0,index_esm/* doc */.H9)(firebase.db, 'crewProfiles', userId));
+                            const crewDoc = await (0,index_esm.getDoc)((0,index_esm.doc)(firebase.db, 'crewProfiles', userId));
                             if (crewDoc.exists()) {
                                 const crewData = crewDoc.data();
                                 const profile = {
@@ -337,14 +337,14 @@ class SocialService {
     static async respondToFollowRequest(requestId, status) {
         try {
             const batch = (0,index_esm/* writeBatch */.wP)(firebase.db);
-            const requestRef = (0,index_esm/* doc */.H9)(firebase.db, 'followRequests', requestId);
+            const requestRef = (0,index_esm.doc)(firebase.db, 'followRequests', requestId);
             // Update request status instead of deleting
             batch.update(requestRef, {
                 status,
                 updatedAt: (0,index_esm/* serverTimestamp */.O5)()
             });
             // Get the request data
-            const requestDoc = await (0,index_esm/* getDoc */.x7)(requestRef);
+            const requestDoc = await (0,index_esm.getDoc)(requestRef);
             if (!requestDoc.exists()) {
                 throw new Error('Follow request not found');
             }
@@ -358,7 +358,7 @@ class SocialService {
                     status: 'active',
                     createdAt: (0,index_esm/* serverTimestamp */.O5)()
                 };
-                const followRef = (0,index_esm/* doc */.H9)((0,index_esm/* collection */.rJ)(firebase.db, 'follows'));
+                const followRef = (0,index_esm.doc)((0,index_esm/* collection */.rJ)(firebase.db, 'follows'));
                 batch.set(followRef, followData);
                 // Create notification for the requester
                 await this.createNotification({
@@ -421,7 +421,7 @@ class SocialService {
             if (!follow) {
                 throw new Error('Not following this user');
             }
-            await (0,index_esm/* deleteDoc */.kd)((0,index_esm/* doc */.H9)(firebase.db, 'follows', follow.id));
+            await (0,index_esm/* deleteDoc */.kd)((0,index_esm.doc)(firebase.db, 'follows', follow.id));
         }
         catch (error) {
             console.error('Error unfollowing:', error);
@@ -571,7 +571,7 @@ class SocialService {
     }
     static async markNotificationAsRead(notificationId) {
         try {
-            const notificationRef = (0,index_esm/* doc */.H9)(firebase.db, 'notifications', notificationId);
+            const notificationRef = (0,index_esm.doc)(firebase.db, 'notifications', notificationId);
             await (0,index_esm/* updateDoc */.mZ)(notificationRef, { isRead: true });
         }
         catch (error) {
@@ -726,7 +726,7 @@ class SocialService {
             };
             await (0,index_esm/* addDoc */.gS)((0,index_esm/* collection */.rJ)(firebase.db, 'likes'), likeData);
             // Update activity feed item likes count
-            const activityRef = (0,index_esm/* doc */.H9)(firebase.db, 'activityFeed', activityId);
+            const activityRef = (0,index_esm.doc)(firebase.db, 'activityFeed', activityId);
             await (0,index_esm/* updateDoc */.mZ)(activityRef, {
                 likes: (0,index_esm/* increment */.GV)(1)
             });
@@ -743,9 +743,9 @@ class SocialService {
             // Find and delete like
             const like = await this.getLike(activityId, userId);
             if (like) {
-                await (0,index_esm/* deleteDoc */.kd)((0,index_esm/* doc */.H9)(firebase.db, 'likes', like.id));
+                await (0,index_esm/* deleteDoc */.kd)((0,index_esm.doc)(firebase.db, 'likes', like.id));
                 // Update activity feed item likes count
-                const activityRef = (0,index_esm/* doc */.H9)(firebase.db, 'activityFeed', activityId);
+                const activityRef = (0,index_esm.doc)(firebase.db, 'activityFeed', activityId);
                 await (0,index_esm/* updateDoc */.mZ)(activityRef, {
                     likes: (0,index_esm/* increment */.GV)(-1)
                 });
@@ -807,7 +807,7 @@ class SocialService {
             };
             await (0,index_esm/* addDoc */.gS)((0,index_esm/* collection */.rJ)(firebase.db, 'comments'), commentData);
             // Update activity feed item comments count
-            const activityRef = (0,index_esm/* doc */.H9)(firebase.db, 'activityFeed', activityId);
+            const activityRef = (0,index_esm.doc)(firebase.db, 'activityFeed', activityId);
             await (0,index_esm/* updateDoc */.mZ)(activityRef, {
                 comments: (0,index_esm/* increment */.GV)(1)
             });
