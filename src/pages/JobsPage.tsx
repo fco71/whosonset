@@ -1,13 +1,31 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { getJobPostings, createJobPosting, JobPosting } from '../services/api/jobService';
 import { getFirestore, collection, query, getDocs, where } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
+import { 
+  Search, 
+  Filter, 
+  MapPin, 
+  Calendar, 
+  Briefcase, 
+  DollarSign, 
+  Clock, 
+  Users,
+  Building,
+  Star,
+  ArrowRight,
+  Plus,
+  X,
+  ChevronDown,
+  TrendingUp,
+  Zap,
+  Globe
+} from 'lucide-react';
 
-
-import { useNavigate } from 'react-router-dom';
 const hasValue = (value: any) => value !== undefined && value !== null && value !== '' && !(Array.isArray(value) && value.length === 0);
+
 const formatDate = (date: Date | string) => {
   if (!date) return 'No date specified';
   const d = new Date(date);
@@ -18,6 +36,20 @@ const formatDate = (date: Date | string) => {
   });
 };
 
+const formatSalary = (min?: number, max?: number, period?: string) => {
+  if (!min && !max) return null;
+  const formatNumber = (num: number) => new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  }).format(num);
+  
+  if (min && max) {
+    return `${formatNumber(min)} - ${formatNumber(max)}`;
+  }
+  return formatNumber(min || max!);
+};
+
 interface JobCardProps {
   job: JobPosting;
   currentUserId?: string;
@@ -26,83 +58,100 @@ interface JobCardProps {
 
 const JobCard: React.FC<JobCardProps> = ({ job, currentUserId, onEdit }) => {
   const navigate = useNavigate();
+  const [isHovered, setIsHovered] = useState(false);
+  
   return (
     <div
-      className="group bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-200 border border-gray-200 flex flex-col items-center p-5 relative cursor-pointer max-w-xs mx-auto"
+      className="group bg-white rounded-xl border border-gray-200 hover:border-blue-200 hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden"
       onClick={() => navigate(`/jobs/${job.id}`)}
-      style={{ minHeight: 220 }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
-      {currentUserId && job.postedById === currentUserId && (
-        <button
-          className="absolute top-3 right-3 p-2 bg-white/80 backdrop-blur-sm rounded-full shadow hover:bg-indigo-50 transition-all duration-200 z-10"
-          title="Edit Job"
-          onClick={e => { e.stopPropagation(); onEdit ? onEdit(job) : navigate(`/edit-job/${job.id}`); }}
-        >
-          <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536M9 13l6-6 3 3-6 6H9v-3z" /></svg>
-        </button>
-      )}
-      <div className="flex flex-col items-center gap-2 w-full">
-        <h3 className="font-bold text-lg text-gray-900 text-center mb-1 truncate w-full">{job.title || 'Untitled Position'}</h3>
-        <div className="flex flex-wrap gap-2 justify-center mb-1">
-          {hasValue(job.department) && (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
-              {job.department}
-            </span>
+      <div className="p-6">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors mb-2">
+              {job.title || 'Untitled Position'}
+            </h3>
+            <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
+              <div className="flex items-center gap-1">
+                <Building className="w-4 h-4" />
+                <span>{job.department || 'Various'}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <MapPin className="w-4 h-4" />
+                <span>{job.location}</span>
+              </div>
+              {job.isRemote && (
+                <div className="flex items-center gap-1 text-blue-600">
+                  <Globe className="w-4 h-4" />
+                  <span>Remote</span>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {currentUserId && job.postedById === currentUserId && (
+            <button
+              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              title="Edit Job"
+              onClick={e => { 
+                e.stopPropagation(); 
+                onEdit ? onEdit(job) : navigate(`/edit-job/${job.id}`); 
+              }}
+            >
+              <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536M9 13l6-6 3 3-6 6H9v-3z" />
+              </svg>
+            </button>
           )}
+        </div>
+
+        <div className="flex flex-wrap gap-2 mb-4">
           {hasValue(job.jobType) && (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800">
-              {job.jobType.replace('_', ' ')}
+            <span className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
+              {job.jobType?.replace('_', ' ')}
             </span>
           )}
-          {job.isRemote && (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-800">
-              Remote
+          {hasValue(job.experienceLevel) && (
+            <span className="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full">
+              {job.experienceLevel} level
             </span>
           )}
+                     {job.isPaid && (
+             <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+               Paid
+             </span>
+           )}
         </div>
-        {hasValue(job.location) && (
-          <div className="text-xs text-gray-500 mb-1 flex items-center gap-1">
-            <svg className="h-4 w-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" /></svg>
-            {job.location}
-          </div>
-        )}
-        {/* Only show salary if showSalary is true and at least one value is present and > 0 */}
-        {job.showSalary && ((job.salaryMin && job.salaryMin > 0) || (job.salaryMax && job.salaryMax > 0)) && (
-          <div className="text-xs font-semibold text-gray-900 mb-1">
-            {job.salaryMin && job.salaryMax && job.salaryMin > 0 && job.salaryMax > 0
-              ? `$${job.salaryMin.toLocaleString()} - $${job.salaryMax.toLocaleString()}`
-              : job.salaryMin && job.salaryMin > 0
-                ? `$${job.salaryMin.toLocaleString()}`
-                : job.salaryMax && job.salaryMax > 0
-                  ? `$${job.salaryMax.toLocaleString()}`
-                  : ''}
-            <span className="text-gray-500 text-xs ml-1">/{job.salaryPeriod || 'year'}</span>
-          </div>
-        )}
+
         {hasValue(job.description) && (
-          <p className="text-xs text-gray-700 text-center line-clamp-2 mb-1">{job.description}</p>
+          <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+            {job.description}
+          </p>
         )}
-        <div className="flex flex-wrap gap-2 justify-center mt-1">
-          {hasValue(job.requirements) && (
-            <span className="inline-block bg-gray-100 text-gray-600 rounded px-2 py-0.5 text-[11px]">Req: {Array.isArray(job.requirements) ? job.requirements.join(', ') : job.requirements}</span>
-          )}
-          {hasValue(job.responsibilities) && (
-            <span className="inline-block bg-gray-100 text-gray-600 rounded px-2 py-0.5 text-[11px]">Resp: {Array.isArray(job.responsibilities) ? job.responsibilities.join(', ') : job.responsibilities}</span>
-          )}
-          {hasValue(job.benefits) && (
-            <span className="inline-block bg-gray-100 text-gray-600 rounded px-2 py-0.5 text-[11px]">Benefits: {Array.isArray(job.benefits) ? job.benefits.join(', ') : job.benefits}</span>
-          )}
+
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4 text-sm text-gray-500">
+            {job.showSalary && (job.salaryMin || job.salaryMax) && (
+              <div className="flex items-center gap-1">
+                <DollarSign className="w-4 h-4" />
+                <span className="font-medium">
+                  {formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod)}
+                </span>
+              </div>
+            )}
+            <div className="flex items-center gap-1">
+              <Calendar className="w-4 h-4" />
+              <span>Posted {formatDate(job.createdAt)}</span>
+            </div>
+          </div>
+          
+          <div className={`flex items-center gap-1 text-blue-600 text-sm font-medium transition-transform ${isHovered ? 'translate-x-1' : ''}`}>
+            <span>View Details</span>
+            <ArrowRight className="w-4 h-4" />
+          </div>
         </div>
-      </div>
-      <div className="flex justify-between items-center w-full mt-3 text-xs text-gray-400">
-        <span>Posted {formatDate(job.createdAt)}</span>
-        <Link
-          to={`/jobs/${job.id}`}
-          className="text-indigo-600 hover:underline font-medium"
-          onClick={e => e.stopPropagation()}
-        >
-          Details
-        </Link>
       </div>
     </div>
   );
@@ -110,210 +159,357 @@ const JobCard: React.FC<JobCardProps> = ({ job, currentUserId, onEdit }) => {
 
 export default function JobsPage() {
   const [jobs, setJobs] = useState<JobPosting[]>([]);
+  const [filteredJobs, setFilteredJobs] = useState<JobPosting[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const auth = useAuth();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedDepartment, setSelectedDepartment] = useState('');
+  const [selectedLocation, setSelectedLocation] = useState('');
+  const [selectedJobType, setSelectedJobType] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [remoteOnly, setRemoteOnly] = useState(false);
   
-  // Debug: Log component mount and initial state
+  const auth = useAuth();
+  const navigate = useNavigate();
+
+  const departments = [
+    'Camera', 'Sound', 'Lighting', 'Art', 'Costume', 'Makeup', 'Hair',
+    'Production', 'Post-Production', 'VFX', 'Stunts', 'Transportation', 'Catering'
+  ];
+
+  const jobTypes = [
+    { value: 'full_time', label: 'Full Time' },
+    { value: 'part_time', label: 'Part Time' },
+    { value: 'contract', label: 'Contract' },
+    { value: 'freelance', label: 'Freelance' },
+    { value: 'temporary', label: 'Temporary' },
+    { value: 'internship', label: 'Internship' }
+  ];
+
+     const stats = [
+     { icon: <Briefcase className="w-5 h-5" />, label: 'Active Jobs', value: jobs.length },
+     { icon: <Building className="w-5 h-5" />, label: 'Companies', value: new Set(jobs.map(j => j.contactName || j.projectName)).size },
+     { icon: <MapPin className="w-5 h-5" />, label: 'Locations', value: new Set(jobs.map(j => j.location)).size },
+     { icon: <Users className="w-5 h-5" />, label: 'Remote Jobs', value: jobs.filter(j => j.isRemote).length }
+   ];
+
   useEffect(() => {
-    console.log('JobsPage mounted');
-    console.log('Initial auth state:', { 
-      isAuthenticated: !!auth.currentUser,
-      userId: auth.currentUser?.uid 
-    });
-    
-    return () => {
-      console.log('JobsPage unmounting');
-    };
-  }, [auth.currentUser]);
+    console.log('JobsPage mounted, loading jobs...');
+    loadJobs();
+  }, []);
 
-  // Check Firestore for jobs directly with enhanced logging
-  const checkFirestoreJobs = async () => {
-    console.group('=== checkFirestoreJobs() ===');
-    console.log('Starting direct Firestore check...');
-    
+  useEffect(() => {
+    applyFilters();
+  }, [jobs, searchQuery, selectedDepartment, selectedLocation, selectedJobType, remoteOnly]);
+
+  const loadJobs = async () => {
     try {
-      console.log('Initializing Firestore...');
+      setLoading(true);
+      setError(null);
+      
       const db = getFirestore();
-      const jobsRef = collection(db, 'jobPostings');
-      const snapshot = await getDocs(jobsRef);
-
-      if (!snapshot.empty) {
-        const jobs = snapshot.docs.map(doc => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            ...data
-          };
-        });
-
-        return jobs;
-      } else {
-        return [];
-      }
-    } catch (error) {
-      setError(`Failed to load jobs: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      return [];
-    }
-  };
-
-  const fetchJobs = async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const jobsData = await getJobPostings();
-
-      if (jobsData && jobsData.length > 0) {
-        setJobs(jobsData);
-      } else {
-        const firestoreJobs = await checkFirestoreJobs();
-
-        if (firestoreJobs.length > 0) {
-          setJobs(firestoreJobs as JobPosting[]);
-        } else {
-          setJobs([]);
-        }
-      }
-    } catch (error) {
-      setError(`Failed to load jobs: ${error instanceof Error ? error.message : 'Unknown error'}`);
-
-      try {
-        const firestoreJobs = await checkFirestoreJobs();
-        if (firestoreJobs.length > 0) {
-          setJobs(firestoreJobs as JobPosting[]);
-          setError(null); // Clear error if fallback works
-        } else {
-          setJobs([]);
-        }
-      } catch (fallbackError) {
-        setJobs([]);
-      }
+      const jobsCollection = collection(db, 'jobs');
+      const jobsQuery = query(jobsCollection);
+      const querySnapshot = await getDocs(jobsQuery);
+      
+      const jobsData: JobPosting[] = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        jobsData.push({
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate() || new Date(),
+        } as JobPosting);
+      });
+      
+      setJobs(jobsData);
+      console.log('Loaded jobs:', jobsData.length);
+      
+    } catch (err) {
+      console.error('Error loading jobs:', err);
+      setError('Failed to load jobs. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const createTestJob = async () => {
-    if (!auth.currentUser) {
-      setError('Must be logged in to create a job');
-      return;
+  const applyFilters = () => {
+    let filtered = [...jobs];
+
+         if (searchQuery) {
+       const query = searchQuery.toLowerCase();
+       filtered = filtered.filter(job =>
+         job.title?.toLowerCase().includes(query) ||
+         job.description?.toLowerCase().includes(query) ||
+         job.contactName?.toLowerCase().includes(query) ||
+         job.projectName?.toLowerCase().includes(query) ||
+         job.location?.toLowerCase().includes(query)
+       );
+     }
+
+    if (selectedDepartment) {
+      filtered = filtered.filter(job => job.department === selectedDepartment);
     }
 
-    try {
-      const testJob = {
-        title: 'Test Job - ' + new Date().toLocaleTimeString(),
-        description: 'This is a test job posting created for debugging purposes.',
-        department: 'Camera',
-        jobType: 'full_time' as const,
-        experienceLevel: 'mid' as const,
-        location: 'Los Angeles, CA',
-        isRemote: false,
-        requirements: 'Test requirements',
-        responsibilities: 'Test responsibilities',
-        benefits: 'Test benefits',
-        skills: ['test', 'debugging'],
-        salaryMin: 50000,
-        salaryMax: 70000,
-        salaryPeriod: 'year' as const,
-        showSalary: true,
-        projectName: 'Test Project',
-        projectType: 'feature' as const,
-        startDate: new Date().toISOString().split('T')[0],
-        contactName: 'Test User',
-        contactEmail: 'test@example.com',
-        isPaid: true,
-        isUnion: false,
-        visaSponsorship: false,
-        relocationAssistance: false,
-      };
-
-      const jobId = await createJobPosting(testJob, auth.currentUser.uid);
-
-      await fetchJobs();
-    } catch (error) {
-      setError(`Failed to create test job: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    if (selectedLocation) {
+      filtered = filtered.filter(job => 
+        job.location?.toLowerCase().includes(selectedLocation.toLowerCase())
+      );
     }
+
+    if (selectedJobType) {
+      filtered = filtered.filter(job => job.jobType === selectedJobType);
+    }
+
+    if (remoteOnly) {
+      filtered = filtered.filter(job => job.isRemote);
+    }
+
+    setFilteredJobs(filtered);
   };
 
-  useEffect(() => {
-    fetchJobs();
-  }, []);
+  const clearFilters = () => {
+    setSearchQuery('');
+    setSelectedDepartment('');
+    setSelectedLocation('');
+    setSelectedJobType('');
+    setRemoteOnly(false);
+  };
 
-  return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Job Board</h1>
-            <p className="mt-1 text-sm text-gray-600">
-              {jobs.length} {jobs.length === 1 ? 'job' : 'jobs'} available
-            </p>
-          </div>
-          {/* Only show Post a Job button if user is signed in */}
-          {auth.currentUser ? (
-            <Link to="/post-job" className="w-full sm:w-auto">
-              <Button className="w-full">
-                Post a Job
-              </Button>
-            </Link>
-          ) : null}
-        </div>
+  const hasActiveFilters = searchQuery || selectedDepartment || selectedLocation || selectedJobType || remoteOnly;
 
-        {jobs.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm p-8 text-center border border-gray-200">
-            <svg 
-              className="mx-auto h-12 w-12 text-gray-400" 
-              fill="none" 
-              viewBox="0 0 24 24" 
-              stroke="currentColor"
-            >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={1.5} 
-                d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" 
-              />
-            </svg>
-            <h3 className="mt-4 text-lg font-medium text-gray-900">No jobs found</h3>
-            <p className="mt-1 text-sm text-gray-500 max-w-md mx-auto">
-              There are currently no job postings. Check back later or post a new job.
-            </p>
-            <div className="mt-6">
-              {auth.currentUser ? (
-                <Link to="/post-job">
-                  <Button>Post a Job</Button>
-                </Link>
-              ) : null}
-              {!auth.currentUser && (
-                <p className="text-sm text-gray-600">
-                  <Link to="/login" className="text-blue-600 hover:underline">Sign in</Link> to post a job
-                </p>
-              )}
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="bg-white rounded-lg shadow-sm p-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-medium text-gray-900">
-                  Available Jobs
-                </h2>
-                <span className="text-sm text-gray-500">
-                  Showing {jobs.length} {jobs.length === 1 ? 'job' : 'jobs'}
-                </span>
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              {jobs.map((job) => (
-                <JobCard key={job.id} job={job} currentUserId={auth.currentUser?.uid} />
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-48 mb-4"></div>
+            <div className="h-4 bg-gray-200 rounded w-64 mb-8"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="bg-white rounded-xl border border-gray-200 p-6">
+                  <div className="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
+                  <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-2/3 mb-4"></div>
+                  <div className="flex gap-2 mb-4">
+                    <div className="h-6 bg-gray-200 rounded w-16"></div>
+                    <div className="h-6 bg-gray-200 rounded w-20"></div>
+                  </div>
+                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                </div>
               ))}
             </div>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Hero Section */}
+      <div className="bg-gradient-to-br from-blue-50 via-white to-purple-50 border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="text-center mb-12">
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+              Find Your Next <span className="text-blue-600">Film Industry</span> Role
+            </h1>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Discover opportunities with leading productions, connect with industry professionals, and advance your career in film and television.
+            </p>
+          </div>
+
+          {/* Quick Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            {stats.map((stat, index) => (
+              <div key={index} className="bg-white/80 backdrop-blur-sm rounded-xl p-4 text-center border border-gray-200">
+                <div className="flex justify-center mb-2 text-blue-600">
+                  {stat.icon}
+                </div>
+                <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
+                <div className="text-sm text-gray-600">{stat.label}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Search Bar */}
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    type="text"
+                    placeholder="Search jobs by title, company, or keywords..."
+                    className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowFilters(!showFilters)}
+                    className="flex items-center gap-2"
+                  >
+                    <Filter className="w-4 h-4" />
+                    Filters
+                    {hasActiveFilters && (
+                      <span className="bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                        {[searchQuery, selectedDepartment, selectedLocation, selectedJobType, remoteOnly].filter(Boolean).length}
+                      </span>
+                    )}
+                  </Button>
+                  {auth.currentUser && (
+                    <Button
+                      onClick={() => navigate('/post-job')}
+                      className="flex items-center gap-2"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Post Job
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Filters */}
+              {showFilters && (
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Department</label>
+                      <select
+                        value={selectedDepartment}
+                        onChange={(e) => setSelectedDepartment(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                      >
+                        <option value="">All Departments</option>
+                        {departments.map(dept => (
+                          <option key={dept} value={dept}>{dept}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+                      <input
+                        type="text"
+                        placeholder="Enter location"
+                        value={selectedLocation}
+                        onChange={(e) => setSelectedLocation(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Job Type</label>
+                      <select
+                        value={selectedJobType}
+                        onChange={(e) => setSelectedJobType(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                      >
+                        <option value="">All Types</option>
+                        {jobTypes.map(type => (
+                          <option key={type.value} value={type.value}>{type.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Remote</label>
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={remoteOnly}
+                          onChange={(e) => setRemoteOnly(e.target.checked)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="ml-2 text-sm text-gray-600">Remote only</span>
+                      </label>
+                    </div>
+                  </div>
+                  {hasActiveFilters && (
+                    <div className="mt-4 flex justify-between items-center">
+                      <span className="text-sm text-gray-600">
+                        {filteredJobs.length} of {jobs.length} jobs match your filters
+                      </span>
+                      <Button variant="ghost" onClick={clearFilters}>
+                        Clear all filters
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Jobs Grid */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <p className="text-red-600">{error}</p>
+          </div>
         )}
-        
-        {/* Debug panel removed for production */}
+
+        {filteredJobs.length === 0 ? (
+          <div className="text-center py-16">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Briefcase className="w-8 h-8 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No jobs found</h3>
+            <p className="text-gray-600 mb-6">
+              {hasActiveFilters 
+                ? "Try adjusting your filters to see more results."
+                : "Check back later for new opportunities."
+              }
+            </p>
+            {hasActiveFilters && (
+              <Button variant="outline" onClick={clearFilters}>
+                Clear filters
+              </Button>
+            )}
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {filteredJobs.length} Job{filteredJobs.length !== 1 ? 's' : ''} Available
+                </h2>
+                <p className="text-gray-600">
+                  {hasActiveFilters ? 'Filtered results' : 'All available positions'}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">Sort by:</span>
+                <select className="px-3 py-1 border border-gray-200 rounded-lg text-sm">
+                  <option>Newest first</option>
+                  <option>Oldest first</option>
+                  <option>Salary high to low</option>
+                  <option>Salary low to high</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredJobs.map((job) => (
+                <JobCard 
+                  key={job.id} 
+                  job={job} 
+                  currentUserId={auth.currentUser?.uid} 
+                />
+              ))}
+            </div>
+
+            {/* Load More */}
+            {filteredJobs.length >= 20 && (
+              <div className="text-center mt-12">
+                <Button variant="outline" className="px-8 py-3">
+                  Load More Jobs
+                </Button>
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   );
