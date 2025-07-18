@@ -86,10 +86,10 @@ export class MessagingService {
       }
       // Only add fileUrl if it's defined and not too long
       if (fileUrl) {
-        // Check if fileUrl is too long for Firestore (limit to 1MB)
-        if (fileUrl.length > 1000000) {
+        // Check if fileUrl is too long for Firestore (limit to 500KB to be safe)
+        if (fileUrl.length > 500 * 1024) {
           console.warn('[MessagingService] File URL too long, truncating:', fileUrl.length, 'bytes');
-          messageData.fileUrl = 'data:application/octet-stream;base64,FILE_TOO_LARGE';
+          messageData.fileUrl = `FILE_TOO_LARGE:${fileUrl.split('/').pop() || 'file'}`;
         } else {
           messageData.fileUrl = fileUrl;
         }
@@ -225,27 +225,33 @@ export class MessagingService {
     
     const sentUnsubscribe = onSnapshot(sentMessagesQuery, (snapshot) => {
       const sentMessages = snapshot.docs
-        .map(doc => {
-          const data = doc.data();
-          let timestamp: Date | undefined;
-          
-          if (data.timestamp) {
-            if (data.timestamp instanceof Date) {
-              timestamp = data.timestamp;
-            } else if (typeof data.timestamp === 'object' && 'toDate' in data.timestamp) {
-              timestamp = (data.timestamp as any).toDate();
-            } else if (typeof data.timestamp === 'number') {
-              timestamp = new Date(data.timestamp);
-            }
-          }
-          
-          return {
-            id: doc.id,
-            ...data,
-            timestamp
-          } as DirectMessage;
-        })
-        .filter(msg => msg.receiverId === userId2);
+                                .map(doc => {
+                          const data = doc.data();
+                          let timestamp: Date | undefined;
+
+                          if (data.timestamp) {
+                            if (data.timestamp instanceof Date) {
+                              timestamp = data.timestamp;
+                            } else if (typeof data.timestamp === 'object' && 'toDate' in data.timestamp) {
+                              timestamp = (data.timestamp as any).toDate();
+                            } else if (typeof data.timestamp === 'number') {
+                              timestamp = new Date(data.timestamp);
+                            }
+                          }
+
+                          return {
+                            id: doc.id,
+                            ...data,
+                            timestamp
+                          } as DirectMessage;
+                        })
+                        .filter(msg => msg.receiverId === userId2)
+                        .filter(msg => {
+                          // Filter out messages deleted for the current user
+                          if (msg.senderId === userId1 && msg.deletedForSender) return false;
+                          if (msg.receiverId === userId1 && msg.deletedForReceiver) return false;
+                          return true;
+                        });
       
       // Combine with received messages and sort
       const combinedMessages = [...sentMessages, ...allMessages.filter(msg => msg.senderId === userId2)]
@@ -273,27 +279,33 @@ export class MessagingService {
     
     const receivedUnsubscribe = onSnapshot(receivedMessagesQuery, (snapshot) => {
       const receivedMessages = snapshot.docs
-        .map(doc => {
-          const data = doc.data();
-          let timestamp: Date | undefined;
-          
-          if (data.timestamp) {
-            if (data.timestamp instanceof Date) {
-              timestamp = data.timestamp;
-            } else if (typeof data.timestamp === 'object' && 'toDate' in data.timestamp) {
-              timestamp = (data.timestamp as any).toDate();
-            } else if (typeof data.timestamp === 'number') {
-              timestamp = new Date(data.timestamp);
-            }
-          }
-          
-          return {
-            id: doc.id,
-            ...data,
-            timestamp
-          } as DirectMessage;
-        })
-        .filter(msg => msg.senderId === userId2);
+                                .map(doc => {
+                          const data = doc.data();
+                          let timestamp: Date | undefined;
+
+                          if (data.timestamp) {
+                            if (data.timestamp instanceof Date) {
+                              timestamp = data.timestamp;
+                            } else if (typeof data.timestamp === 'object' && 'toDate' in data.timestamp) {
+                              timestamp = (data.timestamp as any).toDate();
+                            } else if (typeof data.timestamp === 'number') {
+                              timestamp = new Date(data.timestamp);
+                            }
+                          }
+
+                          return {
+                            id: doc.id,
+                            ...data,
+                            timestamp
+                          } as DirectMessage;
+                        })
+                        .filter(msg => msg.senderId === userId2)
+                        .filter(msg => {
+                          // Filter out messages deleted for the current user
+                          if (msg.senderId === userId1 && msg.deletedForSender) return false;
+                          if (msg.receiverId === userId1 && msg.deletedForReceiver) return false;
+                          return true;
+                        });
       
       allMessages = receivedMessages;
       
@@ -344,16 +356,18 @@ export class MessagingService {
       this.listeners.get(listenerKey)!();
     }
 
-    // Set up real-time listener for conversations
-    const conversationsQuery = query(
+    let allConversations: ConversationSummary[] = [];
+
+    // Set up real-time listener for sent messages
+    const sentMessagesQuery = query(
       collection(db, 'directMessages'),
       where('senderId', '==', userId),
       orderBy('timestamp', 'desc')
     );
 
-    const unsubscribe = onSnapshot(conversationsQuery, async (snapshot) => {
+    const sentUnsubscribe = onSnapshot(sentMessagesQuery, async (snapshot) => {
       try {
-        const conversations = await Promise.all(
+        const sentConversations = await Promise.all(
           snapshot.docs.map(async (doc) => {
             const data = doc.data();
             const receiverId = data.receiverId;
@@ -377,30 +391,95 @@ export class MessagingService {
           })
         );
 
-        // Remove duplicates and sort by last message time
-        const uniqueConversations = conversations.filter((conv, index, arr) => 
-          arr.findIndex(c => c.userId === conv.userId) === index
-        );
-        
-        uniqueConversations.sort((a, b) => {
-          if (!a.lastMessageTime && !b.lastMessageTime) return 0;
-          if (!a.lastMessageTime) return 1;
-          if (!b.lastMessageTime) return -1;
-          return b.lastMessageTime.getTime() - a.lastMessageTime.getTime();
-        });
+        // Combine with received conversations and sort
+        const combinedConversations = [...sentConversations, ...allConversations]
+          .filter((conv, index, arr) => 
+            arr.findIndex(c => c.userId === conv.userId) === index
+          )
+          .sort((a, b) => {
+            if (!a.lastMessageTime && !b.lastMessageTime) return 0;
+            if (!a.lastMessageTime) return 1;
+            if (!b.lastMessageTime) return -1;
+            return b.lastMessageTime.getTime() - a.lastMessageTime.getTime();
+          });
 
-        callback(uniqueConversations);
+        callback(combinedConversations);
       } catch (error) {
-        console.error('Error processing conversations:', error);
-        callback([]);
+        console.error('Error processing sent conversations:', error);
       }
     }, (error) => {
-      console.error('Error in conversations listener:', error);
-      callback([]);
+      console.error('Error in sent conversations listener:', error);
     });
 
-    this.listeners.set(listenerKey, unsubscribe);
-    return unsubscribe;
+    // Set up real-time listener for received messages
+    const receivedMessagesQuery = query(
+      collection(db, 'directMessages'),
+      where('receiverId', '==', userId),
+      orderBy('timestamp', 'desc')
+    );
+
+    const receivedUnsubscribe = onSnapshot(receivedMessagesQuery, async (snapshot) => {
+      try {
+        const receivedConversations = await Promise.all(
+          snapshot.docs.map(async (doc) => {
+            const data = doc.data();
+            const senderId = data.senderId;
+            
+            // Get user profile
+            const userProfile = await this.getUserProfile(senderId);
+            
+            return {
+              userId: senderId,
+              userName: userProfile.displayName,
+              userAvatar: userProfile.avatarUrl,
+              userRole: userProfile.role,
+              userCompany: userProfile.company,
+              userLocation: userProfile.location,
+              lastMessage: data.content,
+              lastMessageTime: data.timestamp?.toDate?.() || new Date(),
+              unreadCount: 0, // TODO: Calculate unread count
+              isOnline: false,
+              lastSeen: undefined
+            } as ConversationSummary;
+          })
+        );
+
+        allConversations = receivedConversations;
+
+        // Get sent conversations from cache to combine
+        const sentConversations = this.conversationCache.get(userId) || [];
+
+        // Combine and sort
+        const combinedConversations = [...sentConversations, ...receivedConversations]
+          .filter((conv, index, arr) => 
+            arr.findIndex(c => c.userId === conv.userId) === index
+          )
+          .sort((a, b) => {
+            if (!a.lastMessageTime && !b.lastMessageTime) return 0;
+            if (!a.lastMessageTime) return 1;
+            if (!b.lastMessageTime) return -1;
+            return b.lastMessageTime.getTime() - a.lastMessageTime.getTime();
+          });
+
+        callback(combinedConversations);
+      } catch (error) {
+        console.error('Error processing received conversations:', error);
+      }
+    }, (error) => {
+      console.error('Error in received conversations listener:', error);
+    });
+
+    // Store the unsubscribe functions
+    this.listeners.set(listenerKey, () => {
+      sentUnsubscribe();
+      receivedUnsubscribe();
+    });
+
+    return () => {
+      sentUnsubscribe();
+      receivedUnsubscribe();
+      this.listeners.delete(listenerKey);
+    };
   }
 
   static subscribeToConversationsWithQueries(
@@ -572,10 +651,10 @@ export class MessagingService {
 
   static async uploadFileToStorage(file: File, pathPrefix: string = 'chat-uploads'): Promise<string> {
     try {
-      console.log('[MessagingService] Uploading file to storage:', file.name);
+      console.log('[MessagingService] Uploading file to storage:', file.name, 'Size:', file.size, 'bytes');
       
-      // Check file size - limit to 1MB to avoid Firestore field size limits
-      const maxSize = 1024 * 1024; // 1MB
+      // Check file size - limit to 5MB for Firebase Storage (more generous than Firestore)
+      const maxSize = 5 * 1024 * 1024; // 5MB
       if (file.size > maxSize) {
         throw new Error(`File size (${file.size} bytes) exceeds maximum allowed size (${maxSize} bytes)`);
       }
@@ -587,32 +666,146 @@ export class MessagingService {
       return downloadURL;
     } catch (error) {
       console.error('[MessagingService] Error uploading file:', error);
+      console.error('[MessagingService] Error details:', {
+        name: error instanceof Error ? error.name : 'Unknown',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : 'No stack trace'
+      });
       
-      // For small files (< 100KB), create a data URL as fallback
-      const maxDataUrlSize = 100 * 1024; // 100KB
+      // Check if it's a size-related error
+      const isSizeError = error instanceof Error && error.message.includes('exceeds maximum allowed size');
+      const isPermissionError = error instanceof Error && (
+        error.message.includes('unauthorized') || 
+        error.message.includes('permission') ||
+        error.message.includes('403')
+      );
+      
+      if (isSizeError) {
+        // If it's a size error, use placeholder
+        console.warn('[MessagingService] File size error, using placeholder');
+        return `FILE_TOO_LARGE:${file.name}`;
+      }
+      
+      if (isPermissionError) {
+        // If it's a permission error, use data URL fallback for small files
+        console.warn('[MessagingService] Storage permission error, trying data URL fallback');
+        const maxDataUrlSize = 300 * 1024; // 300KB for permission errors
+        if (file.size <= maxDataUrlSize) {
+          return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+              const dataUrl = reader.result as string;
+              if (dataUrl.length > 500 * 1024) {
+                console.warn('[MessagingService] Data URL too long, using placeholder');
+                resolve(`UPLOAD_FAILED:${file.name}`);
+              } else {
+                console.log('[MessagingService] Using data URL fallback for permission error');
+                resolve(dataUrl);
+              }
+            };
+            reader.readAsDataURL(file);
+          });
+        } else {
+          return `UPLOAD_FAILED:${file.name}`;
+        }
+      }
+      
+      // For other errors (network, permissions, etc.), try data URL fallback for small files
+      const maxDataUrlSize = 200 * 1024; // 200KB - increased for better fallback
       if (file.size <= maxDataUrlSize) {
+        console.log('[MessagingService] Upload failed, trying data URL fallback for small file');
         return new Promise((resolve) => {
           const reader = new FileReader();
           reader.onload = () => {
             const dataUrl = reader.result as string;
-            // Check if data URL is too long for Firestore
-            if (dataUrl.length > 1000000) { // 1MB limit
-              resolve('data:application/octet-stream;base64,FILE_TOO_LARGE');
+            // Check if data URL is too long for Firestore (limit to 500KB to be safe)
+            if (dataUrl.length > 500 * 1024) {
+              console.warn('[MessagingService] Data URL too long, using placeholder');
+              resolve(`FILE_TOO_LARGE:${file.name}`);
             } else {
+              console.log('[MessagingService] Using data URL fallback successfully');
               resolve(dataUrl);
             }
           };
           reader.readAsDataURL(file);
         });
-             } else {
-         // For larger files, return a placeholder that won't cause image loading errors
-         return `FILE_TOO_LARGE:${file.name}`;
-       }
+      } else {
+        // For larger files that fail to upload due to non-size issues, return a placeholder
+        console.warn('[MessagingService] Upload failed for large file, using placeholder');
+        return `UPLOAD_FAILED:${file.name}`;
+      }
     }
   }
 
-  static async deleteMessage(messageId: string, fileUrl?: string, messageType?: string): Promise<void> {
-    // Offline fallback: do nothing to prevent permission errors
-    console.log('[MessagingService] Using offline fallback for deleteMessage', { messageId, fileUrl, messageType });
+  // Optional storage connectivity test (non-blocking)
+  static async testStorageConnection(): Promise<boolean> {
+    try {
+      console.log('[MessagingService] Testing Firebase Storage connection...');
+      
+      // Create a simple test file
+      const testContent = 'Hello Firebase Storage!';
+      const testBlob = new Blob([testContent], { type: 'text/plain' });
+      const testFile = new File([testBlob], 'test.txt', { type: 'text/plain' });
+      
+      // Use a path that's allowed by storage rules
+      const fileRef = ref(storage, 'chat-uploads/test-connection.txt');
+      await uploadBytes(fileRef, testFile);
+      const downloadURL = await getDownloadURL(fileRef);
+      
+      console.log('[MessagingService] Storage test successful:', downloadURL);
+      return true;
+    } catch (error) {
+      console.warn('[MessagingService] Storage test failed (this is normal if not authenticated):', error);
+      return false;
+    }
+  }
+
+  static async deleteMessage(messageId: string, fileUrl?: string, messageType?: string, deletedByUserId?: string): Promise<void> {
+    try {
+      console.log('[MessagingService] Deleting message:', { messageId, fileUrl, messageType, deletedByUserId });
+
+      // Get the message to check if it's a sender or receiver deletion
+      const messageDoc = await getDoc(doc(db, 'directMessages', messageId));
+      if (!messageDoc.exists()) {
+        console.warn('[MessagingService] Message not found, may have been already deleted');
+        return;
+      }
+
+      const messageData = messageDoc.data();
+      const isSenderDeletion = deletedByUserId === messageData.senderId;
+
+      if (isSenderDeletion) {
+        // Sender deletion: Delete for everyone
+        await deleteDoc(doc(db, 'directMessages', messageId));
+        console.log('[MessagingService] Message deleted from Firestore for everyone');
+
+        // If there's a file URL and it's not a placeholder, delete from Firebase Storage
+        if (fileUrl && 
+            !fileUrl.startsWith('data:') && 
+            !fileUrl.startsWith('FILE_TOO_LARGE:') &&
+            fileUrl.includes('firebase')) {
+          try {
+            const fileRef = ref(storage, fileUrl);
+            await deleteObject(fileRef);
+            console.log('[MessagingService] File deleted from Firebase Storage');
+          } catch (storageError) {
+            console.warn('[MessagingService] Could not delete file from storage:', storageError);
+            // Don't throw error if file deletion fails, message deletion is more important
+          }
+        }
+      } else {
+        // Receiver deletion: Mark as deleted for receiver but keep for sender
+        await updateDoc(doc(db, 'directMessages', messageId), {
+          deletedForReceiver: true,
+          deletedAt: serverTimestamp()
+        });
+        console.log('[MessagingService] Message marked as deleted for receiver');
+      }
+
+      console.log('[MessagingService] Message deletion completed successfully');
+    } catch (error) {
+      console.error('[MessagingService] Error deleting message:', error);
+      throw error;
+    }
   }
 } 

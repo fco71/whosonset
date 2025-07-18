@@ -739,6 +739,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isUserTyping, setIsUserTyping] = useState(false); // Track if user is actively typing
+  const [notification, setNotification] = useState<{ type: 'error' | 'success' | 'warning'; message: string } | null>(null);
 
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -808,6 +809,18 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       // Setup real-time listeners
       setupConversationListener();
+      
+      // Optional: Test storage connection (non-blocking)
+      setTimeout(async () => {
+        try {
+          const storageWorks = await MessagingService.testStorageConnection();
+          if (!storageWorks) {
+            console.warn('[ChatInterface] Firebase Storage connection test failed - file uploads may not work');
+          }
+        } catch (error) {
+          console.warn('[ChatInterface] Storage test error (non-critical):', error);
+        }
+      }, 1000); // Delay test to not block chat initialization
     } catch (error) {
       console.error('Error initializing chat:', error);
       setError('Failed to initialize chat. Please refresh the page.');
@@ -909,6 +922,29 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
+  // Show notification
+  const showNotification = useCallback((type: 'error' | 'success' | 'warning', message: string) => {
+    setNotification({ type, message });
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+      setNotification(null);
+    }, 5000);
+  }, []);
+
+  // Check if a file URL is valid for display
+  const isValidFileUrl = useCallback((url: string): boolean => {
+    if (!url) return false;
+    
+    // Check for invalid/placeholder URLs
+    const invalidPatterns = [
+      'FILE_TOO_LARGE:',
+      'UPLOAD_FAILED:',
+      'data:application/octet-stream;base64,FILE_TOO_LARGE'
+    ];
+    
+    return !invalidPatterns.some(pattern => url.startsWith(pattern));
+  }, []);
+
   // Utility functions
   const formatTime = (date: Date | undefined | null) => {
     // Handle undefined, null, or invalid dates
@@ -955,6 +991,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         typingListenerRef.current = null;
       }
       MessagingService.cleanup();
+      
+      // Clean up any broken image placeholders
+      const placeholders = document.querySelectorAll('.upload-failed-message');
+      placeholders.forEach(placeholder => {
+        if (placeholder.parentElement) {
+          placeholder.remove();
+        }
+      });
     } catch (error) {
       console.error('Error during cleanup:', error);
     }
@@ -1148,16 +1192,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       console.error('[SendMessage] Error sending message:', error);
       
       // Provide specific error messages for file size issues
-      if (error instanceof Error) {
-        if (error.message.includes('exceeds maximum allowed size')) {
-          setError('File is too large. Please choose a file smaller than 1MB.');
-        } else if (error.message.includes('Cannot send message')) {
-          setError('Cannot send message to this user. They may not allow messages from non-followers.');
+              if (error instanceof Error) {
+          if (error.message.includes('exceeds maximum allowed size')) {
+            showNotification('error', 'File is too large. Please choose a file smaller than 5MB.');
+          } else if (error.message.includes('Cannot send message')) {
+          showNotification('error', 'Cannot send message to this user. They may not allow messages from non-followers.');
         } else {
-          setError('Failed to send message. Please try again.');
+          showNotification('error', 'Failed to send message. Please try again.');
         }
       } else {
-        setError('Failed to send message. Please try again.');
+        showNotification('error', 'Failed to send message. Please try again.');
       }
       
       // Remove optimistic message on error
@@ -1204,6 +1248,26 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   return (
     <div className="chat-interface">
+      {/* Notification */}
+      {notification && (
+        <div className={`notification notification-${notification.type}`}>
+          <div className="notification-content">
+            <span className="notification-icon">
+              {notification.type === 'error' && '❌'}
+              {notification.type === 'success' && '✅'}
+              {notification.type === 'warning' && '⚠️'}
+            </span>
+            <span className="notification-message">{notification.message}</span>
+            <button 
+              className="notification-close"
+              onClick={() => setNotification(null)}
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+      
       <div className="chat-container">
         {/* Sidebar */}
         <div className="chat-sidebar">
@@ -1505,28 +1569,63 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                         </div>
                       ) : message.messageType === 'image' && message.fileUrl ? (
                         <div className="message-image">
-                          {message.fileUrl.startsWith('FILE_TOO_LARGE:') ? (
-                            <div className="file-too-large-message">
-                              <div className="file-too-large-icon">📷</div>
-                              <div className="file-too-large-content">
-                                <div className="file-too-large-title">File Too Large</div>
-                                <div className="file-too-large-name">{message.fileName || 'Image'}</div>
-                                <div className="file-too-large-size">
-                                  {message.fileSize ? `${(message.fileSize / 1024 / 1024).toFixed(1)} MB` : 'Unknown size'}
-                                </div>
-                                <div className="file-too-large-message-text">
-                                  This file exceeds the 1MB size limit. Please compress the image or choose a smaller file.
+                          {!isValidFileUrl(message.fileUrl) ? (
+                            message.fileUrl.startsWith('UPLOAD_FAILED:') ? (
+                              <div className="upload-failed-message">
+                                <div className="upload-failed-icon">⚠️</div>
+                                <div className="upload-failed-content">
+                                  <div className="upload-failed-title">Upload Failed</div>
+                                  <div className="upload-failed-name">{message.fileName || 'Image'}</div>
+                                  <div className="upload-failed-message-text">
+                                    The file couldn't be uploaded. This might be due to network issues or service problems. Please try again later.
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          ) : (
-                            <img 
-                              src={message.fileUrl} 
-                              alt={message.fileName || 'Image'} 
-                              className="message-image-content"
-                              onClick={() => window.open(message.fileUrl, '_blank')}
-                            />
-                          )}
+                            ) : (
+                              <div className="file-too-large-message">
+                                <div className="file-too-large-icon">📷</div>
+                                <div className="file-too-large-content">
+                                  <div className="file-too-large-title">File Too Large</div>
+                                  <div className="file-too-large-name">{message.fileName || 'Image'}</div>
+                                  <div className="file-too-large-size">
+                                    {message.fileSize ? `${(message.fileSize / 1024 / 1024).toFixed(1)} MB` : 'Unknown size'}
+                                  </div>
+                                  <div className="file-too-large-message-text">
+                                    This file exceeds the 5MB size limit. Please compress the image or choose a smaller file.
+                                  </div>
+                                </div>
+                              </div>
+                            )
+                                                      ) : (
+                              <img 
+                                src={message.fileUrl} 
+                                alt={message.fileName || 'Image'} 
+                                className="message-image-content"
+                                onClick={() => window.open(message.fileUrl, '_blank')}
+                                onError={(e) => {
+                                  console.warn('[ChatInterface] Image failed to load:', message.fileUrl);
+                                  // Replace the broken image with a placeholder
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                  const parent = target.parentElement;
+                                  if (parent) {
+                                    const placeholder = document.createElement('div');
+                                    placeholder.className = 'upload-failed-message';
+                                    placeholder.innerHTML = `
+                                      <div class="upload-failed-icon">📷</div>
+                                      <div class="upload-failed-content">
+                                        <div class="upload-failed-title">Image Unavailable</div>
+                                        <div class="upload-failed-name">${message.fileName || 'Image'}</div>
+                                        <div class="upload-failed-message-text">
+                                          This image could not be loaded. The file may have been deleted or is no longer available.
+                                        </div>
+                                      </div>
+                                    `;
+                                    parent.appendChild(placeholder);
+                                  }
+                                }}
+                              />
+                            )}
                           {message.content && <p className="image-caption">{message.content}</p>}
                         </div>
                       ) : message.messageType === 'file' && message.fileUrl ? (
@@ -1603,30 +1702,39 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                           </button>
                         ))}
                       </div>
-                      {/* Delete icon for sender's file/image/audio messages */}
-                      {message.senderId === currentUserId && !message.fileUrl && (message.messageType === 'text' || message.messageType === undefined) && (
-                        <button
-                          title="Delete message"
-                          style={{
-                            position: 'absolute',
-                            top: 8,
-                            right: 8,
-                            background: 'none',
-                            border: 'none',
-                            color: '#ef4444',
-                            cursor: 'pointer',
-                            fontSize: 18,
-                            zIndex: 2
-                          }}
-                          onClick={async () => {
-                            if (window.confirm('Delete this message for everyone?')) {
-                              await MessagingService.deleteMessage(message.id, undefined, message.messageType);
+                      {/* Delete icon for all messages (sender and receiver) */}
+                      <button
+                        title={message.senderId === currentUserId ? "Delete message for everyone" : "Delete message from your chat"}
+                        style={{
+                          position: 'absolute',
+                          top: 8,
+                          right: 8,
+                          background: 'none',
+                          border: 'none',
+                          color: message.senderId === currentUserId ? '#ef4444' : '#6b7280',
+                          cursor: 'pointer',
+                          fontSize: 18,
+                          zIndex: 2
+                        }}
+                        onClick={async () => {
+                          const isSender = message.senderId === currentUserId;
+                          const confirmMessage = isSender 
+                            ? 'Delete this message for everyone?' 
+                            : 'Delete this message from your chat? (The sender will still see it)';
+                          
+                          if (window.confirm(confirmMessage)) {
+                            try {
+                              await MessagingService.deleteMessage(message.id, message.fileUrl, message.messageType, currentUserId);
+                              showNotification('success', isSender ? 'Message deleted for everyone' : 'Message removed from your chat');
+                            } catch (error) {
+                              console.error('Error deleting message:', error);
+                              showNotification('error', 'Failed to delete message. Please try again.');
                             }
-                          }}
-                        >
-                          <FaTrash />
-                        </button>
-                      )}
+                          }
+                        }}
+                      >
+                        <FaTrash />
+                      </button>
                     </div>
                   </div>
                 ))}

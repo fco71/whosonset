@@ -47,6 +47,9 @@ export interface DirectMessage {
   fileType?: string;
   voiceDuration?: number;
   voiceWaveform?: number[];
+  deletedForSender?: boolean;
+  deletedForReceiver?: boolean;
+  deletedAt?: Date;
 }
 
 export interface ChatNotification {
