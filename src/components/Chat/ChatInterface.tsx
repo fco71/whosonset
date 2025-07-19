@@ -1748,9 +1748,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             </>
           ) : (
             <div className="no-conversation">
-              <div className="text-6xl mb-4">💬</div>
-              <h3 className="text-xl font-light text-gray-900 mb-2">Select a conversation</h3>
-              <p className="text-gray-600">Choose a contact to start messaging</p>
+              <div className="text-4xl mb-3">💬</div>
+              <h3 className="text-lg font-medium text-gray-900 mb-1">Select a conversation</h3>
+              <p className="text-gray-500 text-sm">Choose a contact to start messaging</p>
             </div>
           )}
         </div>
