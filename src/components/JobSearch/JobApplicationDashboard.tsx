@@ -202,7 +202,9 @@ const JobApplicationDashboard: React.FC = () => {
                       {getStatusIcon(application.status)} {application.status.replace('_', ' ')}
                     </span>
                   </div>
-                  <p className="text-gray-600 mb-1">Project #{application.projectId.slice(-6)}</p>
+                  <p className="text-gray-600 mb-1">
+                    {application.projectId ? `Project #${application.projectId.slice(-6)}` : 'General Application'}
+                  </p>
                   <p className="text-sm text-gray-500">Applied on {formatDate(application.appliedAt)}</p>
                 </div>
                 

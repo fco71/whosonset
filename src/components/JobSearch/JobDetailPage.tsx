@@ -175,6 +175,43 @@ const JobDetailPage: React.FC = () => {
     }
   };
 
+  // Check if user has already saved this job
+  useEffect(() => {
+    // Reset saved state when user or job changes
+    setIsSaved(false);
+    
+    if (auth.currentUser && jobId) {
+      const savedJobRef = doc(db, 'savedJobs', `${auth.currentUser.uid}_${jobId}`);
+      
+      // Use a more robust approach to check saved status
+      const checkSavedStatus = async () => {
+        try {
+          console.log('🔍 Checking saved status for user:', auth.currentUser?.uid, 'job:', jobId);
+          console.log('📄 Document path:', savedJobRef.path);
+          
+          const docSnap = await getDoc(savedJobRef);
+          const exists = docSnap.exists();
+          console.log('✅ Saved job exists:', exists);
+          setIsSaved(exists);
+        } catch (error: any) {
+          console.error('❌ Error checking saved status:', error);
+          console.error('🔍 Error code:', error.code);
+          console.error('🔍 Error message:', error.message);
+          
+          // Don't show error to user, just assume not saved
+          setIsSaved(false);
+          
+          // Handle specific permission errors gracefully
+          if (error.code === 'permission-denied') {
+            console.log('⚠️ Permission denied for saved job check - this is expected for new users');
+          }
+        }
+      };
+      
+      checkSavedStatus();
+    }
+  }, [auth.currentUser, jobId]);
+
   const handleSaveJob = async () => {
     if (!auth.currentUser) {
       toast.error('Please log in to save jobs');
@@ -226,8 +263,11 @@ const JobDetailPage: React.FC = () => {
           text: `I found this great opportunity: ${job?.title}`,
           url: shareUrl
         });
-      } catch (error) {
-        console.error('Error sharing:', error);
+      } catch (error: any) {
+        // Don't log AbortError as it's just user cancellation
+        if (error.name !== 'AbortError') {
+          console.error('Error sharing:', error);
+        }
       }
     } else {
       // Fallback to clipboard

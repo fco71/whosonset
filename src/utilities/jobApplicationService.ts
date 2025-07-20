@@ -141,8 +141,13 @@ export class JobApplicationService {
     try {
       console.log('[JobApplicationService] Submitting application for job:', application.jobId);
       
+      // Filter out undefined values to prevent Firestore errors
+      const cleanApplication = Object.fromEntries(
+        Object.entries(application).filter(([_, value]) => value !== undefined)
+      );
+      
       const applicationData = {
-        ...application,
+        ...cleanApplication,
         appliedAt: serverTimestamp(),
         lastUpdated: serverTimestamp(),
         status: 'pending' as const

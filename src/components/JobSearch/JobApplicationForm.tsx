@@ -82,18 +82,9 @@ const JobApplicationForm: React.FC = () => {
   };
 
   const validateForm = (): boolean => {
-    if (!formData.coverLetter.trim()) {
-      setError('Cover letter is required');
-      return false;
-    }
-    
-    if (!formData.availabilityDate) {
-      setError('Availability date is required');
-      return false;
-    }
-    
-    if (!formData.resumeFile && !formData.resumeUploaded) {
-      setError('Resume is required');
+    // All fields are now optional - just check if user is authenticated
+    if (!currentUser) {
+      setError('You must be logged in to apply');
       return false;
     }
     
@@ -144,14 +135,14 @@ const JobApplicationForm: React.FC = () => {
       const applicationData = {
         jobId: job.id,
         applicantId: userId,
-        projectId: job.projectId,
+        projectId: job.projectId || '', // Handle case where projectId is undefined
         status: 'pending' as const,
-        coverLetter: formData.coverLetter,
+        coverLetter: formData.coverLetter || '',
         expectedSalary: formData.expectedSalary,
-        availabilityDate: formData.availabilityDate,
-        notes: formData.notes,
+        availabilityDate: formData.availabilityDate || '',
+        notes: formData.notes || '',
         resumeId: resumeId || '',
-        attachments: uploadedAttachments.map(file => ({
+        attachments: (formData.attachmentsUploaded || []).map(file => ({
           id: file.id,
           name: file.name,
           url: file.url,
@@ -281,7 +272,7 @@ const JobApplicationForm: React.FC = () => {
             </div>
             
             <div className="flex flex-wrap gap-2">
-              {job.tags.slice(0, 5).map(tag => (
+              {(job.tags || []).slice(0, 5).map(tag => (
                 <span key={tag} className="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full">
                   {tag}
                 </span>
@@ -301,17 +292,16 @@ const JobApplicationForm: React.FC = () => {
           {/* Cover Letter */}
           <div className="mb-8">
             <label className="block text-sm font-medium text-gray-700 mb-3">
-              Cover Letter *
+              Cover Letter (Optional)
             </label>
             <textarea
               value={formData.coverLetter}
               onChange={(e) => handleInputChange('coverLetter', e.target.value)}
-              placeholder="Tell us why you're interested in this position and why you'd be a great fit..."
+              placeholder="Tell us why you're interested in this position and why you'd be a great fit... (optional)"
               className="w-full h-48 p-4 border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none resize-none font-light"
-              required
             />
             <p className="text-sm text-gray-500 mt-2">
-              Minimum 100 characters. Recommended: 300-500 words.
+              Optional: 300-500 words recommended if provided.
             </p>
           </div>
 
@@ -340,25 +330,24 @@ const JobApplicationForm: React.FC = () => {
           {/* Availability Date */}
           <div className="mb-8">
             <label className="block text-sm font-medium text-gray-700 mb-3">
-              When are you available to start? *
+              When are you available to start? (Optional)
             </label>
             <input
               type="date"
               value={formData.availabilityDate}
               onChange={(e) => handleInputChange('availabilityDate', e.target.value)}
               className="w-full p-3 border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none font-light"
-              required
             />
           </div>
 
           {/* Resume Upload */}
           <div className="mb-8">
             <label className="block text-sm font-medium text-gray-700 mb-3">
-              Resume *
+              Resume (Optional)
             </label>
             <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center">
               <div className="text-4xl mb-4 opacity-20">📄</div>
-              <p className="text-gray-600 mb-2">Upload your resume</p>
+              <p className="text-gray-600 mb-2">Upload your resume (optional)</p>
               <p className="text-sm text-gray-500">PDF, DOC, or DOCX (max 5MB)</p>
               <input
                 type="file"

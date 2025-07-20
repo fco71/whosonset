@@ -2,7 +2,7 @@ export interface JobApplication {
   id: string;
   jobId: string;
   applicantId: string;
-  projectId: string;
+  projectId?: string; // Make projectId optional since not all jobs have projects
   status: 'pending' | 'reviewed' | 'shortlisted' | 'interviewed' | 'hired' | 'rejected' | 'withdrawn';
   appliedAt: any; // Firestore timestamp
   reviewedAt?: any;
@@ -58,7 +58,7 @@ export interface ApplicationNotification {
 
 export interface JobPosting {
   id: string;
-  projectId: string;
+  projectId?: string; // Make projectId optional since not all jobs have projects
   title: string;
   department: string;
   jobTitle: string;
