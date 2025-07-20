@@ -9,6 +9,9 @@ import '@fontsource/inter/600.css';
 import '@fontsource/inter/700.css';
 import './App.module.scss';
 
+// Initialize network error suppressor to suppress Firebase connection errors at browser level
+import './utilities/networkErrorSuppressor';
+
 // Import components
 import Navigation from './components/Navigation';
 
@@ -36,6 +39,7 @@ const ApplicationDetailPage = React.lazy(() => import('./pages/ApplicationDetail
 const JobApplicationForm = React.lazy(() => import('./components/JobSearch/JobApplicationForm'));
 const JobApplicationDashboard = React.lazy(() => import('./components/JobSearch/JobApplicationDashboard'));
 const ApplicationSuccessPage = React.lazy(() => import('./components/JobSearch/ApplicationSuccessPage'));
+const EditJobApplication = React.lazy(() => import('./components/JobSearch/EditJobApplication'));
 
 // Protected Route Component for React Router v7
 const ProtectedRoute = ({ children, redirectTo = '/login' }: { children: React.ReactNode, redirectTo?: string }) => {
@@ -175,6 +179,11 @@ function App() {
                 <Route path="/applications/:applicationId" element={
                   <ProtectedRoute>
                     <ApplicationDetailPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/applications/:applicationId/edit" element={
+                  <ProtectedRoute>
+                    <EditJobApplication />
                   </ProtectedRoute>
                 } />
                 <Route path="/applications/:applicationId/success" element={

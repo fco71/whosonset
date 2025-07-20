@@ -260,7 +260,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
               previousPreviewUrlRef.current = previewUrl;
             }}
             onError={e => {
-              console.log('ImageUploader: Failed to load blob:', previewUrl);
+              console.log('ImageUploader: Failed to load image, falling back to default avatar');
               e.currentTarget.src = '/default-avatar.svg';
             }}
           />

@@ -58,6 +58,18 @@ service cloud.firestore {
       allow read, write: if request.auth != null;
     }
     
+    // Job departments - public read access for lookup data
+    match /jobDepartments/{departmentId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    
+    // Countries - public read access for lookup data
+    match /countries/{countryId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    
     // Job applications - users can only access their own applications
     match /jobApplications/{applicationId} {
       allow read: if request.auth != null && (
@@ -79,6 +91,24 @@ service cloud.firestore {
       allow read, write: if request.auth != null && (
         get(/databases/$(database)/documents/jobApplications/$(applicationId)).data.applicantId == request.auth.uid ||
         get(/databases/$(database)/documents/jobPostings/$(get(/databases/$(database)/documents/jobApplications/$(applicationId)).data.jobId)).data.createdBy == request.auth.uid
+      );
+    }
+    
+    // Application notifications - users can only access their own notifications
+    match /applicationNotifications/{notificationId} {
+      allow read, write: if request.auth != null && 
+        (resource == null && request.resource.data.userId == request.auth.uid) ||
+        (resource != null && resource.data.userId == request.auth.uid);
+    }
+    
+    // Application messages - users can only access messages for their applications
+    match /applicationMessages/{messageId} {
+      allow read, write: if request.auth != null && (
+        (resource == null && request.resource.data.senderId == request.auth.uid) ||
+        (resource != null && (
+          resource.data.senderId == request.auth.uid ||
+          resource.data.receiverId == request.auth.uid
+        ))
       );
     }
     

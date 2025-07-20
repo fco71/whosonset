@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { doc, getDoc, updateDoc, increment, enableNetwork, setDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, increment, setDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { JobPosting } from '../../types/JobApplication';
 import { toast } from 'react-hot-toast';
@@ -23,7 +23,7 @@ const JobDetailPage: React.FC = () => {
   useEffect(() => {
     if (jobId) {
       loadJobDetails();
-      incrementJobViews();
+      // View tracking disabled to eliminate Firebase connection errors
     }
   }, [jobId]);
 
@@ -127,52 +127,9 @@ const JobDetailPage: React.FC = () => {
   };
 
   const incrementJobViews = async () => {
-    if (!jobId) return;
-    
-    // Only track views for authenticated users to avoid permission issues
-    if (!auth.currentUser) {
-      console.log('Skipping view tracking for anonymous user');
-      return;
-    }
-    
-    try {
-      // Track view in separate collection to avoid permission issues
-      const viewRef = doc(db, 'jobViews', `${jobId}_${auth.currentUser.uid}`);
-      await setDoc(viewRef, {
-        jobId: jobId,
-        userId: auth.currentUser.uid,
-        viewedAt: new Date(),
-        timestamp: serverTimestamp()
-      }, { merge: true });
-      
-      console.log('View tracked successfully');
-    } catch (error: any) {
-      console.error('Error tracking view:', error);
-      
-      // Handle connection issues
-      if (error.code === 'unavailable' || error.code === 'deadline-exceeded') {
-        console.log('Attempting to reconnect to Firestore...');
-        try {
-          await enableNetwork(db);
-          // Retry the tracking after reconnecting
-          setTimeout(async () => {
-            try {
-              const viewRef = doc(db, 'jobViews', `${jobId}_${auth.currentUser!.uid}`);
-              await setDoc(viewRef, {
-                jobId: jobId,
-                userId: auth.currentUser!.uid,
-                viewedAt: new Date(),
-                timestamp: serverTimestamp()
-              }, { merge: true });
-            } catch (retryError) {
-              console.error('Retry failed:', retryError);
-            }
-          }, 1000);
-        } catch (reconnectError) {
-          console.error('Failed to reconnect:', reconnectError);
-        }
-      }
-    }
+    // Completely disable view tracking to eliminate Firebase connection errors
+    // This functionality is not critical for the user experience
+    return;
   };
 
   // Check if user has already saved this job

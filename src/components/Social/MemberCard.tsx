@@ -85,7 +85,7 @@ const MemberCard: React.FC<MemberCardProps> = ({
   }
 
   const displayName = getDisplayName(profile);
-  const photoUrl = getPhotoUrl(profile) || '/default-avatar.png';
+  const photoUrl = getPhotoUrl(profile) || '/default-avatar.svg';
   const profileId = getProfileId(profile);
 
   return (
@@ -99,12 +99,12 @@ const MemberCard: React.FC<MemberCardProps> = ({
     >
       <div className="h-48 card-image-container flex flex-col items-center justify-center mb-4">
         <img 
-          src={photoUrl || "/default-avatar.png"} 
+          src={photoUrl || "/default-avatar.svg"} 
           alt={displayName}
           className="w-20 h-20 rounded-full object-cover mb-2 border-2 border-gray-100 shadow-sm"
           onError={(e) => {
             const target = e.target as HTMLImageElement;
-            target.src = "/default-avatar.png";
+            target.src = "/default-avatar.svg";
           }}
         />
         

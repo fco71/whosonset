@@ -3,6 +3,9 @@ import { collection, query, where, orderBy, getDocs, limit } from 'firebase/fire
 import { db } from '../../firebase';
 import { JobApplication, JobPosting } from '../../types/JobApplication';
 import { Link } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
+import { JobApplicationService } from '../../utilities/jobApplicationService';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface ApplicationStats {
   total: number;
@@ -15,6 +18,7 @@ interface ApplicationStats {
 }
 
 const JobApplicationDashboard: React.FC = () => {
+  const { currentUser } = useAuth();
   const [applications, setApplications] = useState<JobApplication[]>([]);
   const [stats, setStats] = useState<ApplicationStats>({
     total: 0,
@@ -37,26 +41,33 @@ const JobApplicationDashboard: React.FC = () => {
   }, [applications]);
 
   const loadApplications = async () => {
+    if (!currentUser) return;
+    
     setIsLoading(true);
     try {
-      // In a real app, you'd filter by current user ID
-      const applicationsQuery = query(
-        collection(db, 'jobApplications'),
-        orderBy('appliedAt', 'desc'),
-        limit(50)
-      );
-
-      const snapshot = await getDocs(applicationsQuery);
-      const applicationsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as JobApplication));
-
-      setApplications(applicationsData);
+      const userApplications = await JobApplicationService.getUserApplications(currentUser.uid);
+      setApplications(userApplications);
+      console.log('Loaded applications:', userApplications.length);
     } catch (error) {
       console.error('Error loading applications:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDeleteApplication = async (applicationId: string) => {
+    if (!window.confirm('Are you sure you want to withdraw this application? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await JobApplicationService.deleteApplication(applicationId);
+      toast.success('Application withdrawn successfully');
+      // Reload applications to update the list
+      loadApplications();
+    } catch (error) {
+      console.error('Error deleting application:', error);
+      toast.error('Failed to withdraw application');
     }
   };
 
@@ -217,12 +228,26 @@ const JobApplicationDashboard: React.FC = () => {
                       Interview: {formatDate(application.interviewScheduled)}
                     </p>
                   )}
-                  <Link
-                    to={`/applications/${application.id}`}
-                    className="inline-block mt-2 px-4 py-2 text-sm bg-gray-900 text-white font-light rounded-lg hover:bg-gray-800 transition-colors"
-                  >
-                    View Details
-                  </Link>
+                  <div className="flex gap-2 mt-2">
+                    <Link
+                      to={`/applications/${application.id}`}
+                      className="px-4 py-2 text-sm bg-gray-900 text-white font-light rounded-lg hover:bg-gray-800 transition-colors"
+                    >
+                      View Details
+                    </Link>
+                    <Link
+                      to={`/applications/${application.id}/edit`}
+                      className="px-4 py-2 text-sm bg-blue-600 text-white font-light rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      Edit
+                    </Link>
+                    <button
+                      onClick={() => handleDeleteApplication(application.id)}
+                      className="px-4 py-2 text-sm bg-red-600 text-white font-light rounded-lg hover:bg-red-700 transition-colors"
+                    >
+                      Withdraw
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

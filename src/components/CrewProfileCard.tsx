@@ -76,13 +76,13 @@ const CrewProfileCard: React.FC<CrewProfileCardProps> = ({
     >
       <div className="h-48 card-image-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
         <img 
-          src={profile.profileImageUrl || "/default-avatar.png"} 
+          src={profile.profileImageUrl || "/default-avatar.svg"} 
           alt={profile.name}
           className="card-image"
           style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', marginBottom: 8, border: '3px solid #e5e7eb' }}
           onError={(e) => {
             const target = e.target as HTMLImageElement;
-            target.src = "/default-avatar.png";
+            target.src = "/default-avatar.svg";
           }}
         />
         {/* Bookmark Button */}

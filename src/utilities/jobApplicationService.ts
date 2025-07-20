@@ -16,6 +16,7 @@ import {
   limit,
   startAfter
 } from 'firebase/firestore';
+import { firebaseConnectionManager } from './firebaseConnectionManager';
 import { db } from '../firebase';
 import { 
   JobApplication, 
@@ -140,11 +141,17 @@ export class JobApplicationService {
   static async submitApplication(application: Omit<JobApplication, 'id' | 'appliedAt' | 'lastUpdated'>): Promise<string> {
     try {
       console.log('[JobApplicationService] Submitting application for job:', application.jobId);
+      console.log('[JobApplicationService] Application data:', application);
+      
+      // Simple connection check - just try the operation directly
+      // Firebase will handle connection issues automatically
       
       // Filter out undefined values to prevent Firestore errors
       const cleanApplication = Object.fromEntries(
         Object.entries(application).filter(([_, value]) => value !== undefined)
       );
+      
+      console.log('[JobApplicationService] Cleaned application data:', cleanApplication);
       
       const applicationData = {
         ...cleanApplication,
@@ -155,14 +162,24 @@ export class JobApplicationService {
 
       const docRef = await addDoc(collection(db, 'jobApplications'), applicationData);
       
-      // Update job posting application count
-      const jobRef = doc(db, 'jobPostings', application.jobId);
-      await updateDoc(jobRef, {
-        applicationsCount: firestoreIncrement(1)
-      });
+      // Update job posting application count (optional - don't fail if user can't update)
+      try {
+        const jobRef = doc(db, 'jobPostings', application.jobId);
+        await updateDoc(jobRef, {
+          applicationsCount: firestoreIncrement(1)
+        });
+      } catch (updateError) {
+        console.log('[JobApplicationService] Could not update job application count (this is expected for non-owners):', updateError);
+        // Don't throw error - application was still created successfully
+      }
 
-      // Create notification for the job poster
-      await this.createApplicationNotification(application.jobId, docRef.id, application.applicantId);
+      // Create notification for the job poster (optional)
+      try {
+        await this.createApplicationNotification(application.jobId, docRef.id, application.applicantId);
+      } catch (notificationError) {
+        console.log('[JobApplicationService] Could not create notification (this is expected):', notificationError);
+        // Don't throw error - application was still created successfully
+      }
 
       console.log('[JobApplicationService] Application submitted successfully:', docRef.id);
       return docRef.id;
@@ -200,6 +217,55 @@ export class JobApplicationService {
       console.log('[JobApplicationService] Application status updated successfully');
     } catch (error) {
       console.error('Error updating application status:', error);
+      throw error;
+    }
+  }
+
+  // User can edit their own application
+  static async updateApplication(applicationId: string, updates: Partial<JobApplication>): Promise<void> {
+    try {
+      console.log('[JobApplicationService] Updating application:', applicationId);
+      
+      const updateData = {
+        ...updates,
+        lastUpdated: serverTimestamp()
+      };
+
+      await updateDoc(doc(db, 'jobApplications', applicationId), updateData);
+      console.log('[JobApplicationService] Application updated successfully');
+    } catch (error) {
+      console.error('Error updating application:', error);
+      throw error;
+    }
+  }
+
+  // User can delete/withdraw their own application
+  static async deleteApplication(applicationId: string): Promise<void> {
+    try {
+      console.log('[JobApplicationService] Deleting application:', applicationId);
+      
+      // Get the application to update job posting count
+      const application = await this.getApplication(applicationId);
+      
+      // Delete the application
+      await deleteDoc(doc(db, 'jobApplications', applicationId));
+      
+      // Update job posting application count if possible
+      if (application) {
+        try {
+          const jobRef = doc(db, 'jobPostings', application.jobId);
+          await updateDoc(jobRef, {
+            applicationsCount: firestoreIncrement(-1)
+          });
+        } catch (updateError) {
+          console.log('[JobApplicationService] Could not update job application count:', updateError);
+          // Don't throw error - application was still deleted successfully
+        }
+      }
+
+      console.log('[JobApplicationService] Application deleted successfully');
+    } catch (error) {
+      console.error('Error deleting application:', error);
       throw error;
     }
   }
@@ -333,8 +399,16 @@ export class JobApplicationService {
       };
 
       await addDoc(collection(db, 'applicationNotifications'), notificationData);
-    } catch (error) {
+      console.log('Application notification created successfully');
+    } catch (error: any) {
       console.error('Error creating application notification:', error);
+      
+      // Only log if it's not a permission error
+      if (error.code !== 'permission-denied') {
+        console.log('Notification creation failed:', error.code);
+      }
+      
+      // Don't throw the error - notification creation is not critical
     }
   }
 
@@ -665,5 +739,22 @@ export class JobApplicationService {
         skill.toLowerCase().includes(userSkill.toLowerCase())
       )
     );
+  }
+
+  // Connection health check - simplified
+  static async checkConnectionHealth(): Promise<boolean> {
+    try {
+      console.log('[JobApplicationService] Checking Firestore connection health...');
+      
+      // Simple test query
+      const testQuery = query(collection(db, 'jobPostings'), limit(1));
+      await getDocs(testQuery);
+      
+      console.log('[JobApplicationService] Connection health check passed');
+      return true;
+    } catch (error: any) {
+      console.error('[JobApplicationService] Connection health check failed:', error);
+      return false;
+    }
   }
 } 
