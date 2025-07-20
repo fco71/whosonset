@@ -78,7 +78,7 @@ export interface JobPosting {
   postedBy: string;
   postedAt: any;
   deadline?: string;
-  status: 'active' | 'closed' | 'draft';
+  status: 'active' | 'closed' | 'draft' | 'published';
   applicationsCount: number;
   tags: string[];
   // Enhanced job posting features
@@ -101,6 +101,17 @@ export interface JobPosting {
   shortlistedCount: number;
   interviewedCount: number;
   hiredCount: number;
+  // Contact and project information
+  contactName?: string;
+  contactEmail?: string;
+  showContactEmail?: boolean; // Control whether to display email publicly
+  projectName?: string;
+  projectType?: string;
+  // Work arrangement details
+  isPaid?: boolean;
+  isUnion?: boolean;
+  visaSponsorship?: boolean;
+  relocationAssistance?: boolean;
 }
 
 export interface JobSearchFilter {

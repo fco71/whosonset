@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
+import { useAuth } from '../../contexts/AuthContext';
 import { JobPosting, JobApplication } from '../../types/JobApplication';
 import { JobApplicationService } from '../../utilities/jobApplicationService';
 import { FileUploadService, UploadedFile } from '../../utilities/fileUploadService';
@@ -20,6 +21,7 @@ interface JobApplicationFormData {
 const JobApplicationForm: React.FC = () => {
   const { jobId } = useParams<{ jobId: string }>();
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
   
   const [job, setJob] = useState<JobPosting | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -107,7 +109,12 @@ const JobApplicationForm: React.FC = () => {
       setIsSubmitting(true);
       setError(null);
       
-      const userId = 'current-user-id'; // TODO: Get from auth context
+      if (!currentUser) {
+        setError('You must be logged in to apply');
+        return;
+      }
+      
+      const userId = currentUser.uid;
       
       // Upload resume if not already uploaded
       let resumeId = formData.resumeUploaded?.id;
@@ -170,6 +177,24 @@ const JobApplicationForm: React.FC = () => {
       setIsSubmitting(false);
     }
   };
+
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-6xl mb-4 opacity-20">🔒</div>
+          <h2 className="text-2xl font-light text-gray-900 mb-2">Authentication Required</h2>
+          <p className="text-gray-600 mb-4">Please log in to apply for this job.</p>
+          <button
+            onClick={() => navigate('/login')}
+            className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Go to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

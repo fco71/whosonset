@@ -47,6 +47,7 @@ interface JobFormData {
   // Contact
   contactName: string;
   contactEmail: string;
+  showContactEmail: boolean;
   contactPhone: string;
   // Additional
   isPaid: boolean;
@@ -125,6 +126,7 @@ const PostJobPage: React.FC = (): JSX.Element => {
     startDate: new Date().toISOString().split('T')[0],
     contactName: '',
     contactEmail: '',
+    showContactEmail: false,
     contactPhone: '',
     isPaid: false,
     isUnion: false,
@@ -374,6 +376,7 @@ const PostJobPage: React.FC = (): JSX.Element => {
         // Contact
         contactName: formData.contactName,
         contactEmail: formData.contactEmail,
+        showContactEmail: formData.showContactEmail,
         contactPhone: formData.contactPhone || '',
         
         // Additional
@@ -701,6 +704,25 @@ const PostJobPage: React.FC = (): JSX.Element => {
                   />
                   {errors.contactEmail && <p className="mt-1 text-sm text-red-600">{errors.contactEmail}</p>}
                 </div>
+              </div>
+              
+              <div className="mt-4">
+                <div className="flex items-center">
+                  <input
+                    id="showContactEmail"
+                    name="showContactEmail"
+                    type="checkbox"
+                    checked={formData.showContactEmail}
+                    onChange={(e) => handleChange('showContactEmail', e.target.checked)}
+                    className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                  />
+                  <label htmlFor="showContactEmail" className="ml-2 block text-sm text-gray-700">
+                    Show email address publicly on job posting
+                  </label>
+                </div>
+                <p className="mt-1 text-sm text-gray-500">
+                  If unchecked, applicants will only see your name and can contact you through the application system.
+                </p>
               </div>
             </div>
 

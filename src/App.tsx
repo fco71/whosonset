@@ -25,7 +25,7 @@ const CollaborationPage = React.lazy(() => import('./pages/CollaborationPage'));
 const SettingsPage = React.lazy(() => import('./pages/SettingsPage'));
 const JobsPage = React.lazy(() => import('./pages/JobsPage'));
 const PostJobPage = React.lazy(() => import('./pages/PostJobPage'));
-const JobDetailPage = React.lazy(() => import('./pages/JobDetailPage'));
+const JobDetailPage = React.lazy(() => import('./components/JobSearch/JobDetailPage'));
 const DebugJobsPage = React.lazy(() => import('./pages/DebugJobsPage'));
 const EditProfilePage = React.lazy(() => import('./pages/EditProfilePage'));
 const PublicResumePage = React.lazy(() => import('./components/PublicResumePage'));
@@ -161,7 +161,7 @@ function App() {
                 
                 {/* Job Related Routes */}
                 <Route path="/jobs" element={<JobsPage />} />
-                <Route path="/jobs/:id" element={<JobDetailPage />} />
+                <Route path="/jobs/:jobId" element={<JobDetailPage />} />
                 <Route path="/jobs/:jobId/apply" element={
                   <ProtectedRoute>
                     <JobApplicationForm />
