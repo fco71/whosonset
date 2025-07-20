@@ -1,5 +1,5 @@
 // src/components/LandingPage.tsx
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from './ui/Button';
 import { 
@@ -15,8 +15,18 @@ import {
   Calendar,
   Award
 } from 'lucide-react';
+import { db } from '../firebase';
+import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 
 const LandingPage: React.FC = () => {
+  const [stats, setStats] = useState([
+    { number: "Loading...", label: "Active Members" },
+    { number: "Loading...", label: "Projects Posted" },
+    { number: "Loading...", label: "Countries" },
+    { number: "Loading...", label: "Success Rate" }
+  ]);
+  const [loading, setLoading] = useState(true);
+
   const features = [
     {
       icon: <Film className="w-8 h-8" />,
@@ -40,36 +50,62 @@ const LandingPage: React.FC = () => {
     }
   ];
 
-  const testimonials = [
-    {
-      name: "Sarah Johnson",
-      role: "Producer",
-      company: "Indie Films Co.",
-      content: "whosonset has revolutionized how we find and connect with crew members. The platform is intuitive and the quality of professionals is outstanding.",
-      rating: 5
-    },
-    {
-      name: "Michael Chen",
-      role: "Cinematographer",
-      company: "Freelance",
-      content: "I've landed some of my best projects through whosonset. The networking features and job board are game-changers for freelancers.",
-      rating: 5
-    },
-    {
-      name: "Emma Rodriguez",
-      role: "Production Manager",
-      company: "Studio Productions",
-      content: "The platform makes it so easy to manage crew and find the right people for our projects. Highly recommended!",
-      rating: 5
-    }
-  ];
+  // Fetch real statistics from Firestore
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        // Get crew profiles count
+        const crewRef = collection(db, 'crewProfiles');
+        const crewQuery = query(crewRef, where('isPublished', '==', true));
+        const crewSnapshot = await getDocs(crewQuery);
+        const crewCount = crewSnapshot.size;
 
-  const stats = [
-    { number: "10,000+", label: "Active Members" },
-    { number: "5,000+", label: "Projects Posted" },
-    { number: "50+", label: "Countries" },
-    { number: "95%", label: "Success Rate" }
-  ];
+        // Get projects count
+        const projectsRef = collection(db, 'Projects');
+        const projectsSnapshot = await getDocs(projectsRef);
+        const projectsCount = projectsSnapshot.size;
+
+        // Get unique countries from crew profiles
+        const countries = new Set<string>();
+        crewSnapshot.docs.forEach(doc => {
+          const data = doc.data();
+          if (data.residences && data.residences.length > 0) {
+            data.residences.forEach((residence: any) => {
+              if (residence.country) {
+                countries.add(residence.country);
+              }
+            });
+          }
+        });
+
+        // Calculate success rate based on completed projects
+        const completedProjects = projectsSnapshot.docs.filter(doc => {
+          const data = doc.data();
+          return data.status === 'Completed' || data.status === 'Released';
+        }).length;
+        const successRate = projectsCount > 0 ? Math.round((completedProjects / projectsCount) * 100) : 0;
+
+        setStats([
+          { number: `${crewCount}+`, label: "Active Members" },
+          { number: `${projectsCount}+`, label: "Projects Posted" },
+          { number: `${countries.size}+`, label: "Countries" },
+          { number: `${successRate}%`, label: "Success Rate" }
+        ]);
+      } catch (error) {
+        console.error('Error fetching stats:', error);
+        // Show empty state instead of fake data
+        setStats([
+          { number: "—", label: "Active Members" },
+          { number: "—", label: "Projects Posted" },
+          { number: "—", label: "Countries" },
+          { number: "—", label: "Success Rate" }
+        ]);
+      }
+    };
+
+    fetchStats();
+    setLoading(false);
+  }, []);
 
   return (
     <div className="min-h-screen bg-white">
@@ -106,7 +142,10 @@ const LandingPage: React.FC = () => {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
               <div key={index} className="text-center">
-                <div className="text-3xl lg:text-4xl font-bold text-blue-600 mb-2">
+                <div className={`text-3xl lg:text-4xl font-bold mb-2 ${
+                  stat.number === "Loading..." ? "text-gray-300 animate-pulse" : 
+                  stat.number === "—" ? "text-gray-400" : "text-blue-600"
+                }`}>
                   {stat.number}
                 </div>
                 <div className="text-gray-600 font-medium">
@@ -199,42 +238,7 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* Testimonials Section */}
-      <section className="py-24 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Trusted by industry professionals
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              See what our community members have to say about their experience.
-            </p>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <div key={index} className="card-modern">
-                <div className="flex items-center mb-4">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
-                  ))}
-                </div>
-                <p className="text-gray-600 mb-6 leading-relaxed">
-                  "{testimonial.content}"
-                </p>
-                <div>
-                  <div className="font-semibold text-gray-900">
-                    {testimonial.name}
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    {testimonial.role} at {testimonial.company}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* CTA Section */}
       <section className="py-24 bg-blue-600">

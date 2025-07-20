@@ -35,6 +35,12 @@ service cloud.firestore {
       allow write: if request.auth != null && resource.data.createdBy == request.auth.uid;
     }
     
+    // Projects collection (for homepage stats) - allow public read for published projects
+    match /Projects/{projectId} {
+      allow read: if true; // Allow public reading for homepage statistics
+      allow write: if request.auth != null && resource.data.owner_uid == request.auth.uid;
+    }
+    
     // Job postings - can be read by anyone, created by authenticated users
     match /jobPostings/{jobId} {
       allow read: if true;

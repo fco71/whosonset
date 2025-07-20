@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Film, 
@@ -16,8 +16,18 @@ import {
   Camera,
   Clapperboard
 } from 'lucide-react';
+import { db } from '../firebase';
+import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 
 const HomePage: React.FC = () => {
+  const [stats, setStats] = useState([
+    { number: "Loading...", label: "Active Professionals", icon: <Users className="w-5 h-5" /> },
+    { number: "Loading...", label: "Projects Completed", icon: <Film className="w-5 h-5" /> },
+    { number: "Loading...", label: "Success Rate", icon: <TrendingUp className="w-5 h-5" /> },
+    { number: "Loading...", label: "Countries", icon: <Globe className="w-5 h-5" /> }
+  ]);
+  const [loading, setLoading] = useState(true);
+
   const features = [
     {
       icon: <Film className="w-6 h-6" />,
@@ -51,39 +61,62 @@ const HomePage: React.FC = () => {
     }
   ];
 
-  const stats = [
-    { number: "15,000+", label: "Active Professionals", icon: <Users className="w-5 h-5" /> },
-    { number: "8,500+", label: "Projects Completed", icon: <Film className="w-5 h-5" /> },
-    { number: "95%", label: "Success Rate", icon: <TrendingUp className="w-5 h-5" /> },
-    { number: "60+", label: "Countries", icon: <Globe className="w-5 h-5" /> }
-  ];
+  // Fetch real statistics from Firestore
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        // Get crew profiles count
+        const crewRef = collection(db, 'crewProfiles');
+        const crewQuery = query(crewRef, where('isPublished', '==', true));
+        const crewSnapshot = await getDocs(crewQuery);
+        const crewCount = crewSnapshot.size;
 
-  const testimonials = [
-    {
-      name: "Sarah Johnson",
-      role: "Producer",
-      company: "Indie Films Co.",
-      content: "WhosOnSet revolutionized how we find and connect with crew members. The platform's quality and intuitive design are outstanding.",
-      avatar: "SJ",
-      rating: 5
-    },
-    {
-      name: "Michael Chen",
-      role: "Cinematographer",
-      company: "Freelance",
-      content: "I've landed my best projects through WhosOnSet. The networking features are game-changers for freelancers.",
-      avatar: "MC",
-      rating: 5
-    },
-    {
-      name: "Emma Rodriguez",
-      role: "Production Manager",
-      company: "Studio Productions",
-      content: "Managing crew and finding talent has never been easier. This platform is essential for modern productions.",
-      avatar: "ER",
-      rating: 5
-    }
-  ];
+        // Get projects count
+        const projectsRef = collection(db, 'Projects');
+        const projectsSnapshot = await getDocs(projectsRef);
+        const projectsCount = projectsSnapshot.size;
+
+        // Get unique countries from crew profiles
+        const countries = new Set<string>();
+        crewSnapshot.docs.forEach(doc => {
+          const data = doc.data();
+          if (data.residences && data.residences.length > 0) {
+            data.residences.forEach((residence: any) => {
+              if (residence.country) {
+                countries.add(residence.country);
+              }
+            });
+          }
+        });
+
+        // Calculate success rate based on completed projects
+        const completedProjects = projectsSnapshot.docs.filter(doc => {
+          const data = doc.data();
+          return data.status === 'Completed' || data.status === 'Released';
+        }).length;
+        const successRate = projectsCount > 0 ? Math.round((completedProjects / projectsCount) * 100) : 0;
+
+        setStats([
+          { number: `${crewCount}+`, label: "Active Professionals", icon: <Users className="w-5 h-5" /> },
+          { number: `${projectsCount}+`, label: "Projects Completed", icon: <Film className="w-5 h-5" /> },
+          { number: `${successRate}%`, label: "Success Rate", icon: <TrendingUp className="w-5 h-5" /> },
+          { number: `${countries.size}+`, label: "Countries", icon: <Globe className="w-5 h-5" /> }
+        ]);
+      } catch (error) {
+        console.error('Error fetching stats:', error);
+        // Show empty state instead of fake data
+        setStats([
+          { number: "—", label: "Active Professionals", icon: <Users className="w-5 h-5" /> },
+          { number: "—", label: "Projects Completed", icon: <Film className="w-5 h-5" /> },
+          { number: "—", label: "Success Rate", icon: <TrendingUp className="w-5 h-5" /> },
+          { number: "—", label: "Countries", icon: <Globe className="w-5 h-5" /> }
+        ]);
+      }
+    };
+
+    fetchStats();
+    setLoading(false);
+  }, []);
 
   return (
     <div className="min-h-screen bg-white">
@@ -100,7 +133,7 @@ const HomePage: React.FC = () => {
           <div className="text-center">
             <div className="mb-8">
               <div className="inline-flex items-center px-4 py-2 rounded-full bg-blue-50 text-blue-600 text-sm font-medium border border-blue-200">
-                <Camera className="w-4 h-4 mr-2" />
+                <Users className="w-4 h-4 mr-2" />
                 The Future of Film Industry Networking
               </div>
             </div>
@@ -144,7 +177,10 @@ const HomePage: React.FC = () => {
                   <div className="flex justify-center mb-2 text-blue-600">
                     {stat.icon}
                   </div>
-                  <div className="text-2xl lg:text-3xl font-bold text-gray-900 mb-1">
+                  <div className={`text-2xl lg:text-3xl font-bold mb-1 ${
+                    stat.number === "Loading..." ? "text-gray-300 animate-pulse" : 
+                    stat.number === "—" ? "text-gray-400" : "text-gray-900"
+                  }`}>
                     {stat.number}
                   </div>
                   <div className="text-sm text-gray-600 font-medium">
@@ -237,43 +273,7 @@ const HomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* Testimonials Section */}
-      <section className="py-24 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Trusted by Industry Professionals
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Join thousands of satisfied professionals who have transformed their careers with WhosOnSet.
-            </p>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <div key={index} className="bg-white rounded-xl p-8 shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-300">
-                <div className="flex items-center mb-6">
-                  <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold text-sm mr-4">
-                    {testimonial.avatar}
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-gray-900">{testimonial.name}</h4>
-                    <p className="text-sm text-gray-600">{testimonial.role} at {testimonial.company}</p>
-                  </div>
-                </div>
-                <div className="flex mb-4">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
-                  ))}
-                </div>
-                <p className="text-gray-600 leading-relaxed italic">
-                  "{testimonial.content}"
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* CTA Section */}
       <section className="py-24 bg-gradient-to-r from-blue-600 to-purple-600">

@@ -150,26 +150,56 @@ const Home: React.FC = () => {
     return (
         <div className="min-h-screen" style={{ background: '#f6f7fa' }} role="main">
             {/* Hero Section */}
-            <div style={{ borderBottom: '1px solid #f3f4f6', background: 'linear-gradient(180deg, #f9fafb 0%, #fff 100%)' }} aria-label="Hero section">
+            <div style={{ borderBottom: '1px solid #f3f4f6', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }} aria-label="Hero section">
                 <div className="container-base section-padding-large">
                     <div className="text-center mb-16 animate-fade">
-                        <h1 className="heading-primary mb-6 animate-slide">
+                        <h1 className="text-5xl font-bold text-white mb-6 animate-slide tracking-tight">
                             whosonset
                         </h1>
-                        <h2 className="heading-secondary mb-8 animate-slide">
-                            Film Industry Hub
+                        <h2 className="text-2xl font-light text-white/90 mb-8 animate-slide">
+                            The Film Industry's Professional Network
                         </h2>
-                        <p className="body-large max-w-2xl mx-auto animate-slide">
-                            Discover the latest movie productions and the talented crews behind them. 
-                            Connect with industry professionals and explore creative opportunities.
+                        <p className="text-lg text-white/80 max-w-3xl mx-auto animate-slide leading-relaxed">
+                            Connect with talented film professionals, discover exciting productions, and build your career in the entertainment industry. 
+                            Join thousands of filmmakers, crew members, and industry leaders.
                         </p>
-                        <div className="mt-12 animate-slide">
+                        <div className="mt-12 animate-slide space-x-4">
                             <Link 
                                 to="/projects" 
-                                className="btn-primary"
+                                className="inline-flex items-center px-8 py-4 bg-white text-blue-600 font-semibold rounded-lg hover:bg-gray-50 transition-colors shadow-lg"
                             >
-                                Explore Projects
+                                🎬 Explore Projects
                             </Link>
+                            <Link 
+                                to="/social" 
+                                className="inline-flex items-center px-8 py-4 bg-transparent text-white font-semibold rounded-lg border-2 border-white/30 hover:bg-white/10 transition-colors"
+                            >
+                                👥 Meet the Crew
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Stats Section */}
+            <div style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)', borderBottom: '1px solid #e2e8f0' }} aria-label="Platform Statistics">
+                <div className="container-base section-padding" style={{paddingLeft: 32, paddingRight: 32, maxWidth: 1200, margin: '0 auto'}}>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+                        <div className="animate-fade">
+                                                    <div className="text-3xl font-bold text-blue-600 mb-2">
+                            {projects.length > 0 ? projects.length + '+' : '—'}
+                        </div>
+                            <div className="text-gray-600 font-medium">Active Projects</div>
+                        </div>
+                        <div className="animate-fade" style={{animationDelay: '0.1s'}}>
+                                                    <div className="text-3xl font-bold text-purple-600 mb-2">
+                            {crew.length > 0 ? crew.length + '+' : '—'}
+                        </div>
+                            <div className="text-gray-600 font-medium">Industry Professionals</div>
+                        </div>
+                        <div className="animate-fade" style={{animationDelay: '0.2s'}}>
+                            <div className="text-3xl font-bold text-green-600 mb-2">24/7</div>
+                            <div className="text-gray-600 font-medium">Network Access</div>
                         </div>
                     </div>
                 </div>
@@ -178,12 +208,13 @@ const Home: React.FC = () => {
             {/* Highlighted Projects Section */}
             <div style={{ background: 'transparent' }} aria-label="Project Highlights">
                 <div className="container-base section-padding" style={{paddingLeft: 32, paddingRight: 32, maxWidth: 1200, margin: '0 auto'}}>
-                    <div className="mb-12 animate-fade">
-                        <h3 className="heading-tertiary text-2xl font-bold tracking-tight text-gray-900" id="project-highlights-heading" style={{ letterSpacing: '-0.01em' }}>
-                            Project Highlights
+                    <div className="mb-12 animate-fade text-center">
+                        <h3 className="text-3xl font-bold tracking-tight text-gray-900 mb-4" id="project-highlights-heading">
+                            Featured Productions
                         </h3>
-                        {/* Add spacing below heading for visual balance */}
-                        <div style={{ height: 18 }} />
+                        <p className="text-gray-600 max-w-2xl mx-auto">
+                            Discover the latest film projects, from major studio productions to independent films making waves in the industry
+                        </p>
                     </div>
                     {/* Search and filter UI */}
                     <div className="flex flex-col sm:flex-row gap-4 mb-8 animate-fade items-center" aria-label="Project search and filter">
@@ -216,50 +247,15 @@ const Home: React.FC = () => {
                     {loading ? (
                         <GridSkeleton count={4} height="h-64" />
                     ) : projects.length === 0 ? (
-                        <div className="text-center py-24 animate-fade" aria-live="polite">
-                            <div className="text-8xl mb-8 opacity-20 animate-bounce-slow">🎬</div>
-                            <h3 className="heading-card mb-4">No projects yet</h3>
-                            <p className="body-medium max-w-md mx-auto">Be the first to add a project to the platform</p>
-                            {/* Fallback: Show example projects if none fetched */}
-                            <div className="mt-8">
-                                <div className="heading-card mb-2 text-gray-700">Example Projects</div>
-                                <div className="grid-cards">
-                                    {[{
-                                        id: 'example1',
-                                        projectName: 'Sample Feature Film',
-                                        productionCompany: 'Demo Productions',
-                                        country: 'USA',
-                                        productionLocations: [{ country: 'USA', city: 'Los Angeles' }],
-                                        status: 'In Production',
-                                        synopsis: 'A thrilling adventure in the heart of Hollywood.',
-                                        coverImageUrl: '',
-                                    }, {
-                                        id: 'example2',
-                                        projectName: 'Indie Short',
-                                        productionCompany: 'Indie Studio',
-                                        country: 'UK',
-                                        productionLocations: [{ country: 'UK', city: 'London' }],
-                                        status: 'Completed',
-                                        synopsis: 'A touching story of friendship and dreams.',
-                                        coverImageUrl: '',
-                                    }].map((project, index) => (
-                                        <div key={project.id} style={{ animationDelay: `${index * 0.1}s` }}>
-                                            <ProjectCard
-                                                id={project.id}
-                                                projectName={project.projectName}
-                                                productionCompany={project.productionCompany}
-                                                country={project.country}
-                                                productionLocations={project.productionLocations}
-                                                status={project.status}
-                                                summary={project.synopsis}
-                                                coverImageUrl={project.coverImageUrl}
-                                                showDetails={false}
-                                                isBookmarked={false}
-                                            />
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
+                        <div className="text-center py-16 animate-fade" aria-live="polite">
+                            <div className="text-6xl mb-6 opacity-20">🎬</div>
+                            <h3 className="text-xl font-semibold text-gray-900 mb-3">No Featured Projects</h3>
+                            <p className="text-gray-600 max-w-md mx-auto mb-6">
+                                Check back soon for the latest film productions and industry highlights
+                            </p>
+                            <Link to="/projects" className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                                Browse All Projects
+                            </Link>
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" aria-live="polite" aria-labelledby="project-highlights-heading" style={{marginLeft: 0, marginRight: 0}}>
@@ -304,9 +300,9 @@ const Home: React.FC = () => {
             <div style={{ background: 'transparent', borderBottom: '1px solid #f3f4f6', paddingTop: 32 }} aria-label="Crew Highlights">
                 <div className="container-base section-padding" style={{paddingLeft: 32, paddingRight: 32, maxWidth: 1200, margin: '0 auto'}}>
                     <div className="mb-12 animate-fade text-center">
-                        <h3 className="heading-tertiary mb-2" id="crew-highlights-heading">Crew Highlights</h3>
-                        <p className="body-medium max-w-2xl mx-auto text-gray-500">
-                            Meet some of the talented professionals on whosonset
+                        <h3 className="text-3xl font-bold tracking-tight text-gray-900 mb-4" id="crew-highlights-heading">Industry Professionals</h3>
+                        <p className="text-gray-600 max-w-2xl mx-auto">
+                            Connect with experienced filmmakers, talented crew members, and industry leaders from around the world
                         </p>
                     </div>
                     {/* Search and filter UI for crew */}
@@ -364,9 +360,14 @@ const Home: React.FC = () => {
                         <GridSkeleton count={4} height="h-64" />
                     ) : crew.length === 0 ? (
                         <div className="text-center py-16 animate-fade" aria-live="polite">
-                            <div className="text-7xl mb-6 opacity-20">🎬</div>
-                            <h4 className="heading-card mb-2">No crew profiles yet</h4>
-                            <p className="body-medium max-w-md mx-auto">Be the first to create a crew profile!</p>
+                            <div className="text-6xl mb-6 opacity-20">👥</div>
+                            <h4 className="text-xl font-semibold text-gray-900 mb-3">No Featured Crew</h4>
+                            <p className="text-gray-600 max-w-md mx-auto mb-6">
+                                Discover talented film industry professionals and connect with the community
+                            </p>
+                            <Link to="/social" className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                                Explore Crew Network
+                            </Link>
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade" aria-live="polite" aria-labelledby="crew-highlights-heading" style={{paddingLeft: 0, paddingRight: 0}}>
