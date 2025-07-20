@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, query, where, orderBy, getDocs, limit } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { JobApplication, JobPosting } from '../../types/JobApplication';
+import { Link } from 'react-router-dom';
 
 interface ApplicationStats {
   total: number;
@@ -191,7 +192,12 @@ const JobApplicationDashboard: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
-                    <h4 className="text-lg font-medium text-gray-900">Job #{application.jobId.slice(-6)}</h4>
+                    <Link 
+                      to={`/applications/${application.id}`}
+                      className="text-lg font-medium text-gray-900 hover:text-blue-600 transition-colors"
+                    >
+                      Job #{application.jobId.slice(-6)}
+                    </Link>
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(application.status)}`}>
                       {getStatusIcon(application.status)} {application.status.replace('_', ' ')}
                     </span>
@@ -209,6 +215,12 @@ const JobApplicationDashboard: React.FC = () => {
                       Interview: {formatDate(application.interviewScheduled)}
                     </p>
                   )}
+                  <Link
+                    to={`/applications/${application.id}`}
+                    className="inline-block mt-2 px-4 py-2 text-sm bg-gray-900 text-white font-light rounded-lg hover:bg-gray-800 transition-colors"
+                  >
+                    View Details
+                  </Link>
                 </div>
               </div>
             </div>

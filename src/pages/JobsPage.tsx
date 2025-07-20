@@ -208,7 +208,7 @@ export default function JobsPage() {
       setError(null);
       
       const db = getFirestore();
-      const jobsCollection = collection(db, 'jobs');
+      const jobsCollection = collection(db, 'jobPostings');
       const jobsQuery = query(jobsCollection);
       const querySnapshot = await getDocs(jobsQuery);
       

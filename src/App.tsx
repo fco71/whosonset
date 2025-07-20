@@ -32,6 +32,10 @@ const PublicResumePage = React.lazy(() => import('./components/PublicResumePage'
 const ChatTestPage = React.lazy(() => import('./components/Chat/ChatTestPage'));
 const LoginPage = React.lazy(() => import('./pages/LoginPage'));
 const RegisterPage = React.lazy(() => import('./pages/RegisterPage'));
+const ApplicationDetailPage = React.lazy(() => import('./pages/ApplicationDetailPage'));
+const JobApplicationForm = React.lazy(() => import('./components/JobSearch/JobApplicationForm'));
+const JobApplicationDashboard = React.lazy(() => import('./components/JobSearch/JobApplicationDashboard'));
+const ApplicationSuccessPage = React.lazy(() => import('./components/JobSearch/ApplicationSuccessPage'));
 
 // Protected Route Component for React Router v7
 const ProtectedRoute = ({ children, redirectTo = '/login' }: { children: React.ReactNode, redirectTo?: string }) => {
@@ -158,6 +162,26 @@ function App() {
                 {/* Job Related Routes */}
                 <Route path="/jobs" element={<JobsPage />} />
                 <Route path="/jobs/:id" element={<JobDetailPage />} />
+                <Route path="/jobs/:jobId/apply" element={
+                  <ProtectedRoute>
+                    <JobApplicationForm />
+                  </ProtectedRoute>
+                } />
+                <Route path="/applications" element={
+                  <ProtectedRoute>
+                    <JobApplicationDashboard />
+                  </ProtectedRoute>
+                } />
+                <Route path="/applications/:applicationId" element={
+                  <ProtectedRoute>
+                    <ApplicationDetailPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/applications/:applicationId/success" element={
+                  <ProtectedRoute>
+                    <ApplicationSuccessPage />
+                  </ProtectedRoute>
+                } />
                 <Route path="/post-job" element={
                   <ProtectedRoute>
                     <PostJobPage />

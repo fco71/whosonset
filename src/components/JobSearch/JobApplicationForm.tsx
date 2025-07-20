@@ -4,14 +4,17 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { JobPosting, JobApplication } from '../../types/JobApplication';
 import { JobApplicationService } from '../../utilities/jobApplicationService';
+import { FileUploadService, UploadedFile } from '../../utilities/fileUploadService';
 
 interface JobApplicationFormData {
   coverLetter: string;
   expectedSalary?: number;
   availabilityDate: string;
   notes: string;
-  resumeId: string;
+  resumeFile: File | null;
+  resumeUploaded: UploadedFile | null;
   attachments: File[];
+  attachmentsUploaded: UploadedFile[];
 }
 
 const JobApplicationForm: React.FC = () => {
@@ -29,8 +32,10 @@ const JobApplicationForm: React.FC = () => {
     expectedSalary: undefined,
     availabilityDate: '',
     notes: '',
-    resumeId: '',
-    attachments: []
+    resumeFile: null,
+    resumeUploaded: null,
+    attachments: [],
+    attachmentsUploaded: []
   });
 
   useEffect(() => {
@@ -85,7 +90,7 @@ const JobApplicationForm: React.FC = () => {
       return false;
     }
     
-    if (!formData.resumeId) {
+    if (!formData.resumeFile && !formData.resumeUploaded) {
       setError('Resume is required');
       return false;
     }
@@ -102,26 +107,50 @@ const JobApplicationForm: React.FC = () => {
       setIsSubmitting(true);
       setError(null);
       
-      // TODO: Upload attachments to storage and get URLs
-      const attachmentUrls: string[] = [];
+      const userId = 'current-user-id'; // TODO: Get from auth context
+      
+      // Upload resume if not already uploaded
+      let resumeId = formData.resumeUploaded?.id;
+      if (formData.resumeFile && !resumeId) {
+        const uploadedResume = await FileUploadService.uploadFile(
+          formData.resumeFile, 
+          userId, 
+          'resume'
+        );
+        resumeId = uploadedResume.id;
+      }
+      
+      // Upload attachments
+      const uploadedAttachments = [];
+      if (formData.attachments.length > 0) {
+        const uploadedFiles = await FileUploadService.uploadMultipleFiles(
+          formData.attachments, 
+          userId, 
+          'attachments'
+        );
+        uploadedAttachments.push(...uploadedFiles);
+      }
+      
+      // Add previously uploaded attachments
+      uploadedAttachments.push(...formData.attachmentsUploaded);
       
       const applicationData = {
         jobId: job.id,
-        applicantId: 'current-user-id', // TODO: Get from auth context
+        applicantId: userId,
         projectId: job.projectId,
         status: 'pending' as const,
         coverLetter: formData.coverLetter,
         expectedSalary: formData.expectedSalary,
         availabilityDate: formData.availabilityDate,
         notes: formData.notes,
-        resumeId: formData.resumeId,
-        attachments: attachmentUrls.map((url, index) => ({
-          id: `attachment-${index}`,
-          name: formData.attachments[index]?.name || 'Attachment',
-          url,
+        resumeId: resumeId || '',
+        attachments: uploadedAttachments.map(file => ({
+          id: file.id,
+          name: file.name,
+          url: file.url,
           type: 'other' as const,
-          size: formData.attachments[index]?.size || 0,
-          uploadedAt: new Date()
+          size: file.size,
+          uploadedAt: file.uploadedAt
         }))
       };
       
@@ -312,8 +341,7 @@ const JobApplicationForm: React.FC = () => {
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) {
-                    // TODO: Upload to storage and get ID
-                    handleInputChange('resumeId', 'resume-id');
+                    handleInputChange('resumeFile', file);
                   }
                 }}
                 className="mt-4"

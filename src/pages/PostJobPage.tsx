@@ -385,7 +385,6 @@ const PostJobPage: React.FC = (): JSX.Element => {
         // System fields
         status: 'published' as const,
         postedById: currentUser.uid,
-        createdBy: formData.contactName,
         applicationCount: 0,
         views: 0
       };

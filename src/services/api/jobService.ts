@@ -109,7 +109,7 @@ export const createJobPosting = async (
       updatedAt: serverTimestamp(),
     };
 
-    const docRef = await addDoc(collection(db, 'jobs'), jobPosting);
+    const docRef = await addDoc(collection(db, 'jobPostings'), jobPosting);
     return docRef.id;
   } catch (error) {
     console.error('Error creating job posting:', error);
@@ -120,8 +120,7 @@ export const createJobPosting = async (
 // Update an existing job posting
 export const updateJobPosting = async (jobId: string, jobData: Partial<JobPostingBase>): Promise<void> => {
   try {
-
-    const jobRef = doc(db, 'jobs', jobId);
+    const jobRef = doc(db, 'jobPostings', jobId);
     const updateData: Partial<FirestoreJobPosting> = {
       ...jobData,
       updatedAt: serverTimestamp()
@@ -137,8 +136,7 @@ export const updateJobPosting = async (jobId: string, jobData: Partial<JobPostin
 // Delete a job posting
 export const deleteJobPosting = async (jobId: string): Promise<void> => {
   try {
-
-    const jobRef = doc(db, 'jobs', jobId);
+    const jobRef = doc(db, 'jobPostings', jobId);
     await deleteDoc(jobRef);
   } catch (error) {
     console.error('Error deleting job posting:', error);
@@ -162,7 +160,7 @@ export const getJobPostings = async (filters: {
   try {
 
     
-    const jobsRef = collection(db, 'jobs');
+    const jobsRef = collection(db, 'jobPostings');
 
     
     let q = query(jobsRef);
@@ -280,66 +278,28 @@ export const getJobPostings = async (filters: {
 // Get a single job posting by ID
 export const getJobPostingById = async (jobId: string): Promise<JobPosting | null> => {
   try {
-
-    const docRef = doc(db, 'jobs', jobId);
+    const docRef = doc(db, 'jobPostings', jobId);
     const docSnap = await getDoc(docRef);
     
     if (!docSnap.exists()) {
-
-      // Fallback to check jobPostings collection for backward compatibility
-      const legacyDocRef = doc(db, 'jobPostings', jobId);
-      const legacyDocSnap = await getDoc(legacyDocRef);
-      
-      if (!legacyDocSnap.exists()) {
-
-        return null;
-      }
-      
-      const docData = legacyDocSnap.data();
-
-      
-      // Migrate the job to the new collection
-      if (docData) {
-
-        const newJobRef = doc(db, 'jobs', jobId);
-        await setDoc(newJobRef, {
-          ...docData,
-          updatedAt: serverTimestamp()
-        });
-        
-        // Delete the old document
-        await deleteDoc(legacyDocRef);
-
-      }
-      
-      // Return the job data with proper typing
-      return {
-        ...docData as JobPostingBase,
-        id: jobId,
-        createdAt: docData.createdAt?.toDate ? docData.createdAt.toDate() : new Date(),
-        updatedAt: new Date(),
-        status: docData.status || 'published',
-        postedById: docData.postedById || '',
-        createdBy: docData.createdBy || docData.postedById || '',
-        applicationCount: docData.applicationCount || 0,
-        views: docData.views || 0,
-        skills: Array.isArray(docData.skills) ? docData.skills : []
-      };
+      return null;
     }
     
     const docData = docSnap.data();
     
-    if (docSnap.exists()) {
-      const data = docSnap.data() as Omit<FirestoreJobPosting, 'id'>;
-      return {
-        ...data,
-        id: docSnap.id,
-        createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
-        updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date()
-      };
-    } else {
-      return null;
-    }
+    // Return the job data with proper typing
+    return {
+      ...docData as JobPostingBase,
+      id: jobId,
+      createdAt: docData.createdAt?.toDate ? docData.createdAt.toDate() : new Date(),
+      updatedAt: docData.updatedAt?.toDate ? docData.updatedAt.toDate() : new Date(),
+      status: docData.status || 'published',
+      postedById: docData.postedById || '',
+      createdBy: docData.createdBy || docData.postedById || '',
+      applicationCount: docData.applicationCount || 0,
+      views: docData.views || 0,
+      skills: Array.isArray(docData.skills) ? docData.skills : []
+    };
   } catch (error) {
     console.error('Error fetching job posting:', error);
     throw new Error('Failed to fetch job posting');

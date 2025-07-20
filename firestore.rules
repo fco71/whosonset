@@ -48,6 +48,38 @@ service cloud.firestore {
       allow update, delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
     }
     
+    // Job applications - users can only access their own applications
+    match /jobApplications/{applicationId} {
+      allow read: if request.auth != null && (
+        resource.data.applicantId == request.auth.uid ||
+        get(/databases/$(database)/documents/jobPostings/$(resource.data.jobId)).data.createdBy == request.auth.uid
+      );
+      allow create: if request.auth != null && 
+        request.resource.data.applicantId == request.auth.uid;
+      allow update: if request.auth != null && (
+        resource.data.applicantId == request.auth.uid ||
+        get(/databases/$(database)/documents/jobPostings/$(resource.data.jobId)).data.createdBy == request.auth.uid
+      );
+      allow delete: if request.auth != null && 
+        resource.data.applicantId == request.auth.uid;
+    }
+    
+    // Job application messages - only applicant and job poster can access
+    match /jobApplications/{applicationId}/messages/{messageId} {
+      allow read, write: if request.auth != null && (
+        get(/databases/$(database)/documents/jobApplications/$(applicationId)).data.applicantId == request.auth.uid ||
+        get(/databases/$(database)/documents/jobPostings/$(get(/databases/$(database)/documents/jobApplications/$(applicationId)).data.jobId)).data.createdBy == request.auth.uid
+      );
+    }
+    
+    // Interviews - only participants can access
+    match /interviews/{interviewId} {
+      allow read, write: if request.auth != null && (
+        resource.data.applicantId == request.auth.uid ||
+        resource.data.interviewerEmail == request.auth.token.email
+      );
+    }
+    
     // ===== SOCIAL SYSTEM RULES =====
     
     // Follow requests - strict user isolation

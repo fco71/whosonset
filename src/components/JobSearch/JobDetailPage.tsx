@@ -32,7 +32,7 @@ const JobDetailPage: React.FC = () => {
       setError(null);
       console.log('Loading job details for ID:', jobId, 'from collection: jobs');
       
-      const jobDoc = await getDoc(doc(db, 'jobs', jobId));
+      const jobDoc = await getDoc(doc(db, 'jobPostings', jobId));
       
       if (!jobDoc.exists()) {
         throw new Error('Job not found');

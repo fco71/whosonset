@@ -46,7 +46,7 @@ const JobSearchPage: React.FC = () => {
     
     try {
       console.log('Loading jobs from collection: jobs');
-      const jobsRef = collection(db, 'jobs');
+      const jobsRef = collection(db, 'jobPostings');
       const q = query(jobsRef, orderBy('createdAt', 'desc'), limit(50));
       const querySnapshot = await getDocs(q);
       
