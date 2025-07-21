@@ -260,8 +260,10 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
               previousPreviewUrlRef.current = previewUrl;
             }}
             onError={e => {
-              console.log('ImageUploader: Failed to load image, falling back to default avatar');
-              e.currentTarget.src = '/default-avatar.svg';
+              const target = e.currentTarget;
+              if (!target.src.endsWith('/default-avatar.svg')) {
+                target.src = '/default-avatar.svg';
+              }
             }}
           />
         </div>

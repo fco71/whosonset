@@ -72,6 +72,7 @@ const Home: React.FC = () => {
 
     // Fetch highlighted projects and crew for homepage
     useEffect(() => {
+        console.log("Attempting Firestore fetch");
         setLoading(true);
         setCrewLoading(true);
         const fetchHighlights = async () => {

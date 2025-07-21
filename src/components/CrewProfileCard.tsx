@@ -82,7 +82,9 @@ const CrewProfileCard: React.FC<CrewProfileCardProps> = ({
           style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', marginBottom: 8, border: '3px solid #e5e7eb' }}
           onError={(e) => {
             const target = e.target as HTMLImageElement;
-            target.src = "/default-avatar.svg";
+            if (!target.src.endsWith('/default-avatar.svg')) {
+              target.src = "/default-avatar.svg";
+            }
           }}
         />
         {/* Bookmark Button */}

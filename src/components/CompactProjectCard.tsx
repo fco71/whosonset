@@ -132,7 +132,12 @@ const CompactProjectCard: React.FC<CompactProjectCardProps> = ({
                 alt={`${project.projectName} cover`}
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                 loading="lazy"
-                onError={handleImageError}
+                onError={e => {
+                  const target = e.currentTarget;
+                  if (!target.src.endsWith('/default-avatar.svg')) {
+                    target.src = '/default-avatar.svg';
+                  }
+                }}
               />
               {coverImageUrl.startsWith('blob:') && (
                 <div className="absolute inset-0 border-2 border-yellow-400 border-dashed pointer-events-none" />

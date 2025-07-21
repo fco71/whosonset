@@ -104,7 +104,9 @@ const MemberCard: React.FC<MemberCardProps> = ({
           className="w-20 h-20 rounded-full object-cover mb-2 border-2 border-gray-100 shadow-sm"
           onError={(e) => {
             const target = e.target as HTMLImageElement;
-            target.src = "/default-avatar.svg";
+            if (!target.src.endsWith('/default-avatar.svg')) {
+              target.src = "/default-avatar.svg";
+            }
           }}
         />
         

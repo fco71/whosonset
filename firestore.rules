@@ -2,291 +2,68 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // ===== SECURE USER-SPECIFIC DATA ACCESS =====
-    
     // User collections - users can only access their own collections
     match /UserCollections/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
-    
+
     // Users collection - allow reading for messaging compatibility
     match /users/{userId} {
       allow read: if request.auth != null;
       allow write: if request.auth != null && request.auth.uid == userId;
     }
-    
-    // Users can only read/write their own crew profiles
-    // Allow reading published profiles for messaging and social features
+
+    // Crew profiles - only authenticated users can read/write
     match /crewProfiles/{profileId} {
-      allow read: if resource.data.isPublished == true || 
-                     (request.auth != null && resource.data.uid == request.auth.uid);
-      allow create: if request.auth != null && 
-                     request.resource.data.uid == request.auth.uid;
-      allow update: if request.auth != null && 
-                     resource.data.uid == request.auth.uid;
-      allow delete: if request.auth != null && 
-                     resource.data.uid == request.auth.uid;
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      allow update: if request.auth != null && resource.data.uid == request.auth.uid;
+      allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
     }
-    
-    // Project access - users can read public projects or their own projects
+
+    // Projects - only authenticated users can read/write
     match /projects/{projectId} {
-      allow read: if resource.data.isPublic == true || 
-                     (request.auth != null && resource.data.createdBy == request.auth.uid);
+      allow read: if request.auth != null;
       allow write: if request.auth != null && resource.data.createdBy == request.auth.uid;
     }
-    
-    // Projects collection (for homepage stats) - allow public read for published projects
-    match /Projects/{projectId} {
-      allow read: if true; // Allow public reading for homepage statistics
-      allow write: if request.auth != null && resource.data.owner_uid == request.auth.uid;
-    }
-    
-    // Job postings - can be read by anyone, created by authenticated users
+
+    // Job postings - only authenticated users can read/write
     match /jobPostings/{jobId} {
-      allow read: if true;
+      allow read: if request.auth != null;
       allow create: if request.auth != null;
       allow update, delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
     }
-    
-    // Job views tracking - authenticated users can read/write their own view records
-    match /jobViews/{viewId} {
-      allow read, write: if request.auth != null;
-    }
-    
-    // Saved jobs - authenticated users can read/write their own saved jobs
-    match /savedJobs/{savedJobId} {
-      allow read, write: if request.auth != null;
-    }
-    
-    // Job departments - public read access for lookup data
-    match /jobDepartments/{departmentId} {
-      allow read: if true;
-      allow write: if request.auth != null;
-    }
-    
-    // Countries - public read access for lookup data
-    match /countries/{countryId} {
-      allow read: if true;
-      allow write: if request.auth != null;
-    }
-    
-    // Job applications - users can only access their own applications
+
+    // Job applications - only authenticated users can read/write
     match /jobApplications/{applicationId} {
       allow read: if request.auth != null && (
         resource.data.applicantId == request.auth.uid ||
         get(/databases/$(database)/documents/jobPostings/$(resource.data.jobId)).data.createdBy == request.auth.uid
       );
-      allow create: if request.auth != null && 
-        request.resource.data.applicantId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.applicantId == request.auth.uid;
       allow update: if request.auth != null && (
         resource.data.applicantId == request.auth.uid ||
         get(/databases/$(database)/documents/jobPostings/$(resource.data.jobId)).data.createdBy == request.auth.uid
       );
-      allow delete: if request.auth != null && 
-        resource.data.applicantId == request.auth.uid;
+      allow delete: if request.auth != null && resource.data.applicantId == request.auth.uid;
     }
-    
-    // Job application messages - only applicant and job poster can access
-    match /jobApplications/{applicationId}/messages/{messageId} {
-      allow read, write: if request.auth != null && (
-        get(/databases/$(database)/documents/jobApplications/$(applicationId)).data.applicantId == request.auth.uid ||
-        get(/databases/$(database)/documents/jobPostings/$(get(/databases/$(database)/documents/jobApplications/$(applicationId)).data.jobId)).data.createdBy == request.auth.uid
-      );
-    }
-    
-    // Application notifications - users can only access their own notifications
-    match /applicationNotifications/{notificationId} {
-      allow read, write: if request.auth != null && 
-        (resource == null && request.resource.data.userId == request.auth.uid) ||
-        (resource != null && resource.data.userId == request.auth.uid);
-    }
-    
-    // Application messages - users can only access messages for their applications
-    match /applicationMessages/{messageId} {
-      allow read, write: if request.auth != null && (
-        (resource == null && request.resource.data.senderId == request.auth.uid) ||
-        (resource != null && (
-          resource.data.senderId == request.auth.uid ||
-          resource.data.receiverId == request.auth.uid
-        ))
-      );
-    }
-    
-    // Interviews - only participants can access
-    match /interviews/{interviewId} {
-      allow read, write: if request.auth != null && (
-        resource.data.applicantId == request.auth.uid ||
-        resource.data.interviewerEmail == request.auth.token.email
-      );
-    }
-    
-    // ===== SOCIAL SYSTEM RULES =====
-    
-    // Follow requests - strict user isolation
-    match /followRequests/{requestId} {
-      allow read: if request.auth != null && (
-        resource.data.fromUserId == request.auth.uid || 
-        resource.data.toUserId == request.auth.uid
-      );
-      allow create: if request.auth != null && 
-        request.resource.data.fromUserId == request.auth.uid;
-      allow update: if request.auth != null && 
-        resource.data.toUserId == request.auth.uid;
-      allow delete: if request.auth != null && (
-        resource.data.fromUserId == request.auth.uid || 
-        resource.data.toUserId == request.auth.uid
-      );
-    }
-    
-    // Connections - users can only see their own connections
-    match /connections/{connectionId} {
-      allow read: if request.auth != null && (
-        resource.data.userId == request.auth.uid ||
-        resource.data.connectedUserId == request.auth.uid
-      );
-      allow create: if request.auth != null && 
-        request.resource.data.userId == request.auth.uid;
-      allow update: if request.auth != null && 
-        resource.data.userId == request.auth.uid;
-      allow delete: if request.auth != null && 
-        resource.data.userId == request.auth.uid;
-    }
-    
-    // Follows - users can only see their own follows
-    match /follows/{followId} {
-      allow read: if request.auth != null && (
-        resource.data.followerId == request.auth.uid ||
-        resource.data.followingId == request.auth.uid
-      );
-      allow create: if request.auth != null && 
-        request.resource.data.followerId == request.auth.uid;
-      allow update: if request.auth != null && 
-        resource.data.followerId == request.auth.uid;
-      allow delete: if request.auth != null && 
-        resource.data.followerId == request.auth.uid;
-    }
-    
-    // Notifications - users can only see their own notifications
-    match /notifications/{notificationId} {
-      allow read: if request.auth != null && 
-        resource.data.userId == request.auth.uid;
-      allow create: if request.auth != null;
-      allow update: if request.auth != null && 
-        resource.data.userId == request.auth.uid;
-      allow delete: if request.auth != null && 
-        resource.data.userId == request.auth.uid;
-    }
-    
-    // Activity feed - public read but user-specific write
-    match /activityFeed/{itemId} {
-      allow read: if resource.data.isPublic == true || 
-                     (request.auth != null && resource.data.userId == request.auth.uid);
-      allow create: if request.auth != null && 
-        request.resource.data.userId == request.auth.uid;
-      allow update: if request.auth != null && 
-        resource.data.userId == request.auth.uid;
-      allow delete: if request.auth != null && 
-        resource.data.userId == request.auth.uid;
-    }
-    
-    // Direct messages - only sender and receiver can access
-    match /directMessages/{messageId} {
-      allow read: if request.auth != null && (
-        resource.data.senderId == request.auth.uid ||
-        resource.data.receiverId == request.auth.uid
-      );
-      allow create: if request.auth != null && 
-        request.resource.data.senderId == request.auth.uid;
-      allow update: if request.auth != null && (
-        resource.data.senderId == request.auth.uid ||
-        resource.data.receiverId == request.auth.uid
-      );
-      allow delete: if request.auth != null && 
-        resource.data.senderId == request.auth.uid;
-    }
-    
-    // Chat settings - users can read other users' settings for messaging permissions, but only write their own
-    match /chatSettings/{settingId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && 
-        resource.data.userId == request.auth.uid;
-    }
-    
-    // Typing indicators - users can read/write their own typing status
-    match /typingIndicators/{indicatorId} {
-      allow read: if request.auth != null && (
-        resource.data.userId == request.auth.uid ||
-        resource.data.otherUserId == request.auth.uid
-      );
-      allow create, update, delete: if request.auth != null && 
-        resource.data.userId == request.auth.uid;
-    }
-    
-    // Likes - public read but user-specific write
-    match /likes/{likeId} {
-      allow read: if true;
-      allow create: if request.auth != null && 
-        request.resource.data.userId == request.auth.uid;
-      allow update: if request.auth != null && 
-        resource.data.userId == request.auth.uid;
-      allow delete: if request.auth != null && 
-        resource.data.userId == request.auth.uid;
-    }
-    
-    // Comments - public read but user-specific write
-    match /comments/{commentId} {
-      allow read: if true;
-      allow create: if request.auth != null && 
-        request.resource.data.userId == request.auth.uid;
-      allow update: if request.auth != null && 
-        resource.data.userId == request.auth.uid;
-      allow delete: if request.auth != null && 
-        resource.data.userId == request.auth.uid;
-    }
-    
-    // ===== COLLABORATION SYSTEM =====
-    
-    // Collaboration workspaces - members only
-    match /collaborationWorkspaces/{workspaceId} {
-      allow read: if request.auth != null && 
-        request.auth.uid in resource.data.memberIds;
-      allow create: if request.auth != null && 
-        request.resource.data.createdBy == request.auth.uid;
-      allow update: if request.auth != null && 
-        request.auth.uid in resource.data.memberIds;
-      allow delete: if request.auth != null && 
-        resource.data.createdBy == request.auth.uid;
-    }
-    
-    // Regular workspaces - authenticated users only (for now)
-    match /workspaces/{workspaceId} {
-      allow read, write: if request.auth != null;
-    }
-    
-    // Screenplays - uploader and team members can access
-    match /screenplays/{screenplayId} {
-      allow read: if request.auth != null && (
-        resource.data.uploadedBy == request.auth.uid ||
-        request.auth.uid in resource.data.teamMembers
-      );
-      allow create: if request.auth != null && 
-        request.resource.data.uploadedBy == request.auth.uid;
-      allow update: if request.auth != null && (
-        resource.data.uploadedBy == request.auth.uid ||
-        request.auth.uid in resource.data.teamMembers
-      );
-      allow delete: if request.auth != null && 
-        resource.data.uploadedBy == request.auth.uid;
-    }
-    
-    // Task management - project members only
+
+    // Tasks - only authenticated users can read/write
     match /tasks/{taskId} {
       allow read, write: if request.auth != null;
-      // TODO: Add proper project membership check
     }
-    
-    // ===== FALLBACK RULES =====
-    
+
+    // Saved jobs, job views, follows, connections, notifications, etc - only authenticated users
+    match /{collectionName}/{docId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Public homepage stats (if needed)
+    match /Projects/{projectId} {
+      allow read: if true; // Allow public reading for homepage statistics
+      allow write: if request.auth != null && resource.data.owner_uid == request.auth.uid;
+    }
+
     // Deny all other access by default
     match /{document=**} {
       allow read, write: if false;
