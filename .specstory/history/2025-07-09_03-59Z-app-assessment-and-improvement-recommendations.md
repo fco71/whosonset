@@ -45202,3 +45202,70 @@ Would you like a quick summary of the current friend request flow before I start
 
 ---
 
+_**User**_
+
+Go ahead, do the fixes
+
+---
+
+_**Assistant**_
+
+<details>
+            <summary>Searched codebase "How does friend or follow request and acceptance work? Where is the logic for sending, receiving, and accepting friend/follow requests?" • **25** results</summary>
+        
+| File | Lines |
+|------|-------|
+| `src/utilities/socialService.ts` | L112-177 |
+| `src/utilities/socialService.ts` | L28-85 |
+| `src/utilities/socialService.v2.ts` | L112-151 |
+| `src/utilities/socialService.v2.ts` | L74-112 |
+| `src/pages/SocialPage.v2.tsx` | L623-676 |
+| `src/types/Social.ts` | L1-11 |
+| `src/utilities/socialService.new.ts` | L101-120 |
+| `dist/336.chunk.js` | L1107-1140 |
+| `dist/140.chunk.js` | L498-531 |
+| `src/components/Social/SocialDashboard.tsx` | L158-218 |
+| `src/components/Social/FollowButton.tsx` | L12-71 |
+| `src/utilities/socialService.new.ts` | L82-101 |
+| `dist/997.chunk.js` | L258-299 |
+| `dist/997.chunk.js` | L353-393 |
+| `src/pages/SocialPage.tsx` | L334-394 |
+| `src/pages/SocialPage.new.tsx` | L195-246 |
+| `dist/336.chunk.js` | L1070-1107 |
+| `dist/997.chunk.js` | L336-353 |
+| `src/components/Social/SocialDashboard.tsx` | L426-460 |
+| `src/pages/SocialPage.v2.tsx` | L723-787 |
+| `dist/296.chunk.js` | L514-556 |
+| `src/utilities/socialService.ts` | L85-112 |
+| `src/components/Networking/NetworkingHub.tsx` | L130-174 |
+| `src/pages/SocialPage.tsx` | L479-507 |
+| `src/utilities/socialService.ts` | L221-256 |
+
+</details>
+
+---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
