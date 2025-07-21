@@ -49,7 +49,12 @@ const CrewProfileHeader: React.FC<CrewProfileHeaderProps> = ({ profile }) => {
         src={imageUrl}
         alt={profile.name}
         className="w-24 h-24 rounded-full object-cover border-2 border-gray-200"
-        onError={e => { (e.target as HTMLImageElement).src = '/default-avatar.svg'; }}
+        onError={e => {
+          const target = e.target as HTMLImageElement;
+          if (!target.src.endsWith('/default-avatar.svg')) {
+            target.src = '/default-avatar.svg';
+          }
+        }}
         style={{ flexShrink: 0 }}
       />
       <div className="flex-1 min-w-0 text-center md:text-left">

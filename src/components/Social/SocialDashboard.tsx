@@ -398,7 +398,12 @@ const SocialDashboard: React.FC = () => {
                               src={userData.avatar || '/bust-avatar.svg'}
                               alt={userData.displayName || 'User'}
                               className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-md"
-                              onError={e => (e.currentTarget.src = '/bust-avatar.svg')}
+                              onError={e => {
+                                const target = e.currentTarget;
+                                if (!target.src.endsWith('/bust-avatar.svg')) {
+                                  target.src = '/bust-avatar.svg';
+                                }
+                              }}
                             />
                             <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-gradient-to-br from-green-400 to-green-600 rounded-full border border-white flex items-center justify-center">
                               <div className="w-1.5 h-1.5 bg-white rounded-full"></div>

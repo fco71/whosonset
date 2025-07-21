@@ -9,6 +9,21 @@ import { BrowserRouter as Router } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import App from './App';
 
+// Global handler for all <img> errors (for blob URLs)
+document.addEventListener(
+  'error',
+  function (e) {
+    const target = e.target as HTMLImageElement;
+    if (
+      target.tagName === 'IMG' &&
+      target.src.startsWith('blob:') &&
+      !target.src.endsWith('/default-avatar.svg')
+    ) {
+      target.src = '/default-avatar.svg';
+    }
+  },
+  true
+);
 
 const RootWithProvider = () => (
   <AuthProvider>

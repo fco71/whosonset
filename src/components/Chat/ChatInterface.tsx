@@ -500,6 +500,26 @@ If you don't see the microphone icon, check your browser settings.`;
     }
   }, [pendingAttachment]);
 
+  // Track the preview blob URL for cleanup
+  const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
+
+  // When creating a preview blob URL for pendingAttachment, store and clean up
+  const getPreviewUrl = (file: File | null): string | undefined => {
+    if (!file) return undefined;
+    const url = URL.createObjectURL(file);
+    setPreviewBlobUrl(url);
+    return url;
+  };
+
+  // Cleanup blob URL on unmount or when preview is removed
+  useEffect(() => {
+    return () => {
+      if (previewBlobUrl) {
+        URL.revokeObjectURL(previewBlobUrl);
+      }
+    };
+  }, [previewBlobUrl]);
+
   return (
     <div className={`message-input ${dragOver ? 'drag-over' : ''}`} 
          onDragOver={handleDragOver} 
@@ -654,17 +674,27 @@ If you don't see the microphone icon, check your browser settings.`;
           background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, marginBottom: 12, zIndex: 10
         }}>
           {pendingAttachmentType?.startsWith('image/') ? (
-            <img src={URL.createObjectURL(pendingAttachment)} alt="Preview" style={{ maxWidth: 240, maxHeight: 240, borderRadius: 8, marginBottom: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }} />
+            <img
+              src={getPreviewUrl(pendingAttachment) || undefined}
+              alt="Preview"
+              style={{ maxWidth: 240, maxHeight: 240, borderRadius: 8, marginBottom: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
+              onError={e => {
+                const target = e.currentTarget;
+                if (!target.src.endsWith('/default-avatar.svg')) {
+                  target.src = '/default-avatar.svg';
+                }
+              }}
+            />
           ) : pendingAttachmentType?.startsWith('audio/') ? (
-            <audio controls src={URL.createObjectURL(pendingAttachment)} style={{ width: 220, marginBottom: 12 }} />
+            <audio controls src={getPreviewUrl(pendingAttachment) || undefined} style={{ width: 220, marginBottom: 12 }} />
           ) : (
             <div style={{ marginBottom: 12, fontSize: 16 }}>
               <span>📎 {pendingAttachment.name}</span>
             </div>
           )}
           <div style={{ display: 'flex', gap: 16, marginTop: 4 }}>
-            <button onClick={sendPendingAttachment} style={{ background: '#3b82f6', color: 'white', border: 'none', borderRadius: 8, padding: '10px 24px', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}>Send</button>
-            <button onClick={cancelPendingAttachment} style={{ background: '#ef4444', color: 'white', border: 'none', borderRadius: 8, padding: '10px 24px', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}>Cancel</button>
+            <button onClick={() => { sendPendingAttachment(); if (previewBlobUrl) { URL.revokeObjectURL(previewBlobUrl); setPreviewBlobUrl(null); } }} style={{ background: '#3b82f6', color: 'white', border: 'none', borderRadius: 8, padding: '10px 24px', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}>Send</button>
+            <button onClick={() => { cancelPendingAttachment(); if (previewBlobUrl) { URL.revokeObjectURL(previewBlobUrl); setPreviewBlobUrl(null); } }} style={{ background: '#ef4444', color: 'white', border: 'none', borderRadius: 8, padding: '10px 24px', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}>Cancel</button>
           </div>
         </div>
       )}

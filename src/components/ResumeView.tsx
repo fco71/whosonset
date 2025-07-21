@@ -257,10 +257,11 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
                   alt="Profile" 
                   style={profileImageStyle}
                   crossOrigin="anonymous"
-                  onError={(e) => {
-                    // Fallback to empty image if the URL is invalid
+                  onError={e => {
                     const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
+                    if (!target.src.endsWith('/default-avatar.svg')) {
+                      target.src = '/default-avatar.svg';
+                    }
                   }}
                 />
               )}
