@@ -212,7 +212,7 @@ const SocialPage = () => {
         const mappedRequests = await Promise.all(
           realFollowRequests.map(async (req: any) => {
             const userProfile = await fetchUserProfile(req.fromUserId);
-            return userProfile;
+            return { ...userProfile, requestId: req.id }; // Attach Firestore request ID
           })
         );
         setConnectionRequests(mappedRequests);
@@ -339,7 +339,7 @@ const SocialPage = () => {
     const request = connectionRequests.find(p => getProfileId(p) === userId);
     if (!request) return;
     try {
-      await SocialService.respondToFollowRequest(request.id, action === 'accept' ? 'accepted' : 'rejected');
+      await SocialService.respondToFollowRequest((request as any).requestId, action === 'accept' ? 'accepted' : 'rejected');
       // Update local state after backend call
       if (action === 'accept') {
         setConnections(prev => [...prev, request]);

@@ -211,19 +211,20 @@ const SocialPage = () => {
   };
 
   // Handle follow request response (accept/reject)
-  const handleFollowRequest = (userId: string, action: 'accept' | 'reject') => {
-    // In a real app, you would update the database here
-    console.log(`${action}ing follow request from ${userId}`);
-    
-    // Update local state
-    if (action === 'accept') {
-      const request = connectionRequests.find(p => getProfileId(p) === userId);
-      if (request) {
+  const handleFollowRequest = async (userId: string, action: 'accept' | 'reject') => {
+    // Find the follow request for this user
+    const request = connectionRequests.find(p => getProfileId(p) === userId);
+    if (!request) return;
+    try {
+      await SocialService.respondToFollowRequest(request.id, action === 'accept' ? 'accepted' : 'rejected');
+      // Update local state after backend call
+      if (action === 'accept') {
         setConnections(prev => [...prev, request]);
-        setConnectionRequests(prev => prev.filter(p => getProfileId(p) !== userId));
       }
-    } else {
       setConnectionRequests(prev => prev.filter(p => getProfileId(p) !== userId));
+    } catch (error) {
+      console.error(`Error ${action}ing follow request:`, error);
+      // Optionally show error to user
     }
   };
 
