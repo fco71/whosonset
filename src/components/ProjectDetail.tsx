@@ -9,6 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 import ProjectShowcase from '../components/ProjectShowcase';
 // import LoadingSpinner from '../components/LoadingSpinner';
+import { imageErrorFallback } from '../utilities/imageErrorFallback';
 
 interface Project {
 id: string;
@@ -473,19 +474,9 @@ const ProjectDetail: React.FC = () => {
                         <h3 className="text-xl font-semibold mb-4 border-b pb-1">Media</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
                             <div><label htmlFor="coverImage" className="block text-sm font-medium">Cover Image</label><input type="file" id="coverImage" accept="image/*" onChange={handleCoverImageChange} className="mt-1" />{coverImageBlobUrl ? (
-  <img src={coverImageBlobUrl} alt="New Cover Preview" className="w-36 h-auto mt-2 rounded shadow object-cover" onError={e => {
-    const target = e.currentTarget;
-    if (!target.src.endsWith('/default-avatar.svg')) {
-      target.src = '/default-avatar.svg';
-    }
-  }} />
+  <img src={coverImageBlobUrl} alt="New Cover Preview" className="w-36 h-auto mt-2 rounded shadow object-cover" onError={imageErrorFallback} />
 ) : formState.coverImageUrl ? (
-  <img src={formState.coverImageUrl} alt="Current Cover" className="w-36 h-auto mt-2 rounded shadow object-cover" onError={e => {
-    const target = e.currentTarget;
-    if (!target.src.endsWith('/default-avatar.svg')) {
-      target.src = '/default-avatar.svg';
-    }
-  }} />
+  <img src={formState.coverImageUrl} alt="Current Cover" className="w-36 h-auto mt-2 rounded shadow object-cover" onError={imageErrorFallback} />
 ) : null}</div>
                             {/* Removed Poster Image input */}
                         </div>
@@ -515,10 +506,8 @@ const ProjectDetail: React.FC = () => {
                                 <img
                                     src={project.coverImageUrl}
                                     alt={`${project.projectName} Cover`}
-                                    // Example: Fixed width, auto height, max height, contain to fit
                                     className="w-64 h-auto max-h-48 object-contain rounded-md shadow-lg"
-                                    // Alternative for fixed aspect ratio (e.g., 16:9) and object-cover:
-                                    // className="w-64 h-36 object-cover rounded-md shadow-lg"
+                                    onError={imageErrorFallback}
                                 />
                             </div>
                         )}

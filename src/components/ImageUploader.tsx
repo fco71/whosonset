@@ -10,6 +10,7 @@ import { Crop, PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import ReactCrop from 'react-image-crop';
 import getCroppedImg from './getCroppedImg';
+import { imageErrorFallback } from '../utilities/imageErrorFallback';
 
 interface ImageUploaderProps {
   // Called with the download URL after upload
@@ -259,12 +260,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
               }
               previousPreviewUrlRef.current = previewUrl;
             }}
-            onError={e => {
-              const target = e.currentTarget;
-              if (!target.src.endsWith('/default-avatar.svg')) {
-                target.src = '/default-avatar.svg';
-              }
-            }}
+            onError={imageErrorFallback}
           />
         </div>
       )}

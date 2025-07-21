@@ -6,6 +6,7 @@ import './ChatInterface.scss';
 import { collection, getDocs, where, limit, query as firestoreQuery } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { FaTrash } from 'react-icons/fa';
+import { imageErrorFallback } from '../../utilities/imageErrorFallback';
 
 // Create a completely independent message input component with rich features
 const MessageInput = React.forwardRef<{
@@ -678,12 +679,7 @@ If you don't see the microphone icon, check your browser settings.`;
               src={getPreviewUrl(pendingAttachment) || undefined}
               alt="Preview"
               style={{ maxWidth: 240, maxHeight: 240, borderRadius: 8, marginBottom: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
-              onError={e => {
-                const target = e.currentTarget;
-                if (!target.src.endsWith('/default-avatar.svg')) {
-                  target.src = '/default-avatar.svg';
-                }
-              }}
+              onError={imageErrorFallback}
             />
           ) : pendingAttachmentType?.startsWith('audio/') ? (
             <audio controls src={getPreviewUrl(pendingAttachment) || undefined} style={{ width: 220, marginBottom: 12 }} />
@@ -1355,6 +1351,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                               src={user.avatar}
                               alt={user.name}
                               className="w-8 h-8 rounded-full object-cover"
+                              onError={imageErrorFallback}
                             />
                           ) : (
                             <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
@@ -1489,6 +1486,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                             src={avatar} 
                             alt={name}
                             className="w-10 h-10 rounded-full object-cover"
+                            onError={imageErrorFallback}
                           />
                         ) : (
                           <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
@@ -1554,6 +1552,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                       src={selectedUser ? getUserInfo(selectedUser).avatar : ''} 
                       alt={selectedUser ? getUserInfo(selectedUser).name : ''}
                       className="w-8 h-8 rounded-full object-cover"
+                      onError={imageErrorFallback}
                     />
                   ) : (
                     <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
@@ -1632,28 +1631,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                                 alt={message.fileName || 'Image'} 
                                 className="message-image-content"
                                 onClick={() => window.open(message.fileUrl, '_blank')}
-                                onError={(e) => {
-                                  console.warn('[ChatInterface] Image failed to load:', message.fileUrl);
-                                  // Replace the broken image with a placeholder
-                                  const target = e.target as HTMLImageElement;
-                                  target.style.display = 'none';
-                                  const parent = target.parentElement;
-                                  if (parent) {
-                                    const placeholder = document.createElement('div');
-                                    placeholder.className = 'upload-failed-message';
-                                    placeholder.innerHTML = `
-                                      <div class="upload-failed-icon">📷</div>
-                                      <div class="upload-failed-content">
-                                        <div class="upload-failed-title">Image Unavailable</div>
-                                        <div class="upload-failed-name">${message.fileName || 'Image'}</div>
-                                        <div class="upload-failed-message-text">
-                                          This image could not be loaded. The file may have been deleted or is no longer available.
-                                        </div>
-                                      </div>
-                                    `;
-                                    parent.appendChild(placeholder);
-                                  }
-                                }}
+                                onError={e => imageErrorFallback(e)}
                               />
                             )}
                           {message.content && <p className="image-caption">{message.content}</p>}
@@ -1807,6 +1785,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     src={profileUser.userAvatar} 
                     alt={profileUser.userName}
                     className="w-20 h-20 rounded-full object-cover"
+                    onError={imageErrorFallback}
                   />
                 ) : (
                   <div className="w-20 h-20 bg-gray-300 rounded-full flex items-center justify-center">

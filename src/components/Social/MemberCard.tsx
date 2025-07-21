@@ -7,6 +7,7 @@ import { cn } from '../../lib/utils';
 import { Button } from '../ui/Button';
 import { Profile, getDisplayName, getPhotoUrl, isCrewProfile, getProfileId } from '../../types/Profile';
 import FollowButton from './FollowButton';
+import { imageErrorFallback } from '../../utilities/imageErrorFallback';
 
 interface MemberCardProps {
   profile: Profile;
@@ -102,12 +103,7 @@ const MemberCard: React.FC<MemberCardProps> = ({
           src={photoUrl || "/default-avatar.svg"} 
           alt={displayName}
           className="w-20 h-20 rounded-full object-cover mb-2 border-2 border-gray-100 shadow-sm"
-          onError={(e) => {
-            const target = e.target as HTMLImageElement;
-            if (!target.src.endsWith('/default-avatar.svg')) {
-              target.src = "/default-avatar.svg";
-            }
-          }}
+          onError={imageErrorFallback}
         />
         
         {/* Bookmark Button */}

@@ -3,6 +3,7 @@ import { ProjectEntry } from '../types/ProjectEntry';
 import { JobTitleEntry } from '../types/JobTitleEntry';
 import { Residence, ContactInfo } from '../types/CrewProfile';
 import { useManagedUrl } from '../hooks/useBlobUrl';
+import { imageErrorFallback } from '../utilities/imageErrorFallback';
 
 // Import html2pdf using require to bypass TypeScript issues
 const html2pdf = require('html2pdf.js');
@@ -257,12 +258,7 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
                   alt="Profile" 
                   style={profileImageStyle}
                   crossOrigin="anonymous"
-                  onError={e => {
-                    const target = e.target as HTMLImageElement;
-                    if (!target.src.endsWith('/default-avatar.svg')) {
-                      target.src = '/default-avatar.svg';
-                    }
-                  }}
+                  onError={e => imageErrorFallback(e)}
                 />
               )}
               <div>

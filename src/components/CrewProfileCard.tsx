@@ -6,6 +6,7 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { FaDownload, FaBookmark, FaRegBookmark } from 'react-icons/fa';
 import { CrewProfile } from '../types/CrewProfile';
 import FollowButton from './Social/FollowButton';
+import { imageErrorFallback } from '../utilities/imageErrorFallback';
 
 interface CrewProfileCardProps {
   profile: CrewProfile;
@@ -80,12 +81,7 @@ const CrewProfileCard: React.FC<CrewProfileCardProps> = ({
           alt={profile.name}
           className="card-image"
           style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', marginBottom: 8, border: '3px solid #e5e7eb' }}
-          onError={(e) => {
-            const target = e.target as HTMLImageElement;
-            if (!target.src.endsWith('/default-avatar.svg')) {
-              target.src = "/default-avatar.svg";
-            }
-          }}
+          onError={imageErrorFallback}
         />
         {/* Bookmark Button */}
         {user && currentUserId && (

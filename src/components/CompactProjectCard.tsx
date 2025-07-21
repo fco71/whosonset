@@ -4,6 +4,7 @@ import { Project } from '../types/Project';
 import { Film, Calendar, MapPin, ImageOff } from 'lucide-react';
 import { cn } from '../lib/utils';
 import Card, { CardBody, CardTitle } from './ui/Card';
+import { imageErrorFallback } from '../utilities/imageErrorFallback';
 
 interface CompactProjectCardProps {
   project: Project;
@@ -132,12 +133,7 @@ const CompactProjectCard: React.FC<CompactProjectCardProps> = ({
                 alt={`${project.projectName} cover`}
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                 loading="lazy"
-                onError={e => {
-                  const target = e.currentTarget;
-                  if (!target.src.endsWith('/default-avatar.svg')) {
-                    target.src = '/default-avatar.svg';
-                  }
-                }}
+                onError={imageErrorFallback}
               />
               {coverImageUrl.startsWith('blob:') && (
                 <div className="absolute inset-0 border-2 border-yellow-400 border-dashed pointer-events-none" />

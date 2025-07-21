@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Clock, MapPin, Film, Calendar, Bookmark, BookmarkCheck, ImageOff } from 'lucide-react';
 import Card, { CardHeader, CardBody, CardFooter, CardTitle, CardDescription } from "./ui/Card";
 import { Button } from "./ui/Button";
+import { imageErrorFallback } from '../utilities/imageErrorFallback';
 
 type ProjectStatus = 'in_production' | 'pre_production' | 'post_production' | 'development' | 'completed' | 'cancelled' | string;
 
@@ -308,7 +309,7 @@ const ProjectCard: React.FC<ProjectCardProps> = (props) => {
             alt={`${projectName || 'Untitled Project'} cover`}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             loading="lazy"
-            onError={handleImageError}
+            onError={e => { handleImageError(e); imageErrorFallback(e, getPlaceholderImage()); }}
             onLoad={() => setImageError(false)}
           />
         ) : (

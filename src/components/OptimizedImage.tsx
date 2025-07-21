@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useImageLazyLoad } from '../utilities/performanceUtils';
+import { imageErrorFallback } from '../utilities/imageErrorFallback';
 import './OptimizedImage.scss';
 
 interface OptimizedImageProps {
@@ -108,7 +109,7 @@ const OptimizedImage: React.FC<OptimizedImageProps> = ({
         alt={alt}
         style={imageStyle}
         onLoad={handleImageLoad}
-        onError={handleImageError}
+        onError={e => { handleImageError(); imageErrorFallback(e, placeholder); }}
         loading={priority ? 'eager' : 'lazy'}
         decoding="async"
       />
