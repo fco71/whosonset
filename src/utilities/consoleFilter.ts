@@ -68,8 +68,16 @@ class ConsoleFilter {
   }
 
   private shouldFilter(message: string): boolean {
+    // IMPORTANT: Do NOT filter legitimate permission errors
+    // These are real errors that developers need to see
+    if (message.includes('Missing or insufficient permissions') ||
+        message.includes('Permission denied') ||
+        message.includes('permission-denied')) {
+      return false; // Let these through - they're real errors
+    }
+
     const filterPatterns = [
-      // Firebase connection errors
+      // Firebase connection errors (these are normal internal messages)
       /POST.*firestore\.googleapis\.com.*400.*Bad Request/,
       /TYPE=terminate/,
       /webchannel_blob/,

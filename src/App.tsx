@@ -9,8 +9,8 @@ import '@fontsource/inter/600.css';
 import '@fontsource/inter/700.css';
 import './App.module.scss';
 
-// Initialize network error suppressor to suppress Firebase connection errors at browser level
-import './utilities/networkErrorSuppressor';
+// Initialize console filter to suppress Firebase connection errors
+import './utilities/consoleFilter';
 
 // Import components
 import Navigation from './components/Navigation';
