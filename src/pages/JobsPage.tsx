@@ -361,13 +361,23 @@ export default function JobsPage() {
                     )}
                   </Button>
                   {auth.currentUser && (
-                    <Button
-                      onClick={() => navigate('/post-job')}
-                      className="flex items-center gap-2"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Post Job
-                    </Button>
+                    <>
+                      <Button
+                        onClick={() => navigate('/jobs/applied')}
+                        className="flex items-center gap-2"
+                        variant="secondary"
+                      >
+                        <Briefcase className="w-4 h-4" />
+                        My Applications
+                      </Button>
+                      <Button
+                        onClick={() => navigate('/post-job')}
+                        className="flex items-center gap-2"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Post Job
+                      </Button>
+                    </>
                   )}
                 </div>
               </div>

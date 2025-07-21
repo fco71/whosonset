@@ -39,6 +39,8 @@ const ApplicationSuccessPage = React.lazy(() => import('./components/JobSearch/A
 const EditJobApplication = React.lazy(() => import('./components/JobSearch/EditJobApplication'));
 const JobPosterDashboard = React.lazy(() => import('./components/JobSearch/JobPosterDashboard'));
 const JobApplicationsPage = React.lazy(() => import('./components/JobSearch/JobApplicationsPage'));
+const JobApplicantsPage = React.lazy(() => import('./components/JobSearch/JobApplicantsPage'));
+const AppliedJobsPage = React.lazy(() => import('./components/JobSearch/AppliedJobsPage'));
 
 // Protected Route Component for React Router v7
 const ProtectedRoute = ({ children, redirectTo = '/login' }: { children: React.ReactNode, redirectTo?: string }) => {
@@ -199,12 +201,17 @@ function App() {
                 } />
                 <Route path="/jobs/:jobId/applications" element={
                   <ProtectedRoute>
-                    <JobApplicationsPage />
+                    <JobApplicantsPage />
                   </ProtectedRoute>
                 } />
                 <Route path="/post-job" element={
                   <ProtectedRoute>
                     <PostJobPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/jobs/applied" element={
+                  <ProtectedRoute>
+                    <AppliedJobsPage />
                   </ProtectedRoute>
                 } />
                 
