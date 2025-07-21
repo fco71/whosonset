@@ -1,4 +1,7 @@
 
+// Initialize console filter BEFORE anything else to catch Firebase errors
+import './utilities/consoleFilter';
+
 import './styles/globals.css';
 import React from 'react';
 import ReactDOM from 'react-dom/client';

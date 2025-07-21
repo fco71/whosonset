@@ -463,6 +463,14 @@ const JobDetailPage: React.FC = () => {
                 >
                   📊 View Stats
                 </button>
+                {job.applicationsCount > 0 && (
+                  <Link
+                    to={`/jobs/${job.id}/applications`}
+                    className="px-4 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    View Applications ({job.applicationsCount})
+                  </Link>
+                )}
                 <Link
                   to={`/jobs/${job.id}/edit`}
                   className="px-4 py-3 bg-gray-900 text-white font-medium rounded-lg hover:bg-gray-800 transition-colors"

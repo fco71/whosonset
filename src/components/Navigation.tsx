@@ -174,6 +174,20 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                                                     </Link>
                                                 ))}
                                                 <Link 
+                                                    to="/applications" 
+                                                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+                                                    onClick={closeAllMenus}
+                                                >
+                                                    📝 My Applications
+                                                </Link>
+                                                <Link 
+                                                    to="/jobs/posted" 
+                                                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+                                                    onClick={closeAllMenus}
+                                                >
+                                                    💼 Posted Jobs
+                                                </Link>
+                                                <Link 
                                                     to="/settings" 
                                                     className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors"
                                                     onClick={closeAllMenus}
@@ -272,6 +286,28 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                                                 {link.label}
                                             </Link>
                                         ))}
+                                        <Link
+                                            to="/applications"
+                                            className={`block px-4 py-3 rounded-lg font-medium transition-colors ${
+                                                isActive('/applications')
+                                                    ? 'text-blue-600 bg-blue-50'
+                                                    : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                                            }`}
+                                            onClick={closeAllMenus}
+                                        >
+                                            📝 My Applications
+                                        </Link>
+                                        <Link
+                                            to="/jobs/posted"
+                                            className={`block px-4 py-3 rounded-lg font-medium transition-colors ${
+                                                isActive('/jobs/posted')
+                                                    ? 'text-blue-600 bg-blue-50'
+                                                    : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                                            }`}
+                                            onClick={closeAllMenus}
+                                        >
+                                            💼 Posted Jobs
+                                        </Link>
                                     </div>
                                 </div>
                             </>

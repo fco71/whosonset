@@ -9,9 +9,6 @@ import '@fontsource/inter/600.css';
 import '@fontsource/inter/700.css';
 import './App.module.scss';
 
-// Initialize console filter to suppress Firebase connection errors
-import './utilities/consoleFilter';
-
 // Import components
 import Navigation from './components/Navigation';
 
@@ -40,6 +37,8 @@ const JobApplicationForm = React.lazy(() => import('./components/JobSearch/JobAp
 const JobApplicationDashboard = React.lazy(() => import('./components/JobSearch/JobApplicationDashboard'));
 const ApplicationSuccessPage = React.lazy(() => import('./components/JobSearch/ApplicationSuccessPage'));
 const EditJobApplication = React.lazy(() => import('./components/JobSearch/EditJobApplication'));
+const JobPosterDashboard = React.lazy(() => import('./components/JobSearch/JobPosterDashboard'));
+const JobApplicationsPage = React.lazy(() => import('./components/JobSearch/JobApplicationsPage'));
 
 // Protected Route Component for React Router v7
 const ProtectedRoute = ({ children, redirectTo = '/login' }: { children: React.ReactNode, redirectTo?: string }) => {
@@ -189,6 +188,18 @@ function App() {
                 <Route path="/applications/:applicationId/success" element={
                   <ProtectedRoute>
                     <ApplicationSuccessPage />
+                  </ProtectedRoute>
+                } />
+                
+                {/* Job Poster Routes */}
+                <Route path="/jobs/posted" element={
+                  <ProtectedRoute>
+                    <JobPosterDashboard />
+                  </ProtectedRoute>
+                } />
+                <Route path="/jobs/:jobId/applications" element={
+                  <ProtectedRoute>
+                    <JobApplicationsPage />
                   </ProtectedRoute>
                 } />
                 <Route path="/post-job" element={

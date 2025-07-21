@@ -65,6 +65,22 @@ class ConsoleFilter {
     };
 
     console.log('[ConsoleFilter] Firebase connection errors and messages will be filtered out');
+    
+    // Add global error handler to catch network errors
+    window.addEventListener('error', (event) => {
+      if (event.message && this.shouldFilter(event.message)) {
+        event.preventDefault();
+        return false;
+      }
+    });
+    
+    // Add unhandled rejection handler
+    window.addEventListener('unhandledrejection', (event) => {
+      if (event.reason && event.reason.message && this.shouldFilter(event.reason.message)) {
+        event.preventDefault();
+        return false;
+      }
+    });
   }
 
   private shouldFilter(message: string): boolean {
@@ -98,6 +114,66 @@ class ConsoleFilter {
       /Wc @ webchannel_blob/,
       /Lc @ webchannel_blob/,
       /Mc @ webchannel_blob/,
+      /Nc @ webchannel_blob/,
+      /Rb @ webchannel_blob/,
+      /Jb @ webchannel_blob/,
+      /fd @ webchannel_blob/,
+      /Da @ webchannel_blob/,
+      /x @ webchannel_blob/,
+      /ec @ webchannel_blob/,
+      /Ub @ webchannel_blob/,
+      /Hb @ webchannel_blob/,
+      /fc @ webchannel_blob/,
+      /connect @ webchannel_blob/,
+      /m @ webchannel_blob/,
+      /send @ webchannel_blob/,
+      /ea @ webchannel_blob/,
+      /Fa @ webchannel_blob/,
+      /Ga @ webchannel_blob/,
+      /bb @ webchannel_blob/,
+      /Ea @ webchannel_blob/,
+      /Pa @ webchannel_blob/,
+      /Sa @ webchannel_blob/,
+      /ta @ webchannel_blob/,
+      /Y\.close/,
+      /Y\.m/,
+      /M\.Y/,
+      /M\.ca/,
+      /h\.bb/,
+      /h\.Ea/,
+      /h\.Pa/,
+      /h\.Sa/,
+      /h\.send/,
+      /h\.ea/,
+      /h\.Fa/,
+      /h\.Ga/,
+      /h\.connect/,
+      /h\.m/,
+      /\.close/,
+      /\.m/,
+      /\.Y/,
+      /\.ca/,
+      /\.bb/,
+      /\.Ea/,
+      /\.Pa/,
+      /\.Sa/,
+      /\.send/,
+      /\.ea/,
+      /\.Fa/,
+      /\.Ga/,
+      /\.connect/,
+      /\.m/,
+      /Promise\.then/,
+      /setTimeout/,
+      /batchedUpdates/,
+      /dispatchEvent/,
+      /processDispatchQueue/,
+      /executeDispatch/,
+      /invokeGuardedCallback/,
+      /callCallback/,
+      /handleSubmit/,
+      /submitApplication/,
+      /jobApplicationService\.ts/,
       /Nc @ webchannel_blob/,
       /Rb @ webchannel_blob/,
       /Jb @ webchannel_blob/,

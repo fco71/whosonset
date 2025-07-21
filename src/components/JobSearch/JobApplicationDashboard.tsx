@@ -354,11 +354,21 @@ const JobApplicationDashboard: React.FC = () => {
   );
 
   const renderSavedJobs = () => (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="p-6 border-b border-gray-100">
+        <h3 className="text-xl font-light text-gray-900">Saved Jobs</h3>
+      </div>
+      
       <div className="text-center py-12">
         <div className="text-6xl mb-4 opacity-20">💾</div>
         <h3 className="text-xl font-light text-gray-900 mb-2">Saved Jobs</h3>
-        <p className="text-gray-600">Save interesting job postings to apply later.</p>
+        <p className="text-gray-600 mb-4">Save interesting job postings to apply later.</p>
+        <Link
+          to="/jobs"
+          className="px-6 py-3 bg-blue-600 text-white font-light rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          Browse Jobs
+        </Link>
       </div>
     </div>
   );
