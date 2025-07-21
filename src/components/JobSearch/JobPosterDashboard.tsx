@@ -50,10 +50,10 @@ const JobPosterDashboard: React.FC = () => {
     
     setIsLoading(true);
     try {
-      // Get jobs posted by current user
+      // Get jobs posted by current user (using postedById)
       const jobsQuery = query(
         collection(db, 'jobPostings'),
-        where('postedBy', '==', currentUser.uid),
+        where('postedById', '==', currentUser.uid),
         orderBy('postedAt', 'desc')
       );
       
@@ -199,13 +199,13 @@ const JobPosterDashboard: React.FC = () => {
 
   const renderPostedJobs = () => (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-      <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+      <div className="p-6 border-b border-gray-100 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
         <h3 className="text-xl font-light text-gray-900">Your Posted Jobs</h3>
         <Link
           to="/jobs/post"
-          className="px-4 py-2 bg-blue-600 text-white font-light rounded-lg hover:bg-blue-700 transition-colors"
+          className="px-4 py-2 bg-blue-600 text-white font-light rounded-lg hover:bg-blue-700 transition-colors shadow-md"
         >
-          Post New Job
+          + Post New Job
         </Link>
       </div>
       
@@ -222,58 +222,62 @@ const JobPosterDashboard: React.FC = () => {
           </Link>
         </div>
       ) : (
-        <div className="divide-y divide-gray-100">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
           {postedJobs.map((job) => (
-            <div key={job.id} className="p-6 hover:bg-gray-50 transition-colors duration-200">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <Link 
-                      to={`/jobs/${job.id}`}
-                      className="text-lg font-medium text-gray-900 hover:text-blue-600 transition-colors"
-                    >
-                      {job.title}
-                    </Link>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(job.status)}`}>
-                      {getStatusIcon(job.status)} {job.status.replace('_', ' ')}
-                    </span>
-                  </div>
-                  <p className="text-gray-600 mb-1">{job.department} • {job.location}</p>
-                  <p className="text-sm text-gray-500">Posted on {formatDate(job.postedAt)}</p>
+            <div
+              key={job.id}
+              className="group relative bg-white border border-gray-100 rounded-xl shadow-sm p-6 flex flex-col justify-between transition-all duration-200 hover:shadow-lg hover:-translate-y-1"
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <Link
+                  to={`/jobs/${job.id}`}
+                  className="text-lg font-medium text-gray-900 hover:text-blue-600 transition-colors truncate"
+                  title={job.title}
+                >
+                  {job.title}
+                </Link>
+                <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(job.status)} flex items-center gap-1`}>
+                  {getStatusIcon(job.status)} {job.status.replace('_', ' ')}
+                </span>
+              </div>
+              <p className="text-gray-600 mb-1 truncate">{job.department} • {job.location}</p>
+              <p className="text-xs text-gray-500 mb-1">Posted by {(job as any).companyName || (job as any).company || (job as any).posterName || (job as any).poster || 'You'}</p>
+              <p className="text-xs text-gray-500 mb-4">Posted on {formatDate(job.postedAt)}</p>
+              <div className="flex items-center gap-4 mb-4">
+                <div className="flex flex-col items-center">
+                  <span className="text-xs text-gray-500">Applicants</span>
+                  <span className="text-xl font-light text-gray-900">{job.applicantCount}</span>
                 </div>
-                
-                <div className="text-right">
-                  <div className="mb-2">
-                    <p className="text-sm text-gray-500">Applications</p>
-                    <p className="text-2xl font-light text-gray-900">{job.applicantCount}</p>
-                  </div>
-                  <div className="mb-2">
-                    <p className="text-sm text-gray-500">Views</p>
-                    <p className="text-lg font-light text-gray-900">{job.views || 0}</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Link
-                      to={`/jobs/${job.id}`}
-                      className="px-4 py-2 text-sm bg-gray-900 text-white font-light rounded-lg hover:bg-gray-800 transition-colors"
-                    >
-                      View Job
-                    </Link>
-                    {job.applicantCount > 0 && (
-                      <Link
-                        to={`/jobs/${job.id}/applications`}
-                        className="px-4 py-2 text-sm bg-blue-600 text-white font-light rounded-lg hover:bg-blue-700 transition-colors"
-                      >
-                        View Applications ({job.applicantCount})
-                      </Link>
-                    )}
-                    <Link
-                      to={`/jobs/${job.id}/edit`}
-                      className="px-4 py-2 text-sm bg-green-600 text-white font-light rounded-lg hover:bg-green-700 transition-colors"
-                    >
-                      Edit
-                    </Link>
-                  </div>
+                <div className="flex flex-col items-center">
+                  <span className="text-xs text-gray-500">Views</span>
+                  <span className="text-lg font-light text-gray-900">{job.views || 0}</span>
                 </div>
+              </div>
+              <div className="flex gap-2 mt-auto">
+                <Link
+                  to={`/jobs/${job.id}`}
+                  className="flex-1 px-3 py-2 text-sm bg-gray-900 text-white font-light rounded-lg hover:bg-gray-800 transition-colors text-center"
+                >
+                  View
+                </Link>
+                {job.applicantCount > 0 && (
+                  <Link
+                    to={`/jobs/${job.id}/applications`}
+                    className="flex-1 px-3 py-2 text-sm bg-blue-600 text-white font-light rounded-lg hover:bg-blue-700 transition-colors text-center"
+                  >
+                    Apps ({job.applicantCount})
+                  </Link>
+                )}
+                <Link
+                  to={`/jobs/${job.id}/edit`}
+                  className="flex-1 px-3 py-2 text-sm bg-green-600 text-white font-light rounded-lg hover:bg-green-700 transition-colors text-center"
+                >
+                  Edit
+                </Link>
+              </div>
+              {/* Future: Add Close, Analytics, and batch actions here */}
+              <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                <span className="inline-block px-2 py-1 text-xs bg-gray-200 rounded-full text-gray-700 shadow">ID: {job.id.slice(0, 6)}</span>
               </div>
             </div>
           ))}
