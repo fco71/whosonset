@@ -40,32 +40,83 @@ service cloud.firestore {
     }
 
     function isApplicant(application) {
-      return application.data.applicantId != null && application.data.applicantId == request.auth.uid;
+      // Check if application exists before accessing its data
+      return application != null && (
+        // For new documents, check the request data
+        (!application.exists && request.resource.data.applicantId == request.auth.uid) ||
+        // For existing documents, check the document data
+        (application.exists && application.data.applicantId != null && 
+         application.data.applicantId == request.auth.uid)
+      );
     }
 
     function isJobPoster(application) {
-      return application.data.jobId != null &&
-        get(/databases/$(database)/documents/jobPostings/$(application.data.jobId)).data.createdBy == request.auth.uid;
+      // Check if application exists before accessing its data
+      return application != null && (
+        // For new documents, check the request data
+        (!application.exists && 
+         request.resource.data.jobId != null &&
+         get(/databases/$(database)/documents/jobPostings/$(request.resource.data.jobId)).data.postedById == request.auth.uid) ||
+        // For existing documents, check the document data
+        (application.exists && 
+         application.data.jobId != null &&
+         get(/databases/$(database)/documents/jobPostings/$(application.data.jobId)).data.postedById == request.auth.uid)
+      );
+    }
+    
+    function isJobPosterForJobId(jobId) {
+      return jobId != null &&
+        get(/databases/$(database)/documents/jobPostings/$(jobId)).data.postedById == request.auth.uid;
     }
 
     match /jobApplications/{applicationId} {
       allow read: if request.auth != null && (isApplicant(resource) || isJobPoster(resource));
       allow create: if request.auth != null && request.resource.data.applicantId == request.auth.uid;
-      allow update: if request.auth != null && (isApplicant(resource) || isJobPoster(resource));
+      allow update: if request.auth != null && (
+        // Applicant can update their own application
+        (isApplicant(resource) && 
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'notes', 'lastUpdated'])) ||
+        // Job poster can update status and notes
+        (isJobPoster(resource) && 
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'notes', 'lastUpdated', 'reviewedAt']))
+      );
       allow delete: if request.auth != null && isApplicant(resource);
 
       // Messaging subcollection: allow both applicant and job poster to read/write
       match /messages/{messageId} {
-        allow read, write: if request.auth != null &&
-          (
-            // Applicant
-            resource.data.senderId == request.auth.uid ||
-            // Job poster (createdBy)
-            (
-              resource.data.jobId != null &&
-              get(/databases/$(database)/documents/jobPostings/$(resource.data.jobId)).data.createdBy == request.auth.uid
-            )
-          );
+        // Allow list if user is either the applicant or job poster
+        // This is needed for the initial query and real-time updates
+        allow list: if request.auth != null && (
+          // Check if user is the applicant
+          (get(/databases/$(database)/documents/jobApplications/$(applicationId)).data.applicantId == request.auth.uid) ||
+          // Or if user is the job poster
+          (get(/databases/$(database)/documents/jobPostings/$(get(/databases/$(database)/documents/jobApplications/$(applicationId)).data.jobId)).data.postedById == request.auth.uid)
+        );
+          
+        // Allow get if user is either the sender or has access to the application
+        allow get: if request.auth != null && (
+          // User is the message sender
+          resource.data.senderId == request.auth.uid ||
+          // Or user is the applicant
+          get(/databases/$(database)/documents/jobApplications/$(applicationId)).data.applicantId == request.auth.uid ||
+          // Or user is the job poster
+          get(/databases/$(database)/documents/jobPostings/$(get(/databases/$(database)/documents/jobApplications/$(applicationId)).data.jobId)).data.postedById == request.auth.uid
+        );
+        
+        // Allow create if user is the sender and the message is for this application
+        allow create: if request.auth != null && 
+          request.resource.data.senderId == request.auth.uid &&
+          request.resource.data.applicationId == applicationId;
+          
+        // Allow update only for read receipts and reactions
+        allow update: if request.auth != null && (
+          // User is the message sender
+          resource.data.senderId == request.auth.uid ||
+          // Or user is the applicant
+          get(/databases/$(database)/documents/jobApplications/$(applicationId)).data.applicantId == request.auth.uid ||
+          // Or user is the job poster
+          get(/databases/$(database)/documents/jobPostings/$(get(/databases/$(database)/documents/jobApplications/$(applicationId)).data.jobId)).data.postedById == request.auth.uid
+        ) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'readAt', 'reactions']);
       }
     }
 
@@ -83,6 +134,48 @@ service cloud.firestore {
     match /Projects/{projectId} {
       allow read: if true; // Allow public reading for homepage statistics
       allow write: if request.auth != null && resource.data.owner_uid == request.auth.uid;
+    }
+
+    // Direct Messages - users can only access their own conversations
+    match /directMessages/{messageId} {
+      // Allow read if user is either sender or receiver
+      allow read: if request.auth != null && 
+        (resource.data.senderId == request.auth.uid || 
+         resource.data.receiverId == request.auth.uid);
+      
+      // Allow create if user is the sender
+      allow create: if request.auth != null && 
+        request.resource.data.senderId == request.auth.uid;
+      
+      // Allow update for read receipts and reactions
+      allow update: if request.auth != null && 
+        (resource.data.senderId == request.auth.uid || 
+         resource.data.receiverId == request.auth.uid) &&
+        // Only allow updating specific fields
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead', 'reactions', 'status']);
+    }
+    
+    // Chat conversations - users can only access their own conversations
+    match /conversations/{conversationId} {
+      // Allow read if user is a participant in the conversation
+      allow read: if request.auth != null && 
+        (resource.data.participants && resource.data.participants.hasAny([request.auth.uid]));
+      
+      // Allow create if user is including themselves as a participant
+      allow create: if request.auth != null && 
+        request.resource.data.participants.hasAny([request.auth.uid]);
+      
+      // Messages subcollection
+      match /messages/{messageId} {
+        // Allow read if user is a participant in the parent conversation
+        allow read: if request.auth != null && 
+          get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants.hasAny([request.auth.uid]);
+        
+        // Allow create if user is the sender and a participant in the conversation
+        allow create: if request.auth != null && 
+          request.auth.uid == request.resource.data.senderId &&
+          get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants.hasAny([request.auth.uid]);
+      }
     }
 
     // Deny all other access by default

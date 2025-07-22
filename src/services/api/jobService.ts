@@ -156,7 +156,7 @@ export const getJobPostings = async (filters: {
   jobType?: string;
   experienceLevel?: string;
   isRemote?: boolean;
-  postedBy?: string;
+  postedById?: string;
   limit?: number;
 } = {}): Promise<JobPosting[]> => {
   try {
@@ -200,10 +200,10 @@ export const getJobPostings = async (filters: {
       q = query(q, where('isRemote', '==', filters.isRemote));
     }
     
-    if (filters?.postedBy) {
+    if (filters?.postedById) {
 
-      if (filters.postedBy) {
-        q = query(q, where('postedById', '==', filters.postedBy));
+      if (filters.postedById) {
+        q = query(q, where('postedById', '==', filters.postedById));
       }
     }
     
