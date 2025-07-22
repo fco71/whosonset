@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { db } from '../../firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { JobApplication } from '../../types/JobApplication';
@@ -20,6 +20,7 @@ interface ApplicantProfile {
 
 const JobApplicantsPage: React.FC = () => {
   const { jobId } = useParams<{ jobId: string }>();
+  const navigate = useNavigate();
   const [applications, setApplications] = useState<JobApplication[]>([]);
   const [applicantProfiles, setApplicantProfiles] = useState<CrewProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -167,7 +168,15 @@ const JobApplicantsPage: React.FC = () => {
             <div className="flex gap-3 mt-6">
               <Button variant="success" onClick={() => {/* Accept logic */}}>Accept</Button>
               <Button variant="danger" onClick={() => {/* Reject logic */}}>Reject</Button>
-              <Button variant="outline" onClick={() => {/* Message logic */}}>Message</Button>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowModal(false);
+                  navigate(`/applications/${selectedApplication.id}`);
+                }}
+              >
+                Message
+              </Button>
             </div>
           </div>
         </Modal>
