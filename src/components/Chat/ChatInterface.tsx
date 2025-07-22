@@ -1589,7 +1589,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           </div>
 
           {activeTab === 'general' && (
-            <>
+            <div>
               {error && (
                 <div className="error-banner">
                   {error}
@@ -1597,7 +1597,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               )}
 
               {selectedUser ? (
-                <>
+                <div>
                   {/* Chat Header */}
                   <div className="chat-header">
                     <div className="user-info">
@@ -1807,7 +1807,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
                 {/* Message Input */}
                 <MessageInput key="stable-message-input" ref={messageInputRef} />
-              </>
+              </div>
             ) : (
               <div className="no-conversation">
                 <div className="text-4xl mb-3">💬</div>
@@ -1816,10 +1816,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               </div>
             )}
           </div>
-        </div>
+        )}
 
         {activeTab === 'jobApplications' && (
-          <>
+          <div>
             <h3 className="font-semibold mb-2">Job Application Conversations</h3>
             {jobAppThreads.length === 0 ? (
               <div className="text-gray-400 text-sm">No job application conversations yet.</div>
@@ -1842,7 +1842,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 {/* Real-time message thread and reply box for this job application */}
               </div>
             )}
-          </>
+          </div>
         )}
       </div>
 
@@ -1912,6 +1912,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       )}
     </div>
   );
-};
+  </div>
+)}
 
-export default ChatInterface; 
+export default ChatInterface;
