@@ -198,8 +198,18 @@ const ApplicationDashboard: React.FC = () => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-light text-gray-900 mb-2">Application Dashboard</h1>
-          <p className="text-gray-600">Track and manage your job applications</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-light text-gray-900 mb-2">Application Dashboard</h1>
+              <p className="text-gray-600">Track and manage your job applications</p>
+            </div>
+            <Link 
+              to="/applications/analytics" 
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+            >
+              View Analytics
+            </Link>
+          </div>
         </div>
 
         {/* Stats Cards */}

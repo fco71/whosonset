@@ -69,8 +69,8 @@ var update = injectStylesIntoStyleTag_default()(ChatInterface/* default */.A, op
 var index_esm = __webpack_require__(7594);
 // EXTERNAL MODULE: ./src/firebase.ts
 var firebase = __webpack_require__(9487);
-// EXTERNAL MODULE: ./node_modules/react-icons/fa/index.mjs + 4 modules
-var fa = __webpack_require__(937);
+// EXTERNAL MODULE: ./node_modules/react-icons/fa/index.mjs
+var fa = __webpack_require__(8027);
 // EXTERNAL MODULE: ./src/utilities/imageErrorFallback.ts
 var imageErrorFallback = __webpack_require__(676);
 ;// ./src/components/Chat/ChatInterface.tsx

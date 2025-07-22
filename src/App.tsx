@@ -43,6 +43,8 @@ const JobApplicantsPage = React.lazy(() => import('./components/JobSearch/JobApp
 const AppliedJobsPage = React.lazy(() => import('./components/JobSearch/AppliedJobsPage'));
 const SavedJobsPage = React.lazy(() => import('./components/JobSearch/SavedJobsPage'));
 const ApplicationDashboard = React.lazy(() => import('./components/JobSearch/ApplicationDashboard'));
+const ApplicationAnalytics = React.lazy(() => import('./components/JobSearch/ApplicationAnalytics'));
+const JobPosterAnalytics = React.lazy(() => import('./components/JobSearch/JobPosterAnalytics'));
 
 // Protected Route Component for React Router v7
 const ProtectedRoute = ({ children, redirectTo = '/login' }: { children: React.ReactNode, redirectTo?: string }) => {
@@ -224,6 +226,16 @@ function App() {
                 <Route path="/applications/dashboard" element={
                   <ProtectedRoute>
                     <ApplicationDashboard />
+                  </ProtectedRoute>
+                } />
+                <Route path="/applications/analytics" element={
+                  <ProtectedRoute>
+                    <ApplicationAnalytics />
+                  </ProtectedRoute>
+                } />
+                <Route path="/jobs/analytics" element={
+                  <ProtectedRoute>
+                    <JobPosterAnalytics />
                   </ProtectedRoute>
                 } />
                 
