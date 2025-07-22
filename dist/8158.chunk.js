@@ -29,6 +29,7 @@ const JobApplicationsPage = () => {
     const { currentUser } = (0,_contexts_AuthContext__WEBPACK_IMPORTED_MODULE_5__/* .useAuth */ .A)();
     const [job, setJob] = (0,react__WEBPACK_IMPORTED_MODULE_1__.useState)(null);
     const [applications, setApplications] = (0,react__WEBPACK_IMPORTED_MODULE_1__.useState)([]);
+    const [applicantProfiles, setApplicantProfiles] = (0,react__WEBPACK_IMPORTED_MODULE_1__.useState)({});
     const [isLoading, setIsLoading] = (0,react__WEBPACK_IMPORTED_MODULE_1__.useState)(true);
     const [activeTab, setActiveTab] = (0,react__WEBPACK_IMPORTED_MODULE_1__.useState)('all');
     (0,react__WEBPACK_IMPORTED_MODULE_1__.useEffect)(() => {
@@ -50,7 +51,7 @@ const JobApplicationsPage = () => {
                 };
                 setJob(jobData);
                 // Check if current user is the job poster
-                if (jobData.postedBy !== currentUser?.uid) {
+                if (jobData.postedById !== currentUser?.uid) {
                     react_hot_toast__WEBPACK_IMPORTED_MODULE_6__/* .toast */ .oR.error('You can only view applications for jobs you posted');
                     return;
                 }
@@ -62,6 +63,46 @@ const JobApplicationsPage = () => {
             // Load applications
             const jobApplications = await _utilities_jobApplicationService__WEBPACK_IMPORTED_MODULE_4__/* .JobApplicationService */ .l.getJobApplications(jobId);
             setApplications(jobApplications);
+            // Fetch applicant profiles
+            const applicantIds = jobApplications.map(app => app.applicantId);
+            const profilesMap = {};
+            for (const applicantId of applicantIds) {
+                try {
+                    const profileQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_3__.db, 'crewProfiles'), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__/* .where */ ._M)('uid', '==', applicantId));
+                    const profileSnapshot = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__/* .getDocs */ .GG)(profileQuery);
+                    if (!profileSnapshot.empty) {
+                        const profileData = profileSnapshot.docs[0].data();
+                        profilesMap[applicantId] = {
+                            uid: profileData.uid || applicantId,
+                            name: profileData.name || 'Unknown',
+                            username: profileData.username || profileData.name?.toLowerCase().replace(/\s+/g, '') || 'unknown',
+                            bio: profileData.bio || '',
+                            jobTitles: profileData.jobTitles || [],
+                        };
+                    }
+                    else {
+                        // Fallback for missing profile
+                        profilesMap[applicantId] = {
+                            uid: applicantId,
+                            name: 'Unknown',
+                            username: 'unknown',
+                            bio: '',
+                            jobTitles: [],
+                        };
+                    }
+                }
+                catch (error) {
+                    console.error('Error fetching profile for applicantId:', applicantId, error);
+                    profilesMap[applicantId] = {
+                        uid: applicantId,
+                        name: 'Unknown',
+                        username: 'unknown',
+                        bio: '',
+                        jobTitles: [],
+                    };
+                }
+            }
+            setApplicantProfiles(profilesMap);
         }
         catch (error) {
             console.error('Error loading job and applications:', error);
@@ -132,7 +173,7 @@ const JobApplicationsPage = () => {
                                 ? 'bg-gray-900 text-white'
                                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'}`, children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("span", { children: tab.label }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("span", { className: `px-2 py-1 rounded-full text-xs ${activeTab === tab.id ? 'bg-white text-gray-900' : 'bg-gray-100 text-gray-600'}`, children: tab.count })] }, tab.id))) }) }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden", children: filteredApplications.length === 0 ? ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "text-center py-12", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "text-6xl mb-4 opacity-20", children: "\uD83D\uDCDD" }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("h3", { className: "text-xl font-light text-gray-900 mb-2", children: "No applications found" }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("p", { className: "text-gray-600", children: activeTab === 'all'
                                     ? 'No applications have been submitted for this job yet.'
-                                    : `No ${activeTab} applications found.` })] })) : ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "divide-y divide-gray-100", children: filteredApplications.map((application) => ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "p-6 hover:bg-gray-50 transition-colors duration-200", children: (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "flex items-center justify-between", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "flex-1", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "flex items-center gap-3 mb-2", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("span", { className: "text-lg font-medium text-gray-900", children: ["Applicant #", application.applicantId.slice(0, 8), "..."] }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("span", { className: `px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(application.status)}`, children: [getStatusIcon(application.status), " ", application.status.replace('_', ' ')] })] }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("p", { className: "text-gray-600 mb-1", children: ["Applied on ", formatDate(application.appliedAt)] }), application.expectedSalary && ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("p", { className: "text-sm text-gray-500", children: ["Expected salary: $", application.expectedSalary.toLocaleString()] })), application.availabilityDate && ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("p", { className: "text-sm text-gray-500", children: ["Available from: ", application.availabilityDate] }))] }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "text-right", children: [application.reviewedAt && ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("p", { className: "text-sm text-gray-500 mb-2", children: ["Reviewed ", formatDate(application.reviewedAt)] })), application.interviewScheduled && ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("p", { className: "text-sm text-blue-600 font-medium mb-2", children: ["Interview: ", formatDate(application.interviewScheduled)] })), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "flex gap-2", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_7__/* .Link */ .N_, { to: `/applications/${application.id}`, className: "px-4 py-2 text-sm bg-gray-900 text-white font-light rounded-lg hover:bg-gray-800 transition-colors", children: "View Application" }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_7__/* .Link */ .N_, { to: `/applications/${application.id}/edit`, className: "px-4 py-2 text-sm bg-blue-600 text-white font-light rounded-lg hover:bg-blue-700 transition-colors", children: "Update Status" })] })] })] }) }, application.id))) })) })] }) }));
+                                    : `No ${activeTab} applications found.` })] })) : ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "divide-y divide-gray-100", children: filteredApplications.map((application) => ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "p-6 hover:bg-gray-50 transition-colors duration-200", children: (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "flex items-center justify-between", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "flex-1", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "flex items-center gap-3 mb-2", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("span", { className: "text-lg font-medium text-gray-900", children: applicantProfiles[application.applicantId]?.name || `Applicant #${application.applicantId.slice(0, 8)}...` }), applicantProfiles[application.applicantId]?.jobTitles?.length > 0 && ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("p", { className: "text-sm text-gray-500", children: applicantProfiles[application.applicantId].jobTitles.map((title) => typeof title === 'string' ? title : title.title || 'Unknown').join(', ') }))] }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("span", { className: `px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(application.status)}`, children: [getStatusIcon(application.status), " ", application.status.replace('_', ' ')] })] }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("p", { className: "text-gray-600 mb-1", children: ["Applied on ", formatDate(application.appliedAt)] }), application.expectedSalary && ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("p", { className: "text-sm text-gray-500", children: ["Expected salary: $", application.expectedSalary.toLocaleString()] })), application.availabilityDate && ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("p", { className: "text-sm text-gray-500", children: ["Available from: ", application.availabilityDate] }))] }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "text-right", children: [application.reviewedAt && ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("p", { className: "text-sm text-gray-500 mb-2", children: ["Reviewed ", formatDate(application.reviewedAt)] })), application.interviewScheduled && ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("p", { className: "text-sm text-blue-600 font-medium mb-2", children: ["Interview: ", formatDate(application.interviewScheduled)] })), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "flex gap-2", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_7__/* .Link */ .N_, { to: `/applications/${application.id}`, className: "px-4 py-2 text-sm bg-gray-900 text-white font-light rounded-lg hover:bg-gray-800 transition-colors", children: "View Application" }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_7__/* .Link */ .N_, { to: `/applications/${application.id}/edit`, className: "px-4 py-2 text-sm bg-blue-600 text-white font-light rounded-lg hover:bg-blue-700 transition-colors", children: "Update Status" }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_7__/* .Link */ .N_, { to: `/jobs/${jobId}/applications`, state: { selectedApplication: application.id }, className: "px-4 py-2 text-sm bg-green-600 text-white font-light rounded-lg hover:bg-green-700 transition-colors", children: "Message" })] })] })] }) }, application.id))) })) })] }) }));
 };
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (JobApplicationsPage);
 

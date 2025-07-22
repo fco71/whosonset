@@ -277,42 +277,61 @@ const ApplicationStatusTracker: React.FC<ApplicationStatusTrackerProps> = ({ app
 
             {/* Messages */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <h2 className="text-xl font-light text-gray-900 mb-6">Messages</h2>
+              <div className="flex items-center gap-2 mb-6">
+                <MessageSquare className="w-5 h-5 text-gray-600" />
+                <h2 className="text-xl font-light text-gray-900">Messages</h2>
+              </div>
               
               {messages.length === 0 ? (
                 <div className="text-center py-8">
-                  <div className="text-4xl mb-4 opacity-20">💬</div>
-                  <p className="text-gray-600">No messages yet</p>
+                  <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-600 mb-4">No messages yet</p>
+                  <p className="text-sm text-gray-500">Start a conversation about this application</p>
                 </div>
               ) : (
-                <div className="mt-6">
-                  <h3 className="font-semibold mb-2">Messages</h3>
-                  <div className="bg-gray-50 rounded p-3 max-h-64 overflow-y-auto mb-2">
-                    {messages.length === 0 ? (
-                      <div className="text-gray-400 text-sm">No messages yet.</div>
-                    ) : (
-                      messages.map(msg => (
-                        <div key={msg.id} className={`mb-2 ${msg.senderId === currentUser?.uid ? 'text-right' : 'text-left'}`}> 
-                          <div className="inline-block bg-white rounded px-3 py-2 shadow-sm">
-                            <div className="text-xs text-gray-500 mb-1">{msg.senderName} • {msg.timestamp?.toDate ? new Date(msg.timestamp.seconds * 1000).toLocaleString() : ''}</div>
-                            <div>{msg.message}</div>
+                <div className="space-y-4">
+                  {/* Messages List */}
+                  <div className="bg-gray-50 rounded-lg p-4 max-h-80 overflow-y-auto">
+                    <div className="space-y-3">
+                      {messages.map(msg => (
+                        <div key={msg.id} className={`flex ${msg.senderId === currentUser?.uid ? 'justify-end' : 'justify-start'}`}>
+                          <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                            msg.senderId === currentUser?.uid
+                              ? 'bg-blue-500 text-white'
+                              : 'bg-white text-gray-900 border border-gray-200'
+                          }`}>
+                            <div className={`text-xs mb-1 ${
+                              msg.senderId === currentUser?.uid ? 'text-blue-100' : 'text-gray-500'
+                            }`}>
+                              {msg.senderName} • {msg.timestamp?.toDate ? 
+                                new Date(msg.timestamp.seconds * 1000).toLocaleString() : 
+                                new Date(msg.timestamp).toLocaleString()
+                              }
+                            </div>
+                            <div className="text-sm">{msg.message}</div>
                           </div>
                         </div>
-                      ))
-                    )}
+                      ))}
+                    </div>
                   </div>
-                  <div className="flex gap-2 mt-2">
+                  
+                  {/* Message Input */}
+                  <div className="flex gap-2">
                     <input
                       type="text"
-                      className="flex-1 border rounded px-3 py-2"
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
                       placeholder="Type a message..."
                       value={newMessage}
                       onChange={e => setNewMessage(e.target.value)}
                       onKeyDown={e => { if (e.key === 'Enter') sendMessage(); }}
                       disabled={isSendingMessage}
                     />
-                    <Button onClick={sendMessage} disabled={isSendingMessage || !newMessage.trim()}>
-                      Send
+                    <Button 
+                      onClick={sendMessage} 
+                      disabled={isSendingMessage || !newMessage.trim()}
+                      className="px-4 py-2"
+                    >
+                      <Send className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>

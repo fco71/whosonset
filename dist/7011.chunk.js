@@ -166,6 +166,7 @@ const createJobPosting = async (jobData, userId) => {
             views: 0,
             createdAt: (0,firebase/* serverTimestamp */.O5)(),
             updatedAt: (0,firebase/* serverTimestamp */.O5)(),
+            postedAt: (0,firebase/* serverTimestamp */.O5)(), // Add this field for proper querying
         };
         const docRef = await (0,firebase/* addDoc */.gS)((0,firebase/* collection */.rJ)(firebase.db, 'jobPostings'), jobPosting);
         return docRef.id;
@@ -228,9 +229,9 @@ const getJobPostings = async (filters = {}) => {
         if (filters?.isRemote !== undefined) {
             q = query(q, where('isRemote', '==', filters.isRemote));
         }
-        if (filters?.postedBy) {
-            if (filters.postedBy) {
-                q = query(q, where('postedById', '==', filters.postedBy));
+        if (filters?.postedById) {
+            if (filters.postedById) {
+                q = query(q, where('postedById', '==', filters.postedById));
             }
         }
         if (filters?.limit) {
@@ -636,95 +637,6 @@ const PostJobPage = () => {
     return ((0,jsx_runtime.jsx)("div", { className: "min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8", children: (0,jsx_runtime.jsxs)("div", { className: "max-w-4xl mx-auto", children: [(0,jsx_runtime.jsxs)("div", { className: "text-center mb-8", children: [(0,jsx_runtime.jsx)("h1", { className: "text-3xl font-bold text-gray-900", children: "Post a New Job" }), (0,jsx_runtime.jsx)("p", { className: "mt-2 text-sm text-gray-600", children: "Fill out the form below to post a new job listing." })] }), errors.submit && ((0,jsx_runtime.jsx)("div", { className: "mb-4 p-4 bg-red-50 rounded-md", children: (0,jsx_runtime.jsx)("p", { className: "text-sm text-red-600 text-center", children: errors.submit }) })), (0,jsx_runtime.jsx)("form", { onSubmit: handleSubmit, className: "space-y-6", children: (0,jsx_runtime.jsxs)("div", { className: "bg-white shadow overflow-hidden sm:rounded-lg p-6 space-y-6", children: [(0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("label", { htmlFor: "title", className: "block text-sm font-medium text-gray-700", children: "Job Title *" }), (0,jsx_runtime.jsx)(Input/* Input */.p, { id: "title", name: "title", type: "text", value: formData.title, onChange: (e) => handleChange('title', e.target.value), className: "mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm", placeholder: "e.g. Gaffer, Key Grip, Production Designer" }), errors.title && (0,jsx_runtime.jsx)("p", { className: "mt-1 text-sm text-red-600", children: errors.title })] }), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("label", { htmlFor: "department", className: "block text-sm font-medium text-gray-700", children: "Department *" }), (0,jsx_runtime.jsxs)("select", { id: "department", name: "department", value: formData.department, onChange: (e) => handleChange('department', e.target.value), className: "mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm", children: [(0,jsx_runtime.jsx)("option", { value: "", children: "Select a department" }), departmentOptions.map((dept) => ((0,jsx_runtime.jsx)("option", { value: dept.value, children: dept.label }, dept.value)))] }), errors.department && (0,jsx_runtime.jsx)("p", { className: "mt-1 text-sm text-red-600", children: errors.department })] }), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("label", { htmlFor: "location", className: "block text-sm font-medium text-gray-700", children: "Location *" }), (0,jsx_runtime.jsx)(Input/* Input */.p, { id: "location", name: "location", type: "text", value: formData.location, onChange: (e) => handleChange('location', e.target.value), className: "mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm", placeholder: "e.g. Los Angeles, CA or Remote" }), errors.location && (0,jsx_runtime.jsx)("p", { className: "mt-1 text-sm text-red-600", children: errors.location })] }), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("label", { htmlFor: "jobType", className: "block text-sm font-medium text-gray-700", children: "Job Type" }), (0,jsx_runtime.jsxs)("select", { id: "jobType", name: "jobType", value: formData.jobType, onChange: (e) => handleChange('jobType', e.target.value), className: "mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm", children: [(0,jsx_runtime.jsx)("option", { value: "", children: "Select job type" }), (0,jsx_runtime.jsx)("option", { value: "full_time", children: "Full-time" }), (0,jsx_runtime.jsx)("option", { value: "part_time", children: "Part-time" }), (0,jsx_runtime.jsx)("option", { value: "contract", children: "Contract" }), (0,jsx_runtime.jsx)("option", { value: "freelance", children: "Freelance" })] })] }), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("label", { htmlFor: "description", className: "block text-sm font-medium text-gray-700", children: "Job Description *" }), (0,jsx_runtime.jsx)(Textarea, { id: "description", name: "description", rows: 4, value: formData.description, onChange: (e) => handleChange('description', e.target.value), className: "mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm", placeholder: "Detailed description of the job" }), errors.description && (0,jsx_runtime.jsx)("p", { className: "mt-1 text-sm text-red-600", children: errors.description })] }), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("label", { htmlFor: "requirements", className: "block text-sm font-medium text-gray-700", children: "Requirements" }), (0,jsx_runtime.jsx)(Textarea, { id: "requirements", name: "requirements", rows: 3, value: formData.requirements, onChange: (e) => handleChange('requirements', e.target.value), className: "mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm", placeholder: "List the requirements for this job" }), errors.requirements && (0,jsx_runtime.jsx)("p", { className: "mt-1 text-sm text-red-600", children: errors.requirements })] }), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("label", { htmlFor: "responsibilities", className: "block text-sm font-medium text-gray-700", children: "Responsibilities" }), (0,jsx_runtime.jsx)(Textarea, { id: "responsibilities", name: "responsibilities", rows: 3, value: formData.responsibilities, onChange: (e) => handleChange('responsibilities', e.target.value), className: "mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm", placeholder: "List the responsibilities for this job" }), errors.responsibilities && (0,jsx_runtime.jsx)("p", { className: "mt-1 text-sm text-red-600", children: errors.responsibilities })] }), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("label", { htmlFor: "benefits", className: "block text-sm font-medium text-gray-700", children: "Benefits & Perks" }), (0,jsx_runtime.jsx)(Textarea, { id: "benefits", name: "benefits", rows: 3, value: formData.benefits, onChange: (e) => handleChange('benefits', e.target.value), className: "mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm", placeholder: "List the benefits and perks for this job" }), errors.benefits && (0,jsx_runtime.jsx)("p", { className: "mt-1 text-sm text-red-600", children: errors.benefits })] }), (0,jsx_runtime.jsxs)("fieldset", { className: "border border-gray-200 rounded-md p-4 mb-4", children: [(0,jsx_runtime.jsx)("legend", { className: "text-base font-medium text-gray-900 px-2", children: "Compensation" }), (0,jsx_runtime.jsxs)("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2", children: [(0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("label", { htmlFor: "salaryMin", className: "block text-sm font-medium text-gray-700", children: "Minimum Salary" }), (0,jsx_runtime.jsx)(Input/* Input */.p, { id: "salaryMin", name: "salaryMin", type: "number", min: "0", value: formData.salaryMin, onChange: e => handleChange('salaryMin', e.target.value), className: "mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm", placeholder: "e.g. 50000" }), errors.salaryMin && (0,jsx_runtime.jsx)("p", { className: "mt-1 text-sm text-red-600", children: errors.salaryMin })] }), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("label", { htmlFor: "salaryMax", className: "block text-sm font-medium text-gray-700", children: "Maximum Salary" }), (0,jsx_runtime.jsx)(Input/* Input */.p, { id: "salaryMax", name: "salaryMax", type: "number", min: "0", value: formData.salaryMax, onChange: e => handleChange('salaryMax', e.target.value), className: "mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm", placeholder: "e.g. 70000" }), errors.salaryMax && (0,jsx_runtime.jsx)("p", { className: "mt-1 text-sm text-red-600", children: errors.salaryMax })] }), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("label", { htmlFor: "salaryPeriod", className: "block text-sm font-medium text-gray-700", children: "Salary Period" }), (0,jsx_runtime.jsxs)("select", { id: "salaryPeriod", name: "salaryPeriod", value: formData.salaryPeriod, onChange: e => handleChange('salaryPeriod', e.target.value), className: "mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm", children: [(0,jsx_runtime.jsx)("option", { value: "year", children: "Per Year" }), (0,jsx_runtime.jsx)("option", { value: "month", children: "Per Month" }), (0,jsx_runtime.jsx)("option", { value: "week", children: "Per Week" }), (0,jsx_runtime.jsx)("option", { value: "day", children: "Per Day" }), (0,jsx_runtime.jsx)("option", { value: "hour", children: "Per Hour" })] })] }), (0,jsx_runtime.jsxs)("div", { className: "flex items-center mt-6", children: [(0,jsx_runtime.jsx)("input", { id: "showSalary", name: "showSalary", type: "checkbox", checked: formData.showSalary, onChange: e => handleChange('showSalary', e.target.checked), className: "h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" }), (0,jsx_runtime.jsx)("label", { htmlFor: "showSalary", className: "ml-2 block text-sm text-gray-700", children: "Show salary on job posting" })] })] })] }), (0,jsx_runtime.jsx)("div", { className: "grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2", children: (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("label", { htmlFor: "startDate", className: "block text-sm font-medium text-gray-700", children: "Start Date *" }), (0,jsx_runtime.jsx)(Input/* Input */.p, { type: "date", name: "startDate", id: "startDate", value: formData.startDate, min: new Date().toISOString().split('T')[0], onChange: (e) => handleChange('startDate', e.target.value), className: "mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" }), errors.startDate && (0,jsx_runtime.jsx)("p", { className: "mt-1 text-sm text-red-600", children: errors.startDate })] }) }), (0,jsx_runtime.jsxs)("div", { className: "pt-4 border-t border-gray-200", children: [(0,jsx_runtime.jsx)("h3", { className: "text-lg font-medium text-gray-900", children: "Contact Information" }), (0,jsx_runtime.jsx)("p", { className: "mt-1 text-sm text-gray-500", children: "How should applicants contact you?" }), (0,jsx_runtime.jsxs)("div", { className: "mt-4 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6", children: [(0,jsx_runtime.jsxs)("div", { className: "sm:col-span-3", children: [(0,jsx_runtime.jsx)("label", { htmlFor: "contactName", className: "block text-sm font-medium text-gray-700", children: "Contact Name *" }), (0,jsx_runtime.jsx)(Input/* Input */.p, { type: "text", name: "contactName", id: "contactName", value: formData.contactName, onChange: (e) => handleChange('contactName', e.target.value), className: "mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" }), errors.contactName && (0,jsx_runtime.jsx)("p", { className: "mt-1 text-sm text-red-600", children: errors.contactName })] }), (0,jsx_runtime.jsxs)("div", { className: "sm:col-span-3", children: [(0,jsx_runtime.jsx)("label", { htmlFor: "contactEmail", className: "block text-sm font-medium text-gray-700", children: "Contact Email *" }), (0,jsx_runtime.jsx)(Input/* Input */.p, { type: "email", name: "contactEmail", id: "contactEmail", value: formData.contactEmail, onChange: (e) => handleChange('contactEmail', e.target.value), className: "mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" }), errors.contactEmail && (0,jsx_runtime.jsx)("p", { className: "mt-1 text-sm text-red-600", children: errors.contactEmail })] })] }), (0,jsx_runtime.jsxs)("div", { className: "mt-4", children: [(0,jsx_runtime.jsxs)("div", { className: "flex items-center", children: [(0,jsx_runtime.jsx)("input", { id: "showContactEmail", name: "showContactEmail", type: "checkbox", checked: formData.showContactEmail, onChange: (e) => handleChange('showContactEmail', e.target.checked), className: "h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" }), (0,jsx_runtime.jsx)("label", { htmlFor: "showContactEmail", className: "ml-2 block text-sm text-gray-700", children: "Show email address publicly on job posting" })] }), (0,jsx_runtime.jsx)("p", { className: "mt-1 text-sm text-gray-500", children: "If unchecked, applicants will only see your name and can contact you through the application system." })] })] }), (0,jsx_runtime.jsxs)("div", { className: "pt-5", children: [(0,jsx_runtime.jsxs)("div", { className: "flex justify-end", children: [(0,jsx_runtime.jsx)(Button/* Button */.$, { type: "button", onClick: () => navigate(-1), className: "bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500", children: "Cancel" }), (0,jsx_runtime.jsx)(Button/* Button */.$, { type: "submit", disabled: isSubmitting || !formData.title || !formData.department || !formData.location || !formData.description || !formData.contactName || !formData.contactEmail, className: "ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200", children: isSubmitting ? ((0,jsx_runtime.jsxs)(jsx_runtime.Fragment, { children: [(0,jsx_runtime.jsxs)("svg", { className: "animate-spin -ml-1 mr-2 h-4 w-4 text-white", xmlns: "http://www.w3.org/2000/svg", fill: "none", viewBox: "0 0 24 24", children: [(0,jsx_runtime.jsx)("circle", { className: "opacity-25", cx: "12", cy: "12", r: "10", stroke: "currentColor", strokeWidth: "4" }), (0,jsx_runtime.jsx)("path", { className: "opacity-75", fill: "currentColor", d: "M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" })] }), "Publishing..."] })) : 'Publish Job' })] }), Object.keys(errors).length > 0 && ((0,jsx_runtime.jsx)("div", { className: "mt-4 p-3 bg-red-50 rounded-md", children: (0,jsx_runtime.jsx)("p", { className: "text-sm text-red-600", children: "Please fix the errors in the form before submitting." }) }))] })] }) })] }) }));
 };
 /* harmony default export */ const pages_PostJobPage = (PostJobPage);
-
-
-/***/ }),
-
-/***/ 9973:
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   cn: () => (/* binding */ cn)
-/* harmony export */ });
-/* unused harmony exports formatNumber, truncate, debounce, generateId, isMobileDevice, toKebabCase, isValidEmail */
-/* harmony import */ var clsx__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(4164);
-/* harmony import */ var tailwind_merge__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(856);
-
-
-/**
- * Combines multiple class names and merges Tailwind CSS classes
- * @param inputs - Class names to be combined
- * @returns A single string of combined and merged class names
- */
-function cn(...inputs) {
-    return (0,tailwind_merge__WEBPACK_IMPORTED_MODULE_0__/* .twMerge */ .QP)((0,clsx__WEBPACK_IMPORTED_MODULE_1__/* .clsx */ .$)(inputs));
-}
-/**
- * Formats a number with commas as thousand separators
- * @param num - The number to format
- * @returns Formatted number as string
- */
-function formatNumber(num) {
-    return new Intl.NumberFormat('en-US').format(num);
-}
-/**
- * Truncates a string to a specified length and adds an ellipsis if needed
- * @param str - The string to truncate
- * @param length - Maximum length before truncation
- * @returns Truncated string with ellipsis if needed
- */
-function truncate(str, length) {
-    if (str.length <= length)
-        return str;
-    return `${str.slice(0, length)}...`;
-}
-/**
- * Debounce a function call
- * @param func - The function to debounce
- * @param wait - Time to wait in milliseconds
- * @returns Debounced function
- */
-function debounce(func, wait) {
-    let timeout;
-    return function (...args) {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func.apply(this, args), wait);
-    };
-}
-/**
- * Generates a unique ID
- * @returns A unique string ID
- */
-function generateId() {
-    return Math.random().toString(36).substring(2, 11);
-}
-/**
- * Checks if the current device is a mobile device
- * @returns Boolean indicating if the device is mobile
- */
-function isMobileDevice() {
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-}
-/**
- * Converts a string to kebab-case
- * @param str - The string to convert
- * @returns kebab-cased string
- */
-function toKebabCase(str) {
-    return str
-        .replace(/([a-z])([A-Z])/g, '$1-$2')
-        .replace(/[\s_]+/g, '-')
-        .toLowerCase();
-}
-/**
- * Validates an email address
- * @param email - The email to validate
- * @returns Boolean indicating if the email is valid
- */
-function isValidEmail(email) {
-    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return re.test(email);
-}
 
 
 /***/ })

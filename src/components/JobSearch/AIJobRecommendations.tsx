@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { collection, query, where, getDocs, orderBy, limit, addDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Card from '../ui/Card';
 import { Button } from '../ui/Button';
 import { 
@@ -50,6 +50,7 @@ const AIJobRecommendations: React.FC<AIJobRecommendationsProps> = ({
   refreshInterval = 300000 // 5 minutes
 }) => {
   const { currentUser } = useAuth();
+  const navigate = useNavigate();
   const [recommendations, setRecommendations] = useState<AIRecommendation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [jobDetails, setJobDetails] = useState<{[key: string]: any}>({});
@@ -144,13 +145,12 @@ const AIJobRecommendations: React.FC<AIJobRecommendationsProps> = ({
     return baseRecommendations.map(recommendation => {
       // AI scoring algorithm
       const aiScore = calculateAIScore(recommendation);
-      const reasoning = generateReasoning(recommendation);
       
-      return {
+      const enhancedRecommendation: AIRecommendation = {
         ...recommendation,
         job: { id: recommendation.jobId }, // Placeholder job object
         aiScore,
-        reasoning,
+        reasoning: [], // Will be populated after job data is available
         skillMatch: Math.random() * 0.3 + 0.7, // 70-100%
         locationPreference: Math.random() * 0.4 + 0.6, // 60-100%
         salaryAlignment: Math.random() * 0.3 + 0.7, // 70-100%
@@ -158,6 +158,11 @@ const AIJobRecommendations: React.FC<AIJobRecommendationsProps> = ({
         companyCulture: Math.random() * 0.4 + 0.6, // 60-100%
         growthPotential: Math.random() * 0.3 + 0.7, // 70-100%
       };
+      
+      // Generate reasoning after we have the job data
+      enhancedRecommendation.reasoning = generateReasoning(enhancedRecommendation);
+      
+      return enhancedRecommendation;
     });
   };
 
@@ -171,13 +176,13 @@ const AIJobRecommendations: React.FC<AIJobRecommendationsProps> = ({
     return Math.min(score, 1.0); // Cap at 1.0
   };
 
-  const generateReasoning = (recommendation: JobMatchScore): string[] => {
+  const generateReasoning = (recommendation: AIRecommendation): string[] => {
     const reasons: string[] = [];
     
     // High match score
-    if (recommendation.overallScore > 0.8) {
+    if (recommendation.aiScore > 0.8) {
       reasons.push('Excellent skill match');
-    } else if (recommendation.overallScore > 0.6) {
+    } else if (recommendation.aiScore > 0.6) {
       reasons.push('Strong skill alignment');
     }
     
@@ -317,8 +322,8 @@ const AIJobRecommendations: React.FC<AIJobRecommendationsProps> = ({
           <p className="text-gray-500 mb-4">
             Complete your profile and start applying to jobs to get personalized recommendations.
           </p>
-          <Button asChild>
-            <Link to="/profile">Complete Profile</Link>
+          <Button onClick={() => navigate('/profile')}>
+            Complete Profile
           </Button>
         </div>
       </Card>
@@ -410,11 +415,13 @@ const AIJobRecommendations: React.FC<AIJobRecommendationsProps> = ({
                   >
                     <Share2 className="w-4 h-4" />
                   </Button>
-                  <Button asChild size="sm">
-                    <Link to={`/jobs/${recommendation.job.id}`}>
-                      <Eye className="w-4 h-4" />
-                      View
-                    </Link>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate(`/jobs/${recommendation.job.id}`)}
+                  >
+                    <Eye className="w-4 h-4 mr-1" />
+                    View
                   </Button>
                 </div>
               </div>

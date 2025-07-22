@@ -1,5 +1,5 @@
 "use strict";
-(self["webpackChunkwhosonset"] = self["webpackChunkwhosonset"] || []).push([[191],{
+(self["webpackChunkwhosonset"] = self["webpackChunkwhosonset"] || []).push([[4873],{
 
 /***/ 180:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
@@ -31,7 +31,102 @@ const CircleX = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default
 
 /***/ }),
 
-/***/ 191:
+/***/ 2864:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   A: () => (/* binding */ ChartColumn)
+/* harmony export */ });
+/* unused harmony export __iconNode */
+/* harmony import */ var _createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9407);
+/**
+ * @license lucide-react v0.525.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+
+
+
+const __iconNode = [
+  ["path", { d: "M3 3v16a2 2 0 0 0 2 2h16", key: "c24i48" }],
+  ["path", { d: "M18 17V9", key: "2bz60n" }],
+  ["path", { d: "M13 17V5", key: "1frdt8" }],
+  ["path", { d: "M8 17v-3", key: "17ska0" }]
+];
+const ChartColumn = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .A)("chart-column", __iconNode);
+
+
+//# sourceMappingURL=chart-column.js.map
+
+
+/***/ }),
+
+/***/ 4180:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   A: () => (/* binding */ Award)
+/* harmony export */ });
+/* unused harmony export __iconNode */
+/* harmony import */ var _createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9407);
+/**
+ * @license lucide-react v0.525.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+
+
+
+const __iconNode = [
+  [
+    "path",
+    {
+      d: "m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526",
+      key: "1yiouv"
+    }
+  ],
+  ["circle", { cx: "12", cy: "8", r: "6", key: "1vp47v" }]
+];
+const Award = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .A)("award", __iconNode);
+
+
+//# sourceMappingURL=award.js.map
+
+
+/***/ }),
+
+/***/ 4471:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   A: () => (/* binding */ CircleCheckBig)
+/* harmony export */ });
+/* unused harmony export __iconNode */
+/* harmony import */ var _createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9407);
+/**
+ * @license lucide-react v0.525.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+
+
+
+const __iconNode = [
+  ["path", { d: "M21.801 10A10 10 0 1 1 17 3.335", key: "yps3ct" }],
+  ["path", { d: "m9 11 3 3L22 4", key: "1pflzl" }]
+];
+const CircleCheckBig = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .A)("circle-check-big", __iconNode);
+
+
+//# sourceMappingURL=circle-check-big.js.map
+
+
+/***/ }),
+
+/***/ 4873:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 // ESM COMPAT FLAG
@@ -54,32 +149,10 @@ var jobApplicationService = __webpack_require__(6093);
 var Card = __webpack_require__(4948);
 // EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/clock.js
 var clock = __webpack_require__(7235);
+// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/activity.js
+var activity = __webpack_require__(6844);
 // EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/createLucideIcon.js + 3 modules
 var createLucideIcon = __webpack_require__(9407);
-;// ./node_modules/lucide-react/dist/esm/icons/activity.js
-/**
- * @license lucide-react v0.525.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-
-
-
-const __iconNode = [
-  [
-    "path",
-    {
-      d: "M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2",
-      key: "169zse"
-    }
-  ]
-];
-const Activity = (0,createLucideIcon/* default */.A)("activity", __iconNode);
-
-
-//# sourceMappingURL=activity.js.map
-
 ;// ./node_modules/lucide-react/dist/esm/icons/target.js
 /**
  * @license lucide-react v0.525.0 - ISC
@@ -90,37 +163,18 @@ const Activity = (0,createLucideIcon/* default */.A)("activity", __iconNode);
 
 
 
-const target_iconNode = [
+const __iconNode = [
   ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
   ["circle", { cx: "12", cy: "12", r: "6", key: "1vlfrh" }],
   ["circle", { cx: "12", cy: "12", r: "2", key: "1c9p78" }]
 ];
-const Target = (0,createLucideIcon/* default */.A)("target", target_iconNode);
+const Target = (0,createLucideIcon/* default */.A)("target", __iconNode);
 
 
 //# sourceMappingURL=target.js.map
 
-;// ./node_modules/lucide-react/dist/esm/icons/chart-column.js
-/**
- * @license lucide-react v0.525.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-
-
-
-const chart_column_iconNode = [
-  ["path", { d: "M3 3v16a2 2 0 0 0 2 2h16", key: "c24i48" }],
-  ["path", { d: "M18 17V9", key: "2bz60n" }],
-  ["path", { d: "M13 17V5", key: "1frdt8" }],
-  ["path", { d: "M8 17v-3", key: "17ska0" }]
-];
-const ChartColumn = (0,createLucideIcon/* default */.A)("chart-column", chart_column_iconNode);
-
-
-//# sourceMappingURL=chart-column.js.map
-
+// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/chart-column.js
+var chart_column = __webpack_require__(2864);
 // EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/circle-check-big.js
 var circle_check_big = __webpack_require__(4471);
 // EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/circle-x.js
@@ -347,9 +401,9 @@ const ApplicationAnalytics = () => {
     const getStatusIcon = (status) => {
         const icons = {
             pending: clock/* default */.A,
-            reviewed: Activity,
+            reviewed: activity/* default */.A,
             shortlisted: Target,
-            interviewed: ChartColumn,
+            interviewed: chart_column/* default */.A,
             hired: circle_check_big/* default */.A,
             rejected: circle_x/* default */.A,
             withdrawn: circle_x/* default */.A
@@ -363,12 +417,12 @@ const ApplicationAnalytics = () => {
                                 ? 'bg-blue-600 text-white'
                                 : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'}`, children: range === '30d' ? '30 Days' :
                                 range === '90d' ? '90 Days' :
-                                    range === '6m' ? '6 Months' : '1 Year' }, range))) }) }), (0,jsx_runtime.jsxs)("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8", children: [(0,jsx_runtime.jsx)(Card/* default */.Ay, { variant: "elevated", children: (0,jsx_runtime.jsx)(Card/* CardBody */.bw, { className: "p-6", children: (0,jsx_runtime.jsxs)("div", { className: "flex items-center justify-between", children: [(0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("p", { className: "text-sm font-medium text-gray-600", children: "Total Applications" }), (0,jsx_runtime.jsx)("p", { className: "text-2xl font-bold text-gray-900", children: analyticsData.totalApplications })] }), (0,jsx_runtime.jsx)("div", { className: "p-3 bg-blue-100 rounded-full", children: (0,jsx_runtime.jsx)(ChartColumn, { className: "w-6 h-6 text-blue-600" }) })] }) }) }), (0,jsx_runtime.jsx)(Card/* default */.Ay, { variant: "elevated", children: (0,jsx_runtime.jsx)(Card/* CardBody */.bw, { className: "p-6", children: (0,jsx_runtime.jsxs)("div", { className: "flex items-center justify-between", children: [(0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("p", { className: "text-sm font-medium text-gray-600", children: "Success Rate" }), (0,jsx_runtime.jsxs)("p", { className: "text-2xl font-bold text-gray-900", children: [analyticsData.successRate.toFixed(1), "%"] })] }), (0,jsx_runtime.jsx)("div", { className: "p-3 bg-green-100 rounded-full", children: (0,jsx_runtime.jsx)(award/* default */.A, { className: "w-6 h-6 text-green-600" }) })] }) }) }), (0,jsx_runtime.jsx)(Card/* default */.Ay, { variant: "elevated", children: (0,jsx_runtime.jsx)(Card/* CardBody */.bw, { className: "p-6", children: (0,jsx_runtime.jsxs)("div", { className: "flex items-center justify-between", children: [(0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("p", { className: "text-sm font-medium text-gray-600", children: "Avg Response Time" }), (0,jsx_runtime.jsx)("p", { className: "text-2xl font-bold text-gray-900", children: analyticsData.averageResponseTime > 0
+                                    range === '6m' ? '6 Months' : '1 Year' }, range))) }) }), (0,jsx_runtime.jsxs)("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8", children: [(0,jsx_runtime.jsx)(Card/* default */.Ay, { variant: "elevated", children: (0,jsx_runtime.jsx)(Card/* CardBody */.bw, { className: "p-6", children: (0,jsx_runtime.jsxs)("div", { className: "flex items-center justify-between", children: [(0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("p", { className: "text-sm font-medium text-gray-600", children: "Total Applications" }), (0,jsx_runtime.jsx)("p", { className: "text-2xl font-bold text-gray-900", children: analyticsData.totalApplications })] }), (0,jsx_runtime.jsx)("div", { className: "p-3 bg-blue-100 rounded-full", children: (0,jsx_runtime.jsx)(chart_column/* default */.A, { className: "w-6 h-6 text-blue-600" }) })] }) }) }), (0,jsx_runtime.jsx)(Card/* default */.Ay, { variant: "elevated", children: (0,jsx_runtime.jsx)(Card/* CardBody */.bw, { className: "p-6", children: (0,jsx_runtime.jsxs)("div", { className: "flex items-center justify-between", children: [(0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("p", { className: "text-sm font-medium text-gray-600", children: "Success Rate" }), (0,jsx_runtime.jsxs)("p", { className: "text-2xl font-bold text-gray-900", children: [analyticsData.successRate.toFixed(1), "%"] })] }), (0,jsx_runtime.jsx)("div", { className: "p-3 bg-green-100 rounded-full", children: (0,jsx_runtime.jsx)(award/* default */.A, { className: "w-6 h-6 text-green-600" }) })] }) }) }), (0,jsx_runtime.jsx)(Card/* default */.Ay, { variant: "elevated", children: (0,jsx_runtime.jsx)(Card/* CardBody */.bw, { className: "p-6", children: (0,jsx_runtime.jsxs)("div", { className: "flex items-center justify-between", children: [(0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("p", { className: "text-sm font-medium text-gray-600", children: "Avg Response Time" }), (0,jsx_runtime.jsx)("p", { className: "text-2xl font-bold text-gray-900", children: analyticsData.averageResponseTime > 0
                                                         ? `${analyticsData.averageResponseTime.toFixed(1)} days`
                                                         : 'N/A' })] }), (0,jsx_runtime.jsx)("div", { className: "p-3 bg-purple-100 rounded-full", children: (0,jsx_runtime.jsx)(Clock3, { className: "w-6 h-6 text-purple-600" }) })] }) }) }), (0,jsx_runtime.jsx)(Card/* default */.Ay, { variant: "elevated", children: (0,jsx_runtime.jsx)(Card/* CardBody */.bw, { className: "p-6", children: (0,jsx_runtime.jsxs)("div", { className: "flex items-center justify-between", children: [(0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("p", { className: "text-sm font-medium text-gray-600", children: "Active Applications" }), (0,jsx_runtime.jsx)("p", { className: "text-2xl font-bold text-gray-900", children: (analyticsData.statusBreakdown['pending'] || 0) +
                                                         (analyticsData.statusBreakdown['reviewed'] || 0) +
                                                         (analyticsData.statusBreakdown['shortlisted'] || 0) +
-                                                        (analyticsData.statusBreakdown['interviewed'] || 0) })] }), (0,jsx_runtime.jsx)("div", { className: "p-3 bg-yellow-100 rounded-full", children: (0,jsx_runtime.jsx)(Activity, { className: "w-6 h-6 text-yellow-600" }) })] }) }) })] }), (0,jsx_runtime.jsxs)("div", { className: "grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8", children: [(0,jsx_runtime.jsxs)(Card/* default */.Ay, { variant: "elevated", children: [(0,jsx_runtime.jsx)(Card/* CardHeader */.aR, { children: (0,jsx_runtime.jsx)(Card/* CardTitle */.ZB, { children: "Application Status Breakdown" }) }), (0,jsx_runtime.jsx)(Card/* CardBody */.bw, { children: (0,jsx_runtime.jsx)("div", { className: "space-y-4", children: Object.entries(analyticsData.statusBreakdown).map(([status, count]) => {
+                                                        (analyticsData.statusBreakdown['interviewed'] || 0) })] }), (0,jsx_runtime.jsx)("div", { className: "p-3 bg-yellow-100 rounded-full", children: (0,jsx_runtime.jsx)(activity/* default */.A, { className: "w-6 h-6 text-yellow-600" }) })] }) }) })] }), (0,jsx_runtime.jsxs)("div", { className: "grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8", children: [(0,jsx_runtime.jsxs)(Card/* default */.Ay, { variant: "elevated", children: [(0,jsx_runtime.jsx)(Card/* CardHeader */.aR, { children: (0,jsx_runtime.jsx)(Card/* CardTitle */.ZB, { children: "Application Status Breakdown" }) }), (0,jsx_runtime.jsx)(Card/* CardBody */.bw, { children: (0,jsx_runtime.jsx)("div", { className: "space-y-4", children: Object.entries(analyticsData.statusBreakdown).map(([status, count]) => {
                                             const Icon = getStatusIcon(status);
                                             const percentage = analyticsData.totalApplications > 0
                                                 ? (count / analyticsData.totalApplications) * 100
@@ -385,70 +439,6 @@ const ApplicationAnalytics = () => {
                                         }) }) })] })] }), (0,jsx_runtime.jsxs)("div", { className: "grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8", children: [(0,jsx_runtime.jsxs)(Card/* default */.Ay, { variant: "elevated", children: [(0,jsx_runtime.jsx)(Card/* CardHeader */.aR, { children: (0,jsx_runtime.jsx)(Card/* CardTitle */.ZB, { children: "Top Companies Applied To" }) }), (0,jsx_runtime.jsx)(Card/* CardBody */.bw, { children: (0,jsx_runtime.jsx)("div", { className: "space-y-3", children: analyticsData.topCompanies.map(({ company, count }, index) => ((0,jsx_runtime.jsxs)("div", { className: "flex items-center justify-between", children: [(0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-3", children: [(0,jsx_runtime.jsxs)("span", { className: "text-sm font-medium text-gray-500 w-6", children: ["#", index + 1] }), (0,jsx_runtime.jsx)("span", { className: "font-medium", children: company })] }), (0,jsx_runtime.jsxs)("span", { className: "text-sm text-gray-600", children: [count, " applications"] })] }, company))) }) })] }), (0,jsx_runtime.jsxs)(Card/* default */.Ay, { variant: "elevated", children: [(0,jsx_runtime.jsx)(Card/* CardHeader */.aR, { children: (0,jsx_runtime.jsx)(Card/* CardTitle */.ZB, { children: "Top Departments" }) }), (0,jsx_runtime.jsx)(Card/* CardBody */.bw, { children: (0,jsx_runtime.jsx)("div", { className: "space-y-3", children: analyticsData.topDepartments.map(({ department, count }, index) => ((0,jsx_runtime.jsxs)("div", { className: "flex items-center justify-between", children: [(0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-3", children: [(0,jsx_runtime.jsxs)("span", { className: "text-sm font-medium text-gray-500 w-6", children: ["#", index + 1] }), (0,jsx_runtime.jsx)("span", { className: "font-medium", children: department })] }), (0,jsx_runtime.jsxs)("span", { className: "text-sm text-gray-600", children: [count, " applications"] })] }, department))) }) })] })] }), (0,jsx_runtime.jsxs)(Card/* default */.Ay, { variant: "elevated", className: "mb-8", children: [(0,jsx_runtime.jsx)(Card/* CardHeader */.aR, { children: (0,jsx_runtime.jsx)(Card/* CardTitle */.ZB, { children: "Response Time by Status" }) }), (0,jsx_runtime.jsx)(Card/* CardBody */.bw, { children: (0,jsx_runtime.jsx)("div", { className: "grid grid-cols-2 md:grid-cols-4 gap-4", children: Object.entries(analyticsData.responseTimeByStatus).map(([status, avgTime]) => ((0,jsx_runtime.jsxs)("div", { className: "text-center p-4 bg-gray-50 rounded-lg", children: [(0,jsx_runtime.jsxs)("div", { className: `text-2xl font-bold ${getStatusColor(status)}`, children: [avgTime.toFixed(1), "d"] }), (0,jsx_runtime.jsx)("div", { className: "text-sm text-gray-600 capitalize", children: status })] }, status))) }) })] }), (0,jsx_runtime.jsxs)(Card/* default */.Ay, { variant: "elevated", children: [(0,jsx_runtime.jsx)(Card/* CardHeader */.aR, { children: (0,jsx_runtime.jsx)(Card/* CardTitle */.ZB, { children: "Key Insights" }) }), (0,jsx_runtime.jsx)(Card/* CardBody */.bw, { children: (0,jsx_runtime.jsxs)("div", { className: "space-y-4", children: [analyticsData.successRate > 0 && ((0,jsx_runtime.jsxs)("div", { className: "flex items-start gap-3 p-4 bg-green-50 rounded-lg", children: [(0,jsx_runtime.jsx)(circle_check_big/* default */.A, { className: "w-5 h-5 text-green-600 mt-0.5" }), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("p", { className: "font-medium text-green-800", children: "Success Rate" }), (0,jsx_runtime.jsxs)("p", { className: "text-sm text-green-700", children: ["You have a ", analyticsData.successRate.toFixed(1), "% success rate in getting hired from your applications."] })] })] })), analyticsData.averageResponseTime > 0 && ((0,jsx_runtime.jsxs)("div", { className: "flex items-start gap-3 p-4 bg-blue-50 rounded-lg", children: [(0,jsx_runtime.jsx)(clock/* default */.A, { className: "w-5 h-5 text-blue-600 mt-0.5" }), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("p", { className: "font-medium text-blue-800", children: "Response Time" }), (0,jsx_runtime.jsxs)("p", { className: "text-sm text-blue-700", children: ["Companies typically respond within ", analyticsData.averageResponseTime.toFixed(1), " days on average."] })] })] })), analyticsData.topCompanies.length > 0 && ((0,jsx_runtime.jsxs)("div", { className: "flex items-start gap-3 p-4 bg-purple-50 rounded-lg", children: [(0,jsx_runtime.jsx)(trending_up/* default */.A, { className: "w-5 h-5 text-purple-600 mt-0.5" }), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("p", { className: "font-medium text-purple-800", children: "Top Company" }), (0,jsx_runtime.jsxs)("p", { className: "text-sm text-purple-700", children: ["You've applied most frequently to ", analyticsData.topCompanies[0]?.company, " (", analyticsData.topCompanies[0]?.count, " applications)."] })] })] }))] }) })] })] }) }));
 };
 /* harmony default export */ const JobSearch_ApplicationAnalytics = (ApplicationAnalytics);
-
-
-/***/ }),
-
-/***/ 4180:
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   A: () => (/* binding */ Award)
-/* harmony export */ });
-/* unused harmony export __iconNode */
-/* harmony import */ var _createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9407);
-/**
- * @license lucide-react v0.525.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-
-
-
-const __iconNode = [
-  [
-    "path",
-    {
-      d: "m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526",
-      key: "1yiouv"
-    }
-  ],
-  ["circle", { cx: "12", cy: "8", r: "6", key: "1vp47v" }]
-];
-const Award = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .A)("award", __iconNode);
-
-
-//# sourceMappingURL=award.js.map
-
-
-/***/ }),
-
-/***/ 4471:
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   A: () => (/* binding */ CircleCheckBig)
-/* harmony export */ });
-/* unused harmony export __iconNode */
-/* harmony import */ var _createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9407);
-/**
- * @license lucide-react v0.525.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-
-
-
-const __iconNode = [
-  ["path", { d: "M21.801 10A10 10 0 1 1 17 3.335", key: "yps3ct" }],
-  ["path", { d: "m9 11 3 3L22 4", key: "1pflzl" }]
-];
-const CircleCheckBig = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .A)("circle-check-big", __iconNode);
-
-
-//# sourceMappingURL=circle-check-big.js.map
 
 
 /***/ }),
@@ -560,6 +550,40 @@ const TrendingUp = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["defa
 
 /***/ }),
 
+/***/ 6844:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   A: () => (/* binding */ Activity)
+/* harmony export */ });
+/* unused harmony export __iconNode */
+/* harmony import */ var _createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9407);
+/**
+ * @license lucide-react v0.525.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+
+
+
+const __iconNode = [
+  [
+    "path",
+    {
+      d: "M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2",
+      key: "169zse"
+    }
+  ]
+];
+const Activity = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .A)("activity", __iconNode);
+
+
+//# sourceMappingURL=activity.js.map
+
+
+/***/ }),
+
 /***/ 7235:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
@@ -590,4 +614,4 @@ const Clock = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"]
 /***/ })
 
 }]);
-//# sourceMappingURL=191.chunk.js.map
+//# sourceMappingURL=4873.chunk.js.map

@@ -1,5 +1,5 @@
 "use strict";
-(self["webpackChunkwhosonset"] = self["webpackChunkwhosonset"] || []).push([[5119],{
+(self["webpackChunkwhosonset"] = self["webpackChunkwhosonset"] || []).push([[7900],{
 
 /***/ 684:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
@@ -112,6 +112,40 @@ const Button = (0,react__WEBPACK_IMPORTED_MODULE_1__.forwardRef)(({ variant = 'd
 });
 Button.displayName = 'Button';
 
+
+
+/***/ }),
+
+/***/ 1181:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   A: () => (/* binding */ Star)
+/* harmony export */ });
+/* unused harmony export __iconNode */
+/* harmony import */ var _createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9407);
+/**
+ * @license lucide-react v0.525.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+
+
+
+const __iconNode = [
+  [
+    "path",
+    {
+      d: "M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z",
+      key: "r04s7s"
+    }
+  ]
+];
+const Star = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .A)("star", __iconNode);
+
+
+//# sourceMappingURL=star.js.map
 
 
 /***/ }),
@@ -231,9 +265,12 @@ class SavedJobsService {
             const savedJobData = {
                 userId,
                 jobId,
-                notes,
                 savedAt: (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .serverTimestamp */ .O5)()
             };
+            // Only include notes if it's not undefined
+            if (notes !== undefined) {
+                savedJobData.notes = notes;
+            }
             const docRef = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .addDoc */ .gS)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'savedJobs'), savedJobData);
             console.log('[SavedJobsService] Job saved successfully:', docRef.id);
             return docRef.id;
@@ -496,7 +533,36 @@ CardDescription.displayName = 'CardDescription';
 
 /***/ }),
 
-/***/ 5119:
+/***/ 6589:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   A: () => (/* binding */ DollarSign)
+/* harmony export */ });
+/* unused harmony export __iconNode */
+/* harmony import */ var _createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9407);
+/**
+ * @license lucide-react v0.525.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+
+
+
+const __iconNode = [
+  ["line", { x1: "12", x2: "12", y1: "2", y2: "22", key: "7eqyqh" }],
+  ["path", { d: "M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6", key: "1b0p4s" }]
+];
+const DollarSign = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .A)("dollar-sign", __iconNode);
+
+
+//# sourceMappingURL=dollar-sign.js.map
+
+
+/***/ }),
+
+/***/ 7900:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 // ESM COMPAT FLAG
@@ -564,25 +630,8 @@ const Bookmark = (0,createLucideIcon/* default */.A)("bookmark", bookmark_iconNo
 
 //# sourceMappingURL=bookmark.js.map
 
-;// ./node_modules/lucide-react/dist/esm/icons/dollar-sign.js
-/**
- * @license lucide-react v0.525.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-
-
-
-const dollar_sign_iconNode = [
-  ["line", { x1: "12", x2: "12", y1: "2", y2: "22", key: "7eqyqh" }],
-  ["path", { d: "M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6", key: "1b0p4s" }]
-];
-const DollarSign = (0,createLucideIcon/* default */.A)("dollar-sign", dollar_sign_iconNode);
-
-
-//# sourceMappingURL=dollar-sign.js.map
-
+// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/dollar-sign.js
+var dollar_sign = __webpack_require__(6589);
 // EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/calendar.js
 var calendar = __webpack_require__(2307);
 // EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/arrow-right.js
@@ -617,30 +666,8 @@ const Funnel = (0,createLucideIcon/* default */.A)("funnel", funnel_iconNode);
 
 //# sourceMappingURL=funnel.js.map
 
-;// ./node_modules/lucide-react/dist/esm/icons/star.js
-/**
- * @license lucide-react v0.525.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-
-
-
-const star_iconNode = [
-  [
-    "path",
-    {
-      d: "M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z",
-      key: "r04s7s"
-    }
-  ]
-];
-const Star = (0,createLucideIcon/* default */.A)("star", star_iconNode);
-
-
-//# sourceMappingURL=star.js.map
-
+// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/star.js
+var star = __webpack_require__(1181);
 // EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/plus.js
 var plus = __webpack_require__(697);
 // EXTERNAL MODULE: ./src/utilities/savedJobsService.ts
@@ -748,7 +775,7 @@ const JobCard = ({ job, currentUserId, onEdit }) => {
                                         : "text-gray-400 hover:text-blue-600"}`, title: isSaved ? 'Remove from saved jobs' : 'Save job for later', onClick: handleSave, disabled: isSaving, children: isSaving ? ((0,jsx_runtime.jsx)("div", { className: "animate-spin rounded-full h-4 w-4 border-b-2 border-current" })) : isSaved ? ((0,jsx_runtime.jsx)(BookmarkCheck, { className: "w-5 h-5 fill-current" })) : ((0,jsx_runtime.jsx)(Bookmark, { className: "w-5 h-5" })) })), currentUserId && job.postedById === currentUserId && ((0,jsx_runtime.jsx)("button", { className: "p-2 rounded-lg hover:bg-gray-100 transition-colors", title: "Edit Job", onClick: e => {
                                         e.stopPropagation();
                                         onEdit ? onEdit(job) : navigate(`/edit-job/${job.id}`);
-                                    }, children: (0,jsx_runtime.jsx)("svg", { className: "w-5 h-5 text-gray-500", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24", children: (0,jsx_runtime.jsx)("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M15.232 5.232l3.536 3.536M9 13l6-6 3 3-6 6H9v-3z" }) }) }))] })] }), (0,jsx_runtime.jsxs)("div", { className: "flex flex-wrap gap-2 mb-4", children: [hasValue(job.jobType) && ((0,jsx_runtime.jsx)("span", { className: "px-3 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full", children: job.jobType?.replace('_', ' ') })), hasValue(job.experienceLevel) && ((0,jsx_runtime.jsxs)("span", { className: "px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full", children: [job.experienceLevel, " level"] })), job.isPaid && ((0,jsx_runtime.jsx)("span", { className: "px-3 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full", children: "Paid" }))] }), hasValue(job.description) && ((0,jsx_runtime.jsx)(Card/* CardDescription */.BT, { className: "text-gray-600 text-sm mb-4 line-clamp-2", children: job.description })), (0,jsx_runtime.jsxs)("div", { className: "flex items-center justify-between", children: [(0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-4 text-sm text-gray-500", children: [job.showSalary && (job.salaryMin || job.salaryMax) && ((0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-1", children: [(0,jsx_runtime.jsx)(DollarSign, { className: "w-4 h-4" }), (0,jsx_runtime.jsx)("span", { className: "font-medium", children: formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod) })] })), (0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-1", children: [(0,jsx_runtime.jsx)(calendar/* default */.A, { className: "w-4 h-4" }), (0,jsx_runtime.jsxs)("span", { children: ["Posted ", formatDate(job.createdAt)] })] })] }), (0,jsx_runtime.jsxs)("div", { className: `flex items-center gap-1 text-blue-600 text-sm font-medium transition-transform ${isHovered ? 'translate-x-1' : ''}`, children: [(0,jsx_runtime.jsx)("span", { children: "View Details" }), (0,jsx_runtime.jsx)(arrow_right/* default */.A, { className: "w-4 h-4" })] })] })] }) }));
+                                    }, children: (0,jsx_runtime.jsx)("svg", { className: "w-5 h-5 text-gray-500", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24", children: (0,jsx_runtime.jsx)("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M15.232 5.232l3.536 3.536M9 13l6-6 3 3-6 6H9v-3z" }) }) }))] })] }), (0,jsx_runtime.jsxs)("div", { className: "flex flex-wrap gap-2 mb-4", children: [hasValue(job.jobType) && ((0,jsx_runtime.jsx)("span", { className: "px-3 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full", children: job.jobType?.replace('_', ' ') })), hasValue(job.experienceLevel) && ((0,jsx_runtime.jsxs)("span", { className: "px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full", children: [job.experienceLevel, " level"] })), job.isPaid && ((0,jsx_runtime.jsx)("span", { className: "px-3 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full", children: "Paid" }))] }), hasValue(job.description) && ((0,jsx_runtime.jsx)(Card/* CardDescription */.BT, { className: "text-gray-600 text-sm mb-4 line-clamp-2", children: job.description })), (0,jsx_runtime.jsxs)("div", { className: "flex items-center justify-between", children: [(0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-4 text-sm text-gray-500", children: [job.showSalary && (job.salaryMin || job.salaryMax) && ((0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-1", children: [(0,jsx_runtime.jsx)(dollar_sign/* default */.A, { className: "w-4 h-4" }), (0,jsx_runtime.jsx)("span", { className: "font-medium", children: formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod) })] })), (0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-1", children: [(0,jsx_runtime.jsx)(calendar/* default */.A, { className: "w-4 h-4" }), (0,jsx_runtime.jsxs)("span", { children: ["Posted ", formatDate(job.createdAt)] })] })] }), (0,jsx_runtime.jsxs)("div", { className: `flex items-center gap-1 text-blue-600 text-sm font-medium transition-transform ${isHovered ? 'translate-x-1' : ''}`, children: [(0,jsx_runtime.jsx)("span", { children: "View Details" }), (0,jsx_runtime.jsx)(arrow_right/* default */.A, { className: "w-4 h-4" })] })] })] }) }));
 };
 function JobsPage() {
     const [jobs, setJobs] = (0,react.useState)([]);
@@ -851,9 +878,9 @@ function JobsPage() {
     if (loading) {
         return ((0,jsx_runtime.jsx)("div", { className: "min-h-screen bg-gray-50", children: (0,jsx_runtime.jsx)("div", { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8", children: (0,jsx_runtime.jsxs)("div", { className: "animate-pulse", children: [(0,jsx_runtime.jsx)("div", { className: "h-8 bg-gray-200 rounded w-48 mb-4" }), (0,jsx_runtime.jsx)("div", { className: "h-4 bg-gray-200 rounded w-64 mb-8" }), (0,jsx_runtime.jsx)("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6", children: [...Array(6)].map((_, i) => ((0,jsx_runtime.jsxs)(Card/* default */.Ay, { variant: "elevated", className: "p-6", children: [(0,jsx_runtime.jsx)("div", { className: "h-6 bg-gray-200 rounded w-3/4 mb-4" }), (0,jsx_runtime.jsx)("div", { className: "h-4 bg-gray-200 rounded w-full mb-2" }), (0,jsx_runtime.jsx)("div", { className: "h-4 bg-gray-200 rounded w-2/3 mb-4" }), (0,jsx_runtime.jsxs)("div", { className: "flex gap-2 mb-4", children: [(0,jsx_runtime.jsx)("div", { className: "h-6 bg-gray-200 rounded w-16" }), (0,jsx_runtime.jsx)("div", { className: "h-6 bg-gray-200 rounded w-20" })] }), (0,jsx_runtime.jsx)("div", { className: "h-4 bg-gray-200 rounded w-1/2" })] }, i))) })] }) }) }));
     }
-    return ((0,jsx_runtime.jsxs)("div", { className: "min-h-screen bg-gray-50", children: [(0,jsx_runtime.jsx)("div", { className: "bg-gradient-to-br from-blue-50 via-white to-purple-50 border-b border-gray-200", children: (0,jsx_runtime.jsxs)("div", { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16", children: [(0,jsx_runtime.jsxs)("div", { className: "text-center mb-12", children: [(0,jsx_runtime.jsxs)("h1", { className: "text-4xl md:text-5xl font-bold text-gray-900 mb-4", children: ["Find Your Next ", (0,jsx_runtime.jsx)("span", { className: "text-blue-600", children: "Film Industry" }), " Role"] }), (0,jsx_runtime.jsx)("p", { className: "text-xl text-gray-600 max-w-3xl mx-auto", children: "Discover opportunities with leading productions, connect with industry professionals, and advance your career in film and television." })] }), (0,jsx_runtime.jsx)("div", { className: "grid grid-cols-2 md:grid-cols-4 gap-4 mb-8", children: stats.map((stat, index) => ((0,jsx_runtime.jsxs)("div", { className: "bg-white/80 backdrop-blur-sm rounded-xl p-4 text-center border border-gray-200", children: [(0,jsx_runtime.jsx)("div", { className: "flex justify-center mb-2 text-blue-600", children: stat.icon }), (0,jsx_runtime.jsx)("div", { className: "text-2xl font-bold text-gray-900", children: stat.value }), (0,jsx_runtime.jsx)("div", { className: "text-sm text-gray-600", children: stat.label })] }, index))) }), (0,jsx_runtime.jsx)("div", { className: "max-w-4xl mx-auto", children: (0,jsx_runtime.jsxs)("div", { className: "bg-white rounded-xl shadow-lg border border-gray-200 p-6", children: [(0,jsx_runtime.jsxs)("div", { className: "flex flex-col md:flex-row gap-4", children: [(0,jsx_runtime.jsxs)("div", { className: "relative flex-1", children: [(0,jsx_runtime.jsx)(search/* default */.A, { className: "absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" }), (0,jsx_runtime.jsx)("input", { type: "text", placeholder: "Search jobs by title, company, or keywords...", className: "w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none", value: searchQuery, onChange: (e) => setSearchQuery(e.target.value) })] }), (0,jsx_runtime.jsxs)("div", { className: "flex gap-2", children: [(0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "outline", onClick: () => setShowFilters(!showFilters), className: "flex items-center gap-2", children: [(0,jsx_runtime.jsx)(Funnel, { className: "w-4 h-4" }), "Filters", hasActiveFilters && ((0,jsx_runtime.jsx)("span", { className: "bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs", children: [searchQuery, selectedDepartment, selectedLocation, selectedJobType, remoteOnly].filter(Boolean).length }))] }), auth.currentUser && ((0,jsx_runtime.jsxs)(jsx_runtime.Fragment, { children: [(0,jsx_runtime.jsxs)(Button/* Button */.$, { onClick: () => navigate('/jobs/applied'), className: "flex items-center gap-2", variant: "secondary", children: [(0,jsx_runtime.jsx)(briefcase/* default */.A, { className: "w-4 h-4" }), "My Applications"] }), (0,jsx_runtime.jsxs)(Button/* Button */.$, { onClick: () => navigate('/jobs/saved'), className: "flex items-center gap-2", variant: "secondary", children: [(0,jsx_runtime.jsx)(Star, { className: "w-4 h-4" }), "Saved Jobs"] }), (0,jsx_runtime.jsxs)(Button/* Button */.$, { onClick: () => navigate('/post-job'), className: "flex items-center gap-2", children: [(0,jsx_runtime.jsx)(plus/* default */.A, { className: "w-4 h-4" }), "Post Job"] })] }))] })] }), showFilters && ((0,jsx_runtime.jsxs)("div", { className: "mt-6 pt-6 border-t border-gray-200", children: [(0,jsx_runtime.jsxs)("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4", children: [(0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("label", { className: "block text-sm font-medium text-gray-700 mb-2", children: "Department" }), (0,jsx_runtime.jsxs)("select", { value: selectedDepartment, onChange: (e) => setSelectedDepartment(e.target.value), className: "w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none", children: [(0,jsx_runtime.jsx)("option", { value: "", children: "All Departments" }), departments.map(dept => ((0,jsx_runtime.jsx)("option", { value: dept, children: dept }, dept)))] })] }), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("label", { className: "block text-sm font-medium text-gray-700 mb-2", children: "Location" }), (0,jsx_runtime.jsx)("input", { type: "text", placeholder: "Enter location", value: selectedLocation, onChange: (e) => setSelectedLocation(e.target.value), className: "w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" })] }), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("label", { className: "block text-sm font-medium text-gray-700 mb-2", children: "Job Type" }), (0,jsx_runtime.jsxs)("select", { value: selectedJobType, onChange: (e) => setSelectedJobType(e.target.value), className: "w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none", children: [(0,jsx_runtime.jsx)("option", { value: "", children: "All Types" }), jobTypes.map(type => ((0,jsx_runtime.jsx)("option", { value: type.value, children: type.label }, type.value)))] })] }), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("label", { className: "block text-sm font-medium text-gray-700 mb-2", children: "Remote" }), (0,jsx_runtime.jsxs)("label", { className: "flex items-center", children: [(0,jsx_runtime.jsx)("input", { type: "checkbox", checked: remoteOnly, onChange: (e) => setRemoteOnly(e.target.checked), className: "rounded border-gray-300 text-blue-600 focus:ring-blue-500" }), (0,jsx_runtime.jsx)("span", { className: "ml-2 text-sm text-gray-600", children: "Remote only" })] })] })] }), hasActiveFilters && ((0,jsx_runtime.jsxs)("div", { className: "mt-4 flex justify-between items-center", children: [(0,jsx_runtime.jsxs)("span", { className: "text-sm text-gray-600", children: [filteredJobs.length, " of ", jobs.length, " jobs match your filters"] }), (0,jsx_runtime.jsx)(Button/* Button */.$, { variant: "ghost", onClick: clearFilters, children: "Clear all filters" })] }))] }))] }) })] }) }), (0,jsx_runtime.jsxs)("div", { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12", children: [error && ((0,jsx_runtime.jsx)("div", { className: "bg-red-50 border border-red-200 rounded-lg p-4 mb-6", children: (0,jsx_runtime.jsx)("p", { className: "text-red-600", children: error }) })), filteredJobs.length === 0 ? ((0,jsx_runtime.jsxs)("div", { className: "text-center py-16", children: [(0,jsx_runtime.jsx)("div", { className: "w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4", children: (0,jsx_runtime.jsx)(briefcase/* default */.A, { className: "w-8 h-8 text-gray-400" }) }), (0,jsx_runtime.jsx)("h3", { className: "text-lg font-medium text-gray-900 mb-2", children: "No jobs found" }), (0,jsx_runtime.jsx)("p", { className: "text-gray-600 mb-6", children: hasActiveFilters
+    return ((0,jsx_runtime.jsxs)("div", { className: "min-h-screen bg-gray-50", children: [(0,jsx_runtime.jsx)("div", { className: "bg-gradient-to-br from-blue-50 via-white to-purple-50 border-b border-gray-200", children: (0,jsx_runtime.jsxs)("div", { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16", children: [(0,jsx_runtime.jsxs)("div", { className: "text-center mb-12", children: [(0,jsx_runtime.jsxs)("h1", { className: "text-4xl md:text-5xl font-bold text-gray-900 mb-4", children: ["Find Your Next ", (0,jsx_runtime.jsx)("span", { className: "text-blue-600", children: "Film Industry" }), " Role"] }), (0,jsx_runtime.jsx)("p", { className: "text-xl text-gray-600 max-w-3xl mx-auto", children: "Discover opportunities with leading productions, connect with industry professionals, and advance your career in film and television." })] }), (0,jsx_runtime.jsx)("div", { className: "grid grid-cols-2 md:grid-cols-4 gap-4 mb-8", children: stats.map((stat, index) => ((0,jsx_runtime.jsxs)("div", { className: "bg-white/80 backdrop-blur-sm rounded-xl p-4 text-center border border-gray-200", children: [(0,jsx_runtime.jsx)("div", { className: "flex justify-center mb-2 text-blue-600", children: stat.icon }), (0,jsx_runtime.jsx)("div", { className: "text-2xl font-bold text-gray-900", children: stat.value }), (0,jsx_runtime.jsx)("div", { className: "text-sm text-gray-600", children: stat.label })] }, index))) }), (0,jsx_runtime.jsx)("div", { className: "max-w-4xl mx-auto", children: (0,jsx_runtime.jsxs)("div", { className: "bg-white rounded-xl shadow-lg border border-gray-200 p-6", children: [(0,jsx_runtime.jsxs)("div", { className: "flex flex-col md:flex-row gap-4", children: [(0,jsx_runtime.jsxs)("div", { className: "relative flex-1", children: [(0,jsx_runtime.jsx)(search/* default */.A, { className: "absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" }), (0,jsx_runtime.jsx)("input", { type: "text", placeholder: "Search jobs by title, company, or keywords...", className: "w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none", value: searchQuery, onChange: (e) => setSearchQuery(e.target.value) })] }), (0,jsx_runtime.jsxs)("div", { className: "flex gap-2", children: [(0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "outline", onClick: () => setShowFilters(!showFilters), className: "flex items-center gap-2", children: [(0,jsx_runtime.jsx)(Funnel, { className: "w-4 h-4" }), "Filters", hasActiveFilters && ((0,jsx_runtime.jsx)("span", { className: "bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs", children: [searchQuery, selectedDepartment, selectedLocation, selectedJobType, remoteOnly].filter(Boolean).length }))] }), auth.currentUser && ((0,jsx_runtime.jsxs)(jsx_runtime.Fragment, { children: [(0,jsx_runtime.jsxs)(Button/* Button */.$, { onClick: () => navigate('/jobs/applied'), className: "flex items-center gap-2", variant: "secondary", children: [(0,jsx_runtime.jsx)(briefcase/* default */.A, { className: "w-4 h-4" }), "My Applications"] }), (0,jsx_runtime.jsxs)(Button/* Button */.$, { onClick: () => navigate('/jobs/saved'), className: "flex items-center gap-2", variant: "secondary", children: [(0,jsx_runtime.jsx)(star/* default */.A, { className: "w-4 h-4" }), "Saved Jobs"] }), (0,jsx_runtime.jsxs)(Button/* Button */.$, { onClick: () => navigate('/post-job'), className: "flex items-center gap-2", children: [(0,jsx_runtime.jsx)(plus/* default */.A, { className: "w-4 h-4" }), "Post Job"] })] }))] })] }), showFilters && ((0,jsx_runtime.jsxs)("div", { className: "mt-6 pt-6 border-t border-gray-200", children: [(0,jsx_runtime.jsxs)("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4", children: [(0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("label", { className: "block text-sm font-medium text-gray-700 mb-2", children: "Department" }), (0,jsx_runtime.jsxs)("select", { value: selectedDepartment, onChange: (e) => setSelectedDepartment(e.target.value), className: "w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none", children: [(0,jsx_runtime.jsx)("option", { value: "", children: "All Departments" }), departments.map(dept => ((0,jsx_runtime.jsx)("option", { value: dept, children: dept }, dept)))] })] }), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("label", { className: "block text-sm font-medium text-gray-700 mb-2", children: "Location" }), (0,jsx_runtime.jsx)("input", { type: "text", placeholder: "Enter location", value: selectedLocation, onChange: (e) => setSelectedLocation(e.target.value), className: "w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" })] }), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("label", { className: "block text-sm font-medium text-gray-700 mb-2", children: "Job Type" }), (0,jsx_runtime.jsxs)("select", { value: selectedJobType, onChange: (e) => setSelectedJobType(e.target.value), className: "w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none", children: [(0,jsx_runtime.jsx)("option", { value: "", children: "All Types" }), jobTypes.map(type => ((0,jsx_runtime.jsx)("option", { value: type.value, children: type.label }, type.value)))] })] }), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("label", { className: "block text-sm font-medium text-gray-700 mb-2", children: "Remote" }), (0,jsx_runtime.jsxs)("label", { className: "flex items-center", children: [(0,jsx_runtime.jsx)("input", { type: "checkbox", checked: remoteOnly, onChange: (e) => setRemoteOnly(e.target.checked), className: "rounded border-gray-300 text-blue-600 focus:ring-blue-500" }), (0,jsx_runtime.jsx)("span", { className: "ml-2 text-sm text-gray-600", children: "Remote only" })] })] })] }), hasActiveFilters && ((0,jsx_runtime.jsxs)("div", { className: "mt-4 flex justify-between items-center", children: [(0,jsx_runtime.jsxs)("span", { className: "text-sm text-gray-600", children: [filteredJobs.length, " of ", jobs.length, " jobs match your filters"] }), (0,jsx_runtime.jsx)(Button/* Button */.$, { variant: "ghost", onClick: clearFilters, children: "Clear all filters" })] }))] }))] }) })] }) }), (0,jsx_runtime.jsxs)("div", { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12", children: [error && ((0,jsx_runtime.jsx)("div", { className: "bg-red-50 border border-red-200 rounded-lg p-4 mb-6", children: (0,jsx_runtime.jsx)("p", { className: "text-red-600", children: error }) })), filteredJobs.length === 0 ? ((0,jsx_runtime.jsxs)("div", { className: "text-center py-16", children: [(0,jsx_runtime.jsx)("div", { className: "w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4", children: (0,jsx_runtime.jsx)(briefcase/* default */.A, { className: "w-8 h-8 text-gray-400" }) }), (0,jsx_runtime.jsx)("h3", { className: "text-lg font-medium text-gray-900 mb-2", children: "No jobs found" }), (0,jsx_runtime.jsx)("p", { className: "text-gray-600 mb-6", children: hasActiveFilters
                                     ? "Try adjusting your filters to see more results."
-                                    : "Check back later for new opportunities." }), hasActiveFilters && ((0,jsx_runtime.jsx)(Button/* Button */.$, { variant: "outline", onClick: clearFilters, children: "Clear filters" }))] })) : ((0,jsx_runtime.jsxs)(jsx_runtime.Fragment, { children: [(0,jsx_runtime.jsxs)("div", { className: "flex items-center justify-between mb-6", children: [(0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsxs)("h2", { className: "text-2xl font-bold text-gray-900", children: [filteredJobs.length, " Job", filteredJobs.length !== 1 ? 's' : '', " Available"] }), (0,jsx_runtime.jsx)("p", { className: "text-gray-600", children: hasActiveFilters ? 'Filtered results' : 'All available positions' })] }), (0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-2", children: [(0,jsx_runtime.jsx)("span", { className: "text-sm text-gray-600", children: "Sort by:" }), (0,jsx_runtime.jsxs)("select", { className: "px-3 py-1 border border-gray-200 rounded-lg text-sm", children: [(0,jsx_runtime.jsx)("option", { children: "Newest first" }), (0,jsx_runtime.jsx)("option", { children: "Oldest first" }), (0,jsx_runtime.jsx)("option", { children: "Salary high to low" }), (0,jsx_runtime.jsx)("option", { children: "Salary low to high" })] })] })] }), (0,jsx_runtime.jsx)("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6", children: filteredJobs.map((job) => ((0,jsx_runtime.jsx)(JobCard, { job: job, currentUserId: auth.currentUser?.uid }, job.id))) }), filteredJobs.length >= 20 && ((0,jsx_runtime.jsx)("div", { className: "text-center mt-12", children: (0,jsx_runtime.jsx)(Button/* Button */.$, { variant: "outline", className: "px-8 py-3", children: "Load More Jobs" }) }))] }))] })] }));
+                                    : "Check back later for new opportunities." }), hasActiveFilters && ((0,jsx_runtime.jsx)(Button/* Button */.$, { variant: "outline", onClick: clearFilters, children: "Clear filters" }))] })) : ((0,jsx_runtime.jsxs)(jsx_runtime.Fragment, { children: [(0,jsx_runtime.jsxs)("div", { className: "flex flex-wrap gap-4 mb-8 justify-center md:justify-start", children: [(0,jsx_runtime.jsx)(chunk_QMGIS6GS/* Link */.N_, { to: "/jobs/posted", className: "px-5 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow", children: "My Posted Jobs" }), (0,jsx_runtime.jsx)(chunk_QMGIS6GS/* Link */.N_, { to: "/jobs/analytics", className: "px-5 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors shadow", children: "Job Analytics" }), (0,jsx_runtime.jsx)(chunk_QMGIS6GS/* Link */.N_, { to: "/post-job", className: "px-5 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors shadow", children: "Post New Job" })] }), (0,jsx_runtime.jsxs)("div", { className: "flex items-center justify-between mb-6", children: [(0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsxs)("h2", { className: "text-2xl font-bold text-gray-900", children: [filteredJobs.length, " Job", filteredJobs.length !== 1 ? 's' : '', " Available"] }), (0,jsx_runtime.jsx)("p", { className: "text-gray-600", children: hasActiveFilters ? 'Filtered results' : 'All available positions' })] }), (0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-2", children: [(0,jsx_runtime.jsx)("span", { className: "text-sm text-gray-600", children: "Sort by:" }), (0,jsx_runtime.jsxs)("select", { className: "px-3 py-1 border border-gray-200 rounded-lg text-sm", children: [(0,jsx_runtime.jsx)("option", { children: "Newest first" }), (0,jsx_runtime.jsx)("option", { children: "Oldest first" }), (0,jsx_runtime.jsx)("option", { children: "Salary high to low" }), (0,jsx_runtime.jsx)("option", { children: "Salary low to high" })] })] })] }), (0,jsx_runtime.jsx)("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6", children: filteredJobs.map((job) => ((0,jsx_runtime.jsx)(JobCard, { job: job, currentUserId: auth.currentUser?.uid }, job.id))) }), filteredJobs.length >= 20 && ((0,jsx_runtime.jsx)("div", { className: "text-center mt-12", children: (0,jsx_runtime.jsx)(Button/* Button */.$, { variant: "outline", className: "px-8 py-3", children: "Load More Jobs" }) }))] }))] })] }));
 }
 
 
@@ -924,4 +951,4 @@ const ArrowRight = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["defa
 /***/ })
 
 }]);
-//# sourceMappingURL=5119.chunk.js.map
+//# sourceMappingURL=7900.chunk.js.map

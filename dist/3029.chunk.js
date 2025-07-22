@@ -223,6 +223,7 @@ const ApplicationDashboard = () => {
                                 location: jobData.location || '',
                                 status: jobData.status || '',
                                 postedAt: jobData.postedAt || null,
+                                postedById: jobDoc.docs[0].id, // Assuming jobId is the document ID
                             }
                         };
                     }

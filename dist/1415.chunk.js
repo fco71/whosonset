@@ -1,5 +1,5 @@
 "use strict";
-(self["webpackChunkwhosonset"] = self["webpackChunkwhosonset"] || []).push([[5067],{
+(self["webpackChunkwhosonset"] = self["webpackChunkwhosonset"] || []).push([[1415],{
 
 /***/ 684:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
@@ -31,102 +31,7 @@ const Globe = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"]
 
 /***/ }),
 
-/***/ 2201:
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   A: () => (/* binding */ Briefcase)
-/* harmony export */ });
-/* unused harmony export __iconNode */
-/* harmony import */ var _createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9407);
-/**
- * @license lucide-react v0.525.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-
-
-
-const __iconNode = [
-  ["path", { d: "M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16", key: "jecpp" }],
-  ["rect", { width: "20", height: "14", x: "2", y: "6", rx: "2", key: "i6l2r4" }]
-];
-const Briefcase = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .A)("briefcase", __iconNode);
-
-
-//# sourceMappingURL=briefcase.js.map
-
-
-/***/ }),
-
-/***/ 3893:
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   A: () => (/* binding */ Users)
-/* harmony export */ });
-/* unused harmony export __iconNode */
-/* harmony import */ var _createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9407);
-/**
- * @license lucide-react v0.525.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-
-
-
-const __iconNode = [
-  ["path", { d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2", key: "1yyitq" }],
-  ["path", { d: "M16 3.128a4 4 0 0 1 0 7.744", key: "16gr8j" }],
-  ["path", { d: "M22 21v-2a4 4 0 0 0-3-3.87", key: "kshegd" }],
-  ["circle", { cx: "9", cy: "7", r: "4", key: "nufk8" }]
-];
-const Users = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .A)("users", __iconNode);
-
-
-//# sourceMappingURL=users.js.map
-
-
-/***/ }),
-
-/***/ 4180:
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   A: () => (/* binding */ Award)
-/* harmony export */ });
-/* unused harmony export __iconNode */
-/* harmony import */ var _createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9407);
-/**
- * @license lucide-react v0.525.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-
-
-
-const __iconNode = [
-  [
-    "path",
-    {
-      d: "m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526",
-      key: "1yiouv"
-    }
-  ],
-  ["circle", { cx: "12", cy: "8", r: "6", key: "1vp47v" }]
-];
-const Award = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .A)("award", __iconNode);
-
-
-//# sourceMappingURL=award.js.map
-
-
-/***/ }),
-
-/***/ 5067:
+/***/ 1415:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 // ESM COMPAT FLAG
@@ -199,30 +104,8 @@ const Play = (0,createLucideIcon/* default */.A)("play", play_iconNode);
 
 //# sourceMappingURL=play.js.map
 
-;// ./node_modules/lucide-react/dist/esm/icons/heart.js
-/**
- * @license lucide-react v0.525.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-
-
-
-const heart_iconNode = [
-  [
-    "path",
-    {
-      d: "M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z",
-      key: "c3ymky"
-    }
-  ]
-];
-const Heart = (0,createLucideIcon/* default */.A)("heart", heart_iconNode);
-
-
-//# sourceMappingURL=heart.js.map
-
+// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/heart.js
+var heart = __webpack_require__(3345);
 ;// ./node_modules/lucide-react/dist/esm/icons/clapperboard.js
 /**
  * @license lucide-react v0.525.0 - ISC
@@ -367,9 +250,138 @@ const HomePage = () => {
                                     title: "Find Opportunities",
                                     description: "Discover jobs, projects, and collaborations that match your skills and career goals."
                                 }
-                            ].map((item, index) => ((0,jsx_runtime.jsxs)("div", { className: "text-center relative", children: [(0,jsx_runtime.jsx)("div", { className: "w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white text-xl font-bold mx-auto mb-6 shadow-lg", children: item.step }), (0,jsx_runtime.jsx)("h3", { className: "text-xl font-semibold text-gray-900 mb-3", children: item.title }), (0,jsx_runtime.jsx)("p", { className: "text-gray-600 leading-relaxed", children: item.description }), index < 2 && ((0,jsx_runtime.jsx)("div", { className: "hidden md:block absolute top-8 left-3/4 w-1/2 h-0.5 bg-gradient-to-r from-blue-200 to-purple-200" }))] }, index))) })] }) }), (0,jsx_runtime.jsx)("section", { className: "py-24 bg-gradient-to-r from-blue-600 to-purple-600", children: (0,jsx_runtime.jsx)("div", { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center", children: (0,jsx_runtime.jsxs)("div", { className: "max-w-3xl mx-auto", children: [(0,jsx_runtime.jsx)("h2", { className: "text-4xl font-bold text-white mb-6", children: "Ready to Transform Your Film Career?" }), (0,jsx_runtime.jsx)("p", { className: "text-xl text-blue-100 mb-8", children: "Join the largest community of film professionals and discover unlimited opportunities." }), (0,jsx_runtime.jsxs)("div", { className: "flex flex-col sm:flex-row gap-4 justify-center", children: [(0,jsx_runtime.jsxs)(chunk_QMGIS6GS/* Link */.N_, { to: "/register", className: "group px-8 py-4 bg-white text-blue-600 font-semibold rounded-lg hover:bg-gray-50 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center text-lg", children: [(0,jsx_runtime.jsx)(Heart, { className: "mr-2 w-5 h-5 group-hover:scale-110 transition-transform" }), "Join Free Today"] }), (0,jsx_runtime.jsxs)(chunk_QMGIS6GS/* Link */.N_, { to: "/crew", className: "group px-8 py-4 bg-transparent text-white font-semibold rounded-lg border-2 border-white hover:bg-white hover:text-blue-600 transition-all duration-300 flex items-center justify-center text-lg", children: [(0,jsx_runtime.jsx)(Clapperboard, { className: "mr-2 w-5 h-5 group-hover:scale-110 transition-transform" }), "Browse Talent"] })] })] }) }) })] }));
+                            ].map((item, index) => ((0,jsx_runtime.jsxs)("div", { className: "text-center relative", children: [(0,jsx_runtime.jsx)("div", { className: "w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white text-xl font-bold mx-auto mb-6 shadow-lg", children: item.step }), (0,jsx_runtime.jsx)("h3", { className: "text-xl font-semibold text-gray-900 mb-3", children: item.title }), (0,jsx_runtime.jsx)("p", { className: "text-gray-600 leading-relaxed", children: item.description }), index < 2 && ((0,jsx_runtime.jsx)("div", { className: "hidden md:block absolute top-8 left-3/4 w-1/2 h-0.5 bg-gradient-to-r from-blue-200 to-purple-200" }))] }, index))) })] }) }), (0,jsx_runtime.jsx)("section", { className: "py-24 bg-gradient-to-r from-blue-600 to-purple-600", children: (0,jsx_runtime.jsx)("div", { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center", children: (0,jsx_runtime.jsxs)("div", { className: "max-w-3xl mx-auto", children: [(0,jsx_runtime.jsx)("h2", { className: "text-4xl font-bold text-white mb-6", children: "Ready to Transform Your Film Career?" }), (0,jsx_runtime.jsx)("p", { className: "text-xl text-blue-100 mb-8", children: "Join the largest community of film professionals and discover unlimited opportunities." }), (0,jsx_runtime.jsxs)("div", { className: "flex flex-col sm:flex-row gap-4 justify-center", children: [(0,jsx_runtime.jsxs)(chunk_QMGIS6GS/* Link */.N_, { to: "/register", className: "group px-8 py-4 bg-white text-blue-600 font-semibold rounded-lg hover:bg-gray-50 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center text-lg", children: [(0,jsx_runtime.jsx)(heart/* default */.A, { className: "mr-2 w-5 h-5 group-hover:scale-110 transition-transform" }), "Join Free Today"] }), (0,jsx_runtime.jsxs)(chunk_QMGIS6GS/* Link */.N_, { to: "/crew", className: "group px-8 py-4 bg-transparent text-white font-semibold rounded-lg border-2 border-white hover:bg-white hover:text-blue-600 transition-all duration-300 flex items-center justify-center text-lg", children: [(0,jsx_runtime.jsx)(Clapperboard, { className: "mr-2 w-5 h-5 group-hover:scale-110 transition-transform" }), "Browse Talent"] })] })] }) }) })] }));
 };
 /* harmony default export */ const pages_HomePage = (HomePage);
+
+
+/***/ }),
+
+/***/ 2201:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   A: () => (/* binding */ Briefcase)
+/* harmony export */ });
+/* unused harmony export __iconNode */
+/* harmony import */ var _createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9407);
+/**
+ * @license lucide-react v0.525.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+
+
+
+const __iconNode = [
+  ["path", { d: "M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16", key: "jecpp" }],
+  ["rect", { width: "20", height: "14", x: "2", y: "6", rx: "2", key: "i6l2r4" }]
+];
+const Briefcase = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .A)("briefcase", __iconNode);
+
+
+//# sourceMappingURL=briefcase.js.map
+
+
+/***/ }),
+
+/***/ 3345:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   A: () => (/* binding */ Heart)
+/* harmony export */ });
+/* unused harmony export __iconNode */
+/* harmony import */ var _createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9407);
+/**
+ * @license lucide-react v0.525.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+
+
+
+const __iconNode = [
+  [
+    "path",
+    {
+      d: "M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z",
+      key: "c3ymky"
+    }
+  ]
+];
+const Heart = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .A)("heart", __iconNode);
+
+
+//# sourceMappingURL=heart.js.map
+
+
+/***/ }),
+
+/***/ 3893:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   A: () => (/* binding */ Users)
+/* harmony export */ });
+/* unused harmony export __iconNode */
+/* harmony import */ var _createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9407);
+/**
+ * @license lucide-react v0.525.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+
+
+
+const __iconNode = [
+  ["path", { d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2", key: "1yyitq" }],
+  ["path", { d: "M16 3.128a4 4 0 0 1 0 7.744", key: "16gr8j" }],
+  ["path", { d: "M22 21v-2a4 4 0 0 0-3-3.87", key: "kshegd" }],
+  ["circle", { cx: "9", cy: "7", r: "4", key: "nufk8" }]
+];
+const Users = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .A)("users", __iconNode);
+
+
+//# sourceMappingURL=users.js.map
+
+
+/***/ }),
+
+/***/ 4180:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   A: () => (/* binding */ Award)
+/* harmony export */ });
+/* unused harmony export __iconNode */
+/* harmony import */ var _createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9407);
+/**
+ * @license lucide-react v0.525.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+
+
+
+const __iconNode = [
+  [
+    "path",
+    {
+      d: "m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526",
+      key: "1yiouv"
+    }
+  ],
+  ["circle", { cx: "12", cy: "8", r: "6", key: "1vp47v" }]
+];
+const Award = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .A)("award", __iconNode);
+
+
+//# sourceMappingURL=award.js.map
 
 
 /***/ }),
@@ -468,4 +480,4 @@ const ArrowRight = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["defa
 /***/ })
 
 }]);
-//# sourceMappingURL=5067.chunk.js.map
+//# sourceMappingURL=1415.chunk.js.map

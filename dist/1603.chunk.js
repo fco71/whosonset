@@ -166,9 +166,12 @@ class SavedJobsService {
             const savedJobData = {
                 userId,
                 jobId,
-                notes,
                 savedAt: (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .serverTimestamp */ .O5)()
             };
+            // Only include notes if it's not undefined
+            if (notes !== undefined) {
+                savedJobData.notes = notes;
+            }
             const docRef = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .addDoc */ .gS)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'savedJobs'), savedJobData);
             console.log('[SavedJobsService] Job saved successfully:', docRef.id);
             return docRef.id;

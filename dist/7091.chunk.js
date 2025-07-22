@@ -1,5 +1,5 @@
 "use strict";
-(self["webpackChunkwhosonset"] = self["webpackChunkwhosonset"] || []).push([[1258],{
+(self["webpackChunkwhosonset"] = self["webpackChunkwhosonset"] || []).push([[7091],{
 
 /***/ 697:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
@@ -86,7 +86,67 @@ Button.displayName = 'Button';
 
 /***/ }),
 
-/***/ 1258:
+/***/ 6680:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   p: () => (/* binding */ Input)
+/* harmony export */ });
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(4848);
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(6540);
+/* harmony import */ var _theme_ThemeProvider__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(3049);
+
+
+
+const Input = (0,react__WEBPACK_IMPORTED_MODULE_1__.forwardRef)(({ label, error, leftIcon, rightIcon, className = '', containerClassName = '', labelClassName = '', errorClassName = '', variant = 'outline', inputSize = 'md', id, disabled, onFocus, onBlur, ...props }, ref) => {
+    const { theme } = (0,_theme_ThemeProvider__WEBPACK_IMPORTED_MODULE_2__/* .useTheme */ .DP)();
+    const [isFocused, setIsFocused] = (0,react__WEBPACK_IMPORTED_MODULE_1__.useState)(false);
+    const inputId = id || react__WEBPACK_IMPORTED_MODULE_1__.useId();
+    // Map our custom size to the appropriate classes
+    const sizeClasses = {
+        sm: 'h-8 text-xs px-2.5 py-1.5',
+        md: 'h-10 text-sm px-3 py-2',
+        lg: 'h-12 text-base px-4 py-3',
+    }[inputSize || 'md'];
+    // Variant classes
+    const variantClasses = {
+        outline: `bg-transparent border ${error
+            ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+            : 'border-gray-300 dark:border-neutral-600 focus:border-primary-500 focus:ring-primary-500'}`,
+        filled: `bg-gray-50 dark:bg-neutral-700/30 border border-transparent ${error
+            ? 'focus:border-red-500 focus:ring-red-500'
+            : 'focus:border-primary-500 focus:ring-primary-500'}`,
+        flushed: `bg-transparent border-0 border-b ${error
+            ? 'border-red-500 focus:border-red-500'
+            : 'border-gray-300 dark:border-neutral-600 focus:border-primary-500'} rounded-none px-0`,
+        unstyled: 'bg-transparent border-0 p-0 focus:ring-0',
+    }[variant];
+    // Label classes
+    const labelSizeClasses = {
+        sm: 'text-xs',
+        md: 'text-sm',
+        lg: 'text-base',
+    }[inputSize || 'md'];
+    const handleFocus = (e) => {
+        setIsFocused(true);
+        onFocus?.(e);
+    };
+    const handleBlur = (e) => {
+        setIsFocused(false);
+        onBlur?.(e);
+    };
+    return ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: `w-full ${containerClassName}`, children: [label && ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("label", { htmlFor: inputId, className: `block mb-1.5 font-medium text-gray-700 dark:text-gray-200 ${labelSizeClasses} ${labelClassName} ${error ? 'text-red-600 dark:text-red-400' : ''}`, children: label })), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: `relative flex items-center ${sizeClasses} ${variantClasses} ${isFocused ? 'ring-1 ring-primary-500' : ''} rounded-md transition-all duration-200 ${disabled ? 'opacity-60 cursor-not-allowed' : ''} ${className}`, children: [leftIcon && ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "absolute left-3 flex items-center justify-center text-gray-400 dark:text-gray-400", children: leftIcon })), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("input", { ref: ref, id: inputId, className: `w-full h-full bg-transparent border-0 focus:outline-none focus:ring-0 ${leftIcon ? 'pl-9' : 'pl-3'} ${rightIcon ? 'pr-9' : 'pr-3'} ${disabled ? 'cursor-not-allowed' : ''} text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500`, disabled: disabled, onFocus: handleFocus, onBlur: handleBlur, ...props }), rightIcon && ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "absolute right-3 flex items-center justify-center text-gray-400 dark:text-gray-400", children: rightIcon }))] }), error && ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("p", { className: `mt-1.5 text-sm text-red-600 dark:text-red-400 ${errorClassName}`, children: error }))] }));
+});
+// Add display name for better debugging
+Input.displayName = 'Input';
+
+// Also provide a default export for backward compatibility
+/* unused harmony default export */ var __WEBPACK_DEFAULT_EXPORT__ = ((/* unused pure expression or super */ null && (Input)));
+
+
+/***/ }),
+
+/***/ 7091:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 // ESM COMPAT FLAG
@@ -175,31 +235,8 @@ var plus = __webpack_require__(697);
 var x = __webpack_require__(8697);
 // EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/search.js
 var search = __webpack_require__(8445);
-;// ./node_modules/lucide-react/dist/esm/icons/send.js
-/**
- * @license lucide-react v0.525.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-
-
-
-const send_iconNode = [
-  [
-    "path",
-    {
-      d: "M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z",
-      key: "1ffxy3"
-    }
-  ],
-  ["path", { d: "m21.854 2.147-10.94 10.939", key: "12cjpa" }]
-];
-const Send = (0,createLucideIcon/* default */.A)("send", send_iconNode);
-
-
-//# sourceMappingURL=send.js.map
-
+// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/send.js
+var send = __webpack_require__(7775);
 // EXTERNAL MODULE: ./src/contexts/AuthContext.tsx
 var AuthContext = __webpack_require__(2584);
 // EXTERNAL MODULE: ./src/utilities/socialService.ts
@@ -690,7 +727,7 @@ const SocialPage = () => {
                                                     .split(' ')
                                                     .map(n => n[0])
                                                     .join('')
-                                                    .toUpperCase() })] }), (0,jsx_runtime.jsxs)("div", { className: "flex-1 min-w-0", children: [(0,jsx_runtime.jsx)("h4", { className: "text-sm font-medium text-gray-900 truncate", children: profile.displayName }), profile.type === 'crew' && profile.jobTitles?.[0]?.title && ((0,jsx_runtime.jsx)("p", { className: "text-xs text-gray-500 truncate", children: profile.jobTitles[0].title }))] }), (0,jsx_runtime.jsx)(Button/* Button */.$, { variant: "ghost", size: "sm", className: "h-8 w-8 p-0", children: (0,jsx_runtime.jsx)(Send, { className: "h-4 w-4" }) })] }, (0,Profile/* getProfileId */.Lx)(profile)))) })) })] }) }));
+                                                    .toUpperCase() })] }), (0,jsx_runtime.jsxs)("div", { className: "flex-1 min-w-0", children: [(0,jsx_runtime.jsx)("h4", { className: "text-sm font-medium text-gray-900 truncate", children: profile.displayName }), profile.type === 'crew' && profile.jobTitles?.[0]?.title && ((0,jsx_runtime.jsx)("p", { className: "text-xs text-gray-500 truncate", children: profile.jobTitles[0].title }))] }), (0,jsx_runtime.jsx)(Button/* Button */.$, { variant: "ghost", size: "sm", className: "h-8 w-8 p-0", children: (0,jsx_runtime.jsx)(send/* default */.A, { className: "h-4 w-4" }) })] }, (0,Profile/* getProfileId */.Lx)(profile)))) })) })] }) }));
     };
     return ((0,jsx_runtime.jsxs)("div", { className: "container mx-auto px-4 py-6 max-w-7xl", children: [(0,jsx_runtime.jsxs)("div", { className: "flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8", children: [(0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h1", { className: "text-2xl font-bold text-gray-900", children: "Social Network" }), (0,jsx_runtime.jsx)("p", { className: "text-gray-500", children: "Connect with crew members and discover new professionals" })] }), (0,jsx_runtime.jsxs)("div", { className: "flex items-center space-x-3", children: [(0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "outline", size: "sm", onClick: () => {
                                     // Navigate to full messaging environment
@@ -698,66 +735,6 @@ const SocialPage = () => {
                                 }, className: "flex items-center space-x-2", children: [(0,jsx_runtime.jsx)(MessageCircle, { className: "h-4 w-4" }), (0,jsx_runtime.jsx)("span", { children: "Messages" })] }), (0,jsx_runtime.jsx)("div", { className: "w-full md:w-96", children: (0,jsx_runtime.jsxs)("div", { className: "relative", children: [(0,jsx_runtime.jsx)(search/* default */.A, { className: "absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" }), (0,jsx_runtime.jsx)(Input/* Input */.p, { type: "text", placeholder: "Search people...", className: "pl-10 w-full", value: searchQuery, onChange: handleSearchChange })] }) })] })] }), (0,jsx_runtime.jsxs)("div", { className: "flex space-x-4 mb-6 overflow-x-auto pb-2", children: [(0,jsx_runtime.jsx)(TabButton, { active: activeTab === 'connections', onClick: () => setActiveTab('connections'), icon: user_check/* default */.A, children: "Connections" }), (0,jsx_runtime.jsx)(TabButton, { active: activeTab === 'requests', onClick: () => setActiveTab('requests'), count: connectionRequests.length, icon: UserX, children: "Requests" }), (0,jsx_runtime.jsx)(TabButton, { active: activeTab === 'discover', onClick: () => setActiveTab('discover'), icon: UserPlus, children: "Discover" }), (0,jsx_runtime.jsx)(TabButton, { active: activeTab === 'notifications', onClick: () => setActiveTab('notifications'), icon: bell/* default */.A, children: "Notifications" })] }), (0,jsx_runtime.jsx)("div", { className: "space-y-6", children: renderTabContent() }), (0,jsx_runtime.jsx)(MessagePane, {}), (0,jsx_runtime.jsx)(StartConversationModal, {})] }));
 };
 /* harmony default export */ const pages_SocialPage = (SocialPage);
-
-
-/***/ }),
-
-/***/ 6680:
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   p: () => (/* binding */ Input)
-/* harmony export */ });
-/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(4848);
-/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(6540);
-/* harmony import */ var _theme_ThemeProvider__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(3049);
-
-
-
-const Input = (0,react__WEBPACK_IMPORTED_MODULE_1__.forwardRef)(({ label, error, leftIcon, rightIcon, className = '', containerClassName = '', labelClassName = '', errorClassName = '', variant = 'outline', inputSize = 'md', id, disabled, onFocus, onBlur, ...props }, ref) => {
-    const { theme } = (0,_theme_ThemeProvider__WEBPACK_IMPORTED_MODULE_2__/* .useTheme */ .DP)();
-    const [isFocused, setIsFocused] = (0,react__WEBPACK_IMPORTED_MODULE_1__.useState)(false);
-    const inputId = id || react__WEBPACK_IMPORTED_MODULE_1__.useId();
-    // Map our custom size to the appropriate classes
-    const sizeClasses = {
-        sm: 'h-8 text-xs px-2.5 py-1.5',
-        md: 'h-10 text-sm px-3 py-2',
-        lg: 'h-12 text-base px-4 py-3',
-    }[inputSize || 'md'];
-    // Variant classes
-    const variantClasses = {
-        outline: `bg-transparent border ${error
-            ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
-            : 'border-gray-300 dark:border-neutral-600 focus:border-primary-500 focus:ring-primary-500'}`,
-        filled: `bg-gray-50 dark:bg-neutral-700/30 border border-transparent ${error
-            ? 'focus:border-red-500 focus:ring-red-500'
-            : 'focus:border-primary-500 focus:ring-primary-500'}`,
-        flushed: `bg-transparent border-0 border-b ${error
-            ? 'border-red-500 focus:border-red-500'
-            : 'border-gray-300 dark:border-neutral-600 focus:border-primary-500'} rounded-none px-0`,
-        unstyled: 'bg-transparent border-0 p-0 focus:ring-0',
-    }[variant];
-    // Label classes
-    const labelSizeClasses = {
-        sm: 'text-xs',
-        md: 'text-sm',
-        lg: 'text-base',
-    }[inputSize || 'md'];
-    const handleFocus = (e) => {
-        setIsFocused(true);
-        onFocus?.(e);
-    };
-    const handleBlur = (e) => {
-        setIsFocused(false);
-        onBlur?.(e);
-    };
-    return ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: `w-full ${containerClassName}`, children: [label && ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("label", { htmlFor: inputId, className: `block mb-1.5 font-medium text-gray-700 dark:text-gray-200 ${labelSizeClasses} ${labelClassName} ${error ? 'text-red-600 dark:text-red-400' : ''}`, children: label })), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: `relative flex items-center ${sizeClasses} ${variantClasses} ${isFocused ? 'ring-1 ring-primary-500' : ''} rounded-md transition-all duration-200 ${disabled ? 'opacity-60 cursor-not-allowed' : ''} ${className}`, children: [leftIcon && ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "absolute left-3 flex items-center justify-center text-gray-400 dark:text-gray-400", children: leftIcon })), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("input", { ref: ref, id: inputId, className: `w-full h-full bg-transparent border-0 focus:outline-none focus:ring-0 ${leftIcon ? 'pl-9' : 'pl-3'} ${rightIcon ? 'pr-9' : 'pr-3'} ${disabled ? 'cursor-not-allowed' : ''} text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500`, disabled: disabled, onFocus: handleFocus, onBlur: handleBlur, ...props }), rightIcon && ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "absolute right-3 flex items-center justify-center text-gray-400 dark:text-gray-400", children: rightIcon }))] }), error && ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("p", { className: `mt-1.5 text-sm text-red-600 dark:text-red-400 ${errorClassName}`, children: error }))] }));
-});
-// Add display name for better debugging
-Input.displayName = 'Input';
-
-// Also provide a default export for backward compatibility
-/* unused harmony default export */ var __WEBPACK_DEFAULT_EXPORT__ = ((/* unused pure expression or super */ null && (Input)));
 
 
 /***/ }),
@@ -792,94 +769,40 @@ const UserCheck = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["defau
 
 /***/ }),
 
-/***/ 9973:
+/***/ 7775:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   cn: () => (/* binding */ cn)
+/* harmony export */   A: () => (/* binding */ Send)
 /* harmony export */ });
-/* unused harmony exports formatNumber, truncate, debounce, generateId, isMobileDevice, toKebabCase, isValidEmail */
-/* harmony import */ var clsx__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(4164);
-/* harmony import */ var tailwind_merge__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(856);
+/* unused harmony export __iconNode */
+/* harmony import */ var _createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9407);
+/**
+ * @license lucide-react v0.525.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
 
 
-/**
- * Combines multiple class names and merges Tailwind CSS classes
- * @param inputs - Class names to be combined
- * @returns A single string of combined and merged class names
- */
-function cn(...inputs) {
-    return (0,tailwind_merge__WEBPACK_IMPORTED_MODULE_0__/* .twMerge */ .QP)((0,clsx__WEBPACK_IMPORTED_MODULE_1__/* .clsx */ .$)(inputs));
-}
-/**
- * Formats a number with commas as thousand separators
- * @param num - The number to format
- * @returns Formatted number as string
- */
-function formatNumber(num) {
-    return new Intl.NumberFormat('en-US').format(num);
-}
-/**
- * Truncates a string to a specified length and adds an ellipsis if needed
- * @param str - The string to truncate
- * @param length - Maximum length before truncation
- * @returns Truncated string with ellipsis if needed
- */
-function truncate(str, length) {
-    if (str.length <= length)
-        return str;
-    return `${str.slice(0, length)}...`;
-}
-/**
- * Debounce a function call
- * @param func - The function to debounce
- * @param wait - Time to wait in milliseconds
- * @returns Debounced function
- */
-function debounce(func, wait) {
-    let timeout;
-    return function (...args) {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func.apply(this, args), wait);
-    };
-}
-/**
- * Generates a unique ID
- * @returns A unique string ID
- */
-function generateId() {
-    return Math.random().toString(36).substring(2, 11);
-}
-/**
- * Checks if the current device is a mobile device
- * @returns Boolean indicating if the device is mobile
- */
-function isMobileDevice() {
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-}
-/**
- * Converts a string to kebab-case
- * @param str - The string to convert
- * @returns kebab-cased string
- */
-function toKebabCase(str) {
-    return str
-        .replace(/([a-z])([A-Z])/g, '$1-$2')
-        .replace(/[\s_]+/g, '-')
-        .toLowerCase();
-}
-/**
- * Validates an email address
- * @param email - The email to validate
- * @returns Boolean indicating if the email is valid
- */
-function isValidEmail(email) {
-    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return re.test(email);
-}
+
+const __iconNode = [
+  [
+    "path",
+    {
+      d: "M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z",
+      key: "1ffxy3"
+    }
+  ],
+  ["path", { d: "m21.854 2.147-10.94 10.939", key: "12cjpa" }]
+];
+const Send = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .A)("send", __iconNode);
+
+
+//# sourceMappingURL=send.js.map
 
 
 /***/ })
 
 }]);
-//# sourceMappingURL=1258.chunk.js.map
+//# sourceMappingURL=7091.chunk.js.map

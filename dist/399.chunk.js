@@ -74,7 +74,7 @@ var hasOwn = __webpack_require__(9297);
 var DESCRIPTORS = __webpack_require__(3724);
 var CONFIGURABLE_FUNCTION_NAME = (__webpack_require__(350).CONFIGURABLE);
 var inspectSource = __webpack_require__(3706);
-var InternalStateModule = __webpack_require__(1181);
+var InternalStateModule = __webpack_require__(3562);
 
 var enforceInternalState = InternalStateModule.enforce;
 var getInternalState = InternalStateModule.get;
@@ -7591,7 +7591,7 @@ var microtask = __webpack_require__(1955);
 var hostReportErrors = __webpack_require__(3138);
 var perform = __webpack_require__(1103);
 var Queue = __webpack_require__(8265);
-var InternalStateModule = __webpack_require__(1181);
+var InternalStateModule = __webpack_require__(3562);
 var NativePromiseConstructor = __webpack_require__(550);
 var PromiseConstructorDetection = __webpack_require__(916);
 var newPromiseCapabilityModule = __webpack_require__(6043);
@@ -8503,85 +8503,6 @@ module.exports = function (exec) {
   } catch (error) {
     return { error: true, value: error };
   }
-};
-
-
-/***/ }),
-
-/***/ 1181:
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-"use strict";
-
-var NATIVE_WEAK_MAP = __webpack_require__(8622);
-var globalThis = __webpack_require__(4576);
-var isObject = __webpack_require__(34);
-var createNonEnumerableProperty = __webpack_require__(6699);
-var hasOwn = __webpack_require__(9297);
-var shared = __webpack_require__(7629);
-var sharedKey = __webpack_require__(6119);
-var hiddenKeys = __webpack_require__(421);
-
-var OBJECT_ALREADY_INITIALIZED = 'Object already initialized';
-var TypeError = globalThis.TypeError;
-var WeakMap = globalThis.WeakMap;
-var set, get, has;
-
-var enforce = function (it) {
-  return has(it) ? get(it) : set(it, {});
-};
-
-var getterFor = function (TYPE) {
-  return function (it) {
-    var state;
-    if (!isObject(it) || (state = get(it)).type !== TYPE) {
-      throw new TypeError('Incompatible receiver, ' + TYPE + ' required');
-    } return state;
-  };
-};
-
-if (NATIVE_WEAK_MAP || shared.state) {
-  var store = shared.state || (shared.state = new WeakMap());
-  /* eslint-disable no-self-assign -- prototype methods protection */
-  store.get = store.get;
-  store.has = store.has;
-  store.set = store.set;
-  /* eslint-enable no-self-assign -- prototype methods protection */
-  set = function (it, metadata) {
-    if (store.has(it)) throw new TypeError(OBJECT_ALREADY_INITIALIZED);
-    metadata.facade = it;
-    store.set(it, metadata);
-    return metadata;
-  };
-  get = function (it) {
-    return store.get(it) || {};
-  };
-  has = function (it) {
-    return store.has(it);
-  };
-} else {
-  var STATE = sharedKey('state');
-  hiddenKeys[STATE] = true;
-  set = function (it, metadata) {
-    if (hasOwn(it, STATE)) throw new TypeError(OBJECT_ALREADY_INITIALIZED);
-    metadata.facade = it;
-    createNonEnumerableProperty(it, STATE, metadata);
-    return metadata;
-  };
-  get = function (it) {
-    return hasOwn(it, STATE) ? it[STATE] : {};
-  };
-  has = function (it) {
-    return hasOwn(it, STATE);
-  };
-}
-
-module.exports = {
-  set: set,
-  get: get,
-  has: has,
-  enforce: enforce,
-  getterFor: getterFor
 };
 
 
@@ -10129,6 +10050,85 @@ module.exports = !construct || fails(function () {
 
 /***/ }),
 
+/***/ 3562:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+"use strict";
+
+var NATIVE_WEAK_MAP = __webpack_require__(8622);
+var globalThis = __webpack_require__(4576);
+var isObject = __webpack_require__(34);
+var createNonEnumerableProperty = __webpack_require__(6699);
+var hasOwn = __webpack_require__(9297);
+var shared = __webpack_require__(7629);
+var sharedKey = __webpack_require__(6119);
+var hiddenKeys = __webpack_require__(421);
+
+var OBJECT_ALREADY_INITIALIZED = 'Object already initialized';
+var TypeError = globalThis.TypeError;
+var WeakMap = globalThis.WeakMap;
+var set, get, has;
+
+var enforce = function (it) {
+  return has(it) ? get(it) : set(it, {});
+};
+
+var getterFor = function (TYPE) {
+  return function (it) {
+    var state;
+    if (!isObject(it) || (state = get(it)).type !== TYPE) {
+      throw new TypeError('Incompatible receiver, ' + TYPE + ' required');
+    } return state;
+  };
+};
+
+if (NATIVE_WEAK_MAP || shared.state) {
+  var store = shared.state || (shared.state = new WeakMap());
+  /* eslint-disable no-self-assign -- prototype methods protection */
+  store.get = store.get;
+  store.has = store.has;
+  store.set = store.set;
+  /* eslint-enable no-self-assign -- prototype methods protection */
+  set = function (it, metadata) {
+    if (store.has(it)) throw new TypeError(OBJECT_ALREADY_INITIALIZED);
+    metadata.facade = it;
+    store.set(it, metadata);
+    return metadata;
+  };
+  get = function (it) {
+    return store.get(it) || {};
+  };
+  has = function (it) {
+    return store.has(it);
+  };
+} else {
+  var STATE = sharedKey('state');
+  hiddenKeys[STATE] = true;
+  set = function (it, metadata) {
+    if (hasOwn(it, STATE)) throw new TypeError(OBJECT_ALREADY_INITIALIZED);
+    metadata.facade = it;
+    createNonEnumerableProperty(it, STATE, metadata);
+    return metadata;
+  };
+  get = function (it) {
+    return hasOwn(it, STATE) ? it[STATE] : {};
+  };
+  has = function (it) {
+    return hasOwn(it, STATE);
+  };
+}
+
+module.exports = {
+  set: set,
+  get: get,
+  has: has,
+  enforce: enforce,
+  getterFor: getterFor
+};
+
+
+/***/ }),
+
 /***/ 3635:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
@@ -10206,7 +10206,7 @@ module.exports = !fails(function () {
 var toIndexedObject = __webpack_require__(5397);
 var addToUnscopables = __webpack_require__(6469);
 var Iterators = __webpack_require__(6269);
-var InternalStateModule = __webpack_require__(1181);
+var InternalStateModule = __webpack_require__(3562);
 var defineProperty = (__webpack_require__(4913).f);
 var defineIterator = __webpack_require__(1088);
 var createIterResultObject = __webpack_require__(2529);
@@ -10672,7 +10672,7 @@ module.exports = typeof documentAll == 'undefined' && documentAll !== undefined 
 
 var DESCRIPTORS = __webpack_require__(3724);
 var IE8_DOM_DEFINE = __webpack_require__(5917);
-var V8_PROTOTYPE_DEFINE_BUG = __webpack_require__(8686);
+var V8_PROTOTYPE_DEFINE_BUG = __webpack_require__(6305);
 var anObject = __webpack_require__(8551);
 var toPropertyKey = __webpack_require__(6969);
 
@@ -11169,6 +11169,27 @@ module.exports = {};
 
 /***/ }),
 
+/***/ 6305:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+"use strict";
+
+var DESCRIPTORS = __webpack_require__(3724);
+var fails = __webpack_require__(9039);
+
+// V8 ~ Chrome 36-
+// https://bugs.chromium.org/p/v8/issues/detail?id=3334
+module.exports = DESCRIPTORS && fails(function () {
+  // eslint-disable-next-line es/no-object-defineproperty -- required for testing
+  return Object.defineProperty(function () { /* empty */ }, 'prototype', {
+    value: 42,
+    writable: false
+  }).prototype !== 42;
+});
+
+
+/***/ }),
+
 /***/ 6395:
 /***/ ((module) => {
 
@@ -11390,7 +11411,7 @@ module.exports = function (object, key, method) {
 "use strict";
 
 var DESCRIPTORS = __webpack_require__(3724);
-var V8_PROTOTYPE_DEFINE_BUG = __webpack_require__(8686);
+var V8_PROTOTYPE_DEFINE_BUG = __webpack_require__(6305);
 var definePropertyModule = __webpack_require__(4913);
 var anObject = __webpack_require__(8551);
 var toIndexedObject = __webpack_require__(5397);
@@ -11593,7 +11614,7 @@ var regexpFlags = __webpack_require__(7979);
 var stickyHelpers = __webpack_require__(8429);
 var shared = __webpack_require__(5745);
 var create = __webpack_require__(2360);
-var getInternalState = (__webpack_require__(1181).get);
+var getInternalState = (__webpack_require__(3562).get);
 var UNSUPPORTED_DOT_ALL = __webpack_require__(3635);
 var UNSUPPORTED_NCG = __webpack_require__(8814);
 
@@ -12331,27 +12352,6 @@ var isCallable = __webpack_require__(4901);
 var WeakMap = globalThis.WeakMap;
 
 module.exports = isCallable(WeakMap) && /native code/.test(String(WeakMap));
-
-
-/***/ }),
-
-/***/ 8686:
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-"use strict";
-
-var DESCRIPTORS = __webpack_require__(3724);
-var fails = __webpack_require__(9039);
-
-// V8 ~ Chrome 36-
-// https://bugs.chromium.org/p/v8/issues/detail?id=3334
-module.exports = DESCRIPTORS && fails(function () {
-  // eslint-disable-next-line es/no-object-defineproperty -- required for testing
-  return Object.defineProperty(function () { /* empty */ }, 'prototype', {
-    value: 42,
-    writable: false
-  }).prototype !== 42;
-});
 
 
 /***/ }),

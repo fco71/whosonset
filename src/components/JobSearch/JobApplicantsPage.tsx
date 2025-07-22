@@ -1,291 +1,766 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { useAuth } from '../../contexts/AuthContext';
 import { JobApplication } from '../../types/JobApplication';
-import { CrewProfile } from '../../types/CrewProfile';
-import CrewProfileCard from '../CrewProfileCard';
 import { toast } from 'react-hot-toast';
-import Modal from '../ui/Modal'; // Assume you have a Modal component, or use a simple one
 import { Button } from '../ui/Button';
+import Card from '../ui/Card';
+import { 
+  Users, 
+  MessageSquare, 
+  CheckCircle, 
+  XCircle, 
+  Star, 
+  Heart, 
+  Eye, 
+  Calendar,
+  MapPin,
+  DollarSign,
+  Briefcase,
+  Clock,
+  Phone,
+  Mail,
+  ExternalLink,
+  Filter,
+  Search,
+  MoreHorizontal,
+  Send,
+  User,
+  Award,
+  TrendingUp
+} from 'lucide-react';
 
 interface ApplicantProfile {
-  id: string;
+  uid: string;
   name: string;
-  profileImageUrl?: string;
-  jobTitles?: string[];
-  location?: string;
-  // ...other fields as needed
+  username: string;
+  bio: string;
+  jobTitles: string[];
+  experience: string;
+  location: string;
+  skills: string[];
+  availability: string;
+  expectedSalary?: number;
+  portfolio?: string;
+  phone?: string;
+  email?: string;
 }
 
-const JobApplicantsPage: React.FC = () => {
-  const { jobId } = useParams<{ jobId: string }>();
+interface JobApplicantsPageProps {
+  jobId?: string;
+}
+
+const JobApplicantsPage: React.FC<JobApplicantsPageProps> = ({ jobId: propJobId }) => {
   const navigate = useNavigate();
+  const { jobId: urlJobId } = useParams<{ jobId: string }>();
+  const { currentUser } = useAuth();
+  
+  const [job, setJob] = useState<any>(null);
   const [applications, setApplications] = useState<JobApplication[]>([]);
-  const [applicantProfiles, setApplicantProfiles] = useState<CrewProfile[]>([]);
+  const [applicantProfiles, setApplicantProfiles] = useState<{[key: string]: ApplicantProfile}>({});
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedApplicant, setSelectedApplicant] = useState<CrewProfile | null>(null);
   const [selectedApplication, setSelectedApplication] = useState<JobApplication | null>(null);
-  const [showModal, setShowModal] = useState(false);
+  const [showApplicantModal, setShowApplicantModal] = useState(false);
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [newMessage, setNewMessage] = useState('');
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'date' | 'name' | 'status'>('date');
+
+  const actualJobId = propJobId || urlJobId;
 
   useEffect(() => {
-    const fetchApplicants = async () => {
-      setIsLoading(true);
-      try {
-        // Fetch job applications for this job
-        const appsQuery = query(
-          collection(db, 'jobApplications'),
-          where('jobId', '==', jobId)
-        );
-        const appsSnapshot = await getDocs(appsQuery);
-        const apps: JobApplication[] = appsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as JobApplication));
-        setApplications(apps);
+    if (actualJobId) {
+      loadJobAndApplications();
+    }
+  }, [actualJobId]);
 
-        // Fetch applicant profiles
-        const applicantIds = apps.map(app => app.applicantId);
-        if (applicantIds.length === 0) {
-          setApplicantProfiles([]);
-          setIsLoading(false);
-          return;
-        }
-        // Batch fetch profiles
-        const profilesSnapshot = await Promise.all(
-          applicantIds.map(async (uid) => {
-            const snap = await getDocs(query(collection(db, 'crewProfiles'), where('uid', '==', uid)));
-            if (snap.docs.length > 0) {
-              const data = snap.docs[0].data();
-              // Map to CrewProfile type, with fallbacks for required fields
-              return {
-                uid: data.uid || uid,
-                name: data.name || 'Unknown',
-                username: data.username || data.name?.toLowerCase().replace(/\s+/g, '') || 'unknown',
-                bio: data.bio || '',
-                profileImageUrl: data.profileImageUrl || '',
-                jobTitles: data.jobTitles || [],
-                residences: data.residences || [{ country: '', city: '' }],
-                projects: data.projects || [],
-                education: data.education || [],
-                contactInfo: data.contactInfo || {},
-                otherInfo: data.otherInfo || '',
-                isPublished: data.isPublished ?? true,
-                availability: data.availability || 'available',
-                languages: data.languages || [],
-              } as CrewProfile;
-            } else {
-              // Fallback for missing profile
-              return {
-                uid,
-                name: 'Unknown',
-                username: 'unknown',
-                bio: '',
-                profileImageUrl: '',
-                jobTitles: [],
-                residences: [{ country: '', city: '' }],
-                projects: [],
-                education: [],
-                contactInfo: {},
-                otherInfo: '',
-                isPublished: false,
-                availability: 'unavailable',
-                languages: [],
-              } as CrewProfile;
-            }
-          })
-        );
-        setApplicantProfiles(profilesSnapshot.filter(Boolean) as CrewProfile[]);
-      } catch (error) {
-        console.error('Error fetching applicants:', error);
-        toast.error('Failed to load applicants');
-      } finally {
-        setIsLoading(false);
+  const loadJobAndApplications = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Load job details
+      const jobDoc = await getDoc(doc(db, 'jobPostings', actualJobId!));
+      if (jobDoc.exists()) {
+        setJob({ id: jobDoc.id, ...jobDoc.data() });
       }
-    };
-    if (jobId) fetchApplicants();
-  }, [jobId]);
+
+      // Load applications
+      const applicationsQuery = query(
+        collection(db, 'jobApplications'),
+        where('jobId', '==', actualJobId)
+      );
+      const applicationsSnapshot = await getDocs(applicationsQuery);
+      const applicationsData = applicationsSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as JobApplication[];
+      
+      setApplications(applicationsData);
+
+      // Load applicant profiles
+      const applicantIds = applicationsData.map(app => app.applicantId);
+      const profilesMap: {[key: string]: ApplicantProfile} = {};
+      
+      for (const applicantId of applicantIds) {
+        try {
+          const profileQuery = query(collection(db, 'crewProfiles'), where('uid', '==', applicantId));
+          const profileSnapshot = await getDocs(profileQuery);
+          
+          if (!profileSnapshot.empty) {
+            const profileData = profileSnapshot.docs[0].data();
+            profilesMap[applicantId] = {
+              uid: profileData.uid || applicantId,
+              name: profileData.name || 'Unknown',
+              username: profileData.username || profileData.name?.toLowerCase().replace(/\s+/g, '') || 'unknown',
+              bio: profileData.bio || '',
+              jobTitles: profileData.jobTitles || [],
+              experience: profileData.experience || 'Not specified',
+              location: profileData.location || 'Not specified',
+              skills: profileData.skills || [],
+              availability: profileData.availability || 'Not specified',
+              expectedSalary: profileData.expectedSalary,
+              portfolio: profileData.portfolio,
+              phone: profileData.phone,
+              email: profileData.email
+            };
+          } else {
+            // Create a basic profile if none exists
+            profilesMap[applicantId] = {
+              uid: applicantId,
+              name: 'Unknown Applicant',
+              username: 'unknown',
+              bio: 'Profile not available',
+              jobTitles: [],
+              experience: 'Not specified',
+              location: 'Not specified',
+              skills: [],
+              availability: 'Not specified'
+            };
+          }
+        } catch (error) {
+          console.error('Error fetching profile for applicantId:', applicantId, error);
+          profilesMap[applicantId] = {
+            uid: applicantId,
+            name: 'Unknown Applicant',
+            username: 'unknown',
+            bio: 'Profile not available',
+            jobTitles: [],
+            experience: 'Not specified',
+            location: 'Not specified',
+            skills: [],
+            availability: 'Not specified'
+          };
+        }
+      }
+      
+      setApplicantProfiles(profilesMap);
+    } catch (error) {
+      console.error('Error loading job and applications:', error);
+      toast.error('Failed to load applications');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleStatusUpdate = async (applicationId: string, newStatus: "pending" | "reviewed" | "shortlisted" | "interviewed" | "hired" | "rejected" | "withdrawn") => {
+    try {
+      await updateDoc(doc(db, 'jobApplications', applicationId), {
+        status: newStatus,
+        lastUpdated: serverTimestamp()
+      });
+      
+      // Update local state
+      setApplications(prev => prev.map(app => 
+        app.id === applicationId ? { ...app, status: newStatus } : app
+      ));
+      
+      toast.success(`Application ${newStatus.replace('_', ' ')}`);
+    } catch (error) {
+      console.error('Error updating application status:', error);
+      toast.error('Failed to update status');
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !selectedApplication || !currentUser) return;
+
+    try {
+      setIsSendingMessage(true);
+      
+      const messageData = {
+        senderId: currentUser.uid,
+        senderName: currentUser.displayName || currentUser.email || 'Job Poster',
+        message: newMessage.trim(),
+        timestamp: serverTimestamp(),
+        applicationId: selectedApplication.id
+      };
+
+      await addDoc(collection(db, 'jobApplications', selectedApplication.id, 'messages'), messageData);
+      
+      setNewMessage('');
+      setShowMessageModal(false);
+      toast.success('Message sent successfully!');
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast.error('Failed to send message');
+    } finally {
+      setIsSendingMessage(false);
+    }
+  };
+
+  const handleFavorite = async (applicationId: string) => {
+    try {
+      // Add to favorites collection
+      await addDoc(collection(db, 'users', currentUser!.uid, 'favoriteApplicants'), {
+        applicationId,
+        addedAt: serverTimestamp()
+      });
+      toast.success('Applicant added to favorites');
+    } catch (error) {
+      console.error('Error adding to favorites:', error);
+      toast.error('Failed to add to favorites');
+    }
+  };
+
+  const handleShortlist = async (applicationId: string) => {
+    try {
+      await updateDoc(doc(db, 'jobApplications', applicationId), {
+        shortlisted: true,
+        shortlistedAt: serverTimestamp()
+      });
+      toast.success('Applicant shortlisted');
+    } catch (error) {
+      console.error('Error shortlisting applicant:', error);
+      toast.error('Failed to shortlist');
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'reviewed': return 'bg-blue-100 text-blue-800';
+      case 'shortlisted': return 'bg-purple-100 text-purple-800';
+      case 'interviewed': return 'bg-indigo-100 text-indigo-800';
+      case 'hired': return 'bg-green-100 text-green-800';
+      case 'rejected': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'pending': return <Clock className="w-4 h-4" />;
+      case 'reviewed': return <Eye className="w-4 h-4" />;
+      case 'shortlisted': return <Star className="w-4 h-4" />;
+      case 'interviewed': return <Calendar className="w-4 h-4" />;
+      case 'hired': return <CheckCircle className="w-4 h-4" />;
+      case 'rejected': return <XCircle className="w-4 h-4" />;
+      default: return <Clock className="w-4 h-4" />;
+    }
+  };
+
+  const formatDate = (date: any) => {
+    if (!date) return 'N/A';
+    const dateObj = date.toDate ? date.toDate() : new Date(date);
+    return dateObj.toLocaleDateString();
+  };
+
+  const formatSalary = (salary: number | undefined) => {
+    if (!salary) return 'Not specified';
+    return `$${salary.toLocaleString()}`;
+  };
+
+  const filteredAndSortedApplications = applications
+    .filter(app => {
+      const matchesStatus = filterStatus === 'all' || app.status === filterStatus;
+      const matchesSearch = searchQuery === '' || 
+        applicantProfiles[app.applicantId]?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        applicantProfiles[app.applicantId]?.jobTitles.some(title => 
+          title.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+      return matchesStatus && matchesSearch;
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case 'name':
+          return applicantProfiles[a.applicantId]?.name.localeCompare(applicantProfiles[b.applicantId]?.name || '');
+        case 'status':
+          return a.status.localeCompare(b.status);
+        case 'date':
+        default:
+          return (b.appliedAt?.toDate?.() || new Date(b.appliedAt)).getTime() - 
+                 (a.appliedAt?.toDate?.() || new Date(a.appliedAt)).getTime();
+      }
+    });
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
+          <p className="text-lg font-light text-gray-600">Loading applicants...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!job) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-6xl mb-4 opacity-20">❌</div>
+          <h2 className="text-2xl font-light text-gray-900 mb-2">Job Not Found</h2>
+          <p className="text-gray-600 mb-4">The job you're looking for doesn't exist.</p>
+          <Button onClick={() => navigate('/jobs')}>
+            Back to Jobs
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 md:px-8">
-      <div className="max-w-5xl mx-auto">
-        <div className="mb-8 flex items-center justify-between">
-          <h1 className="text-3xl font-light text-gray-900">Applicants</h1>
-          <Link to="/jobs/posted" className="text-blue-600 hover:underline text-sm">← Back to Dashboard</Link>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <button
+            onClick={() => navigate(`/jobs/${actualJobId}`)}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 transition-colors"
+          >
+            ← Back to Job
+          </button>
+          
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-light text-gray-900 mb-2">
+                Applicants for {job.title}
+              </h1>
+              <p className="text-gray-600">
+                {applications.length} application{applications.length !== 1 ? 's' : ''} • {job.department} • {job.location}
+              </p>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <Button variant="outline" onClick={() => navigate(`/jobs/${actualJobId}`)}>
+                <Eye className="w-4 h-4 mr-2" />
+                View Job
+              </Button>
+            </div>
+          </div>
         </div>
-        {isLoading ? (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
-            <p className="text-lg font-light text-gray-600">Loading applicants...</p>
-          </div>
-        ) : applicantProfiles.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="text-6xl mb-4 opacity-20">👤</div>
-            <h3 className="text-xl font-light text-gray-900 mb-2">No applicants yet</h3>
-            <p className="text-gray-600">Applicants for this job will appear here.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            {applicantProfiles.map((profile, idx) => (
-              <div
-                key={profile.uid}
-                className="cursor-pointer"
-                onClick={() => {
-                  setSelectedApplicant(profile);
-                  setSelectedApplication(applications[idx]);
-                  setShowModal(true);
-                }}
-              >
-                <CrewProfileCard profile={profile} />
+
+        {/* Filters and Search */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Search applicants by name or skills..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                />
               </div>
-            ))}
+            </div>
+            
+            <div className="flex gap-3">
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              >
+                <option value="all">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="reviewed">Reviewed</option>
+                <option value="shortlisted">Shortlisted</option>
+                <option value="interviewed">Interviewed</option>
+                <option value="hired">Hired</option>
+                <option value="rejected">Rejected</option>
+              </select>
+              
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              >
+                <option value="date">Sort by Date</option>
+                <option value="name">Sort by Name</option>
+                <option value="status">Sort by Status</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Applicants Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredAndSortedApplications.map((application) => {
+            const profile = applicantProfiles[application.applicantId];
+            
+            return (
+              <Card key={application.id} className="p-6 hover:shadow-lg transition-shadow">
+                {/* Applicant Header */}
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                      <User className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">{profile?.name}</h3>
+                      <p className="text-sm text-gray-600">@{profile?.username}</p>
+                    </div>
+                  </div>
+                  
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(application.status)}`}>
+                    {getStatusIcon(application.status)}
+                    {application.status.replace('_', ' ')}
+                  </span>
+                </div>
+
+                {/* Applicant Info */}
+                <div className="space-y-3 mb-4">
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Briefcase className="w-4 h-4" />
+                    <span>{profile?.jobTitles?.slice(0, 2).join(', ') || 'No titles specified'}</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <MapPin className="w-4 h-4" />
+                    <span>{profile?.location || 'Location not specified'}</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <DollarSign className="w-4 h-4" />
+                    <span>Expected: {formatSalary(application.expectedSalary)}</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Clock className="w-4 h-4" />
+                    <span>Applied {formatDate(application.appliedAt)}</span>
+                  </div>
+                </div>
+
+                {/* Skills */}
+                {profile?.skills && profile.skills.length > 0 && (
+                  <div className="mb-4">
+                    <p className="text-xs font-medium text-gray-700 mb-2">Skills</p>
+                    <div className="flex flex-wrap gap-1">
+                      {profile.skills.slice(0, 3).map((skill, index) => (
+                        <span key={index} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
+                          {skill}
+                        </span>
+                      ))}
+                      {profile.skills.length > 3 && (
+                        <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
+                          +{profile.skills.length - 3} more
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setSelectedApplication(application);
+                      setShowApplicantModal(true);
+                    }}
+                  >
+                    <Eye className="w-4 h-4 mr-1" />
+                    View Details
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedApplication(application);
+                      setShowMessageModal(true);
+                    }}
+                  >
+                    <MessageSquare className="w-4 h-4 mr-1" />
+                    Message
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleFavorite(application.id)}
+                  >
+                    <Heart className="w-4 h-4 mr-1" />
+                    Favorite
+                  </Button>
+                </div>
+
+                {/* Quick Actions */}
+                <div className="mt-3 pt-3 border-t border-gray-100">
+                  <div className="flex gap-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleStatusUpdate(application.id, 'shortlisted')}
+                      className="flex-1 text-xs"
+                    >
+                      <Star className="w-3 h-3 mr-1" />
+                      Shortlist
+                    </Button>
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleStatusUpdate(application.id, 'interviewed')}
+                      className="flex-1 text-xs"
+                    >
+                      <Calendar className="w-3 h-3 mr-1" />
+                      Interview
+                    </Button>
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleStatusUpdate(application.id, 'hired')}
+                      className="flex-1 text-xs"
+                    >
+                      <CheckCircle className="w-3 h-3 mr-1" />
+                      Hire
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+
+        {filteredAndSortedApplications.length === 0 && (
+          <div className="text-center py-12">
+            <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No applicants found</h3>
+            <p className="text-gray-600">
+              {applications.length === 0 
+                ? "No one has applied to this job yet." 
+                : "No applicants match your current filters."
+              }
+            </p>
           </div>
         )}
       </div>
 
-      {/* Modal for applicant details */}
-      {showModal && selectedApplicant && selectedApplication && (
-        <Modal onClose={() => setShowModal(false)}>
-          <div className="p-8 max-w-2xl mx-auto bg-white rounded-xl">
-            {/* Header */}
-            <div className="flex items-start justify-between mb-6">
-              <div>
-                <h2 className="text-2xl font-light text-gray-900 mb-1">{selectedApplicant.name}</h2>
-                <p className="text-gray-500 text-sm">@{selectedApplicant.username}</p>
-              </div>
-              <div className="text-right">
-                <div className="text-sm text-gray-500">Applied</div>
-                <div className="text-sm font-medium text-gray-900">
-                  {selectedApplication.appliedAt?.toDate ? 
-                    selectedApplication.appliedAt.toDate().toLocaleDateString() : 
-                    'Recently'
-                  }
-                </div>
-              </div>
-            </div>
-
-            {/* Profile Info */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <div>
-                <h3 className="text-sm font-medium text-gray-700 mb-2">Professional Info</h3>
-                <div className="space-y-2">
-                  <div>
-                    <span className="text-sm text-gray-500">Job Titles:</span>
-                                         <div className="flex flex-wrap gap-1 mt-1">
-                       {selectedApplicant.jobTitles?.map((title, idx) => (
-                         <span key={idx} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                           {typeof title === 'string' ? title : title.title || 'Unknown'}
-                         </span>
-                       ))}
-                     </div>
-                  </div>
-                  <div>
-                    <span className="text-sm text-gray-500">Location:</span>
-                    <p className="text-sm text-gray-900">
-                      {selectedApplicant.residences?.map(r => `${r.city}, ${r.country}`).join(' / ') || 'Not specified'}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-sm text-gray-500">Availability:</span>
-                    <p className="text-sm text-gray-900 capitalize">
-                      {selectedApplicant.availability || 'Not specified'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <h3 className="text-sm font-medium text-gray-700 mb-2">Application Details</h3>
-                <div className="space-y-2">
-                  <div>
-                    <span className="text-sm text-gray-500">Status:</span>
-                    <span className={`ml-2 px-2 py-1 text-xs rounded-full ${
-                      selectedApplication.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                      selectedApplication.status === 'reviewed' ? 'bg-blue-100 text-blue-800' :
-                      selectedApplication.status === 'shortlisted' ? 'bg-green-100 text-green-800' :
-                      selectedApplication.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {selectedApplication.status.replace('_', ' ')}
-                    </span>
-                  </div>
-                  {selectedApplication.expectedSalary && (
-                    <div>
-                      <span className="text-sm text-gray-500">Expected Salary:</span>
-                      <p className="text-sm text-gray-900">${selectedApplication.expectedSalary.toLocaleString()}/year</p>
-                    </div>
-                  )}
-                  {selectedApplication.availabilityDate && (
-                    <div>
-                      <span className="text-sm text-gray-500">Available From:</span>
-                      <p className="text-sm text-gray-900">{selectedApplication.availabilityDate}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Bio */}
-            {selectedApplicant.bio && (
-              <div className="mb-6">
-                <h3 className="text-sm font-medium text-gray-700 mb-2">About</h3>
-                <p className="text-sm text-gray-900 leading-relaxed">{selectedApplicant.bio}</p>
-              </div>
-            )}
-
-            {/* Cover Letter */}
-            {selectedApplication.coverLetter && (
-              <div className="mb-6">
-                <h3 className="text-sm font-medium text-gray-700 mb-2">Cover Letter</h3>
-                <div className="bg-gray-50 rounded-lg p-4 max-h-48 overflow-y-auto">
-                  <p className="text-sm text-gray-900 whitespace-pre-line leading-relaxed">
-                    {selectedApplication.coverLetter}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Resume */}
-            {selectedApplication.resumeId && (
-              <div className="mb-6">
-                <h3 className="text-sm font-medium text-gray-700 mb-2">Resume</h3>
-                <a 
-                  href={`/resumes/${selectedApplication.resumeId}`} 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+      {/* Applicant Details Modal */}
+      {showApplicantModal && selectedApplication && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-semibold text-gray-900">
+                  {applicantProfiles[selectedApplication.applicantId]?.name}
+                </h2>
+                <button
+                  onClick={() => setShowApplicantModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
                 >
-                  📄 View Resume
-                </a>
+                  <XCircle className="w-6 h-6" />
+                </button>
               </div>
-            )}
 
-            {/* Actions */}
-            <div className="flex gap-3 pt-6 border-t border-gray-100">
-              <Button 
-                variant="success" 
-                onClick={() => {/* Accept logic */}}
-                className="flex-1"
-              >
-                ✅ Accept Application
-              </Button>
-              <Button 
-                variant="danger" 
-                onClick={() => {/* Reject logic */}}
-                className="flex-1"
-              >
-                ❌ Reject Application
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  setShowModal(false);
-                  navigate(`/applications/${selectedApplication.id}`);
-                }}
-                className="flex-1"
-              >
-                💬 Message Applicant
-              </Button>
+              <div className="space-y-6">
+                {/* Profile Info */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <h3 className="font-medium text-gray-900 mb-2">Contact Information</h3>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center gap-2">
+                        <Mail className="w-4 h-4 text-gray-400" />
+                        <span>{applicantProfiles[selectedApplication.applicantId]?.email || 'Not provided'}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Phone className="w-4 h-4 text-gray-400" />
+                        <span>{applicantProfiles[selectedApplication.applicantId]?.phone || 'Not provided'}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-gray-400" />
+                        <span>{applicantProfiles[selectedApplication.applicantId]?.location || 'Not specified'}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="font-medium text-gray-900 mb-2">Professional Info</h3>
+                    <div className="space-y-2 text-sm">
+                      <div>
+                        <span className="text-gray-600">Experience:</span>
+                        <span className="ml-2">{applicantProfiles[selectedApplication.applicantId]?.experience}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Expected Salary:</span>
+                        <span className="ml-2">{formatSalary(selectedApplication.expectedSalary)}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Availability:</span>
+                        <span className="ml-2">{applicantProfiles[selectedApplication.applicantId]?.availability}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bio */}
+                {applicantProfiles[selectedApplication.applicantId]?.bio && (
+                  <div>
+                    <h3 className="font-medium text-gray-900 mb-2">Bio</h3>
+                    <p className="text-sm text-gray-600">
+                      {applicantProfiles[selectedApplication.applicantId]?.bio}
+                    </p>
+                  </div>
+                )}
+
+                {/* Skills */}
+                {applicantProfiles[selectedApplication.applicantId]?.skills && 
+                 applicantProfiles[selectedApplication.applicantId]?.skills.length > 0 && (
+                  <div>
+                    <h3 className="font-medium text-gray-900 mb-2">Skills</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {applicantProfiles[selectedApplication.applicantId]?.skills.map((skill, index) => (
+                        <span key={index} className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Portfolio */}
+                {applicantProfiles[selectedApplication.applicantId]?.portfolio && (
+                  <div>
+                    <h3 className="font-medium text-gray-900 mb-2">Portfolio</h3>
+                    <a
+                      href={applicantProfiles[selectedApplication.applicantId]?.portfolio}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      View Portfolio
+                    </a>
+                  </div>
+                )}
+
+                {/* Application Details */}
+                <div>
+                  <h3 className="font-medium text-gray-900 mb-2">Application Details</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-600">Applied:</span>
+                      <span className="ml-2">{formatDate(selectedApplication.appliedAt)}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Status:</span>
+                      <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedApplication.status)}`}>
+                        {selectedApplication.status.replace('_', ' ')}
+                      </span>
+                    </div>
+                    {selectedApplication.availabilityDate && (
+                      <div>
+                        <span className="text-gray-600">Available from:</span>
+                        <span className="ml-2">{selectedApplication.availabilityDate}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-3 pt-4 border-t border-gray-200">
+                  <Button
+                    onClick={() => {
+                      setShowApplicantModal(false);
+                      setShowMessageModal(true);
+                    }}
+                    className="flex-1"
+                  >
+                    <MessageSquare className="w-4 h-4 mr-2" />
+                    Send Message
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    onClick={() => handleShortlist(selectedApplication.id)}
+                  >
+                    <Star className="w-4 h-4 mr-2" />
+                    Shortlist
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    onClick={() => handleFavorite(selectedApplication.id)}
+                  >
+                    <Heart className="w-4 h-4 mr-2" />
+                    Favorite
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
-        </Modal>
+        </div>
+      )}
+
+      {/* Message Modal */}
+      {showMessageModal && selectedApplication && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Message {applicantProfiles[selectedApplication.applicantId]?.name}
+                </h2>
+                <button
+                  onClick={() => setShowMessageModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <XCircle className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Message
+                  </label>
+                  <textarea
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    placeholder="Type your message..."
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  />
+                </div>
+
+                <div className="flex gap-3">
+                  <Button
+                    onClick={handleSendMessage}
+                    disabled={isSendingMessage || !newMessage.trim()}
+                    className="flex-1"
+                  >
+                    <Send className="w-4 h-4 mr-2" />
+                    Send Message
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowMessageModal(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
