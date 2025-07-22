@@ -1815,8 +1815,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 <p className="text-gray-500 text-sm">Choose a contact to start messaging</p>
               </div>
             )}
-          </div>
-        </div>
+          </>
+        )}
 
         {activeTab === 'jobApplications' && (
           <>
@@ -1845,6 +1845,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           </>
         )}
       </div>
+    </div>
 
       {/* User Profile Modal */}
       {showUserProfile && profileUser && (
