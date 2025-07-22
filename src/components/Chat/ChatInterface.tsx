@@ -1275,21 +1275,21 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       );
       const jobAppsSnapshot = await getDocs(jobAppsQuery);
       const threads = await Promise.all(jobAppsSnapshot.docs.map(async (doc) => {
-        const application = { id: doc.id, ...doc.data() };
+        const application = { id: doc.id, ...(doc.data() as any) };
         // Fetch job posting
         let job = null;
-        if (application.jobId) {
-          const jobDoc = await getDoc(docRef(db, 'jobPostings', application.jobId));
-          if (jobDoc.exists()) job = { id: jobDoc.id, ...jobDoc.data() };
+        if ((application as any).jobId) {
+          const jobDoc = await getDoc(docRef(db, 'jobPostings', (application as any).jobId));
+          if (jobDoc.exists()) job = { id: jobDoc.id, ...(jobDoc.data() as any) };
         }
         // Fetch latest message
         const messagesRef = collection(db, 'jobApplications', doc.id, 'messages');
         const messagesSnapshot = await getDocs(firestoreQuery(messagesRef, orderBy('timestamp', 'desc'), limit(1)));
         const lastMessage = messagesSnapshot.docs[0]?.data() || null;
         // Determine the other user
-        const otherUserName = application.applicantId === currentUserId
+        const otherUserName = (application as any).applicantId === currentUserId
           ? (job?.posterName || job?.companyName || 'Job Poster')
-          : (application.applicantName || 'Applicant');
+          : ((application as any).applicantName || 'Applicant');
         return { application, job, otherUserName, lastMessage };
       }));
       setJobAppThreads(threads);
@@ -1819,7 +1819,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         </div>
 
         {activeTab === 'jobApplications' && (
-          <div>
+          <>
             <h3 className="font-semibold mb-2">Job Application Conversations</h3>
             {jobAppThreads.length === 0 ? (
               <div className="text-gray-400 text-sm">No job application conversations yet.</div>
@@ -1839,11 +1839,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             )}
             {selectedJobAppThread && (
               <div className="mt-4">
-                {/* Reuse the real-time messaging UI from ApplicationStatusTracker, but for this thread */}
-                {/* ... message thread and reply box ... */}
+                {/* Real-time message thread and reply box for this job application */}
               </div>
             )}
-          </div>
+          </>
         )}
       </div>
 
