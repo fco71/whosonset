@@ -64,6 +64,12 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
         { to: '/edit-profile', label: 'Resume Builder' },
     ];
 
+    const jobManagementLinks = [
+        { to: '/jobs/posted', label: 'My Posted Jobs' },
+        { to: '/jobs/analytics', label: 'Job Analytics' },
+        { to: '/post-job', label: 'Post New Job' },
+    ];
+
     return (
         <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
             isScrolled 
@@ -90,23 +96,84 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
 
                     {/* Desktop Navigation */}
                     <div className="hidden md:flex items-center space-x-1">
-                        {navigationLinks.map((link) => (
-                            <Link 
-                                key={link.to}
-                                to={link.to} 
-                                className={`relative px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
-                                    isActive(link.to)
-                                        ? 'text-blue-600 bg-blue-50/80 shadow-sm'
-                                        : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50/80'
-                                }`}
-                                onClick={closeAllMenus}
-                            >
-                                {link.label}
-                                {isActive(link.to) && (
-                                    <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-blue-600 rounded-full"></div>
-                                )}
-                            </Link>
-                        ))}
+                        {navigationLinks.map((link) => {
+                            // Special handling for Jobs dropdown
+                            if (link.to === '/jobs') {
+                                return (
+                                    <div key={link.to} className="relative group">
+                                        <button 
+                                            className={`relative px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
+                                                isActive('/jobs') || isActive('/jobs/posted') || isActive('/jobs/analytics') || isActive('/post-job')
+                                                    ? 'text-blue-600 bg-blue-50/80 shadow-sm'
+                                                    : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50/80'
+                                            }`}
+                                        >
+                                            Jobs
+                                            <svg className="w-4 h-4 ml-1 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        </button>
+                                        
+                                        {/* Dropdown Menu */}
+                                        <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                                            <div className="py-2">
+                                                <Link 
+                                                    to="/jobs" 
+                                                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                                                    onClick={closeAllMenus}
+                                                >
+                                                    Browse Jobs
+                                                </Link>
+                                                {authUser && (
+                                                    <>
+                                                        <Link 
+                                                            to="/jobs/posted" 
+                                                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                                                            onClick={closeAllMenus}
+                                                        >
+                                                            My Posted Jobs
+                                                        </Link>
+                                                        <Link 
+                                                            to="/jobs/analytics" 
+                                                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                                                            onClick={closeAllMenus}
+                                                        >
+                                                            Job Analytics
+                                                        </Link>
+                                                        <Link 
+                                                            to="/post-job" 
+                                                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                                                            onClick={closeAllMenus}
+                                                        >
+                                                            Post New Job
+                                                        </Link>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            }
+                            
+                            // Regular link handling
+                            return (
+                                <Link 
+                                    key={link.to}
+                                    to={link.to} 
+                                    className={`relative px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
+                                        isActive(link.to)
+                                            ? 'text-blue-600 bg-blue-50/80 shadow-sm'
+                                            : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50/80'
+                                    }`}
+                                    onClick={closeAllMenus}
+                                >
+                                    {link.label}
+                                    {isActive(link.to) && (
+                                        <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-blue-600 rounded-full"></div>
+                                    )}
+                                </Link>
+                            );
+                        })}
                         {authUser && authenticatedLinks.map((link) => (
                             <Link 
                                 key={link.to}

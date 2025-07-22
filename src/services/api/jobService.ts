@@ -74,6 +74,7 @@ export interface FirestoreJobPosting extends JobPostingBase {
   createdBy: string; // Added for tracking who created the job
   applicationCount: number;
   views: number;
+  postedAt: Timestamp | FieldValue; // Added for querying posted jobs
 }
 
 // Extend the base interface for the app (with Date instead of Timestamp)
@@ -107,6 +108,7 @@ export const createJobPosting = async (
       views: 0,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
+      postedAt: serverTimestamp(), // Add this field for proper querying
     };
 
     const docRef = await addDoc(collection(db, 'jobPostings'), jobPosting);

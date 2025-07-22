@@ -27,12 +27,16 @@ export class SavedJobsService {
   // Save a job for a user
   static async saveJob(userId: string, jobId: string, notes?: string): Promise<string> {
     try {
-      const savedJobData = {
+      const savedJobData: any = {
         userId,
         jobId,
-        notes,
         savedAt: serverTimestamp()
       };
+
+      // Only include notes if it's not undefined
+      if (notes !== undefined) {
+        savedJobData.notes = notes;
+      }
 
       const docRef = await addDoc(collection(db, 'savedJobs'), savedJobData);
       console.log('[SavedJobsService] Job saved successfully:', docRef.id);

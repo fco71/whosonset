@@ -2,7 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc, updateDoc, collection, addDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase';
-import { JobApplication, JobPosting, ApplicationMessage } from '../../types/JobApplication';
+import { useAuth } from '../../contexts/AuthContext';
+import { JobApplication } from '../../types/JobApplication';
+import { toast } from 'react-hot-toast';
+import { Button } from '../ui/Button';
+import Card, { CardHeader, CardBody, CardTitle } from '../ui/Card';
+import { MessageSquare, Send, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 
 interface ApplicationStatusTrackerProps {
   applicationId: string;
@@ -10,9 +15,11 @@ interface ApplicationStatusTrackerProps {
 
 const ApplicationStatusTracker: React.FC<ApplicationStatusTrackerProps> = ({ applicationId }) => {
   const navigate = useNavigate();
+  const { applicationId: urlApplicationId } = useParams<{ applicationId: string }>();
+  const { currentUser } = useAuth();
   const [application, setApplication] = useState<JobApplication | null>(null);
-  const [job, setJob] = useState<JobPosting | null>(null);
-  const [messages, setMessages] = useState<ApplicationMessage[]>([]);
+  const [job, setJob] = useState<any | null>(null); // Changed to any for now as JobPosting type is removed
+  const [messages, setMessages] = useState<any[]>([]); // Changed to any for now
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSendingMessage, setIsSendingMessage] = useState(false);
@@ -43,7 +50,7 @@ const ApplicationStatusTracker: React.FC<ApplicationStatusTrackerProps> = ({ app
           setJob({
             id: jobDoc.id,
             ...jobDoc.data()
-          } as JobPosting);
+          } as any); // Changed to any for now
         }
       }
     } catch (error) {
@@ -59,7 +66,7 @@ const ApplicationStatusTracker: React.FC<ApplicationStatusTrackerProps> = ({ app
       const messagesData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
-      })) as ApplicationMessage[];
+      })) as any[]; // Changed to any for now
       setMessages(messagesData.sort((a, b) => 
         (a.timestamp?.toDate?.() || new Date(a.timestamp)).getTime() - 
         (b.timestamp?.toDate?.() || new Date(b.timestamp)).getTime()
@@ -70,24 +77,27 @@ const ApplicationStatusTracker: React.FC<ApplicationStatusTrackerProps> = ({ app
   };
 
   const sendMessage = async () => {
-    if (!newMessage.trim() || !application) return;
+    if (!newMessage.trim() || !application || !currentUser) return;
 
     try {
       setIsSendingMessage(true);
       
       const messageData = {
-        senderId: 'current-user-id', // TODO: Get from auth context
-        senderName: 'You', // TODO: Get from user profile
-        content: newMessage.trim(),
+        senderId: currentUser.uid,
+        senderName: currentUser.displayName || currentUser.email || 'Unknown User',
+        message: newMessage.trim(),
         timestamp: serverTimestamp(),
-        isRead: false,
-        messageType: 'general' as const
+        applicationId: applicationId
       };
 
+      // Add message to the messages subcollection
       await addDoc(collection(db, 'jobApplications', applicationId, 'messages'), messageData);
+      
       setNewMessage('');
+      toast.success('Message sent successfully!');
     } catch (error) {
       console.error('Error sending message:', error);
+      toast.error('Failed to send message. Please try again.');
     } finally {
       setIsSendingMessage(false);
     }
