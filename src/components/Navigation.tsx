@@ -1,6 +1,6 @@
 // src/components/Navigation.tsx
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, User, ChevronDown, Search, Bell, Settings } from 'lucide-react';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from './ui/DropdownMenu';
 import { useNotifications } from '../hooks/useNotifications';
@@ -12,6 +12,7 @@ interface NavigationProps {
 
 const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
     const location = useLocation();
+    const navigate = useNavigate();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
     const [activePath, setActivePath] = useState('/');
@@ -218,12 +219,24 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                                     ) : notifications.map((notif) => (
                                         <DropdownMenuItem
                                             key={notif.id}
-                                            className={`flex flex-col items-start gap-1 px-4 py-3 border-b border-gray-50 last:border-b-0 bg-white hover:bg-blue-50 rounded-lg transition-all ${!notif.read ? 'shadow-md border-blue-100' : ''}`}
-                                            onSelect={() => markAsRead(notif.id)}
+                                            className={`flex flex-col items-start gap-1 px-4 py-3 border-b border-gray-50 last:border-b-0 bg-white hover:bg-blue-50 rounded-lg transition-all cursor-pointer ${!notif.read ? 'shadow-md border-blue-100' : ''}`}
+                                            onSelect={() => {
+                                                markAsRead(notif.id);
+                                                // Navigate based on notification type
+                                                if (notif.type === 'job_application' && notif.extra?.jobId) {
+                                                    navigate(`/jobs/${notif.extra.jobId}/applications`);
+                                                } else if (notif.relatedId) {
+                                                    navigate(`/applications/${notif.relatedId}`);
+                                                }
+                                            }}
                                         >
                                             <div className="font-medium text-gray-900 text-sm">{notif.message}</div>
                                             <div className="text-xs text-gray-400">{notif.type.replace(/_/g, ' ')}</div>
-                                            {/* Optionally, show timestamp here */}
+                                            {notif.timestamp && (
+                                                <div className="text-xs text-gray-400">
+                                                    {new Date(notif.timestamp.seconds * 1000).toLocaleDateString()}
+                                                </div>
+                                            )}
                                         </DropdownMenuItem>
                                     ))}
                                 </div>
@@ -239,9 +252,6 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                                 <div className="hidden md:flex items-center space-x-2">
                                     <button className="p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100/80 transition-colors">
                                         <Search size={18} />
-                                    </button>
-                                    <button className="p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100/80 transition-colors">
-                                        <Bell size={18} />
                                     </button>
                                 </div>
                                 

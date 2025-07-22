@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, where, orderBy, getDocs, limit } from 'firebase/firestore';
+import { collection, query, where, orderBy, getDocs, limit, getDoc, doc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { JobApplication, JobPosting } from '../../types/JobApplication';
 import { Link } from 'react-router-dom';
@@ -20,6 +20,7 @@ interface ApplicationStats {
 const JobApplicationDashboard: React.FC = () => {
   const { currentUser } = useAuth();
   const [applications, setApplications] = useState<JobApplication[]>([]);
+  const [jobDetails, setJobDetails] = useState<{[key: string]: any}>({});
   const [stats, setStats] = useState<ApplicationStats>({
     total: 0,
     pending: 0,
@@ -47,6 +48,26 @@ const JobApplicationDashboard: React.FC = () => {
     try {
       const userApplications = await JobApplicationService.getUserApplications(currentUser.uid);
       setApplications(userApplications);
+      
+      // Fetch job details for each application
+      const jobDetailsMap: {[key: string]: any} = {};
+      for (const application of userApplications) {
+        if (application.jobId) {
+          try {
+            const jobDoc = await getDoc(doc(db, 'jobPostings', application.jobId));
+            if (jobDoc.exists()) {
+              jobDetailsMap[application.jobId] = {
+                id: jobDoc.id,
+                ...jobDoc.data()
+              };
+            }
+          } catch (error) {
+            console.error('Error fetching job details for jobId:', application.jobId, error);
+          }
+        }
+      }
+      setJobDetails(jobDetailsMap);
+      
       console.log('Loaded applications:', userApplications.length);
     } catch (error) {
       console.error('Error loading applications:', error);
@@ -207,7 +228,7 @@ const JobApplicationDashboard: React.FC = () => {
                       to={`/applications/${application.id}`}
                       className="text-lg font-medium text-gray-900 hover:text-blue-600 transition-colors"
                     >
-                      Job #{application.jobId.slice(-6)}
+                      {jobDetails[application.jobId]?.title || `Job #${application.jobId.slice(-6)}`}
                     </Link>
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(application.status)}`}>
                       {getStatusIcon(application.status)} {application.status.replace('_', ' ')}

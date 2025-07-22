@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { JobPosting, JobApplication } from '../../types/JobApplication';
 import { JobApplicationService } from '../../utilities/jobApplicationService';
@@ -12,6 +12,7 @@ const JobApplicationsPage: React.FC = () => {
   const { currentUser } = useAuth();
   const [job, setJob] = useState<JobPosting | null>(null);
   const [applications, setApplications] = useState<JobApplication[]>([]);
+  const [applicantProfiles, setApplicantProfiles] = useState<{[key: string]: any}>({});
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'reviewed' | 'shortlisted' | 'hired' | 'rejected'>('all');
 
@@ -48,6 +49,46 @@ const JobApplicationsPage: React.FC = () => {
       // Load applications
       const jobApplications = await JobApplicationService.getJobApplications(jobId);
       setApplications(jobApplications);
+      
+      // Fetch applicant profiles
+      const applicantIds = jobApplications.map(app => app.applicantId);
+      const profilesMap: {[key: string]: any} = {};
+      
+      for (const applicantId of applicantIds) {
+        try {
+          const profileQuery = query(collection(db, 'crewProfiles'), where('uid', '==', applicantId));
+          const profileSnapshot = await getDocs(profileQuery);
+          if (!profileSnapshot.empty) {
+            const profileData = profileSnapshot.docs[0].data();
+            profilesMap[applicantId] = {
+              uid: profileData.uid || applicantId,
+              name: profileData.name || 'Unknown',
+              username: profileData.username || profileData.name?.toLowerCase().replace(/\s+/g, '') || 'unknown',
+              bio: profileData.bio || '',
+              jobTitles: profileData.jobTitles || [],
+            };
+          } else {
+            // Fallback for missing profile
+            profilesMap[applicantId] = {
+              uid: applicantId,
+              name: 'Unknown',
+              username: 'unknown',
+              bio: '',
+              jobTitles: [],
+            };
+          }
+        } catch (error) {
+          console.error('Error fetching profile for applicantId:', applicantId, error);
+          profilesMap[applicantId] = {
+            uid: applicantId,
+            name: 'Unknown',
+            username: 'unknown',
+            bio: '',
+            jobTitles: [],
+          };
+        }
+      }
+      setApplicantProfiles(profilesMap);
       
     } catch (error) {
       console.error('Error loading job and applications:', error);
@@ -238,9 +279,18 @@ const JobApplicationsPage: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <span className="text-lg font-medium text-gray-900">
-                          Applicant #{application.applicantId.slice(0, 8)}...
-                        </span>
+                        <div>
+                          <span className="text-lg font-medium text-gray-900">
+                            {applicantProfiles[application.applicantId]?.name || `Applicant #${application.applicantId.slice(0, 8)}...`}
+                          </span>
+                          {applicantProfiles[application.applicantId]?.jobTitles?.length > 0 && (
+                            <p className="text-sm text-gray-500">
+                              {applicantProfiles[application.applicantId].jobTitles.map((title: any) => 
+                                typeof title === 'string' ? title : title.title || 'Unknown'
+                              ).join(', ')}
+                            </p>
+                          )}
+                        </div>
                         <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(application.status)}`}>
                           {getStatusIcon(application.status)} {application.status.replace('_', ' ')}
                         </span>
@@ -283,6 +333,13 @@ const JobApplicationsPage: React.FC = () => {
                           className="px-4 py-2 text-sm bg-blue-600 text-white font-light rounded-lg hover:bg-blue-700 transition-colors"
                         >
                           Update Status
+                        </Link>
+                        <Link
+                          to={`/jobs/${jobId}/applications`}
+                          state={{ selectedApplication: application.id }}
+                          className="px-4 py-2 text-sm bg-green-600 text-white font-light rounded-lg hover:bg-green-700 transition-colors"
+                        >
+                          Message
                         </Link>
                       </div>
                     </div>
