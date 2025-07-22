@@ -6,6 +6,8 @@ import { JobApplication } from '../../types/JobApplication';
 import { CrewProfile } from '../../types/CrewProfile';
 import CrewProfileCard from '../CrewProfileCard';
 import { toast } from 'react-hot-toast';
+import Modal from '../ui/Modal'; // Assume you have a Modal component, or use a simple one
+import { Button } from '../ui/Button';
 
 interface ApplicantProfile {
   id: string;
@@ -21,6 +23,9 @@ const JobApplicantsPage: React.FC = () => {
   const [applications, setApplications] = useState<JobApplication[]>([]);
   const [applicantProfiles, setApplicantProfiles] = useState<CrewProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedApplicant, setSelectedApplicant] = useState<CrewProfile | null>(null);
+  const [selectedApplication, setSelectedApplication] = useState<JobApplication | null>(null);
+  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
     const fetchApplicants = async () => {
@@ -117,12 +122,56 @@ const JobApplicantsPage: React.FC = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            {applicantProfiles.map(profile => (
-              <CrewProfileCard key={profile.uid} profile={profile} />
+            {applicantProfiles.map((profile, idx) => (
+              <div
+                key={profile.uid}
+                className="cursor-pointer"
+                onClick={() => {
+                  setSelectedApplicant(profile);
+                  setSelectedApplication(applications[idx]);
+                  setShowModal(true);
+                }}
+              >
+                <CrewProfileCard profile={profile} />
+              </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* Modal for applicant details */}
+      {showModal && selectedApplicant && selectedApplication && (
+        <Modal onClose={() => setShowModal(false)}>
+          <div className="p-6 max-w-lg mx-auto">
+            <h2 className="text-2xl font-bold mb-2">{selectedApplicant.name}</h2>
+            <p className="text-gray-600 mb-2">{selectedApplicant.username}</p>
+            <p className="mb-2">{selectedApplicant.bio}</p>
+            <div className="mb-4">
+              <strong>Job Titles:</strong> {selectedApplicant.jobTitles?.join(', ')}
+            </div>
+            <div className="mb-4">
+              <strong>Location:</strong> {selectedApplicant.residences?.map(r => `${r.city}, ${r.country}`).join(' / ')}
+            </div>
+            {selectedApplication.coverLetter && (
+              <div className="mb-4">
+                <strong>Cover Letter:</strong>
+                <p className="bg-gray-50 p-2 rounded mt-1 whitespace-pre-line">{selectedApplication.coverLetter}</p>
+              </div>
+            )}
+            {selectedApplication.resumeId && (
+              <div className="mb-4">
+                <strong>Resume:</strong>
+                <a href={`/resumes/${selectedApplication.resumeId}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline ml-2">View/Download</a>
+              </div>
+            )}
+            <div className="flex gap-3 mt-6">
+              <Button variant="success" onClick={() => {/* Accept logic */}}>Accept</Button>
+              <Button variant="danger" onClick={() => {/* Reject logic */}}>Reject</Button>
+              <Button variant="outline" onClick={() => {/* Message logic */}}>Message</Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };

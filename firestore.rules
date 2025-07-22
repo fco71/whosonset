@@ -34,27 +34,33 @@ service cloud.firestore {
       allow update, delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
     }
 
-    // Job applications - only authenticated users can read/write
+    function isApplicant(application) {
+      return application.data.applicantId != null && application.data.applicantId == request.auth.uid;
+    }
+
+    function isJobPoster(application) {
+      return application.data.jobId != null &&
+        get(/databases/$(database)/documents/jobPostings/$(application.data.jobId)).data.createdBy == request.auth.uid;
+    }
+
     match /jobApplications/{applicationId} {
-      allow read: if request.auth != null && (
-        resource.data.applicantId == request.auth.uid ||
-        get(/databases/$(database)/documents/jobPostings/$(resource.data.jobId)).data.createdBy == request.auth.uid
-      );
+      allow read: if request.auth != null && (isApplicant(resource) || isJobPoster(resource));
       allow create: if request.auth != null && request.resource.data.applicantId == request.auth.uid;
-      allow update: if request.auth != null && (
-        resource.data.applicantId == request.auth.uid ||
-        get(/databases/$(database)/documents/jobPostings/$(resource.data.jobId)).data.createdBy == request.auth.uid
-      );
-      allow delete: if request.auth != null && resource.data.applicantId == request.auth.uid;
+      allow update: if request.auth != null && (isApplicant(resource) || isJobPoster(resource));
+      allow delete: if request.auth != null && isApplicant(resource);
 
       // Messaging subcollection: allow both applicant and job poster to read/write
       match /messages/{messageId} {
-        allow read, write: if request.auth != null && (
-          // Applicant
-          get(/databases/$(database)/documents/jobApplications/$(applicationId)).data.applicantId == request.auth.uid ||
-          // Job poster (createdBy)
-          get(/databases/$(database)/documents/jobPostings/$(get(/databases/$(database)/documents/jobApplications/$(applicationId)).data.jobId)).data.createdBy == request.auth.uid
-        );
+        allow read, write: if request.auth != null &&
+          (
+            // Applicant
+            resource.data.senderId == request.auth.uid ||
+            // Job poster (createdBy)
+            (
+              resource.data.jobId != null &&
+              get(/databases/$(database)/documents/jobPostings/$(resource.data.jobId)).data.createdBy == request.auth.uid
+            )
+          );
       }
     }
 
