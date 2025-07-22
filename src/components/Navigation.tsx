@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, User, ChevronDown, Search, Bell, Settings } from 'lucide-react';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from './ui/DropdownMenu';
+import { useNotifications } from '../hooks/useNotifications';
 
 interface NavigationProps {
     authUser: any;
@@ -69,6 +71,9 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
         { to: '/jobs/analytics', label: 'Job Analytics' },
         { to: '/post-job', label: 'Post New Job' },
     ];
+
+    const { notifications, loading, markAsRead } = useNotifications();
+    const unreadCount = notifications.filter(n => !n.read).length;
 
     return (
         <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
@@ -193,6 +198,37 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                                 )}
                             </Link>
                         ))}
+                        {/* Notification Bell with Dropdown */}
+                        <DropdownMenu>
+                            <DropdownMenuTrigger className="relative ml-2 p-2 rounded-full hover:bg-gray-100 transition">
+                                <Bell className="w-6 h-6 text-gray-700" />
+                                {unreadCount > 0 && (
+                                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 shadow-lg">
+                                        {unreadCount}
+                                    </span>
+                                )}
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" sideOffset={8} className="w-80 p-0 bg-white rounded-xl shadow-xl border border-gray-100">
+                                <div className="p-3 border-b border-gray-100 font-semibold text-gray-800">Notifications</div>
+                                <div className="max-h-96 overflow-y-auto">
+                                    {loading ? (
+                                        <div className="p-4 text-center text-gray-400">Loading...</div>
+                                    ) : notifications.length === 0 ? (
+                                        <div className="p-4 text-center text-gray-400">No notifications</div>
+                                    ) : notifications.map((notif) => (
+                                        <DropdownMenuItem
+                                            key={notif.id}
+                                            className={`flex flex-col items-start gap-1 px-4 py-3 border-b border-gray-50 last:border-b-0 bg-white hover:bg-blue-50 rounded-lg transition-all ${!notif.read ? 'shadow-md border-blue-100' : ''}`}
+                                            onSelect={() => markAsRead(notif.id)}
+                                        >
+                                            <div className="font-medium text-gray-900 text-sm">{notif.message}</div>
+                                            <div className="text-xs text-gray-400">{notif.type.replace(/_/g, ' ')}</div>
+                                            {/* Optionally, show timestamp here */}
+                                        </DropdownMenuItem>
+                                    ))}
+                                </div>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
 
                     {/* Right side actions */}

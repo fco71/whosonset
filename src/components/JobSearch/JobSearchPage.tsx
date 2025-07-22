@@ -73,7 +73,7 @@ const JobSearchPage: React.FC = () => {
           projectId: data.projectId || '',
           status: data.status || 'active',
           startDate: data.startDate || undefined,
-          postedBy: data.postedBy || '',
+          postedById: data.postedById || '',
           applicationsCount: data.applicationsCount || 0,
           views: data.views || 0,
           saves: data.saves || 0,

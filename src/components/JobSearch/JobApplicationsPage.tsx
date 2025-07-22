@@ -36,7 +36,7 @@ const JobApplicationsPage: React.FC = () => {
         setJob(jobData);
         
         // Check if current user is the job poster
-        if (jobData.postedBy !== currentUser?.uid) {
+        if (jobData.postedById !== currentUser?.uid) {
           toast.error('You can only view applications for jobs you posted');
           return;
         }

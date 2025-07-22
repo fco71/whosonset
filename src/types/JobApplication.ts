@@ -75,7 +75,7 @@ export interface JobPosting {
   };
   isRemote: boolean;
   isUrgent: boolean;
-  postedBy: string;
+  postedById: string;
   postedAt: any;
   deadline?: string;
   status: 'active' | 'closed' | 'draft' | 'published';

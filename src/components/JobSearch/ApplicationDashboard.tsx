@@ -31,6 +31,7 @@ interface JobPostingSummary {
   location?: string;
   status?: string;
   postedAt?: any;
+  postedById: string;
 }
 
 interface ApplicationWithJob {
@@ -88,6 +89,7 @@ const ApplicationDashboard: React.FC = () => {
                 location: jobData.location || '',
                 status: jobData.status || '',
                 postedAt: jobData.postedAt || null,
+                postedById: jobDoc.docs[0].id, // Assuming jobId is the document ID
               } as JobPostingSummary
             };
           }

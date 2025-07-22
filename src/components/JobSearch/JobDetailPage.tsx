@@ -69,7 +69,7 @@ const JobDetailPage: React.FC = () => {
         },
         isRemote: data.isRemote || false,
         isUrgent: data.isUrgent || false,
-        postedBy: data.postedById || data.contactName || '',
+        postedById: data.postedById || '',
         postedAt: data.createdAt?.toDate() || new Date(),
         deadline: data.deadline || '',
         status: data.status || 'published',
@@ -328,7 +328,7 @@ const JobDetailPage: React.FC = () => {
   }
 
   // Determine if the current user is the job poster
-  const isJobPoster = job && auth.currentUser && (job.postedBy === auth.currentUser.uid);
+  const isJobPoster = job && auth.currentUser && (job.postedById === auth.currentUser.uid);
 
   return (
     <div className="min-h-screen bg-gray-50">
