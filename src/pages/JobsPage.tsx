@@ -578,6 +578,17 @@ export default function JobsPage() {
           </div>
         ) : (
           <>
+            <div className="flex flex-wrap gap-4 mb-8 justify-center md:justify-start">
+              <Link to="/jobs/posted" className="px-5 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow">
+                My Posted Jobs
+              </Link>
+              <Link to="/jobs/analytics" className="px-5 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors shadow">
+                Job Analytics
+              </Link>
+              <Link to="/post-job" className="px-5 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors shadow">
+                Post New Job
+              </Link>
+            </div>
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">

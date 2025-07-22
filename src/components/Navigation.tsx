@@ -101,19 +101,21 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                             if (link.to === '/jobs') {
                                 return (
                                     <div key={link.to} className="relative group">
-                                        <button 
-                                            className={`relative px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
+                                        <Link
+                                            to="/jobs"
+                                            className={`relative px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 flex items-center gap-1 ${
                                                 isActive('/jobs') || isActive('/jobs/posted') || isActive('/jobs/analytics') || isActive('/post-job')
                                                     ? 'text-blue-600 bg-blue-50/80 shadow-sm'
                                                     : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50/80'
                                             }`}
+                                            onClick={closeAllMenus}
+                                            style={{ zIndex: 2, position: 'relative' }}
                                         >
-                                            Jobs
+                                            <span>Jobs</span>
                                             <svg className="w-4 h-4 ml-1 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                             </svg>
-                                        </button>
-                                        
+                                        </Link>
                                         {/* Dropdown Menu */}
                                         <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                                             <div className="py-2">
