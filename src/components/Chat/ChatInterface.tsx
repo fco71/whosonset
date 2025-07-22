@@ -3,7 +3,7 @@ import { MessagingService, ConversationSummary } from '../../utilities/messaging
 import { DirectMessage, ChatSettings, MessageReaction } from '../../types/Chat';
 import { SocialService } from '../../utilities/socialService';
 import './ChatInterface.scss';
-import { collection, getDocs, where, limit, query as firestoreQuery } from 'firebase/firestore';
+import { collection, getDocs, where, limit, query as firestoreQuery, orderBy, or, doc as docRef, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { FaTrash } from 'react-icons/fa';
 import { imageErrorFallback } from '../../utilities/imageErrorFallback';
@@ -766,6 +766,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [isSearching, setIsSearching] = useState(false);
   const [isUserTyping, setIsUserTyping] = useState(false); // Track if user is actively typing
   const [notification, setNotification] = useState<{ type: 'error' | 'success' | 'warning'; message: string } | null>(null);
+  const [activeTab, setActiveTab] = useState<'general' | 'jobApplications'>('general');
+  const [jobAppThreads, setJobAppThreads] = useState<any[]>([]); // Replace any with proper type
+  const [selectedJobAppThread, setSelectedJobAppThread] = useState<any | null>(null);
 
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -1259,6 +1262,41 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   }, [sending]);
 
+  // Fetch job application threads for the current user (as applicant or job poster)
+  useEffect(() => {
+    if (!currentUserId) return;
+    const fetchJobAppThreads = async () => {
+      const jobAppsQuery = firestoreQuery(
+        collection(db, 'jobApplications'),
+        or(
+          where('applicantId', '==', currentUserId),
+          where('posterId', '==', currentUserId) // or use createdBy if that's the field
+        )
+      );
+      const jobAppsSnapshot = await getDocs(jobAppsQuery);
+      const threads = await Promise.all(jobAppsSnapshot.docs.map(async (doc) => {
+        const application = { id: doc.id, ...doc.data() };
+        // Fetch job posting
+        let job = null;
+        if (application.jobId) {
+          const jobDoc = await getDoc(docRef(db, 'jobPostings', application.jobId));
+          if (jobDoc.exists()) job = { id: jobDoc.id, ...jobDoc.data() };
+        }
+        // Fetch latest message
+        const messagesRef = collection(db, 'jobApplications', doc.id, 'messages');
+        const messagesSnapshot = await getDocs(firestoreQuery(messagesRef, orderBy('timestamp', 'desc'), limit(1)));
+        const lastMessage = messagesSnapshot.docs[0]?.data() || null;
+        // Determine the other user
+        const otherUserName = application.applicantId === currentUserId
+          ? (job?.posterName || job?.companyName || 'Job Poster')
+          : (application.applicantName || 'Applicant');
+        return { application, job, otherUserName, lastMessage };
+      }));
+      setJobAppThreads(threads);
+    };
+    fetchJobAppThreads();
+  }, [currentUserId]);
+
   if (loading) {
     return (
       <div className="chat-interface">
@@ -1535,233 +1573,278 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
         {/* Chat Area */}
         <div className="chat-area">
-          {error && (
-            <div className="error-banner">
-              <span>{error}</span>
-              <button onClick={() => setError(null)}>×</button>
-            </div>
-          )}
+          <div className="mb-4 flex gap-4 border-b">
+            <button
+              className={`px-4 py-2 font-medium ${activeTab === 'general' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'}`}
+              onClick={() => setActiveTab('general')}
+            >
+              General
+            </button>
+            <button
+              className={`px-4 py-2 font-medium ${activeTab === 'jobApplications' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'}`}
+              onClick={() => setActiveTab('jobApplications')}
+            >
+              Job Applications
+            </button>
+          </div>
 
-          {selectedUser ? (
+          {activeTab === 'general' && (
             <>
-              {/* Chat Header */}
-              <div className="chat-header">
-                <div className="user-info">
-                  {selectedUser ? (
-                    <img 
-                      src={selectedUser ? getUserInfo(selectedUser).avatar : ''} 
-                      alt={selectedUser ? getUserInfo(selectedUser).name : ''}
-                      className="w-8 h-8 rounded-full object-cover"
-                      onError={imageErrorFallback}
-                    />
-                  ) : (
-                    <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-                      <span className="text-sm font-medium text-gray-600">
-                        {selectedUser ? getUserInfo(selectedUser).name.charAt(0).toUpperCase() : ''}
-                      </span>
-                    </div>
-                  )}
-                  <div>
-                    <h3 className="user-name">{selectedUser ? getUserInfo(selectedUser).name : ''}</h3>
-                    {typingUsers.includes(selectedUser) && (
-                      <p className="typing-indicator">typing...</p>
-                    )}
-                  </div>
+              {error && (
+                <div className="error-banner">
+                  {error}
                 </div>
-              </div>
+              )}
 
-              {/* Messages */}
-              <div className="messages-container">
-                {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`message ${message.senderId === currentUserId ? 'sent' : 'received'}`}
-                    style={{ position: 'relative' }}
-                  >
-                    <div className="message-content">
-                      {/* Message content based on type */}
-                      {['deleted_text', 'deleted_image', 'deleted_audio', 'deleted_file'].includes(message.messageType) ? (
-                        <div className="deleted-message-placeholder" style={{
-                          display: 'flex', alignItems: 'center', gap: 6,
-                          color: '#b0b6be',
-                          fontStyle: 'italic',
-                          fontSize: 13,
-                          background: 'none',
-                          borderRadius: 0,
-                          padding: 0,
-                          margin: '2px 0 0 0',
-                          boxShadow: 'none',
-                          minHeight: 0
-                        }}>
-                          <span style={{ fontSize: 15, opacity: 0.7, marginRight: 2 }}>🗑️</span>
-                          {message.content}
-                        </div>
-                      ) : message.messageType === 'image' && message.fileUrl ? (
-                        <div className="message-image">
-                          {!isValidFileUrl(message.fileUrl) ? (
-                            message.fileUrl.startsWith('UPLOAD_FAILED:') ? (
-                              <div className="upload-failed-message">
-                                <div className="upload-failed-icon">⚠️</div>
-                                <div className="upload-failed-content">
-                                  <div className="upload-failed-title">Upload Failed</div>
-                                  <div className="upload-failed-name">{message.fileName || 'Image'}</div>
-                                  <div className="upload-failed-message-text">
-                                    The file couldn't be uploaded. This might be due to network issues or service problems. Please try again later.
-                                  </div>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="file-too-large-message">
-                                <div className="file-too-large-icon">📷</div>
-                                <div className="file-too-large-content">
-                                  <div className="file-too-large-title">File Too Large</div>
-                                  <div className="file-too-large-name">{message.fileName || 'Image'}</div>
-                                  <div className="file-too-large-size">
-                                    {message.fileSize ? `${(message.fileSize / 1024 / 1024).toFixed(1)} MB` : 'Unknown size'}
-                                  </div>
-                                  <div className="file-too-large-message-text">
-                                    This file exceeds the 5MB size limit. Please compress the image or choose a smaller file.
-                                  </div>
-                                </div>
-                              </div>
-                            )
-                                                      ) : (
-                              <img 
-                                src={message.fileUrl} 
-                                alt={message.fileName || 'Image'} 
-                                className="message-image-content"
-                                onClick={() => window.open(message.fileUrl, '_blank')}
-                                onError={e => imageErrorFallback(e)}
-                              />
-                            )}
-                          {message.content && <p className="image-caption">{message.content}</p>}
-                        </div>
-                      ) : message.messageType === 'file' && message.fileUrl ? (
-                        <div className="message-file">
-                          <div className="file-info">
-                            <div className="file-icon">📎</div>
-                            <div className="file-details">
-                              <div className="file-name">{message.fileName || 'File'}</div>
-                              {message.fileSize && (
-                                <div className="file-size">
-                                  {(message.fileSize / 1024 / 1024).toFixed(1)} MB
-                                </div>
-                              )}
-                            </div>
-                            <button 
-                              className="file-download"
-                              onClick={() => message.fileUrl && window.open(message.fileUrl, '_blank')}
-                            >
-                              📥
-                            </button>
-                          </div>
-                          {message.content && <p className="file-caption">{message.content}</p>}
-                        </div>
-                      ) : message.messageType === 'voice' && message.fileUrl ? (
-                        <div className="message-voice">
-                          <audio controls src={message.fileUrl} style={{ width: '100%' }} />
-                          {message.content && <p className="voice-caption">{message.content}</p>}
-                        </div>
+              {selectedUser ? (
+                <>
+                  {/* Chat Header */}
+                  <div className="chat-header">
+                    <div className="user-info">
+                      {selectedUser ? (
+                        <img 
+                          src={selectedUser ? getUserInfo(selectedUser).avatar : ''} 
+                          alt={selectedUser ? getUserInfo(selectedUser).name : ''}
+                          className="w-8 h-8 rounded-full object-cover"
+                          onError={imageErrorFallback}
+                        />
                       ) : (
-                        <p className="message-text">{message.content}</p>
-                      )}
-                      
-                      <div className="message-meta">
-                        <span className="message-time">{formatTime(message.timestamp)}</span>
-                        {message.senderId === currentUserId && (
-                          <span className="message-status">
-                            {message.status === 'sending' && '⏳'}
-                            {message.status === 'sent' && '✓'}
-                            {message.status === 'delivered' && '✓✓'}
-                            {message.status === 'read' && '✓✓'}
+                        <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                          <span className="text-sm font-medium text-gray-600">
+                            {selectedUser ? getUserInfo(selectedUser).name.charAt(0).toUpperCase() : ''}
                           </span>
+                        </div>
+                      )}
+                      <div>
+                        <h3 className="user-name">{selectedUser ? getUserInfo(selectedUser).name : ''}</h3>
+                        {typingUsers.includes(selectedUser) && (
+                          <p className="typing-indicator">typing...</p>
                         )}
                       </div>
-                      
-                      {/* Message Reactions */}
-                      {message.reactions && message.reactions.length > 0 && (
-                        <div className="message-reactions">
-                          {['👍', '❤️', '😊', '🎉'].map((emoji) => {
-                            const count = getReactionCount(message.reactions, emoji);
-                            if (count === 0) return null;
-                            
-                            return (
-                              <button
-                                key={emoji}
-                                onClick={getReactionHandler(message.id, emoji)}
-                                className={`reaction-button ${hasUserReacted(message.reactions, emoji) ? 'reacted' : ''}`}
-                              >
-                                <span className="emoji">{emoji}</span>
-                                <span className="count">{count}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                      {/* Reaction Buttons - moved inside message-content */}
-                      <div className="reaction-buttons">
-                        {['👍', '❤️', '😊', '🎉'].map((emoji) => (
-                          <button
-                            key={emoji}
-                            onClick={getReactionHandler(message.id, emoji)}
-                            className="reaction-option"
-                          >
-                            {emoji}
-                          </button>
-                        ))}
-                      </div>
-                      {/* Delete icon for all messages (sender and receiver) */}
-                      <button
-                        title={message.senderId === currentUserId ? "Delete message for everyone" : "Delete message from your chat"}
-                        className={`delete-message-button ${message.senderId === currentUserId ? 'sender-delete' : 'receiver-delete'}`}
-                        onClick={async () => {
-                          const isSender = message.senderId === currentUserId;
-                          const confirmMessage = isSender 
-                            ? 'Delete this message for everyone?' 
-                            : 'Delete this message from your chat? (The sender will still see it)';
-                          
-                          if (window.confirm(confirmMessage)) {
-                            try {
-                              await MessagingService.deleteMessage(message.id, message.fileUrl, message.messageType, currentUserId);
-                              showNotification('success', isSender ? 'Message deleted for everyone' : 'Message removed from your chat');
-                            } catch (error) {
-                              console.error('Error deleting message:', error);
-                              showNotification('error', 'Failed to delete message. Please try again.');
-                            }
-                          }
-                        }}
-                      >
-                        <FaTrash />
-                      </button>
                     </div>
+                  </div>
+
+                  {/* Messages */}
+                  <div className="messages-container">
+                    {messages.map((message) => (
+                      <div
+                        key={message.id}
+                        className={`message ${message.senderId === currentUserId ? 'sent' : 'received'}`}
+                        style={{ position: 'relative' }}
+                      >
+                        <div className="message-content">
+                          {/* Message content based on type */}
+                          {['deleted_text', 'deleted_image', 'deleted_audio', 'deleted_file'].includes(message.messageType) ? (
+                            <div className="deleted-message-placeholder" style={{
+                              display: 'flex', alignItems: 'center', gap: 6,
+                              color: '#b0b6be',
+                              fontStyle: 'italic',
+                              fontSize: 13,
+                              background: 'none',
+                              borderRadius: 0,
+                              padding: 0,
+                              margin: '2px 0 0 0',
+                              boxShadow: 'none',
+                              minHeight: 0
+                            }}>
+                              <span style={{ fontSize: 15, opacity: 0.7, marginRight: 2 }}>🗑️</span>
+                              {message.content}
+                            </div>
+                          ) : message.messageType === 'image' && message.fileUrl ? (
+                            <div className="message-image">
+                              {!isValidFileUrl(message.fileUrl) ? (
+                                message.fileUrl.startsWith('UPLOAD_FAILED:') ? (
+                                  <div className="upload-failed-message">
+                                    <div className="upload-failed-icon">⚠️</div>
+                                    <div className="upload-failed-content">
+                                      <div className="upload-failed-title">Upload Failed</div>
+                                      <div className="upload-failed-name">{message.fileName || 'Image'}</div>
+                                      <div className="upload-failed-message-text">
+                                        The file couldn't be uploaded. This might be due to network issues or service problems. Please try again later.
+                                      </div>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="file-too-large-message">
+                                    <div className="file-too-large-icon">📷</div>
+                                    <div className="file-too-large-content">
+                                      <div className="file-too-large-title">File Too Large</div>
+                                      <div className="file-too-large-name">{message.fileName || 'Image'}</div>
+                                      <div className="file-too-large-size">
+                                        {message.fileSize ? `${(message.fileSize / 1024 / 1024).toFixed(1)} MB` : 'Unknown size'}
+                                      </div>
+                                      <div className="file-too-large-message-text">
+                                        This file exceeds the 5MB size limit. Please compress the image or choose a smaller file.
+                                      </div>
+                                    </div>
+                                  </div>
+                                )
+                                                      ) : (
+                                <img 
+                                  src={message.fileUrl} 
+                                  alt={message.fileName || 'Image'} 
+                                  className="message-image-content"
+                                  onClick={() => window.open(message.fileUrl, '_blank')}
+                                  onError={e => imageErrorFallback(e)}
+                                />
+                              )}
+                            {message.content && <p className="image-caption">{message.content}</p>}
+                          </div>
+                        ) : message.messageType === 'file' && message.fileUrl ? (
+                          <div className="message-file">
+                            <div className="file-info">
+                              <div className="file-icon">📎</div>
+                              <div className="file-details">
+                                <div className="file-name">{message.fileName || 'File'}</div>
+                                {message.fileSize && (
+                                  <div className="file-size">
+                                    {(message.fileSize / 1024 / 1024).toFixed(1)} MB
+                                  </div>
+                                )}
+                              </div>
+                              <button 
+                                className="file-download"
+                                onClick={() => message.fileUrl && window.open(message.fileUrl, '_blank')}
+                              >
+                                📥
+                              </button>
+                            </div>
+                            {message.content && <p className="file-caption">{message.content}</p>}
+                          </div>
+                        ) : message.messageType === 'voice' && message.fileUrl ? (
+                          <div className="message-voice">
+                            <audio controls src={message.fileUrl} style={{ width: '100%' }} />
+                            {message.content && <p className="voice-caption">{message.content}</p>}
+                          </div>
+                        ) : (
+                          <p className="message-text">{message.content}</p>
+                        )}
+                        
+                        <div className="message-meta">
+                          <span className="message-time">{formatTime(message.timestamp)}</span>
+                          {message.senderId === currentUserId && (
+                            <span className="message-status">
+                              {message.status === 'sending' && '⏳'}
+                              {message.status === 'sent' && '✓'}
+                              {message.status === 'delivered' && '✓✓'}
+                              {message.status === 'read' && '✓✓'}
+                            </span>
+                          )}
+                        </div>
+                        
+                        {/* Message Reactions */}
+                        {message.reactions && message.reactions.length > 0 && (
+                          <div className="message-reactions">
+                            {['👍', '❤️', '😊', '🎉'].map((emoji) => {
+                              const count = getReactionCount(message.reactions, emoji);
+                              if (count === 0) return null;
+                              
+                              return (
+                                <button
+                                  key={emoji}
+                                  onClick={getReactionHandler(message.id, emoji)}
+                                  className={`reaction-button ${hasUserReacted(message.reactions, emoji) ? 'reacted' : ''}`}
+                                >
+                                  <span className="emoji">{emoji}</span>
+                                  <span className="count">{count}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                        {/* Reaction Buttons - moved inside message-content */}
+                        <div className="reaction-buttons">
+                          {['👍', '❤️', '😊', '🎉'].map((emoji) => (
+                            <button
+                              key={emoji}
+                              onClick={getReactionHandler(message.id, emoji)}
+                              className="reaction-option"
+                            >
+                              {emoji}
+                            </button>
+                          ))}
+                        </div>
+                        {/* Delete icon for all messages (sender and receiver) */}
+                        <button
+                          title={message.senderId === currentUserId ? "Delete message for everyone" : "Delete message from your chat"}
+                          className={`delete-message-button ${message.senderId === currentUserId ? 'sender-delete' : 'receiver-delete'}`}
+                          onClick={async () => {
+                            const isSender = message.senderId === currentUserId;
+                            const confirmMessage = isSender 
+                              ? 'Delete this message for everyone?' 
+                              : 'Delete this message from your chat? (The sender will still see it)';
+                            
+                            if (window.confirm(confirmMessage)) {
+                              try {
+                                await MessagingService.deleteMessage(message.id, message.fileUrl, message.messageType, currentUserId);
+                                showNotification('success', isSender ? 'Message deleted for everyone' : 'Message removed from your chat');
+                              } catch (error) {
+                                console.error('Error deleting message:', error);
+                                showNotification('error', 'Failed to delete message. Please try again.');
+                              }
+                            }
+                          }}
+                        >
+                          <FaTrash />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {/* Typing Indicator */}
+                  {typingUsers.includes(selectedUser) && (
+                    <div className="typing-indicator-message">
+                      <div className="typing-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div ref={messagesEndRef} />
+                </div>
+
+                {/* Message Input */}
+                <MessageInput key="stable-message-input" ref={messageInputRef} />
+              </>
+            ) : (
+              <div className="no-conversation">
+                <div className="text-4xl mb-3">💬</div>
+                <h3 className="text-lg font-medium text-gray-900 mb-1">Select a conversation</h3>
+                <p className="text-gray-500 text-sm">Choose a contact to start messaging</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {activeTab === 'jobApplications' && (
+          <div>
+            <h3 className="font-semibold mb-2">Job Application Conversations</h3>
+            {jobAppThreads.length === 0 ? (
+              <div className="text-gray-400 text-sm">No job application conversations yet.</div>
+            ) : (
+              <div className="divide-y">
+                {jobAppThreads.map(thread => (
+                  <div
+                    key={thread.application.id}
+                    className={`p-3 cursor-pointer hover:bg-gray-50 ${selectedJobAppThread?.application.id === thread.application.id ? 'bg-blue-50' : ''}`}
+                    onClick={() => setSelectedJobAppThread(thread)}
+                  >
+                    <div className="font-medium">{thread.job?.title || 'Untitled Job'}</div>
+                    <div className="text-xs text-gray-500">{thread.otherUserName} • {thread.lastMessage?.message?.slice(0, 40)}...</div>
                   </div>
                 ))}
-                
-                {/* Typing Indicator */}
-                {typingUsers.includes(selectedUser) && (
-                  <div className="typing-indicator-message">
-                    <div className="typing-dots">
-                      <span></span>
-                      <span></span>
-                      <span></span>
-                    </div>
-                  </div>
-                )}
-                
-                <div ref={messagesEndRef} />
               </div>
-
-              {/* Message Input */}
-              <MessageInput key="stable-message-input" ref={messageInputRef} />
-            </>
-          ) : (
-            <div className="no-conversation">
-              <div className="text-4xl mb-3">💬</div>
-              <h3 className="text-lg font-medium text-gray-900 mb-1">Select a conversation</h3>
-              <p className="text-gray-500 text-sm">Choose a contact to start messaging</p>
-            </div>
-          )}
-        </div>
+            )}
+            {selectedJobAppThread && (
+              <div className="mt-4">
+                {/* Reuse the real-time messaging UI from ApplicationStatusTracker, but for this thread */}
+                {/* ... message thread and reply box ... */}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* User Profile Modal */}

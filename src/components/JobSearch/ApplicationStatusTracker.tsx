@@ -285,43 +285,38 @@ const ApplicationStatusTracker: React.FC<ApplicationStatusTrackerProps> = ({ app
                   <p className="text-gray-600">No messages yet</p>
                 </div>
               ) : (
-                <div className="space-y-4 mb-6">
-                  {messages.map((message) => (
-                    <div key={message.id} className="flex gap-3">
-                      <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0">
-                        {message.senderName.charAt(0)}
-                      </div>
-                      
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium text-gray-900">{message.senderName}</span>
-                          <span className="text-sm text-gray-500">{formatDate(message.timestamp)}</span>
+                <div className="mt-6">
+                  <h3 className="font-semibold mb-2">Messages</h3>
+                  <div className="bg-gray-50 rounded p-3 max-h-64 overflow-y-auto mb-2">
+                    {messages.length === 0 ? (
+                      <div className="text-gray-400 text-sm">No messages yet.</div>
+                    ) : (
+                      messages.map(msg => (
+                        <div key={msg.id} className={`mb-2 ${msg.senderId === currentUser?.uid ? 'text-right' : 'text-left'}`}> 
+                          <div className="inline-block bg-white rounded px-3 py-2 shadow-sm">
+                            <div className="text-xs text-gray-500 mb-1">{msg.senderName} • {msg.timestamp?.toDate ? new Date(msg.timestamp.seconds * 1000).toLocaleString() : ''}</div>
+                            <div>{msg.message}</div>
+                          </div>
                         </div>
-                        <p className="text-gray-700 bg-gray-50 rounded-lg p-3">{message.content}</p>
-                      </div>
-                    </div>
-                  ))}
+                      ))
+                    )}
+                  </div>
+                  <div className="flex gap-2 mt-2">
+                    <input
+                      type="text"
+                      className="flex-1 border rounded px-3 py-2"
+                      placeholder="Type a message..."
+                      value={newMessage}
+                      onChange={e => setNewMessage(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') sendMessage(); }}
+                      disabled={isSendingMessage}
+                    />
+                    <Button onClick={sendMessage} disabled={isSendingMessage || !newMessage.trim()}>
+                      Send
+                    </Button>
+                  </div>
                 </div>
               )}
-
-              {/* Send Message */}
-              <div className="flex gap-3">
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Type your message..."
-                  className="flex-1 p-3 border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none"
-                  onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                />
-                <button
-                  onClick={sendMessage}
-                  disabled={isSendingMessage || !newMessage.trim()}
-                  className="px-6 py-3 bg-gray-900 text-white font-light rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSendingMessage ? 'Sending...' : 'Send'}
-                </button>
-              </div>
             </div>
           </div>
 
