@@ -6,6 +6,7 @@ import { db } from '../../firebase';
 import { JobPosting } from '../../types/JobApplication';
 import { toast } from 'react-hot-toast';
 import FirebaseDiagnostic from './FirebaseDiagnostic';
+import { SavedJobsService } from '../../utilities/savedJobsService';
 
 const JobDetailPage: React.FC = () => {
   const auth = useAuth();
@@ -176,36 +177,28 @@ const JobDetailPage: React.FC = () => {
     }
 
     try {
-      setIsSaved(!isSaved);
-      
-      // Use a separate collection for saved jobs to avoid permission issues
-      const savedJobRef = doc(db, 'savedJobs', `${auth.currentUser.uid}_${jobId}`);
-      
       if (isSaved) {
         // Remove from saved
-        await deleteDoc(savedJobRef);
-        toast.success('Job removed from saved');
+        const { savedJobId } = await SavedJobsService.isJobSaved(auth.currentUser.uid, jobId!);
+        if (savedJobId) {
+          await SavedJobsService.removeSavedJob(savedJobId);
+          setIsSaved(false);
+          toast.success('Job removed from saved');
+        }
       } else {
         // Add to saved
-        await setDoc(savedJobRef, {
-          jobId: jobId,
-          userId: auth.currentUser.uid,
-          savedAt: new Date(),
-          timestamp: serverTimestamp()
-        });
+        await SavedJobsService.saveJob(auth.currentUser.uid, jobId!);
+        setIsSaved(true);
         toast.success('Job saved successfully');
       }
     } catch (error: any) {
       console.error('Error saving job:', error);
       
-      // Revert the UI state on error
-      setIsSaved(!isSaved);
-      
       // Handle connection issues
       if (error.code === 'unavailable' || error.code === 'deadline-exceeded') {
         toast.error('Connection issue. Please try again.');
       } else {
-        toast.error('Failed to save job');
+        toast.error('Failed to save job. Please try again.');
       }
     }
   };

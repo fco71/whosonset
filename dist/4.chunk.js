@@ -1,6 +1,179 @@
 "use strict";
 (self["webpackChunkwhosonset"] = self["webpackChunkwhosonset"] || []).push([[4],{
 
+/***/ 3657:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   r: () => (/* binding */ SavedJobsService)
+/* harmony export */ });
+/* harmony import */ var firebase_firestore__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(7594);
+/* harmony import */ var _firebase__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(9487);
+
+
+class SavedJobsService {
+    // Save a job for a user
+    static async saveJob(userId, jobId, notes) {
+        try {
+            const savedJobData = {
+                userId,
+                jobId,
+                notes,
+                savedAt: (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .serverTimestamp */ .O5)()
+            };
+            const docRef = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .addDoc */ .gS)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'savedJobs'), savedJobData);
+            console.log('[SavedJobsService] Job saved successfully:', docRef.id);
+            return docRef.id;
+        }
+        catch (error) {
+            console.error('Error saving job:', error);
+            throw error;
+        }
+    }
+    // Remove a saved job
+    static async removeSavedJob(savedJobId) {
+        try {
+            await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .deleteDoc */ .kd)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'savedJobs', savedJobId));
+            console.log('[SavedJobsService] Job removed from saved list');
+        }
+        catch (error) {
+            console.error('Error removing saved job:', error);
+            throw error;
+        }
+    }
+    // Get all saved jobs for a user
+    static async getSavedJobs(userId) {
+        try {
+            const savedJobsQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'savedJobs'), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .where */ ._M)('userId', '==', userId), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .orderBy */ .My)('savedAt', 'desc'));
+            const snapshot = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .getDocs */ .GG)(savedJobsQuery);
+            const savedJobs = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            console.log('[SavedJobsService] Loaded saved jobs:', savedJobs.length);
+            return savedJobs;
+        }
+        catch (error) {
+            console.error('Error getting saved jobs:', error);
+            throw error;
+        }
+    }
+    // Get saved jobs with full job data
+    static async getSavedJobsWithData(userId) {
+        try {
+            const savedJobs = await this.getSavedJobs(userId);
+            // Fetch job data for each saved job
+            const savedJobsWithData = await Promise.all(savedJobs.map(async (savedJob) => {
+                try {
+                    const jobDoc = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .getDocs */ .GG)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'jobPostings'), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .where */ ._M)('__name__', '==', savedJob.jobId)));
+                    if (!jobDoc.empty) {
+                        const jobData = {
+                            id: jobDoc.docs[0].id,
+                            ...jobDoc.docs[0].data()
+                        };
+                        return {
+                            ...savedJob,
+                            jobData
+                        };
+                    }
+                    return savedJob;
+                }
+                catch (error) {
+                    console.error('Error fetching job data for saved job:', error);
+                    return savedJob;
+                }
+            }));
+            return savedJobsWithData;
+        }
+        catch (error) {
+            console.error('Error getting saved jobs with data:', error);
+            throw error;
+        }
+    }
+    // Check if a job is saved by a user
+    static async isJobSaved(userId, jobId) {
+        try {
+            const savedJobsQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'savedJobs'), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .where */ ._M)('userId', '==', userId), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .where */ ._M)('jobId', '==', jobId));
+            const snapshot = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .getDocs */ .GG)(savedJobsQuery);
+            if (!snapshot.empty) {
+                return {
+                    saved: true,
+                    savedJobId: snapshot.docs[0].id
+                };
+            }
+            return { saved: false };
+        }
+        catch (error) {
+            console.error('Error checking if job is saved:', error);
+            return { saved: false };
+        }
+    }
+    // Update notes for a saved job
+    static async updateSavedJobNotes(savedJobId, notes) {
+        try {
+            const savedJobRef = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'savedJobs', savedJobId);
+            await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .updateDoc */ .mZ)(savedJobRef, {
+                notes,
+                updatedAt: (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .serverTimestamp */ .O5)()
+            });
+            console.log('[SavedJobsService] Saved job notes updated');
+        }
+        catch (error) {
+            console.error('Error updating saved job notes:', error);
+            throw error;
+        }
+    }
+    // Subscribe to saved jobs changes
+    static subscribeToSavedJobs(userId, callback) {
+        try {
+            const savedJobsQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'savedJobs'), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .where */ ._M)('userId', '==', userId), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .orderBy */ .My)('savedAt', 'desc'));
+            return (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .onSnapshot */ .aQ)(savedJobsQuery, (snapshot) => {
+                const savedJobs = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                callback(savedJobs);
+            });
+        }
+        catch (error) {
+            console.error('Error setting up saved jobs listener:', error);
+            return () => { };
+        }
+    }
+    // Subscribe to saved status for a specific job
+    static subscribeToJobSaveStatus(userId, jobId, callback) {
+        try {
+            const savedJobsQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'savedJobs'), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .where */ ._M)('userId', '==', userId), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .where */ ._M)('jobId', '==', jobId));
+            return (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .onSnapshot */ .aQ)(savedJobsQuery, (snapshot) => {
+                if (!snapshot.empty) {
+                    callback(true, snapshot.docs[0].id);
+                }
+                else {
+                    callback(false);
+                }
+            });
+        }
+        catch (error) {
+            console.error('Error setting up job save status listener:', error);
+            return () => { };
+        }
+    }
+    // Get saved jobs count for a user
+    static async getSavedJobsCount(userId) {
+        try {
+            const savedJobs = await this.getSavedJobs(userId);
+            return savedJobs.length;
+        }
+        catch (error) {
+            console.error('Error getting saved jobs count:', error);
+            return 0;
+        }
+    }
+}
+
+
+/***/ }),
+
 /***/ 8004:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
@@ -91,7 +264,10 @@ const FirebaseDiagnostic = () => {
 };
 /* harmony default export */ const JobSearch_FirebaseDiagnostic = ((/* unused pure expression or super */ null && (FirebaseDiagnostic)));
 
+// EXTERNAL MODULE: ./src/utilities/savedJobsService.ts
+var savedJobsService = __webpack_require__(3657);
 ;// ./src/components/JobSearch/JobDetailPage.tsx
+
 
 
 
@@ -256,35 +432,30 @@ const JobDetailPage = () => {
             return;
         }
         try {
-            setIsSaved(!isSaved);
-            // Use a separate collection for saved jobs to avoid permission issues
-            const savedJobRef = (0,index_esm.doc)(firebase.db, 'savedJobs', `${auth.currentUser.uid}_${jobId}`);
             if (isSaved) {
                 // Remove from saved
-                await (0,index_esm/* deleteDoc */.kd)(savedJobRef);
-                dist/* toast */.oR.success('Job removed from saved');
+                const { savedJobId } = await savedJobsService/* SavedJobsService */.r.isJobSaved(auth.currentUser.uid, jobId);
+                if (savedJobId) {
+                    await savedJobsService/* SavedJobsService */.r.removeSavedJob(savedJobId);
+                    setIsSaved(false);
+                    dist/* toast */.oR.success('Job removed from saved');
+                }
             }
             else {
                 // Add to saved
-                await (0,index_esm/* setDoc */.BN)(savedJobRef, {
-                    jobId: jobId,
-                    userId: auth.currentUser.uid,
-                    savedAt: new Date(),
-                    timestamp: (0,index_esm/* serverTimestamp */.O5)()
-                });
+                await savedJobsService/* SavedJobsService */.r.saveJob(auth.currentUser.uid, jobId);
+                setIsSaved(true);
                 dist/* toast */.oR.success('Job saved successfully');
             }
         }
         catch (error) {
             console.error('Error saving job:', error);
-            // Revert the UI state on error
-            setIsSaved(!isSaved);
             // Handle connection issues
             if (error.code === 'unavailable' || error.code === 'deadline-exceeded') {
                 dist/* toast */.oR.error('Connection issue. Please try again.');
             }
             else {
-                dist/* toast */.oR.error('Failed to save job');
+                dist/* toast */.oR.error('Failed to save job. Please try again.');
             }
         }
     };

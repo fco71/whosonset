@@ -8,6 +8,7 @@ import { Button } from '../ui/Button';
 import { Profile, getDisplayName, getPhotoUrl, isCrewProfile, getProfileId } from '../../types/Profile';
 import FollowButton from './FollowButton';
 import { imageErrorFallback } from '../../utilities/imageErrorFallback';
+import { toast } from 'react-hot-toast';
 
 interface MemberCardProps {
   profile: Profile;
@@ -44,14 +45,17 @@ const MemberCard: React.FC<MemberCardProps> = ({
           bookmarkedUsers: arrayRemove(profileId)
         });
         setIsBookmarked(false);
+        toast.success('Crew member removed from favorites');
       } else {
         await updateDoc(userRef, {
           bookmarkedUsers: arrayUnion(profileId)
         });
         setIsBookmarked(true);
+        toast.success('Crew member added to favorites!');
       }
     } catch (error) {
       console.error('Error updating bookmark:', error);
+      toast.error('Failed to update favorites. Please try again.');
     } finally {
       setIsBookmarking(false);
     }

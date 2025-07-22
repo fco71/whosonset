@@ -37,6 +37,7 @@ import { Input } from '../components/ui/Input';
 import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/Avatar';
 import { Badge } from '../components/ui/Badge';
 import { Skeleton } from '../components/ui/Skeleton';
+import { toast } from 'react-hot-toast';
 
 type TabValue = 'following' | 'followers' | 'discover' | 'requests' | 'notifications';
 
@@ -324,12 +325,15 @@ const SocialPage = () => {
     try {
       if (follow) {
         await SocialService.sendFollowRequest(user.uid, profileId);
+        toast.success('Follow request sent!');
       } else {
         await SocialService.unfollow(user.uid, profileId);
+        toast.success('Unfollowed successfully');
       }
       await loadData();
     } catch (error) {
       console.error('Error updating follow status:', error);
+      toast.error(follow ? 'Failed to send follow request' : 'Failed to unfollow');
     }
   };
 
@@ -343,11 +347,14 @@ const SocialPage = () => {
       // Update local state after backend call
       if (action === 'accept') {
         setConnections(prev => [...prev, request]);
+        toast.success('Follow request accepted!');
+      } else {
+        toast.success('Follow request rejected.');
       }
       setConnectionRequests(prev => prev.filter(p => getProfileId(p) !== userId));
     } catch (error) {
       console.error(`Error ${action}ing follow request:`, error);
-      // Optionally show error to user
+      toast.error(`Failed to ${action} follow request. Please try again.`);
     }
   };
 

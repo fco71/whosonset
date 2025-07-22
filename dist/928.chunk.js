@@ -1,5 +1,22 @@
 "use strict";
-(self["webpackChunkwhosonset"] = self["webpackChunkwhosonset"] || []).push([[664],{
+(self["webpackChunkwhosonset"] = self["webpackChunkwhosonset"] || []).push([[928],{
+
+/***/ 676:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   i: () => (/* binding */ imageErrorFallback)
+/* harmony export */ });
+// Utility for robust <img> error fallback
+function imageErrorFallback(e, fallback = '/default-avatar.svg') {
+    const target = e.target;
+    if (!target.src.endsWith(fallback)) {
+        target.src = fallback;
+    }
+}
+
+
+/***/ }),
 
 /***/ 774:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
@@ -57,38 +74,7 @@ Button.displayName = 'Button';
 
 /***/ }),
 
-/***/ 2307:
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   A: () => (/* binding */ Calendar)
-/* harmony export */ });
-/* unused harmony export __iconNode */
-/* harmony import */ var _createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9407);
-/**
- * @license lucide-react v0.525.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-
-
-
-const __iconNode = [
-  ["path", { d: "M8 2v4", key: "1cmpym" }],
-  ["path", { d: "M16 2v4", key: "4m81vk" }],
-  ["rect", { width: "18", height: "18", x: "3", y: "4", rx: "2", key: "1hopcy" }],
-  ["path", { d: "M3 10h18", key: "8toen8" }]
-];
-const Calendar = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .A)("calendar", __iconNode);
-
-
-//# sourceMappingURL=calendar.js.map
-
-
-/***/ }),
-
-/***/ 5664:
+/***/ 1928:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 
@@ -105,27 +91,10 @@ var react = __webpack_require__(6540);
 var chunk_QMGIS6GS = __webpack_require__(5788);
 // EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/film.js
 var film = __webpack_require__(6163);
+// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/clock.js
+var clock = __webpack_require__(7235);
 // EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/createLucideIcon.js + 3 modules
 var createLucideIcon = __webpack_require__(9407);
-;// ./node_modules/lucide-react/dist/esm/icons/clock.js
-/**
- * @license lucide-react v0.525.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-
-
-
-const __iconNode = [
-  ["path", { d: "M12 6v6l4 2", key: "mmk7yg" }],
-  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }]
-];
-const Clock = (0,createLucideIcon/* default */.A)("clock", __iconNode);
-
-
-//# sourceMappingURL=clock.js.map
-
 ;// ./node_modules/lucide-react/dist/esm/icons/image-off.js
 /**
  * @license lucide-react v0.525.0 - ISC
@@ -136,7 +105,7 @@ const Clock = (0,createLucideIcon/* default */.A)("clock", __iconNode);
 
 
 
-const image_off_iconNode = [
+const __iconNode = [
   ["line", { x1: "2", x2: "22", y1: "2", y2: "22", key: "a6p6uj" }],
   ["path", { d: "M10.41 10.41a2 2 0 1 1-2.83-2.83", key: "1bzlo9" }],
   ["line", { x1: "13.5", x2: "6", y1: "13.5", y2: "21", key: "1q0aeu" }],
@@ -150,7 +119,7 @@ const image_off_iconNode = [
   ],
   ["path", { d: "M21 15V5a2 2 0 0 0-2-2H9", key: "43el77" }]
 ];
-const ImageOff = (0,createLucideIcon/* default */.A)("image-off", image_off_iconNode);
+const ImageOff = (0,createLucideIcon/* default */.A)("image-off", __iconNode);
 
 
 //# sourceMappingURL=image-off.js.map
@@ -159,74 +128,14 @@ const ImageOff = (0,createLucideIcon/* default */.A)("image-off", image_off_icon
 var map_pin = __webpack_require__(8450);
 // EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/calendar.js
 var calendar = __webpack_require__(2307);
-// EXTERNAL MODULE: ./node_modules/framer-motion/dist/es/render/components/motion/proxy.mjs + 253 modules
-var proxy = __webpack_require__(3490);
-// EXTERNAL MODULE: ./node_modules/clsx/dist/clsx.mjs
-var clsx = __webpack_require__(4164);
-;// ./src/components/ui/Card.tsx
-
-
-
-
-const Card = (0,react.forwardRef)(({ variant = 'elevated', hoverable = false, rounded = 'lg', shadow = 'md', padding = 'md', className = '', children, ...props }, ref) => {
-    // Base card classes
-    const baseClasses = (0,clsx/* default */.A)(
-    // Base styles
-    'transition-all duration-200', 'overflow-hidden', 'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2', 
-    // Variant styles
-    variant === 'elevated' && 'bg-white border border-gray-100', variant === 'outline' && 'bg-white border border-gray-200', variant === 'filled' && 'bg-gray-50', variant === 'unstyled' && 'bg-transparent', 
-    // Shadow
-    shadow === 'sm' && 'shadow-sm', shadow === 'md' && 'shadow', shadow === 'lg' && 'shadow-md', shadow === 'xl' && 'shadow-lg', shadow === '2xl' && 'shadow-xl', shadow === 'inner' && 'shadow-inner', 
-    // Rounded corners
-    rounded === 'sm' && 'rounded-sm', rounded === 'md' && 'rounded', rounded === 'lg' && 'rounded-lg', rounded === 'xl' && 'rounded-xl', rounded === '2xl' && 'rounded-2xl', rounded === 'full' && 'rounded-full', 
-    // Padding
-    padding === 'sm' && 'p-3', padding === 'md' && 'p-4', padding === 'lg' && 'p-6', 
-    // Hover effects
-    hoverable && [
-        'hover:shadow-lg',
-        'hover:-translate-y-0.5',
-        'transform transition-transform duration-200',
-        'hover:ring-2 hover:ring-blue-100',
-    ], 
-    // Custom class names
-    className);
-    // Animation variants with proper typing
-    const variants = {
-        hidden: { opacity: 0, y: 20 },
-        visible: {
-            opacity: 1,
-            y: 0,
-            transition: { duration: 0.3 }
-        }
-    };
-    // Hover animation
-    const hoverAnimation = hoverable ? { scale: 1.01 } : {};
-    return ((0,jsx_runtime.jsx)(proxy/* motion */.P.div, { ref: ref, className: baseClasses, initial: "hidden", animate: "visible", whileHover: hoverAnimation, variants: variants, ...props, children: children }));
-});
-Card.displayName = 'Card';
-const CardHeader = (0,react.forwardRef)(({ className = '', withBorder = true, children, ...props }, ref) => ((0,jsx_runtime.jsx)("div", { ref: ref, className: (0,clsx/* default */.A)('px-4 py-3', withBorder && 'border-b border-gray-100', className), ...props, children: children })));
-CardHeader.displayName = 'CardHeader';
-const CardBody = (0,react.forwardRef)(({ className = '', padding = 'md', children, ...props }, ref) => {
-    const paddingClass = {
-        none: 'p-0',
-        sm: 'p-3',
-        md: 'p-4',
-        lg: 'p-6',
-    }[padding];
-    return ((0,jsx_runtime.jsx)("div", { ref: ref, className: (0,clsx/* default */.A)(paddingClass, className), ...props, children: children }));
-});
-CardBody.displayName = 'CardBody';
-const CardFooter = (0,react.forwardRef)(({ className = '', withBorder = true, children, ...props }, ref) => ((0,jsx_runtime.jsx)("div", { ref: ref, className: (0,clsx/* default */.A)('px-4 py-3', withBorder && 'border-t border-gray-100', className), ...props, children: children })));
-CardFooter.displayName = 'CardFooter';
-const CardTitle = (0,react.forwardRef)(({ as: Tag = 'h3', className = '', children, ...props }, ref) => ((0,jsx_runtime.jsx)(Tag, { ref: ref, className: (0,clsx/* default */.A)('text-lg font-semibold text-gray-900', className), ...props, children: children })));
-CardTitle.displayName = 'CardTitle';
-const CardDescription = (0,react.forwardRef)(({ className = '', children, ...props }, ref) => ((0,jsx_runtime.jsx)("p", { ref: ref, className: (0,clsx/* default */.A)('text-sm text-gray-600 mt-1', className), ...props, children: children })));
-CardDescription.displayName = 'CardDescription';
-/* harmony default export */ const ui_Card = (Card);
-
+// EXTERNAL MODULE: ./src/components/ui/Card.tsx
+var Card = __webpack_require__(4948);
 // EXTERNAL MODULE: ./src/components/ui/Button.tsx
 var Button = __webpack_require__(774);
+// EXTERNAL MODULE: ./src/utilities/imageErrorFallback.ts
+var imageErrorFallback = __webpack_require__(676);
 ;// ./src/components/ProjectCard.tsx
+
 
 
 
@@ -253,15 +162,15 @@ const getStatusStyles = (status) => {
     const statusMap = {
         'in_production': { bg: 'bg-green-100', text: 'text-green-800', icon: (0,jsx_runtime.jsx)(film/* default */.A, { size: 14 }) },
         'production': { bg: 'bg-green-100', text: 'text-green-800', icon: (0,jsx_runtime.jsx)(film/* default */.A, { size: 14 }) },
-        'pre_production': { bg: 'bg-blue-100', text: 'text-blue-800', icon: (0,jsx_runtime.jsx)(Clock, { size: 14 }) },
-        'pre-production': { bg: 'bg-blue-100', text: 'text-blue-800', icon: (0,jsx_runtime.jsx)(Clock, { size: 14 }) },
+        'pre_production': { bg: 'bg-blue-100', text: 'text-blue-800', icon: (0,jsx_runtime.jsx)(clock/* default */.A, { size: 14 }) },
+        'pre-production': { bg: 'bg-blue-100', text: 'text-blue-800', icon: (0,jsx_runtime.jsx)(clock/* default */.A, { size: 14 }) },
         'post_production': { bg: 'bg-purple-100', text: 'text-purple-800', icon: (0,jsx_runtime.jsx)(film/* default */.A, { size: 14 }) },
         'post-production': { bg: 'bg-purple-100', text: 'text-purple-800', icon: (0,jsx_runtime.jsx)(film/* default */.A, { size: 14 }) },
-        'development': { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: (0,jsx_runtime.jsx)(Clock, { size: 14 }) },
+        'development': { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: (0,jsx_runtime.jsx)(clock/* default */.A, { size: 14 }) },
         'completed': { bg: 'bg-gray-200', text: 'text-gray-800', icon: (0,jsx_runtime.jsx)(film/* default */.A, { size: 14 }) },
-        'cancelled': { bg: 'bg-red-100', text: 'text-red-800', icon: (0,jsx_runtime.jsx)(Clock, { size: 14 }) },
+        'cancelled': { bg: 'bg-red-100', text: 'text-red-800', icon: (0,jsx_runtime.jsx)(clock/* default */.A, { size: 14 }) },
     };
-    return statusMap[status] || { bg: 'bg-gray-100', text: 'text-gray-800', icon: (0,jsx_runtime.jsx)(Clock, { size: 14 }) };
+    return statusMap[status] || { bg: 'bg-gray-100', text: 'text-gray-800', icon: (0,jsx_runtime.jsx)(clock/* default */.A, { size: 14 }) };
 };
 const ProjectCard = (props) => {
     const { id, projectName, productionCompany, country, productionLocations, status = 'development', summary, director, producer, genres = [], coverImageUrl: initialCoverImageUrl, startDate, endDate, showDetails = false, onBookmark, isBookmarked = false, className = '', } = props;
@@ -443,14 +352,14 @@ const ProjectCard = (props) => {
                 return status ? status.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'Unknown';
         }
     };
-    return ((0,jsx_runtime.jsxs)(ui_Card, { className: `bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300 flex flex-col ${className}`, style: { padding: 20, minHeight: 340, maxWidth: 370, margin: 'auto', boxSizing: 'border-box' }, hoverable: true, onClick: handleCardClick, role: "button", tabIndex: 0, "aria-label": `View details for ${projectName || 'Untitled Project'}`, onKeyDown: e => {
+    return ((0,jsx_runtime.jsxs)(Card/* default */.Ay, { className: `bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300 flex flex-col ${className}`, style: { padding: 20, minHeight: 340, maxWidth: 370, margin: 'auto', boxSizing: 'border-box' }, hoverable: true, onClick: handleCardClick, role: "button", tabIndex: 0, "aria-label": `View details for ${projectName || 'Untitled Project'}`, onKeyDown: e => {
             if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
                 handleCardClick();
             }
-        }, children: [(0,jsx_runtime.jsx)("div", { style: { width: '100%', height: 180, position: 'relative', borderRadius: 12, overflow: 'hidden', marginBottom: 12, background: '#f8fafc' }, children: coverImageUrl && !imageError ? ((0,jsx_runtime.jsx)("img", { src: coverImageUrl, alt: `${projectName || 'Untitled Project'} cover`, className: "w-full h-full object-cover transition-transform duration-500 group-hover:scale-105", loading: "lazy", onError: handleImageError, onLoad: () => setImageError(false) }, coverImageUrl)) : ((0,jsx_runtime.jsxs)("div", { className: "w-full h-full bg-gradient-to-br from-blue-50 to-purple-50 flex flex-col items-center justify-center text-center p-4", children: [(0,jsx_runtime.jsx)(ImageOff, { size: 32, className: "text-gray-400 mb-2" }), (0,jsx_runtime.jsx)("p", { className: "text-sm text-gray-500", children: retryCount > 0 && retryCount <= maxRetries
+        }, children: [(0,jsx_runtime.jsx)("div", { style: { width: '100%', height: 180, position: 'relative', borderRadius: 12, overflow: 'hidden', marginBottom: 12, background: '#f8fafc' }, children: coverImageUrl && !imageError ? ((0,jsx_runtime.jsx)("img", { src: coverImageUrl, alt: `${projectName || 'Untitled Project'} cover`, className: "w-full h-full object-cover transition-transform duration-500 group-hover:scale-105", loading: "lazy", onError: e => { handleImageError(e); (0,imageErrorFallback/* imageErrorFallback */.i)(e, getPlaceholderImage()); }, onLoad: () => setImageError(false) }, coverImageUrl)) : ((0,jsx_runtime.jsxs)("div", { className: "w-full h-full bg-gradient-to-br from-blue-50 to-purple-50 flex flex-col items-center justify-center text-center p-4", children: [(0,jsx_runtime.jsx)(ImageOff, { size: 32, className: "text-gray-400 mb-2" }), (0,jsx_runtime.jsx)("p", { className: "text-sm text-gray-500", children: retryCount > 0 && retryCount <= maxRetries
                                 ? `Loading image... (${retryCount}/${maxRetries})`
-                                : 'Image not available' }), (0,jsx_runtime.jsx)("p", { className: "text-xs text-gray-500", children: initialCoverImageUrl ? 'Failed to load image' : 'No image available' })] })) }), (0,jsx_runtime.jsxs)(CardBody, { className: "flex-1 flex flex-col", children: [(0,jsx_runtime.jsxs)("div", { className: "flex-1", children: [(0,jsx_runtime.jsxs)(jsx_runtime.Fragment, { children: [(() => { console.log('ProjectCard projectName:', projectName); return null; })(), (0,jsx_runtime.jsx)("div", { className: "text-base font-medium mb-2 leading-tight truncate", title: projectName && projectName.trim() ? projectName : 'Untitled Project', style: {
+                                : 'Image not available' }), (0,jsx_runtime.jsx)("p", { className: "text-xs text-gray-500", children: initialCoverImageUrl ? 'Failed to load image' : 'No image available' })] })) }), (0,jsx_runtime.jsxs)(Card/* CardBody */.bw, { className: "flex-1 flex flex-col", children: [(0,jsx_runtime.jsxs)("div", { className: "flex-1", children: [(0,jsx_runtime.jsxs)(jsx_runtime.Fragment, { children: [(() => { console.log('ProjectCard projectName:', projectName); return null; })(), (0,jsx_runtime.jsx)("div", { className: "text-base font-medium mb-2 leading-tight truncate", title: projectName && projectName.trim() ? projectName : 'Untitled Project', style: {
                                             minHeight: 20,
                                             letterSpacing: '-0.01em',
                                             background: 'rgba(250,252,255,0.92)',
@@ -466,9 +375,118 @@ const ProjectCard = (props) => {
                                             fontWeight: 500,
                                             zIndex: 2,
                                             textShadow: 'none'
-                                        }, children: projectName && projectName.trim() ? projectName : 'Untitled Project' })] }), (0,jsx_runtime.jsxs)("div", { className: `inline-flex items-center gap-2 px-2 py-0.5 rounded-full text-xs font-medium mb-2 ${statusStyles.bg} ${statusStyles.text}`, style: { minHeight: 24 }, children: [statusStyles.icon, (0,jsx_runtime.jsx)("span", { children: formatStatusText(status) })] }), productionCompany && ((0,jsx_runtime.jsxs)(CardDescription, { className: "flex items-center text-sm mb-3", children: [(0,jsx_runtime.jsx)(film/* default */.A, { size: 14, className: "mr-1.5 text-gray-400" }), productionCompany] })), primaryLocation && ((0,jsx_runtime.jsxs)("div", { className: "flex items-center text-sm text-gray-500 mb-3", children: [(0,jsx_runtime.jsx)(map_pin/* default */.A, { size: 14, className: "mr-1.5 text-gray-400" }), primaryLocation] })), summary && ((0,jsx_runtime.jsx)("p", { className: "text-sm text-gray-600 mb-4 line-clamp-3", children: summary })), genres.length > 0 && ((0,jsx_runtime.jsxs)("div", { className: "flex flex-wrap gap-2 mt-3 mb-4", children: [genres.slice(0, 3).map((genre, index) => ((0,jsx_runtime.jsx)("span", { className: "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800", children: genre }, `${genre}-${index}`))), genres.length > 3 && ((0,jsx_runtime.jsxs)("span", { className: "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600", children: ["+", genres.length - 3, " more"] }))] }))] }), (0,jsx_runtime.jsx)(CardFooter, { className: "pt-4 border-t border-gray-100", children: (0,jsx_runtime.jsxs)("div", { className: "flex items-center justify-between w-full", children: [(0,jsx_runtime.jsxs)("div", { className: "flex items-center text-xs text-gray-500", children: [(0,jsx_runtime.jsx)(calendar/* default */.A, { size: 12, className: "mr-1" }), (0,jsx_runtime.jsxs)("span", { children: [startDate ? formatDate(startDate) : 'TBD', " - ", endDate ? formatDate(endDate) : 'TBD'] })] }), (0,jsx_runtime.jsx)(Button/* Button */.$, { variant: "ghost", size: "sm", className: "text-blue-600 hover:text-blue-700 hover:bg-blue-50", children: "View Details \u2192" })] }) })] })] }));
+                                        }, children: projectName && projectName.trim() ? projectName : 'Untitled Project' })] }), (0,jsx_runtime.jsxs)("div", { className: `inline-flex items-center gap-2 px-2 py-0.5 rounded-full text-xs font-medium mb-2 ${statusStyles.bg} ${statusStyles.text}`, style: { minHeight: 24 }, children: [statusStyles.icon, (0,jsx_runtime.jsx)("span", { children: formatStatusText(status) })] }), productionCompany && ((0,jsx_runtime.jsxs)(Card/* CardDescription */.BT, { className: "flex items-center text-sm mb-3", children: [(0,jsx_runtime.jsx)(film/* default */.A, { size: 14, className: "mr-1.5 text-gray-400" }), productionCompany] })), primaryLocation && ((0,jsx_runtime.jsxs)("div", { className: "flex items-center text-sm text-gray-500 mb-3", children: [(0,jsx_runtime.jsx)(map_pin/* default */.A, { size: 14, className: "mr-1.5 text-gray-400" }), primaryLocation] })), summary && ((0,jsx_runtime.jsx)("p", { className: "text-sm text-gray-600 mb-4 line-clamp-3", children: summary })), genres.length > 0 && ((0,jsx_runtime.jsxs)("div", { className: "flex flex-wrap gap-2 mt-3 mb-4", children: [genres.slice(0, 3).map((genre, index) => ((0,jsx_runtime.jsx)("span", { className: "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800", children: genre }, `${genre}-${index}`))), genres.length > 3 && ((0,jsx_runtime.jsxs)("span", { className: "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600", children: ["+", genres.length - 3, " more"] }))] }))] }), (0,jsx_runtime.jsx)(Card/* CardFooter */.wL, { className: "pt-4 border-t border-gray-100", children: (0,jsx_runtime.jsxs)("div", { className: "flex items-center justify-between w-full", children: [(0,jsx_runtime.jsxs)("div", { className: "flex items-center text-xs text-gray-500", children: [(0,jsx_runtime.jsx)(calendar/* default */.A, { size: 12, className: "mr-1" }), (0,jsx_runtime.jsxs)("span", { children: [startDate ? formatDate(startDate) : 'TBD', " - ", endDate ? formatDate(endDate) : 'TBD'] })] }), (0,jsx_runtime.jsx)(Button/* Button */.$, { variant: "ghost", size: "sm", className: "text-blue-600 hover:text-blue-700 hover:bg-blue-50", children: "View Details \u2192" })] }) })] })] }));
 };
 /* harmony default export */ const components_ProjectCard = (ProjectCard);
+
+
+/***/ }),
+
+/***/ 2307:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   A: () => (/* binding */ Calendar)
+/* harmony export */ });
+/* unused harmony export __iconNode */
+/* harmony import */ var _createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9407);
+/**
+ * @license lucide-react v0.525.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+
+
+
+const __iconNode = [
+  ["path", { d: "M8 2v4", key: "1cmpym" }],
+  ["path", { d: "M16 2v4", key: "4m81vk" }],
+  ["rect", { width: "18", height: "18", x: "3", y: "4", rx: "2", key: "1hopcy" }],
+  ["path", { d: "M3 10h18", key: "8toen8" }]
+];
+const Calendar = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .A)("calendar", __iconNode);
+
+
+//# sourceMappingURL=calendar.js.map
+
+
+/***/ }),
+
+/***/ 4948:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   Ay: () => (__WEBPACK_DEFAULT_EXPORT__),
+/* harmony export */   BT: () => (/* binding */ CardDescription),
+/* harmony export */   ZB: () => (/* binding */ CardTitle),
+/* harmony export */   bw: () => (/* binding */ CardBody),
+/* harmony export */   wL: () => (/* binding */ CardFooter)
+/* harmony export */ });
+/* unused harmony export CardHeader */
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(4848);
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(6540);
+/* harmony import */ var framer_motion__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(3490);
+/* harmony import */ var clsx__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(4164);
+
+
+
+
+const Card = (0,react__WEBPACK_IMPORTED_MODULE_1__.forwardRef)(({ variant = 'elevated', hoverable = false, rounded = 'lg', shadow = 'md', padding = 'md', className = '', children, ...props }, ref) => {
+    // Base card classes
+    const baseClasses = (0,clsx__WEBPACK_IMPORTED_MODULE_2__/* ["default"] */ .A)(
+    // Base styles
+    'transition-all duration-200', 'overflow-hidden', 'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2', 
+    // Variant styles
+    variant === 'elevated' && 'bg-white border border-gray-100', variant === 'outline' && 'bg-white border border-gray-200', variant === 'filled' && 'bg-gray-50', variant === 'unstyled' && 'bg-transparent', 
+    // Shadow
+    shadow === 'sm' && 'shadow-sm', shadow === 'md' && 'shadow', shadow === 'lg' && 'shadow-md', shadow === 'xl' && 'shadow-lg', shadow === '2xl' && 'shadow-xl', shadow === 'inner' && 'shadow-inner', 
+    // Rounded corners
+    rounded === 'sm' && 'rounded-sm', rounded === 'md' && 'rounded', rounded === 'lg' && 'rounded-lg', rounded === 'xl' && 'rounded-xl', rounded === '2xl' && 'rounded-2xl', rounded === 'full' && 'rounded-full', 
+    // Padding
+    padding === 'sm' && 'p-3', padding === 'md' && 'p-4', padding === 'lg' && 'p-6', 
+    // Hover effects
+    hoverable && [
+        'hover:shadow-lg',
+        'hover:-translate-y-0.5',
+        'transform transition-transform duration-200',
+        'hover:ring-2 hover:ring-blue-100',
+    ], 
+    // Custom class names
+    className);
+    // Animation variants with proper typing
+    const variants = {
+        hidden: { opacity: 0, y: 20 },
+        visible: {
+            opacity: 1,
+            y: 0,
+            transition: { duration: 0.3 }
+        }
+    };
+    // Hover animation
+    const hoverAnimation = hoverable ? { scale: 1.01 } : {};
+    return ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(framer_motion__WEBPACK_IMPORTED_MODULE_3__/* .motion */ .P.div, { ref: ref, className: baseClasses, initial: "hidden", animate: "visible", whileHover: hoverAnimation, variants: variants, ...props, children: children }));
+});
+Card.displayName = 'Card';
+const CardHeader = (0,react__WEBPACK_IMPORTED_MODULE_1__.forwardRef)(({ className = '', withBorder = true, children, ...props }, ref) => ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { ref: ref, className: (0,clsx__WEBPACK_IMPORTED_MODULE_2__/* ["default"] */ .A)('px-4 py-3', withBorder && 'border-b border-gray-100', className), ...props, children: children })));
+CardHeader.displayName = 'CardHeader';
+const CardBody = (0,react__WEBPACK_IMPORTED_MODULE_1__.forwardRef)(({ className = '', padding = 'md', children, ...props }, ref) => {
+    const paddingClass = {
+        none: 'p-0',
+        sm: 'p-3',
+        md: 'p-4',
+        lg: 'p-6',
+    }[padding];
+    return ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { ref: ref, className: (0,clsx__WEBPACK_IMPORTED_MODULE_2__/* ["default"] */ .A)(paddingClass, className), ...props, children: children }));
+});
+CardBody.displayName = 'CardBody';
+const CardFooter = (0,react__WEBPACK_IMPORTED_MODULE_1__.forwardRef)(({ className = '', withBorder = true, children, ...props }, ref) => ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { ref: ref, className: (0,clsx__WEBPACK_IMPORTED_MODULE_2__/* ["default"] */ .A)('px-4 py-3', withBorder && 'border-t border-gray-100', className), ...props, children: children })));
+CardFooter.displayName = 'CardFooter';
+const CardTitle = (0,react__WEBPACK_IMPORTED_MODULE_1__.forwardRef)(({ as: Tag = 'h3', className = '', children, ...props }, ref) => ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(Tag, { ref: ref, className: (0,clsx__WEBPACK_IMPORTED_MODULE_2__/* ["default"] */ .A)('text-lg font-semibold text-gray-900', className), ...props, children: children })));
+CardTitle.displayName = 'CardTitle';
+const CardDescription = (0,react__WEBPACK_IMPORTED_MODULE_1__.forwardRef)(({ className = '', children, ...props }, ref) => ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("p", { ref: ref, className: (0,clsx__WEBPACK_IMPORTED_MODULE_2__/* ["default"] */ .A)('text-sm text-gray-600 mt-1', className), ...props, children: children })));
+CardDescription.displayName = 'CardDescription';
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (Card);
 
 
 /***/ }),
@@ -504,6 +522,35 @@ const Film = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"] 
 
 
 //# sourceMappingURL=film.js.map
+
+
+/***/ }),
+
+/***/ 7235:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   A: () => (/* binding */ Clock)
+/* harmony export */ });
+/* unused harmony export __iconNode */
+/* harmony import */ var _createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9407);
+/**
+ * @license lucide-react v0.525.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+
+
+
+const __iconNode = [
+  ["path", { d: "M12 6v6l4 2", key: "mmk7yg" }],
+  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }]
+];
+const Clock = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .A)("clock", __iconNode);
+
+
+//# sourceMappingURL=clock.js.map
 
 
 /***/ }),
@@ -544,4 +591,4 @@ const MapPin = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"
 /***/ })
 
 }]);
-//# sourceMappingURL=664.chunk.js.map
+//# sourceMappingURL=928.chunk.js.map

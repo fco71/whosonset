@@ -1,6 +1,23 @@
 "use strict";
 (self["webpackChunkwhosonset"] = self["webpackChunkwhosonset"] || []).push([[149],{
 
+/***/ 676:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   i: () => (/* binding */ imageErrorFallback)
+/* harmony export */ });
+// Utility for robust <img> error fallback
+function imageErrorFallback(e, fallback = '/default-avatar.svg') {
+    const target = e.target;
+    if (!target.src.endsWith(fallback)) {
+        target.src = fallback;
+    }
+}
+
+
+/***/ }),
+
 /***/ 1149:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
@@ -124,7 +141,10 @@ const EmailButton = ({ email, disabled }) => {
 };
 /* harmony default export */ const MessageButton = (EmailButton);
 
+// EXTERNAL MODULE: ./src/utilities/imageErrorFallback.ts
+var imageErrorFallback = __webpack_require__(676);
 ;// ./src/components/CrewProfileHeader.tsx
+
 
 
 
@@ -163,7 +183,7 @@ const CrewProfileHeader = ({ profile }) => {
     const imageUrl = profile.profileImageUrl || profile.photoURL || '/default-avatar.svg';
     const availability = profile.availability || '';
     const canMessage = !!profile.contactInfo?.email && currentUser && currentUser.uid !== profile.uid;
-    return ((0,jsx_runtime.jsxs)("div", { className: "flex flex-col md:flex-row items-center gap-6 bg-white rounded-2xl shadow-lg px-8 py-6 mb-8 border border-gray-100 animate-fade-in", children: [(0,jsx_runtime.jsx)("img", { src: imageUrl, alt: profile.name, className: "w-24 h-24 rounded-full object-cover border-2 border-gray-200", onError: e => { e.target.src = '/default-avatar.svg'; }, style: { flexShrink: 0 } }), (0,jsx_runtime.jsxs)("div", { className: "flex-1 min-w-0 text-center md:text-left", children: [(0,jsx_runtime.jsx)("div", { className: "font-bold text-2xl text-gray-900 mb-1", children: profile.name }), (0,jsx_runtime.jsxs)("div", { className: "text-sm text-gray-500 mb-1", children: [mainTitle, mainLocation ? ' · ' + mainLocation : ''] }), availability && ((0,jsx_runtime.jsx)("span", { className: `inline-block px-2 py-1 rounded-full text-xs font-medium ${availability.toLowerCase() === 'available' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`, children: availability }))] }), (0,jsx_runtime.jsx)("div", { className: "flex flex-col gap-2 items-center md:items-end", children: currentUser && currentUser.uid !== profile.uid && ((0,jsx_runtime.jsxs)("div", { className: "flex gap-2 items-center", children: [(0,jsx_runtime.jsx)(FollowButton/* default */.A, { currentUserId: currentUser.uid, targetUserId: profile.uid, size: "sm" }), (0,jsx_runtime.jsx)("button", { onClick: handleBookmark, disabled: bookmarking, className: `p-2 rounded-full border border-gray-200 bg-white hover:bg-yellow-50 transition-all duration-200 ${isBookmarked ? 'text-yellow-500' : 'text-gray-400'} ${bookmarking ? 'opacity-50' : ''}`, title: isBookmarked ? 'Remove from bookmarks' : 'Add to bookmarks', style: { lineHeight: 0 }, children: isBookmarked ? ((0,jsx_runtime.jsx)("svg", { xmlns: "http://www.w3.org/2000/svg", fill: "currentColor", viewBox: "0 0 24 24", className: "w-6 h-6", children: (0,jsx_runtime.jsx)("path", { d: "M5 5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16l-7-3.5L5 21V5z" }) })) : ((0,jsx_runtime.jsx)("svg", { xmlns: "http://www.w3.org/2000/svg", fill: "none", stroke: "currentColor", strokeWidth: "2", viewBox: "0 0 24 24", className: "w-6 h-6", children: (0,jsx_runtime.jsx)("path", { strokeLinecap: "round", strokeLinejoin: "round", d: "M5 5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16l-7-3.5L5 21V5z" }) })) }), canMessage && ((0,jsx_runtime.jsx)(MessageButton, { email: profile.contactInfo.email }))] })) })] }));
+    return ((0,jsx_runtime.jsxs)("div", { className: "flex flex-col md:flex-row items-center gap-6 bg-white rounded-2xl shadow-lg px-8 py-6 mb-8 border border-gray-100 animate-fade-in", children: [(0,jsx_runtime.jsx)("img", { src: imageUrl, alt: profile.name, className: "w-24 h-24 rounded-full object-cover border-2 border-gray-200", onError: imageErrorFallback/* imageErrorFallback */.i, style: { flexShrink: 0 } }), (0,jsx_runtime.jsxs)("div", { className: "flex-1 min-w-0 text-center md:text-left", children: [(0,jsx_runtime.jsx)("div", { className: "font-bold text-2xl text-gray-900 mb-1", children: profile.name }), (0,jsx_runtime.jsxs)("div", { className: "text-sm text-gray-500 mb-1", children: [mainTitle, mainLocation ? ' · ' + mainLocation : ''] }), availability && ((0,jsx_runtime.jsx)("span", { className: `inline-block px-2 py-1 rounded-full text-xs font-medium ${availability.toLowerCase() === 'available' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`, children: availability }))] }), (0,jsx_runtime.jsx)("div", { className: "flex flex-col gap-2 items-center md:items-end", children: currentUser && currentUser.uid !== profile.uid && ((0,jsx_runtime.jsxs)("div", { className: "flex gap-2 items-center", children: [(0,jsx_runtime.jsx)(FollowButton/* default */.A, { currentUserId: currentUser.uid, targetUserId: profile.uid, size: "sm" }), (0,jsx_runtime.jsx)("button", { onClick: handleBookmark, disabled: bookmarking, className: `p-2 rounded-full border border-gray-200 bg-white hover:bg-yellow-50 transition-all duration-200 ${isBookmarked ? 'text-yellow-500' : 'text-gray-400'} ${bookmarking ? 'opacity-50' : ''}`, title: isBookmarked ? 'Remove from bookmarks' : 'Add to bookmarks', style: { lineHeight: 0 }, children: isBookmarked ? ((0,jsx_runtime.jsx)("svg", { xmlns: "http://www.w3.org/2000/svg", fill: "currentColor", viewBox: "0 0 24 24", className: "w-6 h-6", children: (0,jsx_runtime.jsx)("path", { d: "M5 5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16l-7-3.5L5 21V5z" }) })) : ((0,jsx_runtime.jsx)("svg", { xmlns: "http://www.w3.org/2000/svg", fill: "none", stroke: "currentColor", strokeWidth: "2", viewBox: "0 0 24 24", className: "w-6 h-6", children: (0,jsx_runtime.jsx)("path", { strokeLinecap: "round", strokeLinejoin: "round", d: "M5 5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16l-7-3.5L5 21V5z" }) })) }), canMessage && ((0,jsx_runtime.jsx)(MessageButton, { email: profile.contactInfo.email }))] })) })] }));
 };
 /* harmony default export */ const components_CrewProfileHeader = (CrewProfileHeader);
 
@@ -340,7 +360,10 @@ const useManagedUrl = (url) => {
     return isBlobUrl && blobUrl ? blobUrl : url || null;
 };
 
+// EXTERNAL MODULE: ./src/utilities/imageErrorFallback.ts
+var imageErrorFallback = __webpack_require__(676);
 ;// ./src/components/ResumeView.tsx
+
 
 
 // Import html2pdf using require to bypass TypeScript issues
@@ -521,11 +544,7 @@ const ResumeView = (props) => {
               min-height: 297mm !important;
             }
           }
-        ` }), (0,jsx_runtime.jsx)("div", { className: "resume-container", style: containerStyle, children: (0,jsx_runtime.jsx)("div", { style: contentWrapperStyle, children: (0,jsx_runtime.jsxs)("div", { style: scrollableContentStyle, children: [(0,jsx_runtime.jsxs)("div", { style: headerStyle, children: [managedProfileImageUrl && ((0,jsx_runtime.jsx)("img", { src: managedProfileImageUrl, alt: "Profile", style: profileImageStyle, crossOrigin: "anonymous", onError: (e) => {
-                                            // Fallback to empty image if the URL is invalid
-                                            const target = e.target;
-                                            target.style.display = 'none';
-                                        } })), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h1", { style: nameStyle, children: profile.name }), profile.bio && ((0,jsx_runtime.jsx)("p", { style: bioStyle, children: profile.bio }))] })] }), profile.languages && profile.languages.length > 0 && ((0,jsx_runtime.jsxs)("section", { style: sectionStyle, children: [(0,jsx_runtime.jsx)("div", { style: sectionTitleStyle, children: "Languages" }), (0,jsx_runtime.jsx)("ul", { style: jobTitlesListStyle, children: profile.languages.slice(0, 3).map((lang, idx) => ((0,jsx_runtime.jsx)("li", { style: jobTitleItemStyle, children: lang }, idx))) })] })), (0,jsx_runtime.jsxs)("div", { style: sectionStyle, children: [(0,jsx_runtime.jsx)("h2", { style: sectionTitleStyle, children: "Professional Experience" }), (0,jsx_runtime.jsx)("ul", { style: jobTitlesListStyle, children: profile.jobTitles
+        ` }), (0,jsx_runtime.jsx)("div", { className: "resume-container", style: containerStyle, children: (0,jsx_runtime.jsx)("div", { style: contentWrapperStyle, children: (0,jsx_runtime.jsxs)("div", { style: scrollableContentStyle, children: [(0,jsx_runtime.jsxs)("div", { style: headerStyle, children: [managedProfileImageUrl && ((0,jsx_runtime.jsx)("img", { src: managedProfileImageUrl, alt: "Profile", style: profileImageStyle, crossOrigin: "anonymous", onError: e => (0,imageErrorFallback/* imageErrorFallback */.i)(e) })), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h1", { style: nameStyle, children: profile.name }), profile.bio && ((0,jsx_runtime.jsx)("p", { style: bioStyle, children: profile.bio }))] })] }), profile.languages && profile.languages.length > 0 && ((0,jsx_runtime.jsxs)("section", { style: sectionStyle, children: [(0,jsx_runtime.jsx)("div", { style: sectionTitleStyle, children: "Languages" }), (0,jsx_runtime.jsx)("ul", { style: jobTitlesListStyle, children: profile.languages.slice(0, 3).map((lang, idx) => ((0,jsx_runtime.jsx)("li", { style: jobTitleItemStyle, children: lang }, idx))) })] })), (0,jsx_runtime.jsxs)("div", { style: sectionStyle, children: [(0,jsx_runtime.jsx)("h2", { style: sectionTitleStyle, children: "Professional Experience" }), (0,jsx_runtime.jsx)("ul", { style: jobTitlesListStyle, children: profile.jobTitles
                                             .filter(jt => jt.department && jt.title)
                                             .slice(0, 4)
                                             .map((jt, i) => ((0,jsx_runtime.jsxs)("li", { style: jobTitleItemStyle, children: [(0,jsx_runtime.jsx)("strong", { children: jt.title }), " \u2014 ", jt.department] }, i))) }), profile.jobTitles.filter(jt => jt.department && jt.title).length > 4 && ((0,jsx_runtime.jsx)("p", { style: { fontSize: '9pt', color: '#666', fontStyle: 'italic', margin: '1mm 0 0 0' }, children: "(Showing top 4 positions - prioritize most relevant first)" }))] }), profile.projects && profile.projects.filter(p => p.projectName && p.role).length > 0 && ((0,jsx_runtime.jsxs)("div", { style: sectionStyle, children: [(0,jsx_runtime.jsx)("h2", { style: sectionTitleStyle, children: "Selected Projects" }), (0,jsx_runtime.jsx)("ul", { style: projectsListStyle, children: profile.projects
@@ -582,7 +601,7 @@ const ResumeView = (props) => {
 /* harmony export */ });
 /* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(4848);
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(6540);
-/* harmony import */ var _utilities_socialService__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(6997);
+/* harmony import */ var _utilities_socialService__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(9505);
 /* harmony import */ var react_hot_toast__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(888);
 
 

@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { JobPosting } from '../../types/JobApplication';
 import { cn } from '../../lib/utils';
 import Card, { CardHeader, CardBody, CardFooter, CardTitle, CardDescription } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Calendar, MapPin, Briefcase, Clock, DollarSign, Tag, ExternalLink, Bookmark, BookmarkCheck } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+import { SavedJobsService } from '../../utilities/savedJobsService';
+import { toast } from 'react-hot-toast';
 
 interface JobCardProps {
   job: JobPosting & { matchScore?: number };
@@ -12,6 +15,7 @@ interface JobCardProps {
   onSave?: (jobId: string) => void;
   showMatchScore?: boolean;
   className?: string;
+  showSaveButton?: boolean;
 }
 
 const JobCard: React.FC<JobCardProps> = ({ 
@@ -19,11 +23,31 @@ const JobCard: React.FC<JobCardProps> = ({
   onApply, 
   onSave, 
   showMatchScore = false,
-  className = ''
+  className = '',
+  showSaveButton = true
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const { currentUser } = useAuth();
   
+  // Check if job is saved on component mount
+  useEffect(() => {
+    if (!currentUser || !showSaveButton || !job.id) return;
+    
+    // Subscribe to real-time save status updates
+    const unsubscribe = SavedJobsService.subscribeToJobSaveStatus(currentUser.uid, job.id, (saved, savedJobId) => {
+      setIsSaved(saved);
+    });
+    
+    // Cleanup subscription on unmount
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, [currentUser, job.id, showSaveButton]);
+
   // Format date to relative time
   const formatRelativeTime = (date: Date | string | any) => {
     if (!date) return 'N/A';
@@ -79,10 +103,46 @@ const JobCard: React.FC<JobCardProps> = ({
     return types[type] || { text: type, color: 'bg-gray-100 text-gray-800' };
   };
 
-  const handleSave = (e: React.MouseEvent) => {
+  const handleSave = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    setIsSaved(!isSaved);
-    onSave?.(job.id);
+    
+    if (!currentUser) {
+      toast.error('Please log in to save jobs');
+      return;
+    }
+    
+    if (!job.id) {
+      toast.error('Invalid job data');
+      return;
+    }
+    
+    if (isSaving) return; // Prevent double-clicks
+    
+    setIsSaving(true);
+    try {
+      if (isSaved) {
+        // Remove from saved
+        const { savedJobId } = await SavedJobsService.isJobSaved(currentUser.uid, job.id);
+        if (savedJobId) {
+          await SavedJobsService.removeSavedJob(savedJobId);
+          setIsSaved(false);
+          toast.success('Job removed from saved');
+        }
+      } else {
+        // Add to saved
+        await SavedJobsService.saveJob(currentUser.uid, job.id);
+        setIsSaved(true);
+        toast.success('Job saved successfully');
+      }
+      
+      // Call parent onSave callback if provided
+      onSave?.(job.id);
+    } catch (error) {
+      console.error('Error saving job:', error);
+      toast.error('Failed to save job. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleApply = (e: React.MouseEvent) => {
@@ -141,15 +201,25 @@ const JobCard: React.FC<JobCardProps> = ({
             </div>
           </div>
           
-          {onSave && (
+          {showSaveButton && currentUser && (
             <button
               type="button"
-              className="h-8 w-8 rounded-full hover:bg-gray-50 flex items-center justify-center text-gray-400 hover:text-blue-600 transition-colors"
+              className={cn(
+                "h-8 w-8 rounded-full flex items-center justify-center transition-colors",
+                isSaving ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-50",
+                isSaved 
+                  ? "text-blue-600 hover:text-blue-700" 
+                  : "text-gray-400 hover:text-blue-600"
+              )}
               onClick={handleSave}
+              disabled={isSaving}
               aria-label={isSaved ? 'Unsave job' : 'Save job'}
+              title={isSaved ? 'Remove from saved jobs' : 'Save job for later'}
             >
-              {isSaved ? (
-                <BookmarkCheck className="h-5 w-5 text-blue-600 fill-current" />
+              {isSaving ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+              ) : isSaved ? (
+                <BookmarkCheck className="h-5 w-5 fill-current" />
               ) : (
                 <Bookmark className="h-5 w-5" />
               )}

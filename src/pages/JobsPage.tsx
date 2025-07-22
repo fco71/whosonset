@@ -18,11 +18,13 @@ import {
   ArrowRight,
   Plus,
   X,
-  ChevronDown,
-  TrendingUp,
-  Zap,
-  Globe
+  Bookmark,
+  BookmarkCheck,
+  Globe,
 } from 'lucide-react';
+import { SavedJobsService } from '../utilities/savedJobsService';
+import { toast } from 'react-hot-toast';
+import Card, { CardHeader, CardBody, CardFooter, CardTitle, CardDescription } from '../components/ui/Card';
 
 const hasValue = (value: any) => value !== undefined && value !== null && value !== '' && !(Array.isArray(value) && value.length === 0);
 
@@ -59,20 +61,81 @@ interface JobCardProps {
 const JobCard: React.FC<JobCardProps> = ({ job, currentUserId, onEdit }) => {
   const navigate = useNavigate();
   const [isHovered, setIsHovered] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const { currentUser } = useAuth();
+  
+  // Check if job is saved on component mount
+  useEffect(() => {
+    if (!currentUser || !job.id) return;
+    
+    // Subscribe to real-time save status updates
+    const unsubscribe = SavedJobsService.subscribeToJobSaveStatus(currentUser.uid, job.id, (saved, savedJobId) => {
+      setIsSaved(saved);
+    });
+    
+    // Cleanup subscription on unmount
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, [currentUser, job.id]);
+
+  const handleSave = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    if (!currentUser) {
+      toast.error('Please log in to save jobs');
+      return;
+    }
+    
+    if (!job.id) {
+      toast.error('Invalid job data');
+      return;
+    }
+    
+    if (isSaving) return; // Prevent double-clicks
+    
+    setIsSaving(true);
+    try {
+      if (isSaved) {
+        // Remove from saved
+        const { savedJobId } = await SavedJobsService.isJobSaved(currentUser.uid, job.id);
+        if (savedJobId) {
+          await SavedJobsService.removeSavedJob(savedJobId);
+          setIsSaved(false);
+          toast.success('Job removed from saved');
+        }
+      } else {
+        // Add to saved
+        await SavedJobsService.saveJob(currentUser.uid, job.id);
+        setIsSaved(true);
+        toast.success('Job saved successfully');
+      }
+    } catch (error) {
+      console.error('Error saving job:', error);
+      toast.error('Failed to save job. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
   
   return (
-    <div
-      className="group bg-white rounded-xl border border-gray-200 hover:border-blue-200 hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden"
+    <Card
+      variant="elevated"
+      hoverable
+      className="group cursor-pointer overflow-hidden"
       onClick={() => navigate(`/jobs/${job.id}`)}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="p-6">
+      <CardBody className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
-            <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors mb-2">
+            <CardTitle className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors mb-2">
               {job.title || 'Untitled Position'}
-            </h3>
+            </CardTitle>
             <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
               <div className="flex items-center gap-1">
                 <Building className="w-4 h-4" />
@@ -91,20 +154,47 @@ const JobCard: React.FC<JobCardProps> = ({ job, currentUserId, onEdit }) => {
             </div>
           </div>
           
-          {currentUserId && job.postedById === currentUserId && (
-            <button
-              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-              title="Edit Job"
-              onClick={e => { 
-                e.stopPropagation(); 
-                onEdit ? onEdit(job) : navigate(`/edit-job/${job.id}`); 
-              }}
-            >
-              <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536M9 13l6-6 3 3-6 6H9v-3z" />
-              </svg>
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {/* Save Button */}
+            {currentUser && (
+              <button
+                className={`p-2 rounded-lg transition-colors ${
+                  isSaving ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-100"
+                } ${
+                  isSaved 
+                    ? "text-blue-600 hover:text-blue-700" 
+                    : "text-gray-400 hover:text-blue-600"
+                }`}
+                title={isSaved ? 'Remove from saved jobs' : 'Save job for later'}
+                onClick={handleSave}
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                ) : isSaved ? (
+                  <BookmarkCheck className="w-5 h-5 fill-current" />
+                ) : (
+                  <Bookmark className="w-5 h-5" />
+                )}
+              </button>
+            )}
+            
+            {/* Edit Button for Job Poster */}
+            {currentUserId && job.postedById === currentUserId && (
+              <button
+                className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                title="Edit Job"
+                onClick={e => { 
+                  e.stopPropagation(); 
+                  onEdit ? onEdit(job) : navigate(`/edit-job/${job.id}`); 
+                }}
+              >
+                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536M9 13l6-6 3 3-6 6H9v-3z" />
+                </svg>
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="flex flex-wrap gap-2 mb-4">
@@ -126,9 +216,9 @@ const JobCard: React.FC<JobCardProps> = ({ job, currentUserId, onEdit }) => {
         </div>
 
         {hasValue(job.description) && (
-          <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+          <CardDescription className="text-gray-600 text-sm mb-4 line-clamp-2">
             {job.description}
-          </p>
+          </CardDescription>
         )}
 
         <div className="flex items-center justify-between">
@@ -152,8 +242,8 @@ const JobCard: React.FC<JobCardProps> = ({ job, currentUserId, onEdit }) => {
             <ArrowRight className="w-4 h-4" />
           </div>
         </div>
-      </div>
-    </div>
+      </CardBody>
+    </Card>
   );
 };
 
@@ -287,7 +377,7 @@ export default function JobsPage() {
             <div className="h-4 bg-gray-200 rounded w-64 mb-8"></div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[...Array(6)].map((_, i) => (
-                <div key={i} className="bg-white rounded-xl border border-gray-200 p-6">
+                <Card key={i} variant="elevated" className="p-6">
                   <div className="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
                   <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
                   <div className="h-4 bg-gray-200 rounded w-2/3 mb-4"></div>
@@ -296,7 +386,7 @@ export default function JobsPage() {
                     <div className="h-6 bg-gray-200 rounded w-20"></div>
                   </div>
                   <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                </div>
+                </Card>
               ))}
             </div>
           </div>
@@ -369,6 +459,14 @@ export default function JobsPage() {
                       >
                         <Briefcase className="w-4 h-4" />
                         My Applications
+                      </Button>
+                      <Button
+                        onClick={() => navigate('/jobs/saved')}
+                        className="flex items-center gap-2"
+                        variant="secondary"
+                      >
+                        <Star className="w-4 h-4" />
+                        Saved Jobs
                       </Button>
                       <Button
                         onClick={() => navigate('/post-job')}

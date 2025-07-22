@@ -1,5 +1,5 @@
 "use strict";
-(self["webpackChunkwhosonset"] = self["webpackChunkwhosonset"] || []).push([[296],{
+(self["webpackChunkwhosonset"] = self["webpackChunkwhosonset"] || []).push([[258],{
 
 /***/ 697:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
@@ -86,7 +86,7 @@ Button.displayName = 'Button';
 
 /***/ }),
 
-/***/ 2296:
+/***/ 1258:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 // ESM COMPAT FLAG
@@ -126,26 +126,8 @@ const UserX = (0,createLucideIcon/* default */.A)("user-x", __iconNode);
 
 //# sourceMappingURL=user-x.js.map
 
-;// ./node_modules/lucide-react/dist/esm/icons/user-check.js
-/**
- * @license lucide-react v0.525.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-
-
-
-const user_check_iconNode = [
-  ["path", { d: "m16 11 2 2 4-4", key: "9rsbq5" }],
-  ["path", { d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2", key: "1yyitq" }],
-  ["circle", { cx: "9", cy: "7", r: "4", key: "nufk8" }]
-];
-const UserCheck = (0,createLucideIcon/* default */.A)("user-check", user_check_iconNode);
-
-
-//# sourceMappingURL=user-check.js.map
-
+// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/user-check.js
+var user_check = __webpack_require__(7623);
 ;// ./node_modules/lucide-react/dist/esm/icons/user-plus.js
 /**
  * @license lucide-react v0.525.0 - ISC
@@ -273,7 +255,10 @@ function Skeleton({ className, ...props }) {
 }
 
 
+// EXTERNAL MODULE: ./node_modules/react-hot-toast/dist/index.mjs + 1 modules
+var dist = __webpack_require__(888);
 ;// ./src/pages/SocialPage.tsx
+
 
 
 
@@ -421,7 +406,7 @@ const SocialPage = () => {
                 const realFollowRequests = await followRequestsPromise;
                 const mappedRequests = await Promise.all(realFollowRequests.map(async (req) => {
                     const userProfile = await fetchUserProfile(req.fromUserId);
-                    return userProfile;
+                    return { ...userProfile, requestId: req.id }; // Attach Firestore request ID
                 }));
                 setConnectionRequests(mappedRequests);
                 // Load real connections (people I'm following) - use subscription once
@@ -519,30 +504,40 @@ const SocialPage = () => {
         try {
             if (follow) {
                 await socialService/* SocialService */.l.sendFollowRequest(user.uid, profileId);
+                dist/* toast */.oR.success('Follow request sent!');
             }
             else {
                 await socialService/* SocialService */.l.unfollow(user.uid, profileId);
+                dist/* toast */.oR.success('Unfollowed successfully');
             }
             await loadData();
         }
         catch (error) {
             console.error('Error updating follow status:', error);
+            dist/* toast */.oR.error(follow ? 'Failed to send follow request' : 'Failed to unfollow');
         }
     };
     // Handle follow request response (accept/reject)
-    const handleFollowRequest = (userId, action) => {
-        // In a real app, you would update the database here
-        console.log(`${action}ing follow request from ${userId}`);
-        // Update local state
-        if (action === 'accept') {
-            const request = connectionRequests.find(p => (0,Profile/* getProfileId */.Lx)(p) === userId);
-            if (request) {
+    const handleFollowRequest = async (userId, action) => {
+        // Find the follow request for this user
+        const request = connectionRequests.find(p => (0,Profile/* getProfileId */.Lx)(p) === userId);
+        if (!request)
+            return;
+        try {
+            await socialService/* SocialService */.l.respondToFollowRequest(request.requestId, action === 'accept' ? 'accepted' : 'rejected');
+            // Update local state after backend call
+            if (action === 'accept') {
                 setConnections(prev => [...prev, request]);
-                setConnectionRequests(prev => prev.filter(p => (0,Profile/* getProfileId */.Lx)(p) !== userId));
+                dist/* toast */.oR.success('Follow request accepted!');
             }
-        }
-        else {
+            else {
+                dist/* toast */.oR.success('Follow request rejected.');
+            }
             setConnectionRequests(prev => prev.filter(p => (0,Profile/* getProfileId */.Lx)(p) !== userId));
+        }
+        catch (error) {
+            console.error(`Error ${action}ing follow request:`, error);
+            dist/* toast */.oR.error(`Failed to ${action} follow request. Please try again.`);
         }
     };
     // Messaging functions
@@ -613,7 +608,7 @@ const SocialPage = () => {
             case 'connections':
                 return ((0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h2", { className: "text-xl font-semibold mb-4", children: "Your Connections" }), connections.length > 0 ? ((0,jsx_runtime.jsx)("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4", children: connections.map((profile) => ((0,jsx_runtime.jsx)(UserCard, { profile: profile, action: (0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "outline", size: "sm", className: "whitespace-nowrap text-xs px-3 py-1.5", onClick: () => handleFollowChange((0,Profile/* getProfileId */.Lx)(profile), false), children: [(0,jsx_runtime.jsx)(UserX, { className: "h-3.5 w-3.5 mr-1.5" }), "Unfollow"] }) }, (0,Profile/* getProfileId */.Lx)(profile)))) })) : ((0,jsx_runtime.jsx)("p", { className: "text-gray-500", children: "You don't have any connections yet." }))] }));
             case 'requests':
-                return ((0,jsx_runtime.jsxs)("div", { className: "space-y-4", children: [connectionRequests.length > 0 && ((0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h3", { className: "text-lg font-medium mb-2", children: "Connection Requests" }), (0,jsx_runtime.jsx)("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6", children: connectionRequests.map((profile) => ((0,jsx_runtime.jsx)(UserCard, { profile: profile, action: (0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "default", size: "sm", className: "whitespace-nowrap", onClick: () => handleFollowRequest((0,Profile/* getProfileId */.Lx)(profile), 'accept'), children: [(0,jsx_runtime.jsx)(UserCheck, { className: "h-4 w-4 mr-2" }), "Accept"] }) }, (0,Profile/* getProfileId */.Lx)(profile)))) })] })), sentRequests.length > 0 && ((0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h3", { className: "text-lg font-medium mb-2", children: "Sent Requests" }), (0,jsx_runtime.jsx)("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4", children: sentRequests.map((profile) => ((0,jsx_runtime.jsx)(UserCard, { profile: profile, action: (0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "outline", size: "sm", className: "whitespace-nowrap", onClick: () => handleFollowRequest((0,Profile/* getProfileId */.Lx)(profile), 'reject'), children: [(0,jsx_runtime.jsx)(UserX, { className: "h-4 w-4 mr-2" }), "Cancel"] }) }, (0,Profile/* getProfileId */.Lx)(profile)))) })] })), connectionRequests.length === 0 && sentRequests.length === 0 && ((0,jsx_runtime.jsx)("p", { className: "text-gray-500", children: "No pending requests." }))] }));
+                return ((0,jsx_runtime.jsxs)("div", { className: "space-y-4", children: [connectionRequests.length > 0 && ((0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h3", { className: "text-lg font-medium mb-2", children: "Connection Requests" }), (0,jsx_runtime.jsx)("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6", children: connectionRequests.map((profile) => ((0,jsx_runtime.jsx)(UserCard, { profile: profile, action: (0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "default", size: "sm", className: "whitespace-nowrap", onClick: () => handleFollowRequest((0,Profile/* getProfileId */.Lx)(profile), 'accept'), children: [(0,jsx_runtime.jsx)(user_check/* default */.A, { className: "h-4 w-4 mr-2" }), "Accept"] }) }, (0,Profile/* getProfileId */.Lx)(profile)))) })] })), sentRequests.length > 0 && ((0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h3", { className: "text-lg font-medium mb-2", children: "Sent Requests" }), (0,jsx_runtime.jsx)("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4", children: sentRequests.map((profile) => ((0,jsx_runtime.jsx)(UserCard, { profile: profile, action: (0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "outline", size: "sm", className: "whitespace-nowrap", onClick: () => handleFollowRequest((0,Profile/* getProfileId */.Lx)(profile), 'reject'), children: [(0,jsx_runtime.jsx)(UserX, { className: "h-4 w-4 mr-2" }), "Cancel"] }) }, (0,Profile/* getProfileId */.Lx)(profile)))) })] })), connectionRequests.length === 0 && sentRequests.length === 0 && ((0,jsx_runtime.jsx)("p", { className: "text-gray-500", children: "No pending requests." }))] }));
             case 'discover':
                 return ((0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h2", { className: "text-xl font-semibold mb-4", children: "Discover People" }), filteredProfiles.length > 0 ? ((0,jsx_runtime.jsx)("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4", children: filteredProfiles.map((profile) => ((0,jsx_runtime.jsx)(UserCard, { profile: profile, action: (0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "default", size: "sm", className: "whitespace-nowrap", onClick: () => handleFollowChange((0,Profile/* getProfileId */.Lx)(profile), true), children: [(0,jsx_runtime.jsx)(UserPlus, { className: "h-4 w-4 mr-2" }), "Follow"] }) }, (0,Profile/* getProfileId */.Lx)(profile)))) })) : ((0,jsx_runtime.jsx)("p", { className: "text-gray-500", children: "No suggestions found." }))] }));
             case 'notifications':
@@ -700,7 +695,7 @@ const SocialPage = () => {
     return ((0,jsx_runtime.jsxs)("div", { className: "container mx-auto px-4 py-6 max-w-7xl", children: [(0,jsx_runtime.jsxs)("div", { className: "flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8", children: [(0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h1", { className: "text-2xl font-bold text-gray-900", children: "Social Network" }), (0,jsx_runtime.jsx)("p", { className: "text-gray-500", children: "Connect with crew members and discover new professionals" })] }), (0,jsx_runtime.jsxs)("div", { className: "flex items-center space-x-3", children: [(0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "outline", size: "sm", onClick: () => {
                                     // Navigate to full messaging environment
                                     navigate('/chat');
-                                }, className: "flex items-center space-x-2", children: [(0,jsx_runtime.jsx)(MessageCircle, { className: "h-4 w-4" }), (0,jsx_runtime.jsx)("span", { children: "Messages" })] }), (0,jsx_runtime.jsx)("div", { className: "w-full md:w-96", children: (0,jsx_runtime.jsxs)("div", { className: "relative", children: [(0,jsx_runtime.jsx)(search/* default */.A, { className: "absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" }), (0,jsx_runtime.jsx)(Input/* Input */.p, { type: "text", placeholder: "Search people...", className: "pl-10 w-full", value: searchQuery, onChange: handleSearchChange })] }) })] })] }), (0,jsx_runtime.jsxs)("div", { className: "flex space-x-4 mb-6 overflow-x-auto pb-2", children: [(0,jsx_runtime.jsx)(TabButton, { active: activeTab === 'connections', onClick: () => setActiveTab('connections'), icon: UserCheck, children: "Connections" }), (0,jsx_runtime.jsx)(TabButton, { active: activeTab === 'requests', onClick: () => setActiveTab('requests'), count: connectionRequests.length, icon: UserX, children: "Requests" }), (0,jsx_runtime.jsx)(TabButton, { active: activeTab === 'discover', onClick: () => setActiveTab('discover'), icon: UserPlus, children: "Discover" }), (0,jsx_runtime.jsx)(TabButton, { active: activeTab === 'notifications', onClick: () => setActiveTab('notifications'), icon: bell/* default */.A, children: "Notifications" })] }), (0,jsx_runtime.jsx)("div", { className: "space-y-6", children: renderTabContent() }), (0,jsx_runtime.jsx)(MessagePane, {}), (0,jsx_runtime.jsx)(StartConversationModal, {})] }));
+                                }, className: "flex items-center space-x-2", children: [(0,jsx_runtime.jsx)(MessageCircle, { className: "h-4 w-4" }), (0,jsx_runtime.jsx)("span", { children: "Messages" })] }), (0,jsx_runtime.jsx)("div", { className: "w-full md:w-96", children: (0,jsx_runtime.jsxs)("div", { className: "relative", children: [(0,jsx_runtime.jsx)(search/* default */.A, { className: "absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" }), (0,jsx_runtime.jsx)(Input/* Input */.p, { type: "text", placeholder: "Search people...", className: "pl-10 w-full", value: searchQuery, onChange: handleSearchChange })] }) })] })] }), (0,jsx_runtime.jsxs)("div", { className: "flex space-x-4 mb-6 overflow-x-auto pb-2", children: [(0,jsx_runtime.jsx)(TabButton, { active: activeTab === 'connections', onClick: () => setActiveTab('connections'), icon: user_check/* default */.A, children: "Connections" }), (0,jsx_runtime.jsx)(TabButton, { active: activeTab === 'requests', onClick: () => setActiveTab('requests'), count: connectionRequests.length, icon: UserX, children: "Requests" }), (0,jsx_runtime.jsx)(TabButton, { active: activeTab === 'discover', onClick: () => setActiveTab('discover'), icon: UserPlus, children: "Discover" }), (0,jsx_runtime.jsx)(TabButton, { active: activeTab === 'notifications', onClick: () => setActiveTab('notifications'), icon: bell/* default */.A, children: "Notifications" })] }), (0,jsx_runtime.jsx)("div", { className: "space-y-6", children: renderTabContent() }), (0,jsx_runtime.jsx)(MessagePane, {}), (0,jsx_runtime.jsx)(StartConversationModal, {})] }));
 };
 /* harmony default export */ const pages_SocialPage = (SocialPage);
 
@@ -763,6 +758,36 @@ Input.displayName = 'Input';
 
 // Also provide a default export for backward compatibility
 /* unused harmony default export */ var __WEBPACK_DEFAULT_EXPORT__ = ((/* unused pure expression or super */ null && (Input)));
+
+
+/***/ }),
+
+/***/ 7623:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   A: () => (/* binding */ UserCheck)
+/* harmony export */ });
+/* unused harmony export __iconNode */
+/* harmony import */ var _createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9407);
+/**
+ * @license lucide-react v0.525.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+
+
+
+const __iconNode = [
+  ["path", { d: "m16 11 2 2 4-4", key: "9rsbq5" }],
+  ["path", { d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2", key: "1yyitq" }],
+  ["circle", { cx: "9", cy: "7", r: "4", key: "nufk8" }]
+];
+const UserCheck = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .A)("user-check", __iconNode);
+
+
+//# sourceMappingURL=user-check.js.map
 
 
 /***/ }),
@@ -857,4 +882,4 @@ function isValidEmail(email) {
 /***/ })
 
 }]);
-//# sourceMappingURL=296.chunk.js.map
+//# sourceMappingURL=258.chunk.js.map

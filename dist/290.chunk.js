@@ -366,15 +366,16 @@ const CollaborativeTasksHub_CollaborativeTasksHub = ({ projectId }) => {
     }, []);
     const loadUsers = async () => {
         try {
-            const usersQuery = (0,index_esm/* query */.P)((0,index_esm/* collection */.rJ)(firebase.db, 'users'));
-            const snapshot = await (0,index_esm/* getDocs */.GG)(usersQuery);
+            // Use crewProfiles collection instead of users (single source of truth)
+            const crewQuery = (0,index_esm/* query */.P)((0,index_esm/* collection */.rJ)(firebase.db, 'crewProfiles'), (0,index_esm/* where */._M)('isPublished', '==', true));
+            const snapshot = await (0,index_esm/* getDocs */.GG)(crewQuery);
             const usersData = {};
             snapshot.docs.forEach(doc => {
-                const userData = doc.data();
+                const crewData = doc.data();
                 usersData[doc.id] = {
-                    name: userData.displayName || userData.email || 'Unknown User',
-                    email: userData.email || '',
-                    avatar: userData.photoURL || undefined
+                    name: crewData.name || crewData.displayName || crewData.email || 'Unknown Crew Member',
+                    email: crewData.email || '',
+                    avatar: crewData.profileImageUrl || crewData.photoURL || undefined
                 };
             });
             setUsers(usersData);
@@ -1748,10 +1749,10 @@ const ScreenplayViewer_ScreenplayViewer = ({ screenplay, projectId, onClose, onG
             if (!currentUser)
                 return;
             try {
-                // Get user's followers and following from social data
-                const userSnap = await (0,index_esm/* getDocs */.GG)((0,index_esm/* query */.P)((0,index_esm/* collection */.rJ)(firebase.db, 'users'), (0,index_esm/* where */._M)('id', '==', currentUser.uid)));
-                if (!userSnap.empty) {
-                    const data = userSnap.docs[0].data();
+                // Get user's followers and following from social data using crewProfiles
+                const crewSnap = await (0,index_esm/* getDocs */.GG)((0,index_esm/* query */.P)((0,index_esm/* collection */.rJ)(firebase.db, 'crewProfiles'), (0,index_esm/* where */._M)('uid', '==', currentUser.uid)));
+                if (!crewSnap.empty) {
+                    const data = crewSnap.docs[0].data();
                     const followers = Array.isArray(data.followers) ? data.followers : [];
                     const following = Array.isArray(data.following) ? data.following : [];
                     setUserFollows(Array.from(new Set([...followers, ...following])));
@@ -1793,26 +1794,26 @@ const ScreenplayViewer_ScreenplayViewer = ({ screenplay, projectId, onClose, onG
         try {
             let allResults = [];
             if (approvedContacts.length > 0) {
-                // Fetch all approved contacts' user docs in chunks of 10
-                const usersRef = (0,index_esm/* collection */.rJ)(firebase.db, 'users');
+                // Fetch all approved contacts' crew profiles in chunks of 10
+                const crewRef = (0,index_esm/* collection */.rJ)(firebase.db, 'crewProfiles');
                 const approvedChunks = [];
                 for (let i = 0; i < approvedContacts.length; i += 10) {
                     approvedChunks.push(approvedContacts.slice(i, i + 10));
                 }
                 for (const chunk of approvedChunks) {
-                    const q = (0,index_esm/* query */.P)(usersRef, (0,index_esm/* where */._M)('id', 'in', chunk));
+                    const q = (0,index_esm/* query */.P)(crewRef, (0,index_esm/* where */._M)('uid', 'in', chunk));
                     const snap = await (0,index_esm/* getDocs */.GG)(q);
                     allResults = allResults.concat(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
                 }
             }
             else {
-                // Fallback: search all users
-                const usersRef = (0,index_esm/* collection */.rJ)(firebase.db, 'users');
-                const snap = await (0,index_esm/* getDocs */.GG)(usersRef);
-                console.log('[ScreenplayCollabModal] Fallback: found', snap.docs.length, 'users in Firestore');
+                // Fallback: search all crew profiles
+                const crewRef = (0,index_esm/* collection */.rJ)(firebase.db, 'crewProfiles');
+                const snap = await (0,index_esm/* getDocs */.GG)(crewRef);
+                console.log('[ScreenplayCollabModal] Fallback: found', snap.docs.length, 'crew profiles in Firestore');
                 allResults = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 if (allResults.length === 0) {
-                    console.warn('[ScreenplayCollabModal] No users found in Firestore users collection.');
+                    console.warn('[ScreenplayCollabModal] No crew profiles found in Firestore crewProfiles collection.');
                 }
             }
             // Filter by search query
@@ -1822,10 +1823,10 @@ const ScreenplayViewer_ScreenplayViewer = ({ screenplay, projectId, onClose, onG
                     (user.email || '').toLowerCase().includes(queryStr.toLowerCase())))
                 .map(user => ({
                 id: user.id,
-                name: user.displayName || user.name || `User ${user.id.slice(-4)}`,
+                name: user.name || user.displayName || `Crew Member ${user.id.slice(-4)}`,
                 email: user.email || '',
-                avatar: user.avatarUrl || user.avatar || '',
-                role: user.role || 'User',
+                avatar: user.profileImageUrl || user.avatarUrl || user.avatar || '',
+                role: user.jobTitles?.[0]?.title || user.role || 'Crew Member',
                 isFollowing: userFollows.includes(user.id),
                 connectionStatus: 'connected',
             }));
@@ -2338,40 +2339,40 @@ const CollaborationHub_CollaborationHub = ({ projectId }) => {
         try {
             let allResults = [];
             if (approvedContacts.length > 0) {
-                // Fetch all approved contacts' user docs in chunks of 10
-                const usersRef = (0,index_esm/* collection */.rJ)(firebase.db, 'users');
+                // Fetch all approved contacts' crew profiles in chunks of 10
+                const crewProfilesRef = (0,index_esm/* collection */.rJ)(firebase.db, 'crewProfiles');
                 const approvedChunks = [];
                 for (let i = 0; i < approvedContacts.length; i += 10) {
                     approvedChunks.push(approvedContacts.slice(i, i + 10));
                 }
                 for (const chunk of approvedChunks) {
-                    const q = (0,index_esm/* query */.P)(usersRef, (0,index_esm/* where */._M)('id', 'in', chunk));
+                    const q = (0,index_esm/* query */.P)(crewProfilesRef, (0,index_esm/* where */._M)('uid', 'in', chunk));
                     const snap = await (0,index_esm/* getDocs */.GG)(q);
                     allResults = allResults.concat(snap.docs.map(doc => ({
                         id: doc.id,
-                        name: doc.data().displayName || doc.data().name || `User ${doc.id.slice(-4)}`,
+                        name: doc.data().name || doc.data().displayName || `Crew Member ${doc.id.slice(-4)}`,
                         email: doc.data().email || '',
-                        avatar: doc.data().avatarUrl || doc.data().avatar || '',
-                        role: doc.data().role || 'User',
+                        avatar: doc.data().profileImageUrl || doc.data().avatarUrl || '',
+                        role: doc.data().jobTitles?.[0]?.title || 'Crew Member',
                         company: doc.data().company || ''
                     })));
                 }
             }
             else {
-                // Fallback: search all users
-                const usersRef = (0,index_esm/* collection */.rJ)(firebase.db, 'users');
-                const snap = await (0,index_esm/* getDocs */.GG)(usersRef);
-                console.log('[CollabModal] Fallback: found', snap.docs.length, 'users in Firestore');
+                // Fallback: search all crew profiles
+                const crewProfilesRef = (0,index_esm/* collection */.rJ)(firebase.db, 'crewProfiles');
+                const snap = await (0,index_esm/* getDocs */.GG)(crewProfilesRef);
+                console.log('[CollabModal] Fallback: found', snap.docs.length, 'crew profiles in Firestore');
                 allResults = snap.docs.map(doc => ({
                     id: doc.id,
-                    name: doc.data().displayName || doc.data().name || `User ${doc.id.slice(-4)}`,
+                    name: doc.data().name || doc.data().displayName || `Crew Member ${doc.id.slice(-4)}`,
                     email: doc.data().email || '',
-                    avatar: doc.data().avatarUrl || doc.data().avatar || '',
-                    role: doc.data().role || 'User',
+                    avatar: doc.data().profileImageUrl || doc.data().avatarUrl || '',
+                    role: doc.data().jobTitles?.[0]?.title || 'Crew Member',
                     company: doc.data().company || ''
                 }));
                 if (allResults.length === 0) {
-                    console.warn('[CollabModal] No users found in Firestore users collection.');
+                    console.warn('[CollabModal] No crew profiles found in Firestore crewProfiles collection.');
                 }
             }
             // Filter by search query
@@ -2607,27 +2608,27 @@ const CollaborationHub_CollaborationHub = ({ projectId }) => {
                 setTeamMembers([]);
                 return;
             }
-            // Load real team members from Firestore users collection
+            // Load real team members from Firestore crewProfiles collection
             const memberIds = selectedWorkspace.members?.map(m => m.userId) || [];
             if (memberIds.length === 0) {
                 setTeamMembers([]);
                 return;
             }
-            const usersRef = (0,index_esm/* collection */.rJ)(firebase.db, 'users');
+            const crewProfilesRef = (0,index_esm/* collection */.rJ)(firebase.db, 'crewProfiles');
             const chunks = [];
             for (let i = 0; i < memberIds.length; i += 10) {
                 chunks.push(memberIds.slice(i, i + 10));
             }
             let allMembers = [];
             for (const chunk of chunks) {
-                const q = (0,index_esm/* query */.P)(usersRef, (0,index_esm/* where */._M)('id', 'in', chunk));
+                const q = (0,index_esm/* query */.P)(crewProfilesRef, (0,index_esm/* where */._M)('uid', 'in', chunk));
                 const snap = await (0,index_esm/* getDocs */.GG)(q);
                 allMembers = allMembers.concat(snap.docs.map(doc => ({
                     id: doc.id,
-                    name: doc.data().displayName || doc.data().name || `User ${doc.id.slice(-4)}`,
+                    name: doc.data().name || doc.data().displayName || `Crew Member ${doc.id.slice(-4)}`,
                     email: doc.data().email || '',
-                    role: doc.data().role || 'User',
-                    avatar: doc.data().avatarUrl || doc.data().avatar || '',
+                    role: doc.data().jobTitles?.[0]?.title || 'Crew Member',
+                    avatar: doc.data().profileImageUrl || doc.data().avatarUrl || '',
                     isOnline: doc.data().isOnline || false
                 })));
             }

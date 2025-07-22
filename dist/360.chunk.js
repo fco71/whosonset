@@ -1,6 +1,23 @@
 "use strict";
 (self["webpackChunkwhosonset"] = self["webpackChunkwhosonset"] || []).push([[360],{
 
+/***/ 676:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   i: () => (/* binding */ imageErrorFallback)
+/* harmony export */ });
+// Utility for robust <img> error fallback
+function imageErrorFallback(e, fallback = '/default-avatar.svg') {
+    const target = e.target;
+    if (!target.src.endsWith(fallback)) {
+        target.src = fallback;
+    }
+}
+
+
+/***/ }),
+
 /***/ 3542:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
@@ -86,7 +103,10 @@ const useManagedUrl = (url) => {
     return isBlobUrl && blobUrl ? blobUrl : url || null;
 };
 
+// EXTERNAL MODULE: ./src/utilities/imageErrorFallback.ts
+var imageErrorFallback = __webpack_require__(676);
 ;// ./src/components/ResumeView.tsx
+
 
 
 // Import html2pdf using require to bypass TypeScript issues
@@ -267,11 +287,7 @@ const ResumeView = (props) => {
               min-height: 297mm !important;
             }
           }
-        ` }), (0,jsx_runtime.jsx)("div", { className: "resume-container", style: containerStyle, children: (0,jsx_runtime.jsx)("div", { style: contentWrapperStyle, children: (0,jsx_runtime.jsxs)("div", { style: scrollableContentStyle, children: [(0,jsx_runtime.jsxs)("div", { style: headerStyle, children: [managedProfileImageUrl && ((0,jsx_runtime.jsx)("img", { src: managedProfileImageUrl, alt: "Profile", style: profileImageStyle, crossOrigin: "anonymous", onError: (e) => {
-                                            // Fallback to empty image if the URL is invalid
-                                            const target = e.target;
-                                            target.style.display = 'none';
-                                        } })), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h1", { style: nameStyle, children: profile.name }), profile.bio && ((0,jsx_runtime.jsx)("p", { style: bioStyle, children: profile.bio }))] })] }), profile.languages && profile.languages.length > 0 && ((0,jsx_runtime.jsxs)("section", { style: sectionStyle, children: [(0,jsx_runtime.jsx)("div", { style: sectionTitleStyle, children: "Languages" }), (0,jsx_runtime.jsx)("ul", { style: jobTitlesListStyle, children: profile.languages.slice(0, 3).map((lang, idx) => ((0,jsx_runtime.jsx)("li", { style: jobTitleItemStyle, children: lang }, idx))) })] })), (0,jsx_runtime.jsxs)("div", { style: sectionStyle, children: [(0,jsx_runtime.jsx)("h2", { style: sectionTitleStyle, children: "Professional Experience" }), (0,jsx_runtime.jsx)("ul", { style: jobTitlesListStyle, children: profile.jobTitles
+        ` }), (0,jsx_runtime.jsx)("div", { className: "resume-container", style: containerStyle, children: (0,jsx_runtime.jsx)("div", { style: contentWrapperStyle, children: (0,jsx_runtime.jsxs)("div", { style: scrollableContentStyle, children: [(0,jsx_runtime.jsxs)("div", { style: headerStyle, children: [managedProfileImageUrl && ((0,jsx_runtime.jsx)("img", { src: managedProfileImageUrl, alt: "Profile", style: profileImageStyle, crossOrigin: "anonymous", onError: e => (0,imageErrorFallback/* imageErrorFallback */.i)(e) })), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h1", { style: nameStyle, children: profile.name }), profile.bio && ((0,jsx_runtime.jsx)("p", { style: bioStyle, children: profile.bio }))] })] }), profile.languages && profile.languages.length > 0 && ((0,jsx_runtime.jsxs)("section", { style: sectionStyle, children: [(0,jsx_runtime.jsx)("div", { style: sectionTitleStyle, children: "Languages" }), (0,jsx_runtime.jsx)("ul", { style: jobTitlesListStyle, children: profile.languages.slice(0, 3).map((lang, idx) => ((0,jsx_runtime.jsx)("li", { style: jobTitleItemStyle, children: lang }, idx))) })] })), (0,jsx_runtime.jsxs)("div", { style: sectionStyle, children: [(0,jsx_runtime.jsx)("h2", { style: sectionTitleStyle, children: "Professional Experience" }), (0,jsx_runtime.jsx)("ul", { style: jobTitlesListStyle, children: profile.jobTitles
                                             .filter(jt => jt.department && jt.title)
                                             .slice(0, 4)
                                             .map((jt, i) => ((0,jsx_runtime.jsxs)("li", { style: jobTitleItemStyle, children: [(0,jsx_runtime.jsx)("strong", { children: jt.title }), " \u2014 ", jt.department] }, i))) }), profile.jobTitles.filter(jt => jt.department && jt.title).length > 4 && ((0,jsx_runtime.jsx)("p", { style: { fontSize: '9pt', color: '#666', fontStyle: 'italic', margin: '1mm 0 0 0' }, children: "(Showing top 4 positions - prioritize most relevant first)" }))] }), profile.projects && profile.projects.filter(p => p.projectName && p.role).length > 0 && ((0,jsx_runtime.jsxs)("div", { style: sectionStyle, children: [(0,jsx_runtime.jsx)("h2", { style: sectionTitleStyle, children: "Selected Projects" }), (0,jsx_runtime.jsx)("ul", { style: projectsListStyle, children: profile.projects
@@ -833,11 +849,11 @@ const EditCrewProfile = () => {
             console.log("DEBUG: Saving to document:", docRef.path);
             // Always ensure name and profileImageUrl are set
             const safeName = form.name && form.name.trim() !== '' ? form.name : 'Unknown Crew';
-            let safeProfileImageUrl = form.profileImageUrl && form.profileImageUrl.trim() !== '' ? form.profileImageUrl : '/default-avatar.png';
+            let safeProfileImageUrl = form.profileImageUrl && form.profileImageUrl.trim() !== '' ? form.profileImageUrl : '/default-avatar.svg';
             // Prevent saving blob: URLs
             if (safeProfileImageUrl.startsWith('blob:')) {
                 // If the current image is a blob, fallback to previous or default
-                safeProfileImageUrl = '/default-avatar.png';
+                safeProfileImageUrl = '/default-avatar.svg';
             }
             // Ensure email is included in the saved data
             const dataToSave = {

@@ -180,6 +180,28 @@ export class SavedJobsService {
     }
   }
 
+  // Subscribe to saved status for a specific job
+  static subscribeToJobSaveStatus(userId: string, jobId: string, callback: (saved: boolean, savedJobId?: string) => void) {
+    try {
+      const savedJobsQuery = query(
+        collection(db, 'savedJobs'),
+        where('userId', '==', userId),
+        where('jobId', '==', jobId)
+      );
+
+      return onSnapshot(savedJobsQuery, (snapshot) => {
+        if (!snapshot.empty) {
+          callback(true, snapshot.docs[0].id);
+        } else {
+          callback(false);
+        }
+      });
+    } catch (error) {
+      console.error('Error setting up job save status listener:', error);
+      return () => {};
+    }
+  }
+
   // Get saved jobs count for a user
   static async getSavedJobsCount(userId: string): Promise<number> {
     try {

@@ -12,6 +12,7 @@ import { CrewFavoritesService } from '../utilities/crewFavoritesService';
 import CrewProfileCard from './CrewProfileCard';
 import { CrewProfile } from '../types/CrewProfile';
 import { getHighlightedProjects, getHighlightedCrew, ProjectEntry } from '../utilities/highlightUtils';
+import { toast } from 'react-hot-toast';
 
 interface Project {
     id: string;
@@ -113,8 +114,16 @@ const Home: React.FC = () => {
                     return prev.filter(id => id !== projectId);
                 }
             });
+            
+            // Show success notification
+            if (newStatus) {
+                toast.success('Project added to favorites!');
+            } else {
+                toast.success('Project removed from favorites');
+            }
         } catch (error) {
             console.error('Error toggling favorite:', error);
+            toast.error('Failed to update favorites. Please try again.');
         }
     };
 

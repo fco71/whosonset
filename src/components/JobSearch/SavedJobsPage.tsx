@@ -4,6 +4,9 @@ import { SavedJobsService, SavedJob } from '../../utilities/savedJobsService';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { Button } from '../ui/Button';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '../../firebase';
+import { JobPosting } from '../../types/JobApplication';
 
 const SavedJobsPage: React.FC = () => {
   const { currentUser } = useAuth();
@@ -11,20 +14,57 @@ const SavedJobsPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchSavedJobs = async () => {
-      if (!currentUser) return;
-      setIsLoading(true);
+    if (!currentUser) return;
+    
+    setIsLoading(true);
+    
+    // Subscribe to real-time updates
+    const unsubscribe = SavedJobsService.subscribeToSavedJobs(currentUser.uid, async (savedJobs) => {
       try {
-        const jobs = await SavedJobsService.getSavedJobsWithData(currentUser.uid);
-        setSavedJobs(jobs);
+        // Get full job data for each saved job
+        const jobsWithData = await Promise.all(
+          savedJobs.map(async (savedJob) => {
+            try {
+              const jobDoc = await getDocs(query(
+                collection(db, 'jobPostings'),
+                where('__name__', '==', savedJob.jobId)
+              ));
+              
+              if (!jobDoc.empty) {
+                const jobData = {
+                  id: jobDoc.docs[0].id,
+                  ...jobDoc.docs[0].data()
+                } as JobPosting;
+                
+                return {
+                  ...savedJob,
+                  jobData
+                };
+              }
+              
+              return savedJob;
+            } catch (error) {
+              console.error('Error fetching job data for saved job:', error);
+              return savedJob;
+            }
+          })
+        );
+        
+        setSavedJobs(jobsWithData);
       } catch (error) {
         console.error('Error loading saved jobs:', error);
         toast.error('Failed to load saved jobs');
       } finally {
         setIsLoading(false);
       }
+    });
+    
+    // Cleanup subscription on unmount
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
     };
-    if (currentUser) fetchSavedJobs();
   }, [currentUser]);
 
   const handleRemove = async (savedJobId: string) => {

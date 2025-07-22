@@ -1,5 +1,5 @@
 "use strict";
-(self["webpackChunkwhosonset"] = self["webpackChunkwhosonset"] || []).push([[880],{
+(self["webpackChunkwhosonset"] = self["webpackChunkwhosonset"] || []).push([[662],{
 
 /***/ 676:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
@@ -14,62 +14,6 @@ function imageErrorFallback(e, fallback = '/default-avatar.svg') {
         target.src = fallback;
     }
 }
-
-
-/***/ }),
-
-/***/ 3499:
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
-/* harmony export */ });
-/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(4848);
-/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(6540);
-/* harmony import */ var firebase_firestore__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(7594);
-/* harmony import */ var _firebase__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(9487);
-/* harmony import */ var react_firebase_hooks_auth__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(6354);
-/* harmony import */ var _components_CrewProfileCard__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(6919);
-
-// src/pages/SavedCrewProfilesPage.tsx
-
-
-
-
-
-const SavedCrewProfilesPage = () => {
-    const [user] = (0,react_firebase_hooks_auth__WEBPACK_IMPORTED_MODULE_4__/* .useAuthState */ .hD)(_firebase__WEBPACK_IMPORTED_MODULE_3__/* .auth */ .j2);
-    const [savedProfiles, setSavedProfiles] = (0,react__WEBPACK_IMPORTED_MODULE_1__.useState)([]);
-    const [loading, setLoading] = (0,react__WEBPACK_IMPORTED_MODULE_1__.useState)(true);
-    (0,react__WEBPACK_IMPORTED_MODULE_1__.useEffect)(() => {
-        const fetchSavedProfiles = async () => {
-            if (!user)
-                return;
-            try {
-                const savedProfilesRef = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_3__.db, `collections/${user.uid}/savedCrew`);
-                const querySnapshot = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__/* .getDocs */ .GG)(savedProfilesRef);
-                const profiles = querySnapshot.docs.map(doc => ({
-                    uid: doc.id,
-                    ...doc.data()
-                }));
-                setSavedProfiles(profiles);
-            }
-            catch (error) {
-                console.error('Error fetching saved profiles:', error);
-            }
-            finally {
-                setLoading(false);
-            }
-        };
-        fetchSavedProfiles();
-    }, [user]);
-    if (loading) {
-        return ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "min-h-screen bg-white", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "bg-gradient-to-br from-gray-50 to-white border-b border-gray-100", children: (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "max-w-7xl mx-auto px-8 py-24", children: (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "text-center mb-16 animate-fade-in", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("h1", { className: "text-6xl font-light text-gray-900 mb-6 tracking-tight animate-slide-up", children: "Saved" }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("h2", { className: "text-4xl font-light text-gray-600 mb-8 tracking-wide animate-slide-up-delay", children: "Crew Profiles" })] }) }) }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "max-w-7xl mx-auto px-8 py-16", children: (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8", children: [...Array(8)].map((_, i) => ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "bg-white rounded-xl shadow-sm p-6 animate-pulse", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "h-48 bg-gray-200 rounded-lg mb-4" }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "h-6 bg-gray-200 rounded mb-2" }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "h-4 bg-gray-200 rounded mb-4" }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "h-4 bg-gray-200 rounded mb-6" }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "flex gap-3", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "flex-1 h-10 bg-gray-200 rounded-lg" }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "w-20 h-10 bg-gray-200 rounded-lg" })] })] }, i))) }) })] }));
-    }
-    return ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "min-h-screen bg-white", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "bg-gradient-to-br from-gray-50 to-white border-b border-gray-100", children: (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "max-w-7xl mx-auto px-8 py-24", children: (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "text-center mb-16 animate-fade-in", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("h1", { className: "text-6xl font-light text-gray-900 mb-6 tracking-tight animate-slide-up", children: "Saved" }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("h2", { className: "text-4xl font-light text-gray-600 mb-8 tracking-wide animate-slide-up-delay", children: "Crew Profiles" }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("p", { className: "text-xl font-light text-gray-500 max-w-2xl mx-auto animate-slide-up-delay-2", children: "Your curated collection of talented crew members" })] }) }) }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "max-w-7xl mx-auto px-8 py-16", children: savedProfiles.length === 0 ? ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "text-center py-16", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "text-6xl mb-6", children: "\uD83D\uDCC1" }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("h3", { className: "text-2xl font-light text-gray-900 mb-4 tracking-wide", children: "No Saved Profiles Yet" }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("p", { className: "text-gray-600 font-light mb-8 max-w-md mx-auto", children: "Start building your collection by browsing crew profiles and saving the ones you're interested in." }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("a", { href: "/producer-view", className: "inline-flex items-center px-6 py-3 bg-gray-900 text-white rounded-lg font-light tracking-wide hover:bg-black transition-all duration-300 hover:scale-105", children: "Browse Crew Profiles \u2192" })] })) : ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8", children: savedProfiles.map((profile, index) => ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "animate-card-entrance", style: { animationDelay: `${index * 100}ms` }, children: (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(_components_CrewProfileCard__WEBPACK_IMPORTED_MODULE_5__/* ["default"] */ .A, { profile: profile }) }, profile.uid))) })) })] }));
-};
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (SavedCrewProfilesPage);
 
 
 /***/ }),
@@ -254,7 +198,112 @@ const CrewProfileCard = ({ profile, index = 0, isFiltering = false, currentUserI
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (CrewProfileCard);
 
 
+/***/ }),
+
+/***/ 9662:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(4848);
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(6540);
+/* harmony import */ var react_router_dom__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(5788);
+/* harmony import */ var _firebase__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(9487);
+/* harmony import */ var firebase_firestore__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(7594);
+/* harmony import */ var _CrewProfileCard__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(6919);
+/* harmony import */ var react_hot_toast__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(888);
+
+
+
+
+
+
+
+const JobApplicantsPage = () => {
+    const { jobId } = (0,react_router_dom__WEBPACK_IMPORTED_MODULE_6__/* .useParams */ .g)();
+    const [applications, setApplications] = (0,react__WEBPACK_IMPORTED_MODULE_1__.useState)([]);
+    const [applicantProfiles, setApplicantProfiles] = (0,react__WEBPACK_IMPORTED_MODULE_1__.useState)([]);
+    const [isLoading, setIsLoading] = (0,react__WEBPACK_IMPORTED_MODULE_1__.useState)(true);
+    (0,react__WEBPACK_IMPORTED_MODULE_1__.useEffect)(() => {
+        const fetchApplicants = async () => {
+            setIsLoading(true);
+            try {
+                // Fetch job applications for this job
+                const appsQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db, 'jobApplications'), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__/* .where */ ._M)('jobId', '==', jobId));
+                const appsSnapshot = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__/* .getDocs */ .GG)(appsQuery);
+                const apps = appsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                setApplications(apps);
+                // Fetch applicant profiles
+                const applicantIds = apps.map(app => app.applicantId);
+                if (applicantIds.length === 0) {
+                    setApplicantProfiles([]);
+                    setIsLoading(false);
+                    return;
+                }
+                // Batch fetch profiles
+                const profilesSnapshot = await Promise.all(applicantIds.map(async (uid) => {
+                    const snap = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__/* .getDocs */ .GG)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db, 'crewProfiles'), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__/* .where */ ._M)('uid', '==', uid)));
+                    if (snap.docs.length > 0) {
+                        const data = snap.docs[0].data();
+                        // Map to CrewProfile type, with fallbacks for required fields
+                        return {
+                            uid: data.uid || uid,
+                            name: data.name || 'Unknown',
+                            username: data.username || data.name?.toLowerCase().replace(/\s+/g, '') || 'unknown',
+                            bio: data.bio || '',
+                            profileImageUrl: data.profileImageUrl || '',
+                            jobTitles: data.jobTitles || [],
+                            residences: data.residences || [{ country: '', city: '' }],
+                            projects: data.projects || [],
+                            education: data.education || [],
+                            contactInfo: data.contactInfo || {},
+                            otherInfo: data.otherInfo || '',
+                            isPublished: data.isPublished ?? true,
+                            availability: data.availability || 'available',
+                            languages: data.languages || [],
+                        };
+                    }
+                    else {
+                        // Fallback for missing profile
+                        return {
+                            uid,
+                            name: 'Unknown',
+                            username: 'unknown',
+                            bio: '',
+                            profileImageUrl: '',
+                            jobTitles: [],
+                            residences: [{ country: '', city: '' }],
+                            projects: [],
+                            education: [],
+                            contactInfo: {},
+                            otherInfo: '',
+                            isPublished: false,
+                            availability: 'unavailable',
+                            languages: [],
+                        };
+                    }
+                }));
+                setApplicantProfiles(profilesSnapshot.filter(Boolean));
+            }
+            catch (error) {
+                console.error('Error fetching applicants:', error);
+                react_hot_toast__WEBPACK_IMPORTED_MODULE_5__/* .toast */ .oR.error('Failed to load applicants');
+            }
+            finally {
+                setIsLoading(false);
+            }
+        };
+        if (jobId)
+            fetchApplicants();
+    }, [jobId]);
+    return ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "min-h-screen bg-gray-50 py-12 px-4 md:px-8", children: (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "max-w-5xl mx-auto", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "mb-8 flex items-center justify-between", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("h1", { className: "text-3xl font-light text-gray-900", children: "Applicants" }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_6__/* .Link */ .N_, { to: "/jobs/posted", className: "text-blue-600 hover:underline text-sm", children: "\u2190 Back to Dashboard" })] }), isLoading ? ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "text-center py-12", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4" }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("p", { className: "text-lg font-light text-gray-600", children: "Loading applicants..." })] })) : applicantProfiles.length === 0 ? ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "text-center py-12", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "text-6xl mb-4 opacity-20", children: "\uD83D\uDC64" }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("h3", { className: "text-xl font-light text-gray-900 mb-2", children: "No applicants yet" }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("p", { className: "text-gray-600", children: "Applicants for this job will appear here." })] })) : ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6", children: applicantProfiles.map(profile => ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(_CrewProfileCard__WEBPACK_IMPORTED_MODULE_4__/* ["default"] */ .A, { profile: profile }, profile.uid))) }))] }) }));
+};
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (JobApplicantsPage);
+
+
 /***/ })
 
 }]);
-//# sourceMappingURL=880.chunk.js.map
+//# sourceMappingURL=662.chunk.js.map
