@@ -1220,14 +1220,29 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     } catch (error) {
       console.error('[SendMessage] Error sending message:', error);
       
-      // Provide specific error messages for file size issues
-              if (error instanceof Error) {
-          if (error.message.includes('exceeds maximum allowed size')) {
-            showNotification('error', 'File is too large. Please choose a file smaller than 5MB.');
-          } else if (error.message.includes('Cannot send message')) {
+      // Provide specific error messages for different error types
+      if (error instanceof Error) {
+        if (error.message.includes('not authenticated') || error.message.includes('sign in again')) {
+          showNotification('error', 'Your session has expired. Please sign in again to continue messaging.');
+          // Optionally redirect to login after a delay
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 3000);
+        } else if (error.message.includes('Authentication mismatch')) {
+          showNotification('error', 'Authentication error. Please refresh the page and try again.');
+        } else if (error.message.includes('permission-denied') || error.message.includes('Missing or insufficient permissions')) {
+          showNotification('error', 'Permission denied. Your session may have expired. Please refresh the page or sign in again.');
+          console.error('[SendMessage] Permission error details:', {
+            currentUserId,
+            selectedUser,
+            isAuthenticated: !!currentUserId
+          });
+        } else if (error.message.includes('exceeds maximum allowed size')) {
+          showNotification('error', 'File is too large. Please choose a file smaller than 5MB.');
+        } else if (error.message.includes('Cannot send message')) {
           showNotification('error', 'Cannot send message to this user. They may not allow messages from non-followers.');
         } else {
-          showNotification('error', 'Failed to send message. Please try again.');
+          showNotification('error', `Failed to send message: ${error.message}`);
         }
       } else {
         showNotification('error', 'Failed to send message. Please try again.');

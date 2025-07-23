@@ -143,16 +143,20 @@ service cloud.firestore {
         (resource.data.senderId == request.auth.uid || 
          resource.data.receiverId == request.auth.uid);
       
-      // Allow create if user is the sender
+      // Allow create if user is the sender and all required fields are present
       allow create: if request.auth != null && 
-        request.resource.data.senderId == request.auth.uid;
+        request.auth.uid == request.resource.data.senderId &&
+        request.resource.data.keys().hasAll(['senderId', 'receiverId', 'content', 'messageType', 'timestamp']);
       
       // Allow update for read receipts and reactions
       allow update: if request.auth != null && 
         (resource.data.senderId == request.auth.uid || 
          resource.data.receiverId == request.auth.uid) &&
         // Only allow updating specific fields
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead', 'reactions', 'status']);
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead', 'reactions', 'status', 'deletedForReceiver', 'deletedAt']);
+      
+      // Allow delete only if user is the sender
+      allow delete: if request.auth != null && resource.data.senderId == request.auth.uid;
     }
     
     // Chat conversations - users can only access their own conversations

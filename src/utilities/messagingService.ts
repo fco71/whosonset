@@ -62,6 +62,34 @@ export class MessagingService {
     try {
       console.log('[MessagingService] Sending direct message from', senderId, 'to', receiverId);
       
+      // Add authentication debugging
+      const { auth } = await import('../firebase');
+      const currentAuthUser = auth.currentUser;
+      console.log('[MessagingService] Current auth user:', currentAuthUser?.uid);
+      console.log('[MessagingService] SenderId matches auth user:', currentAuthUser?.uid === senderId);
+      
+      // Verify authentication
+      if (!currentAuthUser) {
+        throw new Error('User is not authenticated. Please sign in again.');
+      }
+      
+      // Force token refresh to ensure valid authentication
+      try {
+        await currentAuthUser.getIdToken(true); // Force refresh
+        console.log('[MessagingService] Auth token refreshed successfully');
+      } catch (tokenError) {
+        console.error('[MessagingService] Failed to refresh auth token:', tokenError);
+        throw new Error('Authentication token expired. Please sign in again.');
+      }
+      
+      if (currentAuthUser.uid !== senderId) {
+        console.error('[MessagingService] Auth mismatch:', {
+          authUid: currentAuthUser.uid,
+          senderId: senderId
+        });
+        throw new Error('Authentication mismatch. The senderId does not match the authenticated user.');
+      }
+      
       // Check permissions
       const canMessage = await this.canSendMessage(senderId, receiverId);
       if (!canMessage) {
@@ -96,6 +124,7 @@ export class MessagingService {
       }
 
       // Add to Firestore
+      console.log('[MessagingService] Message data to be sent:', messageData);
       const docRef = await addDoc(collection(db, 'directMessages'), messageData);
       console.log('[MessagingService] Message sent successfully with ID:', docRef.id);
 
@@ -117,6 +146,14 @@ export class MessagingService {
       return docRef.id;
     } catch (error) {
       console.error('Error sending direct message:', error);
+      // Add more detailed error information
+      if (error instanceof Error) {
+        console.error('Error details:', {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        });
+      }
       throw error;
     }
   }
