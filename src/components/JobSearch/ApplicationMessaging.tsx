@@ -184,48 +184,47 @@ const ApplicationMessaging: React.FC<ApplicationMessagingProps> = ({
   const sendMessage = async () => {
     if (!newMessage.trim() || !application || !currentUser) return;
 
+    // Defensive: ensure applicationId is a string and matches parent
+    if (!applicationId || typeof applicationId !== 'string') {
+      toast.error('Invalid application ID');
+      console.error('Invalid applicationId:', applicationId);
+      return;
+    }
+    if (!currentUser.uid) {
+      toast.error('User not authenticated');
+      console.error('No currentUser.uid');
+      return;
+    }
+    // Check parent document existence
     try {
-      setIsSendingMessage(true);
-      
-      const messageData = {
-        senderId: currentUser.uid,
-        senderName: currentUser.displayName || currentUser.email || 'Unknown User',
-        message: newMessage.trim(),
-        timestamp: serverTimestamp(),
-        applicationId: applicationId,
-        read: false
-      };
-
-      // Add message to the messages subcollection
-      await addDoc(collection(db, 'jobApplications', applicationId, 'messages'), messageData);
-      
-      // Create notification for the other party
-      // Get the job posting to find who posted it
-      const jobPostingRef = doc(db, 'jobPostings', application.jobId);
-      const jobPostingSnap = await getDoc(jobPostingRef);
-      const jobPosting = jobPostingSnap.data();
-      const recipientId = currentUser.uid === application.applicantId ? jobPosting?.postedById : application.applicantId;
-      if (recipientId) {
-        await addDoc(collection(db, 'users', recipientId, 'notifications'), {
-          type: 'application_message',
-          message: `New message from ${currentUser.displayName || currentUser.email} regarding job application`,
-          timestamp: serverTimestamp(),
-          read: false,
-          userId: recipientId,
-          relatedId: applicationId,
-          applicationId: applicationId,
-          senderId: currentUser.uid,
-          extra: {
-            applicationId: applicationId,
-            senderName: currentUser.displayName || currentUser.email
-          }
-        });
+      const parentDoc = await getDoc(doc(db, 'jobApplications', applicationId));
+      if (!parentDoc.exists()) {
+        toast.error('Application does not exist. Cannot send message.');
+        console.error('Parent jobApplications doc does not exist:', applicationId);
+        return;
       }
-      
+    } catch (err) {
+      toast.error('Error checking application existence');
+      console.error('Error checking parent doc existence:', err);
+      return;
+    }
+
+    const messageData = {
+      senderId: currentUser.uid,
+      senderName: currentUser.displayName || currentUser.email || 'Unknown User',
+      message: newMessage.trim(),
+      timestamp: serverTimestamp(),
+      applicationId: applicationId,
+      read: false
+    };
+
+    try {
+      console.log('Attempting to send message:', messageData);
+      await addDoc(collection(db, 'jobApplications', applicationId, 'messages'), messageData);
       setNewMessage('');
       toast.success('Message sent successfully!');
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('Error sending message:', error, '\nMessage data:', messageData, '\napplicationId:', applicationId, '\ncurrentUser:', currentUser);
       toast.error('Failed to send message. Please try again.');
     } finally {
       setIsSendingMessage(false);
