@@ -200,7 +200,11 @@ const ApplicationMessaging: React.FC<ApplicationMessagingProps> = ({
       await addDoc(collection(db, 'jobApplications', applicationId, 'messages'), messageData);
       
       // Create notification for the other party
-      const recipientId = currentUser.uid === application.applicantId ? application.postedById : application.applicantId;
+      // Get the job posting to find who posted it
+      const jobPostingRef = doc(db, 'jobPostings', application.jobId);
+      const jobPostingSnap = await getDoc(jobPostingRef);
+      const jobPosting = jobPostingSnap.data();
+      const recipientId = currentUser.uid === application.applicantId ? jobPosting?.postedById : application.applicantId;
       if (recipientId) {
         await addDoc(collection(db, 'users', recipientId, 'notifications'), {
           type: 'application_message',
