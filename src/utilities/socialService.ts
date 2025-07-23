@@ -369,7 +369,7 @@ export class SocialService {
   static async createNotification(notification: Omit<SocialNotification, 'id'>): Promise<void> {
     try {
       console.log('[SocialService] Creating notification:', notification);
-      const docRef = await addDoc(collection(db, 'notifications'), {
+      const docRef = await addDoc(collection(db, 'users', notification.userId, 'notifications'), {
         ...notification,
         createdAt: serverTimestamp()
       });
@@ -863,7 +863,7 @@ export class SocialService {
         throw new Error('A collaboration request is already pending for this user and screenplay.');
       }
       // Create the notification
-      await addDoc(collection(db, 'notifications'), {
+      await addDoc(collection(db, 'users', inviteeId, 'notifications'), {
         userId: inviteeId,
         type: 'collaboration_request',
         title: 'Collaboration Request',

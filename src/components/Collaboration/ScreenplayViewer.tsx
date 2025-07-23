@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { collection, addDoc, query, where, orderBy, getDocs, onSnapshot, updateDoc, doc, deleteDoc, arrayUnion, arrayRemove, limit, getDoc } from 'firebase/firestore';
+import { collection, addDoc, query, where, orderBy, getDocs, onSnapshot, updateDoc, doc, deleteDoc, arrayUnion, arrayRemove, limit, getDoc, serverTimestamp } from 'firebase/firestore';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -54,7 +54,7 @@ interface Tag {
   userId: string;
   userName: string;
   userAvatar?: string;
-  tagType: 'cast_member' | 'background_actors' | 'stunts' | 'vehicles' | 'props' | 'camera' | 'special_effects' | 'vfx' | 'mechanical_effects' | 'wardrobe' | 'makeup_hair' | 'animals' | 'animal_wrangler' | 'music' | 'sound' | 'art_department' | 'set_dressing' | 'greenery' | 'special_equipment' | 'security' | 'additional_labor' | 'miscellaneous' | 'notes' | 'comments' | 'set' | 'sequence' | 'script_day' | 'unit' | 'location' | 'character' | 'character_arc' | 'character_development' | 'location_detail' | 'costume' | 'makeup' | 'scene' | 'scene_transition' | 'scene_beat' | 'lighting' | 'plot_point' | 'subplot' | 'theme' | 'budget' | 'schedule' | 'logistics' | 'note' | 'revision' | 'research';
+  tagType: 'cast_member' | 'background_actors' | 'stunts' | 'vehicles' | 'props' | 'camera' | 'special_effects' | 'vfx' | 'mechanical_effects' | 'wardrobe' | 'makeup_hair' | 'animals' | 'animal_wrangler' | 'music' | 'sound' | 'art_department' | 'set_dressing' | 'greenery' | 'special_equipment' | 'security' | 'additional_labor' | 'miscellaneous' | 'other' | 'notes' | 'comments' | 'set' | 'sequence' | 'script_day' | 'unit' | 'location' | 'character' | 'character_arc' | 'character_development' | 'location_detail' | 'costume' | 'makeup' | 'scene' | 'scene_transition' | 'scene_beat' | 'lighting' | 'plot_point' | 'subplot' | 'theme' | 'budget' | 'schedule' | 'logistics' | 'note' | 'revision' | 'research';
   content: string;
   timestamp: Date;
   pageNumber: number;
@@ -341,7 +341,8 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     logistics: '#FFC789',
     note: '#FFEAA7',
     revision: '#FDCB6E',
-    research: '#F39C12'
+    research: '#F39C12',
+    other: '#7B7B7B'
   };
 
   const priorityColors = {
@@ -1206,7 +1207,18 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
 
       // Show success message
       toast.success(`${user.name} added as collaborator!`);
-      
+      // Create notification for the new collaborator
+      if (user.id) {
+        await addDoc(collection(db, 'users', user.id, 'notifications'), {
+          type: 'collaborator_added',
+          message: `You have been added as a collaborator to the screenplay: ${screenplay.id}`,
+          timestamp: serverTimestamp(),
+          read: false,
+          userId: user.id,
+          screenplayId: screenplay.id,
+          addedBy: currentUser?.uid || '',
+        });
+      }
       // Close modal and reset search
       setShowAddCollaboratorModal(false);
       setCollaboratorSearch('');
@@ -1954,6 +1966,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                   <option value="script_day">Script Day</option>
                   <option value="unit">Unit</option>
                   <option value="location">Location</option>
+                  <option value="other">Other</option>
                 </select>
                 <input
                   type="text"

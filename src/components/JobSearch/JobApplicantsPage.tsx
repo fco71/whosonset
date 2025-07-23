@@ -171,12 +171,24 @@ const JobApplicantsPage: React.FC<JobApplicantsPageProps> = ({ jobId: propJobId 
         status: newStatus,
         lastUpdated: serverTimestamp()
       });
-      
       // Update local state
       setApplications(prev => prev.map(app => 
         app.id === applicationId ? { ...app, status: newStatus } : app
       ));
-      
+      // Fetch the application to get applicantId
+      const applicationDoc = await getDoc(doc(db, 'jobApplications', applicationId));
+      const applicationData = applicationDoc.data();
+      if (applicationData && applicationData.applicantId) {
+        await addDoc(collection(db, 'users', applicationData.applicantId, 'notifications'), {
+          type: 'application_status_update',
+          message: `Your application status has been updated to: ${newStatus}`,
+          timestamp: serverTimestamp(),
+          read: false,
+          userId: applicationData.applicantId,
+          applicationId: applicationId,
+          status: newStatus
+        });
+      }
       toast.success(`Application ${newStatus.replace('_', ' ')}`);
     } catch (error) {
       console.error('Error updating application status:', error);

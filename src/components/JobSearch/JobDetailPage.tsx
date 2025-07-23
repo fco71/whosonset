@@ -425,22 +425,6 @@ const JobDetailPage: React.FC = () => {
           <div className="flex items-center gap-4 pt-6 border-t border-gray-200">
             {!isJobPoster ? (
               <>
-                <Link
-                  to={`/jobs/${job.id}/apply`}
-                  className="flex-1 px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors text-center"
-                >
-                  Apply Now
-                </Link>
-                                  <button
-                    onClick={handleSaveJob}
-                    className={`px-4 py-3 border rounded-lg transition-colors ${
-                      isSaved 
-                        ? 'border-blue-600 text-blue-600 bg-blue-50' 
-                        : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    {isSaved ? '✓ Saved' : 'Save Job'}
-                  </button>
                 <button
                   onClick={handleShareJob}
                   className="px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"

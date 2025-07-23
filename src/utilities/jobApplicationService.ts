@@ -398,7 +398,7 @@ export class JobApplicationService {
         createdAt: serverTimestamp()
       };
 
-      await addDoc(collection(db, 'applicationNotifications'), notificationData);
+      await addDoc(collection(db, 'users', applicantId, 'notifications'), notificationData);
       console.log('Application notification created successfully');
     } catch (error: any) {
       console.error('Error creating application notification:', error);
@@ -424,7 +424,7 @@ export class JobApplicationService {
         createdAt: serverTimestamp()
       };
 
-      await addDoc(collection(db, 'applicationNotifications'), notificationData);
+      await addDoc(collection(db, 'users', userId, 'notifications'), notificationData);
     } catch (error) {
       console.error('Error creating status update notification:', error);
     }
@@ -442,7 +442,7 @@ export class JobApplicationService {
         createdAt: serverTimestamp()
       };
 
-      await addDoc(collection(db, 'applicationNotifications'), notificationData);
+      await addDoc(collection(db, 'users', userId, 'notifications'), notificationData);
     } catch (error) {
       console.error('Error creating message notification:', error);
     }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, query, orderBy, limit, updateDoc, doc, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -37,6 +37,21 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
   const { notifications, loading, markAsRead } = useNotifications();
   const [filterType, setFilterType] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Dismiss on escape key
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
+  // Dismiss on click outside
+  const handleOverlayClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) onClose();
+  }, [onClose]);
 
   const handleMarkAsRead = async (notificationId: string) => {
     try {
@@ -138,22 +153,23 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
 
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white rounded-xl max-w-2xl w-full max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={handleOverlayClick}>
+      <div className="bg-white rounded-xl max-w-md w-full max-h-[80vh] flex flex-col shadow-lg relative" onClick={e => e.stopPropagation()}>
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <div className="flex items-center gap-3">
             <Bell className="w-6 h-6 text-gray-600" />
             <h2 className="text-xl font-semibold text-gray-900">Notifications</h2>
-            {unreadCount > 0 && (
+            {notifications.filter(n => !n.read).length > 0 && (
               <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1">
-                {unreadCount} new
+                {notifications.filter(n => !n.read).length} new
               </span>
             )}
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors absolute top-2 right-2"
+            aria-label="Close notifications"
           >
             <XCircle className="w-5 h-5 text-gray-500" />
           </button>

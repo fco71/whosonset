@@ -246,15 +246,10 @@ const ApplicationStatusTracker: React.FC<ApplicationStatusTrackerProps> = ({ app
                   Open Chat
                 </Button>
               </div>
-              
               <div className="text-center py-8">
                 <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                 <p className="text-gray-600 mb-4">Messages are now in a dedicated chat interface</p>
                 <p className="text-sm text-gray-500 mb-4">Click "Open Chat" to start messaging</p>
-                <Button onClick={() => setShowMessaging(true)}>
-                  <MessageSquare className="w-4 h-4 mr-2" />
-                  Open Chat
-                </Button>
               </div>
             </div>
           </div>
