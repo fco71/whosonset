@@ -31,8 +31,6 @@ const MessageInput = React.forwardRef<{
   const [dragOver, setDragOver] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);
   const [recordedAudioFile, setRecordedAudioFile] = useState<File | null>(null);
-  const [pendingAttachment, setPendingAttachment] = useState<File | null>(null);
-  const [pendingAttachmentType, setPendingAttachmentType] = useState<string | null>(null);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordingChunksRef = useRef<Blob[]>([]);
@@ -57,9 +55,6 @@ const MessageInput = React.forwardRef<{
   
   const setSendingState = useCallback((isSending: boolean) => {
     sendingRef.current = isSending;
-    if (inputRef.current) {
-      inputRef.current.disabled = isSending;
-    }
   }, []);
   
   // Expose these methods to parent
@@ -86,12 +81,11 @@ const MessageInput = React.forwardRef<{
     setShowEmojiPicker(false);
   }, []);
 
-  // File handling
+  // File handling (revert to old logic: immediately send file)
   const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      setPendingAttachment(file);
-      setPendingAttachmentType(file.type);
+    if (file && sendCallbackRef.current) {
+      sendCallbackRef.current('', undefined, file);
     }
     event.target.value = '';
   }, []);
@@ -488,38 +482,9 @@ If you don't see the microphone icon, check your browser settings.`;
   };
 
   // Add cancel and send handlers for preview
-  const cancelPendingAttachment = useCallback(() => {
-    setPendingAttachment(null);
-    setPendingAttachmentType(null);
-  }, []);
-
-  const sendPendingAttachment = useCallback(() => {
-    if (pendingAttachment) {
-      sendCallbackRef.current?.('', undefined, pendingAttachment);
-      setPendingAttachment(null);
-      setPendingAttachmentType(null);
-    }
-  }, [pendingAttachment]);
-
-  // Track the preview blob URL for cleanup
-  const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
-
-  // When creating a preview blob URL for pendingAttachment, store and clean up
-  const getPreviewUrl = (file: File | null): string | undefined => {
-    if (!file) return undefined;
-    const url = URL.createObjectURL(file);
-    setPreviewBlobUrl(url);
-    return url;
-  };
-
-  // Cleanup blob URL on unmount or when preview is removed
-  useEffect(() => {
-    return () => {
-      if (previewBlobUrl) {
-        URL.revokeObjectURL(previewBlobUrl);
-      }
-    };
-  }, [previewBlobUrl]);
+  // --- BEGIN: File Attachment Preview Logic (to be re-added for future enhancement) ---
+  // [REMOVED: cancelPendingAttachment, sendPendingAttachment, previewBlobUrl, getPreviewUrl]
+  // --- END: File Attachment Preview Logic ---
 
   return (
     <div className={`message-input ${dragOver ? 'drag-over' : ''}`} 
@@ -664,33 +629,6 @@ If you don't see the microphone icon, check your browser settings.`;
             >
               ❌ Cancel
             </button>
-          </div>
-        </div>
-      )}
-
-      {/* Preview UI */}
-      {pendingAttachment && (
-        <div className="attachment-preview" style={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, marginBottom: 12, zIndex: 10
-        }}>
-          {pendingAttachmentType?.startsWith('image/') ? (
-            <img
-              src={getPreviewUrl(pendingAttachment) || undefined}
-              alt="Preview"
-              style={{ maxWidth: 240, maxHeight: 240, borderRadius: 8, marginBottom: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
-              onError={imageErrorFallback}
-            />
-          ) : pendingAttachmentType?.startsWith('audio/') ? (
-            <audio controls src={getPreviewUrl(pendingAttachment) || undefined} style={{ width: 220, marginBottom: 12 }} />
-          ) : (
-            <div style={{ marginBottom: 12, fontSize: 16 }}>
-              <span>📎 {pendingAttachment.name}</span>
-            </div>
-          )}
-          <div style={{ display: 'flex', gap: 16, marginTop: 4 }}>
-            <button onClick={() => { sendPendingAttachment(); if (previewBlobUrl) { URL.revokeObjectURL(previewBlobUrl); setPreviewBlobUrl(null); } }} style={{ background: '#3b82f6', color: 'white', border: 'none', borderRadius: 8, padding: '10px 24px', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}>Send</button>
-            <button onClick={() => { cancelPendingAttachment(); if (previewBlobUrl) { URL.revokeObjectURL(previewBlobUrl); setPreviewBlobUrl(null); } }} style={{ background: '#ef4444', color: 'white', border: 'none', borderRadius: 8, padding: '10px 24px', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}>Cancel</button>
           </div>
         </div>
       )}
@@ -1144,48 +1082,30 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   // Send message function - memoized with useCallback
   const sendMessage = useCallback(async (messageContent: string, messageType: string = 'text', file?: File) => {
     if (!selectedUser || sending) return;
-
-    console.log('[SendMessage] Starting to send message:', { messageContent, messageType, file: file?.name, fileType: file?.type });
-
     setSending(true);
-
     try {
       let content = messageContent;
       let type = messageType as 'text' | 'image' | 'file' | 'voice' | 'project_invite';
       let fileUrl: string | undefined = undefined;
-
       // Handle file uploads
       if (file) {
-        console.log('[SendMessage] Processing file:', file.name, file.type, file.size);
-        
         if (file.type.startsWith('image/')) {
           type = 'image';
           content = `📷 ${file.name}`;
-          // Upload image file to Firebase Storage
           fileUrl = await MessagingService.uploadFileToStorage(file, 'chat-images');
-          console.log('[SendMessage] Uploaded image file, got URL:', fileUrl);
         } else if (file.type.startsWith('audio/')) {
           type = 'voice';
           content = `Voice Message (${(file.size / 1024).toFixed(1)} KB)`;
-          console.log('[SendMessage] Detected voice message:', content);
-          // Upload audio file to Firebase Storage
           fileUrl = await MessagingService.uploadFileToStorage(file, 'chat-audio');
-          console.log('[SendMessage] Uploaded audio file, got URL:', fileUrl);
         } else if (file.type.startsWith('video/')) {
           type = 'file';
           content = `🎥 ${file.name}`;
-          // Optionally upload video here in future
         } else {
           type = 'file';
           content = `📎 ${file.name}`;
-          // Optionally upload file here in future
         }
-        // For non-audio/image, fallback to local preview for now
         if (!fileUrl) fileUrl = URL.createObjectURL(file);
       }
-
-      console.log('[SendMessage] Final message data:', { content, type, fileUrl });
-
       // Optimistically add message to UI
       const optimisticMessage: DirectMessage = {
         id: `temp_${Date.now()}`,
@@ -1201,30 +1121,19 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         fileSize: file?.size,
         fileType: file?.type
       };
-
       setMessages(prev => [...prev, optimisticMessage]);
-
-      // Send actual message
-      console.log('[SendMessage] Calling MessagingService.sendDirectMessage with:', { currentUserId, selectedUser, content, type, fileUrl });
       await MessagingService.sendDirectMessage(currentUserId, selectedUser, content, type, undefined, fileUrl);
-      
-      // Update optimistic message status
-      setMessages(prev => prev.map(msg => 
-        msg.id === optimisticMessage.id 
+      setMessages(prev => prev.map(msg =>
+        msg.id === optimisticMessage.id
           ? { ...msg, status: 'sent' as any }
           : msg
       ));
-
-      // Stop typing indicator
       MessagingService.setTypingStatus(currentUserId, selectedUser, false);
     } catch (error) {
-      console.error('[SendMessage] Error sending message:', error);
-      
-      // Provide specific error messages for file size issues
-              if (error instanceof Error) {
-          if (error.message.includes('exceeds maximum allowed size')) {
-            showNotification('error', 'File is too large. Please choose a file smaller than 5MB.');
-          } else if (error.message.includes('Cannot send message')) {
+      if (error instanceof Error) {
+        if (error.message.includes('exceeds maximum allowed size')) {
+          showNotification('error', 'File is too large. Please choose a file smaller than 5MB.');
+        } else if (error.message.includes('Cannot send message')) {
           showNotification('error', 'Cannot send message to this user. They may not allow messages from non-followers.');
         } else {
           showNotification('error', 'Failed to send message. Please try again.');
@@ -1232,8 +1141,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       } else {
         showNotification('error', 'Failed to send message. Please try again.');
       }
-      
-      // Remove optimistic message on error
       setMessages(prev => prev.filter(msg => msg.id !== `temp_${Date.now()}`));
     } finally {
       setSending(false);
