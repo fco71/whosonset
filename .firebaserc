@@ -1,5 +1,8 @@
 {
   "projects": {
-    "default": "whosonsetdepez"
-  }
+    "default": "whosonsetdepez",
+    "cd .. && firebase use sample-firebase-ai-app-8dca9": "sample-firebase-ai-app-8dca9"
+  },
+  "targets": {},
+  "etags": {}
 }

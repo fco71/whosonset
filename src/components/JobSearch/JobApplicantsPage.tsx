@@ -7,6 +7,7 @@ import { JobApplication } from '../../types/JobApplication';
 import { toast } from 'react-hot-toast';
 import { Button } from '../ui/Button';
 import Card from '../ui/Card';
+import ApplicationMessaging from './ApplicationMessaging';
 import { 
   Users, 
   MessageSquare, 
@@ -64,8 +65,6 @@ const JobApplicantsPage: React.FC<JobApplicantsPageProps> = ({ jobId: propJobId 
   const [selectedApplication, setSelectedApplication] = useState<JobApplication | null>(null);
   const [showApplicantModal, setShowApplicantModal] = useState(false);
   const [showMessageModal, setShowMessageModal] = useState(false);
-  const [newMessage, setNewMessage] = useState('');
-  const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'date' | 'name' | 'status'>('date');
@@ -185,32 +184,7 @@ const JobApplicantsPage: React.FC<JobApplicantsPageProps> = ({ jobId: propJobId 
     }
   };
 
-  const handleSendMessage = async () => {
-    if (!newMessage.trim() || !selectedApplication || !currentUser) return;
 
-    try {
-      setIsSendingMessage(true);
-      
-      const messageData = {
-        senderId: currentUser.uid,
-        senderName: currentUser.displayName || currentUser.email || 'Job Poster',
-        message: newMessage.trim(),
-        timestamp: serverTimestamp(),
-        applicationId: selectedApplication.id
-      };
-
-      await addDoc(collection(db, 'jobApplications', selectedApplication.id, 'messages'), messageData);
-      
-      setNewMessage('');
-      setShowMessageModal(false);
-      toast.success('Message sent successfully!');
-    } catch (error) {
-      console.error('Error sending message:', error);
-      toast.error('Failed to send message');
-    } finally {
-      setIsSendingMessage(false);
-    }
-  };
 
   const handleFavorite = async (applicationId: string) => {
     try {
@@ -711,56 +685,11 @@ const JobApplicantsPage: React.FC<JobApplicantsPageProps> = ({ jobId: propJobId 
 
       {/* Message Modal */}
       {showMessageModal && selectedApplication && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-md w-full">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-gray-900">
-                  Message {applicantProfiles[selectedApplication.applicantId]?.name}
-                </h2>
-                <button
-                  onClick={() => setShowMessageModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <XCircle className="w-6 h-6" />
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Message
-                  </label>
-                  <textarea
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Type your message..."
-                    rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                  />
-                </div>
-
-                <div className="flex gap-3">
-                  <Button
-                    onClick={handleSendMessage}
-                    disabled={isSendingMessage || !newMessage.trim()}
-                    className="flex-1"
-                  >
-                    <Send className="w-4 h-4 mr-2" />
-                    Send Message
-                  </Button>
-                  
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowMessageModal(false)}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ApplicationMessaging 
+          applicationId={selectedApplication.id}
+          isModal={true}
+          onClose={() => setShowMessageModal(false)}
+        />
       )}
     </div>
   );

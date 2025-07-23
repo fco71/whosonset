@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, getDoc, updateDoc, collection, addDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { JobApplication } from '../../types/JobApplication';
@@ -8,6 +8,7 @@ import { toast } from 'react-hot-toast';
 import { Button } from '../ui/Button';
 import Card, { CardHeader, CardBody, CardTitle } from '../ui/Card';
 import { MessageSquare, Send, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import ApplicationMessaging from './ApplicationMessaging';
 
 interface ApplicationStatusTrackerProps {
   applicationId: string;
@@ -19,15 +20,12 @@ const ApplicationStatusTracker: React.FC<ApplicationStatusTrackerProps> = ({ app
   const { currentUser } = useAuth();
   const [application, setApplication] = useState<JobApplication | null>(null);
   const [job, setJob] = useState<any | null>(null); // Changed to any for now as JobPosting type is removed
-  const [messages, setMessages] = useState<any[]>([]); // Changed to any for now
-  const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [isSendingMessage, setIsSendingMessage] = useState(false);
+  const [showMessaging, setShowMessaging] = useState(false);
 
   useEffect(() => {
     if (applicationId) {
       loadApplicationDetails();
-      subscribeToMessages();
     }
   }, [applicationId]);
 
@@ -57,49 +55,6 @@ const ApplicationStatusTracker: React.FC<ApplicationStatusTrackerProps> = ({ app
       console.error('Error loading application details:', error);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const subscribeToMessages = () => {
-    const messagesQuery = collection(db, 'jobApplications', applicationId, 'messages');
-    const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
-      const messagesData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as any[]; // Changed to any for now
-      setMessages(messagesData.sort((a, b) => 
-        (a.timestamp?.toDate?.() || new Date(a.timestamp)).getTime() - 
-        (b.timestamp?.toDate?.() || new Date(b.timestamp)).getTime()
-      ));
-    });
-
-    return unsubscribe;
-  };
-
-  const sendMessage = async () => {
-    if (!newMessage.trim() || !application || !currentUser) return;
-
-    try {
-      setIsSendingMessage(true);
-      
-      const messageData = {
-        senderId: currentUser.uid,
-        senderName: currentUser.displayName || currentUser.email || 'Unknown User',
-        message: newMessage.trim(),
-        timestamp: serverTimestamp(),
-        applicationId: applicationId
-      };
-
-      // Add message to the messages subcollection
-      await addDoc(collection(db, 'jobApplications', applicationId, 'messages'), messageData);
-      
-      setNewMessage('');
-      toast.success('Message sent successfully!');
-    } catch (error) {
-      console.error('Error sending message:', error);
-      toast.error('Failed to send message. Please try again.');
-    } finally {
-      setIsSendingMessage(false);
     }
   };
 
@@ -277,65 +232,30 @@ const ApplicationStatusTracker: React.FC<ApplicationStatusTrackerProps> = ({ app
 
             {/* Messages */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <div className="flex items-center gap-2 mb-6">
-                <MessageSquare className="w-5 h-5 text-gray-600" />
-                <h2 className="text-xl font-light text-gray-900">Messages</h2>
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5 text-gray-600" />
+                  <h2 className="text-xl font-light text-gray-900">Messages</h2>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setShowMessaging(true)}
+                >
+                  <MessageSquare className="w-4 h-4 mr-2" />
+                  Open Chat
+                </Button>
               </div>
               
-              {messages.length === 0 ? (
-                <div className="text-center py-8">
-                  <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-600 mb-4">No messages yet</p>
-                  <p className="text-sm text-gray-500">Start a conversation about this application</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {/* Messages List */}
-                  <div className="bg-gray-50 rounded-lg p-4 max-h-80 overflow-y-auto">
-                    <div className="space-y-3">
-                      {messages.map(msg => (
-                        <div key={msg.id} className={`flex ${msg.senderId === currentUser?.uid ? 'justify-end' : 'justify-start'}`}>
-                          <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                            msg.senderId === currentUser?.uid
-                              ? 'bg-blue-500 text-white'
-                              : 'bg-white text-gray-900 border border-gray-200'
-                          }`}>
-                            <div className={`text-xs mb-1 ${
-                              msg.senderId === currentUser?.uid ? 'text-blue-100' : 'text-gray-500'
-                            }`}>
-                              {msg.senderName} • {msg.timestamp?.toDate ? 
-                                new Date(msg.timestamp.seconds * 1000).toLocaleString() : 
-                                new Date(msg.timestamp).toLocaleString()
-                              }
-                            </div>
-                            <div className="text-sm">{msg.message}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  {/* Message Input */}
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
-                      placeholder="Type a message..."
-                      value={newMessage}
-                      onChange={e => setNewMessage(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter') sendMessage(); }}
-                      disabled={isSendingMessage}
-                    />
-                    <Button 
-                      onClick={sendMessage} 
-                      disabled={isSendingMessage || !newMessage.trim()}
-                      className="px-4 py-2"
-                    >
-                      <Send className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              )}
+              <div className="text-center py-8">
+                <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-600 mb-4">Messages are now in a dedicated chat interface</p>
+                <p className="text-sm text-gray-500 mb-4">Click "Open Chat" to start messaging</p>
+                <Button onClick={() => setShowMessaging(true)}>
+                  <MessageSquare className="w-4 h-4 mr-2" />
+                  Open Messages
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -431,6 +351,15 @@ const ApplicationStatusTracker: React.FC<ApplicationStatusTrackerProps> = ({ app
           </div>
         </div>
       </div>
+
+      {/* Messaging Modal */}
+      {showMessaging && applicationId && (
+        <ApplicationMessaging 
+          applicationId={applicationId}
+          isModal={true}
+          onClose={() => setShowMessaging(false)}
+        />
+      )}
     </div>
   );
 };
