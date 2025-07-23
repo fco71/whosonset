@@ -102,16 +102,24 @@ export class MessagingService {
       // Update conversation cache
       this.updateConversationCache(senderId, receiverId, content, new Date());
 
-      // Create notification for receiver
-      await SocialService.createNotification({
-        userId: receiverId,
+      // Fetch sender's display name for notification
+      let senderName = 'Someone';
+      try {
+        const senderProfile = await this.getUserProfile(senderId);
+        senderName = senderProfile.displayName || 'Someone';
+      } catch (e) {
+        console.warn('[MessagingService] Could not fetch sender display name for notification');
+      }
+      // Create notification for receiver (emulate job application notification model)
+      await addDoc(collection(db, 'crewProfiles', receiverId, 'notifications'), {
         type: 'message',
         title: 'New Message',
-        message: `You have a new message`,
-        relatedUserId: senderId,
+        message: `You have a new message from ${senderName}`,
         isRead: false,
-        createdAt: new Date(),
-        actionUrl: `/chat`
+        createdAt: serverTimestamp(),
+        userId: receiverId,
+        relatedUserId: senderId,
+        actionUrl: `/chat/${senderId}`
       });
 
       return docRef.id;
@@ -577,20 +585,6 @@ export class MessagingService {
 
   private static async getUserProfile(userId: string) {
     try {
-      // Try to get from users collection first
-      const userDoc = await getDoc(doc(db, 'users', userId));
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        return {
-          displayName: userData.displayName || userData.firstName || userData.lastName || `User ${userId.slice(-4)}`,
-          avatarUrl: userData.avatarUrl || userData.photoURL,
-          role: userData.role,
-          company: userData.company,
-          location: userData.location
-        };
-      }
-
-      // Try crewProfiles collection as fallback
       const crewDoc = await getDoc(doc(db, 'crewProfiles', userId));
       if (crewDoc.exists()) {
         const crewData = crewDoc.data();
@@ -602,19 +596,18 @@ export class MessagingService {
           location: crewData.residences?.[0]?.city || crewData.location
         };
       }
-
       // If no user data found, return a fallback
       return {
-        displayName: `User ${userId.slice(-4)}`,
+        displayName: `Crew Member ${userId.slice(-4)}`,
         avatarUrl: undefined,
         role: 'Crew Member',
         company: undefined,
         location: undefined
       };
     } catch (error) {
-      console.error('Error getting user profile:', error);
+      console.error('Error getting crew profile:', error);
       return {
-        displayName: `User ${userId.slice(-4)}`,
+        displayName: `Crew Member ${userId.slice(-4)}`,
         avatarUrl: undefined,
         role: 'Crew Member',
         company: undefined,

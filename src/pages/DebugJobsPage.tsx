@@ -68,7 +68,7 @@ const DebugJobsPage = () => {
         // Try to get user data if postedById exists
         if (data.postedById) {
           try {
-            const userDoc = await getDoc(doc(db, 'users', data.postedById));
+            const userDoc = await getDoc(doc(db, 'crewProfiles', data.postedById));
             if (userDoc.exists()) {
               // Explicitly type the user data
               const userData = userDoc.data() as Record<string, unknown>;

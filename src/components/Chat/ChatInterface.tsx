@@ -1504,35 +1504,33 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               )}
 
               {selectedUser ? (
-                <div>
+                <div style={{display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, maxHeight: '100%', background: '#fff', borderRadius: 12, boxShadow: '0 2px 16px rgba(0,0,0,0.07)', border: '1px solid #e5e7eb', overflow: 'hidden'}}>
                   {/* Chat Header */}
-                  <div className="chat-header">
-                    <div className="user-info">
-                      {selectedUser ? (
-                        <img 
-                          src={selectedUser ? getUserInfo(selectedUser).avatar : ''} 
-                          alt={selectedUser ? getUserInfo(selectedUser).name : ''}
-                          className="w-8 h-8 rounded-full object-cover"
-                          onError={imageErrorFallback}
-                        />
-                      ) : (
-                        <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-                          <span className="text-sm font-medium text-gray-600">
-                            {selectedUser ? getUserInfo(selectedUser).name.charAt(0).toUpperCase() : ''}
-                          </span>
-                        </div>
-                      )}
-                      <div>
-                        <h3 className="user-name">{selectedUser ? getUserInfo(selectedUser).name : ''}</h3>
-                        {typingUsers.includes(selectedUser) && (
-                          <p className="typing-indicator">typing...</p>
-                        )}
+                  <div className="chat-header" style={{padding: '16px 20px', borderBottom: '1px solid #e5e7eb', background: '#f8fafc', display: 'flex', alignItems: 'center', gap: 12}}>
+                    {selectedUser ? (
+                      <img 
+                        src={selectedUser ? getUserInfo(selectedUser).avatar : ''} 
+                        alt={selectedUser ? getUserInfo(selectedUser).name : ''}
+                        className="w-8 h-8 rounded-full object-cover"
+                        onError={imageErrorFallback}
+                      />
+                    ) : (
+                      <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                        <span className="text-sm font-medium text-gray-600">
+                          {selectedUser ? getUserInfo(selectedUser).name.charAt(0).toUpperCase() : ''}
+                        </span>
                       </div>
+                    )}
+                    <div>
+                      <h3 className="user-name">{selectedUser ? getUserInfo(selectedUser).name : ''}</h3>
+                      {typingUsers.includes(selectedUser) && (
+                        <p className="typing-indicator">typing...</p>
+                      )}
                     </div>
                   </div>
 
                   {/* Messages */}
-                  <div className="messages-container">
+                  <div className="messages-container" style={{flex: 1, minHeight: 0, maxHeight: '100%', overflowY: 'auto', background: '#f8fafc', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12}}>
                     {messages.map((message) => (
                       <div
                         key={message.id}
@@ -1712,8 +1710,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                   <div ref={messagesEndRef} />
                 </div>
 
-                {/* Message Input */}
-                <MessageInput key="stable-message-input" ref={messageInputRef} />
+                {/* Message Input - sticky at bottom */}
+                <div style={{background: '#fff', borderTop: '1px solid #e5e7eb', zIndex: 2, padding: '12px 20px'}}>
+                  <MessageInput key="stable-message-input" ref={messageInputRef} />
+                </div>
               </div>
             ) : (
               <div className="no-conversation">
