@@ -74,7 +74,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
   };
 
   const handleNotificationClick = (notification: any) => {
-    // Mark as read
+    // Mark as read and remove from UI
     if (!notification.read) {
       handleMarkAsRead(notification.id);
     }
@@ -166,13 +166,37 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
               </span>
             )}
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors absolute top-2 right-2"
-            aria-label="Close notifications"
-          >
-            <XCircle className="w-5 h-5 text-gray-500" />
-          </button>
+          <div className="flex gap-2 items-center">
+            <button
+              onClick={() => {
+                filteredNotifications.forEach(n => {
+                  if (!n.read) handleMarkAsRead(n.id);
+                });
+              }}
+              className="p-2 text-xs text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
+              aria-label="Mark all as read"
+            >
+              Mark All Read
+            </button>
+            <button
+              onClick={() => {
+                filteredNotifications.forEach(n => {
+                  handleDeleteNotification(n.id);
+                });
+              }}
+              className="p-2 text-xs text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
+              aria-label="Clear all notifications"
+            >
+              Clear All
+            </button>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors absolute top-2 right-2"
+              aria-label="Close notifications"
+            >
+              <XCircle className="w-5 h-5 text-gray-500" />
+            </button>
+          </div>
         </div>
 
         {/* Filters */}
@@ -298,19 +322,6 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
             </p>
             
             <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  // Mark all as read
-                  filteredNotifications.forEach(n => {
-                    if (!n.read) handleMarkAsRead(n.id);
-                  });
-                }}
-              >
-                Mark All Read
-              </Button>
-              
               <Button
                 variant="outline"
                 size="sm"
