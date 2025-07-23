@@ -431,16 +431,16 @@ const JobDetailPage: React.FC = () => {
                 >
                   Apply Now
                 </Link>
-                <button
-                  onClick={handleSaveJob}
-                  className={`px-4 py-3 border rounded-lg transition-colors ${
-                    isSaved 
-                      ? 'border-blue-600 text-blue-600 bg-blue-50' 
-                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  {isSaved ? '✓ Saved' : 'Save'}
-                </button>
+                                  <button
+                    onClick={handleSaveJob}
+                    className={`px-4 py-3 border rounded-lg transition-colors ${
+                      isSaved 
+                        ? 'border-blue-600 text-blue-600 bg-blue-50' 
+                        : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    {isSaved ? '✓ Saved' : 'Save Job'}
+                  </button>
                 <button
                   onClick={handleShareJob}
                   className="px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"

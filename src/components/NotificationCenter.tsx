@@ -137,27 +137,26 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
   const unreadCount = notifications.filter(n => !n.read).length;
 
   if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl max-w-2xl w-full max-h-[80vh] flex flex-col">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-white rounded-xl max-w-2xl w-full max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-              <Bell className="w-4 h-4 text-blue-600" />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900">Notifications</h2>
-              <p className="text-sm text-gray-600">
-                {unreadCount} unread • {notifications.length} total
-              </p>
-            </div>
+            <Bell className="w-6 h-6 text-gray-600" />
+            <h2 className="text-xl font-semibold text-gray-900">Notifications</h2>
+            {unreadCount > 0 && (
+              <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1">
+                {unreadCount} new
+              </span>
+            )}
           </div>
-          
-          <Button variant="outline" size="sm" onClick={onClose}>
-            <XCircle className="w-4 h-4" />
-          </Button>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          >
+            <XCircle className="w-5 h-5 text-gray-500" />
+          </button>
         </div>
 
         {/* Filters */}

@@ -101,6 +101,7 @@ const AllProjects: React.FC = () => {
         setPrevPages((prev) => prev.slice(0, -1));
         setPageNumber((prev) => Math.max(prev - 1, 1));
       } else {
+        // Show all projects, not just user's projects
         q = query(collection(db, 'Projects'), orderBy('projectName'), limit(PROJECTS_PER_PAGE));
         setPrevPages([]);
         setPageNumber(1);

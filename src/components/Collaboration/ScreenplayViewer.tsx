@@ -54,7 +54,7 @@ interface Tag {
   userId: string;
   userName: string;
   userAvatar?: string;
-  tagType: 'character' | 'character_arc' | 'character_development' | 'location' | 'set_design' | 'location_detail' | 'prop' | 'costume' | 'makeup' | 'scene' | 'scene_transition' | 'scene_beat' | 'camera' | 'lighting' | 'sound' | 'plot_point' | 'subplot' | 'theme' | 'budget' | 'schedule' | 'logistics' | 'note' | 'revision' | 'research';
+  tagType: 'cast_member' | 'background_actors' | 'stunts' | 'vehicles' | 'props' | 'camera' | 'special_effects' | 'vfx' | 'mechanical_effects' | 'wardrobe' | 'makeup_hair' | 'animals' | 'animal_wrangler' | 'music' | 'sound' | 'art_department' | 'set_dressing' | 'greenery' | 'special_equipment' | 'security' | 'additional_labor' | 'miscellaneous' | 'notes' | 'comments' | 'set' | 'sequence' | 'script_day' | 'unit' | 'location' | 'character' | 'character_arc' | 'character_development' | 'location_detail' | 'costume' | 'makeup' | 'scene' | 'scene_transition' | 'scene_beat' | 'lighting' | 'plot_point' | 'subplot' | 'theme' | 'budget' | 'schedule' | 'logistics' | 'note' | 'revision' | 'research';
   content: string;
   timestamp: Date;
   pageNumber: number;
@@ -271,42 +271,74 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   };
 
   const tagColors = {
-    // Character related
+    // Cast & Performance
+    cast_member: '#FF6B6B',
+    background_actors: '#FF8E8E',
+    stunts: '#FFB3B3',
+    
+    // Vehicles & Props
+    vehicles: '#4ECDC4',
+    props: '#6ED7D0',
+    
+    // Technical Departments
+    camera: '#45B7D1',
+    special_effects: '#5FC1D8',
+    vfx: '#79CBDF',
+    mechanical_effects: '#96CEB4',
+    
+    // Costume & Makeup
+    wardrobe: '#A8D8C0',
+    makeup_hair: '#BAE2CC',
+    
+    // Animals
+    animals: '#FFD93D',
+    animal_wrangler: '#FFE066',
+    
+    // Audio
+    music: '#FFE680',
+    sound: '#A8E6CF',
+    
+    // Art Department
+    art_department: '#B8EBD9',
+    set_dressing: '#C8F0E3',
+    greenery: '#FF9F43',
+    
+    // Equipment & Security
+    special_equipment: '#FFB366',
+    security: '#FFC789',
+    
+    // Labor & Production
+    additional_labor: '#FFEAA7',
+    
+    // Story & Script
+    notes: '#FDCB6E',
+    comments: '#F39C12',
+    miscellaneous: '#95A5A6',
+    
+    // Production Structure
+    set: '#E74C3C',
+    sequence: '#C0392B',
+    script_day: '#A93226',
+    unit: '#922B21',
+    location: '#7B241C',
+    
+    // Legacy types (keep for backward compatibility)
     character: '#FF6B6B',
     character_arc: '#FF8E8E',
     character_development: '#FFB3B3',
-    
-    // Location related
-    location: '#4ECDC4',
-    set_design: '#6ED7D0',
     location_detail: '#8EE1DB',
-    
-    // Props and objects
-    prop: '#45B7D1',
     costume: '#5FC1D8',
     makeup: '#79CBDF',
-    
-    // Scene related
     scene: '#96CEB4',
     scene_transition: '#A8D8C0',
     scene_beat: '#BAE2CC',
-    
-    // Technical
-    camera: '#FFD93D',
     lighting: '#FFE066',
-    sound: '#FFE680',
-    
-    // Story elements
     plot_point: '#A8E6CF',
     subplot: '#B8EBD9',
     theme: '#C8F0E3',
-    
-    // Production
     budget: '#FF9F43',
     schedule: '#FFB366',
     logistics: '#FFC789',
-    
-    // Notes and general
     note: '#FFEAA7',
     revision: '#FDCB6E',
     research: '#F39C12'
@@ -1893,14 +1925,35 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                   onChange={e => setSelectedTagType(e.target.value as Tag['tagType'])}
                   style={{ width: '100%', marginBottom: 8, border: '1px solid #d1d5db', borderRadius: 6, padding: 8, fontSize: 13, fontFamily: 'inherit' }}
                 >
-                  <option value="character">Character</option>
-                  <option value="location">Location</option>
-                  <option value="prop">Prop</option>
-                  <option value="scene">Scene</option>
+                  <option value="cast_member">Cast Member</option>
+                  <option value="background_actors">Background Actors</option>
+                  <option value="stunts">Stunts</option>
+                  <option value="vehicles">Vehicles</option>
+                  <option value="props">Props</option>
                   <option value="camera">Camera</option>
-                  <option value="lighting">Lighting</option>
+                  <option value="special_effects">Special Effects</option>
+                  <option value="wardrobe">Wardrobe</option>
+                  <option value="makeup_hair">Makeup/Hair</option>
+                  <option value="animals">Animals</option>
+                  <option value="animal_wrangler">Animal Wrangler</option>
+                  <option value="music">Music</option>
                   <option value="sound">Sound</option>
-                  <option value="note">Note</option>
+                  <option value="art_department">Art Department</option>
+                  <option value="set_dressing">Set Dressing</option>
+                  <option value="greenery">Greenery</option>
+                  <option value="special_equipment">Special Equipment</option>
+                  <option value="security">Security</option>
+                  <option value="additional_labor">Additional Labor</option>
+                  <option value="vfx">VFX - Visual Effects</option>
+                  <option value="mechanical_effects">Mechanical Effects</option>
+                  <option value="miscellaneous">Miscellaneous</option>
+                  <option value="notes">Notes</option>
+                  <option value="comments">Comments</option>
+                  <option value="set">Set</option>
+                  <option value="sequence">Sequence</option>
+                  <option value="script_day">Script Day</option>
+                  <option value="unit">Unit</option>
+                  <option value="location">Location</option>
                 </select>
                 <input
                   type="text"

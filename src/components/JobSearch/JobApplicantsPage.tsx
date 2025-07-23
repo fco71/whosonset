@@ -529,18 +529,16 @@ const JobApplicantsPage: React.FC<JobApplicantsPageProps> = ({ jobId: propJobId 
 
       {/* Applicant Details Modal */}
       {showApplicantModal && selectedApplication && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => setShowApplicantModal(false)}>
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-semibold text-gray-900">
-                  {applicantProfiles[selectedApplication.applicantId]?.name}
-                </h2>
+                <h2 className="text-xl font-semibold text-gray-900">Applicant Details</h2>
                 <button
                   onClick={() => setShowApplicantModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
                 >
-                  <XCircle className="w-6 h-6" />
+                  <XCircle className="w-5 h-5 text-gray-500" />
                 </button>
               </div>
 
