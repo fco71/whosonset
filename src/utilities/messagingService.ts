@@ -15,7 +15,8 @@ import {
   limit,
   Timestamp,
   DocumentData,
-  QueryDocumentSnapshot
+  QueryDocumentSnapshot,
+  setDoc
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { DirectMessage, ChatRoom, ChatSettings, MessageReaction, ChatPresence } from '../types/Chat';
@@ -35,6 +36,7 @@ export interface ConversationSummary {
   unreadCount: number;
   isOnline?: boolean;
   lastSeen?: Date;
+  conversationId?: string;
 }
 
 export interface MessageStatus {
@@ -48,6 +50,37 @@ export class MessagingService {
   private static messageCache = new Map<string, DirectMessage[]>();
   private static conversationCache = new Map<string, ConversationSummary[]>();
   private static typingUsers = new Map<string, Set<string>>();
+
+  // ===== CONVERSATION MANAGEMENT =====
+  
+  // Get or create conversation ID between two users
+  private static async getConversationId(userId1: string, userId2: string): Promise<string> {
+    const participants = [userId1, userId2].sort(); // Sort for consistent ordering
+    
+    // Check if conversation already exists
+    const conversationsRef = collection(db, 'conversations');
+    const q = query(
+      conversationsRef,
+      where('participants', '==', participants)
+    );
+    
+    const snapshot = await getDocs(q);
+    if (!snapshot.empty) {
+      return snapshot.docs[0].id;
+    }
+    
+    // Create new conversation
+    const conversationData = {
+      participants,
+      createdAt: serverTimestamp(),
+      lastMessageAt: serverTimestamp(),
+      lastMessage: '',
+      unreadCount: 0
+    };
+    
+    const docRef = await addDoc(conversationsRef, conversationData);
+    return docRef.id;
+  }
 
   // ===== DIRECT MESSAGE OPERATIONS =====
   
@@ -68,10 +101,12 @@ export class MessagingService {
         throw new Error('Cannot send message to this user. They may not allow messages from non-followers.');
       }
 
+      // Get or create conversation
+      const conversationId = await this.getConversationId(senderId, receiverId);
+
       // Create message data, filtering out undefined values
       const messageData: any = {
         senderId,
-        receiverId,
         content,
         messageType,
         timestamp: serverTimestamp(),
@@ -95,259 +130,137 @@ export class MessagingService {
         }
       }
 
-      // Add to Firestore
-      const docRef = await addDoc(collection(db, 'directMessages'), messageData);
-      console.log('[MessagingService] Message sent successfully with ID:', docRef.id);
-
-      // Update conversation cache
-      this.updateConversationCache(senderId, receiverId, content, new Date());
-
-      // Fetch sender's display name for notification
-      let senderName = 'Someone';
-      try {
-        const senderProfile = await this.getUserProfile(senderId);
-        senderName = senderProfile.displayName || 'Someone';
-      } catch (e) {
-        console.warn('[MessagingService] Could not fetch sender display name for notification');
-      }
-      // Create notification for receiver (emulate job application notification model)
-      await addDoc(collection(db, 'crewProfiles', receiverId, 'notifications'), {
-        type: 'message',
-        title: 'New Message',
-        message: `You have a new message from ${senderName}`,
-        isRead: false,
-        createdAt: serverTimestamp(),
-        userId: receiverId,
-        relatedUserId: senderId,
-        actionUrl: `/chat/${senderId}`
+      // Add message to conversation
+      const messagesRef = collection(db, 'conversations', conversationId, 'messages');
+      const docRef = await addDoc(messagesRef, messageData);
+      
+      // Update conversation metadata
+      const conversationRef = doc(db, 'conversations', conversationId);
+      await updateDoc(conversationRef, {
+        lastMessage: content,
+        lastMessageAt: serverTimestamp(),
+        unreadCount: 0 // Reset since sender just sent a message
       });
 
+      console.log('[MessagingService] Message sent successfully with ID:', docRef.id);
       return docRef.id;
     } catch (error) {
-      console.error('Error sending direct message:', error);
+      console.error('[MessagingService] Error sending message:', error);
       throw error;
     }
   }
 
   static async canSendMessage(senderId: string, receiverId: string): Promise<boolean> {
-    try {
-      // For now, allow all authenticated users to send messages to each other
-      // This can be enhanced later with proper permission checking
-      console.log('[MessagingService] Allowing message from', senderId, 'to', receiverId);
-      return true;
-    } catch (error) {
-      console.error('Error checking message permissions:', error);
-      return false;
-    }
+    // For now, allow all authenticated users to message each other
+    // This can be enhanced with privacy settings later
+    return true;
   }
 
   static async getDirectMessages(userId1: string, userId2: string, limitCount: number = 50): Promise<DirectMessage[]> {
     try {
-      console.log('[MessagingService] Getting direct messages between', userId1, 'and', userId2);
-      
-      const cacheKey = `${userId1}_${userId2}`;
-      const cachedMessages = this.messageCache.get(cacheKey);
-      
-      if (cachedMessages && cachedMessages.length >= limitCount) {
-        console.log('[MessagingService] Returning cached messages');
-        return cachedMessages.slice(-limitCount);
-      }
-      
-      // Use a simpler approach: get messages where current user is sender
-      const messagesQuery = query(
-        collection(db, 'directMessages'),
-        where('senderId', '==', userId1),
+      const conversationId = await this.getConversationId(userId1, userId2);
+      const messagesRef = collection(db, 'conversations', conversationId, 'messages');
+      const q = query(
+        messagesRef,
         orderBy('timestamp', 'desc'),
-        limit(50)
+        limit(limitCount)
       );
       
-      const snapshot = await getDocs(messagesQuery);
+      const snapshot = await getDocs(q);
+      const messages: DirectMessage[] = [];
       
-      // Filter messages for this conversation in memory
-      const conversationMessages = snapshot.docs.filter(doc => {
+      snapshot.forEach((doc) => {
         const data = doc.data();
-        return (data.senderId === userId1 && data.receiverId === userId2) ||
-               (data.senderId === userId2 && data.receiverId === userId1);
-      });
-      
-      const messages = conversationMessages.map(doc => {
-        const data = doc.data();
-        let timestamp: Date | undefined;
-        
-        if (data.timestamp) {
-          if (data.timestamp instanceof Date) {
-            timestamp = data.timestamp;
-          } else if (typeof data.timestamp === 'object' && 'toDate' in data.timestamp) {
-            // Firestore timestamp
-            timestamp = (data.timestamp as any).toDate();
-          } else if (typeof data.timestamp === 'number') {
-            // Unix timestamp
-            timestamp = new Date(data.timestamp);
-          }
-        }
-        
-        return {
+        messages.push({
           id: doc.id,
-          ...data,
-          timestamp
-        } as DirectMessage;
+          senderId: data.senderId,
+          receiverId: data.senderId === userId1 ? userId2 : userId1, // Determine receiver based on sender
+          content: data.content,
+          timestamp: data.timestamp?.toDate() || new Date(),
+          isRead: data.isRead || false,
+          messageType: data.messageType || 'text',
+          status: data.status || 'sent',
+          fileUrl: data.fileUrl,
+          fileName: data.fileName,
+          fileSize: data.fileSize,
+          fileType: data.fileType,
+          reactions: data.reactions || []
+        });
       });
       
-      // Cache the messages
-      this.messageCache.set(cacheKey, messages.reverse());
-      
-      console.log('[MessagingService] Retrieved', messages.length, 'messages');
-      return messages.reverse(); // Return in chronological order
+      // Sort by timestamp ascending for display
+      return messages.reverse();
     } catch (error) {
-      console.error('Error getting direct messages:', error);
-      // Return empty array on error to prevent crashes
+      console.error('[MessagingService] Error getting messages:', error);
       return [];
     }
   }
-
-  // ===== REAL-TIME LISTENERS =====
 
   static subscribeToConversation(
     userId1: string, 
     userId2: string, 
     callback: (messages: DirectMessage[]) => void
   ): () => void {
-    console.log('[MessagingService] Subscribing to conversation between', userId1, 'and', userId2);
+    const cacheKey = `${userId1}-${userId2}`;
     
-    const cacheKey = `${userId1}_${userId2}`;
-    
-    // Return cached messages immediately if available
-    const cachedMessages = this.messageCache.get(cacheKey);
-    if (cachedMessages) {
-      callback(cachedMessages);
+    // Clean up existing listener
+    if (this.listeners.has(cacheKey)) {
+      this.listeners.get(cacheKey)?.();
     }
-    
-    let allMessages: DirectMessage[] = [];
-    
-    // Set up real-time listener for messages where current user is sender
-    const sentMessagesQuery = query(
-      collection(db, 'directMessages'),
-      where('senderId', '==', userId1),
-      orderBy('timestamp', 'asc')
-    );
-    
-    const sentUnsubscribe = onSnapshot(sentMessagesQuery, (snapshot) => {
-      const sentMessages = snapshot.docs
-                                .map(doc => {
-                          const data = doc.data();
-                          let timestamp: Date | undefined;
 
-                          if (data.timestamp) {
-                            if (data.timestamp instanceof Date) {
-                              timestamp = data.timestamp;
-                            } else if (typeof data.timestamp === 'object' && 'toDate' in data.timestamp) {
-                              timestamp = (data.timestamp as any).toDate();
-                            } else if (typeof data.timestamp === 'number') {
-                              timestamp = new Date(data.timestamp);
-                            }
-                          }
-
-                          return {
-                            id: doc.id,
-                            ...data,
-                            timestamp
-                          } as DirectMessage;
-                        })
-                        .filter(msg => msg.receiverId === userId2)
-                        .filter(msg => {
-                          // Filter out messages deleted for the current user
-                          if (msg.senderId === userId1 && msg.deletedForSender) return false;
-                          if (msg.receiverId === userId1 && msg.deletedForReceiver) return false;
-                          return true;
-                        });
-      
-      // Combine with received messages and sort
-      const combinedMessages = [...sentMessages, ...allMessages.filter(msg => msg.senderId === userId2)]
-        .sort((a, b) => {
-          if (!a.timestamp && !b.timestamp) return 0;
-          if (!a.timestamp) return 1;
-          if (!b.timestamp) return -1;
-          return a.timestamp.getTime() - b.timestamp.getTime();
+    // Set up the listener immediately
+    const setupListener = async () => {
+      try {
+        const conversationId = await this.getConversationId(userId1, userId2);
+        const messagesRef = collection(db, 'conversations', conversationId, 'messages');
+        const q = query(
+          messagesRef,
+          orderBy('timestamp', 'asc')
+        );
+        
+        return onSnapshot(q, (snapshot) => {
+          const messages: DirectMessage[] = [];
+          
+          snapshot.forEach((doc) => {
+            const data = doc.data();
+            messages.push({
+              id: doc.id,
+              senderId: data.senderId,
+              receiverId: data.senderId === userId1 ? userId2 : userId1,
+              content: data.content,
+              timestamp: data.timestamp?.toDate() || new Date(),
+              isRead: data.isRead || false,
+              messageType: data.messageType || 'text',
+              status: data.status || 'sent',
+              fileUrl: data.fileUrl,
+              fileName: data.fileName,
+              fileSize: data.fileSize,
+              fileType: data.fileType,
+              reactions: data.reactions || []
+            });
+          });
+          
+          this.messageCache.set(cacheKey, messages);
+          callback(messages);
         });
-      
-      // Cache the messages
-      this.messageCache.set(cacheKey, combinedMessages);
-      
-      callback(combinedMessages);
-    }, (error) => {
-      console.error('Error in sent messages listener:', error);
-    });
-    
-    // Set up real-time listener for messages where current user is receiver
-    const receivedMessagesQuery = query(
-      collection(db, 'directMessages'),
-      where('receiverId', '==', userId1),
-      orderBy('timestamp', 'asc')
-    );
-    
-    const receivedUnsubscribe = onSnapshot(receivedMessagesQuery, (snapshot) => {
-      const receivedMessages = snapshot.docs
-                                .map(doc => {
-                          const data = doc.data();
-                          let timestamp: Date | undefined;
+      } catch (error) {
+        console.error('[MessagingService] Error setting up conversation listener:', error);
+        return () => {};
+      }
+    };
 
-                          if (data.timestamp) {
-                            if (data.timestamp instanceof Date) {
-                              timestamp = data.timestamp;
-                            } else if (typeof data.timestamp === 'object' && 'toDate' in data.timestamp) {
-                              timestamp = (data.timestamp as any).toDate();
-                            } else if (typeof data.timestamp === 'number') {
-                              timestamp = new Date(data.timestamp);
-                            }
-                          }
-
-                          return {
-                            id: doc.id,
-                            ...data,
-                            timestamp
-                          } as DirectMessage;
-                        })
-                        .filter(msg => msg.senderId === userId2)
-                        .filter(msg => {
-                          // Filter out messages deleted for the current user
-                          if (msg.senderId === userId1 && msg.deletedForSender) return false;
-                          if (msg.receiverId === userId1 && msg.deletedForReceiver) return false;
-                          return true;
-                        });
-      
-      allMessages = receivedMessages;
-      
-      // Get sent messages from cache to combine
-      const sentMessages = this.messageCache.get(cacheKey)?.filter(msg => msg.senderId === userId1) || [];
-      
-      // Combine and sort
-      const combinedMessages = [...sentMessages, ...receivedMessages]
-        .sort((a, b) => {
-          if (!a.timestamp && !b.timestamp) return 0;
-          if (!a.timestamp) return 1;
-          if (!b.timestamp) return -1;
-          return a.timestamp.getTime() - b.timestamp.getTime();
-        });
-      
-      // Cache the messages
-      this.messageCache.set(cacheKey, combinedMessages);
-      
-      callback(combinedMessages);
-    }, (error) => {
-      console.error('Error in received messages listener:', error);
+    // Set up the listener and store the cleanup function
+    setupListener().then(cleanup => {
+      this.listeners.set(cacheKey, cleanup);
     });
     
-    // Store the unsubscribe functions
-    const listenerKey = `conversation_${cacheKey}`;
-    this.listeners.set(listenerKey, () => {
-      sentUnsubscribe();
-      receivedUnsubscribe();
-    });
-    
+    // Return a cleanup function that will be called immediately
     return () => {
-      sentUnsubscribe();
-      receivedUnsubscribe();
-      this.listeners.delete(listenerKey);
+      const cleanup = this.listeners.get(cacheKey);
+      if (cleanup) {
+        cleanup();
+        this.listeners.delete(cacheKey);
+      }
     };
   }
 
@@ -355,139 +268,66 @@ export class MessagingService {
     userId: string, 
     callback: (conversations: ConversationSummary[]) => void
   ): () => void {
-    console.log('[MessagingService] Subscribing to conversations for user:', userId);
-    
-    const listenerKey = `conversations_${userId}`;
+    const cacheKey = `conversations-${userId}`;
     
     // Clean up existing listener
-    if (this.listeners.has(listenerKey)) {
-      this.listeners.get(listenerKey)!();
+    if (this.listeners.has(cacheKey)) {
+      this.listeners.get(cacheKey)?.();
     }
 
-    let allConversations: ConversationSummary[] = [];
-
-    // Set up real-time listener for sent messages
-    const sentMessagesQuery = query(
-      collection(db, 'directMessages'),
-      where('senderId', '==', userId),
-      orderBy('timestamp', 'desc')
+    const conversationsRef = collection(db, 'conversations');
+    const q = query(
+      conversationsRef,
+      where('participants', 'array-contains', userId),
+      orderBy('lastMessageAt', 'desc')
     );
-
-    const sentUnsubscribe = onSnapshot(sentMessagesQuery, async (snapshot) => {
-      try {
-        const sentConversations = await Promise.all(
-          snapshot.docs.map(async (doc) => {
-            const data = doc.data();
-            const receiverId = data.receiverId;
+    
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
+      const conversations: ConversationSummary[] = [];
+      
+      for (const doc of snapshot.docs) {
+        const data = doc.data();
+        const participants = data.participants || [];
+        const otherUserId = participants.find((id: string) => id !== userId);
+        
+        if (otherUserId) {
+          try {
+            const userProfile = await this.getUserProfile(otherUserId);
+            const unreadCount = await this.getUnreadCount(userId, otherUserId);
             
-            // Get user profile
-            const userProfile = await this.getUserProfile(receiverId);
-            
-            return {
-              userId: receiverId,
-              userName: userProfile.displayName,
-              userAvatar: userProfile.avatarUrl,
-              userRole: userProfile.role,
-              userCompany: userProfile.company,
-              userLocation: userProfile.location,
-              lastMessage: data.content,
-              lastMessageTime: data.timestamp?.toDate?.() || new Date(),
-              unreadCount: 0, // TODO: Calculate unread count
-              isOnline: false,
-              lastSeen: undefined
-            } as ConversationSummary;
-          })
-        );
-
-        // Combine with received conversations and sort
-        const combinedConversations = [...sentConversations, ...allConversations]
-          .filter((conv, index, arr) => 
-            arr.findIndex(c => c.userId === conv.userId) === index
-          )
-          .sort((a, b) => {
-            if (!a.lastMessageTime && !b.lastMessageTime) return 0;
-            if (!a.lastMessageTime) return 1;
-            if (!b.lastMessageTime) return -1;
-            return b.lastMessageTime.getTime() - a.lastMessageTime.getTime();
-          });
-
-        callback(combinedConversations);
-      } catch (error) {
-        console.error('Error processing sent conversations:', error);
+                         conversations.push({
+               userId: otherUserId,
+               userName: userProfile?.displayName || `User ${otherUserId.slice(-6)}`,
+               userAvatar: userProfile?.avatarUrl,
+               userRole: userProfile?.role,
+               userCompany: userProfile?.company,
+               userLocation: userProfile?.location,
+               lastMessage: data.lastMessage || '',
+               lastMessageTime: data.lastMessageAt?.toDate(),
+               unreadCount,
+               conversationId: doc.id
+             });
+          } catch (error) {
+            console.error('[MessagingService] Error getting user profile:', error);
+            // Add conversation with minimal info
+            conversations.push({
+              userId: otherUserId,
+              userName: `User ${otherUserId.slice(-6)}`,
+              lastMessage: data.lastMessage || '',
+              lastMessageTime: data.lastMessageAt?.toDate(),
+              unreadCount: 0,
+              conversationId: doc.id
+            });
+          }
+        }
       }
-    }, (error) => {
-      console.error('Error in sent conversations listener:', error);
+      
+      this.conversationCache.set(cacheKey, conversations);
+      callback(conversations);
     });
-
-    // Set up real-time listener for received messages
-    const receivedMessagesQuery = query(
-      collection(db, 'directMessages'),
-      where('receiverId', '==', userId),
-      orderBy('timestamp', 'desc')
-    );
-
-    const receivedUnsubscribe = onSnapshot(receivedMessagesQuery, async (snapshot) => {
-      try {
-        const receivedConversations = await Promise.all(
-          snapshot.docs.map(async (doc) => {
-            const data = doc.data();
-            const senderId = data.senderId;
-            
-            // Get user profile
-            const userProfile = await this.getUserProfile(senderId);
-            
-            return {
-              userId: senderId,
-              userName: userProfile.displayName,
-              userAvatar: userProfile.avatarUrl,
-              userRole: userProfile.role,
-              userCompany: userProfile.company,
-              userLocation: userProfile.location,
-              lastMessage: data.content,
-              lastMessageTime: data.timestamp?.toDate?.() || new Date(),
-              unreadCount: 0, // TODO: Calculate unread count
-              isOnline: false,
-              lastSeen: undefined
-            } as ConversationSummary;
-          })
-        );
-
-        allConversations = receivedConversations;
-
-        // Get sent conversations from cache to combine
-        const sentConversations = this.conversationCache.get(userId) || [];
-
-        // Combine and sort
-        const combinedConversations = [...sentConversations, ...receivedConversations]
-          .filter((conv, index, arr) => 
-            arr.findIndex(c => c.userId === conv.userId) === index
-          )
-          .sort((a, b) => {
-            if (!a.lastMessageTime && !b.lastMessageTime) return 0;
-            if (!a.lastMessageTime) return 1;
-            if (!b.lastMessageTime) return -1;
-            return b.lastMessageTime.getTime() - a.lastMessageTime.getTime();
-          });
-
-        callback(combinedConversations);
-      } catch (error) {
-        console.error('Error processing received conversations:', error);
-      }
-    }, (error) => {
-      console.error('Error in received conversations listener:', error);
-    });
-
-    // Store the unsubscribe functions
-    this.listeners.set(listenerKey, () => {
-      sentUnsubscribe();
-      receivedUnsubscribe();
-    });
-
-    return () => {
-      sentUnsubscribe();
-      receivedUnsubscribe();
-      this.listeners.delete(listenerKey);
-    };
+    
+    this.listeners.set(cacheKey, unsubscribe);
+    return unsubscribe;
   }
 
   static subscribeToConversationsWithQueries(
@@ -523,8 +363,35 @@ export class MessagingService {
   }
 
   static async markConversationAsRead(userId1: string, userId2: string): Promise<void> {
-    // Offline fallback: do nothing to prevent permission errors
-    console.log('[MessagingService] Using offline fallback for markConversationAsRead', { userId1, userId2 });
+    try {
+      const conversationId = await this.getConversationId(userId1, userId2);
+      const messagesRef = collection(db, 'conversations', conversationId, 'messages');
+      const q = query(
+        messagesRef,
+        where('senderId', '==', userId2),
+        where('isRead', '==', false)
+      );
+      
+      const snapshot = await getDocs(q);
+      const batch = writeBatch(db);
+      
+      snapshot.docs.forEach((doc) => {
+        batch.update(doc.ref, { 
+          isRead: true, 
+          readAt: serverTimestamp() 
+        });
+      });
+      
+      await batch.commit();
+      
+      // Update conversation metadata
+      const conversationRef = doc(db, 'conversations', conversationId);
+      await updateDoc(conversationRef, {
+        unreadCount: 0
+      });
+    } catch (error) {
+      console.error('[MessagingService] Error marking conversation as read:', error);
+    }
   }
 
   static async addMessageReaction(messageId: string, userId: string, userName: string, emoji: string): Promise<void> {
@@ -572,9 +439,21 @@ export class MessagingService {
   // ===== UTILITY METHODS =====
 
   static async getUnreadCount(userId: string, otherUserId: string): Promise<number> {
-    // Offline fallback: return 0 to prevent permission errors
-    console.log('[MessagingService] Using offline fallback for getUnreadCount');
-    return 0;
+    try {
+      const conversationId = await this.getConversationId(userId, otherUserId);
+      const messagesRef = collection(db, 'conversations', conversationId, 'messages');
+      const q = query(
+        messagesRef,
+        where('senderId', '==', otherUserId),
+        where('isRead', '==', false)
+      );
+      
+      const snapshot = await getDocs(q);
+      return snapshot.size;
+    } catch (error) {
+      console.error('[MessagingService] Error getting unread count:', error);
+      return 0;
+    }
   }
 
   static async getConversationParticipants(userId: string): Promise<string[]> {

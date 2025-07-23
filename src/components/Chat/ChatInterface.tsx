@@ -81,7 +81,7 @@ const MessageInput = React.forwardRef<{
     setShowEmojiPicker(false);
   }, []);
 
-  // File handling (revert to old logic: immediately send file)
+  // File handling
   const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && sendCallbackRef.current) {
@@ -103,377 +103,111 @@ const MessageInput = React.forwardRef<{
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
-    const files = Array.from(e.dataTransfer.files);
-    if (files.length > 0 && sendCallbackRef.current) {
-      sendCallbackRef.current('', 'file', files[0]);
+    const file = e.dataTransfer.files[0];
+    if (file && sendCallbackRef.current) {
+      sendCallbackRef.current('', undefined, file);
     }
   }, []);
-
-  // Audio level monitoring
-  const startAudioLevelMonitoring = useCallback(async (stream: MediaStream) => {
-    try {
-      console.log('[Audio Level] Starting audio level monitoring...');
-      
-      // Create audio context
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      audioContextRef.current = audioContext;
-      
-      // Resume audio context if suspended (required for user interaction)
-      if (audioContext.state === 'suspended') {
-        console.log('[Audio Level] Audio context suspended, resuming...');
-        await audioContext.resume();
-        console.log('[Audio Level] Audio context resumed, state:', audioContext.state);
-      }
-      
-      // Create analyser node
-      const analyser = audioContext.createAnalyser();
-      analyser.fftSize = 256;
-      analyser.smoothingTimeConstant = 0.8;
-      analyserRef.current = analyser;
-      
-      // Create microphone source
-      const microphone = audioContext.createMediaStreamSource(stream);
-      microphoneRef.current = microphone;
-      
-      // Connect microphone to analyser
-      microphone.connect(analyser);
-      
-      console.log('[Audio Level] Audio nodes connected successfully');
-      
-      // Create data array for frequency analysis
-      const dataArray = new Uint8Array(analyser.frequencyBinCount);
-      
-      // Function to update audio level
-      const updateAudioLevel = () => {
-        if (!analyserRef.current || !isRecording) {
-          return;
-        }
-        
-        analyserRef.current.getByteFrequencyData(dataArray);
-        
-        // Calculate average volume level
-        const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
-        const normalizedLevel = average / 255; // Normalize to 0-1
-        
-        // Lower threshold for better sensitivity
-        if (average > 2) { // Lower threshold to detect more audio
-          setAudioLevel(normalizedLevel);
-          console.log('[Audio Level] Detected audio level:', normalizedLevel.toFixed(3));
-        } else {
-          setAudioLevel(0);
-        }
-        
-        // Continue monitoring
-        animationFrameRef.current = requestAnimationFrame(updateAudioLevel);
-      };
-      
-      // Start monitoring
-      updateAudioLevel();
-      
-    } catch (error) {
-      console.error('[Audio Level] Failed to start audio level monitoring:', error);
-    }
-  }, [isRecording]);
 
   // Voice recording
   const startRecording = useCallback(async () => {
     try {
-      console.log('[Voice Recording] Starting recording...');
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      const chunks: Blob[] = [];
       
-      // Check if MediaRecorder is supported
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error('Media recording is not supported in this browser');
-      }
-      
-      if (!window.MediaRecorder) {
-        throw new Error('MediaRecorder is not supported in this browser');
-      }
-      
-      // Request audio with better constraints for voice recording
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-          sampleRate: 44100,
-          channelCount: 1
-        } 
-      });
-      
-      console.log('[Voice Recording] Got audio stream:', stream);
-      console.log('[Voice Recording] Audio tracks:', stream.getAudioTracks());
-      
-      // Check if we have audio tracks
-      const audioTracks = stream.getAudioTracks();
-      if (audioTracks.length === 0) {
-        throw new Error('No audio input device found. Please check your microphone.');
-      }
-      
-      // Log audio track details
-      audioTracks.forEach((track, index) => {
-        console.log(`[Voice Recording] Audio track ${index}:`, {
-          label: track.label,
-          enabled: track.enabled,
-          muted: track.muted,
-          readyState: track.readyState,
-          settings: track.getSettings(),
-          constraints: track.getConstraints()
-        });
-        
-        // Check if track is actually receiving audio
-        if (track.readyState === 'ended') {
-          console.warn(`[Voice Recording] Audio track ${index} is ended`);
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          chunks.push(e.data);
         }
-      });
-      
-      // Try different MIME types for better compatibility
-      let mimeType = 'audio/webm;codecs=opus';
-      if (!MediaRecorder.isTypeSupported(mimeType)) {
-        mimeType = 'audio/webm';
-        if (!MediaRecorder.isTypeSupported(mimeType)) {
-          mimeType = 'audio/mp4';
-          if (!MediaRecorder.isTypeSupported(mimeType)) {
-            mimeType = '';
-          }
-        }
-      }
-      
-      console.log('[Voice Recording] Using MIME type:', mimeType);
-      
-      const mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
-      mediaRecorderRef.current = mediaRecorder;
-      recordingChunksRef.current = [];
-      
-      mediaRecorder.ondataavailable = (event) => {
-        console.log('[Voice Recording] Data available:', event.data.size, 'bytes');
-        if (event.data.size > 0) {
-          recordingChunksRef.current.push(event.data);
-        }
-      };
-      
-      mediaRecorder.onstart = async () => {
-        console.log('[Voice Recording] Recording started');
-        setIsRecording(true);
-        setRecordingTime(0);
-        setRecordingError(null);
-        setAudioLevel(0);
-        
-        // Start audio level monitoring
-        try {
-          await startAudioLevelMonitoring(stream);
-          console.log('[Voice Recording] Audio level monitoring started successfully');
-        } catch (error) {
-          console.error('[Voice Recording] Failed to start audio level monitoring:', error);
-        }
-        
-        // Start recording timer
-        recordingTimerRef.current = setInterval(() => {
-          setRecordingTime(prev => prev + 1);
-        }, 1000);
       };
       
       mediaRecorder.onstop = () => {
-        console.log('[Voice Recording] Recording stopped');
-        setIsRecording(false);
-        setRecordingTime(0);
-        
-        // Clear recording timer
-        if (recordingTimerRef.current) {
-          clearInterval(recordingTimerRef.current);
-        }
-        
-        // Stop all tracks
-        stream.getTracks().forEach(track => {
-          console.log('[Voice Recording] Stopping track:', track.kind, track.label);
-          track.stop();
-        });
-        
-        // Don't automatically send - let user decide
-        if (recordingChunksRef.current.length > 0) {
-          const totalSize = recordingChunksRef.current.reduce((sum, chunk) => sum + chunk.size, 0);
-          console.log('[Voice Recording] Total recorded size:', totalSize, 'bytes');
-          
-          if (totalSize < 50) {
-            console.warn('[Voice Recording] Recording seems too small, may not have captured audio');
-            setRecordingError('No audio detected. Please speak louder or check your microphone.');
-            return;
-          }
-          
-          // Store the recording for user to send or cancel
-          const audioBlob = new Blob(recordingChunksRef.current, { type: mimeType || 'audio/webm' });
-          console.log('[Voice Recording] Created audio blob:', audioBlob.size, 'bytes');
-          
-          // Create a file from the blob
-          const audioFile = new File([audioBlob], `voice-message-${Date.now()}.webm`, { 
-            type: mimeType || 'audio/webm' 
-          });
-          
-          console.log('[Voice Recording] Created audio file:', audioFile.name, audioFile.size, 'bytes');
-          
-          // Store the file for user to send or cancel
-          setRecordedAudioFile(audioFile);
-          
-          // Show success message
-          console.log('[Voice Recording] Voice message recorded successfully!');
-        } else {
-          console.warn('[Voice Recording] No recording chunks available');
-          setRecordingError('Recording failed. Please try again.');
-        }
-      };
-      
-      mediaRecorder.onerror = (event) => {
-        console.error('[Voice Recording] MediaRecorder error:', event);
-        setRecordingError('Recording error occurred. Please try again.');
-        setIsRecording(false);
-        setRecordingTime(0);
-        
-        if (recordingTimerRef.current) {
-          clearInterval(recordingTimerRef.current);
-        }
-        
-        // Stop all tracks
+        const blob = new Blob(chunks, { type: 'audio/wav' });
+        const file = new File([blob], `voice-message-${Date.now()}.wav`, { type: 'audio/wav' });
+        setRecordedAudioFile(file);
         stream.getTracks().forEach(track => track.stop());
       };
       
-      // Start recording with 1-second timeslice for better data handling
-      mediaRecorder.start(1000);
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingTime(0);
+      setRecordingError(null);
+      
+      // Start timer
+      const timer = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+      
+      mediaRecorderRef.current = mediaRecorder;
+      recordingChunksRef.current = chunks;
+      recordingTimerRef.current = timer;
       
     } catch (error) {
-      console.error('[Voice Recording] Error starting recording:', error);
-      
-      let errorMessage = 'Failed to start recording. ';
-      
-      if (error instanceof Error) {
-        if (error.name === 'NotAllowedError') {
-          errorMessage = `Microphone access denied. Please follow these steps:
-
-1. Click the microphone icon in your browser's address bar
-2. Select "Allow" for microphone access
-3. Refresh the page and try again
-
-If you don't see the microphone icon, check your browser settings.`;
-        } else if (error.name === 'NotFoundError') {
-          errorMessage = 'No microphone found. Please connect a microphone and try again.';
-        } else if (error.name === 'NotReadableError') {
-          errorMessage = 'Microphone is already in use by another application. Please close other apps using the microphone and try again.';
-        } else {
-          errorMessage += error.message;
-        }
-      }
-      
-      setRecordingError(errorMessage);
-      setIsRecording(false);
-      setRecordingTime(0);
+      console.error('Error starting recording:', error);
+      setRecordingError('Could not access microphone');
     }
-  }, [startAudioLevelMonitoring]);
-
-  const stopAudioLevelMonitoring = useCallback(() => {
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-      animationFrameRef.current = null;
-    }
-    
-    if (microphoneRef.current) {
-      microphoneRef.current.disconnect();
-      microphoneRef.current = null;
-    }
-    
-    if (analyserRef.current) {
-      analyserRef.current.disconnect();
-      analyserRef.current = null;
-    }
-    
-    if (audioContextRef.current) {
-      audioContextRef.current.close();
-      audioContextRef.current = null;
-    }
-    
-    setAudioLevel(0);
   }, []);
 
   const stopRecording = useCallback(() => {
-    console.log('[Voice Recording] Stopping recording...');
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
+      
       if (recordingTimerRef.current) {
         clearInterval(recordingTimerRef.current);
       }
-      // Stop audio level monitoring
-      stopAudioLevelMonitoring();
-      console.log('[Voice Recording] Recording stopped successfully');
-    } else {
-      console.log('[Voice Recording] No active recording to stop');
     }
-  }, [isRecording, stopAudioLevelMonitoring]);
+  }, [isRecording]);
 
-  const sendRecordedAudio = useCallback(() => {
+  const sendVoiceMessage = useCallback(() => {
     if (recordedAudioFile && sendCallbackRef.current) {
-      console.log('[Voice Recording] Sending recorded audio file:', recordedAudioFile.name);
-      sendCallbackRef.current('Voice Message', 'voice', recordedAudioFile);
+      sendCallbackRef.current('', 'voice', recordedAudioFile);
       setRecordedAudioFile(null);
-      setRecordingError(null);
+      setRecordingTime(0);
     }
   }, [recordedAudioFile]);
 
-  const cancelRecordedAudio = useCallback(() => {
-    console.log('[Voice Recording] Canceling recorded audio');
+  const cancelVoiceMessage = useCallback(() => {
     setRecordedAudioFile(null);
+    setRecordingTime(0);
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+    }
   }, []);
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (recordingTimerRef.current) {
-        clearInterval(recordingTimerRef.current);
-      }
-      if (mediaRecorderRef.current && isRecording) {
-        mediaRecorderRef.current.stop();
-      }
-    };
-  }, [isRecording]);
-  
+  // Typing indicator
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!isTypingRef.current && selectedUserRef.current) {
+    if (!isTypingRef.current) {
       isTypingRef.current = true;
-      MessagingService.setTypingStatus(currentUserIdRef.current, selectedUserRef.current, true);
+      // Send typing indicator
     }
-
-    // Clear existing timeout
+    
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
-
-    // Set new timeout
+    
     typingTimeoutRef.current = setTimeout(() => {
       isTypingRef.current = false;
-      if (selectedUserRef.current) {
-        MessagingService.setTypingStatus(currentUserIdRef.current, selectedUserRef.current, false);
-      }
-    }, 2000);
+      // Stop typing indicator
+    }, 1000);
   }, []);
 
-  const handleSend = useCallback(() => {
-    if (!inputRef.current || !selectedUserRef.current || sendingRef.current) return;
+  // Send message
+  const handleSendMessage = useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inputRef.current || !sendCallbackRef.current || sendingRef.current) return;
     
-    const messageContent = inputRef.current.value.trim();
-    if (!messageContent) return;
+    const message = inputRef.current.value.trim();
+    if (!message && !recordedAudioFile) return;
     
-    // Clear input immediately
-    inputRef.current.value = '';
-    
-    // Send the message via callback
-    if (sendCallbackRef.current) {
-      sendCallbackRef.current(messageContent, 'text');
+    if (recordedAudioFile) {
+      sendVoiceMessage();
+    } else {
+      sendCallbackRef.current(message);
+      inputRef.current.value = '';
     }
-  }, []);
-
-  const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  }, [handleSend]);
+  }, [recordedAudioFile, sendVoiceMessage]);
 
   const formatRecordingTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -481,27 +215,100 @@ If you don't see the microphone icon, check your browser settings.`;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Add cancel and send handlers for preview
-  // --- BEGIN: File Attachment Preview Logic (to be re-added for future enhancement) ---
-  // [REMOVED: cancelPendingAttachment, sendPendingAttachment, previewBlobUrl, getPreviewUrl]
-  // --- END: File Attachment Preview Logic ---
+  useEffect(() => {
+    return () => {
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+      }
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
-    <div className={`message-input ${dragOver ? 'drag-over' : ''}`} 
-         onDragOver={handleDragOver} 
-         onDragLeave={handleDragLeave} 
-         onDrop={handleDrop}>
+    <div className="message-input-container">
+      {recordingError && (
+        <div className="recording-error">
+          {recordingError}
+          <button onClick={() => setRecordingError(null)}>×</button>
+        </div>
+      )}
       
-      {/* Drag overlay */}
-      {dragOver && (
-        <div className="drag-overlay">
-          <div className="drag-message">
-            <span>📎 Drop file to send</span>
+      {recordedAudioFile && (
+        <div className="voice-message-preview">
+          <div className="voice-preview-content">
+            <span>🎤 Voice Message ({formatRecordingTime(recordingTime)})</span>
+            <div className="voice-preview-actions">
+              <button onClick={sendVoiceMessage} className="send-voice-btn">Send</button>
+              <button onClick={cancelVoiceMessage} className="cancel-voice-btn">Cancel</button>
+            </div>
           </div>
         </div>
       )}
-
-      {/* Emoji picker */}
+      
+      <form onSubmit={handleSendMessage} className="message-input-form">
+        <div className="input-actions">
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="action-button"
+            title="Attach file"
+          >
+            📎
+          </button>
+          
+          <button
+            type="button"
+            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+            className="action-button"
+            title="Emoji"
+          >
+            😀
+          </button>
+          
+          <button
+            ref={voiceRecorderRef}
+            type="button"
+            onClick={isRecording ? stopRecording : startRecording}
+            className={`action-button ${isRecording ? 'recording' : ''}`}
+            title={isRecording ? 'Stop recording' : 'Voice message'}
+          >
+            {isRecording ? '⏹️' : '🎤'}
+          </button>
+        </div>
+        
+        <div className="input-container">
+          <input
+            ref={inputRef}
+            type="text"
+            placeholder="Type a message..."
+            onChange={handleInputChange}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className={`message-input ${dragOver ? 'drag-over' : ''}`}
+            disabled={sendingRef.current}
+          />
+          
+          <button
+            type="submit"
+            className="send-button"
+            disabled={sendingRef.current}
+          >
+            ➤
+          </button>
+        </div>
+        
+        <input
+          ref={fileInputRef}
+          type="file"
+          onChange={handleFileSelect}
+          style={{ display: 'none' }}
+          accept="image/*,audio/*,video/*,.pdf,.doc,.docx,.txt"
+        />
+      </form>
+      
       {showEmojiPicker && (
         <div className="emoji-picker">
           {emojis.map((emoji, index) => (
@@ -515,157 +322,17 @@ If you don't see the microphone icon, check your browser settings.`;
           ))}
         </div>
       )}
-
-      {/* Input toolbar */}
-      <div className="input-toolbar">
-        <button
-          onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-          className="toolbar-button emoji-button"
-          title="Add emoji"
-        >
-          😀
-        </button>
-        
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="toolbar-button"
-          title="Attach file"
-        >
-          📎
-        </button>
-        
-        <input
-          ref={fileInputRef}
-          type="file"
-          onChange={handleFileSelect}
-          style={{ display: 'none' }}
-          accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt"
-        />
-        
-        <button
-          ref={voiceRecorderRef}
-          onClick={isRecording ? stopRecording : startRecording}
-          className={`toolbar-button voice-button${isRecording ? ' recording' : ''}`}
-          aria-label={isRecording ? 'Stop recording' : 'Record voice message'}
-          type="button"
-        >
-          {/* SVG mic icon for clarity */}
-          {isRecording ? (
-            <span style={{fontSize: 22}}>⏹️</span>
-          ) : (
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>
-          )}
-          <span className="voice-tooltip">{isRecording ? 'Stop recording' : 'Record Voice Message'}</span>
-        </button>
-      </div>
-
-      {/* Recording indicator */}
+      
       {isRecording && (
         <div className="recording-indicator">
           <div className="recording-dot"></div>
-          <span>Recording... {formatRecordingTime(recordingTime)}</span>
-          
-          {/* Audio level indicator */}
-          <div className="audio-level-meter">
-            <div 
-              className="audio-level-bar" 
-              style={{ width: `${Math.min(audioLevel * 100, 100)}%` }}
-            ></div>
-          </div>
-          
-          <button onClick={stopRecording} className="stop-recording">
-            Stop
-          </button>
+          Recording... {formatRecordingTime(recordingTime)}
         </div>
       )}
-
-      {/* Recording error */}
-      {recordingError && (
-        <div className="recording-error">
-          <div className="error-icon">⚠️</div>
-          <div className="error-message">
-            {recordingError.split('\n').map((line: string, index: number) => (
-              <div key={index}>{line}</div>
-            ))}
-          </div>
-          <button 
-            onClick={() => setRecordingError(null)} 
-            className="error-close"
-            title="Close error message"
-          >
-            ×
-          </button>
-        </div>
-      )}
-
-      {/* Recorded audio review */}
-      {recordedAudioFile && (
-        <div className="recorded-audio-review">
-          <div className="audio-info">
-            <div className="audio-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
-                <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
-              </svg>
-            </div>
-            <div className="audio-details">
-              <div className="audio-name">Voice Message</div>
-              <div className="audio-size">{(recordedAudioFile.size / 1024).toFixed(1)} KB</div>
-            </div>
-          </div>
-          <audio controls src={URL.createObjectURL(recordedAudioFile)} style={{ width: '100%', margin: '12px 0' }} />
-          <div className="audio-actions">
-            <button 
-              onClick={sendRecordedAudio} 
-              className="send-audio-btn"
-              title="Send voice message"
-            >
-              📤 Send
-            </button>
-            <button 
-              onClick={cancelRecordedAudio} 
-              className="cancel-audio-btn"
-              title="Cancel and delete recording"
-            >
-              ❌ Cancel
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Main input */}
-      <div className="input-container">
-        <label htmlFor="chat-message-input" className="sr-only">Type your message</label>
-        <input
-          ref={inputRef}
-          id="chat-message-input"
-          name="chatMessage"
-          type="text"
-          onChange={handleInputChange}
-          onKeyPress={handleKeyPress}
-          placeholder="Type a message..."
-          className="message-input-field"
-          disabled={sendingRef.current}
-          aria-label="Type your message"
-          aria-disabled={sendingRef.current}
-        />
-        <button
-          onClick={handleSend}
-          disabled={sendingRef.current}
-          className="send-button"
-          aria-label="Send message"
-          aria-disabled={sendingRef.current}
-        >
-          {sendingRef.current ? 'Sending...' : 'Send'}
-        </button>
-      </div>
     </div>
   );
 });
 
-MessageInput.displayName = 'MessageInput';
-
-// Interface for the main component
 interface ChatInterfaceProps {
   currentUserId: string;
   currentUserName: string;
@@ -680,241 +347,133 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   demoUsers = {}
 }) => {
   // State
-  const [messages, setMessages] = useState<DirectMessage[]>([]);
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
-  const [typingUsers, setTypingUsers] = useState<string[]>([]);
-  const [sending, setSending] = useState(false);
+  const [messages, setMessages] = useState<DirectMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [chatSettings, setChatSettings] = useState<ChatSettings>({
-    userId: currentUserId,
-    allowMessagesFrom: 'everyone',
-    showOnlineStatus: true,
-    showLastSeen: true,
-    isAway: false
-  });
-  const [showSettings, setShowSettings] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [sending, setSending] = useState(false);
   const [showNewChat, setShowNewChat] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [newChatSearchQuery, setNewChatSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<Array<{
+    id: string;
+    name: string;
+    avatar?: string;
+    role?: string;
+    company?: string;
+    location?: string;
+    type: 'crew';
+  }>>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const [showUserProfile, setShowUserProfile] = useState(false);
   const [profileUser, setProfileUser] = useState<ConversationSummary | null>(null);
-  const [newChatSearchQuery, setNewChatSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [isUserTyping, setIsUserTyping] = useState(false); // Track if user is actively typing
   const [notification, setNotification] = useState<{ type: 'error' | 'success' | 'warning'; message: string } | null>(null);
-  const [activeTab, setActiveTab] = useState<'general' | 'jobApplications'>('general');
-  const [jobAppThreads, setJobAppThreads] = useState<any[]>([]); // Replace any with proper type
-  const [selectedJobAppThread, setSelectedJobAppThread] = useState<any | null>(null);
 
   // Refs
+  const messageInputRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const conversationListenerRef = useRef<(() => void) | null>(null);
   const messageListenerRef = useRef<(() => void) | null>(null);
   const typingListenerRef = useRef<(() => void) | null>(null);
-  const messageInputRef = useRef<{
-    setSendCallback: (callback: (message: string, type?: string, file?: File) => void) => void;
-    setCurrentUser: (userId: string) => void;
-    setSelectedUser: (userId: string | null) => void;
-    setSendingState: (isSending: boolean) => void;
-  }>(null);
-
-  // Memoized values
-  const filteredConversations = useMemo(() => {
-    if (!searchQuery.trim()) return conversations;
-    return conversations.filter(conv => 
-      conv.userName.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [conversations, searchQuery]);
-
-  const selectedConversation = useMemo(() => 
-    conversations.find(c => c.userId === selectedUser), 
-    [conversations, selectedUser]
-  );
 
   // Initialize chat
   useEffect(() => {
-    initializeChat();
-    return cleanup;
-  }, []);
-
-  // Handle conversation selection
-  useEffect(() => {
-    if (selectedUser) {
-      loadConversation(selectedUser);
-      markConversationAsRead(selectedUser);
-      setupTypingListener(selectedUser);
-    }
-  }, [selectedUser]);
-
-  // Auto-scroll to bottom when new messages arrive
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  // Load chat settings
-  useEffect(() => {
-    const loadSettings = async () => {
+    if (!currentUserId) return;
+    
+    const initializeChat = async () => {
       try {
+        setLoading(true);
+        setError(null);
+        
+        // Load chat settings
         const settings = await MessagingService.getChatSettings(currentUserId);
         if (settings) {
-          setChatSettings(settings);
+          // Apply settings if needed
         }
+        
+        // Set up conversation listener
+        const unsubscribe = MessagingService.subscribeToConversations(
+          currentUserId,
+          (conversations) => {
+            setConversations(conversations);
+            setLoading(false);
+          }
+        );
+        
+        conversationListenerRef.current = unsubscribe;
+        
       } catch (error) {
-        console.error('Error loading chat settings:', error);
+        console.error('Error initializing chat:', error);
+        setError('Failed to load conversations');
+        setLoading(false);
       }
     };
-    loadSettings();
+    
+    initializeChat();
+    
+    return () => {
+      cleanup();
+    };
   }, [currentUserId]);
 
-  // Initialize chat system
-  const initializeChat = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Setup real-time listeners
-      setupConversationListener();
-      
-      // Optional: Test storage connection (non-blocking)
-      setTimeout(async () => {
-        try {
-          const storageWorks = await MessagingService.testStorageConnection();
-          if (!storageWorks) {
-            console.warn('[ChatInterface] Firebase Storage connection test failed - file uploads may not work');
-          }
-        } catch (error) {
-          console.warn('[ChatInterface] Storage test error (non-critical):', error);
-        }
-      }, 1000); // Delay test to not block chat initialization
-    } catch (error) {
-      console.error('Error initializing chat:', error);
-      setError('Failed to initialize chat. Please refresh the page.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Setup real-time conversation listener
-  const setupConversationListener = () => {
-    try {
-      if (conversationListenerRef.current) {
-        conversationListenerRef.current();
-      }
-
-      conversationListenerRef.current = MessagingService.subscribeToConversations(
+  // Set up message listener when user is selected
+  useEffect(() => {
+    if (!selectedUser || !currentUserId) return;
+    
+    const setupMessageListener = () => {
+      const unsubscribe = MessagingService.subscribeToConversation(
         currentUserId,
-        (conversations) => {
-          setConversations(conversations);
+        selectedUser,
+        (messages) => {
+          setMessages(messages);
+          // Scroll to bottom
+          setTimeout(() => {
+            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+          }, 100);
         }
       );
-    } catch (error) {
-      console.error('Error setting up conversation listener:', error);
-      setError('Failed to load conversations. Please refresh the page.');
-    }
-  };
-
-  // Load conversation messages
-  const loadConversation = (otherUserId: string) => {
-    // Clean up existing message listener
-    if (messageListenerRef.current) {
-      messageListenerRef.current();
-    }
-
-    // Set up message listener
-    messageListenerRef.current = MessagingService.subscribeToConversation(
-      currentUserId,
-      otherUserId,
-      (messages) => {
-        setMessages(messages);
+      
+      messageListenerRef.current = unsubscribe;
+    };
+    
+    setupMessageListener();
+    
+    // Set up typing indicator listener
+    const typingUnsubscribe = MessagingService.subscribeToTypingIndicators(
+      selectedUser,
+      (typingUsers) => {
+        setTypingUsers(typingUsers);
       }
     );
-
-    // Set up typing listener
-    setupTypingListener(otherUserId);
-  };
-
-  // Setup typing indicator listener
-  const setupTypingListener = (otherUserId: string) => {
-    if (typingListenerRef.current) {
-      typingListenerRef.current();
-    }
-
-    typingListenerRef.current = MessagingService.subscribeToTypingIndicators(
-      currentUserId,
-      (users) => {
-        setTypingUsers(users.filter(user => user !== currentUserId));
+    
+    typingListenerRef.current = typingUnsubscribe;
+    
+    return () => {
+      if (messageListenerRef.current) {
+        messageListenerRef.current();
+        messageListenerRef.current = null;
       }
-    );
-  };
+      if (typingListenerRef.current) {
+        typingListenerRef.current();
+        typingListenerRef.current = null;
+      }
+    };
+  }, [selectedUser, currentUserId]);
 
-  // Mark conversation as read
-  const markConversationAsRead = async (otherUserId: string) => {
-    try {
-      await MessagingService.markConversationAsRead(currentUserId, otherUserId);
-    } catch (error) {
-      console.error('Error marking conversation as read:', error);
+  // Set up message input callback
+  useEffect(() => {
+    if (messageInputRef.current) {
+      messageInputRef.current.setSendCallback(sendMessage);
+      messageInputRef.current.setCurrentUser(currentUserId);
+      messageInputRef.current.setSelectedUser(selectedUser);
+      messageInputRef.current.setSendingState(sending);
     }
-  };
-
-  // Add reaction to message - memoized with useCallback
-  const addReaction = useCallback(async (messageId: string, emoji: string) => {
-    try {
-      await MessagingService.addMessageReaction(messageId, currentUserId, currentUserName, emoji);
-    } catch (error) {
-      console.error('Error adding reaction:', error);
-      setError('Failed to add reaction. Please try again.');
-    }
-  }, [currentUserId, currentUserName]);
-
-  // Create memoized reaction handlers to prevent re-renders
-  const createReactionHandler = useCallback((messageId: string, emoji: string) => {
-    return () => addReaction(messageId, emoji);
-  }, [addReaction]);
-
-  // Create stable reaction handlers map to prevent re-renders
-  const reactionHandlersRef = useRef<Map<string, () => void>>(new Map());
-  
-  const getReactionHandler = useCallback((messageId: string, emoji: string) => {
-    const key = `${messageId}-${emoji}`;
-    if (!reactionHandlersRef.current.has(key)) {
-      reactionHandlersRef.current.set(key, () => addReaction(messageId, emoji));
-    }
-    return reactionHandlersRef.current.get(key)!;
-  }, [addReaction]);
-
-  // Scroll to bottom
-  const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, []);
-
-  // Show notification
-  const showNotification = useCallback((type: 'error' | 'success' | 'warning', message: string) => {
-    setNotification({ type, message });
-    // Auto-hide after 5 seconds
-    setTimeout(() => {
-      setNotification(null);
-    }, 5000);
-  }, []);
-
-  // Check if a file URL is valid for display
-  const isValidFileUrl = useCallback((url: string): boolean => {
-    if (!url) return false;
-    
-    // Check for invalid/placeholder URLs
-    const invalidPatterns = [
-      'FILE_TOO_LARGE:',
-      'UPLOAD_FAILED:',
-      'data:application/octet-stream;base64,FILE_TOO_LARGE'
-    ];
-    
-    return !invalidPatterns.some(pattern => url.startsWith(pattern));
-  }, []);
+  }, [currentUserId, selectedUser, sending]);
 
   // Utility functions
   const formatTime = (date: Date | undefined | null) => {
-    // Handle undefined, null, or invalid dates
     if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
       return '';
     }
@@ -958,14 +517,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         typingListenerRef.current = null;
       }
       MessagingService.cleanup();
-      
-      // Clean up any broken image placeholders
-      const placeholders = document.querySelectorAll('.upload-failed-message');
-      placeholders.forEach(placeholder => {
-        if (placeholder.parentElement) {
-          placeholder.remove();
-        }
-      });
     } catch (error) {
       console.error('Error during cleanup:', error);
     }
@@ -980,8 +531,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
     setIsSearching(true);
     try {
-      // Search only in crewProfiles collection (single source of truth)
-      // Use a simpler query to avoid complex index requirements
       const crewQuery = firestoreQuery(
         collection(db, 'crewProfiles'),
         where('isPublished', '==', true),
@@ -1000,18 +549,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         type: 'crew';
       }> = [];
 
-      // Filter crew members by name in memory
       crewSnapshot.docs.forEach(doc => {
         const data = doc.data() as any;
         const name = data.name || data.displayName || data.firstName || '';
         
-        if (doc.id !== currentUserId && // Don't show current user
+        if (doc.id !== currentUserId && 
             name.toLowerCase().includes(query.toLowerCase())) {
           results.push({
             id: doc.id,
             name: name || `Crew Member ${doc.id.slice(-4)}`,
             avatar: data.profileImageUrl || data.avatarUrl,
-            role: data.jobTitles?.[0]?.title || data.role,
+            role: data.role,
             company: data.company,
             location: data.residences?.[0]?.city || data.location,
             type: 'crew'
@@ -1019,12 +567,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         }
       });
 
-      // Remove duplicates and limit results
-      const uniqueResults = results.filter((result, index, self) => 
-        index === self.findIndex(r => r.id === result.id)
-      ).slice(0, 10);
-
-      setSearchResults(uniqueResults);
+      setSearchResults(results);
     } catch (error) {
       console.error('Error searching users:', error);
       setSearchResults([]);
@@ -1033,22 +576,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   };
 
-  // Start new conversation
   const startNewConversation = async (userId: string, userName: string) => {
     setSelectedUser(userId);
     setShowNewChat(false);
     setNewChatSearchQuery('');
     setSearchResults([]);
-    
-    // MessageInput component will handle its own focus
   };
 
-  // Handle new chat search input
   const handleNewChatSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setNewChatSearchQuery(query);
     
-    // Debounce search
     if (query.trim()) {
       setTimeout(() => searchUsers(query), 300);
     } else {
@@ -1056,30 +594,19 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   };
 
-  // Helper to get user info for conversations/messages
   const getUserInfo = (userId: string) => {
-    // Try to find in conversations (from Firestore)
     const conv = conversations.find(c => c.userId === userId);
     if (conv && conv.userName) {
       return { name: conv.userName, avatar: conv.userAvatar };
     }
     
-    // Try demo users
     if (demoUsers[userId]) {
       return { name: demoUsers[userId].displayName, avatar: demoUsers[userId].avatar };
     }
     
-    // Try to get from SocialService
-    try {
-      // This would need to be async, but for now we'll use a fallback
-      return { name: `User ${userId.slice(-6)}`, avatar: undefined };
-    } catch (error) {
-      console.error('[getUserInfo] Error fetching user info:', error);
-      return { name: `User ${userId.slice(-6)}`, avatar: undefined };
-    }
+    return { name: `User ${userId.slice(-6)}`, avatar: undefined };
   };
 
-  // Send message function - memoized with useCallback
   const sendMessage = useCallback(async (messageContent: string, messageType: string = 'text', file?: File) => {
     if (!selectedUser || sending) return;
     setSending(true);
@@ -1087,7 +614,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       let content = messageContent;
       let type = messageType as 'text' | 'image' | 'file' | 'voice' | 'project_invite';
       let fileUrl: string | undefined = undefined;
-      // Handle file uploads
+      
       if (file) {
         if (file.type.startsWith('image/')) {
           type = 'image';
@@ -1097,16 +624,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           type = 'voice';
           content = `Voice Message (${(file.size / 1024).toFixed(1)} KB)`;
           fileUrl = await MessagingService.uploadFileToStorage(file, 'chat-audio');
-        } else if (file.type.startsWith('video/')) {
-          type = 'file';
-          content = `🎥 ${file.name}`;
         } else {
           type = 'file';
           content = `📎 ${file.name}`;
+          fileUrl = await MessagingService.uploadFileToStorage(file, 'chat-files');
         }
         if (!fileUrl) fileUrl = URL.createObjectURL(file);
       }
-      // Optimistically add message to UI
+      
       const optimisticMessage: DirectMessage = {
         id: `temp_${Date.now()}`,
         senderId: currentUserId,
@@ -1121,6 +646,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         fileSize: file?.size,
         fileType: file?.type
       };
+      
       setMessages(prev => [...prev, optimisticMessage]);
       await MessagingService.sendDirectMessage(currentUserId, selectedUser, content, type, undefined, fileUrl);
       setMessages(prev => prev.map(msg =>
@@ -1132,77 +658,29 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     } catch (error) {
       if (error instanceof Error) {
         if (error.message.includes('exceeds maximum allowed size')) {
-          showNotification('error', 'File is too large. Please choose a file smaller than 5MB.');
+          setNotification({ type: 'error', message: 'File is too large. Please choose a file smaller than 5MB.' });
         } else if (error.message.includes('Cannot send message')) {
-          showNotification('error', 'Cannot send message to this user. They may not allow messages from non-followers.');
+          setNotification({ type: 'error', message: 'Cannot send message to this user. They may not allow messages from non-followers.' });
         } else {
-          showNotification('error', 'Failed to send message. Please try again.');
+          setNotification({ type: 'error', message: 'Failed to send message. Please try again.' });
         }
       } else {
-        showNotification('error', 'Failed to send message. Please try again.');
+        setNotification({ type: 'error', message: 'An unexpected error occurred.' });
       }
-      setMessages(prev => prev.filter(msg => msg.id !== `temp_${Date.now()}`));
+      console.error('Error sending message:', error);
     } finally {
       setSending(false);
     }
   }, [selectedUser, sending, currentUserId]);
 
-  // Set up MessageInput communication - moved after sendMessage is defined
-  useEffect(() => {
-    if (messageInputRef.current) {
-      messageInputRef.current.setCurrentUser(currentUserId);
-      messageInputRef.current.setSendCallback(sendMessage);
-    }
-  }, [currentUserId, sendMessage]);
+  const showNotification = (type: 'error' | 'success' | 'warning', message: string) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 5000);
+  };
 
-  // Update MessageInput when selectedUser changes
-  useEffect(() => {
-    if (messageInputRef.current) {
-      messageInputRef.current.setSelectedUser(selectedUser);
-    }
-  }, [selectedUser]);
-
-  // Update MessageInput sending state
-  useEffect(() => {
-    if (messageInputRef.current) {
-      messageInputRef.current.setSendingState(sending);
-    }
-  }, [sending]);
-
-  // Fetch job application threads for the current user (as applicant or job poster)
-  useEffect(() => {
-    if (!currentUserId) return;
-    const fetchJobAppThreads = async () => {
-      const jobAppsQuery = firestoreQuery(
-        collection(db, 'jobApplications'),
-        or(
-          where('applicantId', '==', currentUserId),
-          where('posterId', '==', currentUserId) // or use createdBy if that's the field
-        )
-      );
-      const jobAppsSnapshot = await getDocs(jobAppsQuery);
-      const threads = await Promise.all(jobAppsSnapshot.docs.map(async (doc) => {
-        const application = { id: doc.id, ...(doc.data() as any) };
-        // Fetch job posting
-        let job = null;
-        if ((application as any).jobId) {
-          const jobDoc = await getDoc(docRef(db, 'jobPostings', (application as any).jobId));
-          if (jobDoc.exists()) job = { id: jobDoc.id, ...(jobDoc.data() as any) };
-        }
-        // Fetch latest message
-        const messagesRef = collection(db, 'jobApplications', doc.id, 'messages');
-        const messagesSnapshot = await getDocs(firestoreQuery(messagesRef, orderBy('timestamp', 'desc'), limit(1)));
-        const lastMessage = messagesSnapshot.docs[0]?.data() || null;
-        // Determine the other user
-        const otherUserName = (application as any).applicantId === currentUserId
-          ? (job?.posterName || job?.companyName || 'Job Poster')
-          : ((application as any).applicantName || 'Applicant');
-        return { application, job, otherUserName, lastMessage };
-      }));
-      setJobAppThreads(threads);
-    };
-    fetchJobAppThreads();
-  }, [currentUserId]);
+  const isValidFileUrl = (url: string) => {
+    return url && !url.startsWith('FILE_TOO_LARGE:') && !url.startsWith('UPLOAD_FAILED:');
+  };
 
   if (loading) {
     return (
@@ -1219,7 +697,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   return (
     <div className="chat-interface">
-      {/* Notification */}
       {notification && (
         <div className={`notification notification-${notification.type}`}>
           <div className="notification-content">
@@ -1315,154 +792,75 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                             <p className="text-xs text-gray-500 truncate">{user.company}</p>
                           )}
                         </div>
-                        <div className="flex-shrink-0">
-                          <span className="text-xs text-blue-600">💬</span>
-                        </div>
                       </div>
                     ))}
                   </div>
                 )}
-                
-                {newChatSearchQuery && searchResults.length === 0 && !isSearching && (
-                  <div className="text-xs text-gray-500 text-center py-2">
-                    No users found. Try a different search term.
-                  </div>
-                )}
-                
-                <div className="text-xs text-gray-500">
-                  Find users by name, role, or company
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Search */}
-          <div className="search-container">
-            <input
-              type="text"
-              placeholder="Search conversations..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="search-input"
-            />
-          </div>
-
-          {/* Chat Settings */}
-          {showSettings && (
-            <div className="settings-panel">
-              <h3 className="text-sm font-medium text-gray-900 mb-3">Chat Settings</h3>
-              <div className="space-y-3">
-                <div>
-                  <label className="text-xs text-gray-600">Allow messages from:</label>
-                  <select
-                    value={chatSettings?.allowMessagesFrom || 'everyone'}
-                    onChange={(e) => {
-                      const newSettings: ChatSettings = { 
-                        userId: currentUserId,
-                        allowMessagesFrom: e.target.value as 'followers' | 'everyone' | 'none',
-                        showOnlineStatus: chatSettings?.showOnlineStatus ?? true,
-                        showLastSeen: chatSettings?.showLastSeen ?? true,
-                        autoReply: chatSettings?.autoReply || '',
-                        isAway: chatSettings?.isAway ?? false,
-                        awayMessage: chatSettings?.awayMessage || ''
-                      };
-                      setChatSettings(newSettings);
-                      MessagingService.updateChatSettings(currentUserId, newSettings);
-                    }}
-                    className="w-full text-sm border border-gray-200 rounded px-2 py-1"
-                  >
-                    <option value="everyone">Everyone</option>
-                    <option value="followers">Followers Only</option>
-                    <option value="none">No One</option>
-                  </select>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="showOnline"
-                    checked={chatSettings?.showOnlineStatus || false}
-                    onChange={(e) => {
-                      const newSettings: ChatSettings = { 
-                        userId: currentUserId,
-                        allowMessagesFrom: chatSettings?.allowMessagesFrom || 'everyone',
-                        showOnlineStatus: e.target.checked,
-                        showLastSeen: chatSettings?.showLastSeen ?? true,
-                        autoReply: chatSettings?.autoReply || '',
-                        isAway: chatSettings?.isAway ?? false,
-                        awayMessage: chatSettings?.awayMessage || ''
-                      };
-                      setChatSettings(newSettings);
-                      MessagingService.updateChatSettings(currentUserId, newSettings);
-                    }}
-                  />
-                  <label htmlFor="showOnline" className="text-xs text-gray-600">Show online status</label>
-                </div>
               </div>
             </div>
           )}
 
           {/* Conversations List */}
           <div className="conversations-list">
-            {filteredConversations.length === 0 ? (
-              <div className="empty-state">
-                <div className="text-4xl mb-2">💬</div>
-                <p className="text-sm text-gray-500">
-                  {searchQuery ? 'No conversations found' : 'No conversations yet'}
-                </p>
-                <p className="text-xs text-gray-400">
-                  {searchQuery ? 'Try a different search term' : 'Start messaging your connections'}
-                </p>
+            {conversations.length === 0 ? (
+              <div className="no-conversations">
+                <p className="text-gray-500 text-sm">No conversations yet</p>
+                <p className="text-gray-400 text-xs">Start a new chat to begin messaging</p>
               </div>
             ) : (
-              filteredConversations.map((conversation) => {
-                const { name, avatar } = getUserInfo(conversation.userId);
+              conversations.map((conversation) => {
+                const isSelected = selectedUser === conversation.userId;
                 return (
                   <div
                     key={conversation.userId}
-                    className={`conversation-item ${selectedUser === conversation.userId ? 'active' : ''}`}
+                    className={`conversation-item ${isSelected ? 'selected' : ''}`}
+                    onClick={() => setSelectedUser(conversation.userId)}
                   >
-                    <div 
-                      className="conversation-content"
-                      onClick={() => setSelectedUser(conversation.userId)}
-                    >
-                      <div className="user-avatar">
-                        {avatar ? (
-                          <img 
-                            src={avatar} 
-                            alt={name}
-                            className="w-10 h-10 rounded-full object-cover"
-                            onError={imageErrorFallback}
-                          />
-                        ) : (
-                          <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
-                            <span className="text-sm font-medium text-gray-600">
-                              {name.charAt(0).toUpperCase()}
-                            </span>
-                          </div>
-                        )}
-                        {conversation.isOnline && (
-                          <div className="online-indicator"></div>
+                    <div className="conversation-avatar">
+                      {conversation.userAvatar ? (
+                        <img
+                          src={conversation.userAvatar}
+                          alt={conversation.userName}
+                          className="w-10 h-10 rounded-full object-cover"
+                          onError={imageErrorFallback}
+                        />
+                      ) : (
+                        <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
+                          <span className="text-sm font-medium text-gray-600">
+                            {conversation.userName.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                      )}
+                      {conversation.isOnline && (
+                        <div className="online-indicator"></div>
+                      )}
+                    </div>
+                    
+                    <div className="conversation-content">
+                      <div className="conversation-header">
+                        <h4 className="conversation-name">{conversation.userName}</h4>
+                        {conversation.lastMessageTime && (
+                          <span className="conversation-time">
+                            {formatTime(conversation.lastMessageTime)}
+                          </span>
                         )}
                       </div>
-                      <div className="conversation-info">
-                        <div className="conversation-header">
-                          <h4 className="user-name">{name}</h4>
-                          {conversation.lastMessageTime && (
-                            <span className="message-time">{formatTime(conversation.lastMessageTime)}</span>
-                          )}
-                        </div>
-                        <div className="conversation-preview">
-                          {conversation.lastMessage && (
-                            <p className="last-message">{conversation.lastMessage}</p>
-                          )}
-                          {conversation.unreadCount > 0 && (
-                            <span className="unread-badge">{conversation.unreadCount}</span>
-                          )}
-                        </div>
+                      
+                      <div className="conversation-preview">
+                        <p className="conversation-message">
+                          {conversation.lastMessage || 'No messages yet'}
+                        </p>
+                        {conversation.unreadCount > 0 && (
+                          <span className="unread-badge">
+                            {conversation.unreadCount}
+                          </span>
+                        )}
                       </div>
                     </div>
+                    
                     <button
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setProfileUser(conversation);
                         setShowUserProfile(true);
                       }}
@@ -1480,277 +878,156 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
         {/* Chat Area */}
         <div className="chat-area">
-          <div className="mb-4 flex gap-4 border-b">
-            <button
-              className={`px-4 py-2 font-medium ${activeTab === 'general' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'}`}
-              onClick={() => setActiveTab('general')}
-            >
-              General
-            </button>
-            <button
-              className={`px-4 py-2 font-medium ${activeTab === 'jobApplications' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'}`}
-              onClick={() => setActiveTab('jobApplications')}
-            >
-              Job Applications
-            </button>
-          </div>
+          {error && (
+            <div className="error-banner">
+              {error}
+            </div>
+          )}
 
-          {activeTab === 'general' && (
-            <div>
-              {error && (
-                <div className="error-banner">
-                  {error}
-                </div>
-              )}
-
-              {selectedUser ? (
-                <div style={{display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, maxHeight: '100%', background: '#fff', borderRadius: 12, boxShadow: '0 2px 16px rgba(0,0,0,0.07)', border: '1px solid #e5e7eb', overflow: 'hidden'}}>
-                  {/* Chat Header */}
-                  <div className="chat-header" style={{padding: '16px 20px', borderBottom: '1px solid #e5e7eb', background: '#f8fafc', display: 'flex', alignItems: 'center', gap: 12}}>
-                    {selectedUser ? (
-                      <img 
-                        src={selectedUser ? getUserInfo(selectedUser).avatar : ''} 
-                        alt={selectedUser ? getUserInfo(selectedUser).name : ''}
-                        className="w-8 h-8 rounded-full object-cover"
-                        onError={imageErrorFallback}
-                      />
-                    ) : (
-                      <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-medium text-gray-600">
-                          {selectedUser ? getUserInfo(selectedUser).name.charAt(0).toUpperCase() : ''}
-                        </span>
-                      </div>
-                    )}
-                    <div>
-                      <h3 className="user-name">{selectedUser ? getUserInfo(selectedUser).name : ''}</h3>
-                      {typingUsers.includes(selectedUser) && (
-                        <p className="typing-indicator">typing...</p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Messages */}
-                  <div className="messages-container" style={{flex: 1, minHeight: 0, maxHeight: '100%', overflowY: 'auto', background: '#f8fafc', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12}}>
-                    {messages.map((message) => (
-                      <div
-                        key={message.id}
-                        className={`message ${message.senderId === currentUserId ? 'sent' : 'received'}`}
-                        style={{ position: 'relative' }}
-                      >
-                        <div className="message-content">
-                          {/* Message content based on type */}
-                          {['deleted_text', 'deleted_image', 'deleted_audio', 'deleted_file'].includes(message.messageType) ? (
-                            <div className="deleted-message-placeholder" style={{
-                              display: 'flex', alignItems: 'center', gap: 6,
-                              color: '#b0b6be',
-                              fontStyle: 'italic',
-                              fontSize: 13,
-                              background: 'none',
-                              borderRadius: 0,
-                              padding: 0,
-                              margin: '2px 0 0 0',
-                              boxShadow: 'none',
-                              minHeight: 0
-                            }}>
-                              <span style={{ fontSize: 15, opacity: 0.7, marginRight: 2 }}>🗑️</span>
-                              {message.content}
-                            </div>
-                          ) : message.messageType === 'image' && message.fileUrl ? (
-                            <div className="message-image">
-                              {!isValidFileUrl(message.fileUrl) ? (
-                                message.fileUrl.startsWith('UPLOAD_FAILED:') ? (
-                                  <div className="upload-failed-message">
-                                    <div className="upload-failed-icon">⚠️</div>
-                                    <div className="upload-failed-content">
-                                      <div className="upload-failed-title">Upload Failed</div>
-                                      <div className="upload-failed-name">{message.fileName || 'Image'}</div>
-                                      <div className="upload-failed-message-text">
-                                        The file couldn't be uploaded. This might be due to network issues or service problems. Please try again later.
-                                      </div>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div className="file-too-large-message">
-                                    <div className="file-too-large-icon">📷</div>
-                                    <div className="file-too-large-content">
-                                      <div className="file-too-large-title">File Too Large</div>
-                                      <div className="file-too-large-name">{message.fileName || 'Image'}</div>
-                                      <div className="file-too-large-size">
-                                        {message.fileSize ? `${(message.fileSize / 1024 / 1024).toFixed(1)} MB` : 'Unknown size'}
-                                      </div>
-                                      <div className="file-too-large-message-text">
-                                        This file exceeds the 5MB size limit. Please compress the image or choose a smaller file.
-                                      </div>
-                                    </div>
-                                  </div>
-                                )
-                                                      ) : (
-                                <img 
-                                  src={message.fileUrl} 
-                                  alt={message.fileName || 'Image'} 
-                                  className="message-image-content"
-                                  onClick={() => window.open(message.fileUrl, '_blank')}
-                                  onError={e => imageErrorFallback(e)}
-                                />
-                              )}
-                            {message.content && <p className="image-caption">{message.content}</p>}
-                          </div>
-                        ) : message.messageType === 'file' && message.fileUrl ? (
-                          <div className="message-file">
-                            <div className="file-info">
-                              <div className="file-icon">📎</div>
-                              <div className="file-details">
-                                <div className="file-name">{message.fileName || 'File'}</div>
-                                {message.fileSize && (
-                                  <div className="file-size">
-                                    {(message.fileSize / 1024 / 1024).toFixed(1)} MB
-                                  </div>
-                                )}
-                              </div>
-                              <button 
-                                className="file-download"
-                                onClick={() => message.fileUrl && window.open(message.fileUrl, '_blank')}
-                              >
-                                📥
-                              </button>
-                            </div>
-                            {message.content && <p className="file-caption">{message.content}</p>}
-                          </div>
-                        ) : message.messageType === 'voice' && message.fileUrl ? (
-                          <div className="message-voice">
-                            <audio controls src={message.fileUrl} style={{ width: '100%' }} />
-                            {message.content && <p className="voice-caption">{message.content}</p>}
-                          </div>
-                        ) : (
-                          <p className="message-text">{message.content}</p>
-                        )}
-                        
-                        <div className="message-meta">
-                          <span className="message-time">{formatTime(message.timestamp)}</span>
-                          {message.senderId === currentUserId && (
-                            <span className="message-status">
-                              {message.status === 'sending' && '⏳'}
-                              {message.status === 'sent' && '✓'}
-                              {message.status === 'delivered' && '✓✓'}
-                              {message.status === 'read' && '✓✓'}
-                            </span>
-                          )}
-                        </div>
-                        
-                        {/* Message Reactions */}
-                        {message.reactions && message.reactions.length > 0 && (
-                          <div className="message-reactions">
-                            {['👍', '❤️', '😊', '🎉'].map((emoji) => {
-                              const count = getReactionCount(message.reactions, emoji);
-                              if (count === 0) return null;
-                              
-                              return (
-                                <button
-                                  key={emoji}
-                                  onClick={getReactionHandler(message.id, emoji)}
-                                  className={`reaction-button ${hasUserReacted(message.reactions, emoji) ? 'reacted' : ''}`}
-                                >
-                                  <span className="emoji">{emoji}</span>
-                                  <span className="count">{count}</span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )}
-                        {/* Reaction Buttons - moved inside message-content */}
-                        <div className="reaction-buttons">
-                          {['👍', '❤️', '😊', '🎉'].map((emoji) => (
-                            <button
-                              key={emoji}
-                              onClick={getReactionHandler(message.id, emoji)}
-                              className="reaction-option"
-                            >
-                              {emoji}
-                            </button>
-                          ))}
-                        </div>
-                        {/* Delete icon for all messages (sender and receiver) */}
-                        <button
-                          title={message.senderId === currentUserId ? "Delete message for everyone" : "Delete message from your chat"}
-                          className={`delete-message-button ${message.senderId === currentUserId ? 'sender-delete' : 'receiver-delete'}`}
-                          onClick={async () => {
-                            const isSender = message.senderId === currentUserId;
-                            const confirmMessage = isSender 
-                              ? 'Delete this message for everyone?' 
-                              : 'Delete this message from your chat? (The sender will still see it)';
-                            
-                            if (window.confirm(confirmMessage)) {
-                              try {
-                                await MessagingService.deleteMessage(message.id, message.fileUrl, message.messageType, currentUserId);
-                                showNotification('success', isSender ? 'Message deleted for everyone' : 'Message removed from your chat');
-                              } catch (error) {
-                                console.error('Error deleting message:', error);
-                                showNotification('error', 'Failed to delete message. Please try again.');
-                              }
-                            }
-                          }}
-                        >
-                          <FaTrash />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                  
-                  {/* Typing Indicator */}
-                  {typingUsers.includes(selectedUser) && (
-                    <div className="typing-indicator-message">
-                      <div className="typing-dots">
-                        <span></span>
-                        <span></span>
-                        <span></span>
-                      </div>
+          {selectedUser ? (
+            <div className="chat-messages-container">
+              {/* Chat Header */}
+              <div className="chat-header">
+                <div className="chat-user-info">
+                  {selectedUser ? (
+                    <img 
+                      src={getUserInfo(selectedUser).avatar || ''} 
+                      alt={getUserInfo(selectedUser).name}
+                      className="w-8 h-8 rounded-full object-cover"
+                      onError={imageErrorFallback}
+                    />
+                  ) : (
+                    <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                      <span className="text-sm font-medium text-gray-600">
+                        {selectedUser ? getUserInfo(selectedUser).name.charAt(0).toUpperCase() : ''}
+                      </span>
                     </div>
                   )}
-                  
-                  <div ref={messagesEndRef} />
-                </div>
-
-                {/* Message Input - sticky at bottom */}
-                <div style={{background: '#fff', borderTop: '1px solid #e5e7eb', zIndex: 2, padding: '12px 20px'}}>
-                  <MessageInput key="stable-message-input" ref={messageInputRef} />
+                  <div>
+                    <h3 className="user-name">{selectedUser ? getUserInfo(selectedUser).name : ''}</h3>
+                    {typingUsers.includes(selectedUser) && (
+                      <p className="typing-indicator">typing...</p>
+                    )}
+                  </div>
                 </div>
               </div>
-            ) : (
-              <div className="no-conversation">
-                <div className="text-4xl mb-3">💬</div>
-                <h3 className="text-lg font-medium text-gray-900 mb-1">Select a conversation</h3>
-                <p className="text-gray-500 text-sm">Choose a contact to start messaging</p>
-              </div>
-            )}
-          </div>
-        )}
 
-        {activeTab === 'jobApplications' && (
-          <div>
-            <h3 className="font-semibold mb-2">Job Application Conversations</h3>
-            {jobAppThreads.length === 0 ? (
-              <div className="text-gray-400 text-sm">No job application conversations yet.</div>
-            ) : (
-              <div className="divide-y">
-                {jobAppThreads.map(thread => (
+              {/* Messages */}
+              <div className="messages-container">
+                {messages.map((message) => (
                   <div
-                    key={thread.application.id}
-                    className={`p-3 cursor-pointer hover:bg-gray-50 ${selectedJobAppThread?.application.id === thread.application.id ? 'bg-blue-50' : ''}`}
-                    onClick={() => setSelectedJobAppThread(thread)}
+                    key={message.id}
+                    className={`message ${message.senderId === currentUserId ? 'sent' : 'received'}`}
                   >
-                    <div className="font-medium">{thread.job?.title || 'Untitled Job'}</div>
-                    <div className="text-xs text-gray-500">{thread.otherUserName} • {thread.lastMessage?.message?.slice(0, 40)}...</div>
+                    <div className="message-content">
+                      {message.messageType === 'image' && message.fileUrl ? (
+                        <div className="message-image">
+                          {!isValidFileUrl(message.fileUrl) ? (
+                            <div className="upload-failed-message">
+                              <div className="upload-failed-icon">⚠️</div>
+                              <div className="upload-failed-content">
+                                <div className="upload-failed-title">Upload Failed</div>
+                                <div className="upload-failed-name">{message.fileName || 'Image'}</div>
+                              </div>
+                            </div>
+                          ) : (
+                            <img 
+                              src={message.fileUrl} 
+                              alt={message.fileName || 'Image'} 
+                              className="message-image-content"
+                              onClick={() => window.open(message.fileUrl, '_blank')}
+                              onError={imageErrorFallback}
+                            />
+                          )}
+                          {message.content && <p className="image-caption">{message.content}</p>}
+                        </div>
+                      ) : message.messageType === 'file' && message.fileUrl ? (
+                        <div className="message-file">
+                          <div className="file-info">
+                            <div className="file-icon">📎</div>
+                            <div className="file-details">
+                              <div className="file-name">{message.fileName || 'File'}</div>
+                              <div className="file-size">
+                                {message.fileSize ? `${(message.fileSize / 1024).toFixed(1)} KB` : 'Unknown size'}
+                              </div>
+                            </div>
+                          </div>
+                          {isValidFileUrl(message.fileUrl) && (
+                            <a 
+                              href={message.fileUrl} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="file-download"
+                            >
+                              Download
+                            </a>
+                          )}
+                        </div>
+                      ) : message.messageType === 'voice' ? (
+                        <div className="message-voice">
+                          <div className="voice-message">
+                            <span className="voice-icon">🎤</span>
+                            <span className="voice-duration">
+                              {message.fileSize ? `${Math.round(message.fileSize / 1024)} KB` : 'Voice Message'}
+                            </span>
+                          </div>
+                          {message.fileUrl && isValidFileUrl(message.fileUrl) && (
+                            <audio controls className="voice-player">
+                              <source src={message.fileUrl} type="audio/wav" />
+                              Your browser does not support the audio element.
+                            </audio>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="message-text">
+                          {message.content}
+                        </div>
+                      )}
+                      
+                      <div className="message-meta">
+                        <span className="message-time">
+                          {formatTime(message.timestamp)}
+                        </span>
+                        {message.senderId === currentUserId && (
+                          <span className="message-status">
+                            {message.status === 'sending' && '⏳'}
+                            {message.status === 'sent' && '✓'}
+                            {message.status === 'delivered' && '✓✓'}
+                            {message.status === 'read' && '✓✓'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 ))}
+                
+                {/* Typing Indicator */}
+                {typingUsers.includes(selectedUser) && (
+                  <div className="typing-indicator-message">
+                    <div className="typing-dots">
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                    </div>
+                  </div>
+                )}
+                
+                <div ref={messagesEndRef} />
               </div>
-            )}
-            {selectedJobAppThread && (
-              <div className="mt-4">
-                {/* Real-time message thread and reply box for this job application */}
+
+              {/* Message Input */}
+              <div className="message-input-wrapper">
+                <MessageInput ref={messageInputRef} />
               </div>
-            )}
-          </div>
-        )}
+            </div>
+          ) : (
+            <div className="no-conversation">
+              <div className="text-4xl mb-3">💬</div>
+              <h3 className="text-lg font-medium text-gray-900 mb-1">Select a conversation</h3>
+              <p className="text-gray-500 text-sm">Choose a contact to start messaging</p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* User Profile Modal */}
@@ -1819,7 +1096,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       )}
     </div>
   );
-  </div>
-)}
+};
 
 export default ChatInterface;
