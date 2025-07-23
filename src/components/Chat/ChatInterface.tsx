@@ -43,6 +43,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
+  const [pendingAttachment, setPendingAttachment] = useState<File | null>(null);
+  const [pendingAttachmentType, setPendingAttachmentType] = useState<string | null>(null);
 
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -245,32 +247,38 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && selectedUser) {
-      sendFile(file);
+      setPendingAttachment(file);
+      setPendingAttachmentType(file.type);
     }
     event.target.value = '';
   }, [selectedUser]);
 
-  const sendFile = useCallback(async (file: File) => {
-    if (!selectedUser || sending) return;
+  const cancelPendingAttachment = useCallback(() => {
+    setPendingAttachment(null);
+    setPendingAttachmentType(null);
+  }, []);
+
+  const sendPendingAttachment = useCallback(async () => {
+    if (!pendingAttachment || !selectedUser || sending) return;
     
     setSending(true);
     try {
-      let content = `📎 ${file.name}`;
+      let content = `📎 ${pendingAttachment.name}`;
       let messageType: 'text' | 'image' | 'file' | 'voice' = 'file';
       let fileUrl: string | undefined;
       
       // Determine message type and content
-      if (file.type.startsWith('image/')) {
-        content = `📷 ${file.name}`;
+      if (pendingAttachment.type.startsWith('image/')) {
+        content = `📷 ${pendingAttachment.name}`;
         messageType = 'image';
-      } else if (file.type.startsWith('audio/')) {
-        content = `🎤 ${file.name}`;
+      } else if (pendingAttachment.type.startsWith('audio/')) {
+        content = `🎤 ${pendingAttachment.name}`;
         messageType = 'voice';
       }
       
       // Upload file to storage
       try {
-        fileUrl = await MessagingService.uploadFileToStorage(file, 'chat-uploads');
+        fileUrl = await MessagingService.uploadFileToStorage(pendingAttachment, 'chat-uploads');
         console.log('File uploaded successfully:', fileUrl);
       } catch (uploadError) {
         console.error('File upload failed:', uploadError);
@@ -287,9 +295,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         messageType,
         status: 'sending',
         fileUrl,
-        fileName: file.name,
-        fileSize: file.size,
-        fileType: file.type
+        fileName: pendingAttachment.name,
+        fileSize: pendingAttachment.size,
+        fileType: pendingAttachment.type
       };
       
       setMessages(prev => [...prev, optimisticMessage]);
@@ -299,13 +307,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           ? { ...msg, status: 'sent' as any }
           : msg
       ));
+      
+      // Clear pending attachment
+      setPendingAttachment(null);
+      setPendingAttachmentType(null);
     } catch (error) {
       console.error('Error sending file:', error);
       setMessages(prev => prev.filter(msg => msg.id !== `temp_${Date.now()}`));
     } finally {
       setSending(false);
     }
-  }, [selectedUser, sending, currentUserId]);
+  }, [pendingAttachment, selectedUser, sending, currentUserId]);
 
   // Voice recording - optimized
   const startRecording = useCallback(async () => {
@@ -323,7 +335,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       mediaRecorder.onstop = () => {
         const blob = new Blob(chunks, { type: 'audio/wav' });
         const file = new File([blob], `voice-message-${Date.now()}.wav`, { type: 'audio/wav' });
-        sendFile(file);
+        setPendingAttachment(file);
+        setPendingAttachmentType('audio/wav');
         stream.getTracks().forEach(track => track.stop());
         setIsRecording(false);
         setRecordingTime(0);
@@ -348,7 +361,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       console.error('Error starting recording:', error);
       setError('Could not access microphone');
     }
-  }, [sendFile]);
+  }, []);
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && isRecording) {
@@ -437,9 +450,26 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       <div
         key={message.id}
         className={`message ${isSent ? 'sent' : 'received'}`}
+        style={{ position: 'relative' }}
       >
         <div className="message-content">
-          {message.messageType === 'image' && message.fileUrl && !message.fileUrl.startsWith('FILE_TOO_LARGE:') && !message.fileUrl.startsWith('UPLOAD_FAILED:') ? (
+          {['deleted_text', 'deleted_image', 'deleted_audio', 'deleted_file'].includes(message.messageType) ? (
+            <div className="deleted-message-placeholder" style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              color: '#b0b6be',
+              fontStyle: 'italic',
+              fontSize: 13,
+              background: 'none',
+              borderRadius: 0,
+              padding: 0,
+              margin: '2px 0 0 0',
+              boxShadow: 'none',
+              minHeight: 0
+            }}>
+              <span style={{ fontSize: 15, opacity: 0.7, marginRight: 2 }}>🗑️</span>
+              {message.content}
+            </div>
+          ) : message.messageType === 'image' && message.fileUrl && !message.fileUrl.startsWith('FILE_TOO_LARGE:') && !message.fileUrl.startsWith('UPLOAD_FAILED:') ? (
             <div className="message-image">
               <img 
                 src={message.fileUrl} 
@@ -479,6 +509,28 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             )}
           </div>
         </div>
+
+        {/* Delete button for sender's messages */}
+        {isSent && !['deleted_text', 'deleted_image', 'deleted_audio', 'deleted_file'].includes(message.messageType) && (
+          <button
+            title="Delete message"
+            className="delete-message-button"
+            onClick={async () => {
+              const confirmMessage = 'Delete this message for everyone?';
+              if (window.confirm(confirmMessage)) {
+                try {
+                  await MessagingService.deleteMessage(message.id, message.fileUrl, message.messageType);
+                  // The message will be updated via the listener, no need to manually update state
+                } catch (error) {
+                  console.error('Error deleting message:', error);
+                  setError('Failed to delete message. Please try again.');
+                }
+              }
+            }}
+          >
+            🗑️
+          </button>
+        )}
       </div>
     );
   }, [currentUserId, formatTime]);
@@ -675,6 +727,52 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     <button onClick={stopRecording} className="stop-recording">
                       Stop
                     </button>
+                  </div>
+                )}
+
+                {/* Attachment Preview */}
+                {pendingAttachment && (
+                  <div className="attachment-preview">
+                    <div className="preview-header">
+                      <span>📎 Attachment Preview</span>
+                      <button onClick={cancelPendingAttachment} className="close-preview">✕</button>
+                    </div>
+                    
+                    <div className="preview-content">
+                      {pendingAttachmentType?.startsWith('image/') ? (
+                        <img 
+                          src={URL.createObjectURL(pendingAttachment)} 
+                          alt="Preview" 
+                          className="image-preview"
+                        />
+                      ) : pendingAttachmentType?.startsWith('audio/') ? (
+                        <div className="audio-preview">
+                          <audio controls src={URL.createObjectURL(pendingAttachment)} />
+                          <span>🎤 Voice Message</span>
+                        </div>
+                      ) : (
+                        <div className="file-preview">
+                          <span>📄 {pendingAttachment.name}</span>
+                          <span className="file-size">({(pendingAttachment.size / 1024).toFixed(1)} KB)</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="preview-actions">
+                      <button 
+                        onClick={sendPendingAttachment} 
+                        disabled={sending}
+                        className="send-attachment-btn"
+                      >
+                        {sending ? 'Sending...' : 'Send'}
+                      </button>
+                      <button 
+                        onClick={cancelPendingAttachment}
+                        className="cancel-attachment-btn"
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   </div>
                 )}
 
