@@ -17,7 +17,9 @@ import {
   DocumentData,
   QueryDocumentSnapshot,
   setDoc,
-  increment
+  increment,
+  arrayUnion,
+  arrayRemove
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { DirectMessage, ChatRoom, ChatSettings, MessageReaction, ChatPresence } from '../types/Chat';
@@ -437,28 +439,40 @@ export class MessagingService {
       const messageData = messageDoc.data();
       const currentReactions = messageData.reactions || [];
 
+      console.log('[MessagingService] Current reactions:', currentReactions);
+
       // Check if user already reacted with this emoji
-      const existingReactionIndex = currentReactions.findIndex(
+      const existingReaction = currentReactions.find(
         (reaction: any) => reaction.userId === userId && reaction.emoji === emoji
       );
 
-      if (existingReactionIndex >= 0) {
-        // Remove existing reaction
-        currentReactions.splice(existingReactionIndex, 1);
+      if (existingReaction) {
+        // Remove existing reaction by filtering it out
+        console.log('[MessagingService] Removing existing reaction:', existingReaction);
+        const updatedReactions = currentReactions.filter(
+          (reaction: any) => !(reaction.userId === userId && reaction.emoji === emoji)
+        );
+        
+        await updateDoc(doc(db, 'conversations', conversationId, 'messages', messageId), {
+          reactions: updatedReactions
+        });
       } else {
-        // Add new reaction
-        currentReactions.push({
+        // Add new reaction by appending to array
+        const newReaction = {
           userId,
           userName,
           emoji,
-          timestamp: serverTimestamp()
+          timestamp: new Date().toISOString() // Convert to ISO string for better compatibility
+        };
+        
+        console.log('[MessagingService] Adding reaction object:', newReaction);
+        
+        const updatedReactions = [...currentReactions, newReaction];
+        
+        await updateDoc(doc(db, 'conversations', conversationId, 'messages', messageId), {
+          reactions: updatedReactions
         });
       }
-
-      // Update message with new reactions
-      await updateDoc(doc(db, 'conversations', conversationId, 'messages', messageId), {
-        reactions: currentReactions
-      });
 
       console.log('[MessagingService] Reaction updated successfully');
     } catch (error) {

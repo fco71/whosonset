@@ -182,6 +182,12 @@ service cloud.firestore {
         allow create: if request.auth != null && 
           request.auth.uid == request.resource.data.senderId &&
           get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants.hasAny([request.auth.uid]);
+        
+        // Allow update for reactions and read receipts if user is a participant in the conversation
+        allow update: if request.auth != null && 
+          get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants.hasAny([request.auth.uid]) &&
+          // Only allow updating specific fields
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions', 'isRead', 'readAt']);
       }
     }
 
