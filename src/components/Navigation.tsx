@@ -61,7 +61,7 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
         { to: '/', label: t('nav.home') },
         { to: '/crew', label: t('nav.crew') },
         { to: '/jobs', label: t('nav.jobs') },
-        { to: '/my-projects', label: t('nav.projects') },
+        { to: '/projects', label: t('nav.projects') }, // updated from /my-projects
         { to: '/collaboration', label: t('nav.collaboration') },
     ];
 

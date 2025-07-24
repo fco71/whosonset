@@ -45,6 +45,7 @@ const SavedJobsPage = React.lazy(() => import('./components/JobSearch/SavedJobsP
 const ApplicationDashboard = React.lazy(() => import('./components/JobSearch/ApplicationDashboard'));
 const ApplicationAnalytics = React.lazy(() => import('./components/JobSearch/ApplicationAnalytics'));
 const JobPosterAnalytics = React.lazy(() => import('./components/JobSearch/JobPosterAnalytics'));
+const ProjectsPage = React.lazy(() => import('./pages/ProjectsPage'));
 
 // Protected Route Component for React Router v7
 const ProtectedRoute = ({ children, redirectTo = '/login' }: { children: React.ReactNode, redirectTo?: string }) => {
@@ -112,6 +113,7 @@ function App() {
                     <RegisterPage />
                   </PublicRoute>
                 } />
+                <Route path="/projects" element={<ProjectsPage />} />
                 
                 {/* Protected Routes */}
                 <Route path="/my-projects" element={

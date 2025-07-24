@@ -17,5 +17,72 @@
     "signIn": "Iniciar Sesión",
     "getStarted": "Comenzar",
     "signOut": "Cerrar Sesión"
+  },
+  "home": {
+    "loading": "Cargando...",
+    "hero": {
+      "banner": "El Futuro del Networking en la Industria Cinematográfica",
+      "title1": "Conéctate con la",
+      "title2": "Industria Cinematográfica",
+      "subtitle": "La plataforma principal donde los profesionales del cine muestran proyectos, descubren talento y construyen carreras que dan forma al futuro del entretenimiento.",
+      "ctaPrimary": "Comienza Gratis",
+      "ctaSecondary": "Explorar Trabajos"
+    },
+    "stats": {
+      "activeProfessionals": "Profesionales Activos",
+      "projectsCompleted": "Proyectos Completados",
+      "successRate": "Tasa de Éxito",
+      "countries": "Países"
+    },
+    "features": {
+      "title": "Todo lo que Necesitas para Triunfar",
+      "subtitle": "Nuestra plataforma integral proporciona todas las herramientas y conexiones que necesitas para prosperar en la industria cinematográfica.",
+      "projectShowcase": {
+        "title": "Exhibición de Proyectos",
+        "desc": "Muestra tus proyectos cinematográficos con portafolios profesionales e información detallada de producción."
+      },
+      "crewNetworking": {
+        "title": "Red de Equipo",
+        "desc": "Conéctate con profesionales talentosos de todos los departamentos de la industria cinematográfica."
+      },
+      "jobBoard": {
+        "title": "Bolsa de Trabajo",
+        "desc": "Descubre oportunidades emocionantes y encuentra el rol perfecto para tu próximo proyecto."
+      },
+      "globalReach": {
+        "title": "Alcance Global",
+        "desc": "Accede a oportunidades en todo el mundo y conéctate con producciones internacionales."
+      },
+      "industryRecognition": {
+        "title": "Reconocimiento en la Industria",
+        "desc": "Construye tu reputación con créditos verificados y avales profesionales."
+      },
+      "realTimeCollab": {
+        "title": "Colaboración en Tiempo Real",
+        "desc": "Colabora sin problemas con los miembros del equipo usando nuestras herramientas integradas."
+      }
+    },
+    "howItWorks": {
+      "title": "Cómo Funciona",
+      "subtitle": "Comienza en tres simples pasos y desbloquea tu potencial en la industria cinematográfica.",
+      "step1": {
+        "title": "Crea tu Perfil",
+        "desc": "Construye un perfil profesional mostrando tus habilidades, experiencia y portafolio con nuestras herramientas intuitivas."
+      },
+      "step2": {
+        "title": "Conéctate y Haz Networking",
+        "desc": "Únete a nuestra comunidad global de profesionales del cine y comienza a construir conexiones significativas en la industria."
+      },
+      "step3": {
+        "title": "Encuentra Oportunidades",
+        "desc": "Descubre trabajos, proyectos y colaboraciones que se adapten a tus habilidades y metas profesionales."
+      }
+    },
+    "cta": {
+      "title": "¿Listo para Transformar tu Carrera Cinematográfica?",
+      "subtitle": "Únete a la comunidad más grande de profesionales del cine y descubre oportunidades ilimitadas.",
+      "ctaPrimary": "Únete Gratis Hoy",
+      "ctaSecondary": "Ver Talento"
+    }
   }
 } 

@@ -17,5 +17,72 @@
     "signIn": "Sign In",
     "getStarted": "Get Started",
     "signOut": "Sign Out"
+  },
+  "home": {
+    "loading": "Loading...",
+    "hero": {
+      "banner": "The Future of Film Industry Networking",
+      "title1": "Connect with the",
+      "title2": "Film Industry",
+      "subtitle": "The premier platform where film professionals showcase projects, discover talent, and build careers that shape the future of entertainment.",
+      "ctaPrimary": "Get Started Free",
+      "ctaSecondary": "Explore Jobs"
+    },
+    "stats": {
+      "activeProfessionals": "Active Professionals",
+      "projectsCompleted": "Projects Completed",
+      "successRate": "Success Rate",
+      "countries": "Countries"
+    },
+    "features": {
+      "title": "Everything You Need to Succeed",
+      "subtitle": "Our comprehensive platform provides all the tools and connections you need to thrive in the film industry.",
+      "projectShowcase": {
+        "title": "Project Showcase",
+        "desc": "Showcase your film projects with professional portfolios and detailed production information."
+      },
+      "crewNetworking": {
+        "title": "Crew Networking",
+        "desc": "Connect with talented professionals across all departments in the film industry."
+      },
+      "jobBoard": {
+        "title": "Job Board",
+        "desc": "Discover exciting opportunities and find the perfect role for your next project."
+      },
+      "globalReach": {
+        "title": "Global Reach",
+        "desc": "Access opportunities worldwide and connect with international productions."
+      },
+      "industryRecognition": {
+        "title": "Industry Recognition",
+        "desc": "Build your reputation with verified credits and professional endorsements."
+      },
+      "realTimeCollab": {
+        "title": "Real-Time Collaboration",
+        "desc": "Collaborate seamlessly with team members using our integrated tools."
+      }
+    },
+    "howItWorks": {
+      "title": "How It Works",
+      "subtitle": "Get started in three simple steps and unlock your potential in the film industry.",
+      "step1": {
+        "title": "Create Your Profile",
+        "desc": "Build a professional profile showcasing your skills, experience, and portfolio with our intuitive tools."
+      },
+      "step2": {
+        "title": "Connect & Network",
+        "desc": "Join our global community of film professionals and start building meaningful industry connections."
+      },
+      "step3": {
+        "title": "Find Opportunities",
+        "desc": "Discover jobs, projects, and collaborations that match your skills and career goals."
+      }
+    },
+    "cta": {
+      "title": "Ready to Transform Your Film Career?",
+      "subtitle": "Join the largest community of film professionals and discover unlimited opportunities.",
+      "ctaPrimary": "Join Free Today",
+      "ctaSecondary": "Browse Talent"
+    }
   }
 } 

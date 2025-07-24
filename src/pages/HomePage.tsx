@@ -18,46 +18,48 @@ import {
 } from 'lucide-react';
 import { db } from '../firebase';
 import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
+import { useTranslation } from 'react-i18next';
 
 const HomePage: React.FC = () => {
+  const { t } = useTranslation();
   const [stats, setStats] = useState([
-    { number: "Loading...", label: "Active Professionals", icon: <Users className="w-5 h-5" /> },
-    { number: "Loading...", label: "Projects Completed", icon: <Film className="w-5 h-5" /> },
-    { number: "Loading...", label: "Success Rate", icon: <TrendingUp className="w-5 h-5" /> },
-    { number: "Loading...", label: "Countries", icon: <Globe className="w-5 h-5" /> }
+    { number: t('home.loading'), label: t('home.stats.activeProfessionals'), icon: <Users className="w-5 h-5" /> },
+    { number: t('home.loading'), label: t('home.stats.projectsCompleted'), icon: <Film className="w-5 h-5" /> },
+    { number: t('home.loading'), label: t('home.stats.successRate'), icon: <TrendingUp className="w-5 h-5" /> },
+    { number: t('home.loading'), label: t('home.stats.countries'), icon: <Globe className="w-5 h-5" /> }
   ]);
   const [loading, setLoading] = useState(true);
 
   const features = [
     {
       icon: <Film className="w-6 h-6" />,
-      title: "Project Showcase",
-      description: "Showcase your film projects with professional portfolios and detailed production information."
+      title: t('home.features.projectShowcase.title'),
+      description: t('home.features.projectShowcase.desc')
     },
     {
       icon: <Users className="w-6 h-6" />,
-      title: "Crew Networking",
-      description: "Connect with talented professionals across all departments in the film industry."
+      title: t('home.features.crewNetworking.title'),
+      description: t('home.features.crewNetworking.desc')
     },
     {
       icon: <Briefcase className="w-6 h-6" />,
-      title: "Job Board",
-      description: "Discover exciting opportunities and find the perfect role for your next project."
+      title: t('home.features.jobBoard.title'),
+      description: t('home.features.jobBoard.desc')
     },
     {
       icon: <Globe className="w-6 h-6" />,
-      title: "Global Reach",
-      description: "Access opportunities worldwide and connect with international productions."
+      title: t('home.features.globalReach.title'),
+      description: t('home.features.globalReach.desc')
     },
     {
       icon: <Award className="w-6 h-6" />,
-      title: "Industry Recognition",
-      description: "Build your reputation with verified credits and professional endorsements."
+      title: t('home.features.industryRecognition.title'),
+      description: t('home.features.industryRecognition.desc')
     },
     {
       icon: <Zap className="w-6 h-6" />,
-      title: "Real-Time Collaboration",
-      description: "Collaborate seamlessly with team members using our integrated tools."
+      title: t('home.features.realTimeCollab.title'),
+      description: t('home.features.realTimeCollab.desc')
     }
   ];
 
@@ -97,26 +99,27 @@ const HomePage: React.FC = () => {
         const successRate = projectsCount > 0 ? Math.round((completedProjects / projectsCount) * 100) : 0;
 
         setStats([
-          { number: `${crewCount}+`, label: "Active Professionals", icon: <Users className="w-5 h-5" /> },
-          { number: `${projectsCount}+`, label: "Projects Completed", icon: <Film className="w-5 h-5" /> },
-          { number: `${successRate}%`, label: "Success Rate", icon: <TrendingUp className="w-5 h-5" /> },
-          { number: `${countries.size}+`, label: "Countries", icon: <Globe className="w-5 h-5" /> }
+          { number: `${crewCount}+`, label: t('home.stats.activeProfessionals'), icon: <Users className="w-5 h-5" /> },
+          { number: `${projectsCount}+`, label: t('home.stats.projectsCompleted'), icon: <Film className="w-5 h-5" /> },
+          { number: `${successRate}%`, label: t('home.stats.successRate'), icon: <TrendingUp className="w-5 h-5" /> },
+          { number: `${countries.size}+`, label: t('home.stats.countries'), icon: <Globe className="w-5 h-5" /> }
         ]);
       } catch (error) {
         console.error('Error fetching stats:', error);
         // Show empty state instead of fake data
         setStats([
-          { number: "—", label: "Active Professionals", icon: <Users className="w-5 h-5" /> },
-          { number: "—", label: "Projects Completed", icon: <Film className="w-5 h-5" /> },
-          { number: "—", label: "Success Rate", icon: <TrendingUp className="w-5 h-5" /> },
-          { number: "—", label: "Countries", icon: <Globe className="w-5 h-5" /> }
+          { number: '—', label: t('home.stats.activeProfessionals'), icon: <Users className="w-5 h-5" /> },
+          { number: '—', label: t('home.stats.projectsCompleted'), icon: <Film className="w-5 h-5" /> },
+          { number: '—', label: t('home.stats.successRate'), icon: <TrendingUp className="w-5 h-5" /> },
+          { number: '—', label: t('home.stats.countries'), icon: <Globe className="w-5 h-5" /> }
         ]);
       }
     };
 
     fetchStats();
     setLoading(false);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [t]);
 
   return (
     <div className="min-h-screen bg-white">
@@ -134,23 +137,22 @@ const HomePage: React.FC = () => {
             <div className="mb-8">
               <div className="inline-flex items-center px-4 py-2 rounded-full bg-blue-50 text-blue-600 text-sm font-medium border border-blue-200">
                 <Users className="w-4 h-4 mr-2" />
-                The Future of Film Industry Networking
+                {t('home.hero.banner')}
               </div>
             </div>
             
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-8 leading-tight">
-              Connect with the
+              {t('home.hero.title1')}
               <span className="relative inline-block ml-4">
                 <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  Film Industry
+                  {t('home.hero.title2')}
                 </span>
                 <div className="absolute -bottom-2 left-0 right-0 h-2 bg-gradient-to-r from-blue-200 to-purple-200 rounded-full opacity-30"></div>
               </span>
             </h1>
             
             <p className="text-xl lg:text-2xl text-gray-600 mb-12 max-w-4xl mx-auto leading-relaxed">
-              The premier platform where film professionals showcase projects, discover talent, 
-              and build careers that shape the future of entertainment.
+              {t('home.hero.subtitle')}
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
@@ -158,7 +160,7 @@ const HomePage: React.FC = () => {
                 to="/register"
                 className="group px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center text-lg"
               >
-                Get Started Free
+                {t('home.hero.ctaPrimary')}
                 <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
               <Link
@@ -166,7 +168,7 @@ const HomePage: React.FC = () => {
                 className="group px-8 py-4 bg-white text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-all duration-300 shadow-lg border border-gray-200 hover:border-gray-300 flex items-center text-lg"
               >
                 <Play className="mr-2 w-5 h-5 group-hover:scale-110 transition-transform" />
-                Explore Jobs
+                {t('home.hero.ctaSecondary')}
               </Link>
             </div>
 
@@ -178,7 +180,7 @@ const HomePage: React.FC = () => {
                     {stat.icon}
                   </div>
                   <div className={`text-2xl lg:text-3xl font-bold mb-1 ${
-                    stat.number === "Loading..." ? "text-gray-300 animate-pulse" : 
+                    stat.number === t('home.loading') ? "text-gray-300 animate-pulse" : 
                     stat.number === "—" ? "text-gray-400" : "text-gray-900"
                   }`}>
                     {stat.number}
@@ -198,11 +200,10 @@ const HomePage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Everything You Need to Succeed
+              {t('home.features.title')}
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Our comprehensive platform provides all the tools and connections 
-              you need to thrive in the film industry.
+              {t('home.features.subtitle')}
             </p>
           </div>
 
@@ -229,10 +230,10 @@ const HomePage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              How It Works
+              {t('home.howItWorks.title')}
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Get started in three simple steps and unlock your potential in the film industry.
+              {t('home.howItWorks.subtitle')}
             </p>
           </div>
 
@@ -240,18 +241,18 @@ const HomePage: React.FC = () => {
             {[
               {
                 step: "01",
-                title: "Create Your Profile",
-                description: "Build a professional profile showcasing your skills, experience, and portfolio with our intuitive tools."
+                title: t('home.howItWorks.step1.title'),
+                description: t('home.howItWorks.step1.desc')
               },
               {
                 step: "02",
-                title: "Connect & Network",
-                description: "Join our global community of film professionals and start building meaningful industry connections."
+                title: t('home.howItWorks.step2.title'),
+                description: t('home.howItWorks.step2.desc')
               },
               {
                 step: "03",
-                title: "Find Opportunities",
-                description: "Discover jobs, projects, and collaborations that match your skills and career goals."
+                title: t('home.howItWorks.step3.title'),
+                description: t('home.howItWorks.step3.desc')
               }
             ].map((item, index) => (
               <div key={index} className="text-center relative">
@@ -273,17 +274,15 @@ const HomePage: React.FC = () => {
         </div>
       </section>
 
-
-
       {/* CTA Section */}
       <section className="py-24 bg-gradient-to-r from-blue-600 to-purple-600">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="max-w-3xl mx-auto">
             <h2 className="text-4xl font-bold text-white mb-6">
-              Ready to Transform Your Film Career?
+              {t('home.cta.title')}
             </h2>
             <p className="text-xl text-blue-100 mb-8">
-              Join the largest community of film professionals and discover unlimited opportunities.
+              {t('home.cta.subtitle')}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
@@ -291,14 +290,14 @@ const HomePage: React.FC = () => {
                 className="group px-8 py-4 bg-white text-blue-600 font-semibold rounded-lg hover:bg-gray-50 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center text-lg"
               >
                 <Heart className="mr-2 w-5 h-5 group-hover:scale-110 transition-transform" />
-                Join Free Today
+                {t('home.cta.ctaPrimary')}
               </Link>
               <Link
                 to="/crew"
                 className="group px-8 py-4 bg-transparent text-white font-semibold rounded-lg border-2 border-white hover:bg-white hover:text-blue-600 transition-all duration-300 flex items-center justify-center text-lg"
               >
                 <Clapperboard className="mr-2 w-5 h-5 group-hover:scale-110 transition-transform" />
-                Browse Talent
+                {t('home.cta.ctaSecondary')}
               </Link>
             </div>
           </div>
