@@ -34,7 +34,7 @@ interface NotificationCenterProps {
 const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
-  const { notifications, loading, markAsRead } = useNotifications();
+  const { notifications, loading, markAsRead, markAllAsRead, clearAll, deleteNotification } = useNotifications();
   const [filterType, setFilterType] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -63,13 +63,33 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
     }
   };
 
+  const handleMarkAllAsRead = async () => {
+    try {
+      await markAllAsRead();
+      toast.success('All notifications marked as read');
+    } catch (error) {
+      console.error('Error marking all as read:', error);
+      toast.error('Failed to mark all as read');
+    }
+  };
+
   const handleDeleteNotification = async (notificationId: string) => {
     try {
-      await deleteDoc(doc(db, 'users', currentUser!.uid, 'notifications', notificationId));
+      await deleteNotification(notificationId);
       toast.success('Notification deleted');
     } catch (error) {
       console.error('Error deleting notification:', error);
       toast.error('Failed to delete notification');
+    }
+  };
+
+  const handleClearAll = async () => {
+    try {
+      await clearAll();
+      toast.success('All notifications cleared');
+    } catch (error) {
+      console.error('Error clearing notifications:', error);
+      toast.error('Failed to clear notifications');
     }
   };
 
@@ -90,6 +110,12 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
       case 'application_status_update':
         navigate(`/applications/${notification.applicationId}`);
         break;
+      case 'message':
+        // Navigate to chat with the sender
+        if (notification.senderId && notification.conversationId) {
+          navigate(`/chat?user=${notification.senderId}`);
+        }
+        break;
       default:
         // Default navigation
         break;
@@ -106,6 +132,8 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
         return <MessageSquare className="w-5 h-5 text-green-600" />;
       case 'application_status_update':
         return <CheckCircle className="w-5 h-5 text-purple-600" />;
+      case 'message':
+        return <MessageSquare className="w-5 h-5 text-indigo-600" />;
       default:
         return <Bell className="w-5 h-5 text-gray-600" />;
     }
@@ -119,6 +147,8 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
         return 'bg-green-50 border-green-200';
       case 'application_status_update':
         return 'bg-purple-50 border-purple-200';
+      case 'message':
+        return 'bg-indigo-50 border-indigo-200';
       default:
         return 'bg-gray-50 border-gray-200';
     }
@@ -154,9 +184,9 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={handleOverlayClick}>
-      <div className="bg-white rounded-xl max-w-md w-full max-h-[80vh] flex flex-col shadow-lg relative" onClick={e => e.stopPropagation()}>
+      <div className="bg-white rounded-xl w-full max-w-md max-h-[90vh] flex flex-col shadow-lg relative overflow-hidden" onClick={e => e.stopPropagation()}>
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white sticky top-0 z-10">
           <div className="flex items-center gap-3">
             <Bell className="w-6 h-6 text-gray-600" />
             <h2 className="text-xl font-semibold text-gray-900">Notifications</h2>
@@ -168,22 +198,14 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
           </div>
           <div className="flex gap-2 items-center">
             <button
-              onClick={() => {
-                filteredNotifications.forEach(n => {
-                  if (!n.read) handleMarkAsRead(n.id);
-                });
-              }}
+              onClick={handleMarkAllAsRead}
               className="p-2 text-xs text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
               aria-label="Mark all as read"
             >
               Mark All Read
             </button>
             <button
-              onClick={() => {
-                filteredNotifications.forEach(n => {
-                  handleDeleteNotification(n.id);
-                });
-              }}
+              onClick={handleClearAll}
               className="p-2 text-xs text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
               aria-label="Clear all notifications"
             >
@@ -191,7 +213,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
             </button>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors absolute top-2 right-2"
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
               aria-label="Close notifications"
             >
               <XCircle className="w-5 h-5 text-gray-500" />
@@ -200,7 +222,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
         </div>
 
         {/* Filters */}
-        <div className="p-4 border-b border-gray-200 bg-gray-50">
+        <div className="p-4 border-b border-gray-200 bg-gray-50 sticky top-16 z-10">
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="flex-1">
               <div className="relative">
@@ -224,98 +246,101 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
               <option value="job_application">Job Applications</option>
               <option value="application_message">Messages</option>
               <option value="application_status_update">Status Updates</option>
+              <option value="message">Chat Messages</option>
             </select>
           </div>
         </div>
 
         {/* Notifications List */}
-        <div className="flex-1 overflow-y-auto p-4">
-          {loading ? (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading notifications...</p>
-            </div>
-          ) : filteredNotifications.length === 0 ? (
-            <div className="text-center py-8">
-              <Bell className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No notifications</h3>
-              <p className="text-gray-600">
-                {notifications.length === 0 
-                  ? "You're all caught up! No notifications yet." 
-                  : "No notifications match your current filters."
-                }
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {filteredNotifications.map((notification) => (
-                <div
-                  key={notification.id}
-                  className={`p-4 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
-                    notification.read ? 'opacity-75' : ''
-                  } ${getNotificationColor(notification.type)}`}
-                  onClick={() => handleNotificationClick(notification)}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 mt-1">
-                      {getNotificationIcon(notification.type)}
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <p className={`text-sm font-medium ${
-                            notification.read ? 'text-gray-600' : 'text-gray-900'
-                          }`}>
-                            {notification.message}
-                          </p>
+        <div className="flex-1 overflow-y-auto min-h-0">
+          <div className="p-4">
+            {loading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading notifications...</p>
+              </div>
+            ) : filteredNotifications.length === 0 ? (
+              <div className="text-center py-8">
+                <Bell className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No notifications</h3>
+                <p className="text-gray-600">
+                  {notifications.length === 0 
+                    ? "You're all caught up! No notifications yet." 
+                    : "No notifications match your current filters."
+                  }
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {filteredNotifications.map((notification) => (
+                  <div
+                    key={notification.id}
+                    className={`p-4 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
+                      notification.read ? 'opacity-75' : ''
+                    } ${getNotificationColor(notification.type)}`}
+                    onClick={() => handleNotificationClick(notification)}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 mt-1">
+                        {getNotificationIcon(notification.type)}
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <p className={`text-sm font-medium ${
+                              notification.read ? 'text-gray-600' : 'text-gray-900'
+                            }`}>
+                              {notification.message}
+                            </p>
+                            
+                            {notification.extra && (
+                              <div className="mt-2 text-xs text-gray-500">
+                                {notification.extra.senderName && (
+                                  <span>From: {notification.extra.senderName}</span>
+                                )}
+                                {notification.extra.jobTitle && (
+                                  <span> • Job: {notification.extra.jobTitle}</span>
+                                )}
+                              </div>
+                            )}
+                            
+                            <p className="text-xs text-gray-400 mt-1">
+                              {formatDate(notification.timestamp)}
+                            </p>
+                          </div>
                           
-                          {notification.extra && (
-                            <div className="mt-2 text-xs text-gray-500">
-                              {notification.extra.senderName && (
-                                <span>From: {notification.extra.senderName}</span>
-                              )}
-                              {notification.extra.jobTitle && (
-                                <span> • Job: {notification.extra.jobTitle}</span>
-                              )}
+                          <div className="flex items-center gap-1 ml-2">
+                            {!notification.read && (
+                              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                            )}
+                            
+                            <div className="relative group">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteNotification(notification.id);
+                                }}
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
                             </div>
-                          )}
-                          
-                          <p className="text-xs text-gray-400 mt-1">
-                            {formatDate(notification.timestamp)}
-                          </p>
-                        </div>
-                        
-                        <div className="flex items-center gap-1 ml-2">
-                          {!notification.read && (
-                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                          )}
-                          
-                          <div className="relative group">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteNotification(notification.id);
-                              }}
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-200 bg-gray-50">
+        <div className="p-4 border-t border-gray-200 bg-gray-50 sticky bottom-0">
           <div className="flex items-center justify-between">
             <p className="text-sm text-gray-600">
               {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}

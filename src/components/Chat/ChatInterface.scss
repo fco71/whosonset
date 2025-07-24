@@ -530,6 +530,118 @@
             &:hover .delete-message-button {
               opacity: 1;
             }
+
+            // Message reactions
+            .message-reactions {
+              display: flex;
+              gap: 4px;
+              margin-top: 8px;
+              flex-wrap: wrap;
+
+              .reaction {
+                display: flex;
+                align-items: center;
+                gap: 2px;
+                background: rgba(0, 0, 0, 0.05);
+                border-radius: 12px;
+                padding: 2px 6px;
+                font-size: 12px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+
+                &:hover {
+                  background: rgba(0, 0, 0, 0.1);
+                  transform: scale(1.05);
+                }
+
+                .reaction-count {
+                  font-size: 10px;
+                  font-weight: 500;
+                  color: #6b7280;
+                }
+              }
+            }
+
+            // Message actions
+            .message-actions {
+              position: absolute;
+              top: 8px;
+              right: 8px;
+              display: flex;
+              gap: 4px;
+              opacity: 0;
+              transition: all 0.2s ease;
+              z-index: 10;
+
+              .reaction-button {
+                background: rgba(59, 130, 246, 0.1);
+                border: none;
+                color: #3b82f6;
+                cursor: pointer;
+                font-size: 14px;
+                padding: 4px 6px;
+                border-radius: 6px;
+                transition: all 0.2s ease;
+
+                &:hover {
+                  background: rgba(59, 130, 246, 0.2);
+                  transform: scale(1.1);
+                }
+              }
+
+              .delete-message-button {
+                position: static;
+                opacity: 1;
+                background: rgba(239, 68, 68, 0.1);
+                border: none;
+                color: #ef4444;
+                cursor: pointer;
+                font-size: 14px;
+                padding: 4px 6px;
+                border-radius: 6px;
+                transition: all 0.2s ease;
+
+                &:hover {
+                  background: rgba(239, 68, 68, 0.2);
+                  transform: scale(1.1);
+                }
+              }
+            }
+
+            &:hover .message-actions {
+              opacity: 1;
+            }
+
+            // Reaction picker
+            .reaction-picker {
+              position: absolute;
+              bottom: 100%;
+              right: 0;
+              background: white;
+              border: 1px solid #e5e7eb;
+              border-radius: 12px;
+              box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+              padding: 8px;
+              display: flex;
+              gap: 4px;
+              z-index: 20;
+              margin-bottom: 8px;
+
+              .reaction-option {
+                background: none;
+                border: none;
+                font-size: 18px;
+                padding: 6px;
+                border-radius: 6px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+
+                &:hover {
+                  background: #f3f4f6;
+                  transform: scale(1.2);
+                }
+              }
+            }
           }
 
           .typing-indicator-message {

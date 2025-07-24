@@ -45,6 +45,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [recordingTime, setRecordingTime] = useState(0);
   const [pendingAttachment, setPendingAttachment] = useState<File | null>(null);
   const [pendingAttachmentType, setPendingAttachmentType] = useState<string | null>(null);
+  const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null);
 
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -57,6 +58,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   // Emoji picker - memoized to prevent re-creation
   const emojis = useMemo(() => ['😀', '😂', '😍', '🤔', '👍', '❤️', '🎉', '🔥', '💯', '👏', '🙏', '😎', '🤝', '💪', '🚀', '⭐'], []);
+  
+  // Reaction emojis - commonly used reactions
+  const reactionEmojis = useMemo(() => ['👍', '❤️', '😂', '😮', '😢', '😡'], []);
 
   // Initialize chat
   useEffect(() => {
@@ -381,6 +385,21 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     setShowEmojiPicker(false);
   }, []);
 
+  // Reaction handling
+  const addReaction = useCallback(async (messageId: string, emoji: string) => {
+    try {
+      await MessagingService.addMessageReaction(messageId, currentUserId, currentUserName, emoji);
+      setShowReactionPicker(null);
+    } catch (error) {
+      console.error('Error adding reaction:', error);
+      setError('Failed to add reaction');
+    }
+  }, [currentUserId, currentUserName]);
+
+  const toggleReactionPicker = useCallback((messageId: string) => {
+    setShowReactionPicker(showReactionPicker === messageId ? null : messageId);
+  }, [showReactionPicker]);
+
   const sendMessage = useCallback(async () => {
     if (!selectedUser || sending || !messageInput.trim()) return;
     
@@ -508,32 +527,77 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               </span>
             )}
           </div>
+
+          {/* Reactions */}
+          {message.reactions && message.reactions.length > 0 && (
+            <div className="message-reactions">
+              {/* Group reactions by emoji */}
+              {Object.entries(
+                message.reactions.reduce((acc, reaction) => {
+                  acc[reaction.emoji] = (acc[reaction.emoji] || 0) + 1;
+                  return acc;
+                }, {} as Record<string, number>)
+              ).map(([emoji, count], index) => (
+                <span key={index} className="reaction">
+                  {emoji}
+                  <span className="reaction-count">{count}</span>
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Delete button for sender's messages */}
-        {isSent && !['deleted_text', 'deleted_image', 'deleted_audio', 'deleted_file'].includes(message.messageType) && (
+        {/* Action buttons */}
+        <div className="message-actions">
+          {/* Reaction button */}
           <button
-            title="Delete message"
-            className="delete-message-button"
-            onClick={async () => {
-              const confirmMessage = 'Delete this message for everyone?';
-              if (window.confirm(confirmMessage)) {
-                try {
-                  await MessagingService.deleteMessage(message.id, message.fileUrl, message.messageType);
-                  // The message will be updated via the listener, no need to manually update state
-                } catch (error) {
-                  console.error('Error deleting message:', error);
-                  setError('Failed to delete message. Please try again.');
-                }
-              }
-            }}
+            title="Add reaction"
+            className="reaction-button"
+            onClick={() => toggleReactionPicker(message.id)}
           >
-            🗑️
+            😀
           </button>
+
+          {/* Delete button for sender's messages */}
+          {isSent && !['deleted_text', 'deleted_image', 'deleted_audio', 'deleted_file'].includes(message.messageType) && (
+            <button
+              title="Delete message"
+              className="delete-message-button"
+              onClick={async () => {
+                const confirmMessage = 'Delete this message for everyone?';
+                if (window.confirm(confirmMessage)) {
+                  try {
+                    await MessagingService.deleteMessage(message.id, message.fileUrl, message.messageType);
+                    // The message will be updated via the listener, no need to manually update state
+                  } catch (error) {
+                    console.error('Error deleting message:', error);
+                    setError('Failed to delete message. Please try again.');
+                  }
+                }
+              }}
+            >
+              🗑️
+            </button>
+          )}
+        </div>
+
+        {/* Reaction picker */}
+        {showReactionPicker === message.id && (
+          <div className="reaction-picker">
+            {reactionEmojis.map((emoji, index) => (
+              <button
+                key={index}
+                onClick={() => addReaction(message.id, emoji)}
+                className="reaction-option"
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
         )}
       </div>
     );
-  }, [currentUserId, formatTime]);
+  }, [currentUserId, formatTime, showReactionPicker, reactionEmojis, addReaction, toggleReactionPicker]);
 
   if (loading) {
     return (

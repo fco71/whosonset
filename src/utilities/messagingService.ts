@@ -16,7 +16,8 @@ import {
   Timestamp,
   DocumentData,
   QueryDocumentSnapshot,
-  setDoc
+  setDoc,
+  increment
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { DirectMessage, ChatRoom, ChatSettings, MessageReaction, ChatPresence } from '../types/Chat';
@@ -139,10 +140,13 @@ export class MessagingService {
       await updateDoc(conversationRef, {
         lastMessage: content,
         lastMessageAt: serverTimestamp(),
-        unreadCount: 0 // Reset since sender just sent a message
+        unreadCount: increment(1)
       });
 
-      console.log('[MessagingService] Message sent successfully with ID:', docRef.id);
+      // Create notification for receiver
+      await this.createMessageNotification(receiverId, senderId, docRef.id, content, messageType);
+
+      console.log('[MessagingService] Message sent successfully:', docRef.id);
       return docRef.id;
     } catch (error) {
       console.error('[MessagingService] Error sending message:', error);
@@ -395,8 +399,72 @@ export class MessagingService {
   }
 
   static async addMessageReaction(messageId: string, userId: string, userName: string, emoji: string): Promise<void> {
-    // Offline fallback: do nothing to prevent permission errors
-    console.log('[MessagingService] Using offline fallback for addMessageReaction', { messageId, userId, userName, emoji });
+    try {
+      console.log('[MessagingService] Adding reaction:', { messageId, userId, userName, emoji });
+
+      // Find the message in conversations subcollection
+      const conversationsQuery = query(collection(db, 'conversations'));
+      const conversationsSnapshot = await getDocs(conversationsQuery);
+      
+      let messageFound = false;
+      let conversationId = '';
+
+      // Search through all conversations to find the message
+      for (const conversationDoc of conversationsSnapshot.docs) {
+        const messagesQuery = query(
+          collection(db, 'conversations', conversationDoc.id, 'messages'),
+          where('__name__', '==', messageId)
+        );
+        const messagesSnapshot = await getDocs(messagesQuery);
+        
+        if (!messagesSnapshot.empty) {
+          messageFound = true;
+          conversationId = conversationDoc.id;
+          break;
+        }
+      }
+
+      if (!messageFound) {
+        throw new Error('Message not found');
+      }
+
+      // Get current message data
+      const messageDoc = await getDoc(doc(db, 'conversations', conversationId, 'messages', messageId));
+      if (!messageDoc.exists()) {
+        throw new Error('Message not found');
+      }
+
+      const messageData = messageDoc.data();
+      const currentReactions = messageData.reactions || [];
+
+      // Check if user already reacted with this emoji
+      const existingReactionIndex = currentReactions.findIndex(
+        (reaction: any) => reaction.userId === userId && reaction.emoji === emoji
+      );
+
+      if (existingReactionIndex >= 0) {
+        // Remove existing reaction
+        currentReactions.splice(existingReactionIndex, 1);
+      } else {
+        // Add new reaction
+        currentReactions.push({
+          userId,
+          userName,
+          emoji,
+          timestamp: serverTimestamp()
+        });
+      }
+
+      // Update message with new reactions
+      await updateDoc(doc(db, 'conversations', conversationId, 'messages', messageId), {
+        reactions: currentReactions
+      });
+
+      console.log('[MessagingService] Reaction updated successfully');
+    } catch (error) {
+      console.error('[MessagingService] Error adding reaction:', error);
+      throw error;
+    }
   }
 
   // ===== TYPING INDICATORS =====
@@ -506,6 +574,63 @@ export class MessagingService {
     }
     
     this.conversationCache.set(userId1, conversations);
+  }
+
+  // ===== NOTIFICATION MANAGEMENT =====
+  
+  static async createMessageNotification(
+    receiverId: string, 
+    senderId: string, 
+    messageId: string, 
+    content: string, 
+    messageType: string
+  ): Promise<void> {
+    try {
+      console.log('[MessagingService] Creating message notification for:', receiverId);
+      
+      // Get sender info
+      const senderProfile = await this.getUserProfile(senderId);
+      const senderName = senderProfile?.displayName || 'Unknown User';
+      
+      // Create notification content based on message type
+      let notificationMessage = `New message from ${senderName}`;
+      if (messageType === 'image') {
+        notificationMessage = `${senderName} sent you a photo`;
+      } else if (messageType === 'voice') {
+        notificationMessage = `${senderName} sent you a voice message`;
+      } else if (messageType === 'file') {
+        notificationMessage = `${senderName} sent you a file`;
+      } else if (content.length > 50) {
+        notificationMessage = `${senderName}: ${content.substring(0, 50)}...`;
+      } else {
+        notificationMessage = `${senderName}: ${content}`;
+      }
+      
+      // Create notification document
+      const notificationData = {
+        type: 'message',
+        message: notificationMessage,
+        timestamp: serverTimestamp(),
+        read: false,
+        userId: receiverId,
+        senderId: senderId,
+        messageId: messageId,
+        conversationId: await this.getConversationId(senderId, receiverId),
+        extra: {
+          content: content,
+          messageType: messageType
+        }
+      };
+      
+      // Add to user's notifications
+      const notificationsRef = collection(db, 'users', receiverId, 'notifications');
+      await addDoc(notificationsRef, notificationData);
+      
+      console.log('[MessagingService] Message notification created successfully');
+    } catch (error) {
+      console.error('[MessagingService] Error creating message notification:', error);
+      // Don't throw error - notification failure shouldn't break message sending
+    }
   }
 
   // ===== CLEANUP =====
@@ -636,25 +761,66 @@ export class MessagingService {
     try {
       console.log('[MessagingService] Deleting message:', { messageId, fileUrl, messageType, deletedByUserId });
 
-      // Get the message to check if it's a sender or receiver deletion
-      const messageDoc = await getDoc(doc(db, 'directMessages', messageId));
-      if (!messageDoc.exists()) {
+      // Find the message in conversations subcollection
+      // We need to search through all conversations to find this message
+      const conversationsQuery = query(collection(db, 'conversations'));
+      const conversationsSnapshot = await getDocs(conversationsQuery);
+      
+      let messageFound = false;
+      let conversationId = '';
+      let messageData: any = null;
+
+      // Search through all conversations to find the message
+      for (const conversationDoc of conversationsSnapshot.docs) {
+        const messagesQuery = query(
+          collection(db, 'conversations', conversationDoc.id, 'messages'),
+          where('__name__', '==', messageId)
+        );
+        const messagesSnapshot = await getDocs(messagesQuery);
+        
+        if (!messagesSnapshot.empty) {
+          messageFound = true;
+          conversationId = conversationDoc.id;
+          messageData = messagesSnapshot.docs[0].data();
+          break;
+        }
+      }
+
+      if (!messageFound) {
         console.warn('[MessagingService] Message not found, may have been already deleted');
         return;
       }
 
-      const messageData = messageDoc.data();
       const isSenderDeletion = deletedByUserId === messageData.senderId;
 
       if (isSenderDeletion) {
-        // Sender deletion: Delete for everyone
-        await deleteDoc(doc(db, 'directMessages', messageId));
-        console.log('[MessagingService] Message deleted from Firestore for everyone');
+        // Sender deletion: Update message to show as deleted
+        let placeholder = '[Attachment deleted]';
+        let deletedType = 'deleted_file';
+        
+        if (messageType === 'image') {
+          placeholder = '[Image deleted]';
+          deletedType = 'deleted_image';
+        } else if (messageType === 'voice') {
+          placeholder = '[Audio deleted]';
+          deletedType = 'deleted_audio';
+        } else if (messageType === 'text') {
+          placeholder = '[Message deleted]';
+          deletedType = 'deleted_text';
+        }
+
+        await updateDoc(doc(db, 'conversations', conversationId, 'messages', messageId), {
+          content: placeholder,
+          fileUrl: null,
+          messageType: deletedType,
+          deletedAt: serverTimestamp()
+        });
 
         // If there's a file URL and it's not a placeholder, delete from Firebase Storage
         if (fileUrl && 
             !fileUrl.startsWith('data:') && 
             !fileUrl.startsWith('FILE_TOO_LARGE:') &&
+            !fileUrl.startsWith('UPLOAD_FAILED:') &&
             fileUrl.includes('firebase')) {
           try {
             const fileRef = ref(storage, fileUrl);
@@ -665,9 +831,11 @@ export class MessagingService {
             // Don't throw error if file deletion fails, message deletion is more important
           }
         }
+
+        console.log('[MessagingService] Message marked as deleted for everyone');
       } else {
         // Receiver deletion: Mark as deleted for receiver but keep for sender
-        await updateDoc(doc(db, 'directMessages', messageId), {
+        await updateDoc(doc(db, 'conversations', conversationId, 'messages', messageId), {
           deletedForReceiver: true,
           deletedAt: serverTimestamp()
         });
