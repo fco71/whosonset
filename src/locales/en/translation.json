@@ -1,0 +1,21 @@
+{
+  "nav": {
+    "home": "Home",
+    "crew": "Crew",
+    "jobs": "Jobs",
+    "projects": "Projects",
+    "collaboration": "Collaboration",
+    "social": "Social",
+    "favorites": "Favorites",
+    "resumeBuilder": "Resume Builder",
+    "myPostedJobs": "My Posted Jobs",
+    "jobAnalytics": "Job Analytics",
+    "postNewJob": "Post New Job",
+    "myApplications": "My Applications",
+    "postedJobs": "Posted Jobs",
+    "settings": "Settings",
+    "signIn": "Sign In",
+    "getStarted": "Get Started",
+    "signOut": "Sign Out"
+  }
+} 

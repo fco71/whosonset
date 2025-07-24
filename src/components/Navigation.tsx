@@ -1,10 +1,11 @@
 // src/components/Navigation.tsx
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, User, ChevronDown, Search, Bell, Settings } from 'lucide-react';
+import { Menu, X, User, ChevronDown, Search, Bell, Settings, Globe } from 'lucide-react';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from './ui/DropdownMenu';
 import { useNotifications } from '../hooks/useNotifications';
 import NotificationCenter from './NotificationCenter';
+import { useTranslation } from 'react-i18next';
 
 interface NavigationProps {
     authUser: any;
@@ -19,6 +20,7 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
     const [activePath, setActivePath] = useState('/');
     const [isScrolled, setIsScrolled] = useState(false);
     const [showNotificationCenter, setShowNotificationCenter] = useState(false);
+    const { t, i18n } = useTranslation();
 
     useEffect(() => {
         setActivePath(location.pathname);
@@ -56,27 +58,32 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
     };
 
     const navigationLinks = [
-        { to: '/', label: 'Home' },
-        { to: '/crew', label: 'Crew' },
-        { to: '/jobs', label: 'Jobs' },
-        { to: '/my-projects', label: 'Projects' },
-        { to: '/collaboration', label: 'Collaboration' },
+        { to: '/', label: t('nav.home') },
+        { to: '/crew', label: t('nav.crew') },
+        { to: '/jobs', label: t('nav.jobs') },
+        { to: '/my-projects', label: t('nav.projects') },
+        { to: '/collaboration', label: t('nav.collaboration') },
     ];
 
     const authenticatedLinks = [
-        { to: '/social', label: 'Social' },
-        { to: '/favorites', label: 'Favorites' },
-        { to: '/edit-profile', label: 'Resume Builder' },
+        { to: '/social', label: t('nav.social') },
+        { to: '/favorites', label: t('nav.favorites') },
+        { to: '/edit-profile', label: t('nav.resumeBuilder') },
     ];
 
     const jobManagementLinks = [
-        { to: '/jobs/posted', label: 'My Posted Jobs' },
-        { to: '/jobs/analytics', label: 'Job Analytics' },
-        { to: '/post-job', label: 'Post New Job' },
+        { to: '/jobs/posted', label: t('nav.myPostedJobs') },
+        { to: '/jobs/analytics', label: t('nav.jobAnalytics') },
+        { to: '/post-job', label: t('nav.postNewJob') },
     ];
 
     const { notifications, loading, markAsRead } = useNotifications();
     const unreadCount = notifications.filter(n => !n.read).length;
+
+    const languages = [
+        { code: 'en', label: 'EN' },
+        { code: 'es', label: 'ES' },
+    ];
 
     return (
         <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
@@ -119,7 +126,7 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                                             onClick={closeAllMenus}
                                             style={{ zIndex: 2, position: 'relative' }}
                                         >
-                                            <span>Jobs</span>
+                                            <span>{t('nav.jobs')}</span>
                                             <svg className="w-4 h-4 ml-1 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                             </svg>
@@ -132,7 +139,7 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                                                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900"
                                                     onClick={closeAllMenus}
                                                 >
-                                                    Browse Jobs
+                                                    {t('nav.jobs')}
                                                 </Link>
                                                 {authUser && (
                                                     <>
@@ -141,21 +148,21 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                                                             className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900"
                                                             onClick={closeAllMenus}
                                                         >
-                                                            My Posted Jobs
+                                                            {t('nav.myPostedJobs')}
                                                         </Link>
                                                         <Link 
                                                             to="/jobs/analytics" 
                                                             className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900"
                                                             onClick={closeAllMenus}
                                                         >
-                                                            Job Analytics
+                                                            {t('nav.jobAnalytics')}
                                                         </Link>
                                                         <Link 
                                                             to="/post-job" 
                                                             className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900"
                                                             onClick={closeAllMenus}
                                                         >
-                                                            Post New Job
+                                                            {t('nav.postNewJob')}
                                                         </Link>
                                                     </>
                                                 )}
@@ -217,6 +224,30 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
 
                     {/* Right side actions */}
                     <div className="flex items-center space-x-3">
+                        {/* Language Switcher */}
+                        <div className="relative">
+                            <button
+                                className="flex items-center gap-1 px-2 py-1 rounded-lg text-gray-600 hover:text-blue-700 hover:bg-blue-50/60 transition-colors text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                aria-label="Change language"
+                                tabIndex={0}
+                            >
+                                <Globe size={16} className="mr-1 text-gray-400" />
+                                {languages.map((lang, idx) => (
+                                    <span
+                                        key={lang.code}
+                                        onClick={e => {
+                                            e.stopPropagation();
+                                            i18n.changeLanguage(lang.code);
+                                        }}
+                                        className={`cursor-pointer px-1 ${i18n.language === lang.code ? 'text-blue-700 font-bold underline' : 'text-gray-500 hover:text-blue-600'}`}
+                                        style={{ transition: 'color 0.2s' }}
+                                    >
+                                        {lang.label}
+                                        {idx < languages.length - 1 && <span className="mx-0.5 text-gray-300">/</span>}
+                                    </span>
+                                ))}
+                            </button>
+                        </div>
                         {authUser ? (
                             <>
                                 {/* Quick Actions */}
@@ -264,14 +295,14 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                                                     className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors"
                                                     onClick={closeAllMenus}
                                                 >
-                                                    📝 My Applications
+                                                    📝 {t('nav.myApplications')}
                                                 </Link>
                                                 <Link 
                                                     to="/jobs/posted" 
                                                     className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors"
                                                     onClick={closeAllMenus}
                                                 >
-                                                    💼 Posted Jobs
+                                                    💼 {t('nav.postedJobs')}
                                                 </Link>
                                                 <Link 
                                                     to="/settings" 
@@ -279,7 +310,7 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                                                     onClick={closeAllMenus}
                                                 >
                                                     <Settings size={16} className="mr-2" />
-                                                    Settings
+                                                    {t('nav.settings')}
                                                 </Link>
                                             </div>
                                             
@@ -291,7 +322,7 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                                                     }}
                                                     className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
                                                 >
-                                                    Sign Out
+                                                    {t('nav.signOut')}
                                                 </button>
                                             </div>
                                         </div>
@@ -304,13 +335,13 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                                     to="/login" 
                                     className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
                                 >
-                                    Sign In
+                                    {t('nav.signIn')}
                                 </Link>
                                 <Link 
                                     to="/register" 
                                     className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-sm hover:shadow-md"
                                 >
-                                    Get Started
+                                    {t('nav.getStarted')}
                                 </Link>
                             </div>
                         )}
@@ -381,7 +412,7 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                                             }`}
                                             onClick={closeAllMenus}
                                         >
-                                            📝 My Applications
+                                            📝 {t('nav.myApplications')}
                                         </Link>
                                         <Link
                                             to="/jobs/posted"
@@ -392,7 +423,7 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                                             }`}
                                             onClick={closeAllMenus}
                                         >
-                                            💼 Posted Jobs
+                                            💼 {t('nav.postedJobs')}
                                         </Link>
                                     </div>
                                 </div>
@@ -408,14 +439,14 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                                         className="block w-full px-4 py-3 text-center font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                                         onClick={closeAllMenus}
                                     >
-                                        Sign In
+                                        {t('nav.signIn')}
                                     </Link>
                                     <Link
                                         to="/register"
                                         className="block w-full px-4 py-3 text-center bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-sm"
                                         onClick={closeAllMenus}
                                     >
-                                        Get Started
+                                        {t('nav.getStarted')}
                                     </Link>
                                 </>
                             ) : (
@@ -431,7 +462,7 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                                         }}
                                         className="block w-full px-4 py-3 text-center font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                     >
-                                        Sign Out
+                                        {t('nav.signOut')}
                                     </button>
                                 </>
                             )}

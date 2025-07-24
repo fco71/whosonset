@@ -3,6 +3,7 @@
 // import './utilities/consoleFilter';
 
 import './styles/globals.css';
+import './i18n';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter as Router } from 'react-router-dom';

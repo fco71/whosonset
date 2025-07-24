@@ -1,0 +1,21 @@
+{
+  "nav": {
+    "home": "Inicio",
+    "crew": "Equipo",
+    "jobs": "Trabajos",
+    "projects": "Proyectos",
+    "collaboration": "Colaboración",
+    "social": "Social",
+    "favorites": "Favoritos",
+    "resumeBuilder": "Creador de CV",
+    "myPostedJobs": "Mis Trabajos Publicados",
+    "jobAnalytics": "Analítica de Trabajos",
+    "postNewJob": "Publicar Nuevo Trabajo",
+    "myApplications": "Mis Solicitudes",
+    "postedJobs": "Trabajos Publicados",
+    "settings": "Configuración",
+    "signIn": "Iniciar Sesión",
+    "getStarted": "Comenzar",
+    "signOut": "Cerrar Sesión"
+  }
+} 
