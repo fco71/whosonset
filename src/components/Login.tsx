@@ -9,8 +9,10 @@ import { auth } from '../firebase';
 import { Form, FormInput, FormFieldGroup } from './ui/Form';
 import { Button } from './ui/Button';
 import { Eye, EyeOff, Mail, Lock, AlertCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const Login: React.FC = () => {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -28,7 +30,7 @@ const Login: React.FC = () => {
     const trimmedPassword = password.trim();
 
     if (!trimmedEmail || !trimmedPassword) {
-      setError('Please enter both email and password.');
+      setError(t('auth.errors.emailPasswordRequired'));
       setLoading(false);
       return;
     }
@@ -40,10 +42,10 @@ const Login: React.FC = () => {
       console.error('Login error:', error);
       setError(
         error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password'
-          ? 'Invalid email or password.'
+          ? t('auth.errors.invalidCredentials')
           : error.code === 'auth/too-many-requests'
-          ? 'Too many failed attempts. Please try again later.'
-          : 'An error occurred during login. Please try again.'
+          ? t('auth.errors.tooManyRequests')
+          : t('auth.errors.loginError')
       );
     } finally {
       setLoading(false);
@@ -55,8 +57,8 @@ const Login: React.FC = () => {
       <div className="max-w-md w-full space-y-12">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome back</h1>
-          <p className="text-gray-600">Sign in to your account to continue</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('auth.login.title')}</h1>
+          <p className="text-gray-600">{t('auth.login.subtitle')}</p>
         </div>
 
         {/* Login Form */}
@@ -89,11 +91,11 @@ const Login: React.FC = () => {
 
             <FormFieldGroup>
               <FormInput
-                label="Email Address"
+                label={t('auth.login.email')}
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
+                placeholder={t('auth.login.emailPlaceholder')}
                 size="lg"
                 variant="filled"
                 required
@@ -102,11 +104,11 @@ const Login: React.FC = () => {
 
               <div className="relative">
                 <FormInput
-                  label="Password"
+                  label={t('auth.login.password')}
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
+                  placeholder={t('auth.login.passwordPlaceholder')}
                   size="lg"
                   variant="filled"
                   rightIcon={
@@ -114,7 +116,7 @@ const Login: React.FC = () => {
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       className="text-gray-400 hover:text-gray-600 transition-colors"
-                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      aria-label={showPassword ? t('auth.login.hidePassword') : t('auth.login.showPassword')}
                     >
                       {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
@@ -134,10 +136,10 @@ const Login: React.FC = () => {
               {loading ? (
                 <div className="flex items-center">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Signing in...
+                  {t('auth.login.signingIn')}
                 </div>
               ) : (
-                'Sign In'
+                t('auth.login.signIn')
               )}
             </Button>
           </Form>
@@ -145,12 +147,12 @@ const Login: React.FC = () => {
           {/* Additional Links */}
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
-              Don't have an account?{' '}
+              {t('auth.login.noAccount')}{' '}
               <Link
                 to="/register"
                 className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
               >
-                Create one here
+                {t('auth.login.createAccount')}
               </Link>
             </p>
           </div>
@@ -159,13 +161,13 @@ const Login: React.FC = () => {
         {/* Footer */}
         <div className="text-center mt-10">
           <p className="text-xs text-gray-500">
-            By signing in, you agree to our{' '}
+            {t('auth.login.termsPrivacy')}{' '}
             <Link to="/terms" className="text-blue-600 hover:text-blue-500">
-              Terms of Service
+              {t('auth.login.termsService')}
             </Link>{' '}
-            and{' '}
+            {t('auth.login.and')}{' '}
             <Link to="/privacy" className="text-blue-600 hover:text-blue-500">
-              Privacy Policy
+              {t('auth.login.privacyPolicy')}
             </Link>
           </p>
         </div>

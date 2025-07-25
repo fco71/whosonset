@@ -4,6 +4,7 @@ import { Button } from '../components/ui/Button';
 import { getJobPostings, createJobPosting, JobPosting } from '../services/api/jobService';
 import { getFirestore, collection, query, getDocs, where } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 import { 
   Search, 
   Filter, 
@@ -64,6 +65,7 @@ const JobCard: React.FC<JobCardProps> = ({ job, currentUserId, onEdit }) => {
   const [isSaved, setIsSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const { currentUser } = useAuth();
+  const { t } = useTranslation();
   
   // Check if job is saved on component mount
   useEffect(() => {
@@ -86,12 +88,12 @@ const JobCard: React.FC<JobCardProps> = ({ job, currentUserId, onEdit }) => {
     e.stopPropagation();
     
     if (!currentUser) {
-      toast.error('Please log in to save jobs');
+      toast.error(t('auth.errors.loginRequired', 'Please log in to save jobs'));
       return;
     }
     
     if (!job.id) {
-      toast.error('Invalid job data');
+      toast.error(t('jobs.invalidJobData', 'Invalid job data'));
       return;
     }
     
@@ -105,17 +107,17 @@ const JobCard: React.FC<JobCardProps> = ({ job, currentUserId, onEdit }) => {
         if (savedJobId) {
           await SavedJobsService.removeSavedJob(savedJobId);
           setIsSaved(false);
-          toast.success('Job removed from saved');
+          toast.success(t('jobs.jobRemoved'));
         }
       } else {
         // Add to saved
         await SavedJobsService.saveJob(currentUser.uid, job.id);
         setIsSaved(true);
-        toast.success('Job saved successfully');
+        toast.success(t('jobs.jobSaved'));
       }
     } catch (error) {
       console.error('Error saving job:', error);
-      toast.error('Failed to save job. Please try again.');
+      toast.error(t('jobs.failedToSave'));
     } finally {
       setIsSaving(false);
     }
@@ -134,12 +136,12 @@ const JobCard: React.FC<JobCardProps> = ({ job, currentUserId, onEdit }) => {
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
             <CardTitle className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors mb-2">
-              {job.title || 'Untitled Position'}
+              {job.title || t('jobs.untitledPosition')}
             </CardTitle>
             <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
               <div className="flex items-center gap-1">
                 <Building className="w-4 h-4" />
-                <span>{job.department || 'Various'}</span>
+                <span>{job.department || t('jobs.various')}</span>
               </div>
               <div className="flex items-center gap-1">
                 <MapPin className="w-4 h-4" />
@@ -148,7 +150,7 @@ const JobCard: React.FC<JobCardProps> = ({ job, currentUserId, onEdit }) => {
               {job.isRemote && (
                 <div className="flex items-center gap-1 text-blue-600">
                   <Globe className="w-4 h-4" />
-                  <span>Remote</span>
+                  <span>{t('jobs.remote')}</span>
                 </div>
               )}
             </div>
@@ -165,7 +167,7 @@ const JobCard: React.FC<JobCardProps> = ({ job, currentUserId, onEdit }) => {
                     ? "text-blue-600 hover:text-blue-700" 
                     : "text-gray-400 hover:text-blue-600"
                 }`}
-                title={isSaved ? 'Remove from saved jobs' : 'Save job for later'}
+                title={isSaved ? t('jobs.removeFromSaved') : t('jobs.saveJob')}
                 onClick={handleSave}
                 disabled={isSaving}
               >
@@ -183,7 +185,7 @@ const JobCard: React.FC<JobCardProps> = ({ job, currentUserId, onEdit }) => {
             {currentUserId && job.postedById === currentUserId && (
               <button
                 className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                title="Edit Job"
+                title={t('jobs.editJob')}
                 onClick={e => { 
                   e.stopPropagation(); 
                   onEdit ? onEdit(job) : navigate(`/edit-job/${job.id}`); 
@@ -204,13 +206,13 @@ const JobCard: React.FC<JobCardProps> = ({ job, currentUserId, onEdit }) => {
             </span>
           )}
           {hasValue(job.experienceLevel) && (
-            <span className="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full">
-              {job.experienceLevel} level
+                          <span className="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full">
+              {job.experienceLevel} {t('jobs.level')}
             </span>
           )}
                      {job.isPaid && (
              <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
-               Paid
+               {t('jobs.paid')}
              </span>
            )}
         </div>
@@ -233,12 +235,12 @@ const JobCard: React.FC<JobCardProps> = ({ job, currentUserId, onEdit }) => {
             )}
             <div className="flex items-center gap-1">
               <Calendar className="w-4 h-4" />
-              <span>Posted {formatDate(job.createdAt)}</span>
+              <span>{t('jobs.posted')} {formatDate(job.createdAt)}</span>
             </div>
           </div>
           
           <div className={`flex items-center gap-1 text-blue-600 text-sm font-medium transition-transform ${isHovered ? 'translate-x-1' : ''}`}>
-            <span>View Details</span>
+            <span>{t('jobs.viewDetails')}</span>
             <ArrowRight className="w-4 h-4" />
           </div>
         </div>
@@ -261,6 +263,7 @@ export default function JobsPage() {
   
   const auth = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const departments = [
     'Camera', 'Sound', 'Lighting', 'Art', 'Costume', 'Makeup', 'Hair',
@@ -277,10 +280,10 @@ export default function JobsPage() {
   ];
 
      const stats = [
-     { icon: <Briefcase className="w-5 h-5" />, label: 'Active Jobs', value: jobs.length },
-     { icon: <Building className="w-5 h-5" />, label: 'Companies', value: new Set(jobs.map(j => j.contactName || j.projectName)).size },
-     { icon: <MapPin className="w-5 h-5" />, label: 'Locations', value: new Set(jobs.map(j => j.location)).size },
-     { icon: <Users className="w-5 h-5" />, label: 'Remote Jobs', value: jobs.filter(j => j.isRemote).length }
+     { icon: <Briefcase className="w-5 h-5" />, label: t('jobs.activeJobs'), value: jobs.length },
+     { icon: <Building className="w-5 h-5" />, label: t('jobs.companies'), value: new Set(jobs.map(j => j.contactName || j.projectName)).size },
+     { icon: <MapPin className="w-5 h-5" />, label: t('jobs.locations'), value: new Set(jobs.map(j => j.location)).size },
+     { icon: <Users className="w-5 h-5" />, label: t('jobs.remoteJobs'), value: jobs.filter(j => j.isRemote).length }
    ];
 
   useEffect(() => {
@@ -317,7 +320,7 @@ export default function JobsPage() {
       
     } catch (err) {
       console.error('Error loading jobs:', err);
-      setError('Failed to load jobs. Please try again.');
+      setError(t('jobs.failedToSave'));
     } finally {
       setLoading(false);
     }
@@ -402,10 +405,10 @@ export default function JobsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="text-center mb-12">
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-              Find Your Next <span className="text-blue-600">Film Industry</span> Role
+              {t('jobs.heroTitle', 'Find Your Next Film Industry Role')}
             </h1>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Discover opportunities with leading productions, connect with industry professionals, and advance your career in film and television.
+              {t('jobs.heroSubtitle', 'Discover opportunities with leading productions, connect with industry professionals, and advance your career in film and television.')}
             </p>
           </div>
 
@@ -430,7 +433,7 @@ export default function JobsPage() {
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                   <input
                     type="text"
-                    placeholder="Search jobs by title, company, or keywords..."
+                    placeholder={t('jobs.searchPlaceholder', 'Search jobs by title, company, or keywords...')}
                     className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -443,7 +446,7 @@ export default function JobsPage() {
                     className="flex items-center gap-2"
                   >
                     <Filter className="w-4 h-4" />
-                    Filters
+                    {t('jobs.filters')}
                     {hasActiveFilters && (
                       <span className="bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
                         {[searchQuery, selectedDepartment, selectedLocation, selectedJobType, remoteOnly].filter(Boolean).length}

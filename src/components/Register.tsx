@@ -6,9 +6,11 @@ import { useAuth } from '../contexts/AuthContext';
 import { Form, FormInput, FormFieldGroup } from './ui/Form';
 import { Button } from './ui/Button';
 import { Eye, EyeOff, Mail, Lock, User, AlertCircle, CheckCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const Register: React.FC = () => {
   const { signup } = useAuth();
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -30,19 +32,19 @@ const Register: React.FC = () => {
 
   const validateForm = () => {
     if (!formData.firstName.trim() || !formData.lastName.trim()) {
-      setError('First name and last name are required');
+      setError(t('auth.errors.nameRequired'));
       return false;
     }
     if (!formData.email.trim()) {
-      setError('Email is required');
+      setError(t('auth.errors.emailRequired'));
       return false;
     }
     if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long');
+      setError(t('auth.errors.passwordLength'));
       return false;
     }
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+      setError(t('auth.errors.passwordMatch'));
       return false;
     }
     return true;
@@ -73,7 +75,7 @@ const Register: React.FC = () => {
       );
 
       console.log('[Register] Signup completed successfully');
-      setSuccess('Account created successfully! Redirecting...');
+      setSuccess(t('auth.errors.accountCreated'));
       setTimeout(() => {
         navigate('/');
       }, 1500);
@@ -81,12 +83,12 @@ const Register: React.FC = () => {
       console.error('[Register] Registration error:', error);
       setError(
         error.code === 'auth/email-already-in-use'
-          ? 'An account with this email already exists'
+          ? t('auth.errors.emailInUse')
           : error.code === 'auth/weak-password'
-          ? 'Password is too weak. Please choose a stronger password.'
+          ? t('auth.errors.weakPassword')
           : error.code === 'auth/invalid-email'
-          ? 'Please enter a valid email address'
-          : 'An error occurred during registration. Please try again.'
+          ? t('auth.errors.invalidEmail')
+          : t('auth.errors.registrationError')
       );
     } finally {
       setLoading(false);
@@ -98,8 +100,8 @@ const Register: React.FC = () => {
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Create your account</h1>
-          <p className="text-gray-600">Join whosonset to connect with the film industry</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('auth.register.title')}</h1>
+          <p className="text-gray-600">{t('auth.register.subtitle')}</p>
         </div>
 
         {/* Registration Form */}
@@ -121,22 +123,22 @@ const Register: React.FC = () => {
               </div>
             )}
 
-            <FormFieldGroup title="Personal Information">
+            <FormFieldGroup title={t('auth.register.personalInfo')}>
               <div className="grid grid-cols-2 gap-4">
                 <FormInput
-                  label="First Name"
+                  label={t('auth.register.firstName')}
                   value={formData.firstName}
                   onChange={(e) => handleInputChange('firstName', e.target.value)}
-                  placeholder="John"
+                  placeholder={t('auth.register.firstNamePlaceholder')}
                   leftIcon={<User size={16} />}
                   required
                   autoComplete="given-name"
                 />
                 <FormInput
-                  label="Last Name"
+                  label={t('auth.register.lastName')}
                   value={formData.lastName}
                   onChange={(e) => handleInputChange('lastName', e.target.value)}
-                  placeholder="Doe"
+                  placeholder={t('auth.register.lastNamePlaceholder')}
                   leftIcon={<User size={16} />}
                   required
                   autoComplete="family-name"
@@ -144,13 +146,13 @@ const Register: React.FC = () => {
               </div>
             </FormFieldGroup>
 
-            <FormFieldGroup title="Account Details">
+            <FormFieldGroup title={t('auth.register.accountDetails')}>
               <FormInput
-                label="Email Address"
+                label={t('auth.register.email')}
                 type="email"
                 value={formData.email}
                 onChange={(e) => handleInputChange('email', e.target.value)}
-                placeholder="john.doe@example.com"
+                placeholder={t('auth.register.emailPlaceholder')}
                 leftIcon={<Mail size={16} />}
                 required
                 autoComplete="email"
@@ -158,42 +160,42 @@ const Register: React.FC = () => {
 
               <div className="relative">
                 <FormInput
-                  label="Password"
+                  label={t('auth.register.password')}
                   type={showPassword ? 'text' : 'password'}
                   value={formData.password}
                   onChange={(e) => handleInputChange('password', e.target.value)}
-                  placeholder="Create a strong password"
+                  placeholder={t('auth.register.passwordPlaceholder')}
                   leftIcon={<Lock size={16} />}
                   rightIcon={
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       className="text-gray-400 hover:text-gray-600 transition-colors"
-                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      aria-label={showPassword ? t('auth.login.hidePassword') : t('auth.login.showPassword')}
                     >
                       {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   }
                   required
                   autoComplete="new-password"
-                  helperText="Must be at least 6 characters long"
+                  helperText={t('auth.register.passwordHelper')}
                 />
               </div>
 
               <div className="relative">
                 <FormInput
-                  label="Confirm Password"
+                  label={t('auth.register.confirmPassword')}
                   type={showConfirmPassword ? 'text' : 'password'}
                   value={formData.confirmPassword}
                   onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                  placeholder="Confirm your password"
+                  placeholder={t('auth.register.confirmPasswordPlaceholder')}
                   leftIcon={<Lock size={16} />}
                   rightIcon={
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                       className="text-gray-400 hover:text-gray-600 transition-colors"
-                      aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                      aria-label={showConfirmPassword ? t('auth.login.hidePassword') : t('auth.login.showPassword')}
                     >
                       {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
@@ -213,10 +215,10 @@ const Register: React.FC = () => {
               {loading ? (
                 <div className="flex items-center">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Creating account...
+                  {t('auth.register.creatingAccount')}
                 </div>
               ) : (
-                'Create Account'
+                t('auth.register.createAccount')
               )}
             </Button>
           </Form>
@@ -224,12 +226,12 @@ const Register: React.FC = () => {
           {/* Additional Links */}
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
-              Already have an account?{' '}
+              {t('auth.register.haveAccount')}{' '}
               <Link
                 to="/login"
                 className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
               >
-                Sign in here
+                {t('auth.register.signInHere')}
               </Link>
             </p>
           </div>
@@ -238,13 +240,13 @@ const Register: React.FC = () => {
         {/* Footer */}
         <div className="text-center">
           <p className="text-xs text-gray-500">
-            By creating an account, you agree to our{' '}
+            {t('auth.register.termsPrivacy')}{' '}
             <Link to="/terms" className="text-blue-600 hover:text-blue-500">
-              Terms of Service
+              {t('auth.login.termsService')}
             </Link>{' '}
-            and{' '}
+            {t('auth.login.and')}{' '}
             <Link to="/privacy" className="text-blue-600 hover:text-blue-500">
-              Privacy Policy
+              {t('auth.login.privacyPolicy')}
             </Link>
           </p>
         </div>

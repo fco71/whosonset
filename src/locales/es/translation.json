@@ -2,87 +2,248 @@
   "nav": {
     "home": "Inicio",
     "crew": "Equipo",
-    "jobs": "Trabajos",
+    "jobs": "Trabajos", 
     "projects": "Proyectos",
     "collaboration": "Colaboración",
     "social": "Social",
     "favorites": "Favoritos",
-    "resumeBuilder": "Creador de CV",
+    "resumeBuilder": "Constructor de CV",
     "myPostedJobs": "Mis Trabajos Publicados",
-    "jobAnalytics": "Analítica de Trabajos",
+    "jobAnalytics": "Analíticas de Trabajos",
     "postNewJob": "Publicar Nuevo Trabajo",
-    "myApplications": "Mis Solicitudes",
+    "myApplications": "Mis Aplicaciones",
     "postedJobs": "Trabajos Publicados",
     "settings": "Configuración",
+    "signOut": "Cerrar Sesión",
     "signIn": "Iniciar Sesión",
-    "getStarted": "Comenzar",
-    "signOut": "Cerrar Sesión"
+    "getStarted": "Comenzar"
   },
   "home": {
     "loading": "Cargando...",
-    "hero": {
-      "banner": "El Futuro del Networking en la Industria Cinematográfica",
-      "title1": "Conéctate con la",
-      "title2": "Industria Cinematográfica",
-      "subtitle": "La plataforma principal donde los profesionales del cine muestran proyectos, descubren talento y construyen carreras que dan forma al futuro del entretenimiento.",
-      "ctaPrimary": "Comienza Gratis",
-      "ctaSecondary": "Explorar Trabajos"
-    },
     "stats": {
       "activeProfessionals": "Profesionales Activos",
-      "projectsCompleted": "Proyectos Completados",
+      "projectsCompleted": "Proyectos Completados", 
       "successRate": "Tasa de Éxito",
       "countries": "Países"
     },
+    "hero": {
+      "banner": "La Plataforma Premier de Networking de la Industria Cinematográfica",
+      "title1": "Conecta Profesionales",
+      "title2": "del Cine",
+      "subtitle": "Únete a miles de cineastas, miembros del equipo y profesionales de la industria que se conectan, colaboran y crean proyectos increíbles juntos.",
+      "ctaPrimary": "Comienza Tu Viaje",
+      "ctaSecondary": "Explorar Trabajos"
+    },
     "features": {
-      "title": "Todo lo que Necesitas para Triunfar",
-      "subtitle": "Nuestra plataforma integral proporciona todas las herramientas y conexiones que necesitas para prosperar en la industria cinematográfica.",
+      "title": "Todo lo que Necesitas para Tener Éxito",
+      "subtitle": "Desde el escaparate de proyectos hasta la colaboración en tiempo real, proporcionamos todas las herramientas que necesitas para avanzar en tu carrera cinematográfica.",
       "projectShowcase": {
-        "title": "Exhibición de Proyectos",
-        "desc": "Muestra tus proyectos cinematográficos con portafolios profesionales e información detallada de producción."
+        "title": "Escaparate de Proyectos",
+        "desc": "Muestra tu mejor trabajo y conecta con profesionales de la industria"
       },
       "crewNetworking": {
-        "title": "Red de Equipo",
-        "desc": "Conéctate con profesionales talentosos de todos los departamentos de la industria cinematográfica."
+        "title": "Red de Equipo", 
+        "desc": "Construye conexiones significativas con cineastas talentosos de todo el mundo"
       },
       "jobBoard": {
-        "title": "Bolsa de Trabajo",
-        "desc": "Descubre oportunidades emocionantes y encuentra el rol perfecto para tu próximo proyecto."
+        "title": "Tablero de Trabajos",
+        "desc": "Encuentra y publica trabajos de producción cinematográfica en todos los departamentos"
       },
       "globalReach": {
         "title": "Alcance Global",
-        "desc": "Accede a oportunidades en todo el mundo y conéctate con producciones internacionales."
+        "desc": "Conecta con profesionales de todo el mundo"
       },
       "industryRecognition": {
-        "title": "Reconocimiento en la Industria",
-        "desc": "Construye tu reputación con créditos verificados y avales profesionales."
+        "title": "Reconocimiento de la Industria",
+        "desc": "Muestra tus premios y logros para destacar"
       },
       "realTimeCollab": {
         "title": "Colaboración en Tiempo Real",
-        "desc": "Colabora sin problemas con los miembros del equipo usando nuestras herramientas integradas."
+        "desc": "Trabaja juntos sin problemas con herramientas de comunicación integradas"
       }
     },
     "howItWorks": {
       "title": "Cómo Funciona",
-      "subtitle": "Comienza en tres simples pasos y desbloquea tu potencial en la industria cinematográfica.",
+      "subtitle": "Comienza en solo tres pasos simples y únete a la red más grande de la industria cinematográfica.",
       "step1": {
-        "title": "Crea tu Perfil",
-        "desc": "Construye un perfil profesional mostrando tus habilidades, experiencia y portafolio con nuestras herramientas intuitivas."
+        "title": "Crea Tu Perfil",
+        "desc": "Construye tu perfil profesional y muestra tu mejor trabajo para destacar entre la multitud."
       },
       "step2": {
-        "title": "Conéctate y Haz Networking",
-        "desc": "Únete a nuestra comunidad global de profesionales del cine y comienza a construir conexiones significativas en la industria."
+        "title": "Conecta y Haz Networking",
+        "desc": "Encuentra y conecta con profesionales de la industria, únete a proyectos y construye tu red."
       },
       "step3": {
-        "title": "Encuentra Oportunidades",
-        "desc": "Descubre trabajos, proyectos y colaboraciones que se adapten a tus habilidades y metas profesionales."
+        "title": "Colabora y Crece",
+        "desc": "Trabaja en proyectos increíbles, comparte oportunidades y haz crecer tu carrera en la industria cinematográfica."
       }
     },
     "cta": {
-      "title": "¿Listo para Transformar tu Carrera Cinematográfica?",
-      "subtitle": "Únete a la comunidad más grande de profesionales del cine y descubre oportunidades ilimitadas.",
-      "ctaPrimary": "Únete Gratis Hoy",
-      "ctaSecondary": "Ver Talento"
+      "title": "¿Listo para Llevar Tu Carrera al Siguiente Nivel?",
+      "subtitle": "Únete a miles de profesionales del cine que ya están usando nuestra plataforma para hacer crecer sus carreras.",
+      "ctaPrimary": "Únete a la Comunidad",
+      "ctaSecondary": "Explorar Perfiles"
     }
+  },
+  "auth": {
+    "login": {
+      "title": "Bienvenido de vuelta",
+      "subtitle": "Inicia sesión en tu cuenta para continuar",
+      "email": "Dirección de Correo",
+      "emailPlaceholder": "Ingresa tu correo",
+      "password": "Contraseña",
+      "passwordPlaceholder": "Ingresa tu contraseña",
+      "showPassword": "Mostrar contraseña",
+      "hidePassword": "Ocultar contraseña",
+      "signingIn": "Iniciando sesión...",
+      "signIn": "Iniciar Sesión",
+      "noAccount": "¿No tienes una cuenta?",
+      "createAccount": "Crea una aquí",
+      "termsPrivacy": "Al iniciar sesión, aceptas nuestros",
+      "termsService": "Términos de Servicio",
+      "privacyPolicy": "Política de Privacidad",
+      "and": "y"
+    },
+    "register": {
+      "title": "Crea tu cuenta",
+      "subtitle": "Únete a whosonset para conectar con la industria cinematográfica",
+      "personalInfo": "Información Personal",
+      "firstName": "Nombre",
+      "firstNamePlaceholder": "Juan",
+      "lastName": "Apellido",
+      "lastNamePlaceholder": "Pérez",
+      "accountDetails": "Detalles de la Cuenta",
+      "email": "Dirección de Correo",
+      "emailPlaceholder": "juan.perez@ejemplo.com",
+      "password": "Contraseña",
+      "passwordPlaceholder": "Crea una contraseña fuerte",
+      "passwordHelper": "Debe tener al menos 6 caracteres",
+      "confirmPassword": "Confirmar Contraseña",
+      "confirmPasswordPlaceholder": "Confirma tu contraseña",
+      "creatingAccount": "Creando cuenta...",
+      "createAccount": "Crear Cuenta",
+      "haveAccount": "¿Ya tienes una cuenta?",
+      "signInHere": "Inicia sesión aquí",
+      "termsPrivacy": "Al crear una cuenta, aceptas nuestros"
+    },
+    "errors": {
+      "emailPasswordRequired": "Por favor ingresa tanto el correo como la contraseña.",
+      "invalidCredentials": "Correo o contraseña inválidos.",
+      "tooManyRequests": "Demasiados intentos fallidos. Por favor intenta de nuevo más tarde.",
+      "loginError": "Ocurrió un error durante el inicio de sesión. Por favor intenta de nuevo.",
+      "nameRequired": "El nombre y apellido son requeridos",
+      "emailRequired": "El correo es requerido",
+      "passwordLength": "La contraseña debe tener al menos 6 caracteres",
+      "passwordMatch": "Las contraseñas no coinciden",
+      "emailInUse": "Ya existe una cuenta con este correo",
+      "weakPassword": "La contraseña es muy débil. Por favor elige una contraseña más fuerte.",
+      "invalidEmail": "Por favor ingresa una dirección de correo válida",
+      "registrationError": "Ocurrió un error durante el registro. Por favor intenta de nuevo.",
+      "accountCreated": "¡Cuenta creada exitosamente! Redirigiendo...",
+      "loginRequired": "Por favor inicia sesión para guardar trabajos"
+    }
+  },
+  "jobs": {
+    "title": "Trabajos",
+    "heroTitle": "Encuentra Tu Próximo Rol en la Industria Cinematográfica",
+    "heroSubtitle": "Descubre oportunidades con producciones líderes, conecta con profesionales de la industria y avanza tu carrera en cine y televisión.",
+    "searchPlaceholder": "Buscar trabajos por título, compañía o palabras clave...",
+    "search": "Buscar trabajos...",
+    "filters": "Filtros",
+    "showFilters": "Mostrar Filtros",
+    "hideFilters": "Ocultar Filtros",
+    "noJobsFound": "No se encontraron trabajos",
+    "loadingJobs": "Cargando trabajos...",
+    "allDepartments": "Todos los Departamentos",
+    "allLocations": "Todas las Ubicaciones",
+    "allJobTypes": "Todos los Tipos de Trabajo",
+    "remoteOnly": "Solo Remoto",
+    "applyFilters": "Aplicar Filtros",
+    "clearFilters": "Limpiar Filtros",
+    "saveJob": "Guardar trabajo para después",
+    "removeFromSaved": "Remover de trabajos guardados",
+    "jobSaved": "Trabajo guardado exitosamente",
+    "jobRemoved": "Trabajo removido de guardados",
+    "failedToSave": "Falló al guardar trabajo. Por favor intenta de nuevo.",
+    "viewDetails": "Ver Detalles",
+    "editJob": "Editar Trabajo",
+    "untitledPosition": "Posición Sin Título",
+    "various": "Varios",
+    "remote": "Remoto",
+    "paid": "Pagado",
+    "level": "nivel",
+    "posted": "Publicado",
+    "activeJobs": "Trabajos Activos",
+    "companies": "Compañías",
+    "locations": "Ubicaciones",
+    "remoteJobs": "Trabajos Remotos",
+    "invalidJobData": "Datos de trabajo inválidos",
+    "departments": {
+      "camera": "Cámara",
+      "sound": "Sonido", 
+      "lighting": "Iluminación",
+      "art": "Arte",
+      "costume": "Vestuario",
+      "makeup": "Maquillaje",
+      "hair": "Cabello",
+      "production": "Producción",
+      "postProduction": "Post-Producción",
+      "vfx": "Efectos Visuales",
+      "stunts": "Acrobacias",
+      "transportation": "Transporte",
+      "catering": "Catering"
+    },
+    "jobTypes": {
+      "fullTime": "Tiempo Completo",
+      "partTime": "Tiempo Parcial",
+      "contract": "Contrato",
+      "freelance": "Freelance",
+      "temporary": "Temporal",
+      "internship": "Prácticas"
+    }
+  },
+  "common": {
+    "loading": "Cargando...",
+    "error": "Error",
+    "success": "Éxito",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "create": "Crear",
+    "update": "Actualizar",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "sort": "Ordenar",
+    "close": "Cerrar",
+    "next": "Siguiente",
+    "previous": "Anterior",
+    "back": "Atrás",
+    "continue": "Continuar",
+    "submit": "Enviar",
+    "reset": "Restablecer",
+    "clear": "Limpiar",
+    "yes": "Sí",
+    "no": "No",
+    "ok": "OK"
+  },
+  "chat": {
+    "typeMessage": "Escribe un mensaje...",
+    "send": "Enviar",
+    "sending": "Enviando...",
+    "attachFile": "Adjuntar archivo",
+    "emoji": "Emoji",
+    "voiceMessage": "Mensaje de voz",
+    "stopRecording": "Detener grabación"
+  },
+  "projects": {
+    "loading": "Cargando...",
+    "title": "Proyectos",
+    "createProject": "Crear Proyecto",
+    "editProject": "Editar Proyecto",
+    "deleteProject": "Eliminar Proyecto",
+    "saveProject": "Guardar Proyecto",
+    "projectSaved": "Proyecto guardado exitosamente",
+    "projectDeleted": "Proyecto eliminado exitosamente"
   }
 } 

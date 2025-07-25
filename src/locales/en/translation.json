@@ -2,7 +2,7 @@
   "nav": {
     "home": "Home",
     "crew": "Crew",
-    "jobs": "Jobs",
+    "jobs": "Jobs", 
     "projects": "Projects",
     "collaboration": "Collaboration",
     "social": "Social",
@@ -14,75 +14,236 @@
     "myApplications": "My Applications",
     "postedJobs": "Posted Jobs",
     "settings": "Settings",
+    "signOut": "Sign Out",
     "signIn": "Sign In",
-    "getStarted": "Get Started",
-    "signOut": "Sign Out"
+    "getStarted": "Get Started"
   },
   "home": {
     "loading": "Loading...",
-    "hero": {
-      "banner": "The Future of Film Industry Networking",
-      "title1": "Connect with the",
-      "title2": "Film Industry",
-      "subtitle": "The premier platform where film professionals showcase projects, discover talent, and build careers that shape the future of entertainment.",
-      "ctaPrimary": "Get Started Free",
-      "ctaSecondary": "Explore Jobs"
-    },
     "stats": {
       "activeProfessionals": "Active Professionals",
-      "projectsCompleted": "Projects Completed",
+      "projectsCompleted": "Projects Completed", 
       "successRate": "Success Rate",
       "countries": "Countries"
     },
+    "hero": {
+      "banner": "The Film Industry's Premier Networking Platform",
+      "title1": "Connect Film",
+      "title2": "Professionals",
+      "subtitle": "Join thousands of filmmakers, crew members, and industry professionals connecting, collaborating, and creating amazing projects together.",
+      "ctaPrimary": "Start Your Journey",
+      "ctaSecondary": "Browse Jobs"
+    },
     "features": {
       "title": "Everything You Need to Succeed",
-      "subtitle": "Our comprehensive platform provides all the tools and connections you need to thrive in the film industry.",
+      "subtitle": "From project showcase to real-time collaboration, we provide all the tools you need to advance your film career.",
       "projectShowcase": {
         "title": "Project Showcase",
-        "desc": "Showcase your film projects with professional portfolios and detailed production information."
+        "desc": "Display your best work and connect with industry professionals"
       },
       "crewNetworking": {
-        "title": "Crew Networking",
-        "desc": "Connect with talented professionals across all departments in the film industry."
+        "title": "Crew Networking", 
+        "desc": "Build meaningful connections with talented filmmakers worldwide"
       },
       "jobBoard": {
         "title": "Job Board",
-        "desc": "Discover exciting opportunities and find the perfect role for your next project."
+        "desc": "Find and post film production jobs across all departments"
       },
       "globalReach": {
         "title": "Global Reach",
-        "desc": "Access opportunities worldwide and connect with international productions."
+        "desc": "Connect with professionals from around the world"
       },
       "industryRecognition": {
         "title": "Industry Recognition",
-        "desc": "Build your reputation with verified credits and professional endorsements."
+        "desc": "Showcase your awards and achievements to stand out"
       },
       "realTimeCollab": {
-        "title": "Real-Time Collaboration",
-        "desc": "Collaborate seamlessly with team members using our integrated tools."
+        "title": "Real-time Collaboration",
+        "desc": "Work together seamlessly with integrated communication tools"
       }
     },
     "howItWorks": {
       "title": "How It Works",
-      "subtitle": "Get started in three simple steps and unlock your potential in the film industry.",
+      "subtitle": "Get started in just three simple steps and join the largest film industry network.",
       "step1": {
         "title": "Create Your Profile",
-        "desc": "Build a professional profile showcasing your skills, experience, and portfolio with our intuitive tools."
+        "desc": "Build your professional profile and showcase your best work to stand out from the crowd."
       },
       "step2": {
         "title": "Connect & Network",
-        "desc": "Join our global community of film professionals and start building meaningful industry connections."
+        "desc": "Find and connect with industry professionals, join projects, and build your network."
       },
       "step3": {
-        "title": "Find Opportunities",
-        "desc": "Discover jobs, projects, and collaborations that match your skills and career goals."
+        "title": "Collaborate & Grow",
+        "desc": "Work on amazing projects, share opportunities, and grow your career in the film industry."
       }
     },
     "cta": {
-      "title": "Ready to Transform Your Film Career?",
-      "subtitle": "Join the largest community of film professionals and discover unlimited opportunities.",
-      "ctaPrimary": "Join Free Today",
-      "ctaSecondary": "Browse Talent"
+      "title": "Ready to Take Your Career to the Next Level?",
+      "subtitle": "Join thousands of film professionals who are already using our platform to grow their careers.",
+      "ctaPrimary": "Join the Community",
+      "ctaSecondary": "Explore Profiles"
     }
+  },
+  "auth": {
+    "login": {
+      "title": "Welcome back",
+      "subtitle": "Sign in to your account to continue",
+      "email": "Email Address",
+      "emailPlaceholder": "Enter your email",
+      "password": "Password",
+      "passwordPlaceholder": "Enter your password",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "signingIn": "Signing in...",
+      "signIn": "Sign In",
+      "noAccount": "Don't have an account?",
+      "createAccount": "Create one here",
+      "termsPrivacy": "By signing in, you agree to our",
+      "termsService": "Terms of Service",
+      "privacyPolicy": "Privacy Policy",
+      "and": "and"
+    },
+    "register": {
+      "title": "Create your account",
+      "subtitle": "Join whosonset to connect with the film industry",
+      "personalInfo": "Personal Information",
+      "firstName": "First Name",
+      "firstNamePlaceholder": "John",
+      "lastName": "Last Name",
+      "lastNamePlaceholder": "Doe",
+      "accountDetails": "Account Details",
+      "email": "Email Address",
+      "emailPlaceholder": "john.doe@example.com",
+      "password": "Password",
+      "passwordPlaceholder": "Create a strong password",
+      "passwordHelper": "Must be at least 6 characters long",
+      "confirmPassword": "Confirm Password",
+      "confirmPasswordPlaceholder": "Confirm your password",
+      "creatingAccount": "Creating account...",
+      "createAccount": "Create Account",
+      "haveAccount": "Already have an account?",
+      "signInHere": "Sign in here",
+      "termsPrivacy": "By creating an account, you agree to our"
+    },
+    "errors": {
+      "emailPasswordRequired": "Please enter both email and password.",
+      "invalidCredentials": "Invalid email or password.",
+      "tooManyRequests": "Too many failed attempts. Please try again later.",
+      "loginError": "An error occurred during login. Please try again.",
+      "nameRequired": "First name and last name are required",
+      "emailRequired": "Email is required",
+      "passwordLength": "Password must be at least 6 characters long",
+      "passwordMatch": "Passwords do not match",
+      "emailInUse": "An account with this email already exists",
+      "weakPassword": "Password is too weak. Please choose a stronger password.",
+      "invalidEmail": "Please enter a valid email address",
+      "registrationError": "An error occurred during registration. Please try again.",
+      "accountCreated": "Account created successfully! Redirecting...",
+      "loginRequired": "Please log in to save jobs"
+    }
+  },
+  "jobs": {
+    "title": "Jobs",
+    "heroTitle": "Find Your Next Film Industry Role",
+    "heroSubtitle": "Discover opportunities with leading productions, connect with industry professionals, and advance your career in film and television.",
+    "searchPlaceholder": "Search jobs by title, company, or keywords...",
+    "search": "Search jobs...",
+    "filters": "Filters",
+    "showFilters": "Show Filters",
+    "hideFilters": "Hide Filters",
+    "noJobsFound": "No jobs found",
+    "loadingJobs": "Loading jobs...",
+    "allDepartments": "All Departments",
+    "allLocations": "All Locations",
+    "allJobTypes": "All Job Types",
+    "remoteOnly": "Remote Only",
+    "applyFilters": "Apply Filters",
+    "clearFilters": "Clear Filters",
+    "saveJob": "Save job for later",
+    "removeFromSaved": "Remove from saved jobs",
+    "jobSaved": "Job saved successfully",
+    "jobRemoved": "Job removed from saved",
+    "failedToSave": "Failed to save job. Please try again.",
+    "viewDetails": "View Details",
+    "editJob": "Edit Job",
+    "untitledPosition": "Untitled Position",
+    "various": "Various",
+    "remote": "Remote",
+    "paid": "Paid",
+    "level": "level",
+    "posted": "Posted",
+    "activeJobs": "Active Jobs",
+    "companies": "Companies",
+    "locations": "Locations",
+    "remoteJobs": "Remote Jobs",
+    "invalidJobData": "Invalid job data",
+    "departments": {
+      "camera": "Camera",
+      "sound": "Sound", 
+      "lighting": "Lighting",
+      "art": "Art",
+      "costume": "Costume",
+      "makeup": "Makeup",
+      "hair": "Hair",
+      "production": "Production",
+      "postProduction": "Post-Production",
+      "vfx": "VFX",
+      "stunts": "Stunts",
+      "transportation": "Transportation",
+      "catering": "Catering"
+    },
+    "jobTypes": {
+      "fullTime": "Full Time",
+      "partTime": "Part Time",
+      "contract": "Contract",
+      "freelance": "Freelance",
+      "temporary": "Temporary",
+      "internship": "Internship"
+    }
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "update": "Update",
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort",
+    "close": "Close",
+    "next": "Next",
+    "previous": "Previous",
+    "back": "Back",
+    "continue": "Continue",
+    "submit": "Submit",
+    "reset": "Reset",
+    "clear": "Clear",
+    "yes": "Yes",
+    "no": "No",
+    "ok": "OK"
+  },
+  "chat": {
+    "typeMessage": "Type a message...",
+    "send": "Send",
+    "sending": "Sending...",
+    "attachFile": "Attach file",
+    "emoji": "Emoji",
+    "voiceMessage": "Voice message",
+    "stopRecording": "Stop recording"
+  },
+  "projects": {
+    "loading": "Loading...",
+    "title": "Projects",
+    "createProject": "Create Project",
+    "editProject": "Edit Project",
+    "deleteProject": "Delete Project",
+    "saveProject": "Save Project",
+    "projectSaved": "Project saved successfully",
+    "projectDeleted": "Project deleted successfully"
   }
 } 

@@ -4,6 +4,7 @@ import { DirectMessage } from '../../types/Chat';
 import { collection, getDocs, where, limit, query as firestoreQuery } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { imageErrorFallback } from '../../utilities/imageErrorFallback';
+import { useTranslation } from 'react-i18next';
 import './ChatInterface.scss';
 
 interface ChatInterfaceProps {
@@ -19,6 +20,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   currentUserAvatar,
   demoUsers = {}
 }) => {
+  const { t } = useTranslation();
+  
   // State
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
@@ -861,7 +864,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     <button
                       onClick={() => fileInputRef.current?.click()}
                       className="action-button"
-                      title="Attach file"
+                      title={t('chat.attachFile')}
                     >
                       📎
                     </button>
@@ -869,7 +872,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     <button
                       onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                       className="action-button"
-                      title="Emoji"
+                      title={t('chat.emoji')}
                     >
                       😀
                     </button>
@@ -877,7 +880,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     <button
                       onClick={isRecording ? stopRecording : startRecording}
                       className={`action-button ${isRecording ? 'recording' : ''}`}
-                      title={isRecording ? 'Stop recording' : 'Voice message'}
+                      title={isRecording ? t('chat.stopRecording') : t('chat.voiceMessage')}
                     >
                       {isRecording ? '⏹️' : '🎤'}
                     </button>
@@ -885,7 +888,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
                   <input
                     type="text"
-                    placeholder="Type a message..."
+                    placeholder={t('chat.typeMessage')}
                     value={messageInput}
                     onChange={(e) => setMessageInput(e.target.value)}
                     onKeyPress={handleKeyPress}
@@ -898,7 +901,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     disabled={sending || !messageInput.trim()}
                     className="send-button"
                   >
-                    {sending ? 'Sending...' : 'Send'}
+                    {sending ? t('chat.sending') : t('chat.send')}
                   </button>
                 </div>
 
