@@ -939,6 +939,12 @@
       "noFollowers": "No hay seguidores aún",
       "noFollowing": "No sigues a nadie aún"
     },
+    "headers": {
+      "connectionRequests": "Solicitudes de Conexión",
+      "sentRequests": "Solicitudes Enviadas",
+      "discoverPeople": "Descubrir Personas",
+      "yourNotifications": "Tus notificaciones aparecerán aquí."
+    },
     "statusText": {
       "pendingRequests": "solicitudes pendientes",
       "following": "siguiendo",
@@ -951,6 +957,38 @@
     "noCollaborators": "Aún no hay colaboradores.",
     "annotations": "Anotaciones",
     "tags": "Etiquetas",
+    "categories": {
+      "cast_member": "Miembro del Reparto",
+      "background_actors": "Actores de Fondo",
+      "stunts": "Acrobacias",
+      "vehicles": "Vehículos",
+      "props": "Utilería",
+      "camera": "Cámara",
+      "special_effects": "Efectos Especiales",
+      "wardrobe": "Vestuario",
+      "makeup_hair": "Maquillaje/Cabello",
+      "animals": "Animales",
+      "animal_wrangler": "Entrenador de Animales",
+      "music": "Música",
+      "sound": "Sonido",
+      "art_department": "Departamento de Arte",
+      "set_dressing": "Decoración de Set",
+      "greenery": "Plantas/Vegetación",
+      "special_equipment": "Equipo Especial",
+      "security": "Seguridad",
+      "additional_labor": "Mano de Obra Adicional",
+      "vfx": "VFX - Efectos Visuales",
+      "mechanical_effects": "Efectos Mecánicos",
+      "miscellaneous": "Varios",
+      "notes": "Notas",
+      "comments": "Comentarios",
+      "set": "Set",
+      "sequence": "Secuencia",
+      "script_day": "Día de Guión",
+      "unit": "Unidad",
+      "location": "Ubicación",
+      "other": "Otro"
+    },
     "actions": {
       "goTo": "Ir a",
       "delete": "Eliminar",
@@ -1005,5 +1043,75 @@
     "emoji": "Emoji",
     "voiceMessage": "Mensaje de voz",
     "stopRecording": "Detener grabación"
+  },
+  "favorites": {
+    "title": "Tus Favoritos",
+    "subtitle": "Proyectos que has guardado para fácil acceso",
+    "auth": {
+      "signInRequired": "Inicia sesión para ver tus favoritos",
+      "signInDescription": "Crea una cuenta o inicia sesión para guardar y ver tus proyectos favoritos",
+      "signInButton": "Iniciar Sesión"
+    },
+    "loading": "Cargando tus favoritos...",
+    "empty": {
+      "title": "No hay favoritos aún",
+      "description": "Comienza a explorar proyectos y marca los que te gusten",
+      "exploreButton": "Explorar Proyectos"
+    },
+    "count": {
+      "singular": "Favorito",
+      "plural": "Favoritos"
+    }
+  },
+  "resume": {
+    "loading": "Cargando currículum...",
+    "errors": {
+      "notFound": "Currículum No Encontrado",
+      "notAvailable": "Currículum No Disponible",
+      "notFoundDescription": "No se pudo encontrar este currículum. Por favor verifica el enlace.",
+      "notAvailableDescription": "Este currículum no está disponible. Por favor verifica el enlace o contacta al propietario del perfil."
+    },
+    "sections": {
+      "languages": "Idiomas",
+      "professionalExperience": "Experiencia Profesional",
+      "selectedProjects": "Proyectos Seleccionados",
+      "education": "Educación",
+      "contactInformation": "Información de Contacto",
+      "additionalInformation": "Información Adicional"
+    },
+    "labels": {
+      "present": "Presente",
+      "showingTop": "Mostrando los {count} {type} principales - prioriza los más relevantes primero",
+      "showingMostRecent": "Mostrando los {count} más recientes - prioriza los más relevantes primero"
+    },
+    "types": {
+      "positions": "puestos",
+      "projects": "proyectos"
+    }
+  },
+  "events": {
+    "title": "Eventos",
+    "subtitle": "Descubre y participa en eventos de la industria cinematográfica",
+    "allEvents": "Todos los Eventos",
+    "myEvents": "Mis Eventos",
+    "createNewEvent": "+ Crear Nuevo Evento",
+    "loading": "Cargando eventos...",
+    "loadingEvents": "Cargando eventos...",
+    "errorLoading": "Error al cargar eventos.",
+    "noEventsFound": "No se encontraron eventos",
+    "noEventsYet": "Aún no has agregado ningún evento.",
+    "noEventsAvailable": "No hay eventos disponibles.",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "confirmDelete": "¿Estás seguro de que quieres eliminar este evento? Esto no se puede deshacer.",
+    "deleteSuccess": "Evento eliminado exitosamente.",
+    "deleteFailed": "Error al eliminar evento.",
+    "backToEvents": "← Volver a Todos los Eventos",
+    "viewDetails": "Ver Detalles",
+    "manageEvent": "Gestionar Evento",
+    "editEvent": "Editar Evento",
+    "suggestUpdate": "Sugerir Actualización",
+    "eventNotFound": "Evento no encontrado o no disponible.",
+    "mustBeLoggedIn": "Debes iniciar sesión para ver tus eventos."
   }
 } 

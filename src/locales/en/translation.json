@@ -939,6 +939,12 @@
       "noFollowers": "No followers yet",
       "noFollowing": "Not following anyone yet"
     },
+    "headers": {
+      "connectionRequests": "Connection Requests",
+      "sentRequests": "Sent Requests",
+      "discoverPeople": "Discover People",
+      "yourNotifications": "Your notifications will appear here."
+    },
     "statusText": {
       "pendingRequests": "pending requests",
       "following": "following",
@@ -951,6 +957,38 @@
     "noCollaborators": "No collaborators yet.",
     "annotations": "Annotations",
     "tags": "Tags",
+    "categories": {
+      "cast_member": "Cast Member",
+      "background_actors": "Background Actors",
+      "stunts": "Stunts",
+      "vehicles": "Vehicles",
+      "props": "Props",
+      "camera": "Camera",
+      "special_effects": "Special Effects",
+      "wardrobe": "Wardrobe",
+      "makeup_hair": "Makeup/Hair",
+      "animals": "Animals",
+      "animal_wrangler": "Animal Wrangler",
+      "music": "Music",
+      "sound": "Sound",
+      "art_department": "Art Department",
+      "set_dressing": "Set Dressing",
+      "greenery": "Greenery",
+      "special_equipment": "Special Equipment",
+      "security": "Security",
+      "additional_labor": "Additional Labor",
+      "vfx": "VFX - Visual Effects",
+      "mechanical_effects": "Mechanical Effects",
+      "miscellaneous": "Miscellaneous",
+      "notes": "Notes",
+      "comments": "Comments",
+      "set": "Set",
+      "sequence": "Sequence",
+      "script_day": "Script Day",
+      "unit": "Unit",
+      "location": "Location",
+      "other": "Other"
+    },
     "actions": {
       "goTo": "Go to",
       "delete": "Delete", 
@@ -1005,5 +1043,58 @@
     "emoji": "Emoji",
     "voiceMessage": "Voice message",
     "stopRecording": "Stop recording"
+  },
+  "favorites": {
+    "title": "Your Favorites",
+    "subtitle": "Projects you've bookmarked for easy access",
+    "auth": {
+      "signInRequired": "Sign in to view your favorites",
+      "signInDescription": "Create an account or sign in to save and view your favorite projects",
+      "signInButton": "Sign In"
+    },
+    "loading": "Loading your favorites...",
+    "empty": {
+      "title": "No favorites yet",
+      "description": "Start exploring projects and bookmark the ones you like",
+      "exploreButton": "Explore Projects"
+    },
+    "count": {
+      "singular": "Favorite",
+      "plural": "Favorites"
+    }
+  },
+  "resume": {
+    "loading": "Loading resume...",
+    "errors": {
+      "notFound": "Resume Not Found",
+      "notAvailable": "Resume Not Available",
+      "notFoundDescription": "This resume could not be found. Please check the link.",
+      "notAvailableDescription": "This resume is not available. Please check the link or contact the profile owner."
+    },
+    "sections": {
+      "languages": "Languages",
+      "professionalExperience": "Professional Experience",
+      "selectedProjects": "Selected Projects",
+      "education": "Education",
+      "contactInformation": "Contact Information",
+      "additionalInformation": "Additional Information"
+    },
+    "labels": {
+      "present": "Present",
+      "showingTop": "Showing top {count} {type} - prioritize most relevant first",
+      "showingMostRecent": "Showing {count} most recent - prioritize most relevant first"
+    },
+    "types": {
+      "positions": "positions",
+      "projects": "projects"
+    }
+  },
+  "events": {
+    "title": "Upcoming Events",
+    "attend": "Attend",
+    "viewDetails": "View Details",
+    "attending": "attending",
+    "maxAttendees": "Max",
+    "noEvents": "No upcoming events"
   }
 } 

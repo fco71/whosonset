@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import ResumeView from './ResumeView';
@@ -27,6 +28,7 @@ type LoadingState = typeof LOADING_STATES[keyof typeof LOADING_STATES];
 
 const PublicResumePage: React.FC<PublicResumePageProps> = () => {
   const { uid } = useParams<{ uid: string }>();
+  const { t } = useTranslation();
   const [profile, setProfile] = useState<CrewProfile | null>(null);
   const [status, setStatus] = useState<LoadingState>(LOADING_STATES.LOADING);
   const [error, setError] = useState<string | null>(null);
@@ -96,7 +98,7 @@ const PublicResumePage: React.FC<PublicResumePageProps> = () => {
             className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"
             aria-label="Loading"
           />
-          <p>Loading resume...</p>
+          <p>{t('resume.loading')}</p>
           {process.env.NODE_ENV === 'development' && (
             <div className="mt-4 text-sm text-gray-400">
               <div>Loading profile data...</div>
@@ -118,11 +120,13 @@ const PublicResumePage: React.FC<PublicResumePageProps> = () => {
           </div>
           <h1 className="text-2xl font-bold mb-4">
             {error?.includes('not found') 
-              ? 'Resume Not Found' 
-              : 'Resume Not Available'}
+              ? t('resume.errors.notFound')
+              : t('resume.errors.notAvailable')}
           </h1>
           <p className="text-gray-300">
-            {error || 'This resume is not available. Please check the link or contact the profile owner.'}
+            {error || (error?.includes('not found') 
+              ? t('resume.errors.notFoundDescription')
+              : t('resume.errors.notAvailableDescription'))}
           </p>
           {process.env.NODE_ENV === 'development' && (
             <div className="mt-6 p-4 bg-gray-800 rounded text-left text-sm">

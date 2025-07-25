@@ -1,4 +1,5 @@
 import React, { useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ProjectEntry } from '../types/ProjectEntry';
 import { JobTitleEntry } from '../types/JobTitleEntry';
 import { Residence, ContactInfo } from '../types/CrewProfile';
@@ -45,6 +46,7 @@ interface ResumeViewProps {
 
 const ResumeView: React.FC<ResumeViewProps> = (props) => {
   const { profile } = props;
+  const { t } = useTranslation();
   // Fallback: use photoURL if profileImageUrl is missing
   const managedProfileImageUrl = useManagedUrl(profile?.profileImageUrl || profile?.photoURL);
   
@@ -272,7 +274,7 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
             {/* Languages */}
             {profile.languages && profile.languages.length > 0 && (
               <section style={sectionStyle}>
-                <div style={sectionTitleStyle}>Languages</div>
+                <div style={sectionTitleStyle}>{t('resume.sections.languages')}</div>
                 <ul style={jobTitlesListStyle}>
                   {profile.languages.slice(0, 3).map((lang, idx) => (
                     <li key={idx} style={jobTitleItemStyle}>{lang}</li>
@@ -283,7 +285,7 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
 
             {/* Job Titles */}
             <div style={sectionStyle}>
-              <h2 style={sectionTitleStyle}>Professional Experience</h2>
+              <h2 style={sectionTitleStyle}>{t('resume.sections.professionalExperience')}</h2>
               <ul style={jobTitlesListStyle}>
                 {profile.jobTitles
                   .filter(jt => jt.department && jt.title)
@@ -296,7 +298,7 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
               </ul>
               {profile.jobTitles.filter(jt => jt.department && jt.title).length > 4 && (
                 <p style={{ fontSize: '9pt', color: '#666', fontStyle: 'italic', margin: '1mm 0 0 0' }}>
-                  (Showing top 4 positions - prioritize most relevant first)
+                  ({t('resume.labels.showingTop', { count: 4, type: t('resume.types.positions') })})
                 </p>
               )}
             </div>
@@ -304,7 +306,7 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
             {/* Projects */}
             {profile.projects && profile.projects.filter(p => p.projectName && p.role).length > 0 && (
               <div style={sectionStyle}>
-                <h2 style={sectionTitleStyle}>Selected Projects</h2>
+                <h2 style={sectionTitleStyle}>{t('resume.sections.selectedProjects')}</h2>
                 <ul style={projectsListStyle}>
                   {profile.projects
                     .filter(p => p.projectName && p.role)
@@ -321,7 +323,7 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
                 </ul>
                 {profile.projects.filter(p => p.projectName && p.role).length > 3 && (
                   <p style={{ fontSize: '9pt', color: '#666', fontStyle: 'italic', margin: '1mm 0 0 0' }}>
-                    (Showing top 3 projects - prioritize most relevant first)
+                    ({t('resume.labels.showingTop', { count: 3, type: t('resume.types.projects') })})
                   </p>
                 )}
               </div>
@@ -330,7 +332,7 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
             {/* Education */}
             {profile.education && profile.education.length > 0 && (
               <div style={sectionStyle}>
-                <h2 style={sectionTitleStyle}>Education</h2>
+                <h2 style={sectionTitleStyle}>{t('resume.sections.education')}</h2>
                 <ul style={jobTitlesListStyle}>
                   {profile.education
                     .filter(edu => {
@@ -355,7 +357,7 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
                       
                       // Only show end date or current status
                       if (edu.isCurrent) {
-                        dateInfo.push('Present');
+                        dateInfo.push(t('resume.labels.present'));
                       } else if (edu.endDate) {
                         const endDate = new Date(edu.endDate).toLocaleDateString('en-US', { year: 'numeric' });
                         dateInfo.push(endDate);
@@ -392,7 +394,7 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
                 </ul>
                 {profile.education.length > 2 && (
                   <p style={{ fontSize: '9pt', color: '#666', fontStyle: 'italic', margin: '1mm 0 0 0' }}>
-                    (Showing 2 most recent - prioritize most relevant first)
+                    ({t('resume.labels.showingMostRecent', { count: 2 })})
                   </p>
                 )}
               </div>
@@ -401,7 +403,7 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
             {/* Contact Info */}
             {(profile.contactInfo?.email || profile.contactInfo?.phone || profile.contactInfo?.website || profile.contactInfo?.instagram) && (
               <div style={sectionStyle}>
-                <h2 style={sectionTitleStyle}>Contact Information</h2>
+                <h2 style={sectionTitleStyle}>{t('resume.sections.contactInformation')}</h2>
                 <ul style={contactListStyle}>
                   {profile.contactInfo.email && <li style={contactItemStyle}>📧 {profile.contactInfo.email}</li>}
                   {profile.contactInfo.phone && <li style={contactItemStyle}>📞 {profile.contactInfo.phone}</li>}
@@ -414,7 +416,7 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
             {/* Other Info */}
             {profile.otherInfo && (
               <div style={sectionStyle}>
-                <h2 style={sectionTitleStyle}>Additional Information</h2>
+                <h2 style={sectionTitleStyle}>{t('resume.sections.additionalInformation')}</h2>
                 <p style={otherInfoStyle}>{profile.otherInfo}</p>
               </div>
             )}

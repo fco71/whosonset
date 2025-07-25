@@ -512,7 +512,7 @@ const SocialPage = () => {
           onClick={() => setActiveTab('connections')}
           icon={UserCheck}
         >
-          Connections
+          {t('social.tabs.connections')}
         </TabButton>
         <TabButton 
           active={activeTab === 'requests'}

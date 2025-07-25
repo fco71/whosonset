@@ -493,7 +493,7 @@ const SocialPage = () => {
           <div className="space-y-4">
             {connectionRequests.length > 0 && (
               <div>
-                <h3 className="text-lg font-medium mb-2">Connection Requests</h3>
+                <h3 className="text-lg font-medium mb-2">{t('social.headers.connectionRequests')}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                   {connectionRequests.map((profile: AppProfile) => (
                     <UserCard
@@ -518,7 +518,7 @@ const SocialPage = () => {
             
             {sentRequests.length > 0 && (
               <div>
-                <h3 className="text-lg font-medium mb-2">Sent Requests</h3>
+                <h3 className="text-lg font-medium mb-2">{t('social.headers.sentRequests')}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {sentRequests.map((profile: AppProfile) => (
                     <UserCard
@@ -542,7 +542,7 @@ const SocialPage = () => {
             )}
             
             {connectionRequests.length === 0 && sentRequests.length === 0 && (
-              <p className="text-gray-500">No pending requests.</p>
+                              <p className="text-gray-500">{t('social.empty.noRequests')}</p>
             )}
           </div>
         );
@@ -550,7 +550,7 @@ const SocialPage = () => {
       case 'discover':
         return (
           <div>
-            <h2 className="text-xl font-semibold mb-4">Discover People</h2>
+                          <h2 className="text-xl font-semibold mb-4">{t('social.headers.discoverPeople')}</h2>
             {filteredProfiles.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredProfiles.map((profile: AppProfile) => (
@@ -582,8 +582,8 @@ const SocialPage = () => {
         return (
           <div className="text-center py-12">
             <Bell className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-gray-700 mb-2">No new notifications</h2>
-            <p className="text-gray-500">Your notifications will appear here.</p>
+                          <h2 className="text-xl font-semibold text-gray-700 mb-2">{t('social.empty.noNotifications')}</h2>
+              <p className="text-gray-500">{t('social.headers.yourNotifications')}</p>
           </div>
         );
     }
@@ -985,7 +985,7 @@ const SocialPage = () => {
           onClick={() => setActiveTab('connections')}
           icon={UserCheck}
         >
-          Connections
+          {t('social.tabs.connections')}
         </TabButton>
         <TabButton 
           active={activeTab === 'requests'}
@@ -993,21 +993,21 @@ const SocialPage = () => {
           count={connectionRequests.length}
           icon={UserX}
         >
-          Requests
+          {t('social.tabs.requests')}
         </TabButton>
         <TabButton 
           active={activeTab === 'discover'}
           onClick={() => setActiveTab('discover')}
           icon={UserPlus}
         >
-          Discover
+          {t('social.tabs.discover')}
         </TabButton>
         <TabButton 
           active={activeTab === 'notifications'}
           onClick={() => setActiveTab('notifications')}
           icon={Bell}
         >
-          Notifications
+          {t('social.tabs.notifications')}
         </TabButton>
       </div>
 
