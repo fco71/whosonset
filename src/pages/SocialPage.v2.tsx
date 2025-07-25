@@ -173,6 +173,7 @@ const MessagePane: React.FC<{
   onClose: () => void;
   onStartConversation: (userId: string) => void;
 }> = ({ isOpen, onClose, onStartConversation }) => {
+  const { t } = useTranslation();
   const { currentUser } = useAuth();
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -230,7 +231,7 @@ const MessagePane: React.FC<{
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md max-h-[80vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Messages</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('social.messages')}</h3>
           <div className="flex items-center space-x-2">
             <Button
               variant="ghost"
@@ -283,12 +284,12 @@ const MessagePane: React.FC<{
             <div className="p-8 text-center">
               <MessageCircle className="h-12 w-12 mx-auto text-gray-300 mb-4" />
               <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
-                {searchQuery ? 'No conversations found' : 'No messages yet'}
+                {searchQuery ? t('social.messaging.noConversationsFound') : t('social.empty.noMessages')}
               </h3>
               <p className="text-xs text-gray-500">
                 {searchQuery 
                   ? 'Try a different search term'
-                  : 'Start a conversation with someone to see messages here'
+                  : t('social.messaging.selectContact')
                 }
               </p>
             </div>
@@ -859,8 +860,8 @@ const SocialPage: React.FC = () => {
           {notifications.length === 0 ? (
             <div className="text-center py-8">
               <Bell className="h-10 w-10 mx-auto text-gray-300" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No notifications</h3>
-              <p className="mt-1 text-xs text-gray-500">When you get notifications, they'll appear here.</p>
+                        <h3 className="mt-2 text-sm font-medium text-gray-900">{t('social.empty.noNotifications')}</h3>
+          <p className="mt-1 text-xs text-gray-500">When you get notifications, they'll appear here.</p>
             </div>
           ) : (
             notifications.map(notification => (

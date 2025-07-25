@@ -726,7 +726,8 @@
       "in_progress": "In Progress",
       "completed": "Completed",
       "cancelled": "Cancelled",
-      "overdue": "Overdue"
+      "overdue": "Overdue",
+      "blocked": "Blocked"
     },
     "filters": {
       "allStatus": "All Status",
@@ -912,7 +913,8 @@
       "moreOptions": "More Options",
       "edited": "(edited)",
       "newMessage": "New Message",
-      "selectContact": "Select a contact to start messaging"
+      "selectContact": "Select a contact to start messaging",
+      "noConversationsFound": "No conversations found"
     },
     "errors": {
       "loadFailed": "Failed to load data",

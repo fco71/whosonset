@@ -722,11 +722,12 @@
       "overdue": "Vencidas"
     },
     "status": {
-      "pending": "Sin Comenzar",
+      "pending": "Sin Empezar",
       "in_progress": "En Progreso",
-      "completed": "Completada",
-      "cancelled": "Cancelada",
-      "overdue": "Vencida"
+      "completed": "Completado",
+      "cancelled": "Cancelado",
+      "overdue": "Atrasado",
+      "blocked": "Bloqueado"
     },
     "filters": {
       "allStatus": "Todos los Estados",
@@ -912,7 +913,8 @@
       "moreOptions": "Más Opciones",
       "edited": "(editado)",
       "newMessage": "Nuevo Mensaje",
-      "selectContact": "Selecciona un contacto para comenzar a conversar"
+      "selectContact": "Selecciona un contacto para comenzar a conversar",
+      "noConversationsFound": "No se encontraron conversaciones"
     },
     "errors": {
       "loadFailed": "Error al cargar datos",

@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { SocialService } from '../utilities/socialService';
 import { MessagingService, ConversationSummary } from '../utilities/messagingService';
 import { getProfileId, getDisplayName, getPhotoUrl, isCrewProfile } from '../types/Profile';
+import { useTranslation } from 'react-i18next';
 
 // Define a discriminated union type for profiles
 type BaseProfile = {
@@ -74,6 +75,7 @@ const TabButton = ({
 );
 
 const SocialPage = () => {
+  const { t } = useTranslation();
   const auth = useAuth();
   const user = auth?.currentUser; // Access currentUser instead of user
   const navigate = useNavigate();
@@ -945,8 +947,8 @@ const SocialPage = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Social Network</h1>
-          <p className="text-gray-500">Connect with crew members and discover new professionals</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('social.title')}</h1>
+          <p className="text-gray-500">{t('social.subtitle')}</p>
         </div>
         <div className="flex items-center space-x-3">
           <Button
@@ -959,14 +961,14 @@ const SocialPage = () => {
             className="flex items-center space-x-2"
           >
             <MessageCircle className="h-4 w-4" />
-            <span>Messages</span>
+            <span>{t('social.messages')}</span>
           </Button>
           <div className="w-full md:w-96">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 type="text"
-                placeholder="Search people..."
+                placeholder={t('social.searchPeople')}
                 className="pl-10 w-full"
                 value={searchQuery}
                 onChange={handleSearchChange}

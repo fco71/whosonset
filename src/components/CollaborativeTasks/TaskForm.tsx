@@ -3,6 +3,7 @@ import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db, auth } from '../../firebase';
 import { CollaborativeTask, TaskSubtask, TaskTeamMember } from '../../types/ProjectManagement';
 import './TaskForm.scss';
+import { useTranslation } from 'react-i18next';
 
 interface TaskFormProps {
   task?: CollaborativeTask;
@@ -27,6 +28,7 @@ interface FormData {
 }
 
 const TaskForm: React.FC<TaskFormProps> = ({ task, onSubmit, onCancel, projectId }) => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState<FormData>({
     title: '',
     description: '',
@@ -253,6 +255,15 @@ const TaskForm: React.FC<TaskFormProps> = ({ task, onSubmit, onCancel, projectId
     }
   };
 
+  // Status options with translations
+  const statusOptions = [
+    { value: 'pending', label: t('tasks.status.pending') },
+    { value: 'in_progress', label: t('tasks.status.in_progress') },
+    { value: 'completed', label: t('tasks.status.completed') },
+    { value: 'blocked', label: t('tasks.status.blocked') },
+    { value: 'overdue', label: t('tasks.status.overdue') }
+  ];
+
   // Handle Escape key to close form
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -269,7 +280,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ task, onSubmit, onCancel, projectId
     <div className="task-form-overlay">
       <div className="task-form-modal">
         <div className="form-header">
-          <h2>{task ? 'Edit Task' : 'Create New Task'}</h2>
+          <h2>{task ? t('tasks.taskForm.editTask') : t('tasks.taskForm.createTask')}</h2>
           <button onClick={onCancel} className="close-btn">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -460,10 +471,11 @@ const TaskForm: React.FC<TaskFormProps> = ({ task, onSubmit, onCancel, projectId
                       onChange={(e) => handleTeamMemberChange(index, 'status', e.target.value)}
                       className="form-select"
                     >
-                      <option value="assigned">Assigned</option>
-                      <option value="in_progress">In Progress</option>
-                      <option value="completed">Completed</option>
-                      <option value="blocked">Blocked</option>
+                      {statusOptions.map(option => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
@@ -606,10 +618,11 @@ const TaskForm: React.FC<TaskFormProps> = ({ task, onSubmit, onCancel, projectId
                         onChange={(e) => handleSubtaskChange(index, 'status', e.target.value)}
                         className="form-select small"
                       >
-                        <option value="pending">Pending</option>
-                        <option value="in_progress">In Progress</option>
-                        <option value="completed">Completed</option>
-                        <option value="blocked">Blocked</option>
+                        {statusOptions.map(option => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
                       </select>
                     </div>
                     
@@ -661,10 +674,10 @@ const TaskForm: React.FC<TaskFormProps> = ({ task, onSubmit, onCancel, projectId
           {/* Form Actions */}
           <div className="form-actions">
             <button type="button" onClick={onCancel} className="btn-secondary">
-              Cancel
+              {t('tasks.taskForm.cancel')}
             </button>
             <button type="submit" className="btn-primary">
-              {task ? 'Update Task' : 'Create Task'}
+              {task ? t('tasks.taskForm.update') : t('tasks.taskForm.save')}
             </button>
           </div>
         </form>
