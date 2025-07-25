@@ -938,6 +938,33 @@
       "followers": "seguidores"
     }
   },
+  "screenplay": {
+    "addCollaborator": "Agregar Colaborador",
+    "collaborators": "Colaboradores",
+    "noCollaborators": "Aún no hay colaboradores.",
+    "annotations": "Anotaciones",
+    "tags": "Etiquetas",
+    "actions": {
+      "goTo": "Ir a",
+      "delete": "Eliminar",
+      "resolve": "Resolver",
+      "reopen": "Reabrir",
+      "reply": "Responder"
+    },
+    "popup": {
+      "addToSelection": "Agregar a la selección:",
+      "addAnnotation": "Agregar Anotación",
+      "addTag": "Agregar Etiqueta",
+      "cancel": "Cancelar",
+      "save": "Guardar",
+      "enterAnnotation": "Ingresa tu anotación...",
+      "enterTag": "Ingresa el contenido de la etiqueta...",
+      "writeReply": "Escribe una respuesta..."
+    },
+    "navigation": {
+      "navigatingTo": "Navegando a la anotación..."
+    }
+  },
   "common": {
     "loading": "Cargando...",
     "error": "Error",

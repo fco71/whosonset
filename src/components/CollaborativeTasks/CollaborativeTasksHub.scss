@@ -202,13 +202,11 @@
 
       .search-and-filters {
         display: flex;
-        gap: 1rem;
         align-items: center;
-        width: 100%;
+        gap: 1rem;
 
         .search-container {
-          flex: 2;
-          min-width: 250px;
+          min-width: 280px;
 
           .search-box {
             position: relative;
@@ -218,21 +216,22 @@
             .search-icon {
               position: absolute;
               left: 0.75rem;
-              color: #9ca3af;
-              z-index: 10;
+              color: #64748b;
+              z-index: 1;
             }
 
             .search-input {
               width: 100%;
-              padding: 0.75rem 0.75rem 0.75rem 2.5rem;
+              padding: 0.625rem 0.75rem 0.625rem 2.5rem;
               border: 1px solid #d1d5db;
               border-radius: 0.5rem;
-              font-size: 0.875rem;
               background: white;
-              transition: border-color 0.2s ease, box-shadow 0.2s ease;
+              font-size: 0.875rem;
+              color: #374151;
+              outline: none;
+              transition: all 0.2s;
 
               &:focus {
-                outline: none;
                 border-color: #3b82f6;
                 box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
               }
@@ -250,24 +249,43 @@
           align-items: center;
 
           .filter-select {
-            padding: 0.75rem 1rem;
+            padding: 0.625rem 0.75rem;
             border: 1px solid #d1d5db;
             border-radius: 0.5rem;
-            font-size: 0.875rem;
             background: white;
+            font-size: 0.875rem;
             color: #374151;
-            cursor: pointer;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
-            min-width: 120px;
+            min-width: 140px;
+            outline: none;
+            transition: all 0.2s;
 
             &:focus {
-              outline: none;
               border-color: #3b82f6;
               box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
             }
+          }
+        }
+      }
 
-            &:hover {
-              border-color: #9ca3af;
+      // Mobile responsive improvements
+      @media (max-width: 768px) {
+        .search-and-filters {
+          flex-direction: column;
+          gap: 0.75rem;
+          width: 100%;
+
+          .search-container {
+            width: 100%;
+            min-width: unset;
+          }
+
+          .filters-container {
+            width: 100%;
+            flex-wrap: wrap;
+
+            .filter-select {
+              flex: 1;
+              min-width: 120px;
             }
           }
         }

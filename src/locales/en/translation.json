@@ -938,6 +938,33 @@
       "followers": "followers"
     }
   },
+  "screenplay": {
+    "addCollaborator": "Add Collaborator",
+    "collaborators": "Collaborators",
+    "noCollaborators": "No collaborators yet.",
+    "annotations": "Annotations",
+    "tags": "Tags",
+    "actions": {
+      "goTo": "Go to",
+      "delete": "Delete", 
+      "resolve": "Resolve",
+      "reopen": "Reopen",
+      "reply": "Reply"
+    },
+    "popup": {
+      "addToSelection": "Add to selection:",
+      "addAnnotation": "Add Annotation",
+      "addTag": "Add Tag",
+      "cancel": "Cancel",
+      "save": "Save",
+      "enterAnnotation": "Enter your annotation...",
+      "enterTag": "Enter tag content...",
+      "writeReply": "Write a reply..."
+    },
+    "navigation": {
+      "navigatingTo": "Navigating to annotation..."
+    }
+  },
   "common": {
     "loading": "Loading...",
     "error": "Error",

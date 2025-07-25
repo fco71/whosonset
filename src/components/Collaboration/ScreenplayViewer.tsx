@@ -3,8 +3,9 @@ import { collection, addDoc, query, where, orderBy, getDocs, onSnapshot, updateD
 import { Document, Page, pdfjs } from 'react-pdf';
 import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
-import { toast } from 'react-hot-toast';
+import { toast } from 'react-toastify';
 import './ScreenplayViewer.scss';
+import { useTranslation } from 'react-i18next';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
@@ -168,6 +169,8 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   const modalRef = useRef<HTMLDivElement>(null);
   
   const [searchLoading, setSearchLoading] = useState(false);
+
+  const { t } = useTranslation();
 
   if (!screenplay || !screenplay.id) return null;
 
@@ -1002,19 +1005,13 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       
       newUsers.forEach(user => {
         if (user.userId !== currentUser?.uid) {
-          toast.success(`${user.userName} joined the session`, {
-            icon: '👋',
-            duration: 3000
-          });
+          toast.success(`${user.userName} joined the session`);
         }
       });
       
       leftUsers.forEach(user => {
         if (user.userId !== currentUser?.uid) {
-          toast(`${user.userName} left the session`, {
-            icon: '👋',
-            duration: 2000
-          });
+          toast.info(`${user.userName} left the session`);
         }
       });
     }
@@ -1666,9 +1663,9 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
 
                   {/* Collaborators */}
                   <div className="collaborators-section">
-                    <h4>🤝 Collaborators ({collaborators.filter(user => user && user.id && user.name).length})</h4>
+                    <h4>🤝 {t('screenplay.collaborators')} ({collaborators.filter(user => user && user.id && user.name).length})</h4>
                     <div className="collaborators-list">
-                      {uniqueCollaborators.length === 0 && <div className="no-collaborators">No collaborators yet.</div>}
+                      {uniqueCollaborators.length === 0 && <div className="no-collaborators">{t('screenplay.noCollaborators')}</div>}
                       {uniqueCollaborators.map(user => (
                         <div key={user.id} className="collaborator-item">
                           <div className="collaborator-avatar">
@@ -1691,12 +1688,12 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                         </div>
                       ))}
                     </div>
-                    <button className="add-collaborator-btn" onClick={() => setShowAddCollaboratorModal(true)}>+ Add Collaborator</button>
+                    <button className="add-collaborator-btn" onClick={() => setShowAddCollaboratorModal(true)}>+ {t('screenplay.addCollaborator')}</button>
                   </div>
 
                   {/* Annotations List */}
                   <div className="annotations-section">
-                    <h4>💬 Annotations ({annotations.length})</h4>
+                    <h4>💬 {t('screenplay.annotations')} ({annotations.length})</h4>
                     <div className="annotations-list">
                       {annotations.map(annotation => (
                         <div key={annotation.id} className={`annotation-item ${annotation.resolved ? 'resolved' : ''}`}>
@@ -1720,7 +1717,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                               onClick={() => setReplyingTo(annotation.id)}
                               className="reply-btn compact"
                             >
-                              <span style={{fontSize: '1.1em', marginRight: 2}}>↩</span> Reply
+                              <span style={{fontSize: '1.1em', marginRight: 2}}>↩</span> {t('screenplay.actions.reply')}
                             </button>
                           )}
                           {/* Replies Section */}
@@ -1748,7 +1745,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                               <textarea
                                 value={replyInput}
                                 onChange={(e) => setReplyInput(e.target.value)}
-                                placeholder="Write a reply..."
+                                placeholder={t('screenplay.popup.writeReply')}
                                 className="reply-textarea compact"
                                 rows={2}
                                 autoFocus
@@ -1797,28 +1794,28 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                               onClick={(e) => { e.stopPropagation(); navigateToElement(annotation); }}
                               className="action-btn"
                             >
-                              📍 Go to
+                              📍 {t('screenplay.actions.goTo')}
                             </button>
                             {!annotation.resolved ? (
                               <button
                                 onClick={() => toggleElementResolved(annotation.id, 'annotation')}
                                 className="action-btn"
                               >
-                                ✅ Resolve
+                                ✅ {t('screenplay.actions.resolve')}
                               </button>
                             ) : (
                               <button
                                 onClick={() => toggleElementResolved(annotation.id, 'annotation')}
                                 className="action-btn"
                               >
-                                🔄 Reopen
+                                🔄 {t('screenplay.actions.reopen')}
                               </button>
                             )}
                             <button 
                               onClick={(e) => { e.stopPropagation(); deleteElement(annotation.id, 'annotation'); }}
                               className="action-btn delete"
                             >
-                              🗑️ Delete
+                              🗑️ {t('screenplay.actions.delete')}
                             </button>
                           </div>
                         </div>
@@ -1828,7 +1825,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
 
                   {/* Tags List */}
                   <div className="tags-section">
-                    <h4>🏷️ Tags ({tags.length})</h4>
+                    <h4>🏷️ {t('screenplay.tags')} ({tags.length})</h4>
                     <div className="tags-list">
                       {tags.map(tag => (
                         <div key={tag.id} className={`tag-item ${tag.resolved ? 'resolved' : ''}`}>
@@ -1859,19 +1856,19 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                               onClick={(e) => { e.stopPropagation(); navigateToElement(tag); }}
                               className="action-btn"
                             >
-                              📍 Go to
+                              📍 {t('screenplay.actions.goTo')}
                             </button>
                             <button 
                               onClick={(e) => { e.stopPropagation(); toggleElementResolved(tag.id, 'tag'); }}
                               className={`action-btn ${tag.resolved ? 'resolved' : ''}`}
                             >
-                              {tag.resolved ? '🔄 Reopen' : '✅ Resolve'}
+                              {tag.resolved ? `🔄 ${t('screenplay.actions.reopen')}` : `✅ ${t('screenplay.actions.resolve')}`}
                             </button>
                             <button 
                               onClick={(e) => { e.stopPropagation(); deleteElement(tag.id, 'tag'); }}
                               className="action-btn delete"
                             >
-                              🗑️ Delete
+                              🗑️ {t('screenplay.actions.delete')}
                             </button>
                           </div>
                         </div>
@@ -1888,7 +1885,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         {isNavigating && (
           <div className="navigation-loading">
             <div className="spinner"></div>
-            <span>Navigating to annotation...</span>
+            <span>{t('screenplay.navigation.navigatingTo')}</span>
           </div>
         )}
 
@@ -1910,11 +1907,11 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
             onMouseDown={handlePopupMouseDown}
           >
             <div className="popup-header" style={{ fontWeight: 600, color: '#374151', marginBottom: 8, cursor: 'grab' }}>
-              {popupType === 'annotation' ? 'Add Annotation' : popupType === 'tag' ? 'Add Tag' : 'Add to selection:'}
+              {popupType === 'annotation' ? t('screenplay.popup.addAnnotation') : popupType === 'tag' ? t('screenplay.popup.addTag') : t('screenplay.popup.addToSelection')}
             </div>
             {popupType === 'annotation' && (
               <textarea
-                placeholder="Enter your annotation..."
+                placeholder={t('screenplay.popup.enterAnnotation')}
                 value={annotationInput}
                 onChange={e => setAnnotationInput(e.target.value)}
                 rows={3}
@@ -1970,7 +1967,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                 </select>
                 <input
                   type="text"
-                  placeholder="Enter tag content..."
+                  placeholder={t('screenplay.popup.enterTag')}
                   value={newTag}
                   onChange={e => setNewTag(e.target.value)}
                   style={{ 
@@ -2003,7 +2000,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                   }}
                   style={{ background: '#3b82f6', color: 'white', border: 'none', borderRadius: 6, padding: '8px 12px', fontSize: 13, cursor: 'pointer', transition: 'background 0.2s ease' }}
                 >
-                  💬 Add Annotation
+                  💬 {t('screenplay.popup.addAnnotation')}
                 </button>
                 <button
                   onClick={() => {
@@ -2012,7 +2009,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                   }}
                   style={{ background: '#f59e0b', color: 'white', border: 'none', borderRadius: 6, padding: '8px 12px', fontSize: 13, cursor: 'pointer', transition: 'background 0.2s ease' }}
                 >
-                  🏷️ Add Tag
+                  🏷️ {t('screenplay.popup.addTag')}
                 </button>
                 <button
                   onClick={() => {
@@ -2024,7 +2021,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                   }}
                   style={{ background: '#f3f4f6', color: '#6b7280', border: '1px solid #d1d5db', borderRadius: 6, padding: '6px 12px', fontSize: 12, cursor: 'pointer', transition: 'background 0.2s ease' }}
                 >
-                  Cancel
+                  {t('screenplay.popup.cancel')}
                 </button>
               </div>
             )}
@@ -2038,14 +2035,14 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                   }}
                   style={{ background: '#f3f4f6', color: '#6b7280', border: '1px solid #d1d5db', borderRadius: 6, padding: '6px 12px', fontSize: 12, cursor: 'pointer' }}
                 >
-                  Cancel
+                  {t('screenplay.popup.cancel')}
                 </button>
                 <button
                   onClick={() => createAnnotation(popupType as 'annotation' | 'tag')}
                   disabled={popupType === 'annotation' ? !annotationInput.trim() : !newTag.trim()}
                   style={{ background: (popupType === 'annotation' ? annotationInput.trim() : newTag.trim()) ? (popupType === 'annotation' ? '#3b82f6' : '#f59e0b') : '#9ca3af', color: 'white', border: 'none', borderRadius: 6, padding: '6px 12px', fontSize: 12, cursor: (popupType === 'annotation' ? annotationInput.trim() : newTag.trim()) ? 'pointer' : 'not-allowed' }}
                 >
-                  Save {popupType === 'annotation' ? '(Ctrl+Enter)' : '(Enter)'}
+                  {t('screenplay.popup.save')} {popupType === 'annotation' ? '(Ctrl+Enter)' : '(Enter)'}
                 </button>
               </div>
             )}
