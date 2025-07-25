@@ -315,7 +315,7 @@ const ApplicationMessaging: React.FC<ApplicationMessagingProps> = ({
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 min-h-0">
         {messages.length === 0 ? (
           <div className="text-center py-8">
             <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-4" />
@@ -371,8 +371,8 @@ const ApplicationMessaging: React.FC<ApplicationMessagingProps> = ({
 
   if (isModal) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
-        <div className="bg-white rounded-xl max-w-2xl w-full max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-hidden" onClick={onClose}>
+        <div className="bg-white rounded-xl max-w-2xl w-full h-[85vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
           {content}
         </div>
       </div>
@@ -380,7 +380,7 @@ const ApplicationMessaging: React.FC<ApplicationMessagingProps> = ({
   }
 
   return (
-    <Card className="h-[600px] flex flex-col">
+    <Card className="h-[600px] flex flex-col overflow-hidden">
       {content}
     </Card>
   );
