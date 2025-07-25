@@ -4,6 +4,7 @@ import { db } from '../../firebase';
 import { CrewProfile } from '../../types/CrewProfile';
 import { Project } from '../../models/Project';
 import './NetworkingHub.scss';
+import { useTranslation } from 'react-i18next';
 
 interface NetworkingHubProps {
   currentUserId: string;
@@ -30,6 +31,7 @@ interface Collaboration {
 }
 
 const NetworkingHub: React.FC<NetworkingHubProps> = ({ currentUserId, currentUser }) => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<'discover' | 'connections' | 'collaborations' | 'events'>('discover');
   const [crewProfiles, setCrewProfiles] = useState<CrewProfile[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -202,8 +204,8 @@ const NetworkingHub: React.FC<NetworkingHubProps> = ({ currentUserId, currentUse
   return (
     <div className="networking-hub">
       <div className="networking-header">
-        <h1>🎬 Film Industry Network</h1>
-        <p>Connect with crew members, discover projects, and build your professional network</p>
+        <h1>{t('social.networking.title')}</h1>
+        <p>{t('social.networking.subtitle')}</p>
       </div>
 
       <div className="networking-tabs">
@@ -211,25 +213,25 @@ const NetworkingHub: React.FC<NetworkingHubProps> = ({ currentUserId, currentUse
           className={`tab ${activeTab === 'discover' ? 'active' : ''}`}
           onClick={() => setActiveTab('discover')}
         >
-          🔍 Discover Crew
+          {t('social.networking.tabs.discoverCrew')}
         </button>
         <button 
           className={`tab ${activeTab === 'connections' ? 'active' : ''}`}
           onClick={() => setActiveTab('connections')}
         >
-          👥 Connections
+          {t('social.networking.tabs.connections')}
         </button>
         <button 
           className={`tab ${activeTab === 'collaborations' ? 'active' : ''}`}
           onClick={() => setActiveTab('collaborations')}
         >
-          🤝 Collaborations
+          {t('social.networking.tabs.collaborations')}
         </button>
         <button 
           className={`tab ${activeTab === 'events' ? 'active' : ''}`}
           onClick={() => setActiveTab('events')}
         >
-          📅 Industry Events
+          {t('social.networking.tabs.industryEvents')}
         </button>
       </div>
 
@@ -239,7 +241,7 @@ const NetworkingHub: React.FC<NetworkingHubProps> = ({ currentUserId, currentUse
             <div className="search-bar">
               <input
                 type="text"
-                placeholder="Search by name, skills, or job title..."
+                placeholder={t('social.networking.search.placeholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="search-input"
@@ -252,7 +254,7 @@ const NetworkingHub: React.FC<NetworkingHubProps> = ({ currentUserId, currentUse
                 onChange={(e) => setFilterDepartment(e.target.value)}
                 className="filter-select"
               >
-                <option value="all">All Departments</option>
+                <option value="all">{t('social.networking.filters.allDepartments')}</option>
                 {departments.map(dept => (
                   <option key={dept} value={dept}>{dept}</option>
                 ))}
@@ -263,7 +265,7 @@ const NetworkingHub: React.FC<NetworkingHubProps> = ({ currentUserId, currentUse
                 onChange={(e) => setFilterLocation(e.target.value)}
                 className="filter-select"
               >
-                <option value="all">All Locations</option>
+                <option value="all">{t('social.networking.filters.allLocations')}</option>
                 {locations.map(location => (
                   <option key={location} value={location}>{location}</option>
                 ))}
@@ -427,8 +429,8 @@ const NetworkingHub: React.FC<NetworkingHubProps> = ({ currentUserId, currentUse
       {activeTab === 'events' && (
         <div className="events-section">
           <div className="events-header">
-            <h3>Industry Events & Networking</h3>
-            <button className="create-event-btn">+ Add Event</button>
+            <h3>{t('social.networking.industryEventsTitle')}</h3>
+            <button className="create-event-btn">{t('social.networking.events.addEvent')}</button>
           </div>
 
           <div className="events-grid">
@@ -445,7 +447,7 @@ const NetworkingHub: React.FC<NetworkingHubProps> = ({ currentUserId, currentUse
                   <span>👥 127 attending</span>
                 </div>
               </div>
-              <button className="rsvp-btn">RSVP</button>
+              <button className="rsvp-btn">{t('social.networking.events.rsvp')}</button>
             </div>
 
             <div className="event-card">

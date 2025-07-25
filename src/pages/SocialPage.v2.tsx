@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/Avatar';
 import { Badge } from '../components/ui/Badge';
 import { Skeleton } from '../components/ui/Skeleton';
 import { Search, UserCheck, Users, UserPlus, UserX, Bell, Check, X, MoreHorizontal, MessageCircle, Send, Plus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 // Helper function to get display name from profile
 const getDisplayName = (profile: SocialUser): string => {
@@ -515,6 +516,7 @@ const StartConversationModal: React.FC<{
 };
 
 const SocialPage: React.FC = () => {
+  const { t } = useTranslation();
   const { currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('following');
   const [searchQuery, setSearchQuery] = useState('');
@@ -906,9 +908,9 @@ const SocialPage: React.FC = () => {
     <div className="max-w-7xl mx-auto px-2 sm:px-4 py-4">
       <div className="sm:flex sm:items-center sm:justify-between mb-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Social</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('social.title')}</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Connect with other professionals in your network
+            {t('social.subtitle')}
           </p>
         </div>
         <div className="mt-4 sm:mt-0 flex items-center space-x-3">
@@ -919,10 +921,10 @@ const SocialPage: React.FC = () => {
             className="flex items-center space-x-2"
           >
             <MessageCircle className="h-4 w-4" />
-            <span>Messages</span>
+            <span>{t('social.messages')}</span>
           </Button>
           <div className="relative rounded-md shadow-sm max-w-xs">
-            <label htmlFor="search-people" className="sr-only">Search people</label>
+            <label htmlFor="search-people" className="sr-only">{t('social.searchPlaceholder')}</label>
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Search className="h-4 w-4 text-gray-400" />
             </div>
@@ -930,11 +932,11 @@ const SocialPage: React.FC = () => {
               type="text"
               id="search-people"
               name="searchPeople"
-              placeholder="Search people..."
+              placeholder={t('social.searchPeople')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 w-full"
-              aria-label="Search for people to connect with"
+              aria-label={t('social.searchPlaceholder')}
             />
           </div>
         </div>
@@ -948,7 +950,7 @@ const SocialPage: React.FC = () => {
             icon={UserCheck}
             count={following.length}
           >
-            Following
+            {t('social.tabs.following')}
           </TabButton>
           
           <TabButton
@@ -957,7 +959,7 @@ const SocialPage: React.FC = () => {
             icon={Users}
             count={followers.length}
           >
-            Followers
+            {t('social.tabs.followers')}
           </TabButton>
           
           <TabButton
@@ -965,7 +967,7 @@ const SocialPage: React.FC = () => {
             onClick={() => setActiveTab('discover')}
             icon={Search}
           >
-            Discover
+            {t('social.tabs.discover')}
           </TabButton>
           
           <TabButton
@@ -974,7 +976,7 @@ const SocialPage: React.FC = () => {
             icon={UserPlus}
             count={followRequests.length}
           >
-            Requests
+            {t('social.tabs.requests')}
           </TabButton>
           
           <TabButton
@@ -983,7 +985,7 @@ const SocialPage: React.FC = () => {
             icon={Bell}
             count={notifications.length}
           >
-            Notifications
+            {t('social.tabs.notifications')}
           </TabButton>
         </div>
       </div>

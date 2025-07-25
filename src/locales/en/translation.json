@@ -619,6 +619,323 @@
     "createFirst": "Create your first project to get started.",
     "loginRequired": "You must be logged in to view your projects."
   },
+  "collaboration": {
+    "title": "Collaboration Hub",
+    "subtitle": "Work together on projects, tasks, and creative content",
+    "workspaces": "Workspaces",
+    "tasks": "Tasks",
+    "screenplays": "Screenplays",
+    "loading": "Loading...",
+    "noWorkspaces": "No workspaces available",
+    "createWorkspace": "Create New Workspace",
+    "joinWorkspace": "Join",
+    "addMember": "Add Member",
+    "settings": "Settings",
+    "members": "Members",
+    "online": "Online",
+    "offline": "Offline",
+    "view": "View",
+    "delete": "Delete",
+    "workspacesTab": {
+      "title": "Workspaces",
+      "createWorkspace": "Create Workspace"
+    },
+    "workspaceTypes": {
+      "project": "Project",
+      "department": "Department", 
+      "general": "General"
+    },
+    "createWorkspaceModal": {
+      "title": "Create New Workspace",
+      "step1": "Step 1: Workspace Details",
+      "step2": "Step 2: Add Members",
+      "step3": "Step 3: Workspace Settings",
+      "workspaceName": "Workspace Name",
+      "workspaceNamePlaceholder": "Enter workspace name",
+      "description": "Description",
+      "descriptionPlaceholder": "Enter workspace description",
+      "workspaceType": "Workspace Type",
+      "searchUsers": "Search Users",
+      "searchPlaceholder": "Search by name, email, or role...",
+      "allowGuestAccess": "Allow Guest Access",
+      "requireApproval": "Require Approval for New Members",
+      "autoArchive": "Auto-archive Inactive Content",
+      "retentionPeriod": "Retention Period (days)",
+      "maxFileSize": "Max File Size (MB)",
+      "cancel": "Cancel",
+      "next": "Next",
+      "createWorkspace": "Create Workspace",
+      "searching": "Searching...",
+      "noFriendsFound": "No friends found.",
+      "startTyping": "Start typing to search for users"
+    },
+    "workspaceSettings": {
+      "title": "Workspace Settings",
+      "saveSettings": "Save Settings"
+    },
+    "addMemberModal": {
+      "title": "Add Member to Workspace"
+    },
+    "tasksTab": {
+      "title": "Tasks",
+      "subtitle": "Manage collaborative tasks and project workflows"
+    },
+    "screenplaysTab": {
+      "title": "Screenplays",
+      "subtitle": "Upload and collaborate on screenplay breakdowns",
+      "uploadScreenplay": "Upload Screenplay",
+      "uploading": "Uploading...",
+      "deleteConfirm": "Are you sure you want to delete this screenplay?",
+      "deleteSuccess": "Screenplay deleted successfully",
+      "deleteFailed": "Failed to delete screenplay",
+             "uploadSuccess": "uploaded successfully!",
+       "uploadFailed": "Failed to upload screenplay"
+     },
+     "workspaceDeleteConfirm": "Are you sure you want to delete this workspace and all its data? This action cannot be undone."
+  },
+  "tasks": {
+    "title": "Collaborative Tasks",
+    "subtitle": "Manage team tasks, deadlines, and reminders",
+    "createTask": "Create Task",
+    "editTask": "Edit Task",
+    "deleteTask": "Delete Task",
+    "loading": "Loading tasks...",
+    "noTasks": "No tasks found",
+    "noTasksDescription": "Create your first task to get started",
+    "searchTasks": "Search tasks...",
+    "addComment": "Add Comment",
+    "viewModes": {
+      "list": "List",
+      "calendar": "Calendar", 
+      "kanban": "Kanban",
+      "analytics": "Analytics"
+    },
+    "comingSoon": {
+      "calendar": "Calendar view coming soon...",
+      "kanban": "Kanban view coming soon...",
+      "analytics": "Analytics view coming soon..."
+    },
+    "stats": {
+      "total": "Total Tasks",
+      "completed": "Completed",
+      "inProgress": "In Progress",
+      "overdue": "Overdue"
+    },
+    "status": {
+      "pending": "Not Started",
+      "in_progress": "In Progress",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "overdue": "Overdue"
+    },
+    "filters": {
+      "allStatus": "All Status",
+      "allCategories": "All Categories",
+      "pending": "Pending",
+      "inProgress": "In Progress",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "overdue": "Overdue"
+    },
+    "categories": {
+      "preProduction": "Pre-Production",
+      "production": "Production",
+      "postProduction": "Post-Production",
+      "marketing": "Marketing",
+      "distribution": "Distribution",
+      "other": "Other"
+    },
+    "taskForm": {
+      "createTask": "Create New Task",
+      "editTask": "Edit Task",
+      "taskName": "Task Name",
+      "description": "Description",
+      "dueDate": "Due Date",
+      "assignee": "Assignee",
+      "category": "Category",
+      "priority": "Priority",
+      "status": "Status",
+      "cancel": "Cancel",
+      "save": "Save Task",
+      "update": "Update Task"
+    },
+    "task": {
+      "dueDate": "Due:",
+      "assignedTo": "Assigned to:",
+      "category": "Category:",
+      "priority": "Priority:",
+      "createdBy": "Created by:",
+      "comments": "Comments",
+      "noComments": "No comments yet",
+      "addComment": "Add a comment...",
+      "showComments": "Show Comments",
+      "hideComments": "Hide Comments",
+      "expand": "Expand",
+      "collapse": "Collapse",
+      "completedBadge": "✔ Completed",
+      "edit": "Edit",
+      "notes": "Notes",
+      "tags": "Tags",
+      "teamMembers": "Team Members",
+      "estimatedHours": "Estimated Hours",
+      "location": "Location",
+             "subtasks": "Subtasks",
+       "subtasksCompleted": "completed"
+     },
+     "errors": {
+       "loginRequired": "You must be logged in to create tasks",
+       "createFailed": "Failed to create task. Please try again.",
+       "updateFailed": "Failed to update task. Please try again.",
+       "deleteFailed": "Failed to delete task. Please try again.",
+       "completeFailed": "Failed to complete task. Please try again.",
+       "startFailed": "Failed to start task. Please try again.",
+       "restoreFailed": "Failed to restore task. Please try again.",
+       "commentFailed": "Failed to add comment. Please try again.",
+       "saveFailed": "Failed to save task"
+     }
+  },
+  "social": {
+    "title": "Social",
+    "subtitle": "Connect with other professionals in your network",
+    "searchPeople": "Search people...",
+    "searchPlaceholder": "Search for people to connect with",
+    "messages": "Messages",
+    "loading": "Loading...",
+    "tabs": {
+      "following": "Following",
+      "followers": "Followers",
+      "discover": "Discover",
+      "requests": "Requests",
+      "notifications": "Notifications",
+      "connections": "Connections"
+    },
+    "actions": {
+      "connect": "Connect",
+      "unfollow": "Unfollow",
+      "follow": "Follow",
+      "viewProfile": "View Profile",
+      "message": "Message",
+      "accept": "Accept",
+      "decline": "Decline",
+      "remove": "Remove",
+      "block": "Block",
+      "report": "Report"
+    },
+    "status": {
+      "online": "Online",
+      "offline": "Offline",
+      "away": "Away",
+      "busy": "Busy"
+    },
+    "networking": {
+      "title": "🎬 Film Industry Network",
+      "subtitle": "Connect, collaborate, and grow your career in the film industry",
+      "tabs": {
+        "feed": "📰 Activity Feed",
+        "discover": "🔍 Discover People",
+        "groups": "👥 Industry Groups",
+        "events": "📅 Events",
+        "connections": "🤝 My Connections",
+        "discoverCrew": "🔍 Discover Crew",
+        "collaborations": "🤝 Collaborations",
+        "industryEvents": "📅 Industry Events"
+      },
+      "search": {
+        "placeholder": "Search by name, skills, or job title...",
+        "noResults": "No crew members found",
+        "filterBy": "Filter by"
+      },
+      "industryEventsTitle": "Industry Events & Networking",
+      "filters": {
+        "allDepartments": "All Departments",
+        "allLocations": "All Locations"
+      },
+      "events": {
+        "addEvent": "+ Add Event",
+        "rsvp": "RSVP",
+        "attending": "attending"
+      },
+      "feed": {
+        "title": "Recent Activity",
+        "noActivity": "No recent activity to show"
+      },
+      "discover": {
+        "title": "Discover Amazing Professionals",
+        "noProfiles": "No profiles found"
+      },
+      "groups": {
+        "title": "Industry Groups",
+        "join": "Join",
+        "leave": "Leave",
+        "viewDetails": "View Details",
+        "members": "members",
+        "noGroups": "No groups available"
+      },
+      "events": {
+        "title": "Upcoming Events",
+        "attend": "Attend",
+        "viewDetails": "View Details",
+        "attending": "attending",
+        "maxAttendees": "Max",
+        "noEvents": "No upcoming events"
+      },
+      "connections": {
+        "title": "My Network",
+        "comingSoon": "Connection management coming soon..."
+      }
+    },
+    "profile": {
+      "followers": "followers",
+      "following": "following",
+      "projects": "projects",
+      "connections": "connections",
+      "posts": "posts",
+      "location": "Location",
+      "department": "Department",
+      "experience": "Experience",
+      "availability": "Availability",
+      "skills": "Skills",
+      "bio": "Bio",
+      "contactInfo": "Contact Information",
+      "socialLinks": "Social Links",
+      "endorsements": "Endorsements",
+      "reviews": "Reviews"
+    },
+    "messaging": {
+      "startConversation": "Start Conversation",
+      "typeMessage": "Type a message...",
+      "send": "Send",
+      "attachFile": "Attach File",
+      "emoji": "Emoji",
+      "voiceCall": "Voice Call",
+      "videoCall": "Video Call",
+      "moreOptions": "More Options",
+      "edited": "(edited)",
+      "newMessage": "New Message",
+      "selectContact": "Select a contact to start messaging"
+    },
+    "errors": {
+      "loadFailed": "Failed to load data",
+      "connectFailed": "Failed to connect",
+      "messageFailed": "Failed to send message",
+      "followFailed": "Failed to follow user",
+      "unfollowFailed": "Failed to unfollow user",
+      "profileLoadFailed": "Failed to load profile"
+    },
+    "empty": {
+      "noConnections": "No connections yet",
+      "noRequests": "No pending requests",
+      "noNotifications": "No new notifications",
+      "noMessages": "No messages yet",
+      "noFollowers": "No followers yet",
+      "noFollowing": "Not following anyone yet"
+    },
+    "statusText": {
+      "pendingRequests": "pending requests",
+      "following": "following",
+      "followers": "followers"
+    }
+  },
   "common": {
     "loading": "Loading...",
     "error": "Error",

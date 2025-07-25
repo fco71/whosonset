@@ -12,6 +12,7 @@ import {
   Search,
   Filter
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface UserData {
   id: string;
@@ -21,6 +22,7 @@ interface UserData {
 }
 
 const SocialDashboard: React.FC = () => {
+  const { t } = useTranslation();
   const { currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState<'requests' | 'following' | 'followers'>('requests');
   const [followRequests, setFollowRequests] = useState<FollowRequest[]>([]);
@@ -221,34 +223,34 @@ const SocialDashboard: React.FC = () => {
     switch (activeTab) {
       case 'requests':
         return {
-          title: 'Follow Requests',
+          title: t('social.tabs.requests'),
           icon: <UserPlus className="w-4 h-4" />,
           data: followRequests,
-          emptyMessage: 'No pending follow requests',
+          emptyMessage: t('social.empty.noRequests'),
           showActions: true
         };
       case 'following':
         return {
-          title: 'Following',
+          title: t('social.tabs.following'),
           icon: <UserCheck className="w-4 h-4" />,
           data: following,
-          emptyMessage: 'Not following anyone yet',
+          emptyMessage: t('social.empty.noFollowing'),
           showActions: false
         };
       case 'followers':
         return {
-          title: 'Followers',
+          title: t('social.tabs.followers'),
           icon: <Users className="w-4 h-4" />,
           data: followers,
-          emptyMessage: 'No followers yet',
+          emptyMessage: t('social.empty.noFollowers'),
           showActions: false
         };
       default:
         return {
-          title: 'Follow Requests',
+          title: t('social.tabs.requests'),
           icon: <UserPlus className="w-4 h-4" />,
           data: followRequests,
-          emptyMessage: 'No pending follow requests',
+          emptyMessage: t('social.empty.noRequests'),
           showActions: true
         };
     }
@@ -263,7 +265,7 @@ const SocialDashboard: React.FC = () => {
           <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6">
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-3 border-blue-200 border-t-blue-600"></div>
-              <span className="ml-3 text-gray-700 font-medium">Loading your social connections...</span>
+              <span className="ml-3 text-gray-700 font-medium">{t('social.loading')}...</span>
             </div>
           </div>
         </div>
@@ -279,16 +281,16 @@ const SocialDashboard: React.FC = () => {
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
               <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent mb-1">
-                Social Dashboard
+                {t('social.title')} Dashboard
               </h1>
-              <p className="text-gray-600 text-sm">Connect with your film industry network</p>
+              <p className="text-gray-600 text-sm">{t('social.subtitle')}</p>
             </div>
             <div className="flex items-center gap-4 text-sm text-gray-600">
-              <span>{followRequests.length} pending requests</span>
+              <span>{followRequests.length} {t('social.statusText.pendingRequests')}</span>
               <span>•</span>
-              <span>{following.length} following</span>
+              <span>{following.length} {t('social.statusText.following')}</span>
               <span>•</span>
-              <span>{followers.length} followers</span>
+              <span>{followers.length} {t('social.statusText.followers')}</span>
             </div>
           </div>
         </div>
@@ -312,7 +314,7 @@ const SocialDashboard: React.FC = () => {
               }`}
             >
               <UserPlus className="w-3 h-3" />
-              <span>Requests ({followRequests.length})</span>
+              <span>{t('social.tabs.requests')} ({followRequests.length})</span>
             </button>
             
             <button
@@ -324,7 +326,7 @@ const SocialDashboard: React.FC = () => {
               }`}
             >
               <UserCheck className="w-3 h-3" />
-              <span>Following ({following.length})</span>
+              <span>{t('social.tabs.following')} ({following.length})</span>
             </button>
             
             <button
@@ -336,7 +338,7 @@ const SocialDashboard: React.FC = () => {
               }`}
             >
               <Users className="w-3 h-3" />
-              <span>Followers ({followers.length})</span>
+              <span>{t('social.tabs.followers')} ({followers.length})</span>
             </button>
           </nav>
         </div>
@@ -372,31 +374,30 @@ const SocialDashboard: React.FC = () => {
             {/* User List */}
             {tabData.data.length === 0 ? (
               <div className="text-center py-12">
-                <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <div className="text-gray-400">
-                    {tabData.icon}
-                  </div>
+                <div className="bg-gradient-to-br from-gray-100 to-gray-200 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner">
+                  {tabData.icon}
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No users found</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('social.empty.noConnections')}</h3>
                 <p className="text-gray-600">{tabData.emptyMessage}</p>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {tabData.data.map((item) => {
                   const userData = getUserData(item, activeTab === 'requests' ? 'request' : activeTab === 'following' ? 'following' : 'follower');
                   // For followers tab, check if we already follow this user
                   const isAlreadyFollowing = activeTab === 'followers' && followingSet.has(userData.id);
+                  
                   return (
-                    <div 
-                      key={userData.id} 
-                      className="bg-white/60 backdrop-blur-sm border border-gray-200 rounded-xl p-4 hover:bg-white/80 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+                    <div
+                      key={userData.id}
+                      className="bg-gradient-to-r from-white to-blue-50/30 rounded-lg p-4 border border-blue-100/50 hover:border-blue-200 transition-all duration-300 hover:shadow-md group"
                     >
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-4">
                           <div className="relative">
                             <img
                               src={userData.avatar || '/bust-avatar.svg'}
-                              alt={userData.displayName || 'User'}
+                              alt={userData.displayName}
                               className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-md"
                               onError={e => {
                                 const target = e.currentTarget;
@@ -418,9 +419,9 @@ const SocialDashboard: React.FC = () => {
                               <p className="text-gray-600 text-sm mb-1">{userData.department}</p>
                             )}
                             <span className="text-blue-600 font-medium text-xs">
-                              {activeTab === 'requests' ? 'Wants to follow you' : 
-                               activeTab === 'following' ? 'You are following' : 
-                               'Following you'}
+                              {activeTab === 'requests' ? t('social.actions.follow') + ' request' : 
+                               activeTab === 'following' ? t('social.tabs.following') : 
+                               t('social.tabs.followers')}
                             </span>
                           </div>
                         </div>
@@ -432,13 +433,13 @@ const SocialDashboard: React.FC = () => {
                                 onClick={() => handleFollowRequest(userData.id, 'accept')}
                                 className="btn-accept"
                               >
-                                Accept
+                                {t('social.actions.accept')}
                               </Button>
                               <Button
                                 onClick={() => handleFollowRequest(userData.id, 'reject')}
                                 className="bg-white hover:bg-gray-100 text-blue-600 px-3 py-1 rounded-full text-sm font-medium border border-blue-600 transition-colors"
                               >
-                                Reject
+                                {t('social.actions.decline')}
                               </Button>
                             </>
                           )}
@@ -447,7 +448,7 @@ const SocialDashboard: React.FC = () => {
                               onClick={() => handleUnfollow(userData.id)}
                               className="bg-white hover:bg-gray-100 text-gray-500 px-3 py-1 rounded-full text-sm font-medium border border-gray-300 transition-colors mr-2"
                             >
-                              Unfollow
+                              {t('social.actions.unfollow')}
                             </button>
                           )}
                           {activeTab === 'followers' && !isAlreadyFollowing && (
@@ -455,17 +456,17 @@ const SocialDashboard: React.FC = () => {
                               onClick={() => handleFollow(userData.id)}
                               className="btn-follow-back"
                             >
-                              Follow Back
+                              {t('social.actions.follow')} Back
                             </Button>
                           )}
                           {activeTab === 'followers' && isAlreadyFollowing && (
-                            <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold border border-green-200">Following</span>
+                            <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold border border-green-200">{t('social.tabs.following')}</span>
                           )}
                           <Button
                             className="bg-white hover:bg-gray-100 text-blue-600 px-3 py-1 rounded-full text-sm font-medium border border-blue-600 transition-colors flex items-center gap-1"
                           >
                             <MessageCircle className="w-4 h-4" />
-                            Message
+                            {t('social.actions.message')}
                           </Button>
                         </div>
                       </div>

@@ -15,6 +15,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { collection, addDoc, query, where, orderBy, getDocs, onSnapshot, updateDoc, doc, deleteDoc } from 'firebase/firestore';
 import { db, storage } from '../../firebase';
 import ScreenplayViewer from './ScreenplayViewer';
+import { useTranslation } from 'react-i18next';
 
 interface CollaborationHubProps {
   projectId?: string;
@@ -101,6 +102,7 @@ class CollaborationErrorBoundary extends React.Component<ErrorBoundaryProps, Err
 }
 
 const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
+  const { t } = useTranslation();
   const { currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('workspaces');
   const [workspaces, setWorkspaces] = useState<CollaborationWorkspace[]>([]);
@@ -551,11 +553,11 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       // Update the screenplays list
       setUserScreenplays(prev => [...prev, uploadedScreenplay]);
       
-      toast.success(`${file.name} uploaded successfully!`);
+      toast.success(`${file.name} ${t('collaboration.screenplaysTab.uploadSuccess')}`);
       loadTeamMembers();
     } catch (error) {
       console.error('Error uploading screenplay:', error);
-      toast.error('Failed to upload screenplay');
+      toast.error(t('collaboration.screenplaysTab.uploadFailed'));
     } finally {
       setUploadingScreenplay(false);
       e.target.value = '';
@@ -680,15 +682,15 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   }
 
   const handleDeleteScreenplay = async (screenplayId: string) => {
-    if (window.confirm('Are you sure you want to delete this screenplay?')) {
+    if (window.confirm(t('collaboration.screenplaysTab.deleteConfirm'))) {
       try {
         await deleteDoc(doc(db, 'screenplays', screenplayId));
-        toast.success('Screenplay deleted successfully');
+        toast.success(t('collaboration.screenplaysTab.deleteSuccess'));
         // Refresh the screenplays list
         loadUserScreenplays();
       } catch (error) {
         console.error('Error deleting screenplay:', error);
-        toast.error('Failed to delete screenplay');
+        toast.error(t('collaboration.screenplaysTab.deleteFailed'));
       }
     }
   };
@@ -743,7 +745,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 
   // Delete workspace handler
   const handleDeleteWorkspace = (workspaceId: string) => {
-    if (window.confirm('Are you sure you want to delete this workspace and all its data? This action cannot be undone.')) {
+    if (window.confirm(t('collaboration.workspaceDeleteConfirm'))) {
       setWorkspaces(prev => prev.filter(ws => ws.id !== workspaceId));
       if (selectedWorkspace?.id === workspaceId) {
         setSelectedWorkspace(null);
@@ -754,13 +756,13 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const renderWorkspacesTab = () => (
     <div className="workspaces-tab">
       <div className="workspaces-header">
-        <h2>Workspaces</h2>
+        <h2>{t('collaboration.workspacesTab.title')}</h2>
         <button className="create-workspace-btn" onClick={() => setShowCreateWorkspaceModal(true)}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="12" y1="5" x2="12" y2="19"/>
             <line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
-          Create Workspace
+          {t('collaboration.workspacesTab.createWorkspace')}
         </button>
       </div>
 
@@ -1027,7 +1029,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                   setWorkspaceCreationStep('members');
                 }
               }}>Cancel</button>
-              <button className="btn-primary" onClick={handleCreateWorkspaceStep}>{workspaceCreationStep === 'settings' ? 'Create Workspace' : 'Next'}</button>
+              <button className="btn-primary" onClick={handleCreateWorkspaceStep}>{workspaceCreationStep === 'settings' ? t('collaboration.createWorkspaceModal.createWorkspace') : t('collaboration.createWorkspaceModal.next')}</button>
             </div>
           </div>
         </div>
@@ -1160,8 +1162,8 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const renderTasksTab = () => (
     <div className="tasks-tab">
       <div className="tasks-header">
-        <h2>Tasks</h2>
-        <p>Manage collaborative tasks and project workflows</p>
+        <h2>{t('collaboration.tasksTab.title')}</h2>
+        <p>{t('collaboration.tasksTab.subtitle')}</p>
       </div>
 
       <div className="tasks-content">
@@ -1173,8 +1175,8 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const renderScreenplaysTab = () => (
     <div className="screenplays-tab">
       <div className="screenplays-header">
-        <h2>Screenplays</h2>
-        <p>Upload and collaborate on screenplay breakdowns</p>
+        <h2>{t('collaboration.screenplaysTab.title')}</h2>
+        <p>{t('collaboration.screenplaysTab.subtitle')}</p>
       </div>
       <div className="screenplays-content">
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
@@ -1190,7 +1192,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
             boxShadow: '0 2px 8px rgba(25, 118, 210, 0.08)',
             marginBottom: 16
           }}>
-            {uploadingScreenplay ? 'Uploading...' : 'Upload Screenplay'}
+            {uploadingScreenplay ? t('collaboration.screenplaysTab.uploading') : t('collaboration.screenplaysTab.uploadScreenplay')}
             <input
               id="screenplay-upload"
               type="file"
@@ -1226,14 +1228,14 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                       style={{ padding: '0.4rem 1rem', fontSize: '0.95em' }}
                       onClick={() => openScreenplayViewer(screenplay)}
                     >
-                      View
+                      {t('collaboration.view')}
                     </button>
                     <button
                       className="btn-danger"
                       style={{ padding: '0.4rem 1rem', fontSize: '0.95em' }}
                       onClick={() => handleDeleteScreenplay(screenplay.id)}
                     >
-                      Delete
+                      {t('collaboration.delete')}
                     </button>
                   </div>
                 </li>
@@ -1292,7 +1294,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     <CollaborationErrorBoundary>
       <div className="collaboration-hub">
         <div className="collaboration-header">
-          <h1>Collaboration Hub</h1>
+          <h1>{t('collaboration.title')}</h1>
           <div className="header-actions">
             {/* Video call functionality will be added in a future update */}
           </div>
@@ -1309,7 +1311,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                   <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
                   <polyline points="9,22 9,12 15,12 15,22"/>
                 </svg>
-                <span className="nav-label">Workspaces</span>
+                <span className="nav-label">{t('collaboration.workspaces')}</span>
               </button>
               
 
@@ -1321,7 +1323,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                   <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
                   <polyline points="22,4 12,14.01 9,11.01"/>
                 </svg>
-                <span className="nav-label">Tasks</span>
+                <span className="nav-label">{t('collaboration.tasks')}</span>
               </button>
               
               <button 
@@ -1335,7 +1337,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                   <line x1="16" y1="17" x2="8" y2="17"/>
                   <polyline points="10,9 9,9 8,9"/>
                 </svg>
-                <span className="nav-label">Screenplays</span>
+                <span className="nav-label">{t('collaboration.screenplays')}</span>
               </button>
             </nav>
           </div>

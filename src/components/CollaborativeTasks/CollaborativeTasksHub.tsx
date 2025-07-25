@@ -5,6 +5,7 @@ import { CollaborativeTask, TaskSubtask, TaskTeamMember, TaskReminder, TaskComme
 import TaskForm from './TaskForm';
 import './CollaborativeTasksHub.scss';
 import { toast } from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 interface CollaborativeTasksHubProps {
   projectId: string;
@@ -13,6 +14,7 @@ interface CollaborativeTasksHubProps {
 type ViewMode = 'list' | 'calendar' | 'kanban' | 'analytics';
 
 const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId }) => {
+  const { t } = useTranslation();
   const [tasks, setTasks] = useState<CollaborativeTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>('list');
@@ -30,13 +32,13 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
   const [newComment, setNewComment] = useState('');
   const [users, setUsers] = useState<{[key: string]: {name: string, email: string, avatar?: string}}>({});
 
-  // Add a helper for status options
+  // Add a helper for status options with translations
   const statusOptions = [
-    { value: 'pending', label: 'Not Started' },
-    { value: 'in_progress', label: 'In Progress' },
-    { value: 'completed', label: 'Completed' },
-    { value: 'cancelled', label: 'Cancelled' },
-    { value: 'overdue', label: 'Overdue' },
+    { value: 'pending', label: t('tasks.status.pending') },
+    { value: 'in_progress', label: t('tasks.status.in_progress') },
+    { value: 'completed', label: t('tasks.status.completed') },
+    { value: 'cancelled', label: t('tasks.status.cancelled') },
+    { value: 'overdue', label: t('tasks.status.overdue') },
   ];
 
   useEffect(() => {
@@ -109,7 +111,7 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
     try {
       const currentUser = auth.currentUser;
       if (!currentUser) {
-        toast.error('You must be logged in to create tasks');
+        toast.error(t('tasks.errors.loginRequired'));
         return;
       }
 
@@ -154,7 +156,7 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
       setEditingTask(null);
     } catch (error) {
       console.error('Error creating task:', error);
-      toast.error('Failed to create task. Please try again.');
+      toast.error(t('tasks.errors.createFailed'));
     }
   };
 
@@ -169,7 +171,7 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
       setShowTaskForm(false);
     } catch (error) {
       console.error('Error updating task:', error);
-      toast.error('Failed to update task. Please try again.');
+      toast.error(t('tasks.errors.updateFailed'));
     }
   };
 
@@ -182,7 +184,7 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
         setExpandedTaskId(null);
       } catch (error) {
         console.error('Error deleting task:', error);
-        toast.error('Failed to delete task. Please try again.');
+        toast.error(t('tasks.errors.deleteFailed'));
       }
     }
   };
@@ -197,7 +199,7 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
       });
     } catch (error) {
       console.error('Error completing task:', error);
-      toast.error('Failed to complete task. Please try again.');
+      toast.error(t('tasks.errors.completeFailed'));
     }
   };
 
@@ -211,7 +213,7 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
       });
     } catch (error) {
       console.error('Error starting task:', error);
-      toast.error('Failed to start task. Please try again.');
+      toast.error(t('tasks.errors.startFailed'));
     }
   };
 
@@ -232,7 +234,7 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
       });
     } catch (error) {
       console.error('Error restoring task:', error);
-      toast.error('Failed to restore task. Please try again.');
+      toast.error(t('tasks.errors.restoreFailed'));
     }
   };
 
@@ -264,7 +266,7 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
       setNewComment('');
     } catch (error) {
       console.error('Error adding comment:', error);
-      toast.error('Failed to add comment. Please try again.');
+      toast.error(t('tasks.errors.commentFailed'));
     }
   };
 
@@ -409,7 +411,7 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
       <div className="collaborative-tasks-hub">
         <div className="loading-state">
           <div className="loading-spinner"></div>
-          <p>Loading tasks...</p>
+          <p>{t('tasks.loading')}</p>
         </div>
       </div>
     );
@@ -421,8 +423,8 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
       <div className="tasks-header">
         <div className="header-content">
           <div className="header-left">
-            <h1 className="header-title">Collaborative Tasks</h1>
-            <p className="header-subtitle">Manage team tasks, deadlines, and reminders</p>
+            <h1 className="header-title">{t('tasks.title')}</h1>
+            <p className="header-subtitle">{t('tasks.subtitle')}</p>
           </div>
           <div className="header-actions">
             <button
@@ -435,7 +437,7 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
-              Create Task
+              {t('tasks.createTask')}
             </button>
           </div>
         </div>
@@ -449,7 +451,7 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
               </svg>
             </div>
             <div className="stat-content">
-              <p className="stat-label">Total Tasks</p>
+              <p className="stat-label">{t('tasks.stats.total')}</p>
               <p className="stat-value">{stats.total}</p>
             </div>
           </div>
@@ -461,7 +463,7 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
               </svg>
             </div>
             <div className="stat-content">
-              <p className="stat-label">Completed</p>
+              <p className="stat-label">{t('tasks.stats.completed')}</p>
               <p className="stat-value">{stats.completed}</p>
             </div>
           </div>
@@ -473,7 +475,7 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
               </svg>
             </div>
             <div className="stat-content">
-              <p className="stat-label">In Progress</p>
+              <p className="stat-label">{t('tasks.stats.inProgress')}</p>
               <p className="stat-value">{stats.inProgress}</p>
             </div>
           </div>
@@ -485,7 +487,7 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
               </svg>
             </div>
             <div className="stat-content">
-              <p className="stat-label">Overdue</p>
+              <p className="stat-label">{t('tasks.stats.overdue')}</p>
               <p className="stat-value">{stats.overdue}</p>
             </div>
           </div>
@@ -503,7 +505,7 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
               </svg>
-              List
+              {t('tasks.viewModes.list')}
             </button>
             <button
               className={`view-btn ${viewMode === 'calendar' ? 'active' : ''}`}
@@ -512,7 +514,7 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
-              Calendar
+              {t('tasks.viewModes.calendar')}
             </button>
             <button
               className={`view-btn ${viewMode === 'kanban' ? 'active' : ''}`}
@@ -521,7 +523,7 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2H9a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
-              Kanban
+              {t('tasks.viewModes.kanban')}
             </button>
             <button
               className={`view-btn ${viewMode === 'analytics' ? 'active' : ''}`}
@@ -530,7 +532,7 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
-              Analytics
+              {t('tasks.viewModes.analytics')}
             </button>
           </div>
         </div>
@@ -543,7 +545,7 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
               </svg>
               <input
                 type="text"
-                placeholder="Search tasks..."
+                placeholder={t('tasks.searchTasks')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="search-input"
@@ -556,12 +558,12 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
                 onChange={(e) => setFilters({ ...filters, status: e.target.value })}
                 className="filter-select"
               >
-                <option value="all">All Status</option>
-                <option value="pending">Pending</option>
-                <option value="in_progress">In Progress</option>
-                <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
-                <option value="overdue">Overdue</option>
+                <option value="all">{t('tasks.filters.allStatus')}</option>
+                <option value="pending">{t('tasks.filters.pending')}</option>
+                <option value="in_progress">{t('tasks.filters.inProgress')}</option>
+                <option value="completed">{t('tasks.filters.completed')}</option>
+                <option value="cancelled">{t('tasks.filters.cancelled')}</option>
+                <option value="overdue">{t('tasks.filters.overdue')}</option>
               </select>
 
               <select
@@ -569,13 +571,13 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
                 onChange={(e) => setFilters({ ...filters, category: e.target.value })}
                 className="filter-select"
               >
-                <option value="all">All Categories</option>
-                <option value="pre_production">Pre-Production</option>
-                <option value="production">Production</option>
-                <option value="post_production">Post-Production</option>
-                <option value="marketing">Marketing</option>
-                <option value="distribution">Distribution</option>
-                <option value="other">Other</option>
+                <option value="all">{t('tasks.filters.allCategories')}</option>
+                <option value="pre_production">{t('tasks.categories.preProduction')}</option>
+                <option value="production">{t('tasks.categories.production')}</option>
+                <option value="post_production">{t('tasks.categories.postProduction')}</option>
+                <option value="marketing">{t('tasks.categories.marketing')}</option>
+                <option value="distribution">{t('tasks.categories.distribution')}</option>
+                <option value="other">{t('tasks.categories.other')}</option>
               </select>
             </div>
           </div>
@@ -591,8 +593,8 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
                 <svg className="w-16 h-16 empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
-                <h3 className="empty-title">No tasks found</h3>
-                <p className="empty-description">Create your first task to get started</p>
+                <h3 className="empty-title">{t('tasks.noTasks')}</h3>
+                <p className="empty-description">{t('tasks.noTasksDescription')}</p>
                 <button
                   onClick={() => {
                     setEditingTask(null);
@@ -600,7 +602,7 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
                   }}
                   className="btn-primary"
                 >
-                  Create Task
+                  {t('tasks.createTask')}
                 </button>
               </div>
             ) : (
@@ -661,7 +663,7 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
                           ))}
                         </select>
                         {task.status === 'completed' && (
-                          <span className="task-status-badge completed" style={{ marginLeft: 8, color: '#10b981', fontWeight: 600 }}>✔ Completed</span>
+                          <span className="task-status-badge completed" style={{ marginLeft: 8, color: '#10b981', fontWeight: 600 }}>{t('tasks.task.completedBadge')}</span>
                         )}
                         <button
                           onClick={(e) => {
@@ -671,7 +673,7 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
                           className="btn-quick-action btn-edit"
                           title="Edit Task"
                         >
-                          ✏️ Edit
+                          ✏️ {t('tasks.task.edit')}
                         </button>
                       </div>
                     </div>
@@ -682,22 +684,22 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
                         <div className="task-details-section">
                           <div className="task-info-grid">
                             <div className="info-item">
-                              <span className="info-label">Priority:</span>
+                              <span className="info-label">{t('tasks.task.priority')}</span>
                               <span className={`info-value priority ${task.priority}`}>{task.priority}</span>
                             </div>
                             <div className="info-item">
-                              <span className="info-label">Category:</span>
+                              <span className="info-label">{t('tasks.task.category')}</span>
                               <span className="info-value">{task.category}</span>
                             </div>
                             {task.estimatedHours && (
                               <div className="info-item">
-                                <span className="info-label">Estimated Hours:</span>
+                                <span className="info-label">{t('tasks.task.estimatedHours')}:</span>
                                 <span className="info-value">{task.estimatedHours}h</span>
                               </div>
                             )}
                             {task.location && (
                               <div className="info-item">
-                                <span className="info-label">Location:</span>
+                                <span className="info-label">{t('tasks.task.location')}:</span>
                                 <span className="info-value">{task.location}</span>
                               </div>
                             )}
@@ -705,14 +707,14 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
 
                           {task.notes && (
                             <div className="task-notes">
-                              <h4>Notes</h4>
+                              <h4>{t('tasks.task.notes')}</h4>
                               <p>{task.notes}</p>
                             </div>
                           )}
 
                           {task.tags && task.tags.length > 0 && (
                             <div className="task-tags">
-                              <h4>Tags</h4>
+                              <h4>{t('tasks.task.tags')}</h4>
                               <div className="tags-list">
                                 {task.tags.map((tag, index) => (
                                   <span key={index} className="tag">{tag}</span>
@@ -723,7 +725,7 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
 
                           {task.assignedTeamMembers && task.assignedTeamMembers.length > 0 && (
                             <div className="task-team">
-                              <h4>Team Members</h4>
+                              <h4>{t('tasks.task.teamMembers')}</h4>
                               <div className="team-members-list">
                                 {task.assignedTeamMembers.map((member, index) => (
                                   <div key={member.userId} className="team-member-item">
@@ -743,7 +745,7 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
 
                           {task.subtasks && task.subtasks.length > 0 && (
                             <div className="task-subtasks">
-                              <h4>Subtasks ({task.subtasks.filter(st => st.status === 'completed').length}/{task.subtasks.length} completed)</h4>
+                              <h4>{t('tasks.task.subtasks')} ({task.subtasks.filter(st => st.status === 'completed').length}/{task.subtasks.length} {t('tasks.task.subtasksCompleted')})</h4>
                               <div className="subtasks-list">
                                 {task.subtasks.map((subtask, index) => (
                                   <div key={subtask.id} className="subtask-item">
@@ -805,7 +807,7 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
                                 disabled={!newComment.trim()}
                                 className="btn-primary"
                               >
-                                Add Comment
+                                {t('tasks.addComment')}
                               </button>
                             </div>
                           </div>
@@ -826,19 +828,19 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
                             ))}
                           </select>
                           {task.status === 'completed' && (
-                            <span className="task-status-badge completed" style={{ marginLeft: 8, color: '#10b981', fontWeight: 600 }}>✔ Completed</span>
+                            <span className="task-status-badge completed" style={{ marginLeft: 8, color: '#10b981', fontWeight: 600 }}>{t('tasks.task.completedBadge')}</span>
                           )}
                           <button
                             onClick={() => handleEditTask(task)}
                             className="btn-secondary"
                           >
-                            Edit Task
+                            {t('tasks.editTask')}
                           </button>
                           <button
                             onClick={() => handleDeleteTask(task.id)}
                             className="btn-danger"
                           >
-                            Delete Task
+                            {t('tasks.deleteTask')}
                           </button>
                         </div>
                       </div>
@@ -852,19 +854,19 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
 
         {viewMode === 'calendar' && (
           <div className="calendar-view">
-            <p>Calendar view coming soon...</p>
+            <p>{t('tasks.comingSoon.calendar')}</p>
           </div>
         )}
 
         {viewMode === 'kanban' && (
           <div className="kanban-board">
-            <p>Kanban view coming soon...</p>
+            <p>{t('tasks.comingSoon.kanban')}</p>
           </div>
         )}
 
         {viewMode === 'analytics' && (
           <div className="analytics-view">
-            <p>Analytics view coming soon...</p>
+            <p>{t('tasks.comingSoon.analytics')}</p>
           </div>
         )}
       </div>
@@ -874,7 +876,7 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
         <div className="modal-overlay">
           <div className="modal-content">
             <div className="modal-header">
-              <h2>{editingTask ? 'Edit Task' : 'Create New Task'}</h2>
+              <h2>{editingTask ? t('tasks.editTask') : t('tasks.taskForm.createTask')}</h2>
               <button onClick={() => {
                 setShowTaskForm(false);
                 setEditingTask(null);
@@ -942,9 +944,9 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
                   <p className="task-description completed">{task.description}</p>
                   <div className="task-meta">
                     <span className="task-completed-date">
-                      Completed: {task.completedAt ? new Date(task.completedAt).toLocaleDateString() : 'Unknown'}
+                      {t('tasks.status.completed')}: {task.completedAt ? new Date(task.completedAt).toLocaleDateString() : 'Unknown'}
                     </span>
-                    <span className="task-status completed">Completed</span>
+                    <span className="task-status completed">{t('tasks.status.completed')}</span>
                   </div>
                 </div>
               ))}

@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { SocialProfile, SocialPost, SocialFeedItem, IndustryGroup, SocialEvent } from '../../types/Social';
 import './NetworkingHub.scss';
+import { useTranslation } from 'react-i18next';
 
 const NetworkingHub: React.FC = () => {
+  const { t } = useTranslation();
   const { currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState<'feed' | 'discover' | 'groups' | 'events' | 'connections'>('feed');
   const [feedItems, setFeedItems] = useState<SocialFeedItem[]>([]);
@@ -269,12 +271,12 @@ const NetworkingHub: React.FC = () => {
         ))}
       </div>
       <div className="profile-stats">
-        <span>{profile.followersCount} followers</span>
-        <span>{profile.projectsCount} projects</span>
+        <span>{profile.followersCount} {t('social.profile.followers')}</span>
+        <span>{profile.projectsCount} {t('social.profile.projects')}</span>
       </div>
       <div className="profile-actions">
-        <button className="btn-primary">Connect</button>
-        <button className="btn-secondary">View Profile</button>
+        <button className="btn-primary">{t('social.actions.connect')}</button>
+        <button className="btn-secondary">{t('social.actions.viewProfile')}</button>
       </div>
     </div>
   );
@@ -289,13 +291,13 @@ const NetworkingHub: React.FC = () => {
           <p className="group-department">🎬 {group.department}</p>
         </div>
       </div>
-      <div className="group-stats">
-        <span>{group.membersCount} members</span>
-        <span>{group.postsCount} posts</span>
-      </div>
+              <div className="group-stats">
+          <span>{group.membersCount} {t('social.networking.groups.members')}</span>
+          <span>{group.postsCount} {t('social.profile.posts')}</span>
+        </div>
       <div className="group-actions">
-        <button className="btn-primary">Join Group</button>
-        <button className="btn-secondary">View Details</button>
+        <button className="btn-primary">{t('social.networking.groups.join')}</button>
+        <button className="btn-secondary">{t('social.networking.groups.viewDetails')}</button>
       </div>
     </div>
   );
@@ -311,8 +313,8 @@ const NetworkingHub: React.FC = () => {
         </p>
       </div>
       <div className="event-stats">
-        <span>{event.attendees.length} attending</span>
-        {event.maxAttendees && <span>Max: {event.maxAttendees}</span>}
+        <span>{event.attendees.length} {t('social.networking.events.attending')}</span>
+        {event.maxAttendees && <span>{t('social.networking.events.maxAttendees')}: {event.maxAttendees}</span>}
       </div>
       <div className="event-tags">
         {event.tags.map((tag: string, idx: number) => (
@@ -320,8 +322,8 @@ const NetworkingHub: React.FC = () => {
         ))}
       </div>
       <div className="event-actions">
-        <button className="btn-primary">Attend</button>
-        <button className="btn-secondary">View Details</button>
+        <button className="btn-primary">{t('social.networking.events.attend')}</button>
+        <button className="btn-secondary">{t('social.networking.events.viewDetails')}</button>
       </div>
     </div>
   );
@@ -329,8 +331,8 @@ const NetworkingHub: React.FC = () => {
   return (
     <div className="networking-hub">
       <div className="hub-header">
-        <h2>🎬 Film Industry Network</h2>
-        <p>Connect, collaborate, and grow your career in the film industry</p>
+        <h2>{t('social.networking.title')}</h2>
+        <p>{t('social.networking.subtitle')}</p>
       </div>
 
       <div className="hub-navigation">
@@ -338,49 +340,49 @@ const NetworkingHub: React.FC = () => {
           className={`nav-tab ${activeTab === 'feed' ? 'active' : ''}`}
           onClick={() => setActiveTab('feed')}
         >
-          📰 Activity Feed
+          {t('social.networking.tabs.feed')}
         </button>
         <button 
           className={`nav-tab ${activeTab === 'discover' ? 'active' : ''}`}
           onClick={() => setActiveTab('discover')}
         >
-          🔍 Discover People
+          {t('social.networking.tabs.discover')}
         </button>
         <button 
           className={`nav-tab ${activeTab === 'groups' ? 'active' : ''}`}
           onClick={() => setActiveTab('groups')}
         >
-          👥 Industry Groups
+          {t('social.networking.tabs.groups')}
         </button>
         <button 
           className={`nav-tab ${activeTab === 'events' ? 'active' : ''}`}
           onClick={() => setActiveTab('events')}
         >
-          📅 Events
+          {t('social.networking.tabs.events')}
         </button>
         <button 
           className={`nav-tab ${activeTab === 'connections' ? 'active' : ''}`}
           onClick={() => setActiveTab('connections')}
         >
-          🤝 My Connections
+          {t('social.networking.tabs.connections')}
         </button>
       </div>
 
       <div className="hub-content">
         {loading ? (
-          <div className="loading">Loading...</div>
+          <div className="loading">{t('social.loading')}</div>
         ) : (
           <>
             {activeTab === 'feed' && (
               <div className="feed-container">
-                <h3>Recent Activity</h3>
+                <h3>{t('social.networking.feed.title')}</h3>
                 {feedItems.map(renderFeedItem)}
               </div>
             )}
 
             {activeTab === 'discover' && (
               <div className="discover-container">
-                <h3>Discover Amazing Professionals</h3>
+                <h3>{t('social.networking.discover.title')}</h3>
                 <div className="profiles-grid">
                   {discoverProfiles.map(renderProfileCard)}
                 </div>
@@ -389,7 +391,7 @@ const NetworkingHub: React.FC = () => {
 
             {activeTab === 'groups' && (
               <div className="groups-container">
-                <h3>Industry Groups</h3>
+                <h3>{t('social.networking.groups.title')}</h3>
                 <div className="groups-grid">
                   {groups.map(renderGroupCard)}
                 </div>
@@ -398,7 +400,7 @@ const NetworkingHub: React.FC = () => {
 
             {activeTab === 'events' && (
               <div className="events-container">
-                <h3>Upcoming Events</h3>
+                <h3>{t('social.networking.events.title')}</h3>
                 <div className="events-grid">
                   {events.map(renderEventCard)}
                 </div>
@@ -407,8 +409,8 @@ const NetworkingHub: React.FC = () => {
 
             {activeTab === 'connections' && (
               <div className="connections-container">
-                <h3>My Network</h3>
-                <p>Connection management coming soon...</p>
+                <h3>{t('social.networking.connections.title')}</h3>
+                <p>{t('social.networking.connections.comingSoon')}</p>
               </div>
             )}
           </>

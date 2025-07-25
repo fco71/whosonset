@@ -619,6 +619,323 @@
     "createFirst": "Crea tu primer proyecto para comenzar.",
     "loginRequired": "Debes iniciar sesión para ver tus proyectos."
   },
+  "collaboration": {
+    "title": "Centro de Colaboración",
+    "subtitle": "Trabaja en conjunto en proyectos, tareas y contenido creativo",
+    "workspaces": "Espacios de Trabajo",
+    "tasks": "Tareas",
+    "screenplays": "Guiones",
+    "loading": "Cargando...",
+    "noWorkspaces": "No hay espacios de trabajo disponibles",
+    "createWorkspace": "Crear Nuevo Espacio de Trabajo",
+    "joinWorkspace": "Unirse",
+    "addMember": "Agregar Miembro",
+    "settings": "Configuración",
+    "members": "Miembros",
+    "online": "En línea",
+    "offline": "Desconectado",
+    "view": "Ver",
+    "delete": "Eliminar",
+    "workspacesTab": {
+      "title": "Espacios de Trabajo",
+      "createWorkspace": "Crear Espacio de Trabajo"
+    },
+    "workspaceTypes": {
+      "project": "Proyecto",
+      "department": "Departamento",
+      "general": "General"
+    },
+    "createWorkspaceModal": {
+      "title": "Crear Nuevo Espacio de Trabajo",
+      "step1": "Paso 1: Detalles del Espacio de Trabajo",
+      "step2": "Paso 2: Agregar Miembros",
+      "step3": "Paso 3: Configuración del Espacio de Trabajo",
+      "workspaceName": "Nombre del Espacio de Trabajo",
+      "workspaceNamePlaceholder": "Ingresa el nombre del espacio de trabajo",
+      "description": "Descripción",
+      "descriptionPlaceholder": "Ingresa la descripción del espacio de trabajo",
+      "workspaceType": "Tipo de Espacio de Trabajo",
+      "searchUsers": "Buscar Usuarios",
+      "searchPlaceholder": "Buscar por nombre, email o rol...",
+      "allowGuestAccess": "Permitir Acceso de Invitados",
+      "requireApproval": "Requerir Aprobación para Nuevos Miembros",
+      "autoArchive": "Archivar Automáticamente Contenido Inactivo",
+      "retentionPeriod": "Período de Retención (días)",
+      "maxFileSize": "Tamaño Máximo de Archivo (MB)",
+      "cancel": "Cancelar",
+      "next": "Siguiente",
+      "createWorkspace": "Crear Espacio de Trabajo",
+      "searching": "Buscando...",
+      "noFriendsFound": "No se encontraron amigos.",
+      "startTyping": "Comienza a escribir para buscar usuarios"
+    },
+    "workspaceSettings": {
+      "title": "Configuración del Espacio de Trabajo",
+      "saveSettings": "Guardar Configuración"
+    },
+    "addMemberModal": {
+      "title": "Agregar Miembro al Espacio de Trabajo"
+    },
+    "tasksTab": {
+      "title": "Tareas",
+      "subtitle": "Gestiona tareas colaborativas y flujos de trabajo del proyecto"
+    },
+    "screenplaysTab": {
+      "title": "Guiones",
+      "subtitle": "Sube y colabora en desgloses de guiones",
+      "uploadScreenplay": "Subir Guión",
+      "uploading": "Subiendo...",
+      "deleteConfirm": "¿Estás seguro de que quieres eliminar este guión?",
+      "deleteSuccess": "Guión eliminado exitosamente",
+      "deleteFailed": "Error al eliminar guión",
+      "uploadSuccess": "subido exitosamente!",
+      "uploadFailed": "Error al subir guión"
+    },
+    "workspaceDeleteConfirm": "¿Estás seguro de que quieres eliminar este espacio de trabajo y todos sus datos? Esta acción no se puede deshacer."
+  },
+  "tasks": {
+    "title": "Tareas Colaborativas",
+    "subtitle": "Gestiona tareas del equipo, fechas límite y recordatorios",
+    "createTask": "Crear Tarea",
+    "editTask": "Editar Tarea",
+    "deleteTask": "Eliminar Tarea",
+    "loading": "Cargando tareas...",
+    "noTasks": "No se encontraron tareas",
+    "noTasksDescription": "Crea tu primera tarea para comenzar",
+    "searchTasks": "Buscar tareas...",
+    "addComment": "Agregar Comentario",
+    "viewModes": {
+      "list": "Lista",
+      "calendar": "Calendario",
+      "kanban": "Kanban",
+      "analytics": "Analíticas"
+    },
+    "comingSoon": {
+      "calendar": "Vista de calendario próximamente...",
+      "kanban": "Vista Kanban próximamente...",
+      "analytics": "Vista de analíticas próximamente..."
+    },
+    "stats": {
+      "total": "Total de Tareas",
+      "completed": "Completadas",
+      "inProgress": "En Progreso",
+      "overdue": "Vencidas"
+    },
+    "status": {
+      "pending": "Sin Comenzar",
+      "in_progress": "En Progreso",
+      "completed": "Completada",
+      "cancelled": "Cancelada",
+      "overdue": "Vencida"
+    },
+    "filters": {
+      "allStatus": "Todos los Estados",
+      "allCategories": "Todas las Categorías",
+      "pending": "Pendiente",
+      "inProgress": "En Progreso",
+      "completed": "Completada",
+      "cancelled": "Cancelada",
+      "overdue": "Vencida"
+    },
+    "categories": {
+      "preProduction": "Pre-Producción",
+      "production": "Producción",
+      "postProduction": "Post-Producción",
+      "marketing": "Marketing",
+      "distribution": "Distribución",
+      "other": "Otro"
+    },
+    "taskForm": {
+      "createTask": "Crear Nueva Tarea",
+      "editTask": "Editar Tarea",
+      "taskName": "Nombre de la Tarea",
+      "description": "Descripción",
+      "dueDate": "Fecha Límite",
+      "assignee": "Asignado a",
+      "category": "Categoría",
+      "priority": "Prioridad",
+      "status": "Estado",
+      "cancel": "Cancelar",
+      "save": "Guardar Tarea",
+      "update": "Actualizar Tarea"
+    },
+    "task": {
+      "dueDate": "Vence:",
+      "assignedTo": "Asignado a:",
+      "category": "Categoría:",
+      "priority": "Prioridad:",
+      "createdBy": "Creado por:",
+      "comments": "Comentarios",
+      "noComments": "No hay comentarios aún",
+      "addComment": "Agregar un comentario...",
+      "showComments": "Mostrar Comentarios",
+      "hideComments": "Ocultar Comentarios",
+      "expand": "Expandir",
+      "collapse": "Contraer",
+      "completedBadge": "✔ Completada",
+      "edit": "Editar",
+      "notes": "Notas",
+      "tags": "Etiquetas",
+      "teamMembers": "Miembros del Equipo",
+      "estimatedHours": "Horas Estimadas",
+      "location": "Ubicación",
+      "subtasks": "Subtareas",
+      "subtasksCompleted": "completadas"
+    },
+    "errors": {
+      "loginRequired": "Debes iniciar sesión para crear tareas",
+      "createFailed": "Error al crear la tarea. Inténtalo de nuevo.",
+      "updateFailed": "Error al actualizar la tarea. Inténtalo de nuevo.",
+      "deleteFailed": "Error al eliminar la tarea. Inténtalo de nuevo.",
+      "completeFailed": "Error al completar la tarea. Inténtalo de nuevo.",
+      "startFailed": "Error al iniciar la tarea. Inténtalo de nuevo.",
+      "restoreFailed": "Error al restaurar la tarea. Inténtalo de nuevo.",
+      "commentFailed": "Error al agregar comentario. Inténtalo de nuevo.",
+      "saveFailed": "Error al guardar la tarea"
+    }
+  },
+  "social": {
+    "title": "Social",
+    "subtitle": "Conecta con otros profesionales en tu red",
+    "searchPeople": "Buscar personas...",
+    "searchPlaceholder": "Buscar personas para conectar",
+    "messages": "Mensajes",
+    "loading": "Cargando...",
+    "tabs": {
+      "following": "Siguiendo",
+      "followers": "Seguidores",
+      "discover": "Descubrir",
+      "requests": "Solicitudes",
+      "notifications": "Notificaciones",
+      "connections": "Conexiones"
+    },
+    "actions": {
+      "connect": "Conectar",
+      "unfollow": "Dejar de seguir",
+      "follow": "Seguir",
+      "viewProfile": "Ver Perfil",
+      "message": "Mensaje",
+      "accept": "Aceptar",
+      "decline": "Rechazar",
+      "remove": "Eliminar",
+      "block": "Bloquear",
+      "report": "Reportar"
+    },
+    "status": {
+      "online": "En línea",
+      "offline": "Desconectado",
+      "away": "Ausente",
+      "busy": "Ocupado"
+    },
+    "networking": {
+      "title": "🎬 Red de la Industria Cinematográfica",
+      "subtitle": "Conecta, colabora y haz crecer tu carrera en la industria del cine",
+      "tabs": {
+        "feed": "📰 Feed de Actividad",
+        "discover": "🔍 Descubrir Personas",
+        "groups": "👥 Grupos de la Industria",
+        "events": "📅 Eventos",
+        "connections": "🤝 Mis Conexiones",
+        "discoverCrew": "🔍 Descubrir Equipo",
+        "collaborations": "🤝 Colaboraciones",
+        "industryEvents": "📅 Eventos de la Industria"
+      },
+      "search": {
+        "placeholder": "Buscar por nombre, habilidades o puesto de trabajo...",
+        "noResults": "No se encontraron miembros del equipo",
+        "filterBy": "Filtrar por"
+      },
+      "industryEventsTitle": "Eventos de la Industria y Networking",
+      "filters": {
+        "allDepartments": "Todos los Departamentos",
+        "allLocations": "Todas las Ubicaciones"
+      },
+      "events": {
+        "addEvent": "+ Agregar Evento",
+        "rsvp": "Confirmar",
+        "attending": "asistiendo"
+      },
+      "feed": {
+        "title": "Actividad Reciente",
+        "noActivity": "No hay actividad reciente para mostrar"
+      },
+      "discover": {
+        "title": "Descubre Profesionales Increíbles",
+        "noProfiles": "No se encontraron perfiles"
+      },
+      "groups": {
+        "title": "Grupos de la Industria",
+        "join": "Unirse",
+        "leave": "Salir",
+        "viewDetails": "Ver Detalles",
+        "members": "miembros",
+        "noGroups": "No hay grupos disponibles"
+      },
+      "events": {
+        "title": "Próximos Eventos",
+        "attend": "Asistir",
+        "viewDetails": "Ver Detalles",
+        "attending": "asistiendo",
+        "maxAttendees": "Máx",
+        "noEvents": "No hay próximos eventos"
+      },
+      "connections": {
+        "title": "Mi Red",
+        "comingSoon": "Gestión de conexiones próximamente..."
+      }
+    },
+    "profile": {
+      "followers": "seguidores",
+      "following": "siguiendo",
+      "projects": "proyectos",
+      "connections": "conexiones",
+      "posts": "publicaciones",
+      "location": "Ubicación",
+      "department": "Departamento",
+      "experience": "Experiencia",
+      "availability": "Disponibilidad",
+      "skills": "Habilidades",
+      "bio": "Biografía",
+      "contactInfo": "Información de Contacto",
+      "socialLinks": "Enlaces Sociales",
+      "endorsements": "Recomendaciones",
+      "reviews": "Reseñas"
+    },
+    "messaging": {
+      "startConversation": "Iniciar Conversación",
+      "typeMessage": "Escribe un mensaje...",
+      "send": "Enviar",
+      "attachFile": "Adjuntar Archivo",
+      "emoji": "Emoji",
+      "voiceCall": "Llamada de Voz",
+      "videoCall": "Videollamada",
+      "moreOptions": "Más Opciones",
+      "edited": "(editado)",
+      "newMessage": "Nuevo Mensaje",
+      "selectContact": "Selecciona un contacto para comenzar a conversar"
+    },
+    "errors": {
+      "loadFailed": "Error al cargar datos",
+      "connectFailed": "Error al conectar",
+      "messageFailed": "Error al enviar mensaje",
+      "followFailed": "Error al seguir usuario",
+      "unfollowFailed": "Error al dejar de seguir usuario",
+      "profileLoadFailed": "Error al cargar perfil"
+    },
+    "empty": {
+      "noConnections": "No hay conexiones aún",
+      "noRequests": "No hay solicitudes pendientes",
+      "noNotifications": "No hay nuevas notificaciones",
+      "noMessages": "No hay mensajes aún",
+      "noFollowers": "No hay seguidores aún",
+      "noFollowing": "No sigues a nadie aún"
+    },
+    "statusText": {
+      "pendingRequests": "solicitudes pendientes",
+      "following": "siguiendo",
+      "followers": "seguidores"
+    }
+  },
   "common": {
     "loading": "Cargando...",
     "error": "Error",
