@@ -1,36 +1,6 @@
 "use strict";
 (self["webpackChunkwhosonset"] = self["webpackChunkwhosonset"] || []).push([[1415],{
 
-/***/ 684:
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   A: () => (/* binding */ Globe)
-/* harmony export */ });
-/* unused harmony export __iconNode */
-/* harmony import */ var _createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9407);
-/**
- * @license lucide-react v0.525.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-
-
-
-const __iconNode = [
-  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-  ["path", { d: "M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20", key: "13o1zl" }],
-  ["path", { d: "M2 12h20", key: "9i4pu4" }]
-];
-const Globe = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .A)("globe", __iconNode);
-
-
-//# sourceMappingURL=globe.js.map
-
-
-/***/ }),
-
 /***/ 1415:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
@@ -134,6 +104,8 @@ const Clapperboard = (0,createLucideIcon/* default */.A)("clapperboard", clapper
 var firebase = __webpack_require__(9487);
 // EXTERNAL MODULE: ./node_modules/firebase/firestore/dist/esm/index.esm.js + 3 modules
 var index_esm = __webpack_require__(7594);
+// EXTERNAL MODULE: ./node_modules/react-i18next/dist/es/index.js + 15 modules
+var es = __webpack_require__(2389);
 ;// ./src/pages/HomePage.tsx
 
 
@@ -141,44 +113,46 @@ var index_esm = __webpack_require__(7594);
 
 
 
+
 const HomePage = () => {
+    const { t } = (0,es/* useTranslation */.Bd)();
     const [stats, setStats] = (0,react.useState)([
-        { number: "Loading...", label: "Active Professionals", icon: (0,jsx_runtime.jsx)(users/* default */.A, { className: "w-5 h-5" }) },
-        { number: "Loading...", label: "Projects Completed", icon: (0,jsx_runtime.jsx)(film/* default */.A, { className: "w-5 h-5" }) },
-        { number: "Loading...", label: "Success Rate", icon: (0,jsx_runtime.jsx)(trending_up/* default */.A, { className: "w-5 h-5" }) },
-        { number: "Loading...", label: "Countries", icon: (0,jsx_runtime.jsx)(globe/* default */.A, { className: "w-5 h-5" }) }
+        { number: t('home.loading'), label: t('home.stats.activeProfessionals'), icon: (0,jsx_runtime.jsx)(users/* default */.A, { className: "w-5 h-5" }) },
+        { number: t('home.loading'), label: t('home.stats.projectsCompleted'), icon: (0,jsx_runtime.jsx)(film/* default */.A, { className: "w-5 h-5" }) },
+        { number: t('home.loading'), label: t('home.stats.successRate'), icon: (0,jsx_runtime.jsx)(trending_up/* default */.A, { className: "w-5 h-5" }) },
+        { number: t('home.loading'), label: t('home.stats.countries'), icon: (0,jsx_runtime.jsx)(globe/* default */.A, { className: "w-5 h-5" }) }
     ]);
     const [loading, setLoading] = (0,react.useState)(true);
     const features = [
         {
             icon: (0,jsx_runtime.jsx)(film/* default */.A, { className: "w-6 h-6" }),
-            title: "Project Showcase",
-            description: "Showcase your film projects with professional portfolios and detailed production information."
+            title: t('home.features.projectShowcase.title'),
+            description: t('home.features.projectShowcase.desc')
         },
         {
             icon: (0,jsx_runtime.jsx)(users/* default */.A, { className: "w-6 h-6" }),
-            title: "Crew Networking",
-            description: "Connect with talented professionals across all departments in the film industry."
+            title: t('home.features.crewNetworking.title'),
+            description: t('home.features.crewNetworking.desc')
         },
         {
             icon: (0,jsx_runtime.jsx)(briefcase/* default */.A, { className: "w-6 h-6" }),
-            title: "Job Board",
-            description: "Discover exciting opportunities and find the perfect role for your next project."
+            title: t('home.features.jobBoard.title'),
+            description: t('home.features.jobBoard.desc')
         },
         {
             icon: (0,jsx_runtime.jsx)(globe/* default */.A, { className: "w-6 h-6" }),
-            title: "Global Reach",
-            description: "Access opportunities worldwide and connect with international productions."
+            title: t('home.features.globalReach.title'),
+            description: t('home.features.globalReach.desc')
         },
         {
             icon: (0,jsx_runtime.jsx)(award/* default */.A, { className: "w-6 h-6" }),
-            title: "Industry Recognition",
-            description: "Build your reputation with verified credits and professional endorsements."
+            title: t('home.features.industryRecognition.title'),
+            description: t('home.features.industryRecognition.desc')
         },
         {
             icon: (0,jsx_runtime.jsx)(Zap, { className: "w-6 h-6" }),
-            title: "Real-Time Collaboration",
-            description: "Collaborate seamlessly with team members using our integrated tools."
+            title: t('home.features.realTimeCollab.title'),
+            description: t('home.features.realTimeCollab.desc')
         }
     ];
     // Fetch real statistics from Firestore
@@ -213,44 +187,45 @@ const HomePage = () => {
                 }).length;
                 const successRate = projectsCount > 0 ? Math.round((completedProjects / projectsCount) * 100) : 0;
                 setStats([
-                    { number: `${crewCount}+`, label: "Active Professionals", icon: (0,jsx_runtime.jsx)(users/* default */.A, { className: "w-5 h-5" }) },
-                    { number: `${projectsCount}+`, label: "Projects Completed", icon: (0,jsx_runtime.jsx)(film/* default */.A, { className: "w-5 h-5" }) },
-                    { number: `${successRate}%`, label: "Success Rate", icon: (0,jsx_runtime.jsx)(trending_up/* default */.A, { className: "w-5 h-5" }) },
-                    { number: `${countries.size}+`, label: "Countries", icon: (0,jsx_runtime.jsx)(globe/* default */.A, { className: "w-5 h-5" }) }
+                    { number: `${crewCount}+`, label: t('home.stats.activeProfessionals'), icon: (0,jsx_runtime.jsx)(users/* default */.A, { className: "w-5 h-5" }) },
+                    { number: `${projectsCount}+`, label: t('home.stats.projectsCompleted'), icon: (0,jsx_runtime.jsx)(film/* default */.A, { className: "w-5 h-5" }) },
+                    { number: `${successRate}%`, label: t('home.stats.successRate'), icon: (0,jsx_runtime.jsx)(trending_up/* default */.A, { className: "w-5 h-5" }) },
+                    { number: `${countries.size}+`, label: t('home.stats.countries'), icon: (0,jsx_runtime.jsx)(globe/* default */.A, { className: "w-5 h-5" }) }
                 ]);
             }
             catch (error) {
                 console.error('Error fetching stats:', error);
                 // Show empty state instead of fake data
                 setStats([
-                    { number: "—", label: "Active Professionals", icon: (0,jsx_runtime.jsx)(users/* default */.A, { className: "w-5 h-5" }) },
-                    { number: "—", label: "Projects Completed", icon: (0,jsx_runtime.jsx)(film/* default */.A, { className: "w-5 h-5" }) },
-                    { number: "—", label: "Success Rate", icon: (0,jsx_runtime.jsx)(trending_up/* default */.A, { className: "w-5 h-5" }) },
-                    { number: "—", label: "Countries", icon: (0,jsx_runtime.jsx)(globe/* default */.A, { className: "w-5 h-5" }) }
+                    { number: '—', label: t('home.stats.activeProfessionals'), icon: (0,jsx_runtime.jsx)(users/* default */.A, { className: "w-5 h-5" }) },
+                    { number: '—', label: t('home.stats.projectsCompleted'), icon: (0,jsx_runtime.jsx)(film/* default */.A, { className: "w-5 h-5" }) },
+                    { number: '—', label: t('home.stats.successRate'), icon: (0,jsx_runtime.jsx)(trending_up/* default */.A, { className: "w-5 h-5" }) },
+                    { number: '—', label: t('home.stats.countries'), icon: (0,jsx_runtime.jsx)(globe/* default */.A, { className: "w-5 h-5" }) }
                 ]);
             }
         };
         fetchStats();
         setLoading(false);
-    }, []);
-    return ((0,jsx_runtime.jsxs)("div", { className: "min-h-screen bg-white", children: [(0,jsx_runtime.jsxs)("section", { className: "relative overflow-hidden bg-gradient-to-br from-gray-50 via-white to-blue-50", children: [(0,jsx_runtime.jsxs)("div", { className: "absolute inset-0", children: [(0,jsx_runtime.jsx)("div", { className: "absolute top-0 left-0 w-72 h-72 bg-blue-100 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse" }), (0,jsx_runtime.jsx)("div", { className: "absolute top-0 right-0 w-72 h-72 bg-purple-100 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse delay-1000" }), (0,jsx_runtime.jsx)("div", { className: "absolute bottom-0 left-1/2 w-72 h-72 bg-indigo-100 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse delay-2000" })] }), (0,jsx_runtime.jsx)("div", { className: "relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-24 lg:pt-32 lg:pb-32", children: (0,jsx_runtime.jsxs)("div", { className: "text-center", children: [(0,jsx_runtime.jsx)("div", { className: "mb-8", children: (0,jsx_runtime.jsxs)("div", { className: "inline-flex items-center px-4 py-2 rounded-full bg-blue-50 text-blue-600 text-sm font-medium border border-blue-200", children: [(0,jsx_runtime.jsx)(users/* default */.A, { className: "w-4 h-4 mr-2" }), "The Future of Film Industry Networking"] }) }), (0,jsx_runtime.jsxs)("h1", { className: "text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-8 leading-tight", children: ["Connect with the", (0,jsx_runtime.jsxs)("span", { className: "relative inline-block ml-4", children: [(0,jsx_runtime.jsx)("span", { className: "bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent", children: "Film Industry" }), (0,jsx_runtime.jsx)("div", { className: "absolute -bottom-2 left-0 right-0 h-2 bg-gradient-to-r from-blue-200 to-purple-200 rounded-full opacity-30" })] })] }), (0,jsx_runtime.jsx)("p", { className: "text-xl lg:text-2xl text-gray-600 mb-12 max-w-4xl mx-auto leading-relaxed", children: "The premier platform where film professionals showcase projects, discover talent, and build careers that shape the future of entertainment." }), (0,jsx_runtime.jsxs)("div", { className: "flex flex-col sm:flex-row gap-4 justify-center items-center mb-16", children: [(0,jsx_runtime.jsxs)(chunk_QMGIS6GS/* Link */.N_, { to: "/register", className: "group px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center text-lg", children: ["Get Started Free", (0,jsx_runtime.jsx)(arrow_right/* default */.A, { className: "ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" })] }), (0,jsx_runtime.jsxs)(chunk_QMGIS6GS/* Link */.N_, { to: "/jobs", className: "group px-8 py-4 bg-white text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-all duration-300 shadow-lg border border-gray-200 hover:border-gray-300 flex items-center text-lg", children: [(0,jsx_runtime.jsx)(Play, { className: "mr-2 w-5 h-5 group-hover:scale-110 transition-transform" }), "Explore Jobs"] })] }), (0,jsx_runtime.jsx)("div", { className: "grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 max-w-5xl mx-auto", children: stats.map((stat, index) => ((0,jsx_runtime.jsxs)("div", { className: "text-center p-6 bg-white/60 backdrop-blur-sm rounded-xl border border-gray-100 hover:bg-white/80 transition-all duration-300", children: [(0,jsx_runtime.jsx)("div", { className: "flex justify-center mb-2 text-blue-600", children: stat.icon }), (0,jsx_runtime.jsx)("div", { className: `text-2xl lg:text-3xl font-bold mb-1 ${stat.number === "Loading..." ? "text-gray-300 animate-pulse" :
-                                                    stat.number === "—" ? "text-gray-400" : "text-gray-900"}`, children: stat.number }), (0,jsx_runtime.jsx)("div", { className: "text-sm text-gray-600 font-medium", children: stat.label })] }, index))) })] }) })] }), (0,jsx_runtime.jsx)("section", { className: "py-24 bg-gray-50", children: (0,jsx_runtime.jsxs)("div", { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8", children: [(0,jsx_runtime.jsxs)("div", { className: "text-center mb-16", children: [(0,jsx_runtime.jsx)("h2", { className: "text-4xl font-bold text-gray-900 mb-4", children: "Everything You Need to Succeed" }), (0,jsx_runtime.jsx)("p", { className: "text-xl text-gray-600 max-w-3xl mx-auto", children: "Our comprehensive platform provides all the tools and connections you need to thrive in the film industry." })] }), (0,jsx_runtime.jsx)("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8", children: features.map((feature, index) => ((0,jsx_runtime.jsxs)("div", { className: "group bg-white rounded-xl p-8 shadow-sm border border-gray-100 hover:shadow-lg hover:border-blue-200 transition-all duration-300", children: [(0,jsx_runtime.jsx)("div", { className: "w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 mb-6 group-hover:bg-blue-200 transition-colors", children: feature.icon }), (0,jsx_runtime.jsx)("h3", { className: "text-xl font-semibold text-gray-900 mb-3", children: feature.title }), (0,jsx_runtime.jsx)("p", { className: "text-gray-600 leading-relaxed", children: feature.description })] }, index))) })] }) }), (0,jsx_runtime.jsx)("section", { className: "py-24 bg-white", children: (0,jsx_runtime.jsxs)("div", { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8", children: [(0,jsx_runtime.jsxs)("div", { className: "text-center mb-16", children: [(0,jsx_runtime.jsx)("h2", { className: "text-4xl font-bold text-gray-900 mb-4", children: "How It Works" }), (0,jsx_runtime.jsx)("p", { className: "text-xl text-gray-600 max-w-3xl mx-auto", children: "Get started in three simple steps and unlock your potential in the film industry." })] }), (0,jsx_runtime.jsx)("div", { className: "grid grid-cols-1 md:grid-cols-3 gap-8", children: [
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [t]);
+    return ((0,jsx_runtime.jsxs)("div", { className: "min-h-screen bg-white", children: [(0,jsx_runtime.jsxs)("section", { className: "relative overflow-hidden bg-gradient-to-br from-gray-50 via-white to-blue-50", children: [(0,jsx_runtime.jsxs)("div", { className: "absolute inset-0", children: [(0,jsx_runtime.jsx)("div", { className: "absolute top-0 left-0 w-72 h-72 bg-blue-100 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse" }), (0,jsx_runtime.jsx)("div", { className: "absolute top-0 right-0 w-72 h-72 bg-purple-100 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse delay-1000" }), (0,jsx_runtime.jsx)("div", { className: "absolute bottom-0 left-1/2 w-72 h-72 bg-indigo-100 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse delay-2000" })] }), (0,jsx_runtime.jsx)("div", { className: "relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-24 lg:pt-32 lg:pb-32", children: (0,jsx_runtime.jsxs)("div", { className: "text-center", children: [(0,jsx_runtime.jsx)("div", { className: "mb-8", children: (0,jsx_runtime.jsxs)("div", { className: "inline-flex items-center px-4 py-2 rounded-full bg-blue-50 text-blue-600 text-sm font-medium border border-blue-200", children: [(0,jsx_runtime.jsx)(users/* default */.A, { className: "w-4 h-4 mr-2" }), t('home.hero.banner')] }) }), (0,jsx_runtime.jsxs)("h1", { className: "text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-8 leading-tight", children: [t('home.hero.title1'), (0,jsx_runtime.jsxs)("span", { className: "relative inline-block ml-4", children: [(0,jsx_runtime.jsx)("span", { className: "bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent", children: t('home.hero.title2') }), (0,jsx_runtime.jsx)("div", { className: "absolute -bottom-2 left-0 right-0 h-2 bg-gradient-to-r from-blue-200 to-purple-200 rounded-full opacity-30" })] })] }), (0,jsx_runtime.jsx)("p", { className: "text-xl lg:text-2xl text-gray-600 mb-12 max-w-4xl mx-auto leading-relaxed", children: t('home.hero.subtitle') }), (0,jsx_runtime.jsxs)("div", { className: "flex flex-col sm:flex-row gap-4 justify-center items-center mb-16", children: [(0,jsx_runtime.jsxs)(chunk_QMGIS6GS/* Link */.N_, { to: "/register", className: "group px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center text-lg", children: [t('home.hero.ctaPrimary'), (0,jsx_runtime.jsx)(arrow_right/* default */.A, { className: "ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" })] }), (0,jsx_runtime.jsxs)(chunk_QMGIS6GS/* Link */.N_, { to: "/jobs", className: "group px-8 py-4 bg-white text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-all duration-300 shadow-lg border border-gray-200 hover:border-gray-300 flex items-center text-lg", children: [(0,jsx_runtime.jsx)(Play, { className: "mr-2 w-5 h-5 group-hover:scale-110 transition-transform" }), t('home.hero.ctaSecondary')] })] }), (0,jsx_runtime.jsx)("div", { className: "grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 max-w-5xl mx-auto", children: stats.map((stat, index) => ((0,jsx_runtime.jsxs)("div", { className: "text-center p-6 bg-white/60 backdrop-blur-sm rounded-xl border border-gray-100 hover:bg-white/80 transition-all duration-300", children: [(0,jsx_runtime.jsx)("div", { className: "flex justify-center mb-2 text-blue-600", children: stat.icon }), (0,jsx_runtime.jsx)("div", { className: `text-2xl lg:text-3xl font-bold mb-1 ${stat.number === t('home.loading') ? "text-gray-300 animate-pulse" :
+                                                    stat.number === "—" ? "text-gray-400" : "text-gray-900"}`, children: stat.number }), (0,jsx_runtime.jsx)("div", { className: "text-sm text-gray-600 font-medium", children: stat.label })] }, index))) })] }) })] }), (0,jsx_runtime.jsx)("section", { className: "py-24 bg-gray-50", children: (0,jsx_runtime.jsxs)("div", { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8", children: [(0,jsx_runtime.jsxs)("div", { className: "text-center mb-16", children: [(0,jsx_runtime.jsx)("h2", { className: "text-4xl font-bold text-gray-900 mb-4", children: t('home.features.title') }), (0,jsx_runtime.jsx)("p", { className: "text-xl text-gray-600 max-w-3xl mx-auto", children: t('home.features.subtitle') })] }), (0,jsx_runtime.jsx)("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8", children: features.map((feature, index) => ((0,jsx_runtime.jsxs)("div", { className: "group bg-white rounded-xl p-8 shadow-sm border border-gray-100 hover:shadow-lg hover:border-blue-200 transition-all duration-300", children: [(0,jsx_runtime.jsx)("div", { className: "w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 mb-6 group-hover:bg-blue-200 transition-colors", children: feature.icon }), (0,jsx_runtime.jsx)("h3", { className: "text-xl font-semibold text-gray-900 mb-3", children: feature.title }), (0,jsx_runtime.jsx)("p", { className: "text-gray-600 leading-relaxed", children: feature.description })] }, index))) })] }) }), (0,jsx_runtime.jsx)("section", { className: "py-24 bg-white", children: (0,jsx_runtime.jsxs)("div", { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8", children: [(0,jsx_runtime.jsxs)("div", { className: "text-center mb-16", children: [(0,jsx_runtime.jsx)("h2", { className: "text-4xl font-bold text-gray-900 mb-4", children: t('home.howItWorks.title') }), (0,jsx_runtime.jsx)("p", { className: "text-xl text-gray-600 max-w-3xl mx-auto", children: t('home.howItWorks.subtitle') })] }), (0,jsx_runtime.jsx)("div", { className: "grid grid-cols-1 md:grid-cols-3 gap-8", children: [
                                 {
                                     step: "01",
-                                    title: "Create Your Profile",
-                                    description: "Build a professional profile showcasing your skills, experience, and portfolio with our intuitive tools."
+                                    title: t('home.howItWorks.step1.title'),
+                                    description: t('home.howItWorks.step1.desc')
                                 },
                                 {
                                     step: "02",
-                                    title: "Connect & Network",
-                                    description: "Join our global community of film professionals and start building meaningful industry connections."
+                                    title: t('home.howItWorks.step2.title'),
+                                    description: t('home.howItWorks.step2.desc')
                                 },
                                 {
                                     step: "03",
-                                    title: "Find Opportunities",
-                                    description: "Discover jobs, projects, and collaborations that match your skills and career goals."
+                                    title: t('home.howItWorks.step3.title'),
+                                    description: t('home.howItWorks.step3.desc')
                                 }
-                            ].map((item, index) => ((0,jsx_runtime.jsxs)("div", { className: "text-center relative", children: [(0,jsx_runtime.jsx)("div", { className: "w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white text-xl font-bold mx-auto mb-6 shadow-lg", children: item.step }), (0,jsx_runtime.jsx)("h3", { className: "text-xl font-semibold text-gray-900 mb-3", children: item.title }), (0,jsx_runtime.jsx)("p", { className: "text-gray-600 leading-relaxed", children: item.description }), index < 2 && ((0,jsx_runtime.jsx)("div", { className: "hidden md:block absolute top-8 left-3/4 w-1/2 h-0.5 bg-gradient-to-r from-blue-200 to-purple-200" }))] }, index))) })] }) }), (0,jsx_runtime.jsx)("section", { className: "py-24 bg-gradient-to-r from-blue-600 to-purple-600", children: (0,jsx_runtime.jsx)("div", { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center", children: (0,jsx_runtime.jsxs)("div", { className: "max-w-3xl mx-auto", children: [(0,jsx_runtime.jsx)("h2", { className: "text-4xl font-bold text-white mb-6", children: "Ready to Transform Your Film Career?" }), (0,jsx_runtime.jsx)("p", { className: "text-xl text-blue-100 mb-8", children: "Join the largest community of film professionals and discover unlimited opportunities." }), (0,jsx_runtime.jsxs)("div", { className: "flex flex-col sm:flex-row gap-4 justify-center", children: [(0,jsx_runtime.jsxs)(chunk_QMGIS6GS/* Link */.N_, { to: "/register", className: "group px-8 py-4 bg-white text-blue-600 font-semibold rounded-lg hover:bg-gray-50 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center text-lg", children: [(0,jsx_runtime.jsx)(heart/* default */.A, { className: "mr-2 w-5 h-5 group-hover:scale-110 transition-transform" }), "Join Free Today"] }), (0,jsx_runtime.jsxs)(chunk_QMGIS6GS/* Link */.N_, { to: "/crew", className: "group px-8 py-4 bg-transparent text-white font-semibold rounded-lg border-2 border-white hover:bg-white hover:text-blue-600 transition-all duration-300 flex items-center justify-center text-lg", children: [(0,jsx_runtime.jsx)(Clapperboard, { className: "mr-2 w-5 h-5 group-hover:scale-110 transition-transform" }), "Browse Talent"] })] })] }) }) })] }));
+                            ].map((item, index) => ((0,jsx_runtime.jsxs)("div", { className: "text-center relative", children: [(0,jsx_runtime.jsx)("div", { className: "w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white text-xl font-bold mx-auto mb-6 shadow-lg", children: item.step }), (0,jsx_runtime.jsx)("h3", { className: "text-xl font-semibold text-gray-900 mb-3", children: item.title }), (0,jsx_runtime.jsx)("p", { className: "text-gray-600 leading-relaxed", children: item.description }), index < 2 && ((0,jsx_runtime.jsx)("div", { className: "hidden md:block absolute top-8 left-3/4 w-1/2 h-0.5 bg-gradient-to-r from-blue-200 to-purple-200" }))] }, index))) })] }) }), (0,jsx_runtime.jsx)("section", { className: "py-24 bg-gradient-to-r from-blue-600 to-purple-600", children: (0,jsx_runtime.jsx)("div", { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center", children: (0,jsx_runtime.jsxs)("div", { className: "max-w-3xl mx-auto", children: [(0,jsx_runtime.jsx)("h2", { className: "text-4xl font-bold text-white mb-6", children: t('home.cta.title') }), (0,jsx_runtime.jsx)("p", { className: "text-xl text-blue-100 mb-8", children: t('home.cta.subtitle') }), (0,jsx_runtime.jsxs)("div", { className: "flex flex-col sm:flex-row gap-4 justify-center", children: [(0,jsx_runtime.jsxs)(chunk_QMGIS6GS/* Link */.N_, { to: "/register", className: "group px-8 py-4 bg-white text-blue-600 font-semibold rounded-lg hover:bg-gray-50 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center text-lg", children: [(0,jsx_runtime.jsx)(heart/* default */.A, { className: "mr-2 w-5 h-5 group-hover:scale-110 transition-transform" }), t('home.cta.ctaPrimary')] }), (0,jsx_runtime.jsxs)(chunk_QMGIS6GS/* Link */.N_, { to: "/crew", className: "group px-8 py-4 bg-transparent text-white font-semibold rounded-lg border-2 border-white hover:bg-white hover:text-blue-600 transition-all duration-300 flex items-center justify-center text-lg", children: [(0,jsx_runtime.jsx)(Clapperboard, { className: "mr-2 w-5 h-5 group-hover:scale-110 transition-transform" }), t('home.cta.ctaSecondary')] })] })] }) }) })] }));
 };
 /* harmony default export */ const pages_HomePage = (HomePage);
 

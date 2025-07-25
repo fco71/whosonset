@@ -4,6 +4,7 @@ import { doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serv
 import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { JobApplication } from '../../types/JobApplication';
+import { FileUploadService } from '../../utilities/fileUploadService';
 import { toast } from 'react-hot-toast';
 import { Button } from '../ui/Button';
 import Card from '../ui/Card';
@@ -30,7 +31,10 @@ import {
   Send,
   User,
   Award,
-  TrendingUp
+  TrendingUp,
+  Download,
+  FileText,
+  Paperclip
 } from 'lucide-react';
 
 interface ApplicantProfile {
@@ -258,6 +262,28 @@ const JobApplicantsPage: React.FC<JobApplicantsPageProps> = ({ jobId: propJobId 
   const formatSalary = (salary: number | undefined) => {
     if (!salary) return 'Not specified';
     return `$${salary.toLocaleString()}`;
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    return FileUploadService.formatFileSize(bytes);
+  };
+
+  const getFileIcon = (fileName: string): string => {
+    return FileUploadService.getFileIcon(fileName);
+  };
+
+  const handleDownloadFile = (url: string, fileName: string) => {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleViewFile = (url: string) => {
+    window.open(url, '_blank');
   };
 
   const filteredAndSortedApplications = applications
@@ -657,6 +683,98 @@ const JobApplicantsPage: React.FC<JobApplicantsPageProps> = ({ jobId: propJobId 
                     )}
                   </div>
                 </div>
+
+                {/* Uploaded Documents */}
+                {selectedApplication.attachments && selectedApplication.attachments.length > 0 && (
+                  <div>
+                    <h3 className="font-medium text-gray-900 mb-2">Uploaded Documents</h3>
+                    <div className="space-y-2">
+                      {/* Resume */}
+                      {selectedApplication.attachments.find(att => att.type === 'resume') && (
+                        <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <span className="text-xl">📄</span>
+                              <div>
+                                <p className="font-medium text-gray-900 text-sm">Resume</p>
+                                <p className="text-xs text-gray-600">Submitted with application</p>
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              {(() => {
+                                const resumeAttachment = selectedApplication.attachments?.find(att => att.type === 'resume');
+                                return resumeAttachment ? (
+                                  <>
+                                    <button
+                                      onClick={() => handleViewFile(resumeAttachment.url)}
+                                      className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-100 rounded-lg transition-colors"
+                                      title="View Resume"
+                                    >
+                                      <Eye className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      onClick={() => handleDownloadFile(resumeAttachment.url, resumeAttachment.name)}
+                                      className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-100 rounded-lg transition-colors"
+                                      title="Download Resume"
+                                    >
+                                      <Download className="w-4 h-4" />
+                                    </button>
+                                  </>
+                                ) : null;
+                              })()}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Other Attachments */}
+                      {selectedApplication.attachments.filter(att => att.type !== 'resume').length > 0 && (
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium text-gray-700 mb-2">Additional Documents ({selectedApplication.attachments.filter(att => att.type !== 'resume').length})</p>
+                          {selectedApplication.attachments.filter(att => att.type !== 'resume').map((attachment, index) => (
+                            <div key={attachment.id} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <span className="text-lg">{getFileIcon(attachment.name)}</span>
+                                  <div>
+                                    <p className="font-medium text-gray-900 text-sm">{attachment.name}</p>
+                                    <p className="text-xs text-gray-600">{formatFileSize(attachment.size)}</p>
+                                  </div>
+                                </div>
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => handleViewFile(attachment.url)}
+                                    className="p-2 text-gray-600 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                                    title="View Document"
+                                  >
+                                    <Eye className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDownloadFile(attachment.url, attachment.name)}
+                                    className="p-2 text-gray-600 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                                    title="Download Document"
+                                  >
+                                    <Download className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {(!selectedApplication.attachments || selectedApplication.attachments.length === 0) && (
+                  <div>
+                    <h3 className="font-medium text-gray-900 mb-2">Uploaded Documents</h3>
+                    <div className="text-center py-4 text-gray-500">
+                      <Paperclip className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                      <p className="text-sm">No documents uploaded</p>
+                    </div>
+                  </div>
+                )}
 
                 {/* Actions */}
                 <div className="flex gap-3 pt-4 border-t border-gray-200">

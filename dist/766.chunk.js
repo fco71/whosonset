@@ -1,36 +1,6 @@
 "use strict";
 (self["webpackChunkwhosonset"] = self["webpackChunkwhosonset"] || []).push([[766],{
 
-/***/ 180:
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   A: () => (/* binding */ CircleX)
-/* harmony export */ });
-/* unused harmony export __iconNode */
-/* harmony import */ var _createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9407);
-/**
- * @license lucide-react v0.525.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-
-
-
-const __iconNode = [
-  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-  ["path", { d: "m15 9-6 6", key: "1uzhvr" }],
-  ["path", { d: "m9 9 6 6", key: "z0biqf" }]
-];
-const CircleX = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .A)("circle-x", __iconNode);
-
-
-//# sourceMappingURL=circle-x.js.map
-
-
-/***/ }),
-
 /***/ 766:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
@@ -54,12 +24,16 @@ var index_esm = __webpack_require__(7594);
 var firebase = __webpack_require__(9487);
 // EXTERNAL MODULE: ./src/contexts/AuthContext.tsx
 var AuthContext = __webpack_require__(2584);
+// EXTERNAL MODULE: ./src/utilities/fileUploadService.ts
+var fileUploadService = __webpack_require__(3549);
 // EXTERNAL MODULE: ./node_modules/react-hot-toast/dist/index.mjs + 1 modules
 var dist = __webpack_require__(888);
 // EXTERNAL MODULE: ./src/components/ui/Button.tsx
 var Button = __webpack_require__(774);
 // EXTERNAL MODULE: ./src/components/ui/Card.tsx
 var Card = __webpack_require__(4948);
+// EXTERNAL MODULE: ./src/components/JobSearch/ApplicationMessaging.tsx
+var ApplicationMessaging = __webpack_require__(3797);
 // EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/clock.js
 var clock = __webpack_require__(7235);
 // EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/eye.js
@@ -136,9 +110,13 @@ const ExternalLink = (0,createLucideIcon/* default */.A)("external-link", extern
 
 //# sourceMappingURL=external-link.js.map
 
-// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/send.js
-var send = __webpack_require__(7775);
+// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/download.js
+var download = __webpack_require__(8309);
+// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/paperclip.js
+var paperclip = __webpack_require__(8117);
 ;// ./src/components/JobSearch/JobApplicantsPage.tsx
+
+
 
 
 
@@ -160,8 +138,6 @@ const JobApplicantsPage = ({ jobId: propJobId }) => {
     const [selectedApplication, setSelectedApplication] = (0,react.useState)(null);
     const [showApplicantModal, setShowApplicantModal] = (0,react.useState)(false);
     const [showMessageModal, setShowMessageModal] = (0,react.useState)(false);
-    const [newMessage, setNewMessage] = (0,react.useState)('');
-    const [isSendingMessage, setIsSendingMessage] = (0,react.useState)(false);
     const [filterStatus, setFilterStatus] = (0,react.useState)('all');
     const [searchQuery, setSearchQuery] = (0,react.useState)('');
     const [sortBy, setSortBy] = (0,react.useState)('date');
@@ -260,36 +236,25 @@ const JobApplicantsPage = ({ jobId: propJobId }) => {
             });
             // Update local state
             setApplications(prev => prev.map(app => app.id === applicationId ? { ...app, status: newStatus } : app));
+            // Fetch the application to get applicantId
+            const applicationDoc = await (0,index_esm.getDoc)((0,index_esm.doc)(firebase.db, 'jobApplications', applicationId));
+            const applicationData = applicationDoc.data();
+            if (applicationData && applicationData.applicantId) {
+                await (0,index_esm/* addDoc */.gS)((0,index_esm/* collection */.rJ)(firebase.db, 'users', applicationData.applicantId, 'notifications'), {
+                    type: 'application_status_update',
+                    message: `Your application status has been updated to: ${newStatus}`,
+                    timestamp: (0,index_esm/* serverTimestamp */.O5)(),
+                    read: false,
+                    userId: applicationData.applicantId,
+                    applicationId: applicationId,
+                    status: newStatus
+                });
+            }
             dist/* toast */.oR.success(`Application ${newStatus.replace('_', ' ')}`);
         }
         catch (error) {
             console.error('Error updating application status:', error);
             dist/* toast */.oR.error('Failed to update status');
-        }
-    };
-    const handleSendMessage = async () => {
-        if (!newMessage.trim() || !selectedApplication || !currentUser)
-            return;
-        try {
-            setIsSendingMessage(true);
-            const messageData = {
-                senderId: currentUser.uid,
-                senderName: currentUser.displayName || currentUser.email || 'Job Poster',
-                message: newMessage.trim(),
-                timestamp: (0,index_esm/* serverTimestamp */.O5)(),
-                applicationId: selectedApplication.id
-            };
-            await (0,index_esm/* addDoc */.gS)((0,index_esm/* collection */.rJ)(firebase.db, 'jobApplications', selectedApplication.id, 'messages'), messageData);
-            setNewMessage('');
-            setShowMessageModal(false);
-            dist/* toast */.oR.success('Message sent successfully!');
-        }
-        catch (error) {
-            console.error('Error sending message:', error);
-            dist/* toast */.oR.error('Failed to send message');
-        }
-        finally {
-            setIsSendingMessage(false);
         }
     };
     const handleFavorite = async (applicationId) => {
@@ -352,6 +317,24 @@ const JobApplicantsPage = ({ jobId: propJobId }) => {
             return 'Not specified';
         return `$${salary.toLocaleString()}`;
     };
+    const formatFileSize = (bytes) => {
+        return fileUploadService/* FileUploadService */.P.formatFileSize(bytes);
+    };
+    const getFileIcon = (fileName) => {
+        return fileUploadService/* FileUploadService */.P.getFileIcon(fileName);
+    };
+    const handleDownloadFile = (url, fileName) => {
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+    const handleViewFile = (url) => {
+        window.open(url, '_blank');
+    };
     const filteredAndSortedApplications = applications
         .filter(app => {
         const matchesStatus = filterStatus === 'all' || app.status === filterStatus;
@@ -389,69 +372,16 @@ const JobApplicantsPage = ({ jobId: propJobId }) => {
                                                 }, children: [(0,jsx_runtime.jsx)(message_square/* default */.A, { className: "w-4 h-4 mr-1" }), "Message"] }), (0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "outline", size: "sm", onClick: () => handleFavorite(application.id), children: [(0,jsx_runtime.jsx)(heart/* default */.A, { className: "w-4 h-4 mr-1" }), "Favorite"] })] }), (0,jsx_runtime.jsx)("div", { className: "mt-3 pt-3 border-t border-gray-100", children: (0,jsx_runtime.jsxs)("div", { className: "flex gap-1", children: [(0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "outline", size: "sm", onClick: () => handleStatusUpdate(application.id, 'shortlisted'), className: "flex-1 text-xs", children: [(0,jsx_runtime.jsx)(star/* default */.A, { className: "w-3 h-3 mr-1" }), "Shortlist"] }), (0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "outline", size: "sm", onClick: () => handleStatusUpdate(application.id, 'interviewed'), className: "flex-1 text-xs", children: [(0,jsx_runtime.jsx)(calendar/* default */.A, { className: "w-3 h-3 mr-1" }), "Interview"] }), (0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "outline", size: "sm", onClick: () => handleStatusUpdate(application.id, 'hired'), className: "flex-1 text-xs", children: [(0,jsx_runtime.jsx)(circle_check_big/* default */.A, { className: "w-3 h-3 mr-1" }), "Hire"] })] }) })] }, application.id));
                         }) }), filteredAndSortedApplications.length === 0 && ((0,jsx_runtime.jsxs)("div", { className: "text-center py-12", children: [(0,jsx_runtime.jsx)(users/* default */.A, { className: "w-16 h-16 text-gray-300 mx-auto mb-4" }), (0,jsx_runtime.jsx)("h3", { className: "text-lg font-medium text-gray-900 mb-2", children: "No applicants found" }), (0,jsx_runtime.jsx)("p", { className: "text-gray-600", children: applications.length === 0
                                     ? "No one has applied to this job yet."
-                                    : "No applicants match your current filters." })] }))] }), showApplicantModal && selectedApplication && ((0,jsx_runtime.jsx)("div", { className: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4", children: (0,jsx_runtime.jsx)("div", { className: "bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto", children: (0,jsx_runtime.jsxs)("div", { className: "p-6", children: [(0,jsx_runtime.jsxs)("div", { className: "flex items-center justify-between mb-6", children: [(0,jsx_runtime.jsx)("h2", { className: "text-2xl font-semibold text-gray-900", children: applicantProfiles[selectedApplication.applicantId]?.name }), (0,jsx_runtime.jsx)("button", { onClick: () => setShowApplicantModal(false), className: "text-gray-400 hover:text-gray-600", children: (0,jsx_runtime.jsx)(circle_x/* default */.A, { className: "w-6 h-6" }) })] }), (0,jsx_runtime.jsxs)("div", { className: "space-y-6", children: [(0,jsx_runtime.jsxs)("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4", children: [(0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h3", { className: "font-medium text-gray-900 mb-2", children: "Contact Information" }), (0,jsx_runtime.jsxs)("div", { className: "space-y-2 text-sm", children: [(0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-2", children: [(0,jsx_runtime.jsx)(mail/* default */.A, { className: "w-4 h-4 text-gray-400" }), (0,jsx_runtime.jsx)("span", { children: applicantProfiles[selectedApplication.applicantId]?.email || 'Not provided' })] }), (0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-2", children: [(0,jsx_runtime.jsx)(Phone, { className: "w-4 h-4 text-gray-400" }), (0,jsx_runtime.jsx)("span", { children: applicantProfiles[selectedApplication.applicantId]?.phone || 'Not provided' })] }), (0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-2", children: [(0,jsx_runtime.jsx)(map_pin/* default */.A, { className: "w-4 h-4 text-gray-400" }), (0,jsx_runtime.jsx)("span", { children: applicantProfiles[selectedApplication.applicantId]?.location || 'Not specified' })] })] })] }), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h3", { className: "font-medium text-gray-900 mb-2", children: "Professional Info" }), (0,jsx_runtime.jsxs)("div", { className: "space-y-2 text-sm", children: [(0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("span", { className: "text-gray-600", children: "Experience:" }), (0,jsx_runtime.jsx)("span", { className: "ml-2", children: applicantProfiles[selectedApplication.applicantId]?.experience })] }), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("span", { className: "text-gray-600", children: "Expected Salary:" }), (0,jsx_runtime.jsx)("span", { className: "ml-2", children: formatSalary(selectedApplication.expectedSalary) })] }), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("span", { className: "text-gray-600", children: "Availability:" }), (0,jsx_runtime.jsx)("span", { className: "ml-2", children: applicantProfiles[selectedApplication.applicantId]?.availability })] })] })] })] }), applicantProfiles[selectedApplication.applicantId]?.bio && ((0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h3", { className: "font-medium text-gray-900 mb-2", children: "Bio" }), (0,jsx_runtime.jsx)("p", { className: "text-sm text-gray-600", children: applicantProfiles[selectedApplication.applicantId]?.bio })] })), applicantProfiles[selectedApplication.applicantId]?.skills &&
-                                        applicantProfiles[selectedApplication.applicantId]?.skills.length > 0 && ((0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h3", { className: "font-medium text-gray-900 mb-2", children: "Skills" }), (0,jsx_runtime.jsx)("div", { className: "flex flex-wrap gap-2", children: applicantProfiles[selectedApplication.applicantId]?.skills.map((skill, index) => ((0,jsx_runtime.jsx)("span", { className: "px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full", children: skill }, index))) })] })), applicantProfiles[selectedApplication.applicantId]?.portfolio && ((0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h3", { className: "font-medium text-gray-900 mb-2", children: "Portfolio" }), (0,jsx_runtime.jsxs)("a", { href: applicantProfiles[selectedApplication.applicantId]?.portfolio, target: "_blank", rel: "noopener noreferrer", className: "inline-flex items-center gap-2 text-blue-600 hover:text-blue-700", children: [(0,jsx_runtime.jsx)(ExternalLink, { className: "w-4 h-4" }), "View Portfolio"] })] })), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h3", { className: "font-medium text-gray-900 mb-2", children: "Application Details" }), (0,jsx_runtime.jsxs)("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4 text-sm", children: [(0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("span", { className: "text-gray-600", children: "Applied:" }), (0,jsx_runtime.jsx)("span", { className: "ml-2", children: formatDate(selectedApplication.appliedAt) })] }), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("span", { className: "text-gray-600", children: "Status:" }), (0,jsx_runtime.jsx)("span", { className: `ml-2 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedApplication.status)}`, children: selectedApplication.status.replace('_', ' ') })] }), selectedApplication.availabilityDate && ((0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("span", { className: "text-gray-600", children: "Available from:" }), (0,jsx_runtime.jsx)("span", { className: "ml-2", children: selectedApplication.availabilityDate })] }))] })] }), (0,jsx_runtime.jsxs)("div", { className: "flex gap-3 pt-4 border-t border-gray-200", children: [(0,jsx_runtime.jsxs)(Button/* Button */.$, { onClick: () => {
+                                    : "No applicants match your current filters." })] }))] }), showApplicantModal && selectedApplication && ((0,jsx_runtime.jsx)("div", { className: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4", onClick: () => setShowApplicantModal(false), children: (0,jsx_runtime.jsx)("div", { className: "bg-white rounded-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto", onClick: (e) => e.stopPropagation(), children: (0,jsx_runtime.jsxs)("div", { className: "p-6", children: [(0,jsx_runtime.jsxs)("div", { className: "flex items-center justify-between mb-6", children: [(0,jsx_runtime.jsx)("h2", { className: "text-xl font-semibold text-gray-900", children: "Applicant Details" }), (0,jsx_runtime.jsx)("button", { onClick: () => setShowApplicantModal(false), className: "p-2 hover:bg-gray-100 rounded-full transition-colors", children: (0,jsx_runtime.jsx)(circle_x/* default */.A, { className: "w-5 h-5 text-gray-500" }) })] }), (0,jsx_runtime.jsxs)("div", { className: "space-y-6", children: [(0,jsx_runtime.jsxs)("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4", children: [(0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h3", { className: "font-medium text-gray-900 mb-2", children: "Contact Information" }), (0,jsx_runtime.jsxs)("div", { className: "space-y-2 text-sm", children: [(0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-2", children: [(0,jsx_runtime.jsx)(mail/* default */.A, { className: "w-4 h-4 text-gray-400" }), (0,jsx_runtime.jsx)("span", { children: applicantProfiles[selectedApplication.applicantId]?.email || 'Not provided' })] }), (0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-2", children: [(0,jsx_runtime.jsx)(Phone, { className: "w-4 h-4 text-gray-400" }), (0,jsx_runtime.jsx)("span", { children: applicantProfiles[selectedApplication.applicantId]?.phone || 'Not provided' })] }), (0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-2", children: [(0,jsx_runtime.jsx)(map_pin/* default */.A, { className: "w-4 h-4 text-gray-400" }), (0,jsx_runtime.jsx)("span", { children: applicantProfiles[selectedApplication.applicantId]?.location || 'Not specified' })] })] })] }), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h3", { className: "font-medium text-gray-900 mb-2", children: "Professional Info" }), (0,jsx_runtime.jsxs)("div", { className: "space-y-2 text-sm", children: [(0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("span", { className: "text-gray-600", children: "Experience:" }), (0,jsx_runtime.jsx)("span", { className: "ml-2", children: applicantProfiles[selectedApplication.applicantId]?.experience })] }), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("span", { className: "text-gray-600", children: "Expected Salary:" }), (0,jsx_runtime.jsx)("span", { className: "ml-2", children: formatSalary(selectedApplication.expectedSalary) })] }), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("span", { className: "text-gray-600", children: "Availability:" }), (0,jsx_runtime.jsx)("span", { className: "ml-2", children: applicantProfiles[selectedApplication.applicantId]?.availability })] })] })] })] }), applicantProfiles[selectedApplication.applicantId]?.bio && ((0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h3", { className: "font-medium text-gray-900 mb-2", children: "Bio" }), (0,jsx_runtime.jsx)("p", { className: "text-sm text-gray-600", children: applicantProfiles[selectedApplication.applicantId]?.bio })] })), applicantProfiles[selectedApplication.applicantId]?.skills &&
+                                        applicantProfiles[selectedApplication.applicantId]?.skills.length > 0 && ((0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h3", { className: "font-medium text-gray-900 mb-2", children: "Skills" }), (0,jsx_runtime.jsx)("div", { className: "flex flex-wrap gap-2", children: applicantProfiles[selectedApplication.applicantId]?.skills.map((skill, index) => ((0,jsx_runtime.jsx)("span", { className: "px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full", children: skill }, index))) })] })), applicantProfiles[selectedApplication.applicantId]?.portfolio && ((0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h3", { className: "font-medium text-gray-900 mb-2", children: "Portfolio" }), (0,jsx_runtime.jsxs)("a", { href: applicantProfiles[selectedApplication.applicantId]?.portfolio, target: "_blank", rel: "noopener noreferrer", className: "inline-flex items-center gap-2 text-blue-600 hover:text-blue-700", children: [(0,jsx_runtime.jsx)(ExternalLink, { className: "w-4 h-4" }), "View Portfolio"] })] })), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h3", { className: "font-medium text-gray-900 mb-2", children: "Application Details" }), (0,jsx_runtime.jsxs)("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4 text-sm", children: [(0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("span", { className: "text-gray-600", children: "Applied:" }), (0,jsx_runtime.jsx)("span", { className: "ml-2", children: formatDate(selectedApplication.appliedAt) })] }), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("span", { className: "text-gray-600", children: "Status:" }), (0,jsx_runtime.jsx)("span", { className: `ml-2 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedApplication.status)}`, children: selectedApplication.status.replace('_', ' ') })] }), selectedApplication.availabilityDate && ((0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("span", { className: "text-gray-600", children: "Available from:" }), (0,jsx_runtime.jsx)("span", { className: "ml-2", children: selectedApplication.availabilityDate })] }))] })] }), selectedApplication.attachments && selectedApplication.attachments.length > 0 && ((0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h3", { className: "font-medium text-gray-900 mb-2", children: "Uploaded Documents" }), (0,jsx_runtime.jsxs)("div", { className: "space-y-2", children: [selectedApplication.attachments.find(att => att.type === 'resume') && ((0,jsx_runtime.jsx)("div", { className: "p-3 bg-blue-50 rounded-lg border border-blue-200", children: (0,jsx_runtime.jsxs)("div", { className: "flex items-center justify-between", children: [(0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-3", children: [(0,jsx_runtime.jsx)("span", { className: "text-xl", children: "\uD83D\uDCC4" }), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("p", { className: "font-medium text-gray-900 text-sm", children: "Resume" }), (0,jsx_runtime.jsx)("p", { className: "text-xs text-gray-600", children: "Submitted with application" })] })] }), (0,jsx_runtime.jsx)("div", { className: "flex gap-2", children: (() => {
+                                                                        const resumeAttachment = selectedApplication.attachments?.find(att => att.type === 'resume');
+                                                                        return resumeAttachment ? ((0,jsx_runtime.jsxs)(jsx_runtime.Fragment, { children: [(0,jsx_runtime.jsx)("button", { onClick: () => handleViewFile(resumeAttachment.url), className: "p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-100 rounded-lg transition-colors", title: "View Resume", children: (0,jsx_runtime.jsx)(eye/* default */.A, { className: "w-4 h-4" }) }), (0,jsx_runtime.jsx)("button", { onClick: () => handleDownloadFile(resumeAttachment.url, resumeAttachment.name), className: "p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-100 rounded-lg transition-colors", title: "Download Resume", children: (0,jsx_runtime.jsx)(download/* default */.A, { className: "w-4 h-4" }) })] })) : null;
+                                                                    })() })] }) })), selectedApplication.attachments.filter(att => att.type !== 'resume').length > 0 && ((0,jsx_runtime.jsxs)("div", { className: "space-y-2", children: [(0,jsx_runtime.jsxs)("p", { className: "text-sm font-medium text-gray-700 mb-2", children: ["Additional Documents (", selectedApplication.attachments.filter(att => att.type !== 'resume').length, ")"] }), selectedApplication.attachments.filter(att => att.type !== 'resume').map((attachment, index) => ((0,jsx_runtime.jsx)("div", { className: "p-3 bg-gray-50 rounded-lg border border-gray-200", children: (0,jsx_runtime.jsxs)("div", { className: "flex items-center justify-between", children: [(0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-3", children: [(0,jsx_runtime.jsx)("span", { className: "text-lg", children: getFileIcon(attachment.name) }), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("p", { className: "font-medium text-gray-900 text-sm", children: attachment.name }), (0,jsx_runtime.jsx)("p", { className: "text-xs text-gray-600", children: formatFileSize(attachment.size) })] })] }), (0,jsx_runtime.jsxs)("div", { className: "flex gap-2", children: [(0,jsx_runtime.jsx)("button", { onClick: () => handleViewFile(attachment.url), className: "p-2 text-gray-600 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors", title: "View Document", children: (0,jsx_runtime.jsx)(eye/* default */.A, { className: "w-4 h-4" }) }), (0,jsx_runtime.jsx)("button", { onClick: () => handleDownloadFile(attachment.url, attachment.name), className: "p-2 text-gray-600 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors", title: "Download Document", children: (0,jsx_runtime.jsx)(download/* default */.A, { className: "w-4 h-4" }) })] })] }) }, attachment.id)))] }))] })] })), (!selectedApplication.attachments || selectedApplication.attachments.length === 0) && ((0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h3", { className: "font-medium text-gray-900 mb-2", children: "Uploaded Documents" }), (0,jsx_runtime.jsxs)("div", { className: "text-center py-4 text-gray-500", children: [(0,jsx_runtime.jsx)(paperclip/* default */.A, { className: "w-8 h-8 mx-auto mb-2 text-gray-300" }), (0,jsx_runtime.jsx)("p", { className: "text-sm", children: "No documents uploaded" })] })] })), (0,jsx_runtime.jsxs)("div", { className: "flex gap-3 pt-4 border-t border-gray-200", children: [(0,jsx_runtime.jsxs)(Button/* Button */.$, { onClick: () => {
                                                     setShowApplicantModal(false);
                                                     setShowMessageModal(true);
-                                                }, className: "flex-1", children: [(0,jsx_runtime.jsx)(message_square/* default */.A, { className: "w-4 h-4 mr-2" }), "Send Message"] }), (0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "outline", onClick: () => handleShortlist(selectedApplication.id), children: [(0,jsx_runtime.jsx)(star/* default */.A, { className: "w-4 h-4 mr-2" }), "Shortlist"] }), (0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "outline", onClick: () => handleFavorite(selectedApplication.id), children: [(0,jsx_runtime.jsx)(heart/* default */.A, { className: "w-4 h-4 mr-2" }), "Favorite"] })] })] })] }) }) })), showMessageModal && selectedApplication && ((0,jsx_runtime.jsx)("div", { className: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4", children: (0,jsx_runtime.jsx)("div", { className: "bg-white rounded-xl max-w-md w-full", children: (0,jsx_runtime.jsxs)("div", { className: "p-6", children: [(0,jsx_runtime.jsxs)("div", { className: "flex items-center justify-between mb-4", children: [(0,jsx_runtime.jsxs)("h2", { className: "text-xl font-semibold text-gray-900", children: ["Message ", applicantProfiles[selectedApplication.applicantId]?.name] }), (0,jsx_runtime.jsx)("button", { onClick: () => setShowMessageModal(false), className: "text-gray-400 hover:text-gray-600", children: (0,jsx_runtime.jsx)(circle_x/* default */.A, { className: "w-6 h-6" }) })] }), (0,jsx_runtime.jsxs)("div", { className: "space-y-4", children: [(0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("label", { className: "block text-sm font-medium text-gray-700 mb-2", children: "Message" }), (0,jsx_runtime.jsx)("textarea", { value: newMessage, onChange: (e) => setNewMessage(e.target.value), placeholder: "Type your message...", rows: 4, className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200" })] }), (0,jsx_runtime.jsxs)("div", { className: "flex gap-3", children: [(0,jsx_runtime.jsxs)(Button/* Button */.$, { onClick: handleSendMessage, disabled: isSendingMessage || !newMessage.trim(), className: "flex-1", children: [(0,jsx_runtime.jsx)(send/* default */.A, { className: "w-4 h-4 mr-2" }), "Send Message"] }), (0,jsx_runtime.jsx)(Button/* Button */.$, { variant: "outline", onClick: () => setShowMessageModal(false), children: "Cancel" })] })] })] }) }) }))] }));
+                                                }, className: "flex-1", children: [(0,jsx_runtime.jsx)(message_square/* default */.A, { className: "w-4 h-4 mr-2" }), "Send Message"] }), (0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "outline", onClick: () => handleShortlist(selectedApplication.id), children: [(0,jsx_runtime.jsx)(star/* default */.A, { className: "w-4 h-4 mr-2" }), "Shortlist"] }), (0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "outline", onClick: () => handleFavorite(selectedApplication.id), children: [(0,jsx_runtime.jsx)(heart/* default */.A, { className: "w-4 h-4 mr-2" }), "Favorite"] })] })] })] }) }) })), showMessageModal && selectedApplication && ((0,jsx_runtime.jsx)(ApplicationMessaging/* default */.A, { applicationId: selectedApplication.id, isModal: true, onClose: () => setShowMessageModal(false) }))] }));
 };
 /* harmony default export */ const JobSearch_JobApplicantsPage = (JobApplicantsPage);
-
-
-/***/ }),
-
-/***/ 774:
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   $: () => (/* binding */ Button)
-/* harmony export */ });
-/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(4848);
-/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(6540);
-/* harmony import */ var framer_motion__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(3490);
-/* harmony import */ var clsx__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(4164);
-
-
-
-
-// Button size classes
-const sizeClasses = {
-    sm: 'h-8 px-3 text-xs',
-    md: 'h-10 px-4 py-2 text-sm',
-    lg: 'h-12 px-6 py-3 text-base',
-};
-// Button variant classes
-const variantClasses = {
-    default: 'bg-gray-100 text-gray-900 hover:bg-gray-200 focus-visible:ring-2 focus-visible:ring-gray-400 border border-transparent',
-    primary: 'bg-blue-600 text-white hover:bg-blue-700 focus-visible:ring-2 focus-visible:ring-blue-500 border border-transparent',
-    secondary: 'bg-gray-200 text-gray-900 hover:bg-gray-300 focus-visible:ring-2 focus-visible:ring-gray-400 border border-transparent',
-    outline: 'bg-transparent border border-blue-600 text-blue-600 hover:bg-blue-50 focus-visible:ring-2 focus-visible:ring-blue-400',
-    ghost: 'bg-transparent hover:bg-gray-100 text-gray-700 focus-visible:ring-2 focus-visible:ring-gray-300 border border-transparent',
-    link: 'bg-transparent text-blue-600 hover:underline p-0 focus-visible:ring-0 border-0',
-    danger: 'bg-red-600 text-white hover:bg-red-700 focus-visible:ring-2 focus-visible:ring-red-500 border border-transparent',
-    success: 'bg-green-600 text-white hover:bg-green-700 focus-visible:ring-2 focus-visible:ring-green-500 border border-transparent',
-};
-// Rounded classes
-const roundedClasses = {
-    none: 'rounded-none',
-    sm: 'rounded',
-    md: 'rounded-md',
-    lg: 'rounded-lg',
-    full: 'rounded-full',
-};
-const Button = (0,react__WEBPACK_IMPORTED_MODULE_1__.forwardRef)(({ variant = 'default', size = 'md', isLoading = false, loadingText, leftIcon, rightIcon, children, className, disabled = false, fullWidth = false, rounded = 'md', type = 'button', as: Component = framer_motion__WEBPACK_IMPORTED_MODULE_2__/* .motion */ .P.button, ...props }, ref) => {
-    const isDisabled = isLoading || disabled;
-    // Generate class names
-    const buttonClasses = (0,clsx__WEBPACK_IMPORTED_MODULE_3__/* ["default"] */ .A)('inline-flex items-center justify-center font-medium', 'focus-visible:outline-none focus-visible:ring-offset-2', 'transition-all duration-200 ease-in-out', variantClasses[variant], sizeClasses[size], roundedClasses[rounded], {
-        'w-full': fullWidth,
-        'opacity-60 cursor-not-allowed pointer-events-none': isDisabled,
-    }, className);
-    // Loading spinner
-    const loadingSpinner = ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("svg", { className: "animate-spin h-4 w-4 text-current flex-shrink-0", xmlns: "http://www.w3.org/2000/svg", fill: "none", viewBox: "0 0 24 24", "aria-hidden": "true", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("circle", { className: "opacity-25", cx: "12", cy: "12", r: "10", stroke: "currentColor", strokeWidth: "4" }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("path", { className: "opacity-75", fill: "currentColor", d: "M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" })] }));
-    return ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(Component, { ref: ref, type: type, className: buttonClasses, disabled: isDisabled, "aria-busy": isLoading, "aria-disabled": isDisabled, whileTap: !isDisabled ? { scale: 0.98 } : undefined, whileHover: !isDisabled ? { scale: 1.02 } : undefined, transition: { duration: 0.2 }, ...props, children: isLoading ? ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("span", { className: "flex items-center justify-center", children: [loadingSpinner, loadingText && (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("span", { className: "ml-2", children: loadingText })] })) : ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.Fragment, { children: [leftIcon && (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("span", { className: "mr-2", children: leftIcon }), children, rightIcon && (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("span", { className: "ml-2", children: rightIcon })] })) }));
-});
-Button.displayName = 'Button';
-
 
 
 /***/ }),
@@ -550,41 +480,6 @@ const Calendar = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["defaul
 
 /***/ }),
 
-/***/ 3160:
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   A: () => (/* binding */ Eye)
-/* harmony export */ });
-/* unused harmony export __iconNode */
-/* harmony import */ var _createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9407);
-/**
- * @license lucide-react v0.525.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-
-
-
-const __iconNode = [
-  [
-    "path",
-    {
-      d: "M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0",
-      key: "1nclc0"
-    }
-  ],
-  ["circle", { cx: "12", cy: "12", r: "3", key: "1v7zrd" }]
-];
-const Eye = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .A)("eye", __iconNode);
-
-
-//# sourceMappingURL=eye.js.map
-
-
-/***/ }),
-
 /***/ 3345:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
@@ -679,113 +574,6 @@ const Mail = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"] 
 
 /***/ }),
 
-/***/ 4471:
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   A: () => (/* binding */ CircleCheckBig)
-/* harmony export */ });
-/* unused harmony export __iconNode */
-/* harmony import */ var _createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9407);
-/**
- * @license lucide-react v0.525.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-
-
-
-const __iconNode = [
-  ["path", { d: "M21.801 10A10 10 0 1 1 17 3.335", key: "yps3ct" }],
-  ["path", { d: "m9 11 3 3L22 4", key: "1pflzl" }]
-];
-const CircleCheckBig = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .A)("circle-check-big", __iconNode);
-
-
-//# sourceMappingURL=circle-check-big.js.map
-
-
-/***/ }),
-
-/***/ 4948:
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   Ay: () => (__WEBPACK_DEFAULT_EXPORT__),
-/* harmony export */   BT: () => (/* binding */ CardDescription),
-/* harmony export */   ZB: () => (/* binding */ CardTitle),
-/* harmony export */   aR: () => (/* binding */ CardHeader),
-/* harmony export */   bw: () => (/* binding */ CardBody),
-/* harmony export */   wL: () => (/* binding */ CardFooter)
-/* harmony export */ });
-/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(4848);
-/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(6540);
-/* harmony import */ var framer_motion__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(3490);
-/* harmony import */ var clsx__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(4164);
-
-
-
-
-const Card = (0,react__WEBPACK_IMPORTED_MODULE_1__.forwardRef)(({ variant = 'elevated', hoverable = false, rounded = 'lg', shadow = 'md', padding = 'md', className = '', children, ...props }, ref) => {
-    // Base card classes
-    const baseClasses = (0,clsx__WEBPACK_IMPORTED_MODULE_2__/* ["default"] */ .A)(
-    // Base styles
-    'transition-all duration-200', 'overflow-hidden', 'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2', 
-    // Variant styles
-    variant === 'elevated' && 'bg-white border border-gray-100', variant === 'outline' && 'bg-white border border-gray-200', variant === 'filled' && 'bg-gray-50', variant === 'unstyled' && 'bg-transparent', 
-    // Shadow
-    shadow === 'sm' && 'shadow-sm', shadow === 'md' && 'shadow', shadow === 'lg' && 'shadow-md', shadow === 'xl' && 'shadow-lg', shadow === '2xl' && 'shadow-xl', shadow === 'inner' && 'shadow-inner', 
-    // Rounded corners
-    rounded === 'sm' && 'rounded-sm', rounded === 'md' && 'rounded', rounded === 'lg' && 'rounded-lg', rounded === 'xl' && 'rounded-xl', rounded === '2xl' && 'rounded-2xl', rounded === 'full' && 'rounded-full', 
-    // Padding
-    padding === 'sm' && 'p-3', padding === 'md' && 'p-4', padding === 'lg' && 'p-6', 
-    // Hover effects
-    hoverable && [
-        'hover:shadow-lg',
-        'hover:-translate-y-0.5',
-        'transform transition-transform duration-200',
-        'hover:ring-2 hover:ring-blue-100',
-    ], 
-    // Custom class names
-    className);
-    // Animation variants with proper typing
-    const variants = {
-        hidden: { opacity: 0, y: 20 },
-        visible: {
-            opacity: 1,
-            y: 0,
-            transition: { duration: 0.3 }
-        }
-    };
-    // Hover animation
-    const hoverAnimation = hoverable ? { scale: 1.01 } : {};
-    return ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(framer_motion__WEBPACK_IMPORTED_MODULE_3__/* .motion */ .P.div, { ref: ref, className: baseClasses, initial: "hidden", animate: "visible", whileHover: hoverAnimation, variants: variants, ...props, children: children }));
-});
-Card.displayName = 'Card';
-const CardHeader = (0,react__WEBPACK_IMPORTED_MODULE_1__.forwardRef)(({ className = '', withBorder = true, children, ...props }, ref) => ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { ref: ref, className: (0,clsx__WEBPACK_IMPORTED_MODULE_2__/* ["default"] */ .A)('px-4 py-3', withBorder && 'border-b border-gray-100', className), ...props, children: children })));
-CardHeader.displayName = 'CardHeader';
-const CardBody = (0,react__WEBPACK_IMPORTED_MODULE_1__.forwardRef)(({ className = '', padding = 'md', children, ...props }, ref) => {
-    const paddingClass = {
-        none: 'p-0',
-        sm: 'p-3',
-        md: 'p-4',
-        lg: 'p-6',
-    }[padding];
-    return ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { ref: ref, className: (0,clsx__WEBPACK_IMPORTED_MODULE_2__/* ["default"] */ .A)(paddingClass, className), ...props, children: children }));
-});
-CardBody.displayName = 'CardBody';
-const CardFooter = (0,react__WEBPACK_IMPORTED_MODULE_1__.forwardRef)(({ className = '', withBorder = true, children, ...props }, ref) => ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { ref: ref, className: (0,clsx__WEBPACK_IMPORTED_MODULE_2__/* ["default"] */ .A)('px-4 py-3', withBorder && 'border-t border-gray-100', className), ...props, children: children })));
-CardFooter.displayName = 'CardFooter';
-const CardTitle = (0,react__WEBPACK_IMPORTED_MODULE_1__.forwardRef)(({ as: Tag = 'h3', className = '', children, ...props }, ref) => ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(Tag, { ref: ref, className: (0,clsx__WEBPACK_IMPORTED_MODULE_2__/* ["default"] */ .A)('text-lg font-semibold text-gray-900', className), ...props, children: children })));
-CardTitle.displayName = 'CardTitle';
-const CardDescription = (0,react__WEBPACK_IMPORTED_MODULE_1__.forwardRef)(({ className = '', children, ...props }, ref) => ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("p", { ref: ref, className: (0,clsx__WEBPACK_IMPORTED_MODULE_2__/* ["default"] */ .A)('text-sm text-gray-600 mt-1', className), ...props, children: children })));
-CardDescription.displayName = 'CardDescription';
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (Card);
-
-
-/***/ }),
-
 /***/ 6589:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
@@ -844,69 +632,6 @@ const Clock = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"]
 
 /***/ }),
 
-/***/ 7504:
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   A: () => (/* binding */ MessageSquare)
-/* harmony export */ });
-/* unused harmony export __iconNode */
-/* harmony import */ var _createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9407);
-/**
- * @license lucide-react v0.525.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-
-
-
-const __iconNode = [
-  ["path", { d: "M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z", key: "1lielz" }]
-];
-const MessageSquare = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .A)("message-square", __iconNode);
-
-
-//# sourceMappingURL=message-square.js.map
-
-
-/***/ }),
-
-/***/ 7775:
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   A: () => (/* binding */ Send)
-/* harmony export */ });
-/* unused harmony export __iconNode */
-/* harmony import */ var _createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9407);
-/**
- * @license lucide-react v0.525.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-
-
-
-const __iconNode = [
-  [
-    "path",
-    {
-      d: "M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z",
-      key: "1ffxy3"
-    }
-  ],
-  ["path", { d: "m21.854 2.147-10.94 10.939", key: "12cjpa" }]
-];
-const Send = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .A)("send", __iconNode);
-
-
-//# sourceMappingURL=send.js.map
-
-
-/***/ }),
-
 /***/ 8450:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
@@ -938,35 +663,6 @@ const MapPin = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"
 
 
 //# sourceMappingURL=map-pin.js.map
-
-
-/***/ }),
-
-/***/ 8686:
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   A: () => (/* binding */ User)
-/* harmony export */ });
-/* unused harmony export __iconNode */
-/* harmony import */ var _createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9407);
-/**
- * @license lucide-react v0.525.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-
-
-
-const __iconNode = [
-  ["path", { d: "M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2", key: "975kel" }],
-  ["circle", { cx: "12", cy: "7", r: "4", key: "17ys0d" }]
-];
-const User = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .A)("user", __iconNode);
-
-
-//# sourceMappingURL=user.js.map
 
 
 /***/ })

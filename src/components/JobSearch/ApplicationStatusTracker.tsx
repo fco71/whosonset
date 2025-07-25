@@ -7,8 +7,9 @@ import { JobApplication } from '../../types/JobApplication';
 import { toast } from 'react-hot-toast';
 import { Button } from '../ui/Button';
 import Card, { CardHeader, CardBody, CardTitle } from '../ui/Card';
-import { MessageSquare, Send, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { MessageSquare, Send, Clock, CheckCircle, XCircle, AlertCircle, Star, Calendar, Download, Eye, FileText, Paperclip } from 'lucide-react';
 import ApplicationMessaging from './ApplicationMessaging';
+import { FileUploadService } from '../../utilities/fileUploadService';
 
 interface ApplicationStatusTrackerProps {
   applicationId: string;
@@ -146,6 +147,28 @@ const ApplicationStatusTracker: React.FC<ApplicationStatusTrackerProps> = ({ app
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    return FileUploadService.formatFileSize(bytes);
+  };
+
+  const getFileIcon = (fileName: string): string => {
+    return FileUploadService.getFileIcon(fileName);
+  };
+
+  const handleDownloadFile = (url: string, fileName: string) => {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleViewFile = (url: string) => {
+    window.open(url, '_blank');
   };
 
   if (isLoading) {
@@ -291,6 +314,96 @@ const ApplicationStatusTracker: React.FC<ApplicationStatusTrackerProps> = ({ app
                 )}
               </div>
             </div>
+
+            {/* Uploaded Documents */}
+            {(application.attachments && application.attachments.length > 0) && (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Uploaded Documents</h3>
+                
+                <div className="space-y-3">
+                  {/* Resume */}
+                  {application.attachments?.find(att => att.type === 'resume') && (
+                    <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl">📄</span>
+                          <div>
+                            <p className="font-medium text-gray-900">Resume</p>
+                            <p className="text-sm text-gray-600">Submitted with application</p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          {(() => {
+                            const resumeAttachment = application.attachments?.find(att => att.type === 'resume');
+                            return resumeAttachment ? (
+                              <>
+                                <button
+                                  onClick={() => handleViewFile(resumeAttachment.url)}
+                                  className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-100 rounded-lg transition-colors"
+                                  title="View Resume"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleDownloadFile(resumeAttachment.url, resumeAttachment.name)}
+                                  className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-100 rounded-lg transition-colors"
+                                  title="Download Resume"
+                                >
+                                  <Download className="w-4 h-4" />
+                                </button>
+                              </>
+                            ) : null;
+                          })()}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Other Attachments */}
+                  {application.attachments?.filter(att => att.type !== 'resume').length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-gray-700 mb-2">Additional Documents ({application.attachments?.filter(att => att.type !== 'resume').length || 0})</p>
+                      {application.attachments?.filter(att => att.type !== 'resume').map((attachment, index) => (
+                        <div key={attachment.id} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <span className="text-xl">{getFileIcon(attachment.name)}</span>
+                              <div>
+                                <p className="font-medium text-gray-900 text-sm">{attachment.name}</p>
+                                <p className="text-xs text-gray-600">{formatFileSize(attachment.size)}</p>
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleViewFile(attachment.url)}
+                                className="p-2 text-gray-600 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                                title="View Document"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDownloadFile(attachment.url, attachment.name)}
+                                className="p-2 text-gray-600 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                                title="Download Document"
+                              >
+                                <Download className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {(!application.attachments || application.attachments.length === 0) && (
+                    <div className="text-center py-4 text-gray-500">
+                      <Paperclip className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                      <p className="text-sm">No documents uploaded</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Job Details */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">

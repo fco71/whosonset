@@ -35,6 +35,8 @@ var jsx_runtime = __webpack_require__(4848);
 var react = __webpack_require__(6540);
 // EXTERNAL MODULE: ./node_modules/react-router/dist/development/chunk-QMGIS6GS.mjs
 var chunk_QMGIS6GS = __webpack_require__(5788);
+// EXTERNAL MODULE: ./node_modules/react-i18next/dist/es/index.js + 15 modules
+var es = __webpack_require__(2389);
 // EXTERNAL MODULE: ./node_modules/firebase/firestore/dist/esm/index.esm.js + 3 modules
 var index_esm = __webpack_require__(7594);
 // EXTERNAL MODULE: ./src/firebase.ts
@@ -151,7 +153,9 @@ var imageErrorFallback = __webpack_require__(676);
 
 
 
+
 const CrewProfileHeader = ({ profile }) => {
+    const { t } = (0,es/* useTranslation */.Bd)();
     const { currentUser } = (0,AuthContext/* useAuth */.A)();
     const [isBookmarked, setIsBookmarked] = (0,react.useState)(false);
     const [bookmarking, setBookmarking] = (0,react.useState)(false);
@@ -175,6 +179,18 @@ const CrewProfileHeader = ({ profile }) => {
             setBookmarking(false);
         }
     };
+    const getAvailabilityText = (availability) => {
+        switch (availability.toLowerCase()) {
+            case 'available':
+                return t('crew.available');
+            case 'soon':
+                return t('crew.soon');
+            case 'unavailable':
+                return t('crew.unavailable');
+            default:
+                return availability;
+        }
+    };
     const mainTitle = profile.jobTitles?.[0]?.title || '';
     const mainLocation = profile.residences?.[0]
         ? `${profile.residences[0].city ? profile.residences[0].city + ', ' : ''}${profile.residences[0].country || ''}`
@@ -183,11 +199,12 @@ const CrewProfileHeader = ({ profile }) => {
     const imageUrl = profile.profileImageUrl || profile.photoURL || '/default-avatar.svg';
     const availability = profile.availability || '';
     const canMessage = !!profile.contactInfo?.email && currentUser && currentUser.uid !== profile.uid;
-    return ((0,jsx_runtime.jsxs)("div", { className: "flex flex-col md:flex-row items-center gap-6 bg-white rounded-2xl shadow-lg px-8 py-6 mb-8 border border-gray-100 animate-fade-in", children: [(0,jsx_runtime.jsx)("img", { src: imageUrl, alt: profile.name, className: "w-24 h-24 rounded-full object-cover border-2 border-gray-200", onError: imageErrorFallback/* imageErrorFallback */.i, style: { flexShrink: 0 } }), (0,jsx_runtime.jsxs)("div", { className: "flex-1 min-w-0 text-center md:text-left", children: [(0,jsx_runtime.jsx)("div", { className: "font-bold text-2xl text-gray-900 mb-1", children: profile.name }), (0,jsx_runtime.jsxs)("div", { className: "text-sm text-gray-500 mb-1", children: [mainTitle, mainLocation ? ' · ' + mainLocation : ''] }), availability && ((0,jsx_runtime.jsx)("span", { className: `inline-block px-2 py-1 rounded-full text-xs font-medium ${availability.toLowerCase() === 'available' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`, children: availability }))] }), (0,jsx_runtime.jsx)("div", { className: "flex flex-col gap-2 items-center md:items-end", children: currentUser && currentUser.uid !== profile.uid && ((0,jsx_runtime.jsxs)("div", { className: "flex gap-2 items-center", children: [(0,jsx_runtime.jsx)(FollowButton/* default */.A, { currentUserId: currentUser.uid, targetUserId: profile.uid, size: "sm" }), (0,jsx_runtime.jsx)("button", { onClick: handleBookmark, disabled: bookmarking, className: `p-2 rounded-full border border-gray-200 bg-white hover:bg-yellow-50 transition-all duration-200 ${isBookmarked ? 'text-yellow-500' : 'text-gray-400'} ${bookmarking ? 'opacity-50' : ''}`, title: isBookmarked ? 'Remove from bookmarks' : 'Add to bookmarks', style: { lineHeight: 0 }, children: isBookmarked ? ((0,jsx_runtime.jsx)("svg", { xmlns: "http://www.w3.org/2000/svg", fill: "currentColor", viewBox: "0 0 24 24", className: "w-6 h-6", children: (0,jsx_runtime.jsx)("path", { d: "M5 5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16l-7-3.5L5 21V5z" }) })) : ((0,jsx_runtime.jsx)("svg", { xmlns: "http://www.w3.org/2000/svg", fill: "none", stroke: "currentColor", strokeWidth: "2", viewBox: "0 0 24 24", className: "w-6 h-6", children: (0,jsx_runtime.jsx)("path", { strokeLinecap: "round", strokeLinejoin: "round", d: "M5 5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16l-7-3.5L5 21V5z" }) })) }), canMessage && ((0,jsx_runtime.jsx)(MessageButton, { email: profile.contactInfo.email }))] })) })] }));
+    return ((0,jsx_runtime.jsxs)("div", { className: "flex flex-col md:flex-row items-center gap-6 bg-white rounded-2xl shadow-lg px-8 py-6 mb-8 border border-gray-100 animate-fade-in", children: [(0,jsx_runtime.jsx)("img", { src: imageUrl, alt: profile.name, className: "w-24 h-24 rounded-full object-cover border-2 border-gray-200", onError: imageErrorFallback/* imageErrorFallback */.i, style: { flexShrink: 0 } }), (0,jsx_runtime.jsxs)("div", { className: "flex-1 min-w-0 text-center md:text-left", children: [(0,jsx_runtime.jsx)("div", { className: "font-bold text-2xl text-gray-900 mb-1", children: profile.name }), (0,jsx_runtime.jsxs)("div", { className: "text-sm text-gray-500 mb-1", children: [mainTitle, mainLocation ? ' · ' + mainLocation : ''] }), availability && ((0,jsx_runtime.jsx)("span", { className: `inline-block px-2 py-1 rounded-full text-xs font-medium ${availability.toLowerCase() === 'available' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`, children: getAvailabilityText(availability) }))] }), (0,jsx_runtime.jsx)("div", { className: "flex flex-col gap-2 items-center md:items-end", children: currentUser && currentUser.uid !== profile.uid && ((0,jsx_runtime.jsxs)("div", { className: "flex gap-2 items-center", children: [(0,jsx_runtime.jsx)(FollowButton/* default */.A, { currentUserId: currentUser.uid, targetUserId: profile.uid, size: "sm" }), (0,jsx_runtime.jsx)("button", { onClick: handleBookmark, disabled: bookmarking, className: `p-2 rounded-full border border-gray-200 bg-white hover:bg-yellow-50 transition-all duration-200 ${isBookmarked ? 'text-yellow-500' : 'text-gray-400'} ${bookmarking ? 'opacity-50' : ''}`, title: isBookmarked ? t('crew.removeFromBookmarks') : t('crew.addToBookmarks'), style: { lineHeight: 0 }, children: isBookmarked ? ((0,jsx_runtime.jsx)("svg", { xmlns: "http://www.w3.org/2000/svg", fill: "currentColor", viewBox: "0 0 24 24", className: "w-6 h-6", children: (0,jsx_runtime.jsx)("path", { d: "M5 5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16l-7-3.5L5 21V5z" }) })) : ((0,jsx_runtime.jsx)("svg", { xmlns: "http://www.w3.org/2000/svg", fill: "none", stroke: "currentColor", strokeWidth: "2", viewBox: "0 0 24 24", className: "w-6 h-6", children: (0,jsx_runtime.jsx)("path", { strokeLinecap: "round", strokeLinejoin: "round", d: "M5 5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16l-7-3.5L5 21V5z" }) })) }), canMessage && ((0,jsx_runtime.jsx)(MessageButton, { email: profile.contactInfo.email }))] })) })] }));
 };
 /* harmony default export */ const components_CrewProfileHeader = (CrewProfileHeader);
 
 ;// ./src/components/PublicResumePage.tsx
+
 
 
 
@@ -204,6 +221,7 @@ const LOADING_STATES = {
 };
 const PublicResumePage = () => {
     const { uid } = (0,chunk_QMGIS6GS/* useParams */.g)();
+    const { t } = (0,es/* useTranslation */.Bd)();
     const [profile, setProfile] = (0,react.useState)(null);
     const [status, setStatus] = (0,react.useState)(LOADING_STATES.LOADING);
     const [error, setError] = (0,react.useState)(null);
@@ -257,13 +275,15 @@ const PublicResumePage = () => {
         }
     }, [profile, uid]);
     if (status === LOADING_STATES.LOADING) {
-        return ((0,jsx_runtime.jsx)("div", { className: "min-h-screen bg-gray-900 text-white flex items-center justify-center", children: (0,jsx_runtime.jsxs)("div", { className: "text-center", children: [(0,jsx_runtime.jsx)("div", { className: "animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4", "aria-label": "Loading" }), (0,jsx_runtime.jsx)("p", { children: "Loading resume..." }),  false && (0)] }) }));
+        return ((0,jsx_runtime.jsx)("div", { className: "min-h-screen bg-gray-900 text-white flex items-center justify-center", children: (0,jsx_runtime.jsxs)("div", { className: "text-center", children: [(0,jsx_runtime.jsx)("div", { className: "animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4", "aria-label": "Loading" }), (0,jsx_runtime.jsx)("p", { children: t('resume.loading') }),  false && (0)] }) }));
     }
     if (status === LOADING_STATES.ERROR) {
         console.error('[PublicResumePage] Error loading profile:', { error, profile });
         return ((0,jsx_runtime.jsx)("div", { className: "min-h-screen bg-gray-900 text-white flex items-center justify-center", children: (0,jsx_runtime.jsxs)("div", { className: "text-center max-w-md mx-auto p-6", children: [(0,jsx_runtime.jsx)("div", { className: "text-6xl mb-4", role: "img", "aria-hidden": "true", children: error?.includes('not found') ? '🔍' : '🔒' }), (0,jsx_runtime.jsx)("h1", { className: "text-2xl font-bold mb-4", children: error?.includes('not found')
-                            ? 'Resume Not Found'
-                            : 'Resume Not Available' }), (0,jsx_runtime.jsx)("p", { className: "text-gray-300", children: error || 'This resume is not available. Please check the link or contact the profile owner.' }),  false && (0)] }) }));
+                            ? t('resume.errors.notFound')
+                            : t('resume.errors.notAvailable') }), (0,jsx_runtime.jsx)("p", { className: "text-gray-300", children: error || (error?.includes('not found')
+                            ? t('resume.errors.notFoundDescription')
+                            : t('resume.errors.notAvailableDescription')) }),  false && (0)] }) }));
     }
     if (!profile) {
         return null; // Should be handled by error state, but TypeScript needs this check
@@ -286,6 +306,8 @@ __webpack_require__.d(__webpack_exports__, {
 
 // EXTERNAL MODULE: ./node_modules/react/jsx-runtime.js
 var jsx_runtime = __webpack_require__(4848);
+// EXTERNAL MODULE: ./node_modules/react-i18next/dist/es/index.js + 15 modules
+var es = __webpack_require__(2389);
 // EXTERNAL MODULE: ./node_modules/react/index.js
 var react = __webpack_require__(6540);
 ;// ./src/hooks/useBlobUrl.ts
@@ -366,10 +388,12 @@ var imageErrorFallback = __webpack_require__(676);
 
 
 
+
 // Import html2pdf using require to bypass TypeScript issues
 const html2pdf = __webpack_require__(3833);
 const ResumeView = (props) => {
     const { profile } = props;
+    const { t } = (0,es/* useTranslation */.Bd)();
     // Fallback: use photoURL if profileImageUrl is missing
     const managedProfileImageUrl = useManagedUrl(profile?.profileImageUrl || profile?.photoURL);
     const containerStyle = {
@@ -544,13 +568,13 @@ const ResumeView = (props) => {
               min-height: 297mm !important;
             }
           }
-        ` }), (0,jsx_runtime.jsx)("div", { className: "resume-container", style: containerStyle, children: (0,jsx_runtime.jsx)("div", { style: contentWrapperStyle, children: (0,jsx_runtime.jsxs)("div", { style: scrollableContentStyle, children: [(0,jsx_runtime.jsxs)("div", { style: headerStyle, children: [managedProfileImageUrl && ((0,jsx_runtime.jsx)("img", { src: managedProfileImageUrl, alt: "Profile", style: profileImageStyle, crossOrigin: "anonymous", onError: e => (0,imageErrorFallback/* imageErrorFallback */.i)(e) })), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h1", { style: nameStyle, children: profile.name }), profile.bio && ((0,jsx_runtime.jsx)("p", { style: bioStyle, children: profile.bio }))] })] }), profile.languages && profile.languages.length > 0 && ((0,jsx_runtime.jsxs)("section", { style: sectionStyle, children: [(0,jsx_runtime.jsx)("div", { style: sectionTitleStyle, children: "Languages" }), (0,jsx_runtime.jsx)("ul", { style: jobTitlesListStyle, children: profile.languages.slice(0, 3).map((lang, idx) => ((0,jsx_runtime.jsx)("li", { style: jobTitleItemStyle, children: lang }, idx))) })] })), (0,jsx_runtime.jsxs)("div", { style: sectionStyle, children: [(0,jsx_runtime.jsx)("h2", { style: sectionTitleStyle, children: "Professional Experience" }), (0,jsx_runtime.jsx)("ul", { style: jobTitlesListStyle, children: profile.jobTitles
+        ` }), (0,jsx_runtime.jsx)("div", { className: "resume-container", style: containerStyle, children: (0,jsx_runtime.jsx)("div", { style: contentWrapperStyle, children: (0,jsx_runtime.jsxs)("div", { style: scrollableContentStyle, children: [(0,jsx_runtime.jsxs)("div", { style: headerStyle, children: [managedProfileImageUrl && ((0,jsx_runtime.jsx)("img", { src: managedProfileImageUrl, alt: "Profile", style: profileImageStyle, crossOrigin: "anonymous", onError: e => (0,imageErrorFallback/* imageErrorFallback */.i)(e) })), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h1", { style: nameStyle, children: profile.name }), profile.bio && ((0,jsx_runtime.jsx)("p", { style: bioStyle, children: profile.bio }))] })] }), profile.languages && profile.languages.length > 0 && ((0,jsx_runtime.jsxs)("section", { style: sectionStyle, children: [(0,jsx_runtime.jsx)("div", { style: sectionTitleStyle, children: t('resume.sections.languages') }), (0,jsx_runtime.jsx)("ul", { style: jobTitlesListStyle, children: profile.languages.slice(0, 3).map((lang, idx) => ((0,jsx_runtime.jsx)("li", { style: jobTitleItemStyle, children: lang }, idx))) })] })), (0,jsx_runtime.jsxs)("div", { style: sectionStyle, children: [(0,jsx_runtime.jsx)("h2", { style: sectionTitleStyle, children: t('resume.sections.professionalExperience') }), (0,jsx_runtime.jsx)("ul", { style: jobTitlesListStyle, children: profile.jobTitles
                                             .filter(jt => jt.department && jt.title)
                                             .slice(0, 4)
-                                            .map((jt, i) => ((0,jsx_runtime.jsxs)("li", { style: jobTitleItemStyle, children: [(0,jsx_runtime.jsx)("strong", { children: jt.title }), " \u2014 ", jt.department] }, i))) }), profile.jobTitles.filter(jt => jt.department && jt.title).length > 4 && ((0,jsx_runtime.jsx)("p", { style: { fontSize: '9pt', color: '#666', fontStyle: 'italic', margin: '1mm 0 0 0' }, children: "(Showing top 4 positions - prioritize most relevant first)" }))] }), profile.projects && profile.projects.filter(p => p.projectName && p.role).length > 0 && ((0,jsx_runtime.jsxs)("div", { style: sectionStyle, children: [(0,jsx_runtime.jsx)("h2", { style: sectionTitleStyle, children: "Selected Projects" }), (0,jsx_runtime.jsx)("ul", { style: projectsListStyle, children: profile.projects
+                                            .map((jt, i) => ((0,jsx_runtime.jsxs)("li", { style: jobTitleItemStyle, children: [(0,jsx_runtime.jsx)("strong", { children: jt.title }), " \u2014 ", jt.department] }, i))) }), profile.jobTitles.filter(jt => jt.department && jt.title).length > 4 && ((0,jsx_runtime.jsxs)("p", { style: { fontSize: '9pt', color: '#666', fontStyle: 'italic', margin: '1mm 0 0 0' }, children: ["(", t('resume.labels.showingTop', { count: 4, type: t('resume.types.positions') }), ")"] }))] }), profile.projects && profile.projects.filter(p => p.projectName && p.role).length > 0 && ((0,jsx_runtime.jsxs)("div", { style: sectionStyle, children: [(0,jsx_runtime.jsx)("h2", { style: sectionTitleStyle, children: t('resume.sections.selectedProjects') }), (0,jsx_runtime.jsx)("ul", { style: projectsListStyle, children: profile.projects
                                             .filter(p => p.projectName && p.role)
                                             .slice(0, 3)
-                                            .map((p, i) => ((0,jsx_runtime.jsxs)("li", { style: projectItemStyle, children: [(0,jsx_runtime.jsx)("span", { style: projectNameStyle, children: p.projectName }), (0,jsx_runtime.jsxs)("span", { style: projectRoleStyle, children: [" \u2014 ", p.role] }), p.description && ((0,jsx_runtime.jsxs)("span", { style: projectDescriptionStyle, children: [": ", p.description] }))] }, i))) }), profile.projects.filter(p => p.projectName && p.role).length > 3 && ((0,jsx_runtime.jsx)("p", { style: { fontSize: '9pt', color: '#666', fontStyle: 'italic', margin: '1mm 0 0 0' }, children: "(Showing top 3 projects - prioritize most relevant first)" }))] })), profile.education && profile.education.length > 0 && ((0,jsx_runtime.jsxs)("div", { style: sectionStyle, children: [(0,jsx_runtime.jsx)("h2", { style: sectionTitleStyle, children: "Education" }), (0,jsx_runtime.jsx)("ul", { style: jobTitlesListStyle, children: profile.education
+                                            .map((p, i) => ((0,jsx_runtime.jsxs)("li", { style: projectItemStyle, children: [(0,jsx_runtime.jsx)("span", { style: projectNameStyle, children: p.projectName }), (0,jsx_runtime.jsxs)("span", { style: projectRoleStyle, children: [" \u2014 ", p.role] }), p.description && ((0,jsx_runtime.jsxs)("span", { style: projectDescriptionStyle, children: [": ", p.description] }))] }, i))) }), profile.projects.filter(p => p.projectName && p.role).length > 3 && ((0,jsx_runtime.jsxs)("p", { style: { fontSize: '9pt', color: '#666', fontStyle: 'italic', margin: '1mm 0 0 0' }, children: ["(", t('resume.labels.showingTop', { count: 3, type: t('resume.types.projects') }), ")"] }))] })), profile.education && profile.education.length > 0 && ((0,jsx_runtime.jsxs)("div", { style: sectionStyle, children: [(0,jsx_runtime.jsx)("h2", { style: sectionTitleStyle, children: t('resume.sections.education') }), (0,jsx_runtime.jsx)("ul", { style: jobTitlesListStyle, children: profile.education
                                             .filter(edu => {
                                             // Handle both string and object formats
                                             if (typeof edu === 'string')
@@ -568,7 +592,7 @@ const ResumeView = (props) => {
                                             const dateInfo = [];
                                             // Only show end date or current status
                                             if (edu.isCurrent) {
-                                                dateInfo.push('Present');
+                                                dateInfo.push(t('resume.labels.present'));
                                             }
                                             else if (edu.endDate) {
                                                 const endDate = new Date(edu.endDate).toLocaleDateString('en-US', { year: 'numeric' });
@@ -586,7 +610,7 @@ const ResumeView = (props) => {
                                                 dateInfo.length > 0 ? dateInfo.join(', ') : null
                                             ].filter(Boolean);
                                             return ((0,jsx_runtime.jsxs)("li", { style: { ...jobTitleItemStyle, marginBottom: '4mm' }, children: [titleParts.length > 0 && ((0,jsx_runtime.jsx)("div", { style: { fontWeight: 'bold', color: '#333' }, children: titleParts.join('') })), subtitleParts.length > 0 && ((0,jsx_runtime.jsx)("div", { style: { color: '#555' }, children: subtitleParts.join(', ') }))] }, i));
-                                        }) }), profile.education.length > 2 && ((0,jsx_runtime.jsx)("p", { style: { fontSize: '9pt', color: '#666', fontStyle: 'italic', margin: '1mm 0 0 0' }, children: "(Showing 2 most recent - prioritize most relevant first)" }))] })), (profile.contactInfo?.email || profile.contactInfo?.phone || profile.contactInfo?.website || profile.contactInfo?.instagram) && ((0,jsx_runtime.jsxs)("div", { style: sectionStyle, children: [(0,jsx_runtime.jsx)("h2", { style: sectionTitleStyle, children: "Contact Information" }), (0,jsx_runtime.jsxs)("ul", { style: contactListStyle, children: [profile.contactInfo.email && (0,jsx_runtime.jsxs)("li", { style: contactItemStyle, children: ["\uD83D\uDCE7 ", profile.contactInfo.email] }), profile.contactInfo.phone && (0,jsx_runtime.jsxs)("li", { style: contactItemStyle, children: ["\uD83D\uDCDE ", profile.contactInfo.phone] }), profile.contactInfo.website && (0,jsx_runtime.jsxs)("li", { style: contactItemStyle, children: ["\uD83C\uDF10 ", profile.contactInfo.website] }), profile.contactInfo.instagram && (0,jsx_runtime.jsxs)("li", { style: contactItemStyle, children: ["\uD83D\uDCF7 @", profile.contactInfo.instagram] })] })] })), profile.otherInfo && ((0,jsx_runtime.jsxs)("div", { style: sectionStyle, children: [(0,jsx_runtime.jsx)("h2", { style: sectionTitleStyle, children: "Additional Information" }), (0,jsx_runtime.jsx)("p", { style: otherInfoStyle, children: profile.otherInfo })] }))] }) }) })] }));
+                                        }) }), profile.education.length > 2 && ((0,jsx_runtime.jsxs)("p", { style: { fontSize: '9pt', color: '#666', fontStyle: 'italic', margin: '1mm 0 0 0' }, children: ["(", t('resume.labels.showingMostRecent', { count: 2 }), ")"] }))] })), (profile.contactInfo?.email || profile.contactInfo?.phone || profile.contactInfo?.website || profile.contactInfo?.instagram) && ((0,jsx_runtime.jsxs)("div", { style: sectionStyle, children: [(0,jsx_runtime.jsx)("h2", { style: sectionTitleStyle, children: t('resume.sections.contactInformation') }), (0,jsx_runtime.jsxs)("ul", { style: contactListStyle, children: [profile.contactInfo.email && (0,jsx_runtime.jsxs)("li", { style: contactItemStyle, children: ["\uD83D\uDCE7 ", profile.contactInfo.email] }), profile.contactInfo.phone && (0,jsx_runtime.jsxs)("li", { style: contactItemStyle, children: ["\uD83D\uDCDE ", profile.contactInfo.phone] }), profile.contactInfo.website && (0,jsx_runtime.jsxs)("li", { style: contactItemStyle, children: ["\uD83C\uDF10 ", profile.contactInfo.website] }), profile.contactInfo.instagram && (0,jsx_runtime.jsxs)("li", { style: contactItemStyle, children: ["\uD83D\uDCF7 @", profile.contactInfo.instagram] })] })] })), profile.otherInfo && ((0,jsx_runtime.jsxs)("div", { style: sectionStyle, children: [(0,jsx_runtime.jsx)("h2", { style: sectionTitleStyle, children: t('resume.sections.additionalInformation') }), (0,jsx_runtime.jsx)("p", { style: otherInfoStyle, children: profile.otherInfo })] }))] }) }) })] }));
 };
 /* harmony default export */ const components_ResumeView = (ResumeView);
 

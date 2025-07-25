@@ -68,14 +68,34 @@ function getProfileId(profile) {
 /* harmony export */ });
 /* harmony import */ var firebase_firestore__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(7594);
 /* harmony import */ var _firebase__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(9487);
-/* harmony import */ var _socialService__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(9505);
-/* harmony import */ var firebase_storage__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(2539);
-
+/* harmony import */ var firebase_storage__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(2539);
 
 
 
 
 class MessagingService {
+    // ===== CONVERSATION MANAGEMENT =====
+    // Get or create conversation ID between two users
+    static async getConversationId(userId1, userId2) {
+        const participants = [userId1, userId2].sort(); // Sort for consistent ordering
+        // Check if conversation already exists
+        const conversationsRef = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'conversations');
+        const q = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .query */ .P)(conversationsRef, (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .where */ ._M)('participants', '==', participants));
+        const snapshot = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .getDocs */ .GG)(q);
+        if (!snapshot.empty) {
+            return snapshot.docs[0].id;
+        }
+        // Create new conversation
+        const conversationData = {
+            participants,
+            createdAt: (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .serverTimestamp */ .O5)(),
+            lastMessageAt: (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .serverTimestamp */ .O5)(),
+            lastMessage: '',
+            unreadCount: 0
+        };
+        const docRef = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .addDoc */ .gS)(conversationsRef, conversationData);
+        return docRef.id;
+    }
     // ===== DIRECT MESSAGE OPERATIONS =====
     static async sendDirectMessage(senderId, receiverId, content, messageType = 'text', relatedProjectId, fileUrl) {
         try {
@@ -85,10 +105,11 @@ class MessagingService {
             if (!canMessage) {
                 throw new Error('Cannot send message to this user. They may not allow messages from non-followers.');
             }
+            // Get or create conversation
+            const conversationId = await this.getConversationId(senderId, receiverId);
             // Create message data, filtering out undefined values
             const messageData = {
                 senderId,
-                receiverId,
                 content,
                 messageType,
                 timestamp: (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .serverTimestamp */ .O5)(),
@@ -111,324 +132,168 @@ class MessagingService {
                     messageData.fileUrl = fileUrl;
                 }
             }
-            // Add to Firestore
-            const docRef = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .addDoc */ .gS)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'directMessages'), messageData);
-            console.log('[MessagingService] Message sent successfully with ID:', docRef.id);
-            // Update conversation cache
-            this.updateConversationCache(senderId, receiverId, content, new Date());
-            // Create notification for receiver
-            await _socialService__WEBPACK_IMPORTED_MODULE_2__/* .SocialService */ .l.createNotification({
-                userId: receiverId,
-                type: 'message',
-                title: 'New Message',
-                message: `You have a new message`,
-                relatedUserId: senderId,
-                isRead: false,
-                createdAt: new Date(),
-                actionUrl: `/chat`
+            // Add message to conversation
+            const messagesRef = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'conversations', conversationId, 'messages');
+            const docRef = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .addDoc */ .gS)(messagesRef, messageData);
+            // Update conversation metadata
+            const conversationRef = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'conversations', conversationId);
+            await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .updateDoc */ .mZ)(conversationRef, {
+                lastMessage: content,
+                lastMessageAt: (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .serverTimestamp */ .O5)(),
+                unreadCount: (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .increment */ .GV)(1)
             });
+            // Create notification for receiver
+            await this.createMessageNotification(receiverId, senderId, docRef.id, content, messageType);
+            console.log('[MessagingService] Message sent successfully:', docRef.id);
             return docRef.id;
         }
         catch (error) {
-            console.error('Error sending direct message:', error);
+            console.error('[MessagingService] Error sending message:', error);
             throw error;
         }
     }
     static async canSendMessage(senderId, receiverId) {
-        try {
-            // For now, allow all authenticated users to send messages to each other
-            // This can be enhanced later with proper permission checking
-            console.log('[MessagingService] Allowing message from', senderId, 'to', receiverId);
-            return true;
-        }
-        catch (error) {
-            console.error('Error checking message permissions:', error);
-            return false;
-        }
+        // For now, allow all authenticated users to message each other
+        // This can be enhanced with privacy settings later
+        return true;
     }
     static async getDirectMessages(userId1, userId2, limitCount = 50) {
         try {
-            console.log('[MessagingService] Getting direct messages between', userId1, 'and', userId2);
-            const cacheKey = `${userId1}_${userId2}`;
-            const cachedMessages = this.messageCache.get(cacheKey);
-            if (cachedMessages && cachedMessages.length >= limitCount) {
-                console.log('[MessagingService] Returning cached messages');
-                return cachedMessages.slice(-limitCount);
-            }
-            // Use a simpler approach: get messages where current user is sender
-            const messagesQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'directMessages'), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .where */ ._M)('senderId', '==', userId1), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .orderBy */ .My)('timestamp', 'desc'), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .limit */ .AB)(50));
-            const snapshot = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .getDocs */ .GG)(messagesQuery);
-            // Filter messages for this conversation in memory
-            const conversationMessages = snapshot.docs.filter(doc => {
+            const conversationId = await this.getConversationId(userId1, userId2);
+            const messagesRef = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'conversations', conversationId, 'messages');
+            const q = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .query */ .P)(messagesRef, (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .orderBy */ .My)('timestamp', 'desc'), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .limit */ .AB)(limitCount));
+            const snapshot = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .getDocs */ .GG)(q);
+            const messages = [];
+            snapshot.forEach((doc) => {
                 const data = doc.data();
-                return (data.senderId === userId1 && data.receiverId === userId2) ||
-                    (data.senderId === userId2 && data.receiverId === userId1);
-            });
-            const messages = conversationMessages.map(doc => {
-                const data = doc.data();
-                let timestamp;
-                if (data.timestamp) {
-                    if (data.timestamp instanceof Date) {
-                        timestamp = data.timestamp;
-                    }
-                    else if (typeof data.timestamp === 'object' && 'toDate' in data.timestamp) {
-                        // Firestore timestamp
-                        timestamp = data.timestamp.toDate();
-                    }
-                    else if (typeof data.timestamp === 'number') {
-                        // Unix timestamp
-                        timestamp = new Date(data.timestamp);
-                    }
-                }
-                return {
+                messages.push({
                     id: doc.id,
-                    ...data,
-                    timestamp
-                };
+                    senderId: data.senderId,
+                    receiverId: data.senderId === userId1 ? userId2 : userId1, // Determine receiver based on sender
+                    content: data.content,
+                    timestamp: data.timestamp?.toDate() || new Date(),
+                    isRead: data.isRead || false,
+                    messageType: data.messageType || 'text',
+                    status: data.status || 'sent',
+                    fileUrl: data.fileUrl,
+                    fileName: data.fileName,
+                    fileSize: data.fileSize,
+                    fileType: data.fileType,
+                    reactions: data.reactions || []
+                });
             });
-            // Cache the messages
-            this.messageCache.set(cacheKey, messages.reverse());
-            console.log('[MessagingService] Retrieved', messages.length, 'messages');
-            return messages.reverse(); // Return in chronological order
+            // Sort by timestamp ascending for display
+            return messages.reverse();
         }
         catch (error) {
-            console.error('Error getting direct messages:', error);
-            // Return empty array on error to prevent crashes
+            console.error('[MessagingService] Error getting messages:', error);
             return [];
         }
     }
-    // ===== REAL-TIME LISTENERS =====
     static subscribeToConversation(userId1, userId2, callback) {
-        console.log('[MessagingService] Subscribing to conversation between', userId1, 'and', userId2);
-        const cacheKey = `${userId1}_${userId2}`;
-        // Return cached messages immediately if available
-        const cachedMessages = this.messageCache.get(cacheKey);
-        if (cachedMessages) {
-            callback(cachedMessages);
+        const cacheKey = `${userId1}-${userId2}`;
+        // Clean up existing listener
+        if (this.listeners.has(cacheKey)) {
+            this.listeners.get(cacheKey)?.();
         }
-        let allMessages = [];
-        // Set up real-time listener for messages where current user is sender
-        const sentMessagesQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'directMessages'), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .where */ ._M)('senderId', '==', userId1), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .orderBy */ .My)('timestamp', 'asc'));
-        const sentUnsubscribe = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .onSnapshot */ .aQ)(sentMessagesQuery, (snapshot) => {
-            const sentMessages = snapshot.docs
-                .map(doc => {
-                const data = doc.data();
-                let timestamp;
-                if (data.timestamp) {
-                    if (data.timestamp instanceof Date) {
-                        timestamp = data.timestamp;
-                    }
-                    else if (typeof data.timestamp === 'object' && 'toDate' in data.timestamp) {
-                        timestamp = data.timestamp.toDate();
-                    }
-                    else if (typeof data.timestamp === 'number') {
-                        timestamp = new Date(data.timestamp);
-                    }
-                }
-                return {
-                    id: doc.id,
-                    ...data,
-                    timestamp
-                };
-            })
-                .filter(msg => msg.receiverId === userId2)
-                .filter(msg => {
-                // Filter out messages deleted for the current user
-                if (msg.senderId === userId1 && msg.deletedForSender)
-                    return false;
-                if (msg.receiverId === userId1 && msg.deletedForReceiver)
-                    return false;
-                return true;
-            });
-            // Combine with received messages and sort
-            const combinedMessages = [...sentMessages, ...allMessages.filter(msg => msg.senderId === userId2)]
-                .sort((a, b) => {
-                if (!a.timestamp && !b.timestamp)
-                    return 0;
-                if (!a.timestamp)
-                    return 1;
-                if (!b.timestamp)
-                    return -1;
-                return a.timestamp.getTime() - b.timestamp.getTime();
-            });
-            // Cache the messages
-            this.messageCache.set(cacheKey, combinedMessages);
-            callback(combinedMessages);
-        }, (error) => {
-            console.error('Error in sent messages listener:', error);
+        // Set up the listener immediately
+        const setupListener = async () => {
+            try {
+                const conversationId = await this.getConversationId(userId1, userId2);
+                const messagesRef = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'conversations', conversationId, 'messages');
+                const q = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .query */ .P)(messagesRef, (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .orderBy */ .My)('timestamp', 'asc'));
+                return (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .onSnapshot */ .aQ)(q, (snapshot) => {
+                    const messages = [];
+                    snapshot.forEach((doc) => {
+                        const data = doc.data();
+                        messages.push({
+                            id: doc.id,
+                            senderId: data.senderId,
+                            receiverId: data.senderId === userId1 ? userId2 : userId1,
+                            content: data.content,
+                            timestamp: data.timestamp?.toDate() || new Date(),
+                            isRead: data.isRead || false,
+                            messageType: data.messageType || 'text',
+                            status: data.status || 'sent',
+                            fileUrl: data.fileUrl,
+                            fileName: data.fileName,
+                            fileSize: data.fileSize,
+                            fileType: data.fileType,
+                            reactions: data.reactions || []
+                        });
+                    });
+                    this.messageCache.set(cacheKey, messages);
+                    callback(messages);
+                });
+            }
+            catch (error) {
+                console.error('[MessagingService] Error setting up conversation listener:', error);
+                return () => { };
+            }
+        };
+        // Set up the listener and store the cleanup function
+        setupListener().then(cleanup => {
+            this.listeners.set(cacheKey, cleanup);
         });
-        // Set up real-time listener for messages where current user is receiver
-        const receivedMessagesQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'directMessages'), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .where */ ._M)('receiverId', '==', userId1), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .orderBy */ .My)('timestamp', 'asc'));
-        const receivedUnsubscribe = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .onSnapshot */ .aQ)(receivedMessagesQuery, (snapshot) => {
-            const receivedMessages = snapshot.docs
-                .map(doc => {
-                const data = doc.data();
-                let timestamp;
-                if (data.timestamp) {
-                    if (data.timestamp instanceof Date) {
-                        timestamp = data.timestamp;
-                    }
-                    else if (typeof data.timestamp === 'object' && 'toDate' in data.timestamp) {
-                        timestamp = data.timestamp.toDate();
-                    }
-                    else if (typeof data.timestamp === 'number') {
-                        timestamp = new Date(data.timestamp);
-                    }
-                }
-                return {
-                    id: doc.id,
-                    ...data,
-                    timestamp
-                };
-            })
-                .filter(msg => msg.senderId === userId2)
-                .filter(msg => {
-                // Filter out messages deleted for the current user
-                if (msg.senderId === userId1 && msg.deletedForSender)
-                    return false;
-                if (msg.receiverId === userId1 && msg.deletedForReceiver)
-                    return false;
-                return true;
-            });
-            allMessages = receivedMessages;
-            // Get sent messages from cache to combine
-            const sentMessages = this.messageCache.get(cacheKey)?.filter(msg => msg.senderId === userId1) || [];
-            // Combine and sort
-            const combinedMessages = [...sentMessages, ...receivedMessages]
-                .sort((a, b) => {
-                if (!a.timestamp && !b.timestamp)
-                    return 0;
-                if (!a.timestamp)
-                    return 1;
-                if (!b.timestamp)
-                    return -1;
-                return a.timestamp.getTime() - b.timestamp.getTime();
-            });
-            // Cache the messages
-            this.messageCache.set(cacheKey, combinedMessages);
-            callback(combinedMessages);
-        }, (error) => {
-            console.error('Error in received messages listener:', error);
-        });
-        // Store the unsubscribe functions
-        const listenerKey = `conversation_${cacheKey}`;
-        this.listeners.set(listenerKey, () => {
-            sentUnsubscribe();
-            receivedUnsubscribe();
-        });
+        // Return a cleanup function that will be called immediately
         return () => {
-            sentUnsubscribe();
-            receivedUnsubscribe();
-            this.listeners.delete(listenerKey);
+            const cleanup = this.listeners.get(cacheKey);
+            if (cleanup) {
+                cleanup();
+                this.listeners.delete(cacheKey);
+            }
         };
     }
     static subscribeToConversations(userId, callback) {
-        console.log('[MessagingService] Subscribing to conversations for user:', userId);
-        const listenerKey = `conversations_${userId}`;
+        const cacheKey = `conversations-${userId}`;
         // Clean up existing listener
-        if (this.listeners.has(listenerKey)) {
-            this.listeners.get(listenerKey)();
+        if (this.listeners.has(cacheKey)) {
+            this.listeners.get(cacheKey)?.();
         }
-        let allConversations = [];
-        // Set up real-time listener for sent messages
-        const sentMessagesQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'directMessages'), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .where */ ._M)('senderId', '==', userId), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .orderBy */ .My)('timestamp', 'desc'));
-        const sentUnsubscribe = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .onSnapshot */ .aQ)(sentMessagesQuery, async (snapshot) => {
-            try {
-                const sentConversations = await Promise.all(snapshot.docs.map(async (doc) => {
-                    const data = doc.data();
-                    const receiverId = data.receiverId;
-                    // Get user profile
-                    const userProfile = await this.getUserProfile(receiverId);
-                    return {
-                        userId: receiverId,
-                        userName: userProfile.displayName,
-                        userAvatar: userProfile.avatarUrl,
-                        userRole: userProfile.role,
-                        userCompany: userProfile.company,
-                        userLocation: userProfile.location,
-                        lastMessage: data.content,
-                        lastMessageTime: data.timestamp?.toDate?.() || new Date(),
-                        unreadCount: 0, // TODO: Calculate unread count
-                        isOnline: false,
-                        lastSeen: undefined
-                    };
-                }));
-                // Combine with received conversations and sort
-                const combinedConversations = [...sentConversations, ...allConversations]
-                    .filter((conv, index, arr) => arr.findIndex(c => c.userId === conv.userId) === index)
-                    .sort((a, b) => {
-                    if (!a.lastMessageTime && !b.lastMessageTime)
-                        return 0;
-                    if (!a.lastMessageTime)
-                        return 1;
-                    if (!b.lastMessageTime)
-                        return -1;
-                    return b.lastMessageTime.getTime() - a.lastMessageTime.getTime();
-                });
-                callback(combinedConversations);
+        const conversationsRef = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'conversations');
+        const q = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .query */ .P)(conversationsRef, (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .where */ ._M)('participants', 'array-contains', userId), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .orderBy */ .My)('lastMessageAt', 'desc'));
+        const unsubscribe = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .onSnapshot */ .aQ)(q, async (snapshot) => {
+            const conversations = [];
+            for (const doc of snapshot.docs) {
+                const data = doc.data();
+                const participants = data.participants || [];
+                const otherUserId = participants.find((id) => id !== userId);
+                if (otherUserId) {
+                    try {
+                        const userProfile = await this.getUserProfile(otherUserId);
+                        const unreadCount = await this.getUnreadCount(userId, otherUserId);
+                        conversations.push({
+                            userId: otherUserId,
+                            userName: userProfile?.displayName || `User ${otherUserId.slice(-6)}`,
+                            userAvatar: userProfile?.avatarUrl,
+                            userRole: userProfile?.role,
+                            userCompany: userProfile?.company,
+                            userLocation: userProfile?.location,
+                            lastMessage: data.lastMessage || '',
+                            lastMessageTime: data.lastMessageAt?.toDate(),
+                            unreadCount,
+                            conversationId: doc.id
+                        });
+                    }
+                    catch (error) {
+                        console.error('[MessagingService] Error getting user profile:', error);
+                        // Add conversation with minimal info
+                        conversations.push({
+                            userId: otherUserId,
+                            userName: `User ${otherUserId.slice(-6)}`,
+                            lastMessage: data.lastMessage || '',
+                            lastMessageTime: data.lastMessageAt?.toDate(),
+                            unreadCount: 0,
+                            conversationId: doc.id
+                        });
+                    }
+                }
             }
-            catch (error) {
-                console.error('Error processing sent conversations:', error);
-            }
-        }, (error) => {
-            console.error('Error in sent conversations listener:', error);
+            this.conversationCache.set(cacheKey, conversations);
+            callback(conversations);
         });
-        // Set up real-time listener for received messages
-        const receivedMessagesQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'directMessages'), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .where */ ._M)('receiverId', '==', userId), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .orderBy */ .My)('timestamp', 'desc'));
-        const receivedUnsubscribe = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .onSnapshot */ .aQ)(receivedMessagesQuery, async (snapshot) => {
-            try {
-                const receivedConversations = await Promise.all(snapshot.docs.map(async (doc) => {
-                    const data = doc.data();
-                    const senderId = data.senderId;
-                    // Get user profile
-                    const userProfile = await this.getUserProfile(senderId);
-                    return {
-                        userId: senderId,
-                        userName: userProfile.displayName,
-                        userAvatar: userProfile.avatarUrl,
-                        userRole: userProfile.role,
-                        userCompany: userProfile.company,
-                        userLocation: userProfile.location,
-                        lastMessage: data.content,
-                        lastMessageTime: data.timestamp?.toDate?.() || new Date(),
-                        unreadCount: 0, // TODO: Calculate unread count
-                        isOnline: false,
-                        lastSeen: undefined
-                    };
-                }));
-                allConversations = receivedConversations;
-                // Get sent conversations from cache to combine
-                const sentConversations = this.conversationCache.get(userId) || [];
-                // Combine and sort
-                const combinedConversations = [...sentConversations, ...receivedConversations]
-                    .filter((conv, index, arr) => arr.findIndex(c => c.userId === conv.userId) === index)
-                    .sort((a, b) => {
-                    if (!a.lastMessageTime && !b.lastMessageTime)
-                        return 0;
-                    if (!a.lastMessageTime)
-                        return 1;
-                    if (!b.lastMessageTime)
-                        return -1;
-                    return b.lastMessageTime.getTime() - a.lastMessageTime.getTime();
-                });
-                callback(combinedConversations);
-            }
-            catch (error) {
-                console.error('Error processing received conversations:', error);
-            }
-        }, (error) => {
-            console.error('Error in received conversations listener:', error);
-        });
-        // Store the unsubscribe functions
-        this.listeners.set(listenerKey, () => {
-            sentUnsubscribe();
-            receivedUnsubscribe();
-        });
-        return () => {
-            sentUnsubscribe();
-            receivedUnsubscribe();
-            this.listeners.delete(listenerKey);
-        };
+        this.listeners.set(cacheKey, unsubscribe);
+        return unsubscribe;
     }
     static subscribeToConversationsWithQueries(userId, callback) {
         // Offline fallback: return empty conversations immediately
@@ -452,12 +317,88 @@ class MessagingService {
         console.log('[MessagingService] Using offline fallback for markMessageAsRead', { messageId });
     }
     static async markConversationAsRead(userId1, userId2) {
-        // Offline fallback: do nothing to prevent permission errors
-        console.log('[MessagingService] Using offline fallback for markConversationAsRead', { userId1, userId2 });
+        try {
+            const conversationId = await this.getConversationId(userId1, userId2);
+            const messagesRef = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'conversations', conversationId, 'messages');
+            const q = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .query */ .P)(messagesRef, (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .where */ ._M)('senderId', '==', userId2), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .where */ ._M)('isRead', '==', false));
+            const snapshot = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .getDocs */ .GG)(q);
+            const batch = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .writeBatch */ .wP)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db);
+            snapshot.docs.forEach((doc) => {
+                batch.update(doc.ref, {
+                    isRead: true,
+                    readAt: (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .serverTimestamp */ .O5)()
+                });
+            });
+            await batch.commit();
+            // Update conversation metadata
+            const conversationRef = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'conversations', conversationId);
+            await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .updateDoc */ .mZ)(conversationRef, {
+                unreadCount: 0
+            });
+        }
+        catch (error) {
+            console.error('[MessagingService] Error marking conversation as read:', error);
+        }
     }
     static async addMessageReaction(messageId, userId, userName, emoji) {
-        // Offline fallback: do nothing to prevent permission errors
-        console.log('[MessagingService] Using offline fallback for addMessageReaction', { messageId, userId, userName, emoji });
+        try {
+            console.log('[MessagingService] Adding reaction:', { messageId, userId, userName, emoji });
+            // Find the message in conversations subcollection
+            const conversationsQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'conversations'));
+            const conversationsSnapshot = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .getDocs */ .GG)(conversationsQuery);
+            let messageFound = false;
+            let conversationId = '';
+            // Search through all conversations to find the message
+            for (const conversationDoc of conversationsSnapshot.docs) {
+                const messagesQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'conversations', conversationDoc.id, 'messages'), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .where */ ._M)('__name__', '==', messageId));
+                const messagesSnapshot = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .getDocs */ .GG)(messagesQuery);
+                if (!messagesSnapshot.empty) {
+                    messageFound = true;
+                    conversationId = conversationDoc.id;
+                    break;
+                }
+            }
+            if (!messageFound) {
+                throw new Error('Message not found');
+            }
+            // Get current message data
+            const messageDoc = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__.getDoc)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'conversations', conversationId, 'messages', messageId));
+            if (!messageDoc.exists()) {
+                throw new Error('Message not found');
+            }
+            const messageData = messageDoc.data();
+            const currentReactions = messageData.reactions || [];
+            console.log('[MessagingService] Current reactions:', currentReactions);
+            // Check if user already reacted with this emoji
+            const existingReaction = currentReactions.find((reaction) => reaction.userId === userId && reaction.emoji === emoji);
+            if (existingReaction) {
+                // Remove existing reaction by filtering it out
+                console.log('[MessagingService] Removing existing reaction:', existingReaction);
+                const updatedReactions = currentReactions.filter((reaction) => !(reaction.userId === userId && reaction.emoji === emoji));
+                await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .updateDoc */ .mZ)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'conversations', conversationId, 'messages', messageId), {
+                    reactions: updatedReactions
+                });
+            }
+            else {
+                // Add new reaction by appending to array
+                const newReaction = {
+                    userId,
+                    userName,
+                    emoji,
+                    timestamp: new Date().toISOString() // Convert to ISO string for better compatibility
+                };
+                console.log('[MessagingService] Adding reaction object:', newReaction);
+                const updatedReactions = [...currentReactions, newReaction];
+                await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .updateDoc */ .mZ)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'conversations', conversationId, 'messages', messageId), {
+                    reactions: updatedReactions
+                });
+            }
+            console.log('[MessagingService] Reaction updated successfully');
+        }
+        catch (error) {
+            console.error('[MessagingService] Error adding reaction:', error);
+            throw error;
+        }
     }
     // ===== TYPING INDICATORS =====
     static async setTypingStatus(userId, receiverId, isTyping) {
@@ -491,9 +432,17 @@ class MessagingService {
     }
     // ===== UTILITY METHODS =====
     static async getUnreadCount(userId, otherUserId) {
-        // Offline fallback: return 0 to prevent permission errors
-        console.log('[MessagingService] Using offline fallback for getUnreadCount');
-        return 0;
+        try {
+            const conversationId = await this.getConversationId(userId, otherUserId);
+            const messagesRef = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'conversations', conversationId, 'messages');
+            const q = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .query */ .P)(messagesRef, (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .where */ ._M)('senderId', '==', otherUserId), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .where */ ._M)('isRead', '==', false));
+            const snapshot = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .getDocs */ .GG)(q);
+            return snapshot.size;
+        }
+        catch (error) {
+            console.error('[MessagingService] Error getting unread count:', error);
+            return 0;
+        }
     }
     static async getConversationParticipants(userId) {
         // Offline fallback: return empty array to prevent permission errors
@@ -502,19 +451,6 @@ class MessagingService {
     }
     static async getUserProfile(userId) {
         try {
-            // Try to get from users collection first
-            const userDoc = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__.getDoc)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'users', userId));
-            if (userDoc.exists()) {
-                const userData = userDoc.data();
-                return {
-                    displayName: userData.displayName || userData.firstName || userData.lastName || `User ${userId.slice(-4)}`,
-                    avatarUrl: userData.avatarUrl || userData.photoURL,
-                    role: userData.role,
-                    company: userData.company,
-                    location: userData.location
-                };
-            }
-            // Try crewProfiles collection as fallback
             const crewDoc = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__.getDoc)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'crewProfiles', userId));
             if (crewDoc.exists()) {
                 const crewData = crewDoc.data();
@@ -528,7 +464,7 @@ class MessagingService {
             }
             // If no user data found, return a fallback
             return {
-                displayName: `User ${userId.slice(-4)}`,
+                displayName: `Crew Member ${userId.slice(-4)}`,
                 avatarUrl: undefined,
                 role: 'Crew Member',
                 company: undefined,
@@ -536,9 +472,9 @@ class MessagingService {
             };
         }
         catch (error) {
-            console.error('Error getting user profile:', error);
+            console.error('Error getting crew profile:', error);
             return {
-                displayName: `User ${userId.slice(-4)}`,
+                displayName: `Crew Member ${userId.slice(-4)}`,
                 avatarUrl: undefined,
                 role: 'Crew Member',
                 company: undefined,
@@ -555,6 +491,55 @@ class MessagingService {
             conversations[existingIndex].lastMessageTime = timestamp;
         }
         this.conversationCache.set(userId1, conversations);
+    }
+    // ===== NOTIFICATION MANAGEMENT =====
+    static async createMessageNotification(receiverId, senderId, messageId, content, messageType) {
+        try {
+            console.log('[MessagingService] Creating message notification for:', receiverId);
+            // Get sender info
+            const senderProfile = await this.getUserProfile(senderId);
+            const senderName = senderProfile?.displayName || 'Unknown User';
+            // Create notification content based on message type
+            let notificationMessage = `New message from ${senderName}`;
+            if (messageType === 'image') {
+                notificationMessage = `${senderName} sent you a photo`;
+            }
+            else if (messageType === 'voice') {
+                notificationMessage = `${senderName} sent you a voice message`;
+            }
+            else if (messageType === 'file') {
+                notificationMessage = `${senderName} sent you a file`;
+            }
+            else if (content.length > 50) {
+                notificationMessage = `${senderName}: ${content.substring(0, 50)}...`;
+            }
+            else {
+                notificationMessage = `${senderName}: ${content}`;
+            }
+            // Create notification document
+            const notificationData = {
+                type: 'message',
+                message: notificationMessage,
+                timestamp: (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .serverTimestamp */ .O5)(),
+                read: false,
+                userId: receiverId,
+                senderId: senderId,
+                messageId: messageId,
+                conversationId: await this.getConversationId(senderId, receiverId),
+                extra: {
+                    content: content,
+                    messageType: messageType
+                }
+            };
+            // Add to user's notifications
+            const notificationsRef = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'users', receiverId, 'notifications');
+            await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .addDoc */ .gS)(notificationsRef, notificationData);
+            console.log('[MessagingService] Message notification created successfully');
+        }
+        catch (error) {
+            console.error('[MessagingService] Error creating message notification:', error);
+            // Don't throw error - notification failure shouldn't break message sending
+        }
     }
     // ===== CLEANUP =====
     static cleanup() {
@@ -574,9 +559,9 @@ class MessagingService {
             if (file.size > maxSize) {
                 throw new Error(`File size (${file.size} bytes) exceeds maximum allowed size (${maxSize} bytes)`);
             }
-            const fileRef = (0,firebase_storage__WEBPACK_IMPORTED_MODULE_3__/* .ref */ .KR)(_firebase__WEBPACK_IMPORTED_MODULE_1__/* .storage */ .IG, `${pathPrefix}/${Date.now()}-${file.name}`);
-            await (0,firebase_storage__WEBPACK_IMPORTED_MODULE_3__/* .uploadBytes */ .D)(fileRef, file);
-            const downloadURL = await (0,firebase_storage__WEBPACK_IMPORTED_MODULE_3__/* .getDownloadURL */ .qk)(fileRef);
+            const fileRef = (0,firebase_storage__WEBPACK_IMPORTED_MODULE_2__/* .ref */ .KR)(_firebase__WEBPACK_IMPORTED_MODULE_1__/* .storage */ .IG, `${pathPrefix}/${Date.now()}-${file.name}`);
+            await (0,firebase_storage__WEBPACK_IMPORTED_MODULE_2__/* .uploadBytes */ .D)(fileRef, file);
+            const downloadURL = await (0,firebase_storage__WEBPACK_IMPORTED_MODULE_2__/* .getDownloadURL */ .qk)(fileRef);
             console.log('[MessagingService] File uploaded successfully:', downloadURL);
             return downloadURL;
         }
@@ -659,9 +644,9 @@ class MessagingService {
             const testBlob = new Blob([testContent], { type: 'text/plain' });
             const testFile = new File([testBlob], 'test.txt', { type: 'text/plain' });
             // Use a path that's allowed by storage rules
-            const fileRef = (0,firebase_storage__WEBPACK_IMPORTED_MODULE_3__/* .ref */ .KR)(_firebase__WEBPACK_IMPORTED_MODULE_1__/* .storage */ .IG, 'chat-uploads/test-connection.txt');
-            await (0,firebase_storage__WEBPACK_IMPORTED_MODULE_3__/* .uploadBytes */ .D)(fileRef, testFile);
-            const downloadURL = await (0,firebase_storage__WEBPACK_IMPORTED_MODULE_3__/* .getDownloadURL */ .qk)(fileRef);
+            const fileRef = (0,firebase_storage__WEBPACK_IMPORTED_MODULE_2__/* .ref */ .KR)(_firebase__WEBPACK_IMPORTED_MODULE_1__/* .storage */ .IG, 'chat-uploads/test-connection.txt');
+            await (0,firebase_storage__WEBPACK_IMPORTED_MODULE_2__/* .uploadBytes */ .D)(fileRef, testFile);
+            const downloadURL = await (0,firebase_storage__WEBPACK_IMPORTED_MODULE_2__/* .getDownloadURL */ .qk)(fileRef);
             console.log('[MessagingService] Storage test successful:', downloadURL);
             return true;
         }
@@ -673,26 +658,60 @@ class MessagingService {
     static async deleteMessage(messageId, fileUrl, messageType, deletedByUserId) {
         try {
             console.log('[MessagingService] Deleting message:', { messageId, fileUrl, messageType, deletedByUserId });
-            // Get the message to check if it's a sender or receiver deletion
-            const messageDoc = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__.getDoc)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'directMessages', messageId));
-            if (!messageDoc.exists()) {
+            // Find the message in conversations subcollection
+            // We need to search through all conversations to find this message
+            const conversationsQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'conversations'));
+            const conversationsSnapshot = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .getDocs */ .GG)(conversationsQuery);
+            let messageFound = false;
+            let conversationId = '';
+            let messageData = null;
+            // Search through all conversations to find the message
+            for (const conversationDoc of conversationsSnapshot.docs) {
+                const messagesQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'conversations', conversationDoc.id, 'messages'), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .where */ ._M)('__name__', '==', messageId));
+                const messagesSnapshot = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .getDocs */ .GG)(messagesQuery);
+                if (!messagesSnapshot.empty) {
+                    messageFound = true;
+                    conversationId = conversationDoc.id;
+                    messageData = messagesSnapshot.docs[0].data();
+                    break;
+                }
+            }
+            if (!messageFound) {
                 console.warn('[MessagingService] Message not found, may have been already deleted');
                 return;
             }
-            const messageData = messageDoc.data();
             const isSenderDeletion = deletedByUserId === messageData.senderId;
             if (isSenderDeletion) {
-                // Sender deletion: Delete for everyone
-                await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .deleteDoc */ .kd)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'directMessages', messageId));
-                console.log('[MessagingService] Message deleted from Firestore for everyone');
+                // Sender deletion: Update message to show as deleted
+                let placeholder = '[Attachment deleted]';
+                let deletedType = 'deleted_file';
+                if (messageType === 'image') {
+                    placeholder = '[Image deleted]';
+                    deletedType = 'deleted_image';
+                }
+                else if (messageType === 'voice') {
+                    placeholder = '[Audio deleted]';
+                    deletedType = 'deleted_audio';
+                }
+                else if (messageType === 'text') {
+                    placeholder = '[Message deleted]';
+                    deletedType = 'deleted_text';
+                }
+                await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .updateDoc */ .mZ)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'conversations', conversationId, 'messages', messageId), {
+                    content: placeholder,
+                    fileUrl: null,
+                    messageType: deletedType,
+                    deletedAt: (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .serverTimestamp */ .O5)()
+                });
                 // If there's a file URL and it's not a placeholder, delete from Firebase Storage
                 if (fileUrl &&
                     !fileUrl.startsWith('data:') &&
                     !fileUrl.startsWith('FILE_TOO_LARGE:') &&
+                    !fileUrl.startsWith('UPLOAD_FAILED:') &&
                     fileUrl.includes('firebase')) {
                     try {
-                        const fileRef = (0,firebase_storage__WEBPACK_IMPORTED_MODULE_3__/* .ref */ .KR)(_firebase__WEBPACK_IMPORTED_MODULE_1__/* .storage */ .IG, fileUrl);
-                        await (0,firebase_storage__WEBPACK_IMPORTED_MODULE_3__/* .deleteObject */ .XR)(fileRef);
+                        const fileRef = (0,firebase_storage__WEBPACK_IMPORTED_MODULE_2__/* .ref */ .KR)(_firebase__WEBPACK_IMPORTED_MODULE_1__/* .storage */ .IG, fileUrl);
+                        await (0,firebase_storage__WEBPACK_IMPORTED_MODULE_2__/* .deleteObject */ .XR)(fileRef);
                         console.log('[MessagingService] File deleted from Firebase Storage');
                     }
                     catch (storageError) {
@@ -700,10 +719,11 @@ class MessagingService {
                         // Don't throw error if file deletion fails, message deletion is more important
                     }
                 }
+                console.log('[MessagingService] Message marked as deleted for everyone');
             }
             else {
                 // Receiver deletion: Mark as deleted for receiver but keep for sender
-                await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .updateDoc */ .mZ)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'directMessages', messageId), {
+                await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .updateDoc */ .mZ)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'conversations', conversationId, 'messages', messageId), {
                     deletedForReceiver: true,
                     deletedAt: (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .serverTimestamp */ .O5)()
                 });

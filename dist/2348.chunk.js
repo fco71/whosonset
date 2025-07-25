@@ -1,5 +1,5 @@
 "use strict";
-(self["webpackChunkwhosonset"] = self["webpackChunkwhosonset"] || []).push([[7091],{
+(self["webpackChunkwhosonset"] = self["webpackChunkwhosonset"] || []).push([[2348],{
 
 /***/ 697:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
@@ -30,123 +30,7 @@ const Plus = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"] 
 
 /***/ }),
 
-/***/ 774:
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   $: () => (/* binding */ Button)
-/* harmony export */ });
-/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(4848);
-/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(6540);
-/* harmony import */ var framer_motion__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(3490);
-/* harmony import */ var clsx__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(4164);
-
-
-
-
-// Button size classes
-const sizeClasses = {
-    sm: 'h-8 px-3 text-xs',
-    md: 'h-10 px-4 py-2 text-sm',
-    lg: 'h-12 px-6 py-3 text-base',
-};
-// Button variant classes
-const variantClasses = {
-    default: 'bg-gray-100 text-gray-900 hover:bg-gray-200 focus-visible:ring-2 focus-visible:ring-gray-400 border border-transparent',
-    primary: 'bg-blue-600 text-white hover:bg-blue-700 focus-visible:ring-2 focus-visible:ring-blue-500 border border-transparent',
-    secondary: 'bg-gray-200 text-gray-900 hover:bg-gray-300 focus-visible:ring-2 focus-visible:ring-gray-400 border border-transparent',
-    outline: 'bg-transparent border border-blue-600 text-blue-600 hover:bg-blue-50 focus-visible:ring-2 focus-visible:ring-blue-400',
-    ghost: 'bg-transparent hover:bg-gray-100 text-gray-700 focus-visible:ring-2 focus-visible:ring-gray-300 border border-transparent',
-    link: 'bg-transparent text-blue-600 hover:underline p-0 focus-visible:ring-0 border-0',
-    danger: 'bg-red-600 text-white hover:bg-red-700 focus-visible:ring-2 focus-visible:ring-red-500 border border-transparent',
-    success: 'bg-green-600 text-white hover:bg-green-700 focus-visible:ring-2 focus-visible:ring-green-500 border border-transparent',
-};
-// Rounded classes
-const roundedClasses = {
-    none: 'rounded-none',
-    sm: 'rounded',
-    md: 'rounded-md',
-    lg: 'rounded-lg',
-    full: 'rounded-full',
-};
-const Button = (0,react__WEBPACK_IMPORTED_MODULE_1__.forwardRef)(({ variant = 'default', size = 'md', isLoading = false, loadingText, leftIcon, rightIcon, children, className, disabled = false, fullWidth = false, rounded = 'md', type = 'button', as: Component = framer_motion__WEBPACK_IMPORTED_MODULE_2__/* .motion */ .P.button, ...props }, ref) => {
-    const isDisabled = isLoading || disabled;
-    // Generate class names
-    const buttonClasses = (0,clsx__WEBPACK_IMPORTED_MODULE_3__/* ["default"] */ .A)('inline-flex items-center justify-center font-medium', 'focus-visible:outline-none focus-visible:ring-offset-2', 'transition-all duration-200 ease-in-out', variantClasses[variant], sizeClasses[size], roundedClasses[rounded], {
-        'w-full': fullWidth,
-        'opacity-60 cursor-not-allowed pointer-events-none': isDisabled,
-    }, className);
-    // Loading spinner
-    const loadingSpinner = ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("svg", { className: "animate-spin h-4 w-4 text-current flex-shrink-0", xmlns: "http://www.w3.org/2000/svg", fill: "none", viewBox: "0 0 24 24", "aria-hidden": "true", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("circle", { className: "opacity-25", cx: "12", cy: "12", r: "10", stroke: "currentColor", strokeWidth: "4" }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("path", { className: "opacity-75", fill: "currentColor", d: "M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" })] }));
-    return ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(Component, { ref: ref, type: type, className: buttonClasses, disabled: isDisabled, "aria-busy": isLoading, "aria-disabled": isDisabled, whileTap: !isDisabled ? { scale: 0.98 } : undefined, whileHover: !isDisabled ? { scale: 1.02 } : undefined, transition: { duration: 0.2 }, ...props, children: isLoading ? ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("span", { className: "flex items-center justify-center", children: [loadingSpinner, loadingText && (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("span", { className: "ml-2", children: loadingText })] })) : ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.Fragment, { children: [leftIcon && (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("span", { className: "mr-2", children: leftIcon }), children, rightIcon && (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("span", { className: "ml-2", children: rightIcon })] })) }));
-});
-Button.displayName = 'Button';
-
-
-
-/***/ }),
-
-/***/ 6680:
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   p: () => (/* binding */ Input)
-/* harmony export */ });
-/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(4848);
-/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(6540);
-/* harmony import */ var _theme_ThemeProvider__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(3049);
-
-
-
-const Input = (0,react__WEBPACK_IMPORTED_MODULE_1__.forwardRef)(({ label, error, leftIcon, rightIcon, className = '', containerClassName = '', labelClassName = '', errorClassName = '', variant = 'outline', inputSize = 'md', id, disabled, onFocus, onBlur, ...props }, ref) => {
-    const { theme } = (0,_theme_ThemeProvider__WEBPACK_IMPORTED_MODULE_2__/* .useTheme */ .DP)();
-    const [isFocused, setIsFocused] = (0,react__WEBPACK_IMPORTED_MODULE_1__.useState)(false);
-    const inputId = id || react__WEBPACK_IMPORTED_MODULE_1__.useId();
-    // Map our custom size to the appropriate classes
-    const sizeClasses = {
-        sm: 'h-8 text-xs px-2.5 py-1.5',
-        md: 'h-10 text-sm px-3 py-2',
-        lg: 'h-12 text-base px-4 py-3',
-    }[inputSize || 'md'];
-    // Variant classes
-    const variantClasses = {
-        outline: `bg-transparent border ${error
-            ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
-            : 'border-gray-300 dark:border-neutral-600 focus:border-primary-500 focus:ring-primary-500'}`,
-        filled: `bg-gray-50 dark:bg-neutral-700/30 border border-transparent ${error
-            ? 'focus:border-red-500 focus:ring-red-500'
-            : 'focus:border-primary-500 focus:ring-primary-500'}`,
-        flushed: `bg-transparent border-0 border-b ${error
-            ? 'border-red-500 focus:border-red-500'
-            : 'border-gray-300 dark:border-neutral-600 focus:border-primary-500'} rounded-none px-0`,
-        unstyled: 'bg-transparent border-0 p-0 focus:ring-0',
-    }[variant];
-    // Label classes
-    const labelSizeClasses = {
-        sm: 'text-xs',
-        md: 'text-sm',
-        lg: 'text-base',
-    }[inputSize || 'md'];
-    const handleFocus = (e) => {
-        setIsFocused(true);
-        onFocus?.(e);
-    };
-    const handleBlur = (e) => {
-        setIsFocused(false);
-        onBlur?.(e);
-    };
-    return ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: `w-full ${containerClassName}`, children: [label && ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("label", { htmlFor: inputId, className: `block mb-1.5 font-medium text-gray-700 dark:text-gray-200 ${labelSizeClasses} ${labelClassName} ${error ? 'text-red-600 dark:text-red-400' : ''}`, children: label })), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: `relative flex items-center ${sizeClasses} ${variantClasses} ${isFocused ? 'ring-1 ring-primary-500' : ''} rounded-md transition-all duration-200 ${disabled ? 'opacity-60 cursor-not-allowed' : ''} ${className}`, children: [leftIcon && ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "absolute left-3 flex items-center justify-center text-gray-400 dark:text-gray-400", children: leftIcon })), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("input", { ref: ref, id: inputId, className: `w-full h-full bg-transparent border-0 focus:outline-none focus:ring-0 ${leftIcon ? 'pl-9' : 'pl-3'} ${rightIcon ? 'pr-9' : 'pr-3'} ${disabled ? 'cursor-not-allowed' : ''} text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500`, disabled: disabled, onFocus: handleFocus, onBlur: handleBlur, ...props }), rightIcon && ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "absolute right-3 flex items-center justify-center text-gray-400 dark:text-gray-400", children: rightIcon }))] }), error && ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("p", { className: `mt-1.5 text-sm text-red-600 dark:text-red-400 ${errorClassName}`, children: error }))] }));
-});
-// Add display name for better debugging
-Input.displayName = 'Input';
-
-// Also provide a default export for backward compatibility
-/* unused harmony default export */ var __WEBPACK_DEFAULT_EXPORT__ = ((/* unused pure expression or super */ null && (Input)));
-
-
-/***/ }),
-
-/***/ 7091:
+/***/ 2348:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 // ESM COMPAT FLAG
@@ -188,27 +72,8 @@ const UserX = (0,createLucideIcon/* default */.A)("user-x", __iconNode);
 
 // EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/user-check.js
 var user_check = __webpack_require__(7623);
-;// ./node_modules/lucide-react/dist/esm/icons/user-plus.js
-/**
- * @license lucide-react v0.525.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-
-
-
-const user_plus_iconNode = [
-  ["path", { d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2", key: "1yyitq" }],
-  ["circle", { cx: "9", cy: "7", r: "4", key: "nufk8" }],
-  ["line", { x1: "19", x2: "19", y1: "8", y2: "14", key: "1bvyxn" }],
-  ["line", { x1: "22", x2: "16", y1: "11", y2: "11", key: "1shjgl" }]
-];
-const UserPlus = (0,createLucideIcon/* default */.A)("user-plus", user_plus_iconNode);
-
-
-//# sourceMappingURL=user-plus.js.map
-
+// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/user-plus.js
+var user_plus = __webpack_require__(1999);
 // EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/bell.js
 var bell = __webpack_require__(9436);
 ;// ./node_modules/lucide-react/dist/esm/icons/message-circle.js
@@ -245,6 +110,8 @@ var socialService = __webpack_require__(9505);
 var messagingService = __webpack_require__(4672);
 // EXTERNAL MODULE: ./src/types/Profile.ts
 var Profile = __webpack_require__(835);
+// EXTERNAL MODULE: ./node_modules/react-i18next/dist/es/index.js + 15 modules
+var es = __webpack_require__(2389);
 // EXTERNAL MODULE: ./src/components/ui/Button.tsx
 var Button = __webpack_require__(774);
 // EXTERNAL MODULE: ./src/components/ui/Input.tsx
@@ -309,11 +176,13 @@ var dist = __webpack_require__(888);
 
 
 
+
 // Enhanced tab component with better styling
 const TabButton = ({ active, onClick, children, count, icon: Icon }) => ((0,jsx_runtime.jsxs)("button", { onClick: onClick, className: `flex items-center gap-2 px-4 py-3 font-medium text-sm rounded-lg transition-all relative ${active
         ? 'text-blue-600 bg-blue-50'
         : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`, children: [(0,jsx_runtime.jsx)(Icon, { className: `h-4 w-4 ${active ? 'text-blue-600' : 'text-gray-500'}` }), (0,jsx_runtime.jsx)("span", { children: children }), count !== undefined && count > 0 && ((0,jsx_runtime.jsx)("span", { className: "ml-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700", children: count }))] }));
 const SocialPage = () => {
+    const { t } = (0,es/* useTranslation */.Bd)();
     const auth = (0,AuthContext/* useAuth */.A)();
     const user = auth?.currentUser; // Access currentUser instead of user
     const navigate = (0,chunk_QMGIS6GS/* useNavigate */.Zp)();
@@ -643,14 +512,14 @@ const SocialPage = () => {
         }
         switch (activeTab) {
             case 'connections':
-                return ((0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h2", { className: "text-xl font-semibold mb-4", children: "Your Connections" }), connections.length > 0 ? ((0,jsx_runtime.jsx)("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4", children: connections.map((profile) => ((0,jsx_runtime.jsx)(UserCard, { profile: profile, action: (0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "outline", size: "sm", className: "whitespace-nowrap text-xs px-3 py-1.5", onClick: () => handleFollowChange((0,Profile/* getProfileId */.Lx)(profile), false), children: [(0,jsx_runtime.jsx)(UserX, { className: "h-3.5 w-3.5 mr-1.5" }), "Unfollow"] }) }, (0,Profile/* getProfileId */.Lx)(profile)))) })) : ((0,jsx_runtime.jsx)("p", { className: "text-gray-500", children: "You don't have any connections yet." }))] }));
+                return ((0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h2", { className: "text-xl font-semibold mb-4", children: "Your Connections" }), connections.length > 0 ? ((0,jsx_runtime.jsx)("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4", children: connections.map((profile) => ((0,jsx_runtime.jsx)(UserCard, { profile: profile, action: (0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "outline", size: "sm", className: "whitespace-nowrap text-xs px-3 py-1.5", onClick: () => handleFollowChange((0,Profile/* getProfileId */.Lx)(profile), false), children: [(0,jsx_runtime.jsx)(UserX, { className: "h-3.5 w-3.5 mr-1.5" }), t('social.actions.unfollow')] }) }, (0,Profile/* getProfileId */.Lx)(profile)))) })) : ((0,jsx_runtime.jsx)("p", { className: "text-gray-500", children: "You don't have any connections yet." }))] }));
             case 'requests':
-                return ((0,jsx_runtime.jsxs)("div", { className: "space-y-4", children: [connectionRequests.length > 0 && ((0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h3", { className: "text-lg font-medium mb-2", children: "Connection Requests" }), (0,jsx_runtime.jsx)("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6", children: connectionRequests.map((profile) => ((0,jsx_runtime.jsx)(UserCard, { profile: profile, action: (0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "default", size: "sm", className: "whitespace-nowrap", onClick: () => handleFollowRequest((0,Profile/* getProfileId */.Lx)(profile), 'accept'), children: [(0,jsx_runtime.jsx)(user_check/* default */.A, { className: "h-4 w-4 mr-2" }), "Accept"] }) }, (0,Profile/* getProfileId */.Lx)(profile)))) })] })), sentRequests.length > 0 && ((0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h3", { className: "text-lg font-medium mb-2", children: "Sent Requests" }), (0,jsx_runtime.jsx)("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4", children: sentRequests.map((profile) => ((0,jsx_runtime.jsx)(UserCard, { profile: profile, action: (0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "outline", size: "sm", className: "whitespace-nowrap", onClick: () => handleFollowRequest((0,Profile/* getProfileId */.Lx)(profile), 'reject'), children: [(0,jsx_runtime.jsx)(UserX, { className: "h-4 w-4 mr-2" }), "Cancel"] }) }, (0,Profile/* getProfileId */.Lx)(profile)))) })] })), connectionRequests.length === 0 && sentRequests.length === 0 && ((0,jsx_runtime.jsx)("p", { className: "text-gray-500", children: "No pending requests." }))] }));
+                return ((0,jsx_runtime.jsxs)("div", { className: "space-y-4", children: [connectionRequests.length > 0 && ((0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h3", { className: "text-lg font-medium mb-2", children: t('social.headers.connectionRequests') }), (0,jsx_runtime.jsx)("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6", children: connectionRequests.map((profile) => ((0,jsx_runtime.jsx)(UserCard, { profile: profile, action: (0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "default", size: "sm", className: "whitespace-nowrap", onClick: () => handleFollowRequest((0,Profile/* getProfileId */.Lx)(profile), 'accept'), children: [(0,jsx_runtime.jsx)(user_check/* default */.A, { className: "h-4 w-4 mr-2" }), t('social.actions.accept')] }) }, (0,Profile/* getProfileId */.Lx)(profile)))) })] })), sentRequests.length > 0 && ((0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h3", { className: "text-lg font-medium mb-2", children: t('social.headers.sentRequests') }), (0,jsx_runtime.jsx)("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4", children: sentRequests.map((profile) => ((0,jsx_runtime.jsx)(UserCard, { profile: profile, action: (0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "outline", size: "sm", className: "whitespace-nowrap", onClick: () => handleFollowRequest((0,Profile/* getProfileId */.Lx)(profile), 'reject'), children: [(0,jsx_runtime.jsx)(UserX, { className: "h-4 w-4 mr-2" }), "Cancel"] }) }, (0,Profile/* getProfileId */.Lx)(profile)))) })] })), connectionRequests.length === 0 && sentRequests.length === 0 && ((0,jsx_runtime.jsx)("p", { className: "text-gray-500", children: t('social.empty.noRequests') }))] }));
             case 'discover':
-                return ((0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h2", { className: "text-xl font-semibold mb-4", children: "Discover People" }), filteredProfiles.length > 0 ? ((0,jsx_runtime.jsx)("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4", children: filteredProfiles.map((profile) => ((0,jsx_runtime.jsx)(UserCard, { profile: profile, action: (0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "default", size: "sm", className: "whitespace-nowrap", onClick: () => handleFollowChange((0,Profile/* getProfileId */.Lx)(profile), true), children: [(0,jsx_runtime.jsx)(UserPlus, { className: "h-4 w-4 mr-2" }), "Follow"] }) }, (0,Profile/* getProfileId */.Lx)(profile)))) })) : ((0,jsx_runtime.jsx)("p", { className: "text-gray-500", children: "No suggestions found." }))] }));
+                return ((0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h2", { className: "text-xl font-semibold mb-4", children: t('social.headers.discoverPeople') }), filteredProfiles.length > 0 ? ((0,jsx_runtime.jsx)("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4", children: filteredProfiles.map((profile) => ((0,jsx_runtime.jsx)(UserCard, { profile: profile, action: (0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "default", size: "sm", className: "whitespace-nowrap", onClick: () => handleFollowChange((0,Profile/* getProfileId */.Lx)(profile), true), children: [(0,jsx_runtime.jsx)(user_plus/* default */.A, { className: "h-4 w-4 mr-2" }), t('social.actions.follow')] }) }, (0,Profile/* getProfileId */.Lx)(profile)))) })) : ((0,jsx_runtime.jsx)("p", { className: "text-gray-500", children: "No suggestions found." }))] }));
             case 'notifications':
             default:
-                return ((0,jsx_runtime.jsxs)("div", { className: "text-center py-12", children: [(0,jsx_runtime.jsx)(bell/* default */.A, { className: "h-12 w-12 text-gray-300 mx-auto mb-4" }), (0,jsx_runtime.jsx)("h2", { className: "text-xl font-semibold text-gray-700 mb-2", children: "No new notifications" }), (0,jsx_runtime.jsx)("p", { className: "text-gray-500", children: "Your notifications will appear here." })] }));
+                return ((0,jsx_runtime.jsxs)("div", { className: "text-center py-12", children: [(0,jsx_runtime.jsx)(bell/* default */.A, { className: "h-12 w-12 text-gray-300 mx-auto mb-4" }), (0,jsx_runtime.jsx)("h2", { className: "text-xl font-semibold text-gray-700 mb-2", children: t('social.empty.noNotifications') }), (0,jsx_runtime.jsx)("p", { className: "text-gray-500", children: t('social.headers.yourNotifications') })] }));
         }
     };
     // User card component
@@ -729,12 +598,72 @@ const SocialPage = () => {
                                                     .join('')
                                                     .toUpperCase() })] }), (0,jsx_runtime.jsxs)("div", { className: "flex-1 min-w-0", children: [(0,jsx_runtime.jsx)("h4", { className: "text-sm font-medium text-gray-900 truncate", children: profile.displayName }), profile.type === 'crew' && profile.jobTitles?.[0]?.title && ((0,jsx_runtime.jsx)("p", { className: "text-xs text-gray-500 truncate", children: profile.jobTitles[0].title }))] }), (0,jsx_runtime.jsx)(Button/* Button */.$, { variant: "ghost", size: "sm", className: "h-8 w-8 p-0", children: (0,jsx_runtime.jsx)(send/* default */.A, { className: "h-4 w-4" }) })] }, (0,Profile/* getProfileId */.Lx)(profile)))) })) })] }) }));
     };
-    return ((0,jsx_runtime.jsxs)("div", { className: "container mx-auto px-4 py-6 max-w-7xl", children: [(0,jsx_runtime.jsxs)("div", { className: "flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8", children: [(0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h1", { className: "text-2xl font-bold text-gray-900", children: "Social Network" }), (0,jsx_runtime.jsx)("p", { className: "text-gray-500", children: "Connect with crew members and discover new professionals" })] }), (0,jsx_runtime.jsxs)("div", { className: "flex items-center space-x-3", children: [(0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "outline", size: "sm", onClick: () => {
+    return ((0,jsx_runtime.jsxs)("div", { className: "container mx-auto px-4 py-6 max-w-7xl", children: [(0,jsx_runtime.jsxs)("div", { className: "flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8", children: [(0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h1", { className: "text-2xl font-bold text-gray-900", children: t('social.title') }), (0,jsx_runtime.jsx)("p", { className: "text-gray-500", children: t('social.subtitle') })] }), (0,jsx_runtime.jsxs)("div", { className: "flex items-center space-x-3", children: [(0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "outline", size: "sm", onClick: () => {
                                     // Navigate to full messaging environment
                                     navigate('/chat');
-                                }, className: "flex items-center space-x-2", children: [(0,jsx_runtime.jsx)(MessageCircle, { className: "h-4 w-4" }), (0,jsx_runtime.jsx)("span", { children: "Messages" })] }), (0,jsx_runtime.jsx)("div", { className: "w-full md:w-96", children: (0,jsx_runtime.jsxs)("div", { className: "relative", children: [(0,jsx_runtime.jsx)(search/* default */.A, { className: "absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" }), (0,jsx_runtime.jsx)(Input/* Input */.p, { type: "text", placeholder: "Search people...", className: "pl-10 w-full", value: searchQuery, onChange: handleSearchChange })] }) })] })] }), (0,jsx_runtime.jsxs)("div", { className: "flex space-x-4 mb-6 overflow-x-auto pb-2", children: [(0,jsx_runtime.jsx)(TabButton, { active: activeTab === 'connections', onClick: () => setActiveTab('connections'), icon: user_check/* default */.A, children: "Connections" }), (0,jsx_runtime.jsx)(TabButton, { active: activeTab === 'requests', onClick: () => setActiveTab('requests'), count: connectionRequests.length, icon: UserX, children: "Requests" }), (0,jsx_runtime.jsx)(TabButton, { active: activeTab === 'discover', onClick: () => setActiveTab('discover'), icon: UserPlus, children: "Discover" }), (0,jsx_runtime.jsx)(TabButton, { active: activeTab === 'notifications', onClick: () => setActiveTab('notifications'), icon: bell/* default */.A, children: "Notifications" })] }), (0,jsx_runtime.jsx)("div", { className: "space-y-6", children: renderTabContent() }), (0,jsx_runtime.jsx)(MessagePane, {}), (0,jsx_runtime.jsx)(StartConversationModal, {})] }));
+                                }, className: "flex items-center space-x-2", children: [(0,jsx_runtime.jsx)(MessageCircle, { className: "h-4 w-4" }), (0,jsx_runtime.jsx)("span", { children: t('social.messages') })] }), (0,jsx_runtime.jsx)("div", { className: "w-full md:w-96", children: (0,jsx_runtime.jsxs)("div", { className: "relative", children: [(0,jsx_runtime.jsx)(search/* default */.A, { className: "absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" }), (0,jsx_runtime.jsx)(Input/* Input */.p, { type: "text", placeholder: t('social.searchPeople'), className: "pl-10 w-full", value: searchQuery, onChange: handleSearchChange })] }) })] })] }), (0,jsx_runtime.jsxs)("div", { className: "flex space-x-4 mb-6 overflow-x-auto pb-2", children: [(0,jsx_runtime.jsx)(TabButton, { active: activeTab === 'connections', onClick: () => setActiveTab('connections'), icon: user_check/* default */.A, children: t('social.tabs.connections') }), (0,jsx_runtime.jsx)(TabButton, { active: activeTab === 'requests', onClick: () => setActiveTab('requests'), count: connectionRequests.length, icon: UserX, children: t('social.tabs.requests') }), (0,jsx_runtime.jsx)(TabButton, { active: activeTab === 'discover', onClick: () => setActiveTab('discover'), icon: user_plus/* default */.A, children: t('social.tabs.discover') }), (0,jsx_runtime.jsx)(TabButton, { active: activeTab === 'notifications', onClick: () => setActiveTab('notifications'), icon: bell/* default */.A, children: t('social.tabs.notifications') })] }), (0,jsx_runtime.jsx)("div", { className: "space-y-6", children: renderTabContent() }), (0,jsx_runtime.jsx)(MessagePane, {}), (0,jsx_runtime.jsx)(StartConversationModal, {})] }));
 };
 /* harmony default export */ const pages_SocialPage = (SocialPage);
+
+
+/***/ }),
+
+/***/ 6680:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   p: () => (/* binding */ Input)
+/* harmony export */ });
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(4848);
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(6540);
+/* harmony import */ var _theme_ThemeProvider__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(3049);
+
+
+
+const Input = (0,react__WEBPACK_IMPORTED_MODULE_1__.forwardRef)(({ label, error, leftIcon, rightIcon, className = '', containerClassName = '', labelClassName = '', errorClassName = '', variant = 'outline', inputSize = 'md', id, disabled, onFocus, onBlur, ...props }, ref) => {
+    const { theme } = (0,_theme_ThemeProvider__WEBPACK_IMPORTED_MODULE_2__/* .useTheme */ .DP)();
+    const [isFocused, setIsFocused] = (0,react__WEBPACK_IMPORTED_MODULE_1__.useState)(false);
+    const inputId = id || react__WEBPACK_IMPORTED_MODULE_1__.useId();
+    // Map our custom size to the appropriate classes
+    const sizeClasses = {
+        sm: 'h-8 text-xs px-2.5 py-1.5',
+        md: 'h-10 text-sm px-3 py-2',
+        lg: 'h-12 text-base px-4 py-3',
+    }[inputSize || 'md'];
+    // Variant classes
+    const variantClasses = {
+        outline: `bg-transparent border ${error
+            ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+            : 'border-gray-300 dark:border-neutral-600 focus:border-primary-500 focus:ring-primary-500'}`,
+        filled: `bg-gray-50 dark:bg-neutral-700/30 border border-transparent ${error
+            ? 'focus:border-red-500 focus:ring-red-500'
+            : 'focus:border-primary-500 focus:ring-primary-500'}`,
+        flushed: `bg-transparent border-0 border-b ${error
+            ? 'border-red-500 focus:border-red-500'
+            : 'border-gray-300 dark:border-neutral-600 focus:border-primary-500'} rounded-none px-0`,
+        unstyled: 'bg-transparent border-0 p-0 focus:ring-0',
+    }[variant];
+    // Label classes
+    const labelSizeClasses = {
+        sm: 'text-xs',
+        md: 'text-sm',
+        lg: 'text-base',
+    }[inputSize || 'md'];
+    const handleFocus = (e) => {
+        setIsFocused(true);
+        onFocus?.(e);
+    };
+    const handleBlur = (e) => {
+        setIsFocused(false);
+        onBlur?.(e);
+    };
+    return ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: `w-full ${containerClassName}`, children: [label && ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("label", { htmlFor: inputId, className: `block mb-1.5 font-medium text-gray-700 dark:text-gray-200 ${labelSizeClasses} ${labelClassName} ${error ? 'text-red-600 dark:text-red-400' : ''}`, children: label })), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: `relative flex items-center ${sizeClasses} ${variantClasses} ${isFocused ? 'ring-1 ring-primary-500' : ''} rounded-md transition-all duration-200 ${disabled ? 'opacity-60 cursor-not-allowed' : ''} ${className}`, children: [leftIcon && ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "absolute left-3 flex items-center justify-center text-gray-400 dark:text-gray-400", children: leftIcon })), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("input", { ref: ref, id: inputId, className: `w-full h-full bg-transparent border-0 focus:outline-none focus:ring-0 ${leftIcon ? 'pl-9' : 'pl-3'} ${rightIcon ? 'pr-9' : 'pr-3'} ${disabled ? 'cursor-not-allowed' : ''} text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500`, disabled: disabled, onFocus: handleFocus, onBlur: handleBlur, ...props }), rightIcon && ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "absolute right-3 flex items-center justify-center text-gray-400 dark:text-gray-400", children: rightIcon }))] }), error && ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("p", { className: `mt-1.5 text-sm text-red-600 dark:text-red-400 ${errorClassName}`, children: error }))] }));
+});
+// Add display name for better debugging
+Input.displayName = 'Input';
+
+// Also provide a default export for backward compatibility
+/* unused harmony default export */ var __WEBPACK_DEFAULT_EXPORT__ = ((/* unused pure expression or super */ null && (Input)));
 
 
 /***/ }),
@@ -802,7 +731,96 @@ const Send = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"] 
 //# sourceMappingURL=send.js.map
 
 
+/***/ }),
+
+/***/ 9973:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   cn: () => (/* binding */ cn)
+/* harmony export */ });
+/* unused harmony exports formatNumber, truncate, debounce, generateId, isMobileDevice, toKebabCase, isValidEmail */
+/* harmony import */ var clsx__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(4164);
+/* harmony import */ var tailwind_merge__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(856);
+
+
+/**
+ * Combines multiple class names and merges Tailwind CSS classes
+ * @param inputs - Class names to be combined
+ * @returns A single string of combined and merged class names
+ */
+function cn(...inputs) {
+    return (0,tailwind_merge__WEBPACK_IMPORTED_MODULE_0__/* .twMerge */ .QP)((0,clsx__WEBPACK_IMPORTED_MODULE_1__/* .clsx */ .$)(inputs));
+}
+/**
+ * Formats a number with commas as thousand separators
+ * @param num - The number to format
+ * @returns Formatted number as string
+ */
+function formatNumber(num) {
+    return new Intl.NumberFormat('en-US').format(num);
+}
+/**
+ * Truncates a string to a specified length and adds an ellipsis if needed
+ * @param str - The string to truncate
+ * @param length - Maximum length before truncation
+ * @returns Truncated string with ellipsis if needed
+ */
+function truncate(str, length) {
+    if (str.length <= length)
+        return str;
+    return `${str.slice(0, length)}...`;
+}
+/**
+ * Debounce a function call
+ * @param func - The function to debounce
+ * @param wait - Time to wait in milliseconds
+ * @returns Debounced function
+ */
+function debounce(func, wait) {
+    let timeout;
+    return function (...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+}
+/**
+ * Generates a unique ID
+ * @returns A unique string ID
+ */
+function generateId() {
+    return Math.random().toString(36).substring(2, 11);
+}
+/**
+ * Checks if the current device is a mobile device
+ * @returns Boolean indicating if the device is mobile
+ */
+function isMobileDevice() {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+/**
+ * Converts a string to kebab-case
+ * @param str - The string to convert
+ * @returns kebab-cased string
+ */
+function toKebabCase(str) {
+    return str
+        .replace(/([a-z])([A-Z])/g, '$1-$2')
+        .replace(/[\s_]+/g, '-')
+        .toLowerCase();
+}
+/**
+ * Validates an email address
+ * @param email - The email to validate
+ * @returns Boolean indicating if the email is valid
+ */
+function isValidEmail(email) {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+}
+
+
 /***/ })
 
 }]);
-//# sourceMappingURL=7091.chunk.js.map
+//# sourceMappingURL=2348.chunk.js.map

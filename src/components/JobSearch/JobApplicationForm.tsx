@@ -110,14 +110,30 @@ const JobApplicationForm: React.FC = () => {
       const userId = currentUser.uid;
       
       // Upload resume if not already uploaded
-      let resumeId = formData.resumeUploaded?.id;
-      if (formData.resumeFile && !resumeId) {
+      let resumeAttachment = null;
+      if (formData.resumeFile && !formData.resumeUploaded) {
         const uploadedResume = await FileUploadService.uploadFile(
           formData.resumeFile, 
           userId, 
           'resume'
         );
-        resumeId = uploadedResume.id;
+        resumeAttachment = {
+          id: uploadedResume.id,
+          name: uploadedResume.name,
+          url: uploadedResume.url,
+          type: 'resume' as const,
+          size: uploadedResume.size,
+          uploadedAt: uploadedResume.uploadedAt
+        };
+      } else if (formData.resumeUploaded) {
+        resumeAttachment = {
+          id: formData.resumeUploaded.id,
+          name: formData.resumeUploaded.name,
+          url: formData.resumeUploaded.url,
+          type: 'resume' as const,
+          size: formData.resumeUploaded.size,
+          uploadedAt: formData.resumeUploaded.uploadedAt
+        };
       }
       
       // Upload attachments
@@ -134,6 +150,20 @@ const JobApplicationForm: React.FC = () => {
       // Add previously uploaded attachments
       uploadedAttachments.push(...formData.attachmentsUploaded);
       
+      // Combine all attachments (resume + other attachments)
+      const allAttachments = [];
+      if (resumeAttachment) {
+        allAttachments.push(resumeAttachment);
+      }
+      allAttachments.push(...uploadedAttachments.map(file => ({
+        id: file.id,
+        name: file.name,
+        url: file.url,
+        type: 'other' as const,
+        size: file.size,
+        uploadedAt: file.uploadedAt
+      })));
+      
       const applicationData = {
         jobId: job.id,
         applicantId: userId,
@@ -143,15 +173,8 @@ const JobApplicationForm: React.FC = () => {
         expectedSalary: formData.expectedSalary,
         availabilityDate: formData.availabilityDate || '',
         notes: formData.notes || '',
-        resumeId: resumeId || '',
-        attachments: (formData.attachmentsUploaded || []).map(file => ({
-          id: file.id,
-          name: file.name,
-          url: file.url,
-          type: 'other' as const,
-          size: file.size,
-          uploadedAt: file.uploadedAt
-        }))
+        resumeId: resumeAttachment?.id || '',
+        attachments: allAttachments
       };
       
       const applicationId = await JobApplicationService.submitApplication(applicationData);
