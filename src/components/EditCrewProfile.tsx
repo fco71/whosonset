@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 // --- MODIFIED: Added onAuthStateChanged for robust user checking ---
 import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
 import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore';
@@ -46,6 +47,7 @@ const fetchJobDepartments = async (): Promise<JobDepartment[]> => {
 };
 
 const EditCrewProfile: React.FC = () => {
+  const { t } = useTranslation();
   const auth = getAuth();
 
   // --- MODIFIED: Use state to track the user, which is more reliable on load ---
@@ -397,7 +399,7 @@ const EditCrewProfile: React.FC = () => {
       URL.revokeObjectURL(blobUrl);
       
       // Show error message to user
-      setMessage('Failed to upload image. Please try again.');
+              setMessage(t('common.error') + ': Failed to upload image. Please try again.');
     }
   };
 
@@ -558,10 +560,10 @@ const EditCrewProfile: React.FC = () => {
 
       await setDoc(docRef, dataToSave, { merge: true });
       console.log("DEBUG: Save successful!");
-      setMessage('Profile saved!');
+      setMessage(t('resume.builder.savedMessage'));
     } catch(error) { // Added error logging
       console.error("DEBUG: Save failed with error:", error);
-      setMessage('Failed to save.');
+      setMessage(t('resume.builder.saveError'));
     } finally {
       setLoading(false);
     }
@@ -572,8 +574,8 @@ const EditCrewProfile: React.FC = () => {
     <div className="flex flex-col items-center min-h-screen bg-gray-100 pt-10">
       <div className="w-full max-w-6xl mb-4 px-4">
         <div className="resume-builder-banner bg-white bg-opacity-95 shadow-md rounded-xl p-3 flex flex-col items-center text-center">
-          <h1 className="text-xl font-medium text-gray-800 tracking-wide mb-1">Resume Builder</h1>
-          <p className="text-gray-600 text-sm leading-snug">Easily create, update, and download your professional film industry resume. Showcase your experience, skills, and projects to producers and collaborators.</p>
+          <h1 className="text-xl font-medium text-gray-800 tracking-wide mb-1">{t('resume.builder.title')}</h1>
+          <p className="text-gray-600 text-sm leading-snug">{t('resume.builder.description')}</p>
         </div>
       </div>
       <div className="w-full max-w-6xl px-4">
@@ -583,13 +585,13 @@ const EditCrewProfile: React.FC = () => {
             <div className="max-w-6xl mx-auto px-4 py-8">
               <div className="text-center mb-6 animate-fade-in">
                 <h1 className="text-3xl font-light text-gray-900 mb-2 tracking-tight animate-slide-up">
-                  Edit
+                  {t('resume.builder.edit')}
                 </h1>
                 <h2 className="text-xl font-light text-gray-600 mb-3 tracking-wide animate-slide-up-delay">
-                  Crew Profile
+                  {t('resume.builder.crewProfile')}
                 </h2>
                 <p className="text-base font-light text-gray-500 max-w-xl mx-auto leading-normal animate-slide-up-delay-2">
-                  Update your professional information and showcase your experience. Keep your profile current to attract the best opportunities.
+                  {t('resume.builder.updateDescription')}
                 </p>
               </div>
             </div>
@@ -601,13 +603,13 @@ const EditCrewProfile: React.FC = () => {
               <div className="bg-white rounded-xl shadow-sm p-8 animate-fade-in">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-8">
-                  <h3 className="text-2xl font-light text-gray-900 tracking-wide">Profile Information</h3>
+                  <h3 className="text-2xl font-light text-gray-900 tracking-wide">{t('resume.builder.profileInformation')}</h3>
                   <div className={`px-4 py-2 rounded-full text-sm font-medium tracking-wider ${
                     isPublished 
                       ? 'bg-green-100 text-green-800' 
                       : 'bg-gray-100 text-gray-600'
                   }`}>
-                    {isPublished ? '🌐 Published' : '🔒 Private'}
+                    {isPublished ? t('resume.builder.published') : t('resume.builder.private')}
                   </div>
                 </div>
 
@@ -615,13 +617,13 @@ const EditCrewProfile: React.FC = () => {
                 <div className="space-y-6 mb-8">
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-3 uppercase tracking-wider">
-                      Full Name
+                      {t('resume.builder.fullName')}
                     </label>
                     <input 
                       name="name" 
                       value={form.name} 
                       onChange={handleChange} 
-                      placeholder="Enter your full name" 
+                                              placeholder={t('resume.builder.fullNamePlaceholder')} 
                       className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]" 
                     />
                   </div>
@@ -634,7 +636,7 @@ const EditCrewProfile: React.FC = () => {
                       name="bio" 
                       value={form.bio} 
                       onChange={handleChange} 
-                      placeholder="Tell us about yourself and your experience" 
+                                              placeholder={t('resume.builder.bioPlaceholder')} 
                       rows={4} 
                       className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02] resize-none" 
                     />
@@ -787,7 +789,7 @@ const EditCrewProfile: React.FC = () => {
 
                 {/* Languages Section */}
                 <div className="mb-8">
-                  <h3 className="text-lg font-light text-gray-900 mb-4 tracking-wide">Languages (up to 3, optional)</h3>
+                  <h3 className="text-lg font-light text-gray-900 mb-4 tracking-wide">{t('resume.builder.languages')}</h3>
                   {(form.languages || []).map((lang: string, idx: number) => (
                     <div key={idx} className="mb-3 flex items-center gap-3">
                       <input
@@ -803,7 +805,7 @@ const EditCrewProfile: React.FC = () => {
                         onClick={() => removeLanguage(idx)} 
                         className="text-red-600 hover:text-red-700 text-sm font-medium transition-colors"
                       >
-                        Remove
+                        {t('common.delete')}
                       </button>
                     </div>
                   ))}
@@ -813,7 +815,7 @@ const EditCrewProfile: React.FC = () => {
                       onClick={addLanguage} 
                       className="text-gray-600 hover:text-gray-800 font-medium text-sm transition-colors"
                     >
-                      + Add Language
+                      {t('resume.builder.addLanguage')}
                     </button>
                   )}
                 </div>
@@ -858,41 +860,41 @@ const EditCrewProfile: React.FC = () => {
 
                 {/* Projects Section */}
                 <div className="mb-8">
-                  <h3 className="text-lg font-light text-gray-900 mb-4 tracking-wide">Projects</h3>
+                  <h3 className="text-lg font-light text-gray-900 mb-4 tracking-wide">{t('resume.builder.projects')}</h3>
                   {form.projects.map((proj, i) => (
                     <div key={i} className="mb-4 p-6 bg-gray-50 rounded-lg space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
-                            Project Name
+                            {t('resume.builder.projectName')}
                           </label>
                           <input
                             value={proj.projectName}
                             onChange={e => updateProject(i, 'projectName', e.target.value)}
-                            placeholder="Enter project name"
+                            placeholder={t('resume.builder.projectNamePlaceholder')}
                             className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
                           />
                         </div>
                         <div>
                           <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
-                            Your Role
+                            {t('resume.builder.yourRole')}
                           </label>
                           <input
                             value={proj.role}
                             onChange={e => updateProject(i, 'role', e.target.value)}
-                            placeholder="Enter your role"
+                            placeholder={t('resume.builder.yourRolePlaceholder')}
                             className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
                           />
                         </div>
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
-                          Description (Optional)
+                          {t('resume.builder.projectDescription')}
                         </label>
                         <input
                           value={proj.description}
                           onChange={e => updateProject(i, 'description', e.target.value)}
-                          placeholder="Short description of your contribution"
+                          placeholder={t('resume.builder.descriptionPlaceholder')}
                           maxLength={100}
                           className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02] text-sm"
                         />
@@ -903,7 +905,7 @@ const EditCrewProfile: React.FC = () => {
                           onClick={() => removeProject(i)} 
                           className="text-red-600 hover:text-red-700 text-sm font-medium transition-colors"
                         >
-                          Remove Project
+                          {t('resume.builder.removeProject')}
                         </button>
                       )}
                     </div>
@@ -913,16 +915,16 @@ const EditCrewProfile: React.FC = () => {
                     onClick={addProject} 
                     className="text-gray-600 hover:text-gray-800 font-medium text-sm transition-colors"
                   >
-                    + Add Project
+                    {t('resume.builder.addProject')}
                   </button>
                 </div>
 
                 {/* Education Section */}
                 <div className="mb-8">
                   <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-light text-gray-900 tracking-wide">Education</h3>
+                    <h3 className="text-lg font-light text-gray-900 tracking-wide">{t('resume.builder.education')}</h3>
                     <span className="text-sm text-gray-500">
-                      {form.education.length} {form.education.length === 1 ? 'entry' : 'entries'}
+                                              {t('resume.builder.educationEntries', { count: form.education.length })}
                     </span>
                   </div>
                   
@@ -931,8 +933,8 @@ const EditCrewProfile: React.FC = () => {
                       <svg className="mx-auto h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                       </svg>
-                      <h4 className="mt-2 text-sm font-medium text-gray-900">No education added</h4>
-                      <p className="mt-1 text-sm text-gray-500">Add your education history to showcase your background</p>
+                      <h4 className="mt-2 text-sm font-medium text-gray-900">{t('resume.builder.noEducationTitle')}</h4>
+                      <p className="mt-1 text-sm text-gray-500">{t('resume.builder.noEducationDescription')}</p>
                       <button
                         type="button"
                         onClick={addEducation}
@@ -941,7 +943,7 @@ const EditCrewProfile: React.FC = () => {
                         <svg className="-ml-0.5 mr-1.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                         </svg>
-                        Add Education
+                        {t('resume.builder.addEducation')}
                       </button>
                     </div>
                   ) : (
@@ -1251,7 +1253,7 @@ const EditCrewProfile: React.FC = () => {
                 {/* Share Resume Section */}
                 {isPublished && user && (
                   <div className="mb-8 p-6 bg-blue-50 rounded-lg border border-blue-200">
-                    <h4 className="font-medium text-blue-900 mb-3">Share Your Resume</h4>
+                    <h4 className="font-medium text-blue-900 mb-3">{t('resume.builder.shareResume')}</h4>
                     <div className="flex items-center gap-3 mb-3">
                       <input
                         type="text"
@@ -1262,16 +1264,16 @@ const EditCrewProfile: React.FC = () => {
                       <button
                         onClick={() => {
                           navigator.clipboard.writeText(`${window.location.origin}/resume/${user.uid}`);
-                          setMessage('Link copied to clipboard!');
+                          setMessage(t('resume.builder.linkCopied'));
                           setTimeout(() => setMessage(null), 3000);
                         }}
                         className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
                       >
-                        Copy
+                        {t('resume.builder.copyLink')}
                       </button>
                     </div>
                     <p className="text-xs text-blue-700">
-                      Share this link with potential employers or collaborators
+                      {t('resume.builder.shareDescription')}
                     </p>
                   </div>
                 )}
@@ -1282,7 +1284,7 @@ const EditCrewProfile: React.FC = () => {
                   disabled={loading} 
                   className="w-full bg-gray-900 text-white py-4 rounded-lg hover:bg-gray-800 disabled:opacity-50 font-light tracking-wide transition-all duration-300 hover:scale-[1.02]"
                 >
-                  {loading ? 'Saving…' : 'Save Profile'}
+                  {loading ? t('resume.builder.loading') : t('resume.builder.save')}
                 </button>
                 
                 {message && (
@@ -1291,7 +1293,7 @@ const EditCrewProfile: React.FC = () => {
 
                 {/* Resume Preview */}
                 <hr className="my-8 border-gray-200" />
-                <h3 className="text-xl font-light text-gray-900 mb-6 tracking-wide">Resume Preview</h3>
+                <h3 className="text-xl font-light text-gray-900 mb-6 tracking-wide">{t('resume.builder.resumePreview')}</h3>
                 <div ref={resumeRef} className="bg-white border border-gray-200 rounded-lg overflow-hidden">
                   <ResumeView profile={{
                     ...form,
@@ -1306,7 +1308,7 @@ const EditCrewProfile: React.FC = () => {
                   onClick={handleDownloadPDF}
                   className="mt-6 bg-gray-900 hover:bg-gray-800 text-white py-3 px-6 rounded-lg font-light tracking-wide transition-all duration-300 hover:scale-105"
                 >
-                  Download as PDF
+                  {t('resume.builder.downloadPDF')}
                 </button>
               </div>
             </div>

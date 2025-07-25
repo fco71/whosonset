@@ -115,7 +115,7 @@ const FavoritesPage: React.FC = () => {
         <div className="container mx-auto px-4 py-12">
           <div className="max-w-4xl mx-auto text-center">
             <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-red-500 to-pink-600 rounded-2xl mb-6 shadow-lg">
-              <Heart className="w-10 h-10 text-white fill-current" />
+              <Heart className="w-10 h-10 text-white fill-white stroke-white" />
             </div>
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
               {t('favorites.title')}

@@ -286,7 +286,7 @@ const SocialPage = () => {
                         onClick={() => handleFollowChange(getProfileId(profile), false)}
                       >
                         <UserX className="h-4 w-4 mr-2" />
-                        Unfollow
+                        {t('social.actions.unfollow')}
                       </Button>
                     }
                   />
@@ -317,7 +317,7 @@ const SocialPage = () => {
                           onClick={() => handleFollowRequest(getProfileId(profile), 'accept')}
                         >
                           <UserCheck className="h-4 w-4 mr-2" />
-                          Accept
+                          {t('social.actions.accept')}
                         </Button>
                       }
                     />

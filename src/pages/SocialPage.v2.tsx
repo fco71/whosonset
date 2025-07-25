@@ -736,7 +736,7 @@ const SocialPage: React.FC = () => {
             className="h-8 px-3 text-xs"
             onClick={() => handleFollowRequest(user.id, true)}
           >
-            <Check className="h-3.5 w-3.5 mr-1" /> Accept
+            <Check className="h-3.5 w-3.5 mr-1" /> {t('social.actions.accept')}
           </Button>
           <Button 
             variant="ghost" 
@@ -761,7 +761,7 @@ const SocialPage: React.FC = () => {
               className="h-8 px-3 text-xs"
               onClick={() => handleUnfollow(user.id)}
             >
-              <UserCheck className="h-3.5 w-3.5 mr-1" /> Following
+              <UserCheck className="h-3.5 w-3.5 mr-1" /> {t('social.statusText.following')}
             </Button>
           )}
           <Button 
@@ -799,7 +799,7 @@ const SocialPage: React.FC = () => {
             className="h-8 px-3 text-xs"
             onClick={() => handleUnfollow(user.id)}
           >
-            <UserCheck className="h-3.5 w-3.5 mr-1" /> Following
+            <UserCheck className="h-3.5 w-3.5 mr-1" /> {t('social.statusText.following')}
           </Button>
           <Button 
             variant="ghost" 
