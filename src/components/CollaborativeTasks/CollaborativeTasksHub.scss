@@ -206,18 +206,22 @@
         gap: 1rem;
 
         .search-container {
+          flex: 1;
           min-width: 280px;
+          max-width: 400px;
 
           .search-box {
             position: relative;
             display: flex;
             align-items: center;
+            width: 100%;
 
             .search-icon {
               position: absolute;
               left: 0.75rem;
               color: #64748b;
-              z-index: 1;
+              z-index: 2;
+              pointer-events: none;
             }
 
             .search-input {
@@ -230,6 +234,7 @@
               color: #374151;
               outline: none;
               transition: all 0.2s;
+              box-sizing: border-box;
 
               &:focus {
                 border-color: #3b82f6;

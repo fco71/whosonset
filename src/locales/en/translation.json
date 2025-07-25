@@ -781,7 +781,14 @@
       "estimatedHours": "Estimated Hours",
       "location": "Location",
              "subtasks": "Subtasks",
-       "subtasksCompleted": "completed"
+       "subtasksCompleted": "completed",
+       "noMembersAssigned": "No members assigned",
+       "moreMembers": "more members",
+       "due": "Due",
+       "noDueDate": "No due date",
+       "subtasksCount": "subtasks",
+       "changeStatus": "Change task status",
+       "editTask": "Edit Task"
      },
      "errors": {
        "loginRequired": "You must be logged in to create tasks",
@@ -851,7 +858,7 @@
         "allDepartments": "All Departments",
         "allLocations": "All Locations"
       },
-      "events": {
+      "eventActions": {
         "addEvent": "+ Add Event",
         "rsvp": "RSVP",
         "attending": "attending"

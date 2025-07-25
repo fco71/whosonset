@@ -651,9 +651,9 @@
       "step2": "Paso 2: Agregar Miembros",
       "step3": "Paso 3: Configuración del Espacio de Trabajo",
       "workspaceName": "Nombre del Espacio de Trabajo",
-      "workspaceNamePlaceholder": "Ingresa el nombre del espacio de trabajo",
+      "workspaceNamePlaceholder": "Ingrese el nombre del espacio de trabajo",
       "description": "Descripción",
-      "descriptionPlaceholder": "Ingresa la descripción del espacio de trabajo",
+      "descriptionPlaceholder": "Ingrese la descripción del espacio de trabajo",
       "workspaceType": "Tipo de Espacio de Trabajo",
       "searchUsers": "Buscar Usuarios",
       "searchPlaceholder": "Buscar por nombre, email o rol...",
@@ -667,7 +667,7 @@
       "createWorkspace": "Crear Espacio de Trabajo",
       "searching": "Buscando...",
       "noFriendsFound": "No se encontraron amigos.",
-      "startTyping": "Comienza a escribir para buscar usuarios"
+      "startTyping": "Comience a escribir para buscar usuarios"
     },
     "workspaceSettings": {
       "title": "Configuración del Espacio de Trabajo",
@@ -781,7 +781,14 @@
       "estimatedHours": "Horas Estimadas",
       "location": "Ubicación",
       "subtasks": "Subtareas",
-      "subtasksCompleted": "completadas"
+      "subtasksCompleted": "completadas",
+      "noMembersAssigned": "No hay miembros asignados",
+      "moreMembers": "más miembros",
+      "due": "Vence",
+      "noDueDate": "Sin fecha de vencimiento",
+      "subtasksCount": "subtareas",
+      "changeStatus": "Cambiar estado de la tarea",
+      "editTask": "Editar Tarea"
     },
     "errors": {
       "loginRequired": "Debes iniciar sesión para crear tareas",
@@ -851,7 +858,7 @@
         "allDepartments": "Todos los Departamentos",
         "allLocations": "Todas las Ubicaciones"
       },
-      "events": {
+      "eventActions": {
         "addEvent": "+ Agregar Evento",
         "rsvp": "Confirmar",
         "attending": "asistiendo"

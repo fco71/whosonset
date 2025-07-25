@@ -880,7 +880,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         <div className="modal-overlay">
           <div className="modal-content">
             <div className="modal-header">
-              <h3>Create New Workspace</h3>
+              <h3>{t('collaboration.createWorkspaceModal.title')}</h3>
               <button onClick={() => {
                 setShowCreateWorkspaceModal(false);
                 setWorkspaceCreationStep('details');
@@ -904,37 +904,37 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
               {/* Step 1: Workspace Details */}
               {workspaceCreationStep === 'details' && (
                 <div className="step-content">
-                  <h4>Step 1: Workspace Details</h4>
+                  <h4>{t('collaboration.createWorkspaceModal.step1')}</h4>
                   <div className="form-group">
-                    <label>Workspace Name *</label>
+                    <label>{t('collaboration.createWorkspaceModal.workspaceName')} *</label>
                     <input
                       type="text"
                       value={newWorkspaceData.name}
                       onChange={(e) => setNewWorkspaceData(prev => ({ ...prev, name: e.target.value }))}
-                      placeholder="Enter workspace name"
+                      placeholder={t('collaboration.createWorkspaceModal.workspaceNamePlaceholder')}
                       className="form-input"
                     />
                   </div>
                   <div className="form-group">
-                    <label>Description</label>
+                    <label>{t('collaboration.createWorkspaceModal.description')}</label>
                     <textarea
                       value={newWorkspaceData.description}
                       onChange={(e) => setNewWorkspaceData(prev => ({ ...prev, description: e.target.value }))}
-                      placeholder="Enter workspace description"
+                      placeholder={t('collaboration.createWorkspaceModal.descriptionPlaceholder')}
                       className="form-input"
                       rows={3}
                     />
                   </div>
                   <div className="form-group">
-                    <label>Workspace Type</label>
+                    <label>{t('collaboration.createWorkspaceModal.workspaceType')}</label>
                     <select
                       value={newWorkspaceData.type}
                       onChange={(e) => setNewWorkspaceData(prev => ({ ...prev, type: e.target.value as any }))}
                       className="form-input"
                     >
-                      <option value="project">Project</option>
-                      <option value="department">Department</option>
-                      <option value="general">General</option>
+                      <option value="project">{t('collaboration.workspaceTypes.project')}</option>
+                      <option value="department">{t('collaboration.workspaceTypes.department')}</option>
+                      <option value="general">{t('collaboration.workspaceTypes.general')}</option>
                     </select>
                   </div>
                 </div>
@@ -943,16 +943,16 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
               {/* Step 2: Add Members */}
               {workspaceCreationStep === 'members' && (
                 <div className="step-content">
-                  <h4>Step 2: Add Members</h4>
+                  <h4>{t('collaboration.createWorkspaceModal.step2')}</h4>
                   <div className="form-group">
-                    <label>Search Users</label>
+                    <label>{t('collaboration.createWorkspaceModal.searchUsers')}</label>
                     <UserAutocomplete
                       value={newWorkspaceData.selectedMembers}
                       onChange={(users: UserAutocompleteOption[]) => setNewWorkspaceData(prev => ({ ...prev, selectedMembers: users }))}
                       onSearch={handleUserSearchChange}
                       options={userSearchResults}
                       loading={isSearchingUsers}
-                      placeholder="Search by name, email, or role..."
+                      placeholder={t('collaboration.createWorkspaceModal.searchPlaceholder')}
                     />
                   </div>
                 </div>
@@ -961,7 +961,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
               {/* Step 3: Settings */}
               {workspaceCreationStep === 'settings' && (
                 <div className="step-content">
-                  <h4>Step 3: Workspace Settings</h4>
+                  <h4>{t('collaboration.createWorkspaceModal.step3')}</h4>
                   <div className="form-group">
                     <label>
                       <input
@@ -972,7 +972,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                           settings: { ...prev.settings, allowGuestAccess: e.target.checked }
                         }))}
                       />
-                      Allow Guest Access
+                      {t('collaboration.createWorkspaceModal.allowGuestAccess')}
                     </label>
                   </div>
                   <div className="form-group">
@@ -985,7 +985,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                           settings: { ...prev.settings, requireApproval: e.target.checked }
                         }))}
                       />
-                      Require Approval for New Members
+                      {t('collaboration.createWorkspaceModal.requireApproval')}
                     </label>
                   </div>
                   <div className="form-group">
@@ -998,11 +998,11 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                           settings: { ...prev.settings, autoArchive: e.target.checked }
                         }))}
                       />
-                      Auto-archive Inactive Content
+                      {t('collaboration.createWorkspaceModal.autoArchive')}
                     </label>
                   </div>
                   <div className="form-group">
-                    <label>Retention Period (days)</label>
+                    <label>{t('collaboration.createWorkspaceModal.retentionPeriod')}</label>
                     <input
                       type="number"
                       value={newWorkspaceData.settings.retentionDays}
@@ -1028,7 +1028,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                 } else if (workspaceCreationStep === 'settings') {
                   setWorkspaceCreationStep('members');
                 }
-              }}>Cancel</button>
+              }}>{t('collaboration.createWorkspaceModal.cancel')}</button>
               <button className="btn-primary" onClick={handleCreateWorkspaceStep}>{workspaceCreationStep === 'settings' ? t('collaboration.createWorkspaceModal.createWorkspace') : t('collaboration.createWorkspaceModal.next')}</button>
             </div>
           </div>

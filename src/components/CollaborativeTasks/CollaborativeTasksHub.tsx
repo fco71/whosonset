@@ -605,18 +605,18 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
                                 </div>
                               ))}
                               {task.assignedTeamMembers.length > 3 && (
-                                <div className="member-count" title={`${task.assignedTeamMembers.length - 3} more members`}>
+                                <div className="member-count" title={`${task.assignedTeamMembers.length - 3} ${t('tasks.task.moreMembers')}`}>
                                   +{task.assignedTeamMembers.length - 3}
                                 </div>
                               )}
                             </div>
                           ) : (
-                            <span className="no-members">No members assigned</span>
+                            <span className="no-members">{t('tasks.task.noMembersAssigned')}</span>
                           )}
                         </div>
                       </div>
                       <div className="task-actions">
-                        <span className={`task-status ${task.status}`}>{task.status}</span>
+                        <span className={`task-status ${task.status}`}>{t(`tasks.status.${task.status}`)}</span>
                         <svg className={`expand-icon ${expandedTaskId === task.id ? 'expanded' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
@@ -627,10 +627,10 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
                       <p className="task-description">{task.description}</p>
                       <div className="task-meta">
                         <span className="task-due-date">
-                          Due: {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No due date'}
+                          {t('tasks.task.due')}: {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : t('tasks.task.noDueDate')}
                         </span>
                         {task.subtasks && task.subtasks.length > 0 && (
-                          <span className="subtasks-count">{task.subtasks.length} subtasks</span>
+                          <span className="subtasks-count">{task.subtasks.length} {t('tasks.task.subtasksCount')}</span>
                         )}
                       </div>
                       <div className="task-quick-actions">
@@ -639,7 +639,7 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
                           onChange={e => handleStatusChange(task.id, e.target.value as 'pending' | 'in_progress' | 'completed' | 'cancelled' | 'overdue')}
                           className={`task-status-dropdown status-${task.status}`}
                           disabled={task.status === 'completed'}
-                          title="Change task status"
+                          title={t('tasks.task.changeStatus')}
                           style={{ minWidth: 120, borderRadius: 6, padding: '0.25rem 0.5rem', fontWeight: 500 }}
                         >
                           {statusOptions.map(opt => (
@@ -655,7 +655,7 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
                             handleEditTask(task);
                           }}
                           className="btn-quick-action btn-edit"
-                          title="Edit Task"
+                          title={t('tasks.task.editTask')}
                         >
                           ✏️ {t('tasks.task.edit')}
                         </button>
@@ -740,7 +740,7 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
                                     <p className="subtask-description">{subtask.description}</p>
                                     <div className="subtask-meta">
                                       <span className="subtask-due">
-                                        Due: {subtask.dueDate ? new Date(subtask.dueDate).toLocaleDateString() : 'No due date'}
+                                        {t('tasks.task.due')}: {subtask.dueDate ? new Date(subtask.dueDate).toLocaleDateString() : t('tasks.task.noDueDate')}
                                       </span>
                                       {subtask.estimatedHours && (
                                         <span className="subtask-hours">{subtask.estimatedHours}h</span>
@@ -804,7 +804,7 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
                             onChange={e => handleStatusChange(task.id, e.target.value as 'pending' | 'in_progress' | 'completed' | 'cancelled' | 'overdue')}
                             className={`task-status-dropdown status-${task.status}`}
                             disabled={task.status === 'completed'}
-                            title="Change task status"
+                            title={t('tasks.task.changeStatus')}
                             style={{ minWidth: 120, borderRadius: 6, padding: '0.25rem 0.5rem', fontWeight: 500 }}
                           >
                             {statusOptions.map(opt => (
