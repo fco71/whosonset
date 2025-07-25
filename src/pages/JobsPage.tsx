@@ -461,7 +461,7 @@ export default function JobsPage() {
                         variant="secondary"
                       >
                         <Briefcase className="w-4 h-4" />
-                        My Applications
+                        {t('jobs.myApplications')}
                       </Button>
                       <Button
                         onClick={() => navigate('/jobs/saved')}
@@ -469,14 +469,14 @@ export default function JobsPage() {
                         variant="secondary"
                       >
                         <Star className="w-4 h-4" />
-                        Saved Jobs
+                        {t('jobs.savedJobs')}
                       </Button>
                       <Button
                         onClick={() => navigate('/post-job')}
                         className="flex items-center gap-2"
                       >
                         <Plus className="w-4 h-4" />
-                        Post Job
+                        {t('jobs.postJob')}
                       </Button>
                     </>
                   )}
@@ -488,43 +488,43 @@ export default function JobsPage() {
                 <div className="mt-6 pt-6 border-t border-gray-200">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Department</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">{t('jobs.department', 'Department')}</label>
                       <select
                         value={selectedDepartment}
                         onChange={(e) => setSelectedDepartment(e.target.value)}
                         className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                       >
-                        <option value="">All Departments</option>
+                        <option value="">{t('jobs.allDepartments')}</option>
                         {departments.map(dept => (
                           <option key={dept} value={dept}>{dept}</option>
                         ))}
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">{t('jobs.location', 'Location')}</label>
                       <input
                         type="text"
-                        placeholder="Enter location"
+                        placeholder={t('jobs.enterLocation', 'Enter location')}
                         value={selectedLocation}
                         onChange={(e) => setSelectedLocation(e.target.value)}
                         className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Job Type</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">{t('jobs.jobType', 'Job Type')}</label>
                       <select
                         value={selectedJobType}
                         onChange={(e) => setSelectedJobType(e.target.value)}
                         className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                       >
-                        <option value="">All Types</option>
+                        <option value="">{t('jobs.allJobTypes')}</option>
                         {jobTypes.map(type => (
                           <option key={type.value} value={type.value}>{type.label}</option>
                         ))}
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Remote</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">{t('jobs.remote')}</label>
                       <label className="flex items-center">
                         <input
                           type="checkbox"
@@ -532,7 +532,7 @@ export default function JobsPage() {
                           onChange={(e) => setRemoteOnly(e.target.checked)}
                           className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                         />
-                        <span className="ml-2 text-sm text-gray-600">Remote only</span>
+                        <span className="ml-2 text-sm text-gray-600">{t('jobs.remoteOnly')}</span>
                       </label>
                     </div>
                   </div>
@@ -542,7 +542,7 @@ export default function JobsPage() {
                         {filteredJobs.length} of {jobs.length} jobs match your filters
                       </span>
                       <Button variant="ghost" onClick={clearFilters}>
-                        Clear all filters
+                        {t('jobs.clearFilters')}
                       </Button>
                     </div>
                   )}
@@ -566,7 +566,9 @@ export default function JobsPage() {
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Briefcase className="w-8 h-8 text-gray-400" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No jobs found</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              {t('jobs.noJobsFound')}
+            </h3>
             <p className="text-gray-600 mb-6">
               {hasActiveFilters 
                 ? "Try adjusting your filters to see more results."
@@ -583,31 +585,31 @@ export default function JobsPage() {
           <>
             <div className="flex flex-wrap gap-4 mb-8 justify-center md:justify-start">
               <Link to="/jobs/posted" className="px-5 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow">
-                My Posted Jobs
+                {t('jobs.myPostedJobs')}
               </Link>
               <Link to="/jobs/analytics" className="px-5 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors shadow">
-                Job Analytics
+                {t('jobs.jobAnalytics')}
               </Link>
               <Link to="/post-job" className="px-5 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors shadow">
-                Post New Job
+                {t('jobs.postNewJob')}
               </Link>
             </div>
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">
-                  {filteredJobs.length} Job{filteredJobs.length !== 1 ? 's' : ''} Available
+                  {filteredJobs.length} {t('jobs.jobsAvailable')}
                 </h2>
                 <p className="text-gray-600">
-                  {hasActiveFilters ? 'Filtered results' : 'All available positions'}
+                  {hasActiveFilters ? t('jobs.filteredResults', 'Filtered results') : t('jobs.allAvailablePositions')}
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-600">Sort by:</span>
+                <span className="text-sm text-gray-600">{t('jobs.sortBy')}:</span>
                 <select className="px-3 py-1 border border-gray-200 rounded-lg text-sm">
-                  <option>Newest first</option>
-                  <option>Oldest first</option>
-                  <option>Salary high to low</option>
-                  <option>Salary low to high</option>
+                  <option>{t('jobs.newestFirst')}</option>
+                  <option>{t('jobs.oldestFirst')}</option>
+                  <option>{t('jobs.salaryHighToLow')}</option>
+                  <option>{t('jobs.salaryLowToHigh')}</option>
                 </select>
               </div>
             </div>
@@ -622,11 +624,15 @@ export default function JobsPage() {
               ))}
             </div>
 
-            {/* Load More */}
-            {filteredJobs.length >= 20 && (
-              <div className="text-center mt-12">
-                <Button variant="outline" className="px-8 py-3">
-                  Load More Jobs
+            {/* Load More Button - if you have pagination */}
+            {filteredJobs.length > 0 && filteredJobs.length < jobs.length && (
+              <div className="text-center mt-8">
+                <Button
+                  onClick={() => {/* load more logic */}}
+                  variant="outline"
+                  className="px-6 py-2"
+                >
+                  {t('jobs.loadMoreJobs')}
                 </Button>
               </div>
             )}
