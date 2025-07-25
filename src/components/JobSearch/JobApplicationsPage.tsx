@@ -6,6 +6,7 @@ import { JobPosting, JobApplication } from '../../types/JobApplication';
 import { JobApplicationService } from '../../utilities/jobApplicationService';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
+import { Avatar, AvatarImage, AvatarFallback } from '../ui/Avatar';
 
 const JobApplicationsPage: React.FC = () => {
   const { jobId } = useParams<{ jobId: string }>();
@@ -66,6 +67,7 @@ const JobApplicationsPage: React.FC = () => {
               username: profileData.username || profileData.name?.toLowerCase().replace(/\s+/g, '') || 'unknown',
               bio: profileData.bio || '',
               jobTitles: profileData.jobTitles || [],
+              profileImageUrl: profileData.profileImageUrl || profileData.photoURL || profileData.avatarUrl,
             };
           } else {
             // Fallback for missing profile
@@ -279,6 +281,15 @@ const JobApplicationsPage: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
+                        <Avatar className="w-10 h-10">
+                          <AvatarImage 
+                            src={applicantProfiles[application.applicantId]?.profileImageUrl || '/bust-avatar.svg'} 
+                            alt={applicantProfiles[application.applicantId]?.name || 'Applicant'} 
+                          />
+                          <AvatarFallback className="bg-blue-100 text-blue-600 text-sm">
+                            {applicantProfiles[application.applicantId]?.name?.charAt(0) || 'A'}
+                          </AvatarFallback>
+                        </Avatar>
                         <div>
                           <span className="text-lg font-medium text-gray-900">
                             {applicantProfiles[application.applicantId]?.name || `Applicant #${application.applicantId.slice(0, 8)}...`}

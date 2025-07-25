@@ -8,6 +8,7 @@ import { FileUploadService } from '../../utilities/fileUploadService';
 import { toast } from 'react-hot-toast';
 import { Button } from '../ui/Button';
 import Card from '../ui/Card';
+import { Avatar, AvatarImage, AvatarFallback } from '../ui/Avatar';
 import ApplicationMessaging from './ApplicationMessaging';
 import { 
   Users, 
@@ -51,6 +52,7 @@ interface ApplicantProfile {
   portfolio?: string;
   phone?: string;
   email?: string;
+  profileImageUrl?: string;
 }
 
 interface JobApplicantsPageProps {
@@ -128,7 +130,8 @@ const JobApplicantsPage: React.FC<JobApplicantsPageProps> = ({ jobId: propJobId 
               expectedSalary: profileData.expectedSalary,
               portfolio: profileData.portfolio,
               phone: profileData.phone,
-              email: profileData.email
+              email: profileData.email,
+              profileImageUrl: profileData.profileImageUrl || profileData.photoURL || profileData.avatarUrl
             };
           } else {
             // Create a basic profile if none exists
@@ -420,9 +423,15 @@ const JobApplicantsPage: React.FC<JobApplicantsPageProps> = ({ jobId: propJobId 
                 {/* Applicant Header */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                      <User className="w-6 h-6 text-blue-600" />
-                    </div>
+                    <Avatar className="w-12 h-12">
+                      <AvatarImage 
+                        src={profile?.profileImageUrl || '/bust-avatar.svg'} 
+                        alt={profile?.name || 'Applicant'} 
+                      />
+                      <AvatarFallback className="bg-blue-100 text-blue-600">
+                        <User className="w-6 h-6" />
+                      </AvatarFallback>
+                    </Avatar>
                     <div>
                       <h3 className="font-semibold text-gray-900">{profile?.name}</h3>
                       <p className="text-sm text-gray-600">@{profile?.username}</p>
