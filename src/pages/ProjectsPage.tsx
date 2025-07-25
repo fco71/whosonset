@@ -3,6 +3,7 @@ import { collection, query, where, getDocs, deleteDoc, doc } from 'firebase/fire
 import { db, auth } from '../firebase';
 import { useNavigate } from 'react-router-dom';
 import ProjectCard from '../components/ProjectCard';
+import { useTranslation } from 'react-i18next';
 
 interface Project {
   id: string;
@@ -20,6 +21,7 @@ interface Project {
 }
 
 const ProjectsPage: React.FC = () => {
+  const { t } = useTranslation();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,25 +39,25 @@ const ProjectsPage: React.FC = () => {
         const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Project[];
         setProjects(data);
       } catch (err: any) {
-        setError('Error loading projects.');
+        setError(t('projects.errorLoading'));
       } finally {
         setLoading(false);
       }
     };
     fetchProjects();
-  }, []);
+  }, [t]);
 
   const handleEdit = (projectId: string) => {
     navigate(`/edit-project/${projectId}`);
   };
 
   const handleDelete = async (projectId: string) => {
-    if (!window.confirm('Are you sure you want to delete this project? This cannot be undone.')) return;
+    if (!window.confirm(t('projects.confirmDelete'))) return;
     try {
       await deleteDoc(doc(db, 'Projects', projectId));
       setProjects(projects => projects.filter(p => p.id !== projectId));
     } catch (err) {
-      alert('Failed to delete project.');
+      alert(t('projects.deleteFailed'));
     }
   };
 
@@ -68,30 +70,30 @@ const ProjectsPage: React.FC = () => {
       <div className="section-gradient border-b border-gray-100">
         <div className="container-base section-padding-large">
           <div className="text-center mb-8 animate-fade">
-            <h1 className="heading-primary mb-2 animate-slide">Projects</h1>
+            <h1 className="heading-primary mb-2 animate-slide">{t('projects.title')}</h1>
             <p className="body-large max-w-2xl mx-auto animate-slide">
-              Discover, create, and manage film projects. {user && 'You can also view and edit your own projects.'}
+              {user ? t('projects.subtitle') : t('projects.subtitleLoggedOut')}
             </p>
             <div className="mt-8 flex justify-center gap-4">
               <button
                 className={`px-6 py-2 rounded-lg font-medium transition-colors ${tab === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-50'}`}
                 onClick={() => setTab('all')}
               >
-                All Projects
+                {t('projects.allProjects')}
               </button>
               {user && (
                 <button
                   className={`px-6 py-2 rounded-lg font-medium transition-colors ${tab === 'mine' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-50'}`}
                   onClick={() => setTab('mine')}
                 >
-                  My Projects
+                  {t('projects.myProjects')}
                 </button>
               )}
               <button
                 onClick={() => navigate('/projects/add')}
                 className="btn-primary ml-4"
               >
-                + Create New Project
+                {t('projects.createNewProject')}
               </button>
             </div>
           </div>
@@ -100,14 +102,16 @@ const ProjectsPage: React.FC = () => {
       <div className="section-gray">
         <div className="container-base section-padding">
           {loading ? (
-            <div className="text-center py-24 animate-fade">Loading...</div>
+            <div className="text-center py-24 animate-fade">{t('projects.loading')}</div>
           ) : error ? (
             <div className="text-center py-24 text-red-600 animate-fade">{error}</div>
           ) : filteredProjects.length === 0 ? (
             <div className="text-center py-24 animate-fade">
               <div className="text-8xl mb-8 opacity-20 animate-bounce-slow">🎬</div>
-              <h3 className="heading-card mb-4">No projects found</h3>
-              <p className="body-medium max-w-md mx-auto">{tab === 'mine' ? "You haven't added any projects yet." : "No projects available."}</p>
+              <h3 className="heading-card mb-4">{t('projects.noProjectsFound')}</h3>
+              <p className="body-medium max-w-md mx-auto">
+                {tab === 'mine' ? t('projects.noProjectsYet') : t('projects.noProjectsAvailable')}
+              </p>
             </div>
           ) : (
             <div className="grid-cards">
@@ -133,13 +137,13 @@ const ProjectsPage: React.FC = () => {
                         onClick={() => handleEdit(project.id)}
                         className="btn-secondary px-3 py-1 text-xs"
                       >
-                        Edit
+                        {t('projects.edit')}
                       </button>
                       <button
                         onClick={() => handleDelete(project.id)}
                         className="btn-danger px-3 py-1 text-xs"
                       >
-                        Delete
+                        {t('projects.delete')}
                       </button>
                     </div>
                   )}

@@ -6,6 +6,7 @@ import { doc, getDoc, updateDoc, collection, query, orderBy, startAfter, limit, 
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 import ProjectShowcase from '../components/ProjectShowcase';
 // import LoadingSpinner from '../components/LoadingSpinner';
@@ -47,9 +48,10 @@ createdAt: Date;
 projectId: string;
 }
 
-const LoadingSpinner: React.FC = () => <div className="text-white text-center mt-10 p-4">Loading...</div>;
+const LoadingSpinner: React.FC = () => <div className="text-white text-center mt-10 p-4">{useTranslation().t('common.loading')}</div>;
 
 const ProjectDetail: React.FC = () => {
+    const { t } = useTranslation();
     const { projectId } = useParams<{ projectId: string }>();
     const { currentUser } = useAuth();
     const navigate = useNavigate();
@@ -387,16 +389,18 @@ const ProjectDetail: React.FC = () => {
     };
 
     const reviewSection = (
-        <section className="mt-12">
-            <h2 className="text-2xl font-semibold text-white mb-6">Reviews</h2>
-            {loadingReviews ? ( <div className="text-gray-400">Loading reviews...</div> ) :
-             reviews.length === 0 ? ( <p className="text-gray-400">No reviews yet.</p> ) : (
+        <section className="bg-gray-800 rounded-lg p-6 mt-10">
+            <h3 className="text-xl font-semibold text-white mb-4">{t('projectDetail.reviews')}</h3>
+            {loadingReviews && <p className="text-gray-400">{t('projectDetail.loadingReviews')}</p>}
+            {reviews.length === 0 && !loadingReviews ? (
+                <p className="text-gray-400">{t('projectDetail.noReviews')}</p>
+            ) : (
                 <ul className="space-y-4">
                     {reviews.map((r) => (
-                        <li key={r.id} className="bg-gray-900 rounded-lg p-5 border border-gray-700">
+                        <li key={r.id} className="border-b border-gray-700 pb-4">
                             <div className="flex justify-between items-center mb-2">
-                                <span className="text-sm font-medium text-teal-400">{r.author}</span>
-                                <span className="text-xs text-gray-500">{r.createdAt.toLocaleString()}</span>
+                                <span className="font-medium text-white">{r.author}</span>
+                                <span className="text-sm text-gray-400">{r.createdAt.toLocaleDateString()}</span>
                             </div>
                             <p className="text-sm text-white">{r.content}</p>
                         </li>
@@ -404,9 +408,9 @@ const ProjectDetail: React.FC = () => {
                 </ul>
             )}
             <div className="mt-8 flex items-center justify-between gap-6">
-                <button onClick={() => fetchReviews('prev')} disabled={loadingReviews || prevReviewPages.length <= 1} className="px-4 py-2 rounded-md text-sm font-medium bg-gray-700 hover:bg-gray-600 text-white disabled:opacity-40">← Previous</button>
-                <span className="text-gray-400 text-sm">Page {prevReviewPages.length || (reviews.length > 0 ? 1 : 0) }</span>
-                <button onClick={() => fetchReviews('next')} disabled={loadingReviews || reviews.length < REVIEWS_PER_PAGE} className="px-4 py-2 rounded-md text-sm font-medium bg-gray-700 hover:bg-gray-600 text-white disabled:opacity-40">Next →</button>
+                <button onClick={() => fetchReviews('prev')} disabled={loadingReviews || prevReviewPages.length <= 1} className="px-4 py-2 rounded-md text-sm font-medium bg-gray-700 hover:bg-gray-600 text-white disabled:opacity-40">{t('projectDetail.previous')}</button>
+                <span className="text-gray-400 text-sm">{t('projectDetail.page')} {prevReviewPages.length || (reviews.length > 0 ? 1 : 0) }</span>
+                <button onClick={() => fetchReviews('next')} disabled={loadingReviews || reviews.length < REVIEWS_PER_PAGE} className="px-4 py-2 rounded-md text-sm font-medium bg-gray-700 hover:bg-gray-600 text-white disabled:opacity-40">{t('projectDetail.next')}</button>
             </div>
         </section>
     );
@@ -423,75 +427,75 @@ const ProjectDetail: React.FC = () => {
     return (
         <div className="min-h-screen bg-gray-900 p-6">
             <Link to="/" className="inline-block mb-6 text-blue-500 hover:text-blue-400 transition-colors">
-                ← Back to All Projects
+                {t('projects.backToProjects')}
             </Link>
 
             {isEditing ? (
                 // --- EDITING FORM ---
                 <form className="max-w-5xl mx-auto p-6 bg-white rounded shadow-md space-y-6">
                     {error && <p className="text-red-600 text-sm mb-4">{error}</p>}
-                    {saveSuccess && <p className="text-green-500 text-sm mb-4">Project updated successfully!</p>}
+                    {saveSuccess && <p className="text-green-500 text-sm mb-4">{t('projectForm.updateSuccess')}</p>}
                     {/* Form sections from your provided code */}
                     <div>
-                        <h3 className="text-xl font-semibold mb-4 border-b pb-1">Basic Information</h3>
+                        <h3 className="text-xl font-semibold mb-4 border-b pb-1">{t('projectForm.basicInfo')}</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div><label htmlFor="projectName" className="block text-sm font-medium">Project Name</label><input type="text" id="projectName" name="projectName" value={formState.projectName || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" /></div>
-                            <div><label htmlFor="country" className="block text-sm font-medium">Country</label><input type="text" id="country" name="country" value={formState.country || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" /></div>
-                            <div><label htmlFor="productionCompany" className="block text-sm font-medium">Production Company</label><input type="text" id="productionCompany" name="productionCompany" value={formState.productionCompany || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" /></div>
-                            <div><label htmlFor="status" className="block text-sm font-medium">Status</label><select id="status" name="status" value={formState.status || 'Pre-Production'} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2">
-  <option value="Pre-Production">Pre-Production</option>
-  <option value="Development">Development</option>
-  <option value="Production">Production</option>
-  <option value="Post-Production">Post-Production</option>
-  <option value="Completed">Completed</option>
-  <option value="Cancelled">Cancelled</option>
+                            <div><label htmlFor="projectName" className="block text-sm font-medium">{t('projectForm.projectName')}</label><input type="text" id="projectName" name="projectName" value={formState.projectName || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" /></div>
+                            <div><label htmlFor="country" className="block text-sm font-medium">{t('projectForm.country')}</label><input type="text" id="country" name="country" value={formState.country || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" /></div>
+                            <div><label htmlFor="productionCompany" className="block text-sm font-medium">{t('projectForm.productionCompany')}</label><input type="text" id="productionCompany" name="productionCompany" value={formState.productionCompany || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" /></div>
+                            <div><label htmlFor="status" className="block text-sm font-medium">{t('projectForm.status')}</label><select id="status" name="status" value={formState.status || 'Pre-Production'} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2">
+  <option value="Pre-Production">{t('projectStatus.preProduction')}</option>
+  <option value="Development">{t('projectStatus.development')}</option>
+  <option value="Production">{t('projectStatus.production')}</option>
+  <option value="Post-Production">{t('projectStatus.postProduction')}</option>
+  <option value="Completed">{t('projectStatus.completed')}</option>
+  <option value="Cancelled">{t('projectStatus.cancelled')}</option>
 </select></div>
                         </div>
                     </div>
                     <div>
-                        <h3 className="text-xl font-semibold mb-4 border-b pb-1">Story Info</h3>
+                        <h3 className="text-xl font-semibold mb-4 border-b pb-1">{t('projectForm.storyInfo')}</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div><label htmlFor="logline" className="block text-sm font-medium">Logline</label><textarea id="logline" name="logline" value={formState.logline || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" rows={2} /></div>
-                            <div><label htmlFor="synopsis" className="block text-sm font-medium">Synopsis</label><textarea id="synopsis" name="synopsis" value={formState.synopsis || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" rows={4} /></div>
+                            <div><label htmlFor="logline" className="block text-sm font-medium">{t('projectForm.logline')}</label><textarea id="logline" name="logline" value={formState.logline || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" rows={2} /></div>
+                            <div><label htmlFor="synopsis" className="block text-sm font-medium">{t('projectForm.synopsis')}</label><textarea id="synopsis" name="synopsis" value={formState.synopsis || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" rows={4} /></div>
                         </div>
                     </div>
                     <div>
-                        <h3 className="text-xl font-semibold mb-4 border-b pb-1">Production Timeline</h3>
+                        <h3 className="text-xl font-semibold mb-4 border-b pb-1">{t('projectForm.productionTimeline')}</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div><label htmlFor="startDate" className="block text-sm font-medium">Start Date</label><input type="date" id="startDate" name="startDate" value={formState.startDate || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" /></div>
-                            <div><label htmlFor="endDate" className="block text-sm font-medium">End Date</label><input type="date" id="endDate" name="endDate" value={formState.endDate || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" /></div>
-                            <div><label htmlFor="genres" className="block text-sm font-medium">Genres (comma-separated)</label><input type="text" id="genres" name="genres" value={(Array.isArray(formState.genres) ? formState.genres.join(', ') : formState.genre) || ''} onChange={handleGenresChange} className="mt-1 w-full border rounded px-3 py-2" placeholder="e.g., Action, Comedy" /></div>
+                            <div><label htmlFor="startDate" className="block text-sm font-medium">{t('projectForm.startDate')}</label><input type="date" id="startDate" name="startDate" value={formState.startDate || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" /></div>
+                            <div><label htmlFor="endDate" className="block text-sm font-medium">{t('projectForm.endDate')}</label><input type="date" id="endDate" name="endDate" value={formState.endDate || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" /></div>
+                            <div><label htmlFor="genres" className="block text-sm font-medium">{t('projectForm.genres')}</label><input type="text" id="genres" name="genres" value={(Array.isArray(formState.genres) ? formState.genres.join(', ') : formState.genre) || ''} onChange={handleGenresChange} className="mt-1 w-full border rounded px-3 py-2" placeholder={t('projectForm.genresPlaceholder')} /></div>
                         </div>
                     </div>
                     <div>
-                        <h3 className="text-xl font-semibold mb-4 border-b pb-1">Creative Team</h3>
+                        <h3 className="text-xl font-semibold mb-4 border-b pb-1">{t('projectForm.creativeTeam')}</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div><label htmlFor="director" className="block text-sm font-medium">Director</label><input type="text" id="director" name="director" value={formState.director || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" /></div>
-                            <div><label htmlFor="producer" className="block text-sm font-medium">Producer</label><input type="text" id="producer" name="producer" value={formState.producer || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" /></div>
+                            <div><label htmlFor="director" className="block text-sm font-medium">{t('projectForm.director')}</label><input type="text" id="director" name="director" value={formState.director || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" /></div>
+                            <div><label htmlFor="producer" className="block text-sm font-medium">{t('projectForm.producer')}</label><input type="text" id="producer" name="producer" value={formState.producer || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" /></div>
                         </div>
                     </div>
                     <div>
-                        <h3 className="text-xl font-semibold mb-4 border-b pb-1">Media</h3>
+                        <h3 className="text-xl font-semibold mb-4 border-b pb-1">{t('projectForm.media')}</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-                            <div><label htmlFor="coverImage" className="block text-sm font-medium">Cover Image</label><input type="file" id="coverImage" accept="image/*" onChange={handleCoverImageChange} className="mt-1" />{coverImageBlobUrl ? (
-  <img src={coverImageBlobUrl} alt="New Cover Preview" className="w-36 h-auto mt-2 rounded shadow object-cover" onError={imageErrorFallback} />
+                            <div><label htmlFor="coverImage" className="block text-sm font-medium">{t('projectForm.coverImage')}</label><input type="file" id="coverImage" accept="image/*" onChange={handleCoverImageChange} className="mt-1" />{coverImageBlobUrl ? (
+  <img src={coverImageBlobUrl} alt={t('projectDetail.newCoverPreview')} className="w-36 h-auto mt-2 rounded shadow object-cover" onError={imageErrorFallback} />
 ) : formState.coverImageUrl ? (
-  <img src={formState.coverImageUrl} alt="Current Cover" className="w-36 h-auto mt-2 rounded shadow object-cover" onError={imageErrorFallback} />
+  <img src={formState.coverImageUrl} alt={t('projectDetail.currentCover')} className="w-36 h-auto mt-2 rounded shadow object-cover" onError={imageErrorFallback} />
 ) : null}</div>
                             {/* Removed Poster Image input */}
                         </div>
                     </div>
                     <div>
-                        <h3 className="text-xl font-semibold mb-4 border-b pb-1">Additional</h3>
+                        <h3 className="text-xl font-semibold mb-4 border-b pb-1">{t('projectForm.additional')}</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div><label htmlFor="projectWebsite" className="block text-sm font-medium">Website</label><input type="url" id="projectWebsite" name="projectWebsite" value={formState.projectWebsite || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" /></div>
-                            <div><label htmlFor="productionBudget" className="block text-sm font-medium">Budget</label><input type="text" id="productionBudget" name="productionBudget" value={formState.productionBudget || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" /></div>
-                            <div><label htmlFor="productionCompanyContact" className="block text-sm font-medium">Company Contact</label><input type="text" id="productionCompanyContact" name="productionCompanyContact" value={formState.productionCompanyContact || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" /></div>
+                            <div><label htmlFor="projectWebsite" className="block text-sm font-medium">{t('projectForm.website')}</label><input type="url" id="projectWebsite" name="projectWebsite" value={formState.projectWebsite || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" /></div>
+                            <div><label htmlFor="productionBudget" className="block text-sm font-medium">{t('projectForm.budget')}</label><input type="text" id="productionBudget" name="productionBudget" value={formState.productionBudget || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" /></div>
+                            <div><label htmlFor="productionCompanyContact" className="block text-sm font-medium">{t('projectForm.companyContact')}</label><input type="text" id="productionCompanyContact" name="productionCompanyContact" value={formState.productionCompanyContact || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" /></div>
                         </div>
                     </div>
                     <div className="pt-4 border-t mt-6 flex justify-end space-x-4">
-                        <button type="button" onClick={handleCancelClick} className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600" disabled={loading}>Cancel</button>
-                        <button type="button" onClick={handleSaveClick} disabled={loading} className={`px-4 py-2 rounded text-white ${loading ? 'bg-green-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}>{loading ? 'Saving...' : 'Save Changes'}</button>
+                        <button type="button" onClick={handleCancelClick} className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600" disabled={loading}>{t('projectForm.cancel')}</button>
+                        <button type="button" onClick={handleSaveClick} disabled={loading} className={`px-4 py-2 rounded text-white ${loading ? 'bg-green-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}>{loading ? t('projectForm.saving') : t('projectForm.saveChanges')}</button>
                     </div>
                 </form>
             ) : (
@@ -505,7 +509,7 @@ const ProjectDetail: React.FC = () => {
                             <div className="mb-6 flex justify-center"> {/* Centers the image container */}
                                 <img
                                     src={project.coverImageUrl}
-                                    alt={`${project.projectName} Cover`}
+                                    alt={`${project.projectName} ${t('projectDetail.coverAlt')}`}
                                     className="w-64 h-auto max-h-48 object-contain rounded-md shadow-lg"
                                     onError={imageErrorFallback}
                                 />
@@ -529,13 +533,13 @@ const ProjectDetail: React.FC = () => {
                                         to={`/projects/${projectId}/manage`}
                                         className="px-5 py-2 bg-green-600 hover:bg-green-500 text-white rounded-md transition-colors"
                                     >
-                                        Manage Project
+                                        {t('projects.manageProject')}
                                     </Link>
                                     <button
                                         onClick={handleEditClick} // This will set isEditing to true
                                         className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-md transition-colors"
                                     >
-                                        Edit Project
+                                        {t('projects.editProject')}
                                     </button>
                                 </div>
                             ) : (
@@ -543,13 +547,13 @@ const ProjectDetail: React.FC = () => {
                                     onClick={handleSuggestClick}
                                     className="px-5 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md"
                                 >
-                                    Suggest Update
+                                    {t('projects.suggestUpdate')}
                                 </button>
                             )}
                         </div>
                     </div>
                 ) : (
-                    <div className="text-white text-center mt-10">Project not found or not available.</div>
+                    <div className="text-white text-center mt-10">{t('projects.projectNotFound')}</div>
                 )
             )}
         </div>

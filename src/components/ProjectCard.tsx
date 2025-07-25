@@ -5,6 +5,7 @@ import { Clock, MapPin, Film, Calendar, Bookmark, BookmarkCheck, ImageOff } from
 import Card, { CardHeader, CardBody, CardFooter, CardTitle, CardDescription } from "./ui/Card";
 import { Button } from "./ui/Button";
 import { imageErrorFallback } from '../utilities/imageErrorFallback';
+import { useTranslation } from 'react-i18next';
 
 type ProjectStatus = 'in_production' | 'pre_production' | 'post_production' | 'development' | 'completed' | 'cancelled' | string;
 
@@ -61,6 +62,7 @@ const getStatusStyles = (status: ProjectStatus) => {
 };
 
 const ProjectCard: React.FC<ProjectCardProps> = (props) => {
+  const { t } = useTranslation();
   const {
     id,
     projectName,
@@ -98,7 +100,7 @@ const ProjectCard: React.FC<ProjectCardProps> = (props) => {
   // Get primary production location
   const primaryLocation = productionLocations?.[0]?.city 
     ? `${productionLocations[0].city}, ${productionLocations[0].country || country}`
-    : country;
+    : country || '';
 
   // Handle card click
   const handleCardClick = () => {
@@ -261,27 +263,41 @@ const ProjectCard: React.FC<ProjectCardProps> = (props) => {
     }
   };
 
-  // Helper to format status text
+  // Helper to format status text using translations
   const formatStatusText = (status: ProjectStatus) => {
-    switch (status) {
-      case 'in_production':
+    const statusKey = status.toLowerCase().replace(/-/g, '').replace(/_/g, '');
+    switch (statusKey) {
+      case 'inproduction':
       case 'production':
-        return 'In Production';
-      case 'pre_production':
-      case 'pre-production':
-        return 'Pre-Production';
-      case 'post_production':
-      case 'post-production':
-        return 'Post-Production';
+        return t('projectStatus.inProduction');
+      case 'preproduction':
+        return t('projectStatus.preProduction');
+      case 'postproduction':
+        return t('projectStatus.postProduction');
       case 'development':
-        return 'Development';
+        return t('projectStatus.development');
       case 'completed':
-        return 'Completed';
+        return t('projectStatus.completed');
       case 'cancelled':
-        return 'Cancelled';
+        return t('projectStatus.cancelled');
+      case 'canceled':
+        return t('projectStatus.canceled');
+      case 'filming':
+        return t('projectStatus.filming');
       default:
-        return status ? status.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'Unknown';
+        return t('projectStatus.unknown');
     }
+  };
+
+  const formatDateWithFallback = (dateString?: string): string => {
+    if (!dateString) return t('projectStatus.tbd');
+    
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    }).format(date);
   };
 
   return (
@@ -317,11 +333,11 @@ const ProjectCard: React.FC<ProjectCardProps> = (props) => {
             <ImageOff size={32} className="text-gray-400 mb-2" />
             <p className="text-sm text-gray-500">
               {retryCount > 0 && retryCount <= maxRetries 
-                ? `Loading image... (${retryCount}/${maxRetries})` 
-                : 'Image not available'}
+                ? `${t('projectStatus.loadingImage', { count: retryCount, max: maxRetries })}` 
+                : t('projectStatus.imageNotAvailable')}
             </p>
             <p className="text-xs text-gray-500">
-              {initialCoverImageUrl ? 'Failed to load image' : 'No image available'}
+              {initialCoverImageUrl ? t('projectStatus.failedToLoadImage') : t('projectStatus.noImageAvailable')}
             </p>
           </div>
         )}
@@ -407,7 +423,7 @@ const ProjectCard: React.FC<ProjectCardProps> = (props) => {
             <div className="flex items-center text-xs text-gray-500">
               <Calendar size={12} className="mr-1" />
               <span>
-                {startDate ? formatDate(startDate) : 'TBD'} - {endDate ? formatDate(endDate) : 'TBD'}
+                {startDate ? formatDateWithFallback(startDate) : t('projectStatus.tbd')} - {endDate ? formatDateWithFallback(endDate) : t('projectStatus.tbd')}
               </span>
             </div>
             {/* View Details Button */}
@@ -416,7 +432,7 @@ const ProjectCard: React.FC<ProjectCardProps> = (props) => {
               size="sm"
               className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
             >
-              View Details →
+              {t('projectStatus.viewDetails')} →
             </Button>
           </div>
         </CardFooter>

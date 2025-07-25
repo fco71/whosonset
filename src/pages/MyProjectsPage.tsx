@@ -3,6 +3,7 @@ import { collection, query, where, getDocs, deleteDoc, doc } from 'firebase/fire
 import { db, auth } from '../firebase';
 import { useNavigate } from 'react-router-dom';
 import ProjectCard from '../components/ProjectCard';
+import { useTranslation } from 'react-i18next';
 
 interface Project {
   id: string;
@@ -19,6 +20,7 @@ interface Project {
 }
 
 const MyProjectsPage: React.FC = () => {
+  const { t } = useTranslation();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,7 +32,7 @@ const MyProjectsPage: React.FC = () => {
       setError(null);
       const user = auth.currentUser;
       if (!user) {
-        setError('You must be logged in to view your projects.');
+        setError(t('projects.mustBeLoggedIn'));
         setLoading(false);
         return;
       }
@@ -40,30 +42,30 @@ const MyProjectsPage: React.FC = () => {
         const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Project[];
         setProjects(data);
       } catch (err: any) {
-        setError('Error loading projects.');
+        setError(t('projects.errorLoading'));
       } finally {
         setLoading(false);
       }
     };
     fetchProjects();
-  }, []);
+  }, [t]);
 
   const handleEdit = (projectId: string) => {
     navigate(`/edit-project/${projectId}`);
   };
 
   const handleDelete = async (projectId: string) => {
-    if (!window.confirm('Are you sure you want to delete this project? This cannot be undone.')) return;
+    if (!window.confirm(t('projects.confirmDelete'))) return;
     try {
       await deleteDoc(doc(db, 'Projects', projectId));
       setProjects(projects => projects.filter(p => p.id !== projectId));
     } catch (err) {
-      alert('Failed to delete project.');
+      alert(t('projects.deleteFailed'));
     }
   };
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    return <div className="min-h-screen flex items-center justify-center">{t('projects.loading')}</div>;
   }
   if (error) {
     return <div className="min-h-screen flex items-center justify-center text-red-600">{error}</div>;
@@ -74,17 +76,17 @@ const MyProjectsPage: React.FC = () => {
       <div className="section-gradient border-b border-gray-100">
         <div className="container-base section-padding-large">
           <div className="text-center mb-16 animate-fade">
-            <h1 className="heading-primary mb-6 animate-slide">My</h1>
-            <h2 className="heading-secondary mb-8 animate-slide">Projects</h2>
+            <h1 className="heading-primary mb-6 animate-slide">{t('myProjects.title')}</h1>
+            <h2 className="heading-secondary mb-8 animate-slide">{t('myProjects.subtitle')}</h2>
             <p className="body-large max-w-2xl mx-auto animate-slide">
-              View, edit, or delete your own film projects.
+              {t('myProjects.description')}
             </p>
             <div className="mt-8">
               <button
                 onClick={() => navigate('/projects/add')}
                 className="btn-primary"
               >
-                + Create New Project
+                {t('projects.createNewProject')}
               </button>
             </div>
           </div>
@@ -95,8 +97,14 @@ const MyProjectsPage: React.FC = () => {
           {projects.length === 0 ? (
             <div className="text-center py-24 animate-fade">
               <div className="text-8xl mb-8 opacity-20 animate-bounce-slow">🎬</div>
-              <h3 className="heading-card mb-4">No projects found</h3>
-              <p className="body-medium max-w-md mx-auto">You haven't added any projects yet.</p>
+              <h3 className="heading-card mb-4">{t('myProjects.noProjects')}</h3>
+              <p className="body-medium max-w-md mx-auto mb-8">{t('myProjects.createFirst')}</p>
+              <button
+                onClick={() => navigate('/projects/add')}
+                className="btn-primary"
+              >
+                {t('projects.createNewProject')}
+              </button>
             </div>
           ) : (
             <div className="grid-cards">
@@ -121,13 +129,13 @@ const MyProjectsPage: React.FC = () => {
                       onClick={() => handleEdit(project.id)}
                       className="btn-secondary px-3 py-1 text-xs"
                     >
-                      Edit
+                      {t('projects.edit')}
                     </button>
                     <button
                       onClick={() => handleDelete(project.id)}
                       className="btn-danger px-3 py-1 text-xs"
                     >
-                      Delete
+                      {t('projects.delete')}
                     </button>
                   </div>
                 </div>
