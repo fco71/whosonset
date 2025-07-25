@@ -5,8 +5,10 @@ import { db, auth } from '../firebase';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import CrewProfileCard from '../components/CrewProfileCard';
 import { CrewProfile } from '../types/CrewProfile';
+import { useTranslation } from 'react-i18next';
 
 const SavedCrewProfilesPage: React.FC = () => {
+  const { t } = useTranslation();
   const [user] = useAuthState(auth);
   const [savedProfiles, setSavedProfiles] = useState<CrewProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,10 +43,10 @@ const SavedCrewProfilesPage: React.FC = () => {
           <div className="max-w-7xl mx-auto px-8 py-24">
             <div className="text-center mb-16 animate-fade-in">
               <h1 className="text-6xl font-light text-gray-900 mb-6 tracking-tight animate-slide-up">
-                Saved
+                {t('crew.savedCrew')}
               </h1>
               <h2 className="text-4xl font-light text-gray-600 mb-8 tracking-wide animate-slide-up-delay">
-                Crew Profiles
+                {t('crew.crewProfiles')}
               </h2>
             </div>
           </div>
@@ -77,13 +79,13 @@ const SavedCrewProfilesPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-8 py-24">
           <div className="text-center mb-16 animate-fade-in">
             <h1 className="text-6xl font-light text-gray-900 mb-6 tracking-tight animate-slide-up">
-              Saved
+              {t('crew.savedCrew')}
             </h1>
             <h2 className="text-4xl font-light text-gray-600 mb-8 tracking-wide animate-slide-up-delay">
-              Crew Profiles
+              {t('crew.crewProfiles')}
             </h2>
             <p className="text-xl font-light text-gray-500 max-w-2xl mx-auto animate-slide-up-delay-2">
-              Your curated collection of talented crew members
+              {t('crew.curatedCollection')}
             </p>
           </div>
         </div>
@@ -95,16 +97,16 @@ const SavedCrewProfilesPage: React.FC = () => {
           <div className="text-center py-16">
             <div className="text-6xl mb-6">📁</div>
             <h3 className="text-2xl font-light text-gray-900 mb-4 tracking-wide">
-              No Saved Profiles Yet
+              {t('crew.noSavedProfiles')}
             </h3>
             <p className="text-gray-600 font-light mb-8 max-w-md mx-auto">
-              Start building your collection by browsing crew profiles and saving the ones you're interested in.
+              {t('crew.startBuilding')}
             </p>
             <a
               href="/producer-view"
               className="inline-flex items-center px-6 py-3 bg-gray-900 text-white rounded-lg font-light tracking-wide hover:bg-black transition-all duration-300 hover:scale-105"
             >
-              Browse Crew Profiles →
+              {t('crew.browseCrewProfiles')} →
             </a>
           </div>
         ) : (

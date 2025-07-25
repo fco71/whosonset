@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { JobApplicationService } from '../../utilities/jobApplicationService';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 interface JobPosterStats {
   totalJobs: number;
@@ -22,6 +23,7 @@ interface JobWithApplications extends JobPosting {
 }
 
 const JobPosterDashboard: React.FC = () => {
+  const { t } = useTranslation();
   const { currentUser } = useAuth();
   const [postedJobs, setPostedJobs] = useState<JobWithApplications[]>([]);
   const [stats, setStats] = useState<JobPosterStats>({
@@ -138,7 +140,7 @@ const JobPosterDashboard: React.FC = () => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-light text-gray-600">Total Jobs Posted</p>
+            <p className="text-sm font-light text-gray-600">{t('jobDashboard.totalJobsPosted')}</p>
             <p className="text-3xl font-light text-gray-900">{stats.totalJobs}</p>
           </div>
           <div className="text-3xl opacity-20">💼</div>
@@ -148,7 +150,7 @@ const JobPosterDashboard: React.FC = () => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-light text-gray-600">Active Jobs</p>
+            <p className="text-sm font-light text-gray-600">{t('jobDashboard.activeJobs')}</p>
             <p className="text-3xl font-light text-gray-900">{stats.activeJobs}</p>
           </div>
           <div className="text-3xl opacity-20">📊</div>
@@ -158,7 +160,7 @@ const JobPosterDashboard: React.FC = () => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-light text-gray-600">Total Applications</p>
+            <p className="text-sm font-light text-gray-600">{t('jobDashboard.totalApplications')}</p>
             <p className="text-3xl font-light text-gray-900">{stats.totalApplications}</p>
           </div>
           <div className="text-3xl opacity-20">📝</div>
@@ -168,7 +170,7 @@ const JobPosterDashboard: React.FC = () => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-light text-gray-600">Pending Applications</p>
+            <p className="text-sm font-light text-gray-600">{t('jobDashboard.pendingApplications')}</p>
             <p className="text-3xl font-light text-gray-900">{stats.pendingApplications}</p>
           </div>
           <div className="text-3xl opacity-20">⏳</div>
@@ -178,7 +180,7 @@ const JobPosterDashboard: React.FC = () => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-light text-gray-600">Avg Applications/Job</p>
+            <p className="text-sm font-light text-gray-600">{t('jobDashboard.avgApplicationsJob')}</p>
             <p className="text-3xl font-light text-gray-900">{stats.avgApplicationsPerJob.toFixed(1)}</p>
           </div>
           <div className="text-3xl opacity-20">📈</div>
@@ -188,7 +190,7 @@ const JobPosterDashboard: React.FC = () => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-light text-gray-600">Total Views</p>
+            <p className="text-sm font-light text-gray-600">{t('jobDashboard.totalViews')}</p>
             <p className="text-3xl font-light text-gray-900">{stats.totalViews}</p>
           </div>
           <div className="text-3xl opacity-20">👁️</div>
@@ -200,25 +202,25 @@ const JobPosterDashboard: React.FC = () => {
   const renderPostedJobs = () => (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
       <div className="p-6 border-b border-gray-100 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-        <h3 className="text-xl font-light text-gray-900">Your Posted Jobs</h3>
+        <h3 className="text-xl font-light text-gray-900">{t('jobDashboard.yourPostedJobs')}</h3>
         <Link
           to="/jobs/post"
           className="px-4 py-2 bg-blue-600 text-white font-light rounded-lg hover:bg-blue-700 transition-colors shadow-md"
         >
-          + Post New Job
+          {t('jobDashboard.postNewJob')}
         </Link>
       </div>
       
       {postedJobs.length === 0 ? (
         <div className="text-center py-12">
           <div className="text-6xl mb-4 opacity-20">💼</div>
-          <h3 className="text-xl font-light text-gray-900 mb-2">No jobs posted yet</h3>
-          <p className="text-gray-600 mb-4">Start posting jobs to see them here and track applications.</p>
+          <h3 className="text-xl font-light text-gray-900 mb-2">{t('jobDashboard.noJobsPosted')}</h3>
+          <p className="text-gray-600 mb-4">{t('jobDashboard.startPosting')}</p>
           <Link
             to="/jobs/post"
             className="px-6 py-3 bg-blue-600 text-white font-light rounded-lg hover:bg-blue-700 transition-colors"
           >
-            Post Your First Job
+            {t('jobDashboard.postFirstJob')}
           </Link>
         </div>
       ) : (
@@ -241,15 +243,15 @@ const JobPosterDashboard: React.FC = () => {
                 </span>
               </div>
               <p className="text-gray-600 mb-1 truncate">{job.department} • {job.location}</p>
-              <p className="text-xs text-gray-500 mb-1">Posted by {(job as any).companyName || (job as any).company || (job as any).posterName || (job as any).poster || 'You'}</p>
-              <p className="text-xs text-gray-500 mb-4">Posted on {formatDate(job.postedAt)}</p>
+              <p className="text-xs text-gray-500 mb-1">{t('jobDashboard.postedBy')} {(job as any).companyName || (job as any).company || (job as any).posterName || (job as any).poster || t('jobDashboard.you')}</p>
+              <p className="text-xs text-gray-500 mb-4">{t('jobDashboard.postedOn')} {formatDate(job.postedAt)}</p>
               <div className="flex items-center gap-4 mb-4">
                 <div className="flex flex-col items-center">
-                  <span className="text-xs text-gray-500">Applicants</span>
+                  <span className="text-xs text-gray-500">{t('jobDashboard.applicants')}</span>
                   <span className="text-xl font-light text-gray-900">{job.applicantCount}</span>
                 </div>
                 <div className="flex flex-col items-center">
-                  <span className="text-xs text-gray-500">Views</span>
+                  <span className="text-xs text-gray-500">{t('jobDashboard.views')}</span>
                   <span className="text-lg font-light text-gray-900">{job.views || 0}</span>
                 </div>
               </div>
@@ -258,21 +260,21 @@ const JobPosterDashboard: React.FC = () => {
                   to={`/jobs/${job.id}`}
                   className="flex-1 px-3 py-2 text-sm bg-gray-900 text-white font-light rounded-lg hover:bg-gray-800 transition-colors text-center"
                 >
-                  View
+                  {t('jobDashboard.view')}
                 </Link>
                 {job.applicantCount > 0 && (
                   <Link
                     to={`/jobs/${job.id}/applications`}
                     className="flex-1 px-3 py-2 text-sm bg-blue-600 text-white font-light rounded-lg hover:bg-blue-700 transition-colors text-center"
                   >
-                    Apps ({job.applicantCount})
+                    {t('jobDashboard.apps')} ({job.applicantCount})
                   </Link>
                 )}
                 <Link
                   to={`/jobs/${job.id}/edit`}
                   className="flex-1 px-3 py-2 text-sm bg-green-600 text-white font-light rounded-lg hover:bg-green-700 transition-colors text-center"
                 >
-                  Edit
+                  {t('jobDashboard.edit')}
                 </Link>
               </div>
               {/* Future: Add Close, Analytics, and batch actions here */}
@@ -295,14 +297,14 @@ const JobPosterDashboard: React.FC = () => {
     return (
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="p-6 border-b border-gray-100">
-          <h3 className="text-xl font-light text-gray-900">All Applications</h3>
+          <h3 className="text-xl font-light text-gray-900">{t('jobDashboard.allApplications')}</h3>
         </div>
         
         {allApplications.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-6xl mb-4 opacity-20">📝</div>
-            <h3 className="text-xl font-light text-gray-900 mb-2">No applications yet</h3>
-            <p className="text-gray-600">Applications from your job postings will appear here.</p>
+            <h3 className="text-xl font-light text-gray-900 mb-2">{t('jobDashboard.noApplicationsYet')}</h3>
+            <p className="text-gray-600">{t('jobDashboard.applicationsWillAppear')}</p>
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
@@ -321,8 +323,8 @@ const JobPosterDashboard: React.FC = () => {
                         {getStatusIcon(application.status)} {application.status.replace('_', ' ')}
                       </span>
                     </div>
-                    <p className="text-gray-600 mb-1">Applicant: {application.applicantId.slice(0, 8)}...</p>
-                    <p className="text-sm text-gray-500">Applied on {formatDate(application.appliedAt)}</p>
+                    <p className="text-gray-600 mb-1">{t('jobDashboard.applicant')}: {application.applicantId.slice(0, 8)}...</p>
+                    <p className="text-sm text-gray-500">{t('jobDashboard.appliedOn')} {formatDate(application.appliedAt)}</p>
                   </div>
                   
                   <div className="text-right">
@@ -331,13 +333,13 @@ const JobPosterDashboard: React.FC = () => {
                         to={`/applications/${application.id}`}
                         className="px-4 py-2 text-sm bg-gray-900 text-white font-light rounded-lg hover:bg-gray-800 transition-colors"
                       >
-                        View Application
+                        {t('jobDashboard.viewApplication')}
                       </Link>
                       <Link
                         to={`/jobs/${application.jobId}`}
                         className="px-4 py-2 text-sm bg-blue-600 text-white font-light rounded-lg hover:bg-blue-700 transition-colors"
                       >
-                        View Job
+                        {t('jobDashboard.viewJob')}
                       </Link>
                     </div>
                   </div>
@@ -353,7 +355,7 @@ const JobPosterDashboard: React.FC = () => {
   const renderAnalytics = () => (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h3 className="text-xl font-light text-gray-900 mb-6">Job Performance</h3>
+        <h3 className="text-xl font-light text-gray-900 mb-6">{t('jobDashboard.jobPerformance')}</h3>
         <div className="space-y-4">
           {postedJobs.slice(0, 5).map((job) => (
             <div key={job.id} className="flex items-center justify-between">
@@ -362,8 +364,8 @@ const JobPosterDashboard: React.FC = () => {
                 <p className="text-xs text-gray-500">{job.department}</p>
               </div>
               <div className="text-right">
-                <p className="text-sm font-medium text-gray-900">{job.applicantCount} apps</p>
-                <p className="text-xs text-gray-500">{job.views || 0} views</p>
+                <p className="text-sm font-medium text-gray-900">{job.applicantCount} {t('jobDashboard.apps').toLowerCase()}</p>
+                <p className="text-xs text-gray-500">{job.views || 0} {t('jobDashboard.views').toLowerCase()}</p>
               </div>
             </div>
           ))}
@@ -371,7 +373,7 @@ const JobPosterDashboard: React.FC = () => {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h3 className="text-xl font-light text-gray-900 mb-6">Application Status</h3>
+        <h3 className="text-xl font-light text-gray-900 mb-6">{t('jobDashboard.applicationStatus')}</h3>
         <div className="space-y-4">
           {postedJobs.map((job) => {
             const pending = job.applications.filter(app => app.status === 'pending').length;
@@ -383,10 +385,10 @@ const JobPosterDashboard: React.FC = () => {
               <div key={job.id} className="border-b border-gray-100 pb-4 last:border-b-0">
                 <p className="text-sm font-medium text-gray-900 mb-2">{job.title}</p>
                 <div className="flex gap-4 text-xs">
-                  <span className="text-yellow-600">⏳ {pending} pending</span>
-                  <span className="text-blue-600">👁️ {reviewed} reviewed</span>
-                  <span className="text-green-600">⭐ {shortlisted} shortlisted</span>
-                  <span className="text-purple-600">✅ {hired} hired</span>
+                  <span className="text-yellow-600">⏳ {pending} {t('jobDashboard.pending')}</span>
+                  <span className="text-blue-600">👁️ {reviewed} {t('jobDashboard.reviewed')}</span>
+                  <span className="text-green-600">⭐ {shortlisted} {t('jobDashboard.shortlisted')}</span>
+                  <span className="text-purple-600">✅ {hired} {t('jobDashboard.hired')}</span>
                 </div>
               </div>
             );
@@ -401,10 +403,10 @@ const JobPosterDashboard: React.FC = () => {
       <div className="max-w-7xl mx-auto px-8 py-16">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-light text-gray-900 mb-4 tracking-tight">
-            Job Poster Dashboard
+            {t('jobDashboard.title')}
           </h1>
           <p className="text-xl font-light text-gray-600 max-w-2xl mx-auto leading-relaxed">
-            Manage your job postings, track applications, and analyze performance.
+            {t('jobDashboard.subtitle')}
           </p>
         </div>
 
@@ -412,10 +414,10 @@ const JobPosterDashboard: React.FC = () => {
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-2 mb-8">
           <div className="flex space-x-2">
             {[
-              { id: 'overview', label: 'Overview', icon: '📊' },
-              { id: 'jobs', label: 'Posted Jobs', icon: '💼' },
-              { id: 'applications', label: 'Applications', icon: '📝' },
-              { id: 'analytics', label: 'Analytics', icon: '📈' }
+              { id: 'overview', label: t('jobDashboard.overview'), icon: '📊' },
+              { id: 'jobs', label: t('jobDashboard.postedJobs'), icon: '💼' },
+              { id: 'applications', label: t('jobDashboard.applications'), icon: '📝' },
+              { id: 'analytics', label: t('jobDashboard.analytics'), icon: '📈' }
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -437,7 +439,7 @@ const JobPosterDashboard: React.FC = () => {
         {isLoading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
-            <p className="text-lg font-light text-gray-600">Loading dashboard...</p>
+            <p className="text-lg font-light text-gray-600">{t('jobDashboard.loading')}</p>
           </div>
         ) : (
           <>

@@ -5,6 +5,7 @@ import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestor
 import Card, { CardHeader, CardBody, CardTitle } from '../ui/Card';
 import { BarChart3, Users, Clock, TrendingUp, TrendingDown, CheckCircle, XCircle, Activity, Calendar, Award } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 interface JobPosting {
   id: string;
@@ -26,6 +27,7 @@ interface JobApplication {
 }
 
 const JobPosterAnalytics: React.FC = () => {
+  const { t } = useTranslation();
   const { currentUser } = useAuth();
   const [jobs, setJobs] = useState<JobPosting[]>([]);
   const [applications, setApplications] = useState<JobApplication[]>([]);
@@ -125,7 +127,7 @@ const JobPosterAnalytics: React.FC = () => {
         <div className="max-w-7xl mx-auto">
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
-            <p className="text-lg font-light text-gray-600">Loading analytics...</p>
+            <p className="text-lg font-light text-gray-600">{t('common.loading')}</p>
           </div>
         </div>
       </div>
@@ -137,10 +139,10 @@ const JobPosterAnalytics: React.FC = () => {
       <div className="max-w-7xl mx-auto">
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-light text-gray-900 mb-2">Job Poster Analytics</h1>
-            <p className="text-gray-600">Insights into your job postings and applicants</p>
+            <h1 className="text-3xl font-light text-gray-900 mb-2">{t('jobAnalytics.title')}</h1>
+            <p className="text-gray-600">{t('jobAnalytics.subtitle')}</p>
           </div>
-          <Link to="/jobs/posted" className="text-blue-600 hover:underline text-sm">← Back to Dashboard</Link>
+          <Link to="/jobs/posted" className="text-blue-600 hover:underline text-sm">{t('jobAnalytics.backToDashboard')}</Link>
         </div>
         {/* Key Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -148,7 +150,7 @@ const JobPosterAnalytics: React.FC = () => {
             <CardBody className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Total Jobs Posted</p>
+                  <p className="text-sm font-medium text-gray-600">{t('jobAnalytics.totalJobsPosted')}</p>
                   <p className="text-2xl font-bold text-gray-900">{analytics.totalJobs}</p>
                 </div>
                 <div className="p-3 bg-blue-100 rounded-full">
@@ -161,7 +163,7 @@ const JobPosterAnalytics: React.FC = () => {
             <CardBody className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Total Applications</p>
+                  <p className="text-sm font-medium text-gray-600">{t('jobAnalytics.totalApplications')}</p>
                   <p className="text-2xl font-bold text-gray-900">{analytics.totalApplications}</p>
                 </div>
                 <div className="p-3 bg-green-100 rounded-full">
@@ -174,7 +176,7 @@ const JobPosterAnalytics: React.FC = () => {
             <CardBody className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Avg Applications / Job</p>
+                  <p className="text-sm font-medium text-gray-600">{t('jobAnalytics.avgApplicationsJob')}</p>
                   <p className="text-2xl font-bold text-gray-900">{analytics.avgApplicationsPerJob.toFixed(1)}</p>
                 </div>
                 <div className="p-3 bg-yellow-100 rounded-full">
@@ -187,9 +189,9 @@ const JobPosterAnalytics: React.FC = () => {
             <CardBody className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Avg Time to Fill</p>
+                  <p className="text-sm font-medium text-gray-600">{t('jobAnalytics.avgTimeToFill')}</p>
                   <p className="text-2xl font-bold text-gray-900">
-                    {analytics.timeToFill > 0 ? `${analytics.timeToFill.toFixed(1)} days` : 'N/A'}
+                    {analytics.timeToFill > 0 ? `${analytics.timeToFill.toFixed(1)} days` : t('jobAnalytics.notAvailable')}
                   </p>
                 </div>
                 <div className="p-3 bg-purple-100 rounded-full">
@@ -202,7 +204,7 @@ const JobPosterAnalytics: React.FC = () => {
         {/* Status Breakdown */}
         <Card variant="elevated" className="mb-8">
           <CardHeader>
-            <CardTitle>Application Status Breakdown</CardTitle>
+            <CardTitle>{t('jobAnalytics.applicationStatusBreakdown')}</CardTitle>
           </CardHeader>
           <CardBody>
             <div className="space-y-4">
@@ -250,7 +252,7 @@ const JobPosterAnalytics: React.FC = () => {
         {/* Top Jobs by Applicants */}
         <Card variant="elevated" className="mb-8">
           <CardHeader>
-            <CardTitle>Top Jobs by Applicants</CardTitle>
+            <CardTitle>{t('jobAnalytics.topJobsByApplicants')}</CardTitle>
           </CardHeader>
           <CardBody>
             <div className="space-y-3">
@@ -260,7 +262,7 @@ const JobPosterAnalytics: React.FC = () => {
                     <span className="text-sm font-medium text-gray-500 w-6">#{idx + 1}</span>
                     <span className="font-medium">{job.title}</span>
                   </div>
-                  <span className="text-sm text-gray-600">{job.applicantCount} applicants</span>
+                  <span className="text-sm text-gray-600">{job.applicantCount} {t('jobAnalytics.applicants')}</span>
                 </div>
               ))}
             </div>
@@ -269,7 +271,7 @@ const JobPosterAnalytics: React.FC = () => {
         {/* Monthly Trends */}
         <Card variant="elevated">
           <CardHeader>
-            <CardTitle>Monthly Application Trends</CardTitle>
+            <CardTitle>{t('jobAnalytics.monthlyApplicationTrends')}</CardTitle>
           </CardHeader>
           <CardBody>
             <div className="space-y-3">

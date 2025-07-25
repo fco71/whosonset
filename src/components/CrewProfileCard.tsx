@@ -7,6 +7,7 @@ import { FaDownload, FaBookmark, FaRegBookmark } from 'react-icons/fa';
 import { CrewProfile } from '../types/CrewProfile';
 import FollowButton from './Social/FollowButton';
 import { imageErrorFallback } from '../utilities/imageErrorFallback';
+import { useTranslation } from 'react-i18next';
 
 interface CrewProfileCardProps {
   profile: CrewProfile;
@@ -21,6 +22,7 @@ const CrewProfileCard: React.FC<CrewProfileCardProps> = ({
   isFiltering = false,
   currentUserId 
 }) => {
+  const { t } = useTranslation();
   const [user] = useAuthState(auth);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isBookmarking, setIsBookmarking] = useState(false);
@@ -66,9 +68,22 @@ const CrewProfileCard: React.FC<CrewProfileCardProps> = ({
     }
   };
 
-  const primaryJobTitle = profile.jobTitles?.[0]?.title || 'Crew Member';
+  const getAvailabilityText = (availability: string) => {
+    switch (availability.toLowerCase()) {
+      case 'available':
+        return t('crew.available');
+      case 'soon':
+        return t('crew.soon');
+      case 'unavailable':
+        return t('crew.unavailable');
+      default:
+        return availability;
+    }
+  };
+
+  const primaryJobTitle = profile.jobTitles?.[0]?.title || t('crew.crewMember');
   const primaryLocation = profile.residences?.[0] ? 
-    `${profile.residences[0].city}, ${profile.residences[0].country}` : 'Location not specified';
+    `${profile.residences[0].city}, ${profile.residences[0].country}` : t('crew.locationNotSpecified');
 
   return (
     <div 
@@ -89,7 +104,7 @@ const CrewProfileCard: React.FC<CrewProfileCardProps> = ({
             onClick={handleBookmark}
             disabled={isBookmarking}
             className="absolute top-3 right-3 p-2 bg-white/80 backdrop-blur-sm rounded-full shadow-lg hover:bg-white transition-all duration-300 hover:scale-110 disabled:opacity-50"
-            title={isBookmarked ? "Remove from bookmarks" : "Add to bookmarks"}
+            title={isBookmarked ? t('crew.removeFromBookmarks') : t('crew.addToBookmarks')}
           >
             <svg 
               className={`w-5 h-5 ${isBookmarked ? 'text-yellow-500 fill-current' : 'text-gray-600'}`} 
@@ -109,7 +124,9 @@ const CrewProfileCard: React.FC<CrewProfileCardProps> = ({
         {/* Availability Badge */}
         {profile.availability && (
           <div className="absolute bottom-3 left-3">
-            <span className={`badge-base ${getAvailabilityColor(profile.availability)}`}>{profile.availability}</span>
+            <span className={`badge-base ${getAvailabilityColor(profile.availability)}`}>
+              {getAvailabilityText(profile.availability)}
+            </span>
           </div>
         )}
       </div>

@@ -8,6 +8,7 @@ import Card, { CardHeader, CardTitle, CardDescription, CardBody } from '../compo
 import { createJobPosting, getJobPostingById } from '../services/api/jobService';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 
 type JobType = 'full_time' | 'part_time' | 'contract' | 'freelance' | 'temporary' | 'internship' | 'volunteer';
 type ExperienceLevel = 'intern' | 'entry' | 'associate' | 'mid' | 'senior' | 'lead' | 'manager' | 'director' | 'executive';
@@ -76,6 +77,7 @@ declare global {
 }
 
 const PostJobPage: React.FC = (): JSX.Element => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   
@@ -92,8 +94,8 @@ const PostJobPage: React.FC = (): JSX.Element => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
         <div className="max-w-md w-full bg-white shadow rounded-lg p-8 text-center">
-          <h2 className="text-2xl font-bold mb-4 text-gray-900">Sign in required</h2>
-          <p className="text-gray-600 mb-6">You must be signed in to post a job. Please <a href="/login" className="text-blue-600 hover:underline">sign in</a> or <a href="/register" className="text-blue-600 hover:underline">register</a> to continue.</p>
+          <h2 className="text-2xl font-bold mb-4 text-gray-900">{t('postJob.signInRequired')}</h2>
+          <p className="text-gray-600 mb-6">{t('postJob.signInMessage')} <a href="/login" className="text-blue-600 hover:underline">{t('postJob.signIn')}</a> {t('common.or')} <a href="/register" className="text-blue-600 hover:underline">{t('postJob.register')}</a> {t('common.toContinue')}.</p>
         </div>
       </div>
     );
@@ -429,8 +431,8 @@ const PostJobPage: React.FC = (): JSX.Element => {
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Post a New Job</h1>
-          <p className="mt-2 text-sm text-gray-600">Fill out the form below to post a new job listing.</p>
+          <h1 className="text-3xl font-bold text-gray-900">{t('postJob.postNewJob')}</h1>
+          <p className="mt-2 text-sm text-gray-600">{t('postJob.postJobDescription')}</p>
         </div>
         
         {errors.submit && (
@@ -444,7 +446,7 @@ const PostJobPage: React.FC = (): JSX.Element => {
             {/* Job Title */}
             <div>
               <label htmlFor="title" className="block text-sm font-medium text-gray-700">
-                Job Title *
+                {t('postJob.jobTitle')} *
               </label>
               <Input
                 id="title"
@@ -453,7 +455,7 @@ const PostJobPage: React.FC = (): JSX.Element => {
                 value={formData.title}
                 onChange={(e) => handleChange('title', e.target.value)}
                 className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                placeholder="e.g. Gaffer, Key Grip, Production Designer"
+                placeholder={t('postJob.jobTitlePlaceholder')}
               />
               {errors.title && <p className="mt-1 text-sm text-red-600">{errors.title}</p>}
             </div>
@@ -461,7 +463,7 @@ const PostJobPage: React.FC = (): JSX.Element => {
             {/* Department */}
             <div>
               <label htmlFor="department" className="block text-sm font-medium text-gray-700">
-                Department *
+                {t('postJob.department')} *
               </label>
               <select
                 id="department"
@@ -470,7 +472,7 @@ const PostJobPage: React.FC = (): JSX.Element => {
                 onChange={(e) => handleChange('department', e.target.value)}
                 className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
               >
-                <option value="">Select a department</option>
+                <option value="">{t('postJob.selectDepartment')}</option>
                 {departmentOptions.map((dept) => (
                   <option key={dept.value} value={dept.value}>
                     {dept.label}
@@ -483,7 +485,7 @@ const PostJobPage: React.FC = (): JSX.Element => {
             {/* Location */}
             <div>
               <label htmlFor="location" className="block text-sm font-medium text-gray-700">
-                Location *
+                {t('postJob.location')} *
               </label>
               <Input
                 id="location"
@@ -492,7 +494,7 @@ const PostJobPage: React.FC = (): JSX.Element => {
                 value={formData.location}
                 onChange={(e) => handleChange('location', e.target.value)}
                 className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                placeholder="e.g. Los Angeles, CA or Remote"
+                placeholder={t('postJob.locationPlaceholder')}
               />
               {errors.location && <p className="mt-1 text-sm text-red-600">{errors.location}</p>}
             </div>
@@ -500,7 +502,7 @@ const PostJobPage: React.FC = (): JSX.Element => {
             {/* Job Type */}
             <div>
               <label htmlFor="jobType" className="block text-sm font-medium text-gray-700">
-                Job Type
+                {t('postJob.jobType')}
               </label>
               <select
                 id="jobType"
@@ -509,11 +511,11 @@ const PostJobPage: React.FC = (): JSX.Element => {
                 onChange={(e) => handleChange('jobType', e.target.value)}
                 className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
               >
-                <option value="">Select job type</option>
-                <option value="full_time">Full-time</option>
-                <option value="part_time">Part-time</option>
-                <option value="contract">Contract</option>
-                <option value="freelance">Freelance</option>
+                <option value="">{t('postJob.selectJobType')}</option>
+                <option value="full_time">{t('postJob.fullTime')}</option>
+                <option value="part_time">{t('postJob.partTime')}</option>
+                <option value="contract">{t('postJob.contract')}</option>
+                <option value="freelance">{t('postJob.freelance')}</option>
               </select>
             </div>
 
@@ -521,7 +523,7 @@ const PostJobPage: React.FC = (): JSX.Element => {
             {/* Job Description */}
             <div>
               <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                Job Description *
+                {t('postJob.jobDescription')} *
               </label>
               <Textarea
                 id="description"
@@ -530,7 +532,7 @@ const PostJobPage: React.FC = (): JSX.Element => {
                 value={formData.description}
                 onChange={(e) => handleChange('description', e.target.value)}
                 className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                placeholder="Detailed description of the job"
+                placeholder={t('postJob.jobDescriptionPlaceholder')}
               />
               {errors.description && <p className="mt-1 text-sm text-red-600">{errors.description}</p>}
             </div>
@@ -538,7 +540,7 @@ const PostJobPage: React.FC = (): JSX.Element => {
             {/* Requirements */}
             <div>
               <label htmlFor="requirements" className="block text-sm font-medium text-gray-700">
-                Requirements
+                {t('postJob.requirements')}
               </label>
               <Textarea
                 id="requirements"
@@ -547,7 +549,7 @@ const PostJobPage: React.FC = (): JSX.Element => {
                 value={formData.requirements}
                 onChange={(e) => handleChange('requirements', e.target.value)}
                 className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                placeholder="List the requirements for this job"
+                placeholder={t('postJob.requirementsPlaceholder')}
               />
               {errors.requirements && <p className="mt-1 text-sm text-red-600">{errors.requirements}</p>}
             </div>
@@ -555,7 +557,7 @@ const PostJobPage: React.FC = (): JSX.Element => {
             {/* Responsibilities */}
             <div>
               <label htmlFor="responsibilities" className="block text-sm font-medium text-gray-700">
-                Responsibilities
+                {t('postJob.responsibilities')}
               </label>
               <Textarea
                 id="responsibilities"
@@ -564,7 +566,7 @@ const PostJobPage: React.FC = (): JSX.Element => {
                 value={formData.responsibilities}
                 onChange={(e) => handleChange('responsibilities', e.target.value)}
                 className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                placeholder="List the responsibilities for this job"
+                placeholder={t('postJob.responsibilitiesPlaceholder')}
               />
               {errors.responsibilities && <p className="mt-1 text-sm text-red-600">{errors.responsibilities}</p>}
             </div>
@@ -572,7 +574,7 @@ const PostJobPage: React.FC = (): JSX.Element => {
             {/* Benefits & Perks */}
             <div>
               <label htmlFor="benefits" className="block text-sm font-medium text-gray-700">
-                Benefits &amp; Perks
+                {t('postJob.benefits')} &amp; {t('postJob.perks')}
               </label>
               <Textarea
                 id="benefits"
@@ -581,17 +583,17 @@ const PostJobPage: React.FC = (): JSX.Element => {
                 value={formData.benefits}
                 onChange={(e) => handleChange('benefits', e.target.value)}
                 className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                placeholder="List the benefits and perks for this job"
+                placeholder={t('postJob.benefitsPlaceholder')}
               />
               {errors.benefits && <p className="mt-1 text-sm text-red-600">{errors.benefits}</p>}
             </div>
 
             {/* Compensation Section */}
             <fieldset className="border border-gray-200 rounded-md p-4 mb-4">
-              <legend className="text-base font-medium text-gray-900 px-2">Compensation</legend>
+              <legend className="text-base font-medium text-gray-900 px-2">{t('postJob.compensation')}</legend>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
                 <div>
-                  <label htmlFor="salaryMin" className="block text-sm font-medium text-gray-700">Minimum Salary</label>
+                  <label htmlFor="salaryMin" className="block text-sm font-medium text-gray-700">{t('postJob.minimumSalary')}</label>
                   <Input
                     id="salaryMin"
                     name="salaryMin"
@@ -600,12 +602,12 @@ const PostJobPage: React.FC = (): JSX.Element => {
                     value={formData.salaryMin}
                     onChange={e => handleChange('salaryMin', e.target.value)}
                     className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                    placeholder="e.g. 50000"
+                    placeholder={t('postJob.minimumSalaryPlaceholder')}
                   />
                   {errors.salaryMin && <p className="mt-1 text-sm text-red-600">{errors.salaryMin}</p>}
                 </div>
                 <div>
-                  <label htmlFor="salaryMax" className="block text-sm font-medium text-gray-700">Maximum Salary</label>
+                  <label htmlFor="salaryMax" className="block text-sm font-medium text-gray-700">{t('postJob.maximumSalary')}</label>
                   <Input
                     id="salaryMax"
                     name="salaryMax"
@@ -614,12 +616,12 @@ const PostJobPage: React.FC = (): JSX.Element => {
                     value={formData.salaryMax}
                     onChange={e => handleChange('salaryMax', e.target.value)}
                     className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                    placeholder="e.g. 70000"
+                    placeholder={t('postJob.maximumSalaryPlaceholder')}
                   />
                   {errors.salaryMax && <p className="mt-1 text-sm text-red-600">{errors.salaryMax}</p>}
                 </div>
                 <div>
-                  <label htmlFor="salaryPeriod" className="block text-sm font-medium text-gray-700">Salary Period</label>
+                  <label htmlFor="salaryPeriod" className="block text-sm font-medium text-gray-700">{t('postJob.salaryPeriod')}</label>
                   <select
                     id="salaryPeriod"
                     name="salaryPeriod"
@@ -627,11 +629,11 @@ const PostJobPage: React.FC = (): JSX.Element => {
                     onChange={e => handleChange('salaryPeriod', e.target.value)}
                     className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                   >
-                    <option value="year">Per Year</option>
-                    <option value="month">Per Month</option>
-                    <option value="week">Per Week</option>
-                    <option value="day">Per Day</option>
-                    <option value="hour">Per Hour</option>
+                    <option value="year">{t('postJob.perYear')}</option>
+                    <option value="month">{t('postJob.perMonth')}</option>
+                    <option value="week">{t('postJob.perWeek')}</option>
+                    <option value="day">{t('postJob.perDay')}</option>
+                    <option value="hour">{t('postJob.perHour')}</option>
                   </select>
                 </div>
                 <div className="flex items-center mt-6">
@@ -644,7 +646,7 @@ const PostJobPage: React.FC = (): JSX.Element => {
                     className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
                   />
                   <label htmlFor="showSalary" className="ml-2 block text-sm text-gray-700">
-                    Show salary on job posting
+                    {t('postJob.showSalaryOnJobPosting')}
                   </label>
                 </div>
               </div>
@@ -654,7 +656,7 @@ const PostJobPage: React.FC = (): JSX.Element => {
             <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2">
               <div>
                 <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">
-                  Start Date *
+                  {t('postJob.startDate')} *
                 </label>
                 <Input
                   type="date"
@@ -671,13 +673,13 @@ const PostJobPage: React.FC = (): JSX.Element => {
 
             {/* Contact Information */}
             <div className="pt-4 border-t border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Contact Information</h3>
-              <p className="mt-1 text-sm text-gray-500">How should applicants contact you?</p>
+              <h3 className="text-lg font-medium text-gray-900">{t('postJob.contactInformation')}</h3>
+              <p className="mt-1 text-sm text-gray-500">{t('postJob.howToContact')}</p>
               
               <div className="mt-4 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
                 <div className="sm:col-span-3">
                   <label htmlFor="contactName" className="block text-sm font-medium text-gray-700">
-                    Contact Name *
+                    {t('postJob.contactName')} *
                   </label>
                   <Input
                     type="text"
@@ -692,7 +694,7 @@ const PostJobPage: React.FC = (): JSX.Element => {
 
                 <div className="sm:col-span-3">
                   <label htmlFor="contactEmail" className="block text-sm font-medium text-gray-700">
-                    Contact Email *
+                    {t('postJob.contactEmail')} *
                   </label>
                   <Input
                     type="email"
@@ -717,11 +719,11 @@ const PostJobPage: React.FC = (): JSX.Element => {
                     className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
                   />
                   <label htmlFor="showContactEmail" className="ml-2 block text-sm text-gray-700">
-                    Show email address publicly on job posting
+                    {t('postJob.showEmailOnJobPosting')}
                   </label>
                 </div>
                 <p className="mt-1 text-sm text-gray-500">
-                  If unchecked, applicants will only see your name and can contact you through the application system.
+                  {t('postJob.showEmailExplanation')}
                 </p>
               </div>
             </div>
@@ -734,7 +736,7 @@ const PostJobPage: React.FC = (): JSX.Element => {
                   onClick={() => navigate(-1)}
                   className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 >
-                  Cancel
+                  {t('postJob.cancel')}
                 </Button>
                 <Button
                   type="submit"
@@ -747,15 +749,15 @@ const PostJobPage: React.FC = (): JSX.Element => {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      Publishing...
+                      {t('postJob.publishing')}
                     </>
-                  ) : 'Publish Job'}
+                  ) : t('postJob.publishJob')}
                 </Button>
               </div>
               {Object.keys(errors).length > 0 && (
                 <div className="mt-4 p-3 bg-red-50 rounded-md">
                   <p className="text-sm text-red-600">
-                    Please fix the errors in the form before submitting.
+                    {t('postJob.fixErrors')}
                   </p>
                 </div>
               )}

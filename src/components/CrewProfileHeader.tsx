@@ -4,12 +4,14 @@ import { CrewFavoritesService } from '../utilities/crewFavoritesService';
 import { useAuth } from '../contexts/AuthContext';
 import EmailButton from './MessageButton';
 import { imageErrorFallback } from '../utilities/imageErrorFallback';
+import { useTranslation } from 'react-i18next';
 
 interface CrewProfileHeaderProps {
   profile: any;
 }
 
 const CrewProfileHeader: React.FC<CrewProfileHeaderProps> = ({ profile }) => {
+  const { t } = useTranslation();
   const { currentUser } = useAuth();
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [bookmarking, setBookmarking] = useState(false);
@@ -31,6 +33,19 @@ const CrewProfileHeader: React.FC<CrewProfileHeaderProps> = ({ profile }) => {
       setIsBookmarked(newStatus);
     } finally {
       setBookmarking(false);
+    }
+  };
+
+  const getAvailabilityText = (availability: string) => {
+    switch (availability.toLowerCase()) {
+      case 'available':
+        return t('crew.available');
+      case 'soon':
+        return t('crew.soon');
+      case 'unavailable':
+        return t('crew.unavailable');
+      default:
+        return availability;
     }
   };
 
@@ -57,7 +72,9 @@ const CrewProfileHeader: React.FC<CrewProfileHeaderProps> = ({ profile }) => {
         <div className="font-bold text-2xl text-gray-900 mb-1">{profile.name}</div>
         <div className="text-sm text-gray-500 mb-1">{mainTitle}{mainLocation ? ' · ' + mainLocation : ''}</div>
         {availability && (
-          <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${availability.toLowerCase() === 'available' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>{availability}</span>
+          <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${availability.toLowerCase() === 'available' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
+            {getAvailabilityText(availability)}
+          </span>
         )}
       </div>
       <div className="flex flex-col gap-2 items-center md:items-end">
@@ -68,7 +85,7 @@ const CrewProfileHeader: React.FC<CrewProfileHeaderProps> = ({ profile }) => {
               onClick={handleBookmark}
               disabled={bookmarking}
               className={`p-2 rounded-full border border-gray-200 bg-white hover:bg-yellow-50 transition-all duration-200 ${isBookmarked ? 'text-yellow-500' : 'text-gray-400'} ${bookmarking ? 'opacity-50' : ''}`}
-              title={isBookmarked ? 'Remove from bookmarks' : 'Add to bookmarks'}
+              title={isBookmarked ? t('crew.removeFromBookmarks') : t('crew.addToBookmarks')}
               style={{ lineHeight: 0 }}
             >
               {isBookmarked ? (

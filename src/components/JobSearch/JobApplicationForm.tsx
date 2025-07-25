@@ -6,6 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { JobPosting, JobApplication } from '../../types/JobApplication';
 import { JobApplicationService } from '../../utilities/jobApplicationService';
 import { FileUploadService, UploadedFile } from '../../utilities/fileUploadService';
+import { useTranslation } from 'react-i18next';
 
 interface JobApplicationFormData {
   coverLetter: string;
@@ -19,6 +20,7 @@ interface JobApplicationFormData {
 }
 
 const JobApplicationForm: React.FC = () => {
+  const { t } = useTranslation();
   const { jobId } = useParams<{ jobId: string }>();
   const navigate = useNavigate();
   const { currentUser } = useAuth();
@@ -221,7 +223,7 @@ const JobApplicationForm: React.FC = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="text-6xl mb-4">✅</div>
-          <h2 className="text-2xl font-light text-gray-900 mb-2">Application Submitted!</h2>
+          <h2 className="text-2xl font-light text-gray-900 mb-2">{t('applyJob.applicationSubmitted')}</h2>
           <p className="text-gray-600 mb-4">Your application has been successfully submitted.</p>
           <div className="animate-pulse">
             <p className="text-sm text-gray-500">Redirecting to confirmation page...</p>
@@ -240,14 +242,14 @@ const JobApplicationForm: React.FC = () => {
             onClick={() => navigate(-1)}
             className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 transition-colors"
           >
-            ← Back to Job
+            ← {t('applyJob.backToJob')}
           </button>
           
           <h1 className="text-3xl font-light text-gray-900 mb-2">
-            Apply for {job?.title}
+            {t('applyJob.applyFor')} {job?.title}
           </h1>
           <p className="text-gray-600">
-            Complete your application for this position
+            {t('applyJob.completeApplication')}
           </p>
         </div>
 
@@ -266,7 +268,7 @@ const JobApplicationForm: React.FC = () => {
               </div>
               {job.isUrgent && (
                 <span className="px-3 py-1 bg-red-100 text-red-800 text-xs font-medium rounded-full">
-                  Urgent
+                  {t('applyJob.urgent')}
                 </span>
               )}
             </div>
@@ -292,23 +294,23 @@ const JobApplicationForm: React.FC = () => {
           {/* Cover Letter */}
           <div className="mb-8">
             <label className="block text-sm font-medium text-gray-700 mb-3">
-              Cover Letter (Optional)
+              {t('applyJob.coverLetter')}
             </label>
             <textarea
               value={formData.coverLetter}
               onChange={(e) => handleInputChange('coverLetter', e.target.value)}
-              placeholder="Tell us why you're interested in this position and why you'd be a great fit... (optional)"
+              placeholder={t('applyJob.coverLetterPlaceholder')}
               className="w-full h-48 p-4 border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none resize-none font-light"
             />
             <p className="text-sm text-gray-500 mt-2">
-              Optional: 300-500 words recommended if provided.
+              {t('applyJob.coverLetterNote')}
             </p>
           </div>
 
           {/* Expected Salary */}
           <div className="mb-8">
             <label className="block text-sm font-medium text-gray-700 mb-3">
-              Expected Salary (Optional)
+              {t('applyJob.expectedSalary')}
             </label>
             <div className="flex items-center gap-2">
               <span className="text-gray-500">$</span>
@@ -316,21 +318,21 @@ const JobApplicationForm: React.FC = () => {
                 type="number"
                 value={formData.expectedSalary || ''}
                 onChange={(e) => handleInputChange('expectedSalary', e.target.value ? parseInt(e.target.value) : undefined)}
-                placeholder="e.g., 75000"
+                placeholder={t('applyJob.expectedSalaryPlaceholder')}
                 className="flex-1 p-3 border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none font-light"
                 min="0"
               />
-              <span className="text-gray-500">per year</span>
+              <span className="text-gray-500">{t('applyJob.perYear')}</span>
             </div>
             <p className="text-sm text-gray-500 mt-2">
-              This helps us understand your salary expectations
+              {t('applyJob.salaryNote')}
             </p>
           </div>
 
           {/* Availability Date */}
           <div className="mb-8">
             <label className="block text-sm font-medium text-gray-700 mb-3">
-              When are you available to start? (Optional)
+              {t('applyJob.availabilityDate')}
             </label>
             <input
               type="date"
@@ -412,12 +414,12 @@ const JobApplicationForm: React.FC = () => {
           {/* Additional Notes */}
           <div className="mb-8">
             <label className="block text-sm font-medium text-gray-700 mb-3">
-              Additional Notes (Optional)
+              {t('applyJob.additionalNotes')}
             </label>
             <textarea
               value={formData.notes}
               onChange={(e) => handleInputChange('notes', e.target.value)}
-              placeholder="Any additional information you'd like to share..."
+              placeholder={t('applyJob.additionalNotesPlaceholder')}
               className="w-full h-24 p-4 border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none resize-none font-light"
             />
           </div>
@@ -429,7 +431,7 @@ const JobApplicationForm: React.FC = () => {
               onClick={() => navigate(-1)}
               className="px-6 py-3 text-gray-600 hover:text-gray-900 font-light transition-colors"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             
             <button
@@ -440,10 +442,10 @@ const JobApplicationForm: React.FC = () => {
               {isSubmitting ? (
                 <span className="flex items-center gap-2">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  Submitting...
+                  {t('applyJob.submitting')}
                 </span>
               ) : (
-                'Submit Application'
+                t('applyJob.submitApplication')
               )}
             </button>
           </div>
