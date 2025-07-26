@@ -337,36 +337,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
               )}
             </div>
             
-            <div className="flex gap-2">
-              {unreadCount > 0 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleMarkAllAsRead}
-                  title="Mark all notifications as read (they will still be visible)"
-                >
-                  Mark all read
-                </Button>
-              )}
-              {notifications.length > 0 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleClearAll}
-                  title="Delete all notifications permanently"
-                >
-                  Clear all
-                </Button>
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate('/settings/notifications')}
-              >
-                <Settings className="w-4 h-4 mr-1" />
-                Settings
-              </Button>
-            </div>
+
           </div>
         </div>
       </div>
