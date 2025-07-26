@@ -20,9 +20,9 @@ service cloud.firestore {
       }
     }
 
-    // Crew profiles - only authenticated users can read/write
+    // Crew profiles - allow public read for homepage stats, authenticated users can read/write all
     match /crewProfiles/{profileId} {
-      allow read: if request.auth != null;
+      allow read: if true; // Allow public read for homepage statistics
       allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
       allow update: if request.auth != null && resource.data.uid == request.auth.uid;
       allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
@@ -33,9 +33,9 @@ service cloud.firestore {
       }
     }
 
-    // Projects - only authenticated users can read/write
+    // Projects - allow public read for homepage stats, authenticated users can read/write all
     match /projects/{projectId} {
-      allow read: if request.auth != null;
+      allow read: if true; // Allow public read for homepage statistics
       allow write: if request.auth != null && resource.data.createdBy == request.auth.uid;
     }
 

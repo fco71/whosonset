@@ -1,8 +1,15 @@
 {
   "projects": {
-    "default": "whosonsetdepez",
-    "cd .. && firebase use sample-firebase-ai-app-8dca9": "sample-firebase-ai-app-8dca9"
+    "default": "my-film-jobs"
   },
-  "targets": {},
+  "targets": {
+    "my-film-jobs": {
+      "hosting": {
+        "myfilmjobs-com": [
+          "myfilmjobs-com"
+        ]
+      }
+    }
+  },
   "etags": {}
 }
