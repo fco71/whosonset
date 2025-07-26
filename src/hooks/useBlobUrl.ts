@@ -69,6 +69,9 @@ export const useManagedUrl = (url: string | null | undefined): string | null => 
         setIsBlobUrl(true);
       } catch (error) {
         console.error('Error fetching blob:', error);
+        // If we can't fetch the blob, don't try to manage it
+        setIsBlobUrl(false);
+        setBlob(null);
       }
     };
 

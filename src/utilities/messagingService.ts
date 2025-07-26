@@ -364,8 +364,97 @@ export class MessagingService {
   // ===== MESSAGE STATUS & REACTIONS =====
 
   static async markMessageAsRead(messageId: string): Promise<void> {
-    // Offline fallback: do nothing to prevent permission errors
-    console.log('[MessagingService] Using offline fallback for markMessageAsRead', { messageId });
+    try {
+      console.log('[MessagingService] Marking message as read:', messageId);
+
+      // Find the message in conversations subcollection
+      const conversationsQuery = query(collection(db, 'conversations'));
+      const conversationsSnapshot = await getDocs(conversationsQuery);
+      
+      let messageFound = false;
+      let conversationId = '';
+
+      // Search through all conversations to find the message
+      for (const conversationDoc of conversationsSnapshot.docs) {
+        const messagesQuery = query(
+          collection(db, 'conversations', conversationDoc.id, 'messages'),
+          where('__name__', '==', messageId)
+        );
+        const messagesSnapshot = await getDocs(messagesQuery);
+        
+        if (!messagesSnapshot.empty) {
+          messageFound = true;
+          conversationId = conversationDoc.id;
+          break;
+        }
+      }
+
+      if (!messageFound) {
+        console.warn('[MessagingService] Message not found for marking as read:', messageId);
+        return;
+      }
+
+      // Update the message status to 'read'
+      const messageRef = doc(db, 'conversations', conversationId, 'messages', messageId);
+      await updateDoc(messageRef, { 
+        isRead: true, 
+        status: 'read',
+        readAt: serverTimestamp() 
+      });
+
+      console.log('[MessagingService] Message marked as read successfully:', messageId);
+    } catch (error) {
+      console.error('[MessagingService] Error marking message as read:', error);
+    }
+  }
+
+  static async updateMessageStatus(messageId: string, status: 'sending' | 'sent' | 'delivered' | 'read' | 'failed'): Promise<void> {
+    try {
+      console.log('[MessagingService] Updating message status:', { messageId, status });
+
+      // Find the message in conversations subcollection
+      const conversationsQuery = query(collection(db, 'conversations'));
+      const conversationsSnapshot = await getDocs(conversationsQuery);
+      
+      let messageFound = false;
+      let conversationId = '';
+
+      // Search through all conversations to find the message
+      for (const conversationDoc of conversationsSnapshot.docs) {
+        const messagesQuery = query(
+          collection(db, 'conversations', conversationDoc.id, 'messages'),
+          where('__name__', '==', messageId)
+        );
+        const messagesSnapshot = await getDocs(messagesQuery);
+        
+        if (!messagesSnapshot.empty) {
+          messageFound = true;
+          conversationId = conversationDoc.id;
+          break;
+        }
+      }
+
+      if (!messageFound) {
+        console.warn('[MessagingService] Message not found for status update:', messageId);
+        return;
+      }
+
+      // Update the message status
+      const messageRef = doc(db, 'conversations', conversationId, 'messages', messageId);
+      const updateData: any = { status };
+      
+      // If marking as read, also update isRead and readAt
+      if (status === 'read') {
+        updateData.isRead = true;
+        updateData.readAt = serverTimestamp();
+      }
+      
+      await updateDoc(messageRef, updateData);
+
+      console.log('[MessagingService] Message status updated successfully:', { messageId, status });
+    } catch (error) {
+      console.error('[MessagingService] Error updating message status:', error);
+    }
   }
 
   static async markConversationAsRead(userId1: string, userId2: string): Promise<void> {

@@ -113,6 +113,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           setTimeout(() => {
             messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
           }, 100);
+          
+          // Mark conversation as read when messages are loaded
+          if (messages.length > 0) {
+            MessagingService.markConversationAsRead(currentUserId, selectedUser).catch(error => {
+              console.error('[ChatInterface] Error marking conversation as read:', error);
+            });
+          }
         }
       );
       
@@ -142,6 +149,32 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       }
     };
   }, [selectedUser, currentUserId]);
+
+  // Mark messages as read when they are viewed
+  useEffect(() => {
+    if (!selectedUser || !currentUserId || messages.length === 0) return;
+
+    // Mark unread messages from the other user as read
+    const unreadMessages = messages.filter(
+      message => 
+        message.senderId === selectedUser && 
+        !message.isRead && 
+        message.status !== 'read'
+    );
+
+    if (unreadMessages.length > 0) {
+      console.log('[ChatInterface] Marking messages as read:', unreadMessages.length);
+      
+      // Mark each unread message as read
+      unreadMessages.forEach(async (message) => {
+        try {
+          await MessagingService.markMessageAsRead(message.id);
+        } catch (error) {
+          console.error('[ChatInterface] Error marking message as read:', error);
+        }
+      });
+    }
+  }, [messages, selectedUser, currentUserId]);
 
   // Cleanup
   const cleanup = useCallback(() => {
