@@ -16,7 +16,7 @@ import Navigation from './components/Navigation';
 const ProducerView = React.lazy(() => import('./pages/ProducerView'));
 const HomePage = React.lazy(() => import('./pages/HomePage'));
 const MyProjectsPage = React.lazy(() => import('./pages/MyProjectsPage'));
-const FavoritesPage = React.lazy(() => import('./pages/FavoritesPage'));
+
 const SavedCrewProfilesPage = React.lazy(() => import('./pages/SavedCrewProfilesPage'));
 const SavedProjectsPage = React.lazy(() => import('./pages/SavedProjectsPage'));
 const CollectionsHubPage = React.lazy(() => import('./pages/CollectionsHubPage'));
@@ -121,11 +121,7 @@ function App() {
                     <MyProjectsPage />
                   </ProtectedRoute>
                 } />
-                <Route path="/favorites" element={
-                  <ProtectedRoute>
-                    <FavoritesPage />
-                  </ProtectedRoute>
-                } />
+
                 <Route path="/saved-crew" element={
                   <ProtectedRoute>
                     <SavedCrewProfilesPage />

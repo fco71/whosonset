@@ -88,13 +88,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ authUser, userSignOut }) => {
                         >
                             📁 My Collections
                         </Link>
-                        <Link
-                            to="/favorites"
-                            className="block px-2 py-1 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors"
-                            onClick={() => setIsOpen(false)}
-                        >
-                            ❤️ Favorites
-                        </Link>
+
                     </div>
 
                     {/* Tools */}

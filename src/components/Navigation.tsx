@@ -67,7 +67,6 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
 
     const authenticatedLinks = [
         { to: '/social', label: t('nav.social') },
-        { to: '/favorites', label: t('nav.favorites') },
         { to: '/edit-profile', label: t('nav.resumeBuilder') },
     ];
 

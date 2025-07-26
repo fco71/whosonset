@@ -4,6 +4,7 @@ import { db, auth } from '../firebase';
 import { useNavigate } from 'react-router-dom';
 import ProjectCard from '../components/ProjectCard';
 import { useTranslation } from 'react-i18next';
+import { FavoritesService, FavoriteProject } from '../utilities/favoritesService';
 
 interface Project {
   id: string;
@@ -23,9 +24,10 @@ interface Project {
 const ProjectsPage: React.FC = () => {
   const { t } = useTranslation();
   const [projects, setProjects] = useState<Project[]>([]);
+  const [favorites, setFavorites] = useState<FavoriteProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [tab, setTab] = useState<'all' | 'mine'>('all');
+  const [tab, setTab] = useState<'all' | 'mine' | 'favorites'>('all');
   const navigate = useNavigate();
   const user = auth.currentUser;
 
@@ -44,8 +46,21 @@ const ProjectsPage: React.FC = () => {
         setLoading(false);
       }
     };
+    
+    const loadFavorites = async () => {
+      if (user) {
+        try {
+          const userFavorites = await FavoritesService.getFavorites();
+          setFavorites(userFavorites);
+        } catch (error) {
+          console.error('Error loading favorites:', error);
+        }
+      }
+    };
+
     fetchProjects();
-  }, [t]);
+    loadFavorites();
+  }, [t, user]);
 
   const handleEdit = (projectId: string) => {
     navigate(`/edit-project/${projectId}`);
@@ -61,9 +76,40 @@ const ProjectsPage: React.FC = () => {
     }
   };
 
-  const filteredProjects = tab === 'mine' && user
-    ? projects.filter(p => p.owner_uid === user.uid)
-    : projects;
+  const handleRemoveFromFavorites = async (projectId: string) => {
+    try {
+      await FavoritesService.removeFromFavorites(projectId);
+      setFavorites(prev => prev.filter(fav => fav.projectId !== projectId));
+    } catch (error) {
+      console.error('Error removing from favorites:', error);
+      alert('Failed to remove from favorites');
+    }
+  };
+
+  const filteredProjects = (() => {
+    if (tab === 'mine' && user) {
+      return projects.filter(p => p.owner_uid === user.uid);
+    } else if (tab === 'favorites' && user) {
+      // Convert favorites to project format for display
+      return favorites.map(fav => ({
+        id: fav.projectId,
+        projectName: fav.projectData?.projectName || 'Unknown Project',
+        productionCompany: fav.projectData?.productionCompany || '',
+        status: fav.projectData?.status || 'active',
+        synopsis: '', // Not stored in favorites
+        director: undefined,
+        producer: undefined,
+        coverImageUrl: fav.projectData?.coverImageUrl,
+        genres: undefined,
+        country: undefined,
+        productionLocations: undefined,
+        owner_uid: undefined,
+        isFavorite: true
+      })) as Project[];
+    } else {
+      return projects;
+    }
+  })();
 
   return (
     <div className="min-h-screen bg-white">
@@ -89,6 +135,14 @@ const ProjectsPage: React.FC = () => {
                   {t('projects.myProjects')}
                 </button>
               )}
+              {user && (
+                <button
+                  className={`px-6 py-2 rounded-lg font-medium transition-colors ${tab === 'favorites' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-50'}`}
+                  onClick={() => setTab('favorites')}
+                >
+                  ❤️ {t('nav.favorites')}
+                </button>
+              )}
               <button
                 onClick={() => navigate('/projects/add')}
                 className="btn-primary ml-4"
@@ -110,7 +164,9 @@ const ProjectsPage: React.FC = () => {
               <div className="text-8xl mb-8 opacity-20 animate-bounce-slow">🎬</div>
               <h3 className="heading-card mb-4">{t('projects.noProjectsFound')}</h3>
               <p className="body-medium max-w-md mx-auto">
-                {tab === 'mine' ? t('projects.noProjectsYet') : t('projects.noProjectsAvailable')}
+                {tab === 'mine' ? t('projects.noProjectsYet') : 
+                 tab === 'favorites' ? 'No favorite projects yet. Start exploring projects and add them to your favorites!' :
+                 t('projects.noProjectsAvailable')}
               </p>
             </div>
           ) : (
@@ -144,6 +200,16 @@ const ProjectsPage: React.FC = () => {
                         className="btn-danger px-3 py-1 text-xs"
                       >
                         {t('projects.delete')}
+                      </button>
+                    </div>
+                  )}
+                  {tab === 'favorites' && user && (
+                    <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => handleRemoveFromFavorites(project.id)}
+                        className="btn-danger px-3 py-1 text-xs"
+                      >
+                        ❤️ Remove
                       </button>
                     </div>
                   )}
