@@ -35,14 +35,16 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const { notifications, loading, markAsRead, markAllAsRead, clearAll, deleteNotification } = useNotifications();
-  const [filterType, setFilterType] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState('');
+
 
   // Dismiss on escape key
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -50,16 +52,19 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
 
   // Dismiss on click outside
   const handleOverlayClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget) onClose();
+    if (e.target === e.currentTarget) {
+      e.preventDefault();
+      onClose();
+    }
   }, [onClose]);
 
   const handleMarkAsRead = async (notificationId: string) => {
     try {
       await markAsRead(notificationId);
-      toast.success('Notification marked as read');
+      // Don't show toast for individual mark as read to reduce noise
     } catch (error) {
       console.error('Error marking notification as read:', error);
-      toast.error('Failed to mark as read');
+      // Don't show toast for individual errors to reduce noise
     }
   };
 
@@ -69,7 +74,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
       toast.success('All notifications marked as read');
     } catch (error) {
       console.error('Error marking all as read:', error);
-      toast.error('Failed to mark all as read');
+      // Don't show error toast - function handles errors internally
     }
   };
 
@@ -87,14 +92,16 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
     try {
       await clearAll();
       toast.success('All notifications cleared');
+      // Close the notification center after clearing
+      onClose();
     } catch (error) {
       console.error('Error clearing notifications:', error);
-      toast.error('Failed to clear notifications');
+      // Don't show error toast - function handles errors internally
     }
   };
 
   const handleNotificationClick = (notification: any) => {
-    // Mark as read and remove from UI
+    // Mark as read if not already read
     if (!notification.read) {
       handleMarkAsRead(notification.id);
     }
@@ -121,6 +128,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
         break;
     }
     
+    // Close the notification center after navigation
     onClose();
   };
 
@@ -166,100 +174,71 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
     return dateObj.toLocaleDateString();
   };
 
-  const filteredNotifications = notifications
-    .filter(notification => {
-      const matchesType = filterType === 'all' || notification.type === filterType;
-      const matchesSearch = searchQuery === '' || 
-        notification.message.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesType && matchesSearch;
-    })
-    .sort((a, b) => {
-      const dateA = a.timestamp?.toDate?.() || new Date(a.timestamp);
-      const dateB = b.timestamp?.toDate?.() || new Date(b.timestamp);
-      return dateB.getTime() - dateA.getTime();
-    });
+  const sortedNotifications = notifications.sort((a, b) => {
+    const dateA = a.timestamp?.toDate?.() || new Date(a.timestamp);
+    const dateB = b.timestamp?.toDate?.() || new Date(b.timestamp);
+    return dateB.getTime() - dateA.getTime();
+  });
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
   if (!isOpen) return null;
+  
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={handleOverlayClick}>
-      <div className="bg-white rounded-xl w-full max-w-md max-h-[90vh] flex flex-col shadow-lg relative overflow-hidden" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-[9999] pt-16" onClick={handleOverlayClick}>
+      <div className="bg-white rounded-xl w-full max-w-md max-h-[calc(100vh-8rem)] flex flex-col shadow-lg relative overflow-hidden" onClick={e => e.stopPropagation()}>
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white sticky top-0 z-10">
-          <div className="flex items-center gap-3">
-            <Bell className="w-6 h-6 text-gray-600" />
-            <h2 className="text-xl font-semibold text-gray-900">Notifications</h2>
-            {notifications.filter(n => !n.read).length > 0 && (
+        <div className="flex items-center justify-between p-3 border-b border-gray-200 bg-white z-10">
+          <div className="flex items-center gap-2">
+            <Bell className="w-5 h-5 text-gray-600" />
+            <h2 className="text-lg font-semibold text-gray-900">Notifications</h2>
+            {unreadCount > 0 && (
               <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1">
-                {notifications.filter(n => !n.read).length} new
+                {unreadCount} new
               </span>
             )}
           </div>
           <div className="flex gap-2 items-center">
-            <button
-              onClick={handleMarkAllAsRead}
-              className="p-2 text-xs text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
-              aria-label="Mark all as read"
-            >
-              Mark All Read
-            </button>
-            <button
-              onClick={handleClearAll}
-              className="p-2 text-xs text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
-              aria-label="Clear all notifications"
-            >
-              Clear All
-            </button>
+            {unreadCount > 0 && (
+              <button
+                onClick={handleMarkAllAsRead}
+                className="p-2 text-xs text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
+                aria-label="Mark all as read"
+              >
+                Mark All Read
+              </button>
+            )}
+            {notifications.length > 0 && (
+              <button
+                onClick={handleClearAll}
+                className="p-2 text-xs text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
+                aria-label="Clear all notifications"
+              >
+                Clear All
+              </button>
+            )}
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500 hover:text-gray-700"
               aria-label="Close notifications"
+              title="Close notifications"
             >
-              <XCircle className="w-5 h-5 text-gray-500" />
+              <XCircle className="w-5 h-5" />
             </button>
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="p-4 border-b border-gray-200 bg-gray-50 sticky top-16 z-10">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <input
-                  type="text"
-                  placeholder="Search notifications..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                />
-              </div>
-            </div>
-            
-            <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-            >
-              <option value="all">All Types</option>
-              <option value="job_application">Job Applications</option>
-              <option value="application_message">Messages</option>
-              <option value="application_status_update">Status Updates</option>
-              <option value="message">Chat Messages</option>
-            </select>
-          </div>
-        </div>
+
 
         {/* Notifications List */}
         <div className="flex-1 overflow-y-auto min-h-0">
-          <div className="p-4">
+          <div className="p-3">
             {loading ? (
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
                 <p className="text-gray-600">Loading notifications...</p>
               </div>
-            ) : filteredNotifications.length === 0 ? (
+                        ) : sortedNotifications.length === 0 ? (
               <div className="text-center py-8">
                 <Bell className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No notifications</h3>
@@ -269,15 +248,16 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
                     : "No notifications match your current filters."
                   }
                 </p>
+
               </div>
             ) : (
               <div className="space-y-3">
-                {filteredNotifications.map((notification) => (
+                {sortedNotifications.map((notification: any) => (
                   <div
                     key={notification.id}
                     className={`p-4 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
-                      notification.read ? 'opacity-75' : ''
-                    } ${getNotificationColor(notification.type)}`}
+                      notification.read ? 'opacity-75 bg-gray-50' : 'bg-white'
+                    } ${getNotificationColor(notification.type)} ${!notification.read ? 'border-l-4 border-l-blue-500' : ''}`}
                     onClick={() => handleNotificationClick(notification)}
                   >
                     <div className="flex items-start gap-3">
@@ -340,13 +320,44 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-200 bg-gray-50 sticky bottom-0">
+        <div className="p-3 border-t border-gray-200 bg-gray-50">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-600">
-              {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}
-            </p>
+            <div className="flex flex-col">
+              <p className="text-sm text-gray-600">
+                {unreadCount > 0 ? (
+                  `${unreadCount} unread notification${unreadCount !== 1 ? 's' : ''}`
+                ) : (
+                  notifications.length > 0 ? "All notifications read" : "No notifications"
+                )}
+              </p>
+              {notifications.length > 0 && (
+                <p className="text-xs text-gray-400 mt-1">
+                  Click notifications to mark as read • "Clear all" deletes permanently
+                </p>
+              )}
+            </div>
             
             <div className="flex gap-2">
+              {unreadCount > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleMarkAllAsRead}
+                  title="Mark all notifications as read (they will still be visible)"
+                >
+                  Mark all read
+                </Button>
+              )}
+              {notifications.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleClearAll}
+                  title="Delete all notifications permanently"
+                >
+                  Clear all
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="sm"

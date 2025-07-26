@@ -44,11 +44,18 @@ export function useNotifications() {
 
   const markAsRead = async (notificationId: string) => {
     if (!currentUser) return;
-    const notifRef = doc(db, "users", currentUser.uid, "notifications", notificationId);
-    await updateDoc(notifRef, { read: true });
-    
-    // Remove from local state immediately for better UX
-    setNotifications(prev => prev.filter(notif => notif.id !== notificationId));
+    try {
+      const notifRef = doc(db, "users", currentUser.uid, "notifications", notificationId);
+      await updateDoc(notifRef, { read: true });
+      
+      // Update local state to mark as read (don't remove)
+      setNotifications(prev => prev.map(notif => 
+        notif.id === notificationId ? { ...notif, read: true } : notif
+      ));
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      // Don't throw - just log the error
+    }
   };
 
   const markAllAsRead = async () => {
@@ -69,7 +76,7 @@ export function useNotifications() {
       setNotifications(prev => prev.map(notification => ({ ...notification, read: true })));
     } catch (error) {
       console.error('Error marking all as read:', error);
-      throw error;
+      // Don't throw - just log the error
     }
   };
 
@@ -85,11 +92,11 @@ export function useNotifications() {
       });
       await batch.commit();
       
-      // Clear from local state
+      // Clear from local state immediately
       setNotifications([]);
     } catch (error) {
       console.error('Error clearing notifications:', error);
-      throw error;
+      // Don't throw - just log the error
     }
   };
 
@@ -136,6 +143,7 @@ export function useNotifications() {
       setNotifications(prev => prev.filter(notif => notif.id !== notificationId));
     } catch (error) {
       console.error('Error deleting notification:', error);
+      // Don't throw - just log the error
     }
   };
 
