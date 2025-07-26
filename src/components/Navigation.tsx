@@ -1,7 +1,7 @@
 // src/components/Navigation.tsx
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, User, ChevronDown, Search, Bell, Settings, Globe } from 'lucide-react';
+import { Menu, X, User, ChevronDown, Bell, Settings } from 'lucide-react';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from './ui/DropdownMenu';
 import { useNotifications } from '../hooks/useNotifications';
 import NotificationCenter from './NotificationCenter';
@@ -227,11 +227,10 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                         {/* Language Switcher */}
                         <div className="relative">
                             <button
-                                className="flex items-center gap-1 px-2 py-1 rounded-lg text-gray-600 hover:text-blue-700 hover:bg-blue-50/60 transition-colors text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                className="flex items-center px-2 py-1 rounded-lg text-gray-600 hover:text-blue-700 hover:bg-blue-50/60 transition-colors text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-200"
                                 aria-label="Change language"
                                 tabIndex={0}
                             >
-                                <Globe size={16} className="mr-1 text-gray-400" />
                                 {languages.map((lang, idx) => (
                                     <span
                                         key={lang.code}
@@ -239,23 +238,17 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                                             e.stopPropagation();
                                             i18n.changeLanguage(lang.code);
                                         }}
-                                        className={`cursor-pointer px-1 ${i18n.language === lang.code ? 'text-blue-700 font-bold underline' : 'text-gray-500 hover:text-blue-600'}`}
-                                        style={{ transition: 'color 0.2s' }}
+                                        className={`cursor-pointer ${i18n.language === lang.code ? 'text-blue-700 font-bold' : 'text-gray-500 hover:text-blue-600'}`}
                                     >
                                         {lang.label}
-                                        {idx < languages.length - 1 && <span className="mx-0.5 text-gray-300">/</span>}
+                                        {idx < languages.length - 1 && <span className="mx-1 text-gray-300">/</span>}
                                     </span>
                                 ))}
                             </button>
                         </div>
                         {authUser ? (
                             <>
-                                {/* Quick Actions */}
-                                <div className="hidden md:flex items-center space-x-2">
-                                    <button className="p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100/80 transition-colors">
-                                        <Search size={18} />
-                                    </button>
-                                </div>
+
                                 
                                 {/* User Menu */}
                                 <div className="relative">
