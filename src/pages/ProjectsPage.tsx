@@ -19,6 +19,7 @@ interface Project {
   country?: string;
   productionLocations?: Array<{ country: string; city?: string }>;
   owner_uid?: string;
+  isFavorite?: boolean;
 }
 
 const ProjectsPage: React.FC = () => {
@@ -54,7 +55,10 @@ const ProjectsPage: React.FC = () => {
           setFavorites(userFavorites);
         } catch (error) {
           console.error('Error loading favorites:', error);
+          setFavorites([]); // Set empty array on error
         }
+      } else {
+        setFavorites([]); // Clear favorites when no user
       }
     };
 
@@ -77,6 +81,8 @@ const ProjectsPage: React.FC = () => {
   };
 
   const handleRemoveFromFavorites = async (projectId: string) => {
+    if (!user) return;
+    
     try {
       await FavoritesService.removeFromFavorites(projectId);
       setFavorites(prev => prev.filter(fav => fav.projectId !== projectId));

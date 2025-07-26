@@ -61,8 +61,13 @@ export class FavoritesService {
       throw new Error('User must be authenticated to remove favorites');
     }
 
-    const favoriteId = `${user.uid}_${projectId}`;
-    await deleteDoc(doc(db, this.COLLECTION_NAME, favoriteId));
+    try {
+      const favoriteId = `${user.uid}_${projectId}`;
+      await deleteDoc(doc(db, this.COLLECTION_NAME, favoriteId));
+    } catch (error) {
+      console.error('Error removing from favorites:', error);
+      throw error;
+    }
   }
 
   /**
@@ -88,18 +93,26 @@ export class FavoritesService {
     const user = auth.currentUser;
     if (!user) return [];
 
-    const favoritesQuery = query(
-      collection(db, this.COLLECTION_NAME),
-      where('userId', '==', user.uid),
-      orderBy('addedAt', 'asc'),
-      orderBy('__name__', 'asc')
-    );
+    try {
+      const favoritesQuery = query(
+        collection(db, this.COLLECTION_NAME),
+        where('userId', '==', user.uid),
+        orderBy('addedAt', 'asc'),
+        orderBy('__name__', 'asc')
+      );
 
-    const snapshot = await getDocs(favoritesQuery);
-    return snapshot.docs.map(doc => ({
-      ...doc.data(),
-      addedAt: doc.data().addedAt.toDate()
-    } as FavoriteProject));
+      const snapshot = await getDocs(favoritesQuery);
+      return snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          ...data,
+          addedAt: data.addedAt?.toDate ? data.addedAt.toDate() : data.addedAt
+        } as FavoriteProject;
+      });
+    } catch (error) {
+      console.error('Error getting favorites:', error);
+      return [];
+    }
   }
 
   /**
