@@ -123,11 +123,20 @@ const LandingPage: React.FC = () => {
               connect with crew, and discover opportunities worldwide.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Button size="lg" className="text-lg px-8 py-4">
+              <Button 
+                size="lg" 
+                className="text-lg px-8 py-4"
+                to="/register"
+              >
                 Get Started
                 <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
-              <Button variant="ghost" size="lg" className="text-lg px-8 py-4">
+              <Button 
+                variant="ghost" 
+                size="lg" 
+                className="text-lg px-8 py-4"
+                to="/about"
+              >
                 <Play className="mr-2 w-5 h-5" />
                 Watch Demo
               </Button>
@@ -250,13 +259,19 @@ const LandingPage: React.FC = () => {
             Start building your professional network and discover amazing opportunities today.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button variant="secondary" size="lg" className="text-lg px-8 py-4">
+            <Link 
+              to="/register"
+              className="inline-flex items-center justify-center font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 bg-gray-200 text-gray-900 hover:bg-gray-300 focus-visible:ring-gray-400 border border-transparent h-12 px-6 py-3 text-base rounded-md text-lg px-8 py-4"
+            >
               Create Free Account
               <ArrowRight className="ml-2 w-5 h-5" />
-            </Button>
-            <Button variant="ghost" size="lg" className="text-lg px-8 py-4 text-white hover:bg-blue-700">
+            </Link>
+            <Link 
+              to="/about"
+              className="inline-flex items-center justify-center font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 bg-transparent hover:bg-gray-100 text-gray-700 focus-visible:ring-gray-300 border border-transparent h-12 px-6 py-3 text-base rounded-md text-lg px-8 py-4 text-white hover:bg-blue-700"
+            >
               Learn More
-            </Button>
+            </Link>
           </div>
         </div>
       </section>
