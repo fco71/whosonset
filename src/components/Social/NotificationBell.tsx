@@ -1,7 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Bell, X, Check, Clock } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
 import { SocialService } from '../../utilities/socialService';
 import { SocialNotification } from '../../types/Social';
 import { UserUtils, UserProfile } from '../../utilities/userUtils';
@@ -12,11 +9,9 @@ interface NotificationBellProps {
 }
 
 const NotificationBell: React.FC<NotificationBellProps> = ({ currentUserId, className = '' }) => {
-  const { currentUser } = useAuth();
-  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<SocialNotification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [userProfiles, setUserProfiles] = useState<Map<string, UserProfile>>(new Map());
 
   useEffect(() => {
@@ -83,31 +78,26 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ currentUserId, clas
 
   const handleMarkAsRead = async (notificationId: string) => {
     try {
-      setIsLoading(true);
+      setLoading(true);
       await SocialService.markNotificationAsRead(notificationId);
     } catch (error) {
       console.error('Error marking notification as read:', error);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   const handleMarkAllAsRead = async () => {
     try {
-      setIsLoading(true);
+      setLoading(true);
       const unreadNotifications = notifications.filter(n => !n.isRead);
       await Promise.all(
         unreadNotifications.map(n => SocialService.markNotificationAsRead(n.id))
       );
-      
-      // Update local state
-      setNotifications(prev => 
-        prev.map(n => ({ ...n, isRead: true }))
-      );
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
@@ -159,42 +149,42 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ currentUserId, clas
       switch (notification.type) {
         case 'follow_request':
           // Navigate to social page to see follow requests
-          navigate('/social');
+          window.location.href = '/social';
           break;
         case 'follow_accepted':
           // Navigate to the user's profile who accepted
           if (notification.relatedUserId) {
-            navigate(`/resume/${notification.relatedUserId}`);
+            window.location.href = `/resume/${notification.relatedUserId}`;
           }
           break;
         case 'project_invite':
           // Navigate to project management
           if (notification.relatedProjectId) {
-            navigate(`/projects/${notification.relatedProjectId}/manage`);
+            window.location.href = `/projects/${notification.relatedProjectId}/manage`;
           }
           break;
         case 'message':
           // Navigate to messaging
-          navigate('/social');
+          window.location.href = '/social';
           break;
         case 'mention':
           // Navigate to social page for mentions
-          navigate('/social');
+          window.location.href = '/social';
           break;
         case 'like':
         case 'comment':
           // Navigate to social page for likes/comments
-          navigate('/social');
+          window.location.href = '/social';
           break;
         case 'project_update':
           // Navigate to project
           if (notification.relatedProjectId) {
-            navigate(`/projects/${notification.relatedProjectId}`);
+            window.location.href = `/projects/${notification.relatedProjectId}`;
           }
           break;
         default:
           // Default to social page
-          navigate('/social');
+          window.location.href = '/social';
       }
     } catch (error) {
       console.error('Error handling notification click:', error);
@@ -229,10 +219,10 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ currentUserId, clas
               {unreadCount > 0 && (
                 <button
                   onClick={handleMarkAllAsRead}
-                  disabled={isLoading}
+                  disabled={loading}
                   className="text-sm text-blue-600 hover:text-blue-800 disabled:opacity-50"
                 >
-                  {isLoading ? 'Marking...' : 'Mark all read'}
+                  {loading ? 'Marking...' : 'Mark all read'}
                 </button>
               )}
             </div>
@@ -292,7 +282,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ currentUserId, clas
                 onClick={() => {
                   setIsOpen(false);
                   // Navigate to full notifications page
-                  navigate('/social');
+                  window.location.href = '/social';
                 }}
                 className="w-full text-center text-sm text-blue-600 hover:text-blue-800"
               >

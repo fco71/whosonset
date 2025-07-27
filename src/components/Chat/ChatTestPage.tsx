@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import ChatInterface from './ChatInterface';
 import { useAuth } from '../../contexts/AuthContext';
 import { SocialService } from '../../utilities/socialService.v2';
 import { getDisplayName, getPhotoUrl } from '../../types/Profile';
-import ChatInterface from './ChatInterface';
 
 const ChatTestPage: React.FC = () => {
   const { currentUser } = useAuth();
-  const navigate = useNavigate();
   const [showChat, setShowChat] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [userProfile, setUserProfile] = useState<any>(null);
@@ -94,14 +92,14 @@ const ChatTestPage: React.FC = () => {
           
           <div className="space-y-3">
             <button
-              onClick={() => navigate('/login')}
+              onClick={() => window.location.href = '/login'}
               className="bg-blue-600 text-white font-medium py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors"
             >
               Sign In
             </button>
             
             <button
-              onClick={() => navigate('/register')}
+              onClick={() => window.location.href = '/register'}
               className="block bg-gray-100 text-gray-700 font-medium py-2 px-6 rounded-lg hover:bg-gray-200 transition-colors"
             >
               Create Account

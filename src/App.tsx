@@ -47,6 +47,7 @@ const ApplicationAnalytics = React.lazy(() => import('./components/JobSearch/App
 const JobPosterAnalytics = React.lazy(() => import('./components/JobSearch/JobPosterAnalytics'));
 const ProjectsPage = React.lazy(() => import('./pages/ProjectsPage'));
 
+
 // Protected Route Component for React Router v7
 const ProtectedRoute = ({ children, redirectTo = '/login' }: { children: React.ReactNode, redirectTo?: string }) => {
   const { currentUser } = useAuth();
@@ -241,6 +242,7 @@ function App() {
                 {process.env.NODE_ENV === 'development' && (
                   <Route path="/debug-jobs" element={<DebugJobsPage />} />
                 )}
+
                 
                   {/* 404 Route - Keep this last */}
                   <Route path="*" element={<Navigate to="/" replace />} />
