@@ -21,8 +21,23 @@
   ],
   "hosting": [
     {
-      "target": "myfilmjobs-com",
-      "public": "public",
+      "target": "production",
+      "public": "dist",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ]
+    },
+    {
+      "target": "development",
+      "public": "dist",
       "ignore": [
         "firebase.json",
         "**/.*",

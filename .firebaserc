@@ -5,8 +5,11 @@
   "targets": {
     "my-film-jobs": {
       "hosting": {
-        "myfilmjobs-com": [
+        "production": [
           "myfilmjobs-com"
+        ],
+        "development": [
+          "my-film-jobs"
         ]
       }
     }
