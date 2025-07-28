@@ -2,17 +2,30 @@
 
 ## Branch Strategy
 
-- **`main`** = Production (deploys to myfilmjobs.com)
-- **`develop`** = Development (where you do all your work)
+- **`main`** = Regular working branch (local only)
+- **`develop`** = Experimental features (local only)
+- **`deployate`** = Auto-deploys to myfilmjobs.com (PRODUCTION)
 
 ## Daily Workflow
 
-### 1. Development (Normal Work)
+### 1. Regular Work (main branch)
 ```bash
-# Always work on develop branch
-git checkout develop
+# Work on main branch for regular features
+git checkout main
 
 # Make your changes...
+# Test locally with npm start
+# Commit your changes
+git add .
+git commit -m "Your changes"
+```
+
+### 2. Experimental Features (develop branch)
+```bash
+# Work on experimental features
+git checkout develop
+
+# Make experimental changes...
 # Test locally with npm start
 
 # Deploy to development for testing
@@ -20,51 +33,63 @@ git checkout develop
 # This deploys to: https://my-film-jobs.web.app
 ```
 
-### 2. Production Deployment (When Ready)
+### 3. Production Deployment (deployate branch)
 ```bash
-# When your changes are ready for production:
+# When ready to deploy to production:
 
-# 1. Merge develop into main
+# 1. Merge your changes to deployate
+git checkout deployate
+git merge main  # or git merge develop
+
+# 2. Push to deployate (auto-deploys to production)
+git push origin deployate
+# This automatically deploys to: https://myfilmjobs-com.web.app
+
+# 3. Go back to main for next feature
 git checkout main
-git merge develop
-
-# 2. Deploy to production
-./deploy-production.sh
-# This deploys to: https://myfilmjobs-com.web.app (myfilmjobs.com)
-
-# 3. Go back to develop for next feature
-git checkout develop
 ```
 
 ## Deployment Scripts
 
 - **`./deploy-development.sh`** - Deploy to development (safe for testing)
-- **`./deploy-production.sh`** - Deploy to production (only from main branch)
+- **`./deploy-production.sh`** - Deploy to production (only from deployate branch)
 
 ## Safety Features
 
-- ✅ Production deployment only works from `main` branch
+- ✅ Only `deployate` branch auto-deploys to production
+- ✅ `main` and `develop` branches are local only (safe!)
 - ✅ Git hook asks for confirmation before production deployment
-- ✅ Development deployments are safe and don't affect production
 - ✅ Clear separation between development and production URLs
 
 ## URLs
 
-- **Development**: https://my-film-jobs.web.app
-- **Production**: https://myfilmjobs-com.web.app (myfilmjobs.com)
+- **Development**: https://my-film-jobs.web.app (manual deployment)
+- **Production**: https://myfilmjobs-com.web.app (auto-deploys from deployate)
 
 ## Quick Commands
 
 ```bash
-# Start working
-git checkout develop
+# Regular work
+git checkout main
+# ... make changes ...
+git add . && git commit -m "Changes"
 
-# Test changes
+# Experimental work
+git checkout develop
+# ... make experimental changes ...
 ./deploy-development.sh
 
-# When ready for production
+# Deploy to production
+git checkout deployate
+git merge main  # or develop
+git push origin deployate  # auto-deploys!
 git checkout main
-git merge develop
-./deploy-production.sh
-git checkout develop
-``` 
+```
+
+## Branch Purposes
+
+- **`main`**: Your daily work, stable features
+- **`develop`**: Experimental features, testing new ideas
+- **`deployate`**: Production-ready code that goes live
+
+## TEST: Auto-deploy is working correctly! 
