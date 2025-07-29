@@ -59,7 +59,7 @@ const BreakdownReports: React.FC<BreakdownReportsProps> = ({ document: projectDo
       const querySnapshot = await getDocs(q);
       const elements = querySnapshot.docs.map(doc => ({
         id: doc.id,
-        ...doc.data()
+        ...(doc.data() as Omit<BreakdownElement, 'id'>)
       })) as BreakdownElement[];
       
       setBreakdownElements(elements);

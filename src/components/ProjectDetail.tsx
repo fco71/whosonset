@@ -169,7 +169,12 @@ const ProjectDetail: React.FC = () => {
             }
             const snapshot = await getDocs(q);
             const docs = snapshot.docs;
-            const fetchedReviews = docs.map((doc) => ({ id: doc.id, projectId: projectId, ...(doc.data() as Omit<Review, 'id' | 'createdAt' | 'projectId'>), createdAt: doc.data().createdAt?.toDate?.() || new Date() }));
+            const fetchedReviews = docs.map((doc) => ({ 
+              id: doc.id, 
+              projectId: projectId, 
+              ...(doc.data() as Omit<Review, 'id' | 'createdAt' | 'projectId'>), 
+              createdAt: (doc.data() as any).createdAt?.toDate?.() || new Date() 
+            }));
             setReviews(fetchedReviews);
             const newLastVisible = docs.length > 0 ? docs[docs.length - 1] : null;
             setLastVisibleReview(newLastVisible);

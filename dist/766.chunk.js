@@ -48,8 +48,8 @@ __webpack_require__.d(__webpack_exports__, {
 var jsx_runtime = __webpack_require__(4848);
 // EXTERNAL MODULE: ./node_modules/react/index.js
 var react = __webpack_require__(6540);
-// EXTERNAL MODULE: ./node_modules/react-router/dist/development/chunk-QMGIS6GS.mjs
-var chunk_QMGIS6GS = __webpack_require__(5788);
+// EXTERNAL MODULE: ./node_modules/react-router/dist/index.js
+var dist = __webpack_require__(7767);
 // EXTERNAL MODULE: ./node_modules/firebase/firestore/dist/esm/index.esm.js + 3 modules
 var index_esm = __webpack_require__(7594);
 // EXTERNAL MODULE: ./src/firebase.ts
@@ -59,7 +59,7 @@ var AuthContext = __webpack_require__(2584);
 // EXTERNAL MODULE: ./src/utilities/fileUploadService.ts
 var fileUploadService = __webpack_require__(3549);
 // EXTERNAL MODULE: ./node_modules/react-hot-toast/dist/index.mjs + 1 modules
-var dist = __webpack_require__(888);
+var react_hot_toast_dist = __webpack_require__(888);
 // EXTERNAL MODULE: ./src/components/ui/Button.tsx
 var Button = __webpack_require__(774);
 // EXTERNAL MODULE: ./src/components/ui/Card.tsx
@@ -87,7 +87,7 @@ var user = __webpack_require__(8686);
 // EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/briefcase.js
 var briefcase = __webpack_require__(2201);
 // EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/map-pin.js
-var map_pin = __webpack_require__(8450);
+var map_pin = __webpack_require__(6069);
 // EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/dollar-sign.js
 var dollar_sign = __webpack_require__(6589);
 // EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/message-square.js
@@ -163,8 +163,8 @@ var paperclip = __webpack_require__(8117);
 
 
 const JobApplicantsPage = ({ jobId: propJobId }) => {
-    const navigate = (0,chunk_QMGIS6GS/* useNavigate */.Zp)();
-    const { jobId: urlJobId } = (0,chunk_QMGIS6GS/* useParams */.g)();
+    const navigate = (0,dist/* useNavigate */.Zp)();
+    const { jobId: urlJobId } = (0,dist/* useParams */.g)();
     const { currentUser } = (0,AuthContext/* useAuth */.A)();
     const [job, setJob] = (0,react.useState)(null);
     const [applications, setApplications] = (0,react.useState)([]);
@@ -258,7 +258,7 @@ const JobApplicantsPage = ({ jobId: propJobId }) => {
         }
         catch (error) {
             console.error('Error loading job and applications:', error);
-            dist/* toast */.oR.error('Failed to load applications');
+            react_hot_toast_dist/* toast */.oR.error('Failed to load applications');
         }
         finally {
             setIsLoading(false);
@@ -286,11 +286,11 @@ const JobApplicantsPage = ({ jobId: propJobId }) => {
                     status: newStatus
                 });
             }
-            dist/* toast */.oR.success(`Application ${newStatus.replace('_', ' ')}`);
+            react_hot_toast_dist/* toast */.oR.success(`Application ${newStatus.replace('_', ' ')}`);
         }
         catch (error) {
             console.error('Error updating application status:', error);
-            dist/* toast */.oR.error('Failed to update status');
+            react_hot_toast_dist/* toast */.oR.error('Failed to update status');
         }
     };
     const handleFavorite = async (applicationId) => {
@@ -300,11 +300,11 @@ const JobApplicantsPage = ({ jobId: propJobId }) => {
                 applicationId,
                 addedAt: (0,index_esm/* serverTimestamp */.O5)()
             });
-            dist/* toast */.oR.success('Applicant added to favorites');
+            react_hot_toast_dist/* toast */.oR.success('Applicant added to favorites');
         }
         catch (error) {
             console.error('Error adding to favorites:', error);
-            dist/* toast */.oR.error('Failed to add to favorites');
+            react_hot_toast_dist/* toast */.oR.error('Failed to add to favorites');
         }
     };
     const handleShortlist = async (applicationId) => {
@@ -313,11 +313,11 @@ const JobApplicantsPage = ({ jobId: propJobId }) => {
                 shortlisted: true,
                 shortlistedAt: (0,index_esm/* serverTimestamp */.O5)()
             });
-            dist/* toast */.oR.success('Applicant shortlisted');
+            react_hot_toast_dist/* toast */.oR.success('Applicant shortlisted');
         }
         catch (error) {
             console.error('Error shortlisting applicant:', error);
-            dist/* toast */.oR.error('Failed to shortlist');
+            react_hot_toast_dist/* toast */.oR.error('Failed to shortlist');
         }
     };
     const getStatusColor = (status) => {
@@ -610,6 +610,41 @@ const Mail = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"] 
 
 /***/ }),
 
+/***/ 6069:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   A: () => (/* binding */ MapPin)
+/* harmony export */ });
+/* unused harmony export __iconNode */
+/* harmony import */ var _createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9407);
+/**
+ * @license lucide-react v0.525.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+
+
+
+const __iconNode = [
+  [
+    "path",
+    {
+      d: "M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0",
+      key: "1r0f0z"
+    }
+  ],
+  ["circle", { cx: "12", cy: "10", r: "3", key: "ilqhr7" }]
+];
+const MapPin = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .A)("map-pin", __iconNode);
+
+
+//# sourceMappingURL=map-pin.js.map
+
+
+/***/ }),
+
 /***/ 6589:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
@@ -697,41 +732,6 @@ const Search = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"
 
 /***/ }),
 
-/***/ 8450:
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   A: () => (/* binding */ MapPin)
-/* harmony export */ });
-/* unused harmony export __iconNode */
-/* harmony import */ var _createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9407);
-/**
- * @license lucide-react v0.525.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-
-
-
-const __iconNode = [
-  [
-    "path",
-    {
-      d: "M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0",
-      key: "1r0f0z"
-    }
-  ],
-  ["circle", { cx: "12", cy: "10", r: "3", key: "ilqhr7" }]
-];
-const MapPin = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .A)("map-pin", __iconNode);
-
-
-//# sourceMappingURL=map-pin.js.map
-
-
-/***/ }),
-
 /***/ 9973:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
@@ -739,8 +739,8 @@ const MapPin = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"
 /* harmony export */   cn: () => (/* binding */ cn)
 /* harmony export */ });
 /* unused harmony exports formatNumber, truncate, debounce, generateId, isMobileDevice, toKebabCase, isValidEmail */
-/* harmony import */ var clsx__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(4164);
-/* harmony import */ var tailwind_merge__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(856);
+/* harmony import */ var clsx__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(4164);
+/* harmony import */ var tailwind_merge__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(856);
 
 
 /**
@@ -749,7 +749,7 @@ const MapPin = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"
  * @returns A single string of combined and merged class names
  */
 function cn(...inputs) {
-    return (0,tailwind_merge__WEBPACK_IMPORTED_MODULE_0__/* .twMerge */ .QP)((0,clsx__WEBPACK_IMPORTED_MODULE_1__/* .clsx */ .$)(inputs));
+    return (0,tailwind_merge__WEBPACK_IMPORTED_MODULE_1__/* .twMerge */ .QP)((0,clsx__WEBPACK_IMPORTED_MODULE_0__/* .clsx */ .$)(inputs));
 }
 /**
  * Formats a number with commas as thousand separators

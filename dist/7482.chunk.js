@@ -10,10 +10,10 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(4848);
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(6540);
-/* harmony import */ var react_router_dom__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(5788);
-/* harmony import */ var _contexts_AuthContext__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(2584);
-/* harmony import */ var _utilities_jobApplicationService__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(6093);
-/* harmony import */ var react_hot_toast__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(888);
+/* harmony import */ var react_router_dom__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(7767);
+/* harmony import */ var _contexts_AuthContext__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(2584);
+/* harmony import */ var _utilities_jobApplicationService__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(6093);
+/* harmony import */ var react_hot_toast__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(888);
 
 
 
@@ -21,9 +21,9 @@ __webpack_require__.r(__webpack_exports__);
 
 
 const EditJobApplication = () => {
-    const { applicationId } = (0,react_router_dom__WEBPACK_IMPORTED_MODULE_5__/* .useParams */ .g)();
-    const navigate = (0,react_router_dom__WEBPACK_IMPORTED_MODULE_5__/* .useNavigate */ .Zp)();
-    const { currentUser } = (0,_contexts_AuthContext__WEBPACK_IMPORTED_MODULE_2__/* .useAuth */ .A)();
+    const { applicationId } = (0,react_router_dom__WEBPACK_IMPORTED_MODULE_2__/* .useParams */ .g)();
+    const navigate = (0,react_router_dom__WEBPACK_IMPORTED_MODULE_2__/* .useNavigate */ .Zp)();
+    const { currentUser } = (0,_contexts_AuthContext__WEBPACK_IMPORTED_MODULE_3__/* .useAuth */ .A)();
     const [application, setApplication] = (0,react__WEBPACK_IMPORTED_MODULE_1__.useState)(null);
     const [isLoading, setIsLoading] = (0,react__WEBPACK_IMPORTED_MODULE_1__.useState)(true);
     const [isSubmitting, setIsSubmitting] = (0,react__WEBPACK_IMPORTED_MODULE_1__.useState)(false);
@@ -42,7 +42,7 @@ const EditJobApplication = () => {
     const loadApplication = async () => {
         try {
             setIsLoading(true);
-            const app = await _utilities_jobApplicationService__WEBPACK_IMPORTED_MODULE_3__/* .JobApplicationService */ .l.getApplication(applicationId);
+            const app = await _utilities_jobApplicationService__WEBPACK_IMPORTED_MODULE_4__/* .JobApplicationService */ .l.getApplication(applicationId);
             if (!app) {
                 setError('Application not found');
                 return;
@@ -81,13 +81,13 @@ const EditJobApplication = () => {
         try {
             setIsSubmitting(true);
             setError(null);
-            await _utilities_jobApplicationService__WEBPACK_IMPORTED_MODULE_3__/* .JobApplicationService */ .l.updateApplication(applicationId, {
+            await _utilities_jobApplicationService__WEBPACK_IMPORTED_MODULE_4__/* .JobApplicationService */ .l.updateApplication(applicationId, {
                 coverLetter: formData.coverLetter,
                 expectedSalary: formData.expectedSalary,
                 availabilityDate: formData.availabilityDate,
                 notes: formData.notes
             });
-            react_hot_toast__WEBPACK_IMPORTED_MODULE_4__/* .toast */ .oR.success('Application updated successfully');
+            react_hot_toast__WEBPACK_IMPORTED_MODULE_5__/* .toast */ .oR.success('Application updated successfully');
             navigate('/applications');
         }
         catch (error) {
@@ -107,8 +107,8 @@ const EditJobApplication = () => {
         try {
             setIsSubmitting(true);
             setError(null);
-            await _utilities_jobApplicationService__WEBPACK_IMPORTED_MODULE_3__/* .JobApplicationService */ .l.deleteApplication(applicationId);
-            react_hot_toast__WEBPACK_IMPORTED_MODULE_4__/* .toast */ .oR.success('Application withdrawn successfully');
+            await _utilities_jobApplicationService__WEBPACK_IMPORTED_MODULE_4__/* .JobApplicationService */ .l.deleteApplication(applicationId);
+            react_hot_toast__WEBPACK_IMPORTED_MODULE_5__/* .toast */ .oR.success('Application withdrawn successfully');
             navigate('/applications');
         }
         catch (error) {

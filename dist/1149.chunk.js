@@ -33,8 +33,8 @@ __webpack_require__.d(__webpack_exports__, {
 var jsx_runtime = __webpack_require__(4848);
 // EXTERNAL MODULE: ./node_modules/react/index.js
 var react = __webpack_require__(6540);
-// EXTERNAL MODULE: ./node_modules/react-router/dist/development/chunk-QMGIS6GS.mjs
-var chunk_QMGIS6GS = __webpack_require__(5788);
+// EXTERNAL MODULE: ./node_modules/react-router/dist/index.js
+var dist = __webpack_require__(7767);
 // EXTERNAL MODULE: ./node_modules/react-i18next/dist/es/index.js + 15 modules
 var es = __webpack_require__(2389);
 // EXTERNAL MODULE: ./node_modules/firebase/firestore/dist/esm/index.esm.js + 3 modules
@@ -220,7 +220,7 @@ const LOADING_STATES = {
     ERROR: 'ERROR',
 };
 const PublicResumePage = () => {
-    const { uid } = (0,chunk_QMGIS6GS/* useParams */.g)();
+    const { uid } = (0,dist/* useParams */.g)();
     const { t } = (0,es/* useTranslation */.Bd)();
     const [profile, setProfile] = (0,react.useState)(null);
     const [status, setStatus] = (0,react.useState)(LOADING_STATES.LOADING);

@@ -109,7 +109,7 @@ const AllProjects: React.FC = () => {
 
       const snapshot = await getDocs(q);
       const docs = snapshot.docs;
-      const data = docs.map((doc) => ({ id: doc.id, ...doc.data() })) as Project[];
+      const data = docs.map((doc) => ({ id: doc.id, ...(doc.data() as Omit<Project, 'id'>) })) as Project[];
 
       setProjects(data);
       setLastVisible(docs[docs.length - 1] || null);

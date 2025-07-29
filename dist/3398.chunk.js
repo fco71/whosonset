@@ -195,17 +195,17 @@ FileUploadService.ALLOWED_TYPES = {
 /* harmony export */ });
 /* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(4848);
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(6540);
-/* harmony import */ var react_router_dom__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(5788);
-/* harmony import */ var firebase_firestore__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(7594);
-/* harmony import */ var _firebase__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(9487);
-/* harmony import */ var _contexts_AuthContext__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(2584);
-/* harmony import */ var react_hot_toast__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(888);
-/* harmony import */ var _ui_Button__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(774);
-/* harmony import */ var _ui_Card__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(4948);
-/* harmony import */ var lucide_react__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(8686);
-/* harmony import */ var lucide_react__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(180);
-/* harmony import */ var lucide_react__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(7504);
-/* harmony import */ var lucide_react__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(7775);
+/* harmony import */ var react_router_dom__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(7767);
+/* harmony import */ var firebase_firestore__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(7594);
+/* harmony import */ var _firebase__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(9487);
+/* harmony import */ var _contexts_AuthContext__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(2584);
+/* harmony import */ var react_hot_toast__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(888);
+/* harmony import */ var _ui_Button__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(774);
+/* harmony import */ var _ui_Card__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(4948);
+/* harmony import */ var lucide_react__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(180);
+/* harmony import */ var lucide_react__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(7504);
+/* harmony import */ var lucide_react__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(7775);
+/* harmony import */ var lucide_react__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(8686);
 
 
 
@@ -217,8 +217,8 @@ FileUploadService.ALLOWED_TYPES = {
 
 
 const ApplicationMessaging = ({ applicationId, onClose, isModal = false }) => {
-    const navigate = (0,react_router_dom__WEBPACK_IMPORTED_MODULE_8__/* .useNavigate */ .Zp)();
-    const { currentUser } = (0,_contexts_AuthContext__WEBPACK_IMPORTED_MODULE_4__/* .useAuth */ .A)();
+    const navigate = (0,react_router_dom__WEBPACK_IMPORTED_MODULE_2__/* .useNavigate */ .Zp)();
+    const { currentUser } = (0,_contexts_AuthContext__WEBPACK_IMPORTED_MODULE_5__/* .useAuth */ .A)();
     const [application, setApplication] = (0,react__WEBPACK_IMPORTED_MODULE_1__.useState)(null);
     const [job, setJob] = (0,react__WEBPACK_IMPORTED_MODULE_1__.useState)(null);
     const [applicantProfile, setApplicantProfile] = (0,react__WEBPACK_IMPORTED_MODULE_1__.useState)(null);
@@ -243,7 +243,7 @@ const ApplicationMessaging = ({ applicationId, onClose, isModal = false }) => {
         try {
             setIsLoading(true);
             // Load application details
-            const applicationDoc = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__.getDoc)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_3__.db, 'jobApplications', applicationId));
+            const applicationDoc = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__.getDoc)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_4__.db, 'jobApplications', applicationId));
             if (applicationDoc.exists()) {
                 const applicationData = {
                     id: applicationDoc.id,
@@ -251,7 +251,7 @@ const ApplicationMessaging = ({ applicationId, onClose, isModal = false }) => {
                 };
                 setApplication(applicationData);
                 // Load job details
-                const jobDoc = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__.getDoc)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_3__.db, 'jobPostings', applicationData.jobId));
+                const jobDoc = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__.getDoc)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_4__.db, 'jobPostings', applicationData.jobId));
                 if (jobDoc.exists()) {
                     setJob({
                         id: jobDoc.id,
@@ -260,8 +260,8 @@ const ApplicationMessaging = ({ applicationId, onClose, isModal = false }) => {
                 }
                 // Load applicant profile
                 try {
-                    const profileQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_3__.db, 'crewProfiles'), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__/* .where */ ._M)('uid', '==', applicationData.applicantId));
-                    const profileSnapshot = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__/* .getDocs */ .GG)(profileQuery);
+                    const profileQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_4__.db, 'crewProfiles'), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__/* .where */ ._M)('uid', '==', applicationData.applicantId));
+                    const profileSnapshot = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__/* .getDocs */ .GG)(profileQuery);
                     if (!profileSnapshot.empty) {
                         const profileData = profileSnapshot.docs[0].data();
                         setApplicantProfile({
@@ -310,15 +310,15 @@ const ApplicationMessaging = ({ applicationId, onClose, isModal = false }) => {
         }
         catch (error) {
             console.error('Error loading application details:', error);
-            react_hot_toast__WEBPACK_IMPORTED_MODULE_5__/* .toast */ .oR.error('Failed to load application details');
+            react_hot_toast__WEBPACK_IMPORTED_MODULE_6__/* .toast */ .oR.error('Failed to load application details');
         }
         finally {
             setIsLoading(false);
         }
     };
     const subscribeToMessages = () => {
-        const messagesQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_3__.db, 'jobApplications', applicationId, 'messages'), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__/* .orderBy */ .My)('timestamp', 'asc'), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__/* .limit */ .AB)(100));
-        const unsubscribe = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__/* .onSnapshot */ .aQ)(messagesQuery, (snapshot) => {
+        const messagesQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_4__.db, 'jobApplications', applicationId, 'messages'), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__/* .orderBy */ .My)('timestamp', 'asc'), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__/* .limit */ .AB)(100));
+        const unsubscribe = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__/* .onSnapshot */ .aQ)(messagesQuery, (snapshot) => {
             const messagesData = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
@@ -332,26 +332,26 @@ const ApplicationMessaging = ({ applicationId, onClose, isModal = false }) => {
             return;
         // Defensive: ensure applicationId is a string and matches parent
         if (!applicationId || typeof applicationId !== 'string') {
-            react_hot_toast__WEBPACK_IMPORTED_MODULE_5__/* .toast */ .oR.error('Invalid application ID');
+            react_hot_toast__WEBPACK_IMPORTED_MODULE_6__/* .toast */ .oR.error('Invalid application ID');
             console.error('Invalid applicationId:', applicationId);
             return;
         }
         if (!currentUser.uid) {
-            react_hot_toast__WEBPACK_IMPORTED_MODULE_5__/* .toast */ .oR.error('User not authenticated');
+            react_hot_toast__WEBPACK_IMPORTED_MODULE_6__/* .toast */ .oR.error('User not authenticated');
             console.error('No currentUser.uid');
             return;
         }
         // Check parent document existence
         try {
-            const parentDoc = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__.getDoc)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_3__.db, 'jobApplications', applicationId));
+            const parentDoc = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__.getDoc)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_4__.db, 'jobApplications', applicationId));
             if (!parentDoc.exists()) {
-                react_hot_toast__WEBPACK_IMPORTED_MODULE_5__/* .toast */ .oR.error('Application does not exist. Cannot send message.');
+                react_hot_toast__WEBPACK_IMPORTED_MODULE_6__/* .toast */ .oR.error('Application does not exist. Cannot send message.');
                 console.error('Parent jobApplications doc does not exist:', applicationId);
                 return;
             }
         }
         catch (err) {
-            react_hot_toast__WEBPACK_IMPORTED_MODULE_5__/* .toast */ .oR.error('Error checking application existence');
+            react_hot_toast__WEBPACK_IMPORTED_MODULE_6__/* .toast */ .oR.error('Error checking application existence');
             console.error('Error checking parent doc existence:', err);
             return;
         }
@@ -359,24 +359,24 @@ const ApplicationMessaging = ({ applicationId, onClose, isModal = false }) => {
             senderId: currentUser.uid,
             senderName: currentUser.displayName || currentUser.email || 'Unknown User',
             message: newMessage.trim(),
-            timestamp: (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__/* .serverTimestamp */ .O5)(),
+            timestamp: (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__/* .serverTimestamp */ .O5)(),
             applicationId: applicationId,
             read: false
         };
         try {
             console.log('Attempting to send message:', messageData);
-            await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__/* .addDoc */ .gS)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_3__.db, 'jobApplications', applicationId, 'messages'), messageData);
+            await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__/* .addDoc */ .gS)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_4__.db, 'jobApplications', applicationId, 'messages'), messageData);
             // Create notification for the recipient
-            const jobPostingRef = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_3__.db, 'jobPostings', application.jobId);
-            const jobPostingSnap = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__.getDoc)(jobPostingRef);
+            const jobPostingRef = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_4__.db, 'jobPostings', application.jobId);
+            const jobPostingSnap = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__.getDoc)(jobPostingRef);
             const jobPosting = jobPostingSnap.data();
             // Determine recipient: if sender is applicant, recipient is job poster; else recipient is applicant
             const recipientId = currentUser.uid === application.applicantId ? jobPosting?.postedById : application.applicantId;
             if (recipientId) {
-                await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__/* .addDoc */ .gS)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_3__.db, 'users', recipientId, 'notifications'), {
+                await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__/* .addDoc */ .gS)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_4__.db, 'users', recipientId, 'notifications'), {
                     type: 'application_message',
                     message: `New message from ${currentUser.displayName || currentUser.email} regarding job application`,
-                    timestamp: (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__/* .serverTimestamp */ .O5)(),
+                    timestamp: (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__/* .serverTimestamp */ .O5)(),
                     read: false,
                     userId: recipientId,
                     relatedId: applicationId,
@@ -389,11 +389,11 @@ const ApplicationMessaging = ({ applicationId, onClose, isModal = false }) => {
                 });
             }
             setNewMessage('');
-            react_hot_toast__WEBPACK_IMPORTED_MODULE_5__/* .toast */ .oR.success('Message sent successfully!');
+            react_hot_toast__WEBPACK_IMPORTED_MODULE_6__/* .toast */ .oR.success('Message sent successfully!');
         }
         catch (error) {
             console.error('Error sending message:', error, '\nMessage data:', messageData, '\napplicationId:', applicationId, '\ncurrentUser:', currentUser);
-            react_hot_toast__WEBPACK_IMPORTED_MODULE_5__/* .toast */ .oR.error('Failed to send message. Please try again.');
+            react_hot_toast__WEBPACK_IMPORTED_MODULE_6__/* .toast */ .oR.error('Failed to send message. Please try again.');
         }
         finally {
             setIsSendingMessage(false);
@@ -412,16 +412,16 @@ const ApplicationMessaging = ({ applicationId, onClose, isModal = false }) => {
         return ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "flex items-center justify-center p-8", children: (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "text-center", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4" }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("p", { className: "text-gray-600", children: "Loading messages..." })] }) }));
     }
     if (!application || !job) {
-        return ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "text-center p-8", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "text-6xl mb-4 opacity-20", children: "\u274C" }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("h2", { className: "text-xl font-semibold text-gray-900 mb-2", children: "Application Not Found" }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("p", { className: "text-gray-600 mb-4", children: "The application you're looking for doesn't exist." }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(_ui_Button__WEBPACK_IMPORTED_MODULE_6__/* .Button */ .$, { onClick: () => navigate('/applications'), children: "Back to Applications" })] }));
+        return ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "text-center p-8", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "text-6xl mb-4 opacity-20", children: "\u274C" }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("h2", { className: "text-xl font-semibold text-gray-900 mb-2", children: "Application Not Found" }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("p", { className: "text-gray-600 mb-4", children: "The application you're looking for doesn't exist." }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(_ui_Button__WEBPACK_IMPORTED_MODULE_7__/* .Button */ .$, { onClick: () => navigate('/applications'), children: "Back to Applications" })] }));
     }
-    const content = ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "flex flex-col h-full", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "flex items-center justify-between p-4 border-b border-gray-200 bg-white rounded-t-lg", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "flex items-center gap-3", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center", children: (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(lucide_react__WEBPACK_IMPORTED_MODULE_9__/* ["default"] */ .A, { className: "w-5 h-5 text-blue-600" }) }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("h3", { className: "font-semibold text-gray-900", children: applicantProfile?.name || 'Unknown Applicant' }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("p", { className: "text-sm text-gray-600", children: [job.title, " \u2022 ", job.department] })] })] }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "flex items-center gap-2", children: isModal && onClose && ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(_ui_Button__WEBPACK_IMPORTED_MODULE_6__/* .Button */ .$, { variant: "outline", size: "sm", onClick: onClose, children: (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(lucide_react__WEBPACK_IMPORTED_MODULE_10__/* ["default"] */ .A, { className: "w-4 h-4" }) })) })] }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 min-h-0", children: messages.length === 0 ? ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "text-center py-8", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(lucide_react__WEBPACK_IMPORTED_MODULE_11__/* ["default"] */ .A, { className: "w-12 h-12 text-gray-300 mx-auto mb-4" }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("p", { className: "text-gray-600 mb-2", children: "No messages yet" }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("p", { className: "text-sm text-gray-500", children: "Start a conversation about this application" })] })) : ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "space-y-3", children: [messages.map((message) => ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: `flex ${isCurrentUser(message.senderId) ? 'justify-end' : 'justify-start'}`, children: (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: `max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${isCurrentUser(message.senderId)
+    const content = ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "flex flex-col h-full", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "flex items-center justify-between p-4 border-b border-gray-200 bg-white rounded-t-lg", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "flex items-center gap-3", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center", children: (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(lucide_react__WEBPACK_IMPORTED_MODULE_12__/* ["default"] */ .A, { className: "w-5 h-5 text-blue-600" }) }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("h3", { className: "font-semibold text-gray-900", children: applicantProfile?.name || 'Unknown Applicant' }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("p", { className: "text-sm text-gray-600", children: [job.title, " \u2022 ", job.department] })] })] }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "flex items-center gap-2", children: isModal && onClose && ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(_ui_Button__WEBPACK_IMPORTED_MODULE_7__/* .Button */ .$, { variant: "outline", size: "sm", onClick: onClose, children: (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(lucide_react__WEBPACK_IMPORTED_MODULE_9__/* ["default"] */ .A, { className: "w-4 h-4" }) })) })] }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 min-h-0", children: messages.length === 0 ? ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "text-center py-8", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(lucide_react__WEBPACK_IMPORTED_MODULE_10__/* ["default"] */ .A, { className: "w-12 h-12 text-gray-300 mx-auto mb-4" }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("p", { className: "text-gray-600 mb-2", children: "No messages yet" }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("p", { className: "text-sm text-gray-500", children: "Start a conversation about this application" })] })) : ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "space-y-3", children: [messages.map((message) => ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: `flex ${isCurrentUser(message.senderId) ? 'justify-end' : 'justify-start'}`, children: (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: `max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${isCurrentUser(message.senderId)
                                     ? 'bg-blue-500 text-white'
                                     : 'bg-white text-gray-900 border border-gray-200'}`, children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: `text-xs mb-1 ${isCurrentUser(message.senderId) ? 'text-blue-100' : 'text-gray-500'}`, children: [message.senderName, " \u2022 ", formatDate(message.timestamp)] }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "text-sm whitespace-pre-wrap", children: message.message })] }) }, message.id))), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { ref: messagesEndRef })] })) }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "p-4 border-t border-gray-200 bg-white rounded-b-lg", children: (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "flex gap-2", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("input", { type: "text", className: "flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all", placeholder: "Type a message...", value: newMessage, onChange: (e) => setNewMessage(e.target.value), onKeyDown: (e) => { if (e.key === 'Enter' && !e.shiftKey)
-                                sendMessage(); }, disabled: isSendingMessage }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(_ui_Button__WEBPACK_IMPORTED_MODULE_6__/* .Button */ .$, { onClick: sendMessage, disabled: isSendingMessage || !newMessage.trim(), className: "px-4 py-2", children: (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(lucide_react__WEBPACK_IMPORTED_MODULE_12__/* ["default"] */ .A, { className: "w-4 h-4" }) })] }) })] }));
+                                sendMessage(); }, disabled: isSendingMessage }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(_ui_Button__WEBPACK_IMPORTED_MODULE_7__/* .Button */ .$, { onClick: sendMessage, disabled: isSendingMessage || !newMessage.trim(), className: "px-4 py-2", children: (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(lucide_react__WEBPACK_IMPORTED_MODULE_11__/* ["default"] */ .A, { className: "w-4 h-4" }) })] }) })] }));
     if (isModal) {
         return ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-hidden", onClick: onClose, children: (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "bg-white rounded-xl max-w-2xl w-full h-[85vh] flex flex-col overflow-hidden", onClick: (e) => e.stopPropagation(), children: content }) }));
     }
-    return ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(_ui_Card__WEBPACK_IMPORTED_MODULE_7__/* ["default"] */ .Ay, { className: "h-[600px] flex flex-col overflow-hidden", children: content }));
+    return ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(_ui_Card__WEBPACK_IMPORTED_MODULE_8__/* ["default"] */ .Ay, { className: "h-[600px] flex flex-col overflow-hidden", children: content }));
 };
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (ApplicationMessaging);
 
@@ -441,15 +441,15 @@ const ApplicationMessaging = ({ applicationId, onClose, isModal = false }) => {
 /* harmony export */ });
 /* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(4848);
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(6540);
-/* harmony import */ var framer_motion__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(3490);
-/* harmony import */ var clsx__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(4164);
+/* harmony import */ var framer_motion__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(7106);
+/* harmony import */ var clsx__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(4164);
 
 
 
 
 const Card = (0,react__WEBPACK_IMPORTED_MODULE_1__.forwardRef)(({ variant = 'elevated', hoverable = false, rounded = 'lg', shadow = 'md', padding = 'md', className = '', children, ...props }, ref) => {
     // Base card classes
-    const baseClasses = (0,clsx__WEBPACK_IMPORTED_MODULE_2__/* ["default"] */ .A)(
+    const baseClasses = (0,clsx__WEBPACK_IMPORTED_MODULE_3__/* ["default"] */ .A)(
     // Base styles
     'transition-all duration-200', 'overflow-hidden', 'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2', 
     // Variant styles
@@ -480,10 +480,10 @@ const Card = (0,react__WEBPACK_IMPORTED_MODULE_1__.forwardRef)(({ variant = 'ele
     };
     // Hover animation
     const hoverAnimation = hoverable ? { scale: 1.01 } : {};
-    return ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(framer_motion__WEBPACK_IMPORTED_MODULE_3__/* .motion */ .P.div, { ref: ref, className: baseClasses, initial: "hidden", animate: "visible", whileHover: hoverAnimation, variants: variants, ...props, children: children }));
+    return ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(framer_motion__WEBPACK_IMPORTED_MODULE_2__/* .motion */ .P.div, { ref: ref, className: baseClasses, initial: "hidden", animate: "visible", whileHover: hoverAnimation, variants: variants, ...props, children: children }));
 });
 Card.displayName = 'Card';
-const CardHeader = (0,react__WEBPACK_IMPORTED_MODULE_1__.forwardRef)(({ className = '', withBorder = true, children, ...props }, ref) => ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { ref: ref, className: (0,clsx__WEBPACK_IMPORTED_MODULE_2__/* ["default"] */ .A)('px-4 py-3', withBorder && 'border-b border-gray-100', className), ...props, children: children })));
+const CardHeader = (0,react__WEBPACK_IMPORTED_MODULE_1__.forwardRef)(({ className = '', withBorder = true, children, ...props }, ref) => ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { ref: ref, className: (0,clsx__WEBPACK_IMPORTED_MODULE_3__/* ["default"] */ .A)('px-4 py-3', withBorder && 'border-b border-gray-100', className), ...props, children: children })));
 CardHeader.displayName = 'CardHeader';
 const CardBody = (0,react__WEBPACK_IMPORTED_MODULE_1__.forwardRef)(({ className = '', padding = 'md', children, ...props }, ref) => {
     const paddingClass = {
@@ -492,14 +492,14 @@ const CardBody = (0,react__WEBPACK_IMPORTED_MODULE_1__.forwardRef)(({ className 
         md: 'p-4',
         lg: 'p-6',
     }[padding];
-    return ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { ref: ref, className: (0,clsx__WEBPACK_IMPORTED_MODULE_2__/* ["default"] */ .A)(paddingClass, className), ...props, children: children }));
+    return ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { ref: ref, className: (0,clsx__WEBPACK_IMPORTED_MODULE_3__/* ["default"] */ .A)(paddingClass, className), ...props, children: children }));
 });
 CardBody.displayName = 'CardBody';
-const CardFooter = (0,react__WEBPACK_IMPORTED_MODULE_1__.forwardRef)(({ className = '', withBorder = true, children, ...props }, ref) => ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { ref: ref, className: (0,clsx__WEBPACK_IMPORTED_MODULE_2__/* ["default"] */ .A)('px-4 py-3', withBorder && 'border-t border-gray-100', className), ...props, children: children })));
+const CardFooter = (0,react__WEBPACK_IMPORTED_MODULE_1__.forwardRef)(({ className = '', withBorder = true, children, ...props }, ref) => ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { ref: ref, className: (0,clsx__WEBPACK_IMPORTED_MODULE_3__/* ["default"] */ .A)('px-4 py-3', withBorder && 'border-t border-gray-100', className), ...props, children: children })));
 CardFooter.displayName = 'CardFooter';
-const CardTitle = (0,react__WEBPACK_IMPORTED_MODULE_1__.forwardRef)(({ as: Tag = 'h3', className = '', children, ...props }, ref) => ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(Tag, { ref: ref, className: (0,clsx__WEBPACK_IMPORTED_MODULE_2__/* ["default"] */ .A)('text-lg font-semibold text-gray-900', className), ...props, children: children })));
+const CardTitle = (0,react__WEBPACK_IMPORTED_MODULE_1__.forwardRef)(({ as: Tag = 'h3', className = '', children, ...props }, ref) => ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(Tag, { ref: ref, className: (0,clsx__WEBPACK_IMPORTED_MODULE_3__/* ["default"] */ .A)('text-lg font-semibold text-gray-900', className), ...props, children: children })));
 CardTitle.displayName = 'CardTitle';
-const CardDescription = (0,react__WEBPACK_IMPORTED_MODULE_1__.forwardRef)(({ className = '', children, ...props }, ref) => ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("p", { ref: ref, className: (0,clsx__WEBPACK_IMPORTED_MODULE_2__/* ["default"] */ .A)('text-sm text-gray-600 mt-1', className), ...props, children: children })));
+const CardDescription = (0,react__WEBPACK_IMPORTED_MODULE_1__.forwardRef)(({ className = '', children, ...props }, ref) => ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("p", { ref: ref, className: (0,clsx__WEBPACK_IMPORTED_MODULE_3__/* ["default"] */ .A)('text-sm text-gray-600 mt-1', className), ...props, children: children })));
 CardDescription.displayName = 'CardDescription';
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (Card);
 

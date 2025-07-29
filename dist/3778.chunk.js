@@ -77,8 +77,8 @@ __webpack_require__.d(__webpack_exports__, {
 var jsx_runtime = __webpack_require__(4848);
 // EXTERNAL MODULE: ./node_modules/react/index.js
 var react = __webpack_require__(6540);
-// EXTERNAL MODULE: ./node_modules/react-router/dist/development/chunk-QMGIS6GS.mjs
-var chunk_QMGIS6GS = __webpack_require__(5788);
+// EXTERNAL MODULE: ./node_modules/react-router/dist/index.js
+var dist = __webpack_require__(7767);
 // EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/createLucideIcon.js + 3 modules
 var createLucideIcon = __webpack_require__(9407);
 ;// ./node_modules/lucide-react/dist/esm/icons/user-x.js
@@ -175,7 +175,7 @@ function Skeleton({ className, ...props }) {
 
 
 // EXTERNAL MODULE: ./node_modules/react-hot-toast/dist/index.mjs + 1 modules
-var dist = __webpack_require__(888);
+var react_hot_toast_dist = __webpack_require__(888);
 ;// ./src/pages/SocialPage.tsx
 
 
@@ -200,7 +200,7 @@ const SocialPage = () => {
     const { t } = (0,es/* useTranslation */.Bd)();
     const auth = (0,AuthContext/* useAuth */.A)();
     const user = auth?.currentUser; // Access currentUser instead of user
-    const navigate = (0,chunk_QMGIS6GS/* useNavigate */.Zp)();
+    const navigate = (0,dist/* useNavigate */.Zp)();
     const [activeTab, setActiveTab] = (0,react.useState)('connections');
     const [searchQuery, setSearchQuery] = (0,react.useState)('');
     // Define the profile state with proper typing
@@ -425,17 +425,17 @@ const SocialPage = () => {
         try {
             if (follow) {
                 await socialService/* SocialService */.l.sendFollowRequest(user.uid, profileId);
-                dist/* toast */.oR.success('Follow request sent!');
+                react_hot_toast_dist/* toast */.oR.success('Follow request sent!');
             }
             else {
                 await socialService/* SocialService */.l.unfollow(user.uid, profileId);
-                dist/* toast */.oR.success('Unfollowed successfully');
+                react_hot_toast_dist/* toast */.oR.success('Unfollowed successfully');
             }
             await loadData();
         }
         catch (error) {
             console.error('Error updating follow status:', error);
-            dist/* toast */.oR.error(follow ? 'Failed to send follow request' : 'Failed to unfollow');
+            react_hot_toast_dist/* toast */.oR.error(follow ? 'Failed to send follow request' : 'Failed to unfollow');
         }
     };
     // Handle follow request response (accept/reject)
@@ -449,16 +449,16 @@ const SocialPage = () => {
             // Update local state after backend call
             if (action === 'accept') {
                 setConnections(prev => [...prev, request]);
-                dist/* toast */.oR.success('Follow request accepted!');
+                react_hot_toast_dist/* toast */.oR.success('Follow request accepted!');
             }
             else {
-                dist/* toast */.oR.success('Follow request rejected.');
+                react_hot_toast_dist/* toast */.oR.success('Follow request rejected.');
             }
             setConnectionRequests(prev => prev.filter(p => (0,Profile/* getProfileId */.Lx)(p) !== userId));
         }
         catch (error) {
             console.error(`Error ${action}ing follow request:`, error);
-            dist/* toast */.oR.error(`Failed to ${action} follow request. Please try again.`);
+            react_hot_toast_dist/* toast */.oR.error(`Failed to ${action} follow request. Please try again.`);
         }
     };
     // Messaging functions
@@ -784,8 +784,8 @@ const Search = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"
 /* harmony export */   cn: () => (/* binding */ cn)
 /* harmony export */ });
 /* unused harmony exports formatNumber, truncate, debounce, generateId, isMobileDevice, toKebabCase, isValidEmail */
-/* harmony import */ var clsx__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(4164);
-/* harmony import */ var tailwind_merge__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(856);
+/* harmony import */ var clsx__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(4164);
+/* harmony import */ var tailwind_merge__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(856);
 
 
 /**
@@ -794,7 +794,7 @@ const Search = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"
  * @returns A single string of combined and merged class names
  */
 function cn(...inputs) {
-    return (0,tailwind_merge__WEBPACK_IMPORTED_MODULE_0__/* .twMerge */ .QP)((0,clsx__WEBPACK_IMPORTED_MODULE_1__/* .clsx */ .$)(inputs));
+    return (0,tailwind_merge__WEBPACK_IMPORTED_MODULE_1__/* .twMerge */ .QP)((0,clsx__WEBPACK_IMPORTED_MODULE_0__/* .clsx */ .$)(inputs));
 }
 /**
  * Formats a number with commas as thousand separators

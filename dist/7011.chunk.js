@@ -76,8 +76,8 @@ __webpack_require__.d(__webpack_exports__, {
 var jsx_runtime = __webpack_require__(4848);
 // EXTERNAL MODULE: ./node_modules/react/index.js
 var react = __webpack_require__(6540);
-// EXTERNAL MODULE: ./node_modules/react-router/dist/development/chunk-QMGIS6GS.mjs
-var chunk_QMGIS6GS = __webpack_require__(5788);
+// EXTERNAL MODULE: ./node_modules/react-router/dist/index.js
+var dist = __webpack_require__(7767);
 // EXTERNAL MODULE: ./src/components/ui/Button.tsx
 var Button = __webpack_require__(774);
 // EXTERNAL MODULE: ./src/components/ui/Input.tsx
@@ -269,7 +269,7 @@ const getJobPostingById = async (jobId) => {
 // EXTERNAL MODULE: ./src/contexts/AuthContext.tsx
 var AuthContext = __webpack_require__(2584);
 // EXTERNAL MODULE: ./node_modules/react-toastify/dist/index.mjs
-var dist = __webpack_require__(1409);
+var react_toastify_dist = __webpack_require__(1409);
 // EXTERNAL MODULE: ./node_modules/react-i18next/dist/es/index.js + 15 modules
 var es = __webpack_require__(2389);
 ;// ./src/pages/PostJobPage.tsx
@@ -285,7 +285,7 @@ var es = __webpack_require__(2389);
 
 const PostJobPage = () => {
     const { t } = (0,es/* useTranslation */.Bd)();
-    const navigate = (0,chunk_QMGIS6GS/* useNavigate */.Zp)();
+    const navigate = (0,dist/* useNavigate */.Zp)();
     const { currentUser } = (0,AuthContext/* useAuth */.A)();
     // Redirect to login if not authenticated
     react.useEffect(() => {
@@ -499,14 +499,14 @@ const PostJobPage = () => {
             }
             else {
                 // If no specific field error but form is invalid, show general error
-                dist/* toast */.oR.error('Please fill in all required fields');
+                react_toastify_dist/* toast */.oR.error('Please fill in all required fields');
             }
             return;
         }
         if (!currentUser) {
             const errorMsg = 'You must be logged in to post a job';
             console.error(errorMsg);
-            dist/* toast */.oR.error(errorMsg);
+            react_toastify_dist/* toast */.oR.error(errorMsg);
             return;
         }
         setIsSubmitting(true);
@@ -569,14 +569,14 @@ const PostJobPage = () => {
             catch (fetchError) {
                 console.error('Error fetching saved job:', fetchError);
             }
-            dist/* toast */.oR.success('Job posted successfully!');
+            react_toastify_dist/* toast */.oR.success('Job posted successfully!');
             // Redirect to the job details page
             navigate(`/jobs/${jobId}`);
         }
         catch (error) {
             console.error('Error in job posting flow:', error);
             const errorMessage = error instanceof Error ? error.message : 'Failed to complete job posting process.';
-            dist/* toast */.oR.error(errorMessage);
+            react_toastify_dist/* toast */.oR.error(errorMessage);
         }
         finally {
             setIsSubmitting(false);
@@ -596,8 +596,8 @@ const PostJobPage = () => {
 /* harmony export */   cn: () => (/* binding */ cn)
 /* harmony export */ });
 /* unused harmony exports formatNumber, truncate, debounce, generateId, isMobileDevice, toKebabCase, isValidEmail */
-/* harmony import */ var clsx__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(4164);
-/* harmony import */ var tailwind_merge__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(856);
+/* harmony import */ var clsx__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(4164);
+/* harmony import */ var tailwind_merge__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(856);
 
 
 /**
@@ -606,7 +606,7 @@ const PostJobPage = () => {
  * @returns A single string of combined and merged class names
  */
 function cn(...inputs) {
-    return (0,tailwind_merge__WEBPACK_IMPORTED_MODULE_0__/* .twMerge */ .QP)((0,clsx__WEBPACK_IMPORTED_MODULE_1__/* .clsx */ .$)(inputs));
+    return (0,tailwind_merge__WEBPACK_IMPORTED_MODULE_1__/* .twMerge */ .QP)((0,clsx__WEBPACK_IMPORTED_MODULE_0__/* .clsx */ .$)(inputs));
 }
 /**
  * Formats a number with commas as thousand separators

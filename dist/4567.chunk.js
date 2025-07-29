@@ -14,8 +14,8 @@ __webpack_require__.d(__webpack_exports__, {
 
 // EXTERNAL MODULE: ./node_modules/react/jsx-runtime.js
 var jsx_runtime = __webpack_require__(4848);
-// EXTERNAL MODULE: ./node_modules/react-router/dist/development/chunk-QMGIS6GS.mjs
-var chunk_QMGIS6GS = __webpack_require__(5788);
+// EXTERNAL MODULE: ./node_modules/react-router/dist/index.js
+var dist = __webpack_require__(7767);
 // EXTERNAL MODULE: ./node_modules/react/index.js
 var react = __webpack_require__(6540);
 // EXTERNAL MODULE: ./node_modules/firebase/firestore/dist/esm/index.esm.js + 3 modules
@@ -50,8 +50,8 @@ var fileUploadService = __webpack_require__(3549);
 
 
 const ApplicationStatusTracker = ({ applicationId }) => {
-    const navigate = (0,chunk_QMGIS6GS/* useNavigate */.Zp)();
-    const { applicationId: urlApplicationId } = (0,chunk_QMGIS6GS/* useParams */.g)();
+    const navigate = (0,dist/* useNavigate */.Zp)();
+    const { applicationId: urlApplicationId } = (0,dist/* useParams */.g)();
     const { currentUser } = (0,AuthContext/* useAuth */.A)();
     const [application, setApplication] = (0,react.useState)(null);
     const [job, setJob] = (0,react.useState)(null); // Changed to any for now as JobPosting type is removed
@@ -209,7 +209,7 @@ const ApplicationStatusTracker = ({ applicationId }) => {
 
 
 const ApplicationDetailPage = () => {
-    const { applicationId } = (0,chunk_QMGIS6GS/* useParams */.g)();
+    const { applicationId } = (0,dist/* useParams */.g)();
     if (!applicationId) {
         return ((0,jsx_runtime.jsx)("div", { className: "min-h-screen bg-gray-50 flex items-center justify-center", children: (0,jsx_runtime.jsxs)("div", { className: "text-center", children: [(0,jsx_runtime.jsx)("div", { className: "text-6xl mb-4 opacity-20", children: "\u274C" }), (0,jsx_runtime.jsx)("h2", { className: "text-2xl font-light text-gray-900 mb-2", children: "Invalid Application" }), (0,jsx_runtime.jsx)("p", { className: "text-gray-600", children: "Application ID is required." })] }) }));
     }

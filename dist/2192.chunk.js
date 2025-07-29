@@ -10,13 +10,13 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(4848);
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(6540);
-/* harmony import */ var react_router_dom__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(5788);
-/* harmony import */ var firebase_firestore__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(7594);
-/* harmony import */ var _firebase__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(9487);
-/* harmony import */ var _contexts_AuthContext__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(2584);
-/* harmony import */ var _utilities_jobApplicationService__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(6093);
-/* harmony import */ var _utilities_fileUploadService__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(3549);
-/* harmony import */ var react_i18next__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(2389);
+/* harmony import */ var react_router_dom__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(7767);
+/* harmony import */ var firebase_firestore__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(7594);
+/* harmony import */ var _firebase__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(9487);
+/* harmony import */ var _contexts_AuthContext__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(2584);
+/* harmony import */ var _utilities_jobApplicationService__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(6093);
+/* harmony import */ var _utilities_fileUploadService__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(3549);
+/* harmony import */ var react_i18next__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(2389);
 
 
 
@@ -27,10 +27,10 @@ __webpack_require__.r(__webpack_exports__);
 
 
 const JobApplicationForm = () => {
-    const { t } = (0,react_i18next__WEBPACK_IMPORTED_MODULE_7__/* .useTranslation */ .Bd)();
-    const { jobId } = (0,react_router_dom__WEBPACK_IMPORTED_MODULE_8__/* .useParams */ .g)();
-    const navigate = (0,react_router_dom__WEBPACK_IMPORTED_MODULE_8__/* .useNavigate */ .Zp)();
-    const { currentUser } = (0,_contexts_AuthContext__WEBPACK_IMPORTED_MODULE_4__/* .useAuth */ .A)();
+    const { t } = (0,react_i18next__WEBPACK_IMPORTED_MODULE_8__/* .useTranslation */ .Bd)();
+    const { jobId } = (0,react_router_dom__WEBPACK_IMPORTED_MODULE_2__/* .useParams */ .g)();
+    const navigate = (0,react_router_dom__WEBPACK_IMPORTED_MODULE_2__/* .useNavigate */ .Zp)();
+    const { currentUser } = (0,_contexts_AuthContext__WEBPACK_IMPORTED_MODULE_5__/* .useAuth */ .A)();
     const [job, setJob] = (0,react__WEBPACK_IMPORTED_MODULE_1__.useState)(null);
     const [isLoading, setIsLoading] = (0,react__WEBPACK_IMPORTED_MODULE_1__.useState)(true);
     const [isSubmitting, setIsSubmitting] = (0,react__WEBPACK_IMPORTED_MODULE_1__.useState)(false);
@@ -54,7 +54,7 @@ const JobApplicationForm = () => {
     const loadJobDetails = async () => {
         try {
             setIsLoading(true);
-            const jobDoc = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__.getDoc)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_3__.db, 'jobPostings', jobId));
+            const jobDoc = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__.getDoc)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_4__.db, 'jobPostings', jobId));
             if (jobDoc.exists()) {
                 setJob({
                     id: jobDoc.id,
@@ -108,7 +108,7 @@ const JobApplicationForm = () => {
             // Upload resume if not already uploaded
             let resumeAttachment = null;
             if (formData.resumeFile && !formData.resumeUploaded) {
-                const uploadedResume = await _utilities_fileUploadService__WEBPACK_IMPORTED_MODULE_6__/* .FileUploadService */ .P.uploadFile(formData.resumeFile, userId, 'resume');
+                const uploadedResume = await _utilities_fileUploadService__WEBPACK_IMPORTED_MODULE_7__/* .FileUploadService */ .P.uploadFile(formData.resumeFile, userId, 'resume');
                 resumeAttachment = {
                     id: uploadedResume.id,
                     name: uploadedResume.name,
@@ -131,7 +131,7 @@ const JobApplicationForm = () => {
             // Upload attachments
             const uploadedAttachments = [];
             if (formData.attachments.length > 0) {
-                const uploadedFiles = await _utilities_fileUploadService__WEBPACK_IMPORTED_MODULE_6__/* .FileUploadService */ .P.uploadMultipleFiles(formData.attachments, userId, 'attachments');
+                const uploadedFiles = await _utilities_fileUploadService__WEBPACK_IMPORTED_MODULE_7__/* .FileUploadService */ .P.uploadMultipleFiles(formData.attachments, userId, 'attachments');
                 uploadedAttachments.push(...uploadedFiles);
             }
             // Add previously uploaded attachments
@@ -161,7 +161,7 @@ const JobApplicationForm = () => {
                 resumeId: resumeAttachment?.id || '',
                 attachments: allAttachments
             };
-            const applicationId = await _utilities_jobApplicationService__WEBPACK_IMPORTED_MODULE_5__/* .JobApplicationService */ .l.submitApplication(applicationData);
+            const applicationId = await _utilities_jobApplicationService__WEBPACK_IMPORTED_MODULE_6__/* .JobApplicationService */ .l.submitApplication(applicationData);
             setSuccess(true);
             // Redirect to success page after a short delay
             setTimeout(() => {

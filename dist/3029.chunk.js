@@ -101,11 +101,11 @@ var arrow_up_down = __webpack_require__(8645);
 // EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/building.js
 var building = __webpack_require__(1393);
 // EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/map-pin.js
-var map_pin = __webpack_require__(8450);
-// EXTERNAL MODULE: ./node_modules/react-router/dist/development/chunk-QMGIS6GS.mjs
-var chunk_QMGIS6GS = __webpack_require__(5788);
+var map_pin = __webpack_require__(6069);
+// EXTERNAL MODULE: ./node_modules/react-router-dom/dist/index.js
+var dist = __webpack_require__(4976);
 // EXTERNAL MODULE: ./node_modules/react-hot-toast/dist/index.mjs + 1 modules
-var dist = __webpack_require__(888);
+var react_hot_toast_dist = __webpack_require__(888);
 // EXTERNAL MODULE: ./node_modules/firebase/firestore/dist/esm/index.esm.js + 3 modules
 var index_esm = __webpack_require__(7594);
 // EXTERNAL MODULE: ./src/firebase.ts
@@ -189,7 +189,7 @@ const ApplicationDashboard = () => {
             }
             catch (error) {
                 console.error('Error fetching applications:', error);
-                dist/* toast */.oR.error('Failed to load applications');
+                react_hot_toast_dist/* toast */.oR.error('Failed to load applications');
             }
             finally {
                 setIsLoading(false);
@@ -260,7 +260,7 @@ const ApplicationDashboard = () => {
         };
         return colors[status] || 'bg-gray-100 text-gray-800';
     };
-    return ((0,jsx_runtime.jsx)("div", { className: "min-h-screen bg-gray-50 py-12 px-4 md:px-8", children: (0,jsx_runtime.jsxs)("div", { className: "max-w-7xl mx-auto", children: [(0,jsx_runtime.jsx)("div", { className: "mb-8", children: (0,jsx_runtime.jsxs)("div", { className: "flex items-center justify-between", children: [(0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h1", { className: "text-3xl font-light text-gray-900 mb-2", children: "Application Dashboard" }), (0,jsx_runtime.jsx)("p", { className: "text-gray-600", children: "Track and manage your job applications" })] }), (0,jsx_runtime.jsx)(chunk_QMGIS6GS/* Link */.N_, { to: "/applications/analytics", className: "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium", children: "View Analytics" })] }) }), (0,jsx_runtime.jsxs)("div", { className: "grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-8", children: [(0,jsx_runtime.jsxs)(Card/* default */.Ay, { variant: "elevated", className: "text-center p-4", children: [(0,jsx_runtime.jsx)("div", { className: "text-2xl font-bold text-gray-900", children: stats.total }), (0,jsx_runtime.jsx)("div", { className: "text-sm text-gray-600", children: "Total" })] }), (0,jsx_runtime.jsxs)(Card/* default */.Ay, { variant: "elevated", className: "text-center p-4", children: [(0,jsx_runtime.jsx)("div", { className: "text-2xl font-bold text-yellow-600", children: stats.pending }), (0,jsx_runtime.jsx)("div", { className: "text-sm text-gray-600", children: "Pending" })] }), (0,jsx_runtime.jsxs)(Card/* default */.Ay, { variant: "elevated", className: "text-center p-4", children: [(0,jsx_runtime.jsx)("div", { className: "text-2xl font-bold text-blue-600", children: stats.reviewed }), (0,jsx_runtime.jsx)("div", { className: "text-sm text-gray-600", children: "Reviewed" })] }), (0,jsx_runtime.jsxs)(Card/* default */.Ay, { variant: "elevated", className: "text-center p-4", children: [(0,jsx_runtime.jsx)("div", { className: "text-2xl font-bold text-purple-600", children: stats.shortlisted }), (0,jsx_runtime.jsx)("div", { className: "text-sm text-gray-600", children: "Shortlisted" })] }), (0,jsx_runtime.jsxs)(Card/* default */.Ay, { variant: "elevated", className: "text-center p-4", children: [(0,jsx_runtime.jsx)("div", { className: "text-2xl font-bold text-indigo-600", children: stats.interviewed }), (0,jsx_runtime.jsx)("div", { className: "text-sm text-gray-600", children: "Interviewed" })] }), (0,jsx_runtime.jsxs)(Card/* default */.Ay, { variant: "elevated", className: "text-center p-4", children: [(0,jsx_runtime.jsx)("div", { className: "text-2xl font-bold text-green-600", children: stats.hired }), (0,jsx_runtime.jsx)("div", { className: "text-sm text-gray-600", children: "Hired" })] }), (0,jsx_runtime.jsxs)(Card/* default */.Ay, { variant: "elevated", className: "text-center p-4", children: [(0,jsx_runtime.jsx)("div", { className: "text-2xl font-bold text-red-600", children: stats.rejected }), (0,jsx_runtime.jsx)("div", { className: "text-sm text-gray-600", children: "Rejected" })] }), (0,jsx_runtime.jsxs)(Card/* default */.Ay, { variant: "elevated", className: "text-center p-4", children: [(0,jsx_runtime.jsx)("div", { className: "text-2xl font-bold text-gray-600", children: stats.withdrawn }), (0,jsx_runtime.jsx)("div", { className: "text-sm text-gray-600", children: "Withdrawn" })] })] }), (0,jsx_runtime.jsx)(Card/* default */.Ay, { variant: "elevated", className: "mb-6", children: (0,jsx_runtime.jsx)(Card/* CardBody */.bw, { className: "p-6", children: (0,jsx_runtime.jsxs)("div", { className: "flex flex-col md:flex-row gap-4", children: [(0,jsx_runtime.jsx)("div", { className: "flex-1", children: (0,jsx_runtime.jsxs)("div", { className: "relative", children: [(0,jsx_runtime.jsx)(search/* default */.A, { className: "absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" }), (0,jsx_runtime.jsx)("input", { type: "text", placeholder: "Search jobs, companies, or locations...", value: searchTerm, onChange: (e) => setSearchTerm(e.target.value), className: "w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" })] }) }), (0,jsx_runtime.jsx)("div", { className: "w-full md:w-48", children: (0,jsx_runtime.jsx)(ui_Select, { value: statusFilter, onChange: (e) => setStatusFilter(e.target.value), options: [
+    return ((0,jsx_runtime.jsx)("div", { className: "min-h-screen bg-gray-50 py-12 px-4 md:px-8", children: (0,jsx_runtime.jsxs)("div", { className: "max-w-7xl mx-auto", children: [(0,jsx_runtime.jsx)("div", { className: "mb-8", children: (0,jsx_runtime.jsxs)("div", { className: "flex items-center justify-between", children: [(0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h1", { className: "text-3xl font-light text-gray-900 mb-2", children: "Application Dashboard" }), (0,jsx_runtime.jsx)("p", { className: "text-gray-600", children: "Track and manage your job applications" })] }), (0,jsx_runtime.jsx)(dist/* Link */.N_, { to: "/applications/analytics", className: "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium", children: "View Analytics" })] }) }), (0,jsx_runtime.jsxs)("div", { className: "grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-8", children: [(0,jsx_runtime.jsxs)(Card/* default */.Ay, { variant: "elevated", className: "text-center p-4", children: [(0,jsx_runtime.jsx)("div", { className: "text-2xl font-bold text-gray-900", children: stats.total }), (0,jsx_runtime.jsx)("div", { className: "text-sm text-gray-600", children: "Total" })] }), (0,jsx_runtime.jsxs)(Card/* default */.Ay, { variant: "elevated", className: "text-center p-4", children: [(0,jsx_runtime.jsx)("div", { className: "text-2xl font-bold text-yellow-600", children: stats.pending }), (0,jsx_runtime.jsx)("div", { className: "text-sm text-gray-600", children: "Pending" })] }), (0,jsx_runtime.jsxs)(Card/* default */.Ay, { variant: "elevated", className: "text-center p-4", children: [(0,jsx_runtime.jsx)("div", { className: "text-2xl font-bold text-blue-600", children: stats.reviewed }), (0,jsx_runtime.jsx)("div", { className: "text-sm text-gray-600", children: "Reviewed" })] }), (0,jsx_runtime.jsxs)(Card/* default */.Ay, { variant: "elevated", className: "text-center p-4", children: [(0,jsx_runtime.jsx)("div", { className: "text-2xl font-bold text-purple-600", children: stats.shortlisted }), (0,jsx_runtime.jsx)("div", { className: "text-sm text-gray-600", children: "Shortlisted" })] }), (0,jsx_runtime.jsxs)(Card/* default */.Ay, { variant: "elevated", className: "text-center p-4", children: [(0,jsx_runtime.jsx)("div", { className: "text-2xl font-bold text-indigo-600", children: stats.interviewed }), (0,jsx_runtime.jsx)("div", { className: "text-sm text-gray-600", children: "Interviewed" })] }), (0,jsx_runtime.jsxs)(Card/* default */.Ay, { variant: "elevated", className: "text-center p-4", children: [(0,jsx_runtime.jsx)("div", { className: "text-2xl font-bold text-green-600", children: stats.hired }), (0,jsx_runtime.jsx)("div", { className: "text-sm text-gray-600", children: "Hired" })] }), (0,jsx_runtime.jsxs)(Card/* default */.Ay, { variant: "elevated", className: "text-center p-4", children: [(0,jsx_runtime.jsx)("div", { className: "text-2xl font-bold text-red-600", children: stats.rejected }), (0,jsx_runtime.jsx)("div", { className: "text-sm text-gray-600", children: "Rejected" })] }), (0,jsx_runtime.jsxs)(Card/* default */.Ay, { variant: "elevated", className: "text-center p-4", children: [(0,jsx_runtime.jsx)("div", { className: "text-2xl font-bold text-gray-600", children: stats.withdrawn }), (0,jsx_runtime.jsx)("div", { className: "text-sm text-gray-600", children: "Withdrawn" })] })] }), (0,jsx_runtime.jsx)(Card/* default */.Ay, { variant: "elevated", className: "mb-6", children: (0,jsx_runtime.jsx)(Card/* CardBody */.bw, { className: "p-6", children: (0,jsx_runtime.jsxs)("div", { className: "flex flex-col md:flex-row gap-4", children: [(0,jsx_runtime.jsx)("div", { className: "flex-1", children: (0,jsx_runtime.jsxs)("div", { className: "relative", children: [(0,jsx_runtime.jsx)(search/* default */.A, { className: "absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" }), (0,jsx_runtime.jsx)("input", { type: "text", placeholder: "Search jobs, companies, or locations...", value: searchTerm, onChange: (e) => setSearchTerm(e.target.value), className: "w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" })] }) }), (0,jsx_runtime.jsx)("div", { className: "w-full md:w-48", children: (0,jsx_runtime.jsx)(ui_Select, { value: statusFilter, onChange: (e) => setStatusFilter(e.target.value), options: [
                                             { value: 'all', label: 'All Statuses' },
                                             { value: 'pending', label: 'Pending' },
                                             { value: 'reviewed', label: 'Reviewed' },
@@ -290,7 +290,7 @@ const ApplicationDashboard = () => {
                             notes: application.notes,
                             nextStep: application.interviewNotes
                         };
-                        return ((0,jsx_runtime.jsx)(Card/* default */.Ay, { variant: "elevated", hoverable: true, children: (0,jsx_runtime.jsxs)(Card/* CardBody */.bw, { className: "p-6", children: [(0,jsx_runtime.jsx)("div", { className: "flex items-start justify-between mb-4", children: (0,jsx_runtime.jsxs)("div", { className: "flex-1", children: [(0,jsx_runtime.jsx)(Card/* CardTitle */.ZB, { className: "text-lg font-medium text-gray-900 mb-2", children: (0,jsx_runtime.jsx)(chunk_QMGIS6GS/* Link */.N_, { to: job ? `/jobs/${job.id}` : '#', className: "hover:text-blue-600 transition-colors", children: job?.title || 'Untitled Job' }) }), (0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-4 text-sm text-gray-600 mb-3", children: [job?.companyName && ((0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-1", children: [(0,jsx_runtime.jsx)(building/* default */.A, { className: "w-4 h-4" }), (0,jsx_runtime.jsx)("span", { children: job.companyName })] })), job?.location && ((0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-1", children: [(0,jsx_runtime.jsx)(map_pin/* default */.A, { className: "w-4 h-4" }), (0,jsx_runtime.jsx)("span", { children: job.location })] }))] })] }) }), (0,jsx_runtime.jsx)(ApplicationStatusBadge/* default */.A, { status: enhancedStatus, showProgress: true, className: "mb-4" }), (0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-2 pt-4 border-t border-gray-100", children: [(0,jsx_runtime.jsx)(chunk_QMGIS6GS/* Link */.N_, { to: job ? `/jobs/${job.id}` : '#', className: "flex-1 px-3 py-2 text-sm bg-blue-600 text-white font-light rounded-lg hover:bg-blue-700 transition-colors text-center", children: "View Job" }), (0,jsx_runtime.jsx)(chunk_QMGIS6GS/* Link */.N_, { to: `/applications/${application.id}`, className: "flex-1 px-3 py-2 text-sm bg-gray-900 text-white font-light rounded-lg hover:bg-gray-800 transition-colors text-center", children: "View Application" })] })] }) }, application.id));
+                        return ((0,jsx_runtime.jsx)(Card/* default */.Ay, { variant: "elevated", hoverable: true, children: (0,jsx_runtime.jsxs)(Card/* CardBody */.bw, { className: "p-6", children: [(0,jsx_runtime.jsx)("div", { className: "flex items-start justify-between mb-4", children: (0,jsx_runtime.jsxs)("div", { className: "flex-1", children: [(0,jsx_runtime.jsx)(Card/* CardTitle */.ZB, { className: "text-lg font-medium text-gray-900 mb-2", children: (0,jsx_runtime.jsx)(dist/* Link */.N_, { to: job ? `/jobs/${job.id}` : '#', className: "hover:text-blue-600 transition-colors", children: job?.title || 'Untitled Job' }) }), (0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-4 text-sm text-gray-600 mb-3", children: [job?.companyName && ((0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-1", children: [(0,jsx_runtime.jsx)(building/* default */.A, { className: "w-4 h-4" }), (0,jsx_runtime.jsx)("span", { children: job.companyName })] })), job?.location && ((0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-1", children: [(0,jsx_runtime.jsx)(map_pin/* default */.A, { className: "w-4 h-4" }), (0,jsx_runtime.jsx)("span", { children: job.location })] }))] })] }) }), (0,jsx_runtime.jsx)(ApplicationStatusBadge/* default */.A, { status: enhancedStatus, showProgress: true, className: "mb-4" }), (0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-2 pt-4 border-t border-gray-100", children: [(0,jsx_runtime.jsx)(dist/* Link */.N_, { to: job ? `/jobs/${job.id}` : '#', className: "flex-1 px-3 py-2 text-sm bg-blue-600 text-white font-light rounded-lg hover:bg-blue-700 transition-colors text-center", children: "View Job" }), (0,jsx_runtime.jsx)(dist/* Link */.N_, { to: `/applications/${application.id}`, className: "flex-1 px-3 py-2 text-sm bg-gray-900 text-white font-light rounded-lg hover:bg-gray-800 transition-colors text-center", children: "View Application" })] })] }) }, application.id));
                     }) }))] }) }));
 };
 /* harmony default export */ const JobSearch_ApplicationDashboard = (ApplicationDashboard);
@@ -311,15 +311,15 @@ const ApplicationDashboard = () => {
 /* harmony export */ });
 /* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(4848);
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(6540);
-/* harmony import */ var framer_motion__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(3490);
-/* harmony import */ var clsx__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(4164);
+/* harmony import */ var framer_motion__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(7106);
+/* harmony import */ var clsx__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(4164);
 
 
 
 
 const Card = (0,react__WEBPACK_IMPORTED_MODULE_1__.forwardRef)(({ variant = 'elevated', hoverable = false, rounded = 'lg', shadow = 'md', padding = 'md', className = '', children, ...props }, ref) => {
     // Base card classes
-    const baseClasses = (0,clsx__WEBPACK_IMPORTED_MODULE_2__/* ["default"] */ .A)(
+    const baseClasses = (0,clsx__WEBPACK_IMPORTED_MODULE_3__/* ["default"] */ .A)(
     // Base styles
     'transition-all duration-200', 'overflow-hidden', 'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2', 
     // Variant styles
@@ -350,10 +350,10 @@ const Card = (0,react__WEBPACK_IMPORTED_MODULE_1__.forwardRef)(({ variant = 'ele
     };
     // Hover animation
     const hoverAnimation = hoverable ? { scale: 1.01 } : {};
-    return ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(framer_motion__WEBPACK_IMPORTED_MODULE_3__/* .motion */ .P.div, { ref: ref, className: baseClasses, initial: "hidden", animate: "visible", whileHover: hoverAnimation, variants: variants, ...props, children: children }));
+    return ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(framer_motion__WEBPACK_IMPORTED_MODULE_2__/* .motion */ .P.div, { ref: ref, className: baseClasses, initial: "hidden", animate: "visible", whileHover: hoverAnimation, variants: variants, ...props, children: children }));
 });
 Card.displayName = 'Card';
-const CardHeader = (0,react__WEBPACK_IMPORTED_MODULE_1__.forwardRef)(({ className = '', withBorder = true, children, ...props }, ref) => ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { ref: ref, className: (0,clsx__WEBPACK_IMPORTED_MODULE_2__/* ["default"] */ .A)('px-4 py-3', withBorder && 'border-b border-gray-100', className), ...props, children: children })));
+const CardHeader = (0,react__WEBPACK_IMPORTED_MODULE_1__.forwardRef)(({ className = '', withBorder = true, children, ...props }, ref) => ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { ref: ref, className: (0,clsx__WEBPACK_IMPORTED_MODULE_3__/* ["default"] */ .A)('px-4 py-3', withBorder && 'border-b border-gray-100', className), ...props, children: children })));
 CardHeader.displayName = 'CardHeader';
 const CardBody = (0,react__WEBPACK_IMPORTED_MODULE_1__.forwardRef)(({ className = '', padding = 'md', children, ...props }, ref) => {
     const paddingClass = {
@@ -362,14 +362,14 @@ const CardBody = (0,react__WEBPACK_IMPORTED_MODULE_1__.forwardRef)(({ className 
         md: 'p-4',
         lg: 'p-6',
     }[padding];
-    return ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { ref: ref, className: (0,clsx__WEBPACK_IMPORTED_MODULE_2__/* ["default"] */ .A)(paddingClass, className), ...props, children: children }));
+    return ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { ref: ref, className: (0,clsx__WEBPACK_IMPORTED_MODULE_3__/* ["default"] */ .A)(paddingClass, className), ...props, children: children }));
 });
 CardBody.displayName = 'CardBody';
-const CardFooter = (0,react__WEBPACK_IMPORTED_MODULE_1__.forwardRef)(({ className = '', withBorder = true, children, ...props }, ref) => ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { ref: ref, className: (0,clsx__WEBPACK_IMPORTED_MODULE_2__/* ["default"] */ .A)('px-4 py-3', withBorder && 'border-t border-gray-100', className), ...props, children: children })));
+const CardFooter = (0,react__WEBPACK_IMPORTED_MODULE_1__.forwardRef)(({ className = '', withBorder = true, children, ...props }, ref) => ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { ref: ref, className: (0,clsx__WEBPACK_IMPORTED_MODULE_3__/* ["default"] */ .A)('px-4 py-3', withBorder && 'border-t border-gray-100', className), ...props, children: children })));
 CardFooter.displayName = 'CardFooter';
-const CardTitle = (0,react__WEBPACK_IMPORTED_MODULE_1__.forwardRef)(({ as: Tag = 'h3', className = '', children, ...props }, ref) => ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(Tag, { ref: ref, className: (0,clsx__WEBPACK_IMPORTED_MODULE_2__/* ["default"] */ .A)('text-lg font-semibold text-gray-900', className), ...props, children: children })));
+const CardTitle = (0,react__WEBPACK_IMPORTED_MODULE_1__.forwardRef)(({ as: Tag = 'h3', className = '', children, ...props }, ref) => ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(Tag, { ref: ref, className: (0,clsx__WEBPACK_IMPORTED_MODULE_3__/* ["default"] */ .A)('text-lg font-semibold text-gray-900', className), ...props, children: children })));
 CardTitle.displayName = 'CardTitle';
-const CardDescription = (0,react__WEBPACK_IMPORTED_MODULE_1__.forwardRef)(({ className = '', children, ...props }, ref) => ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("p", { ref: ref, className: (0,clsx__WEBPACK_IMPORTED_MODULE_2__/* ["default"] */ .A)('text-sm text-gray-600 mt-1', className), ...props, children: children })));
+const CardDescription = (0,react__WEBPACK_IMPORTED_MODULE_1__.forwardRef)(({ className = '', children, ...props }, ref) => ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("p", { ref: ref, className: (0,clsx__WEBPACK_IMPORTED_MODULE_3__/* ["default"] */ .A)('text-sm text-gray-600 mt-1', className), ...props, children: children })));
 CardDescription.displayName = 'CardDescription';
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (Card);
 
@@ -383,63 +383,63 @@ CardDescription.displayName = 'CardDescription';
 /* harmony export */   A: () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
 /* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(4848);
-/* harmony import */ var lucide_react__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(7235);
-/* harmony import */ var lucide_react__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(7946);
-/* harmony import */ var lucide_react__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(7623);
-/* harmony import */ var lucide_react__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(7504);
-/* harmony import */ var lucide_react__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(4471);
-/* harmony import */ var lucide_react__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(180);
-/* harmony import */ var lucide_react__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(2307);
+/* harmony import */ var lucide_react__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(7946);
+/* harmony import */ var lucide_react__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(4471);
+/* harmony import */ var lucide_react__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(180);
+/* harmony import */ var lucide_react__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(2307);
+/* harmony import */ var lucide_react__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(7235);
+/* harmony import */ var lucide_react__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(7504);
+/* harmony import */ var lucide_react__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(7623);
 
 
 const statusConfig = {
     pending: {
         label: 'Pending Review',
         color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-        icon: lucide_react__WEBPACK_IMPORTED_MODULE_1__/* ["default"] */ .A,
+        icon: lucide_react__WEBPACK_IMPORTED_MODULE_5__/* ["default"] */ .A,
         progress: 0
     },
     reviewed: {
         label: 'Under Review',
         color: 'bg-blue-100 text-blue-800 border-blue-200',
-        icon: lucide_react__WEBPACK_IMPORTED_MODULE_2__/* ["default"] */ .A,
+        icon: lucide_react__WEBPACK_IMPORTED_MODULE_1__/* ["default"] */ .A,
         progress: 25
     },
     shortlisted: {
         label: 'Shortlisted',
         color: 'bg-purple-100 text-purple-800 border-purple-200',
-        icon: lucide_react__WEBPACK_IMPORTED_MODULE_3__/* ["default"] */ .A,
+        icon: lucide_react__WEBPACK_IMPORTED_MODULE_7__/* ["default"] */ .A,
         progress: 50
     },
     interviewed: {
         label: 'Interviewing',
         color: 'bg-indigo-100 text-indigo-800 border-indigo-200',
-        icon: lucide_react__WEBPACK_IMPORTED_MODULE_4__/* ["default"] */ .A,
+        icon: lucide_react__WEBPACK_IMPORTED_MODULE_6__/* ["default"] */ .A,
         progress: 75
     },
     hired: {
         label: 'Hired',
         color: 'bg-green-100 text-green-800 border-green-200',
-        icon: lucide_react__WEBPACK_IMPORTED_MODULE_5__/* ["default"] */ .A,
+        icon: lucide_react__WEBPACK_IMPORTED_MODULE_2__/* ["default"] */ .A,
         progress: 100
     },
     rejected: {
         label: 'Not Selected',
         color: 'bg-red-100 text-red-800 border-red-200',
-        icon: lucide_react__WEBPACK_IMPORTED_MODULE_6__/* ["default"] */ .A,
+        icon: lucide_react__WEBPACK_IMPORTED_MODULE_3__/* ["default"] */ .A,
         progress: 100
     },
     withdrawn: {
         label: 'Withdrawn',
         color: 'bg-gray-100 text-gray-800 border-gray-200',
-        icon: lucide_react__WEBPACK_IMPORTED_MODULE_6__/* ["default"] */ .A,
+        icon: lucide_react__WEBPACK_IMPORTED_MODULE_3__/* ["default"] */ .A,
         progress: 100
     }
 };
 const ApplicationStatusBadge = ({ status, showProgress = true, className = '' }) => {
     const config = statusConfig[status.status];
     const Icon = config.icon;
-    return ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: `space-y-2 ${className}`, children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: `inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border ${config.color}`, children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(Icon, { className: "w-3.5 h-3.5" }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("span", { children: config.label })] }), showProgress && ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "w-full", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "flex justify-between text-xs text-gray-500 mb-1", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("span", { children: "Progress" }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("span", { children: [config.progress, "%"] })] }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "w-full bg-gray-200 rounded-full h-2", children: (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out", style: { width: `${config.progress}%` } }) })] })), status.timeline && ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "text-xs text-gray-500 space-y-1", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "flex items-center gap-2", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(lucide_react__WEBPACK_IMPORTED_MODULE_7__/* ["default"] */ .A, { className: "w-3 h-3" }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("span", { children: ["Applied: ", status.timeline.applied.toLocaleDateString()] })] }), status.timeline.reviewed && ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "flex items-center gap-2", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(lucide_react__WEBPACK_IMPORTED_MODULE_2__/* ["default"] */ .A, { className: "w-3 h-3" }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("span", { children: ["Reviewed: ", status.timeline.reviewed.toLocaleDateString()] })] })), status.timeline.shortlisted && ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "flex items-center gap-2", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(lucide_react__WEBPACK_IMPORTED_MODULE_3__/* ["default"] */ .A, { className: "w-3 h-3" }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("span", { children: ["Shortlisted: ", status.timeline.shortlisted.toLocaleDateString()] })] })), status.timeline.interviewed && ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "flex items-center gap-2", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(lucide_react__WEBPACK_IMPORTED_MODULE_4__/* ["default"] */ .A, { className: "w-3 h-3" }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("span", { children: ["Interviewed: ", status.timeline.interviewed.toLocaleDateString()] })] })), status.timeline.decision && ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "flex items-center gap-2", children: [status.status === 'hired' ? ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(lucide_react__WEBPACK_IMPORTED_MODULE_5__/* ["default"] */ .A, { className: "w-3 h-3 text-green-600" })) : ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(lucide_react__WEBPACK_IMPORTED_MODULE_6__/* ["default"] */ .A, { className: "w-3 h-3 text-red-600" })), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("span", { children: ["Decision: ", status.timeline.decision.toLocaleDateString()] })] }))] })), status.nextStep && ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("strong", { children: "Next:" }), " ", status.nextStep] })), status.notes && ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded", children: status.notes }))] }));
+    return ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: `space-y-2 ${className}`, children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: `inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border ${config.color}`, children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(Icon, { className: "w-3.5 h-3.5" }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("span", { children: config.label })] }), showProgress && ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "w-full", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "flex justify-between text-xs text-gray-500 mb-1", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("span", { children: "Progress" }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("span", { children: [config.progress, "%"] })] }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "w-full bg-gray-200 rounded-full h-2", children: (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out", style: { width: `${config.progress}%` } }) })] })), status.timeline && ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "text-xs text-gray-500 space-y-1", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "flex items-center gap-2", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(lucide_react__WEBPACK_IMPORTED_MODULE_4__/* ["default"] */ .A, { className: "w-3 h-3" }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("span", { children: ["Applied: ", status.timeline.applied.toLocaleDateString()] })] }), status.timeline.reviewed && ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "flex items-center gap-2", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(lucide_react__WEBPACK_IMPORTED_MODULE_1__/* ["default"] */ .A, { className: "w-3 h-3" }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("span", { children: ["Reviewed: ", status.timeline.reviewed.toLocaleDateString()] })] })), status.timeline.shortlisted && ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "flex items-center gap-2", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(lucide_react__WEBPACK_IMPORTED_MODULE_7__/* ["default"] */ .A, { className: "w-3 h-3" }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("span", { children: ["Shortlisted: ", status.timeline.shortlisted.toLocaleDateString()] })] })), status.timeline.interviewed && ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "flex items-center gap-2", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(lucide_react__WEBPACK_IMPORTED_MODULE_6__/* ["default"] */ .A, { className: "w-3 h-3" }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("span", { children: ["Interviewed: ", status.timeline.interviewed.toLocaleDateString()] })] })), status.timeline.decision && ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "flex items-center gap-2", children: [status.status === 'hired' ? ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(lucide_react__WEBPACK_IMPORTED_MODULE_2__/* ["default"] */ .A, { className: "w-3 h-3 text-green-600" })) : ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(lucide_react__WEBPACK_IMPORTED_MODULE_3__/* ["default"] */ .A, { className: "w-3 h-3 text-red-600" })), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("span", { children: ["Decision: ", status.timeline.decision.toLocaleDateString()] })] }))] })), status.nextStep && ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded", children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("strong", { children: "Next:" }), " ", status.nextStep] })), status.notes && ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", { className: "text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded", children: status.notes }))] }));
 };
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (ApplicationStatusBadge);
 

@@ -20,8 +20,8 @@ var react = __webpack_require__(6540);
 var index_esm = __webpack_require__(7594);
 // EXTERNAL MODULE: ./src/firebase.ts
 var firebase = __webpack_require__(9487);
-// EXTERNAL MODULE: ./node_modules/react-router/dist/development/chunk-QMGIS6GS.mjs
-var chunk_QMGIS6GS = __webpack_require__(5788);
+// EXTERNAL MODULE: ./node_modules/react-router/dist/index.js
+var dist = __webpack_require__(7767);
 // EXTERNAL MODULE: ./src/components/ProjectCard.tsx + 1 modules
 var ProjectCard = __webpack_require__(1928);
 // EXTERNAL MODULE: ./node_modules/react-i18next/dist/es/index.js + 15 modules
@@ -143,7 +143,7 @@ const ProjectsPage = () => {
     const [loading, setLoading] = (0,react.useState)(true);
     const [error, setError] = (0,react.useState)(null);
     const [tab, setTab] = (0,react.useState)('all');
-    const navigate = (0,chunk_QMGIS6GS/* useNavigate */.Zp)();
+    const navigate = (0,dist/* useNavigate */.Zp)();
     const user = firebase/* auth */.j2.currentUser;
     (0,react.useEffect)(() => {
         const fetchProjects = async () => {
