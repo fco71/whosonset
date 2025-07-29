@@ -56,7 +56,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ authUser, userSignOut }) => {
                     <div className="px-4 py-2">
                         <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Quick Actions</h3>
                         <Link
-                            to="/projects/add"
+                            to="/projects/create"
                             className="block px-2 py-1 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors"
                             onClick={() => setIsOpen(false)}
                         >

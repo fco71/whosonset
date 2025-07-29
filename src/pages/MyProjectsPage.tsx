@@ -83,7 +83,7 @@ const MyProjectsPage: React.FC = () => {
             </p>
             <div className="mt-8">
               <button
-                onClick={() => navigate('/projects/add')}
+                onClick={() => navigate('/projects/create')}
                 className="btn-primary"
               >
                 {t('projects.createNewProject')}
@@ -100,7 +100,7 @@ const MyProjectsPage: React.FC = () => {
               <h3 className="heading-card mb-4">{t('myProjects.noProjects')}</h3>
               <p className="body-medium max-w-md mx-auto mb-8">{t('myProjects.createFirst')}</p>
               <button
-                onClick={() => navigate('/projects/add')}
+                onClick={() => navigate('/projects/create')}
                 className="btn-primary"
               >
                 {t('projects.createNewProject')}

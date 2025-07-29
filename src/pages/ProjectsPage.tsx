@@ -150,7 +150,7 @@ const ProjectsPage: React.FC = () => {
                 </button>
               )}
               <button
-                onClick={() => navigate('/projects/add')}
+                onClick={() => navigate('/projects/create')}
                 className="btn-primary ml-4"
               >
                 {t('projects.createNewProject')}

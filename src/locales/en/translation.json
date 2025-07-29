@@ -571,6 +571,9 @@
     "cancel": "Cancel",
     "saveChanges": "Save Changes",
     "saving": "Saving...",
+    "delete": "Delete Project",
+    "confirmDelete": "Are you sure you want to delete this project? This action cannot be undone.",
+    "deleteFailed": "Failed to delete project. Please try again.",
     "updateSuccess": "Project updated successfully!",
     "updateFailed": "Failed to update project.",
     "createProject": "Create Project",
@@ -607,7 +610,7 @@
     "untitledProject": "Untitled Project"
   },
   "projectDetail": {
-    "backToAllProjects": "← Back to All Projects",
+    "backToAllProjects": "Back to All Projects",
     "coverAlt": "Cover",
     "newCoverPreview": "New Cover Preview",
     "currentCover": "Current Cover",

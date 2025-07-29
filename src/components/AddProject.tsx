@@ -26,16 +26,24 @@ const COUNTRIES = [
   'Guyana', 'Suriname', 'French Guiana', 'Brazil', 'Ecuador', 'Peru', 'Bolivia', 'Paraguay', 'Uruguay', 'Argentina',
   'Chile', 'Cuba', 'Jamaica', 'Haiti', 'Dominican Republic', 'Puerto Rico', 'Bahamas', 'Trinidad and Tobago',
   'Barbados', 'Grenada', 'Saint Vincent and the Grenadines', 'Saint Lucia', 'Dominica', 'Antigua and Barbuda',
-  'Saint Kitts and Nevis', 'Cape Verde', 'São Tomé and Príncipe', 'Equatorial Guinea', 'Gabon', 'Congo', 'DR Congo',
-  'Central African Republic', 'Chad', 'Cameroon', 'Nigeria', 'Niger', 'Burkina Faso', 'Mali', 'Senegal', 'The Gambia',
-  'Guinea-Bissau', 'Guinea', 'Sierra Leone', 'Liberia', 'Ivory Coast', 'Ghana', 'Togo', 'Benin', 'Algeria', 'Tunisia',
-  'Libya', 'Egypt', 'Sudan', 'South Sudan', 'Ethiopia', 'Eritrea', 'Djibouti', 'Somalia', 'Kenya', 'Uganda', 'Tanzania',
-  'Rwanda', 'Burundi', 'DR Congo', 'Congo', 'Gabon', 'Equatorial Guinea', 'São Tomé and Príncipe', 'Cameroon',
-  'Central African Republic', 'Chad', 'Niger', 'Nigeria', 'Benin', 'Togo', 'Ghana', 'Ivory Coast', 'Liberia',
-  'Sierra Leone', 'Guinea', 'Guinea-Bissau', 'Senegal', 'The Gambia', 'Mauritania', 'Mali', 'Burkina Faso', 'Algeria',
-  'Tunisia', 'Libya', 'Morocco', 'Western Sahara', 'Angola', 'Zambia', 'Zimbabwe', 'Botswana', 'Namibia', 'South Africa',
-  'Lesotho', 'Eswatini', 'Mozambique', 'Madagascar', 'Comoros', 'Mauritius', 'Seychelles'
+  'Saint Kitts and Nevis', 'Cape Verde', 'São Tomé and Príncipe'
 ];
+
+const CITIES = {
+  'United States': ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Philadelphia', 'San Antonio', 'San Diego', 'Dallas', 'San Jose'],
+  'Canada': ['Toronto', 'Montreal', 'Vancouver', 'Calgary', 'Edmonton', 'Ottawa', 'Winnipeg', 'Quebec City', 'Hamilton', 'Kitchener'],
+  'United Kingdom': ['London', 'Birmingham', 'Manchester', 'Glasgow', 'Liverpool', 'Leeds', 'Sheffield', 'Edinburgh', 'Bristol', 'Cardiff'],
+  'Australia': ['Sydney', 'Melbourne', 'Brisbane', 'Perth', 'Adelaide', 'Gold Coast', 'Newcastle', 'Canberra', 'Sunshine Coast', 'Wollongong'],
+  'Germany': ['Berlin', 'Hamburg', 'Munich', 'Cologne', 'Frankfurt', 'Stuttgart', 'Düsseldorf', 'Dortmund', 'Essen', 'Leipzig'],
+  'France': ['Paris', 'Marseille', 'Lyon', 'Toulouse', 'Nice', 'Nantes', 'Strasbourg', 'Montpellier', 'Bordeaux', 'Lille'],
+  'Italy': ['Rome', 'Milan', 'Naples', 'Turin', 'Palermo', 'Genoa', 'Bologna', 'Florence', 'Bari', 'Catania'],
+  'Spain': ['Madrid', 'Barcelona', 'Valencia', 'Seville', 'Zaragoza', 'Málaga', 'Murcia', 'Palma', 'Las Palmas', 'Bilbao'],
+  'Netherlands': ['Amsterdam', 'Rotterdam', 'The Hague', 'Utrecht', 'Eindhoven', 'Tilburg', 'Groningen', 'Almere', 'Breda', 'Nijmegen'],
+  'Belgium': ['Brussels', 'Antwerp', 'Ghent', 'Charleroi', 'Liège', 'Bruges', 'Namur', 'Leuven', 'Mons', 'Aalst'],
+  'Mexico': ['Mexico City', 'Guadalajara', 'Monterrey', 'Puebla', 'Tijuana', 'Toluca', 'León', 'Juárez', 'Torreón', 'Querétaro'],
+  'Brazil': ['São Paulo', 'Rio de Janeiro', 'Brasília', 'Salvador', 'Fortaleza', 'Belo Horizonte', 'Manaus', 'Curitiba', 'Recife', 'Porto Alegre'],
+  'Argentina': ['Buenos Aires', 'Córdoba', 'Rosario', 'Mendoza', 'La Plata', 'Tucumán', 'Salta', 'Santa Fe', 'San Juan', 'Santiago del Estero']
+};
 
 interface ProductionLocation {
   country: string;
@@ -62,6 +70,7 @@ const AddProject: React.FC = () => {
   const [projectWebsite, setProjectWebsite] = useState('');
   const [productionBudget, setProductionBudget] = useState('');
   const [productionCompanyContact, setProductionCompanyContact] = useState('');
+  const [imageUploadComplete, setImageUploadComplete] = useState(false);
 
   const navigate = useNavigate();
   const [user, loading, error] = useAuthState(auth);
@@ -83,6 +92,10 @@ const AddProject: React.FC = () => {
     if (!user) {
       navigate('/login');
       return;
+    }
+    if (isCropping || imageUploading) {
+      e.preventDefault();
+      return; // Prevent submission during image operations
     }
     try {
       const legacyProjectId = projectName.trim().replace(/\s+/g, '_');
@@ -109,7 +122,7 @@ const AddProject: React.FC = () => {
         await updateDoc(projectRef, { coverImageUrl });
       }
       setIsCropping(false);
-      navigate('/');
+      navigate('/projects');
     } catch {
       setImageUploading(false);
       setIsCropping(false);
@@ -136,7 +149,10 @@ const AddProject: React.FC = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
                     <select
                       value={selectedCountry}
-                      onChange={(e) => setSelectedCountry(e.target.value)}
+                      onChange={(e) => {
+                        setSelectedCountry(e.target.value);
+                        setCityInput(''); // Clear city when country changes
+                      }}
                       className="w-full bg-white text-gray-900 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                     >
                       <option value="">Select a country...</option>
@@ -147,13 +163,26 @@ const AddProject: React.FC = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">City (Optional)</label>
-                    <input
-                      type="text"
-                      value={cityInput}
-                      onChange={(e) => setCityInput(e.target.value)}
-                      placeholder="Enter city"
-                      className="w-full bg-white text-gray-900 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                    />
+                    {selectedCountry && CITIES[selectedCountry as keyof typeof CITIES] ? (
+                      <select
+                        value={cityInput}
+                        onChange={(e) => setCityInput(e.target.value)}
+                        className="w-full bg-white text-gray-900 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                      >
+                        <option value="">Select a city...</option>
+                        {CITIES[selectedCountry as keyof typeof CITIES].map(city => (
+                          <option key={city} value={city}>{city}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type="text"
+                        value={cityInput}
+                        onChange={(e) => setCityInput(e.target.value)}
+                        placeholder="Enter city"
+                        className="w-full bg-white text-gray-900 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                      />
+                    )}
                   </div>
                 </div>
                 <button
@@ -213,7 +242,13 @@ const AddProject: React.FC = () => {
                 producer={producer}
                 setProducer={setProducer}
                 coverImageUrl={coverImageUrl}
-                setCoverImageUrl={setCoverImageUrl}
+                setCoverImageUrl={(url) => {
+                  setCoverImageUrl(url);
+                  setImageUploadComplete(true);
+                  setIsCropping(false);
+                  // Add a small delay to prevent any race conditions
+                  setTimeout(() => setImageUploadComplete(false), 100);
+                }}
                 projectWebsite={projectWebsite}
                 setProjectWebsite={setProjectWebsite}
                 productionBudget={productionBudget}
@@ -221,7 +256,10 @@ const AddProject: React.FC = () => {
                 productionCompanyContact={productionCompanyContact}
                 setProductionCompanyContact={setProductionCompanyContact}
                 onImageCropStart={() => setIsCropping(true)}
-                onImageCropCancel={() => setIsCropping(false)}
+                onImageCropCancel={() => {
+                  setIsCropping(false);
+                  setImageUploadComplete(false);
+                }}
               />
               <div className="flex flex-col sm:flex-row justify-end gap-4 pt-6 border-t border-gray-200">
                 <button
@@ -234,10 +272,10 @@ const AddProject: React.FC = () => {
                 <button
                   type="submit"
                   className="btn-primary"
-                  disabled={isCropping || !coverImageUrl}
-                  title={isCropping ? 'Please finish cropping the image' : !coverImageUrl ? 'Please upload a cover image' : ''}
+                  disabled={isCropping || imageUploading || imageUploadComplete}
+                  title={isCropping ? 'Please finish cropping the image' : imageUploading ? 'Please wait for image upload to complete' : imageUploadComplete ? 'Please wait...' : ''}
                 >
-                  {isCropping ? 'Cropping Image...' : !coverImageUrl ? 'Upload Cover Image' : 'Add Project'}
+                  {isCropping ? 'Cropping Image...' : imageUploading ? 'Uploading Image...' : imageUploadComplete ? 'Processing...' : 'Add Project'}
                 </button>
               </div>
               {(imageUploading || isCropping) && (

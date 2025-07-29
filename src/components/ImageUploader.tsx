@@ -22,6 +22,7 @@ interface ImageUploaderProps {
   maxHeight?: number;
   cropEnabled?: boolean;
   placeholder?: string;
+  projectName?: string; // For generating unique file names
 }
 
 const ImageUploader: React.FC<ImageUploaderProps> = ({
@@ -32,7 +33,8 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
   maxWidth = 800,
   maxHeight = 600,
   cropEnabled = true,
-  placeholder = "Upload Image"
+  placeholder = "Upload Image",
+  projectName = "project"
 }) => {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -136,26 +138,61 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
   };
 
   const onCropComplete = useCallback((crop: PixelCrop, percentageCrop: Crop) => {
-    setCroppedAreaPixels(crop);
+    if (crop.width > 0 && crop.height > 0) {
+      setCroppedAreaPixels(crop);
+    }
   }, []);
 
   const handleCropSave = async () => {
-    if (!imageSrc || !croppedAreaPixels) return;
-    setCropping(true);
+    if (!imageSrc) {
+      alert('No image selected.');
+      return;
+    }
+    
+    // Only set cropping state if user actually selected a crop area
+    const hasCropSelection = croppedAreaPixels && croppedAreaPixels.width > 0 && croppedAreaPixels.height > 0;
+    
+    if (hasCropSelection) {
+      setCropping(true);
+    }
     setUploading(false);
     setUploadProgress(0);
     setUploadSuccess(false);
+    
     try {
-      const croppedBlob = await getCroppedImg(imageSrc, croppedAreaPixels);
-      const croppedFile = new File([croppedBlob], 'cropped-image.jpg', { type: croppedBlob.type });
+      let croppedBlob: Blob;
+      
+      // If no crop area is selected, use the original file directly
+      if (!hasCropSelection) {
+        // Get the original file from the file input
+        const fileInput = fileInputRef.current;
+        if (fileInput && fileInput.files && fileInput.files[0]) {
+          croppedBlob = fileInput.files[0];
+        } else {
+          // Fallback: convert blob URL back to blob
+          const response = await fetch(imageSrc);
+          croppedBlob = await response.blob();
+        }
+      } else {
+        // Only crop if user actually selected an area
+        croppedBlob = await getCroppedImg(imageSrc, croppedAreaPixels);
+      }
+      
+      // Generate unique filename based on project name and timestamp
+      const timestamp = Date.now();
+      const sanitizedProjectName = projectName.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+      const fileName = `${sanitizedProjectName}-cover-${timestamp}.jpg`;
+      const croppedFile = new File([croppedBlob], fileName, { type: croppedBlob.type });
+      
       // Create preview URL for the cropped image
       const previewURL = URL.createObjectURL(croppedBlob);
       currentPreviewBlobRef.current = previewURL;
       setPreviewUrl(previewURL);
-      // Upload to Firebase Storage (legacy path: project-images/originalfilename)
+      
+      // Upload to Firebase Storage
       setUploading(true);
       const storage = getStorage(app);
-      const storagePath = `project-images/${croppedFile.name}`;
+      const storagePath = `project-images/${fileName}`;
       const storageRef = ref(storage, storagePath);
       const uploadTask = uploadBytesResumable(storageRef, croppedFile);
       uploadTask.on('state_changed',
@@ -166,6 +203,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
         (error) => {
           setUploading(false);
           setCropping(false);
+          setShowCrop(false);
           alert('Image upload failed: ' + error.message);
         },
         async () => {
@@ -178,6 +216,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
             alert('Failed to get download URL.');
           }
           setShowCrop(false);
+          setCropping(false);
           // Clean up the original imageSrc blob URL after successful upload
           if (currentImageBlobRef.current) {
             revokeBlobUrl(currentImageBlobRef.current);
@@ -189,6 +228,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
     } catch (err) {
       setCropping(false);
       setUploading(false);
+      setShowCrop(false);
       alert('Failed to crop image. Please try again.');
     }
   };
@@ -290,10 +330,10 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
                 </button>
                 <button
                   onClick={handleCropSave}
-                  className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                  className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
                   disabled={cropping || uploading}
                 >
-                  {cropping ? 'Preparing...' : uploading ? 'Uploading...' : uploadSuccess ? 'Uploaded!' : 'Save Crop'}
+                  {cropping ? 'Cropping...' : uploading ? 'Uploading...' : uploadSuccess ? 'Uploaded!' : 'Save Crop'}
                 </button>
               </div>
             </div>
@@ -314,9 +354,10 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
                 crop={crop}
                 onChange={(c) => setCrop(c)}
                 onComplete={onCropComplete}
-                aspect={aspectRatio}
-                minWidth={100}
-                minHeight={100}
+                aspect={undefined}
+                minWidth={50}
+                minHeight={50}
+                keepSelection
               >
                 <img
                   ref={imageRef}

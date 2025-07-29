@@ -156,6 +156,7 @@ const ProjectForm: React.FC<ProjectFormProps> = (props) => {
               onImageUploaded={props.setCoverImageUrl}
               onCropStart={props.onImageCropStart}
               onCropCancel={props.onImageCropCancel}
+              projectName={props.projectName}
             />
             {props.coverImageUrl && (
               <p className="text-sm text-green-600 mt-2">

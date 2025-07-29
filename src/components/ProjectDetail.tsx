@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { db, auth, storage } from '../firebase';
-import { doc, getDoc, updateDoc, collection, query, orderBy, startAfter, limit, getDocs, QueryDocumentSnapshot } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, deleteDoc, collection, query, orderBy, startAfter, limit, getDocs, QueryDocumentSnapshot } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -40,13 +40,7 @@ genres?: string[];
 ownerId?: string;
 }
 
-interface Review {
-id: string;
-author: string;
-content: string;
-createdAt: Date;
-projectId: string;
-}
+
 
 const LoadingSpinner: React.FC = () => <div className="text-white text-center mt-10 p-4">{useTranslation().t('common.loading')}</div>;
 
@@ -67,10 +61,7 @@ const ProjectDetail: React.FC = () => {
     // Track blob URL with ref for proper cleanup
     const coverImageBlobRef = useRef<string | null>(null);
     
-    const [reviews, setReviews] = useState<Review[]>([]);
-    const [lastVisibleReview, setLastVisibleReview] = useState<QueryDocumentSnapshot | null>(null);
-    const [prevReviewPages, setPrevReviewPages] = useState<QueryDocumentSnapshot[]>([]);
-    const [loadingReviews, setLoadingReviews] = useState(false);
+
 
     const [formState, setFormState] = useState<Partial<Project>>({});
 
@@ -134,59 +125,13 @@ const ProjectDetail: React.FC = () => {
         }
     }, [projectId]);
 
-    useEffect(() => {
-        if (projectId) {
-            fetchReviews('reset');
-        }
-    }, [projectId]);
+
 
     useEffect(() => {
         if (!isEditing) {
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }
-    }, [reviews, isEditing]);
-
-    const REVIEWS_PER_PAGE = 5;
-
-    const fetchReviews = async (direction: 'next' | 'prev' | 'reset' = 'reset') => {
-        if (!projectId) return;
-        setLoadingReviews(true);
-        try {
-            let q;
-            const reviewsCollection = collection(db, 'Projects', projectId, 'Reviews');
-            if (direction === 'next' && lastVisibleReview) {
-                q = query(reviewsCollection, orderBy('createdAt', 'desc'), startAfter(lastVisibleReview), limit(REVIEWS_PER_PAGE));
-            } else if (direction === 'prev') {
-                if (prevReviewPages.length <= 1) { setLoadingReviews(false); return; }
-                const newPrevPages = prevReviewPages.slice(0, -1);
-                const cursorForPrevPage = newPrevPages.length > 1 ? newPrevPages[newPrevPages.length - 2] : null;
-                q = cursorForPrevPage ? query(reviewsCollection, orderBy('createdAt', 'desc'), startAfter(cursorForPrevPage), limit(REVIEWS_PER_PAGE))
-                                      : query(reviewsCollection, orderBy('createdAt', 'desc'), limit(REVIEWS_PER_PAGE));
-                setPrevReviewPages(newPrevPages);
-            } else {
-                q = query(reviewsCollection, orderBy('createdAt', 'desc'), limit(REVIEWS_PER_PAGE));
-                setPrevReviewPages([]);
-            }
-            const snapshot = await getDocs(q);
-            const docs = snapshot.docs;
-            const fetchedReviews = docs.map((doc) => ({ id: doc.id, projectId: projectId, ...(doc.data() as Omit<Review, 'id' | 'createdAt' | 'projectId'>), createdAt: doc.data().createdAt?.toDate?.() || new Date() }));
-            setReviews(fetchedReviews);
-            const newLastVisible = docs.length > 0 ? docs[docs.length - 1] : null;
-            setLastVisibleReview(newLastVisible);
-            if (direction === 'next' && docs.length > 0) setPrevReviewPages((prev) => [...prev, docs[0]]);
-            else if (direction === 'reset' && docs.length > 0) setPrevReviewPages(docs[0] ? [docs[0]] : []);
-        } catch (err) {
-            if (err instanceof Error) {
-                console.error('Failed to fetch reviews:', err);
-                setError(err.message || 'Failed to fetch reviews.');
-            } else {
-                console.error('Failed to fetch reviews:', err);
-                setError('Failed to fetch reviews.');
-            }
-        } finally {
-            setLoadingReviews(false);
-        }
-    };
+    }, [isEditing]);
 
     const handleEditClick = () => {
         if (project) {
@@ -388,32 +333,40 @@ const ProjectDetail: React.FC = () => {
         window.location.href = `mailto:admin@example.com?subject=${subject}&body=${body}`; // Replace with your admin email
     };
 
-    const reviewSection = (
-        <section className="bg-gray-800 rounded-lg p-6 mt-10">
-            <h3 className="text-xl font-semibold text-white mb-4">{t('projectDetail.reviews')}</h3>
-            {loadingReviews && <p className="text-gray-400">{t('projectDetail.loadingReviews')}</p>}
-            {reviews.length === 0 && !loadingReviews ? (
-                <p className="text-gray-400">{t('projectDetail.noReviews')}</p>
-            ) : (
-                <ul className="space-y-4">
-                    {reviews.map((r) => (
-                        <li key={r.id} className="border-b border-gray-700 pb-4">
-                            <div className="flex justify-between items-center mb-2">
-                                <span className="font-medium text-white">{r.author}</span>
-                                <span className="text-sm text-gray-400">{r.createdAt.toLocaleDateString()}</span>
-                            </div>
-                            <p className="text-sm text-white">{r.content}</p>
-                        </li>
-                    ))}
-                </ul>
-            )}
-            <div className="mt-8 flex items-center justify-between gap-6">
-                <button onClick={() => fetchReviews('prev')} disabled={loadingReviews || prevReviewPages.length <= 1} className="px-4 py-2 rounded-md text-sm font-medium bg-gray-700 hover:bg-gray-600 text-white disabled:opacity-40">{t('projectDetail.previous')}</button>
-                <span className="text-gray-400 text-sm">{t('projectDetail.page')} {prevReviewPages.length || (reviews.length > 0 ? 1 : 0) }</span>
-                <button onClick={() => fetchReviews('next')} disabled={loadingReviews || reviews.length < REVIEWS_PER_PAGE} className="px-4 py-2 rounded-md text-sm font-medium bg-gray-700 hover:bg-gray-600 text-white disabled:opacity-40">{t('projectDetail.next')}</button>
-            </div>
-        </section>
-    );
+    const handleDeleteClick = async () => {
+        if (!project || !projectId) return;
+        
+        if (window.confirm(t('projectForm.confirmDelete'))) {
+            try {
+                // Delete the project document
+                await deleteDoc(doc(db, 'Projects', projectId));
+                
+                // Delete cover image if it exists
+                if (project.coverImageUrl) {
+                    try {
+                        // Extract the storage path from the download URL
+                        const url = new URL(project.coverImageUrl);
+                        const pathMatch = url.pathname.match(/\/o\/(.+?)\?/);
+                        if (pathMatch) {
+                            const storagePath = decodeURIComponent(pathMatch[1]);
+                            const imageRef = ref(storage, storagePath);
+                            await deleteObject(imageRef);
+                        }
+                    } catch (error) {
+                        console.error('Error deleting cover image:', error);
+                    }
+                }
+                
+                // Navigate back to projects page
+                navigate('/projects');
+            } catch (error) {
+                console.error('Error deleting project:', error);
+                alert(t('projectForm.deleteFailed'));
+            }
+        }
+    };
+
+
 
     // Cleanup blob URL when component unmounts or when coverImage changes
     useEffect(() => {
@@ -425,8 +378,8 @@ const ProjectDetail: React.FC = () => {
     }, []);
 
     return (
-        <div className="min-h-screen bg-gray-900 p-6">
-            <Link to="/" className="inline-block mb-6 text-blue-500 hover:text-blue-400 transition-colors">
+        <div className="min-h-screen bg-gray-50 p-6">
+            <Link to="/projects" className="inline-block mb-6 text-blue-600 hover:text-blue-700 transition-colors">
                 {t('projects.backToProjects')}
             </Link>
 
@@ -493,9 +446,14 @@ const ProjectDetail: React.FC = () => {
                             <div><label htmlFor="productionCompanyContact" className="block text-sm font-medium">{t('projectForm.companyContact')}</label><input type="text" id="productionCompanyContact" name="productionCompanyContact" value={formState.productionCompanyContact || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" /></div>
                         </div>
                     </div>
-                    <div className="pt-4 border-t mt-6 flex justify-end space-x-4">
-                        <button type="button" onClick={handleCancelClick} className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600" disabled={loading}>{t('projectForm.cancel')}</button>
-                        <button type="button" onClick={handleSaveClick} disabled={loading} className={`px-4 py-2 rounded text-white ${loading ? 'bg-green-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}>{loading ? t('projectForm.saving') : t('projectForm.saveChanges')}</button>
+                    <div className="pt-4 border-t mt-6 flex justify-between">
+                        <button type="button" onClick={handleDeleteClick} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded transition-colors">
+                            {t('projectForm.delete')}
+                        </button>
+                        <div className="flex space-x-4">
+                            <button type="button" onClick={handleCancelClick} className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600" disabled={loading}>{t('projectForm.cancel')}</button>
+                            <button type="button" onClick={handleSaveClick} disabled={loading} className={`px-4 py-2 rounded text-white ${loading ? 'bg-green-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}>{loading ? t('projectForm.saving') : t('projectForm.saveChanges')}</button>
+                        </div>
                     </div>
                 </form>
             ) : (
@@ -523,25 +481,16 @@ const ProjectDetail: React.FC = () => {
                             // If the edit button is handled *only* below, this prop might not be needed by ProjectShowcase.
                             onEditClick={handleEditClick}
                         />
-                        {reviewSection}
 
                         {/* MODIFICATION 2: Conditional Edit/Suggest Button */}
                         <div className="mt-10 text-center"> {/* Ensures buttons are centered */}
                             {currentUser && currentUser.uid === project.owner_uid ? (
-                                <div className="flex gap-4 justify-center">
-                                    <Link
-                                        to={`/projects/${projectId}/manage`}
-                                        className="px-5 py-2 bg-green-600 hover:bg-green-500 text-white rounded-md transition-colors"
-                                    >
-                                        {t('projects.manageProject')}
-                                    </Link>
-                                    <button
-                                        onClick={handleEditClick} // This will set isEditing to true
-                                        className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-md transition-colors"
-                                    >
-                                        {t('projects.editProject')}
-                                    </button>
-                                </div>
+                                <button
+                                    onClick={handleEditClick} // This will set isEditing to true
+                                    className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-md transition-colors"
+                                >
+                                    {t('projects.editProject')}
+                                </button>
                             ) : (
                                 <button
                                     onClick={handleSuggestClick}

@@ -267,7 +267,7 @@ const FormSelect = forwardRef<HTMLSelectElement, FormSelectProps>(({
         <select
           ref={ref}
           id={selectId}
-          className={clsx(selectClasses, 'appearance-none pr-8')}
+          className={clsx(selectClasses, 'w-full bg-white text-gray-900 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all')}
           onChange={handleChange}
           {...props}
         >
@@ -286,10 +286,6 @@ const FormSelect = forwardRef<HTMLSelectElement, FormSelectProps>(({
           </option>
         ))}
         </select>
-        {/* Custom dropdown arrow */}
-        <span className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-          <svg width="20" height="20" fill="none" viewBox="0 0 20 20"><path d="M7 8l3 3 3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-        </span>
       </div>
       
       {(error || helperText) && (

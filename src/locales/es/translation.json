@@ -571,6 +571,9 @@
     "cancel": "Cancelar",
     "saveChanges": "Guardar Cambios",
     "saving": "Guardando...",
+    "delete": "Eliminar Proyecto",
+    "confirmDelete": "¿Estás seguro de que quieres eliminar este proyecto? Esta acción no se puede deshacer.",
+    "deleteFailed": "Error al eliminar el proyecto. Por favor, inténtalo de nuevo.",
     "updateSuccess": "¡Proyecto actualizado exitosamente!",
     "updateFailed": "Error al actualizar proyecto.",
     "createProject": "Crear Proyecto",
@@ -607,7 +610,7 @@
     "untitledProject": "Proyecto Sin Título"
   },
   "projectDetail": {
-    "backToAllProjects": "← Volver a Todos los Proyectos",
+    "backToAllProjects": "Volver a Todos los Proyectos",
     "coverAlt": "Portada",
     "newCoverPreview": "Vista Previa de Nueva Portada",
     "currentCover": "Portada Actual",
