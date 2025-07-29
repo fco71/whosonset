@@ -347,6 +347,8 @@ const ProjectCard: React.FC<ProjectCardProps> = (props) => {
         <div className="flex-1">
           {/* Project Name (always visible, using CardTitle) */}
           <>
+            {/* Debug: log projectName to console */}
+            {(() => { console.log('ProjectCard projectName:', projectName); return null; })()}
             <div
               className="text-base font-medium mb-2 leading-tight truncate"
               title={projectName && projectName.trim() ? projectName : 'Untitled Project'}

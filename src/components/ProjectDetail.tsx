@@ -40,7 +40,13 @@ genres?: string[];
 ownerId?: string;
 }
 
-
+interface Review {
+id: string;
+author: string;
+content: string;
+createdAt: Date;
+projectId: string;
+}
 
 const LoadingSpinner: React.FC = () => <div className="text-white text-center mt-10 p-4">{useTranslation().t('common.loading')}</div>;
 
@@ -61,7 +67,10 @@ const ProjectDetail: React.FC = () => {
     // Track blob URL with ref for proper cleanup
     const coverImageBlobRef = useRef<string | null>(null);
     
-
+    const [reviews, setReviews] = useState<Review[]>([]);
+    const [lastVisibleReview, setLastVisibleReview] = useState<QueryDocumentSnapshot | null>(null);
+    const [prevReviewPages, setPrevReviewPages] = useState<QueryDocumentSnapshot[]>([]);
+    const [loadingReviews, setLoadingReviews] = useState(false);
 
     const [formState, setFormState] = useState<Partial<Project>>({});
 
@@ -125,13 +134,59 @@ const ProjectDetail: React.FC = () => {
         }
     }, [projectId]);
 
-
+    useEffect(() => {
+        if (projectId) {
+            fetchReviews('reset');
+        }
+    }, [projectId]);
 
     useEffect(() => {
         if (!isEditing) {
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }
-    }, [isEditing]);
+    }, [reviews, isEditing]);
+
+    const REVIEWS_PER_PAGE = 5;
+
+    const fetchReviews = async (direction: 'next' | 'prev' | 'reset' = 'reset') => {
+        if (!projectId) return;
+        setLoadingReviews(true);
+        try {
+            let q;
+            const reviewsCollection = collection(db, 'Projects', projectId, 'Reviews');
+            if (direction === 'next' && lastVisibleReview) {
+                q = query(reviewsCollection, orderBy('createdAt', 'desc'), startAfter(lastVisibleReview), limit(REVIEWS_PER_PAGE));
+            } else if (direction === 'prev') {
+                if (prevReviewPages.length <= 1) { setLoadingReviews(false); return; }
+                const newPrevPages = prevReviewPages.slice(0, -1);
+                const cursorForPrevPage = newPrevPages.length > 1 ? newPrevPages[newPrevPages.length - 2] : null;
+                q = cursorForPrevPage ? query(reviewsCollection, orderBy('createdAt', 'desc'), startAfter(cursorForPrevPage), limit(REVIEWS_PER_PAGE))
+                                      : query(reviewsCollection, orderBy('createdAt', 'desc'), limit(REVIEWS_PER_PAGE));
+                setPrevReviewPages(newPrevPages);
+            } else {
+                q = query(reviewsCollection, orderBy('createdAt', 'desc'), limit(REVIEWS_PER_PAGE));
+                setPrevReviewPages([]);
+            }
+            const snapshot = await getDocs(q);
+            const docs = snapshot.docs;
+            const fetchedReviews = docs.map((doc) => ({ id: doc.id, projectId: projectId, ...(doc.data() as Omit<Review, 'id' | 'createdAt' | 'projectId'>), createdAt: doc.data().createdAt?.toDate?.() || new Date() }));
+            setReviews(fetchedReviews);
+            const newLastVisible = docs.length > 0 ? docs[docs.length - 1] : null;
+            setLastVisibleReview(newLastVisible);
+            if (direction === 'next' && docs.length > 0) setPrevReviewPages((prev) => [...prev, docs[0]]);
+            else if (direction === 'reset' && docs.length > 0) setPrevReviewPages(docs[0] ? [docs[0]] : []);
+        } catch (err) {
+            if (err instanceof Error) {
+                console.error('Failed to fetch reviews:', err);
+                setError(err.message || 'Failed to fetch reviews.');
+            } else {
+                console.error('Failed to fetch reviews:', err);
+                setError('Failed to fetch reviews.');
+            }
+        } finally {
+            setLoadingReviews(false);
+        }
+    };
 
     const handleEditClick = () => {
         if (project) {
@@ -333,7 +388,32 @@ const ProjectDetail: React.FC = () => {
         window.location.href = `mailto:admin@example.com?subject=${subject}&body=${body}`; // Replace with your admin email
     };
 
-
+    const reviewSection = (
+        <section className="bg-gray-800 rounded-lg p-6 mt-10">
+            <h3 className="text-xl font-semibold text-white mb-4">{t('projectDetail.reviews')}</h3>
+            {loadingReviews && <p className="text-gray-400">{t('projectDetail.loadingReviews')}</p>}
+            {reviews.length === 0 && !loadingReviews ? (
+                <p className="text-gray-400">{t('projectDetail.noReviews')}</p>
+            ) : (
+                <ul className="space-y-4">
+                    {reviews.map((r) => (
+                        <li key={r.id} className="border-b border-gray-700 pb-4">
+                            <div className="flex justify-between items-center mb-2">
+                                <span className="font-medium text-white">{r.author}</span>
+                                <span className="text-sm text-gray-400">{r.createdAt.toLocaleDateString()}</span>
+                            </div>
+                            <p className="text-sm text-white">{r.content}</p>
+                        </li>
+                    ))}
+                </ul>
+            )}
+            <div className="mt-8 flex items-center justify-between gap-6">
+                <button onClick={() => fetchReviews('prev')} disabled={loadingReviews || prevReviewPages.length <= 1} className="px-4 py-2 rounded-md text-sm font-medium bg-gray-700 hover:bg-gray-600 text-white disabled:opacity-40">{t('projectDetail.previous')}</button>
+                <span className="text-gray-400 text-sm">{t('projectDetail.page')} {prevReviewPages.length || (reviews.length > 0 ? 1 : 0) }</span>
+                <button onClick={() => fetchReviews('next')} disabled={loadingReviews || reviews.length < REVIEWS_PER_PAGE} className="px-4 py-2 rounded-md text-sm font-medium bg-gray-700 hover:bg-gray-600 text-white disabled:opacity-40">{t('projectDetail.next')}</button>
+            </div>
+        </section>
+    );
 
     // Cleanup blob URL when component unmounts or when coverImage changes
     useEffect(() => {
@@ -345,9 +425,9 @@ const ProjectDetail: React.FC = () => {
     }, []);
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-white to-blue-50 p-6">
-            <Link to="/projects" className="inline-block mb-6 text-blue-600 hover:text-blue-700 transition-colors font-medium">
-                ← {t('projectDetail.backToAllProjects')}
+        <div className="min-h-screen bg-gray-900 p-6">
+            <Link to="/" className="inline-block mb-6 text-blue-500 hover:text-blue-400 transition-colors">
+                {t('projects.backToProjects')}
             </Link>
 
             {isEditing ? (
@@ -421,95 +501,59 @@ const ProjectDetail: React.FC = () => {
             ) : (
                 // --- DISPLAYING PROJECT DETAILS ---
                 loading && !project ? ( <LoadingSpinner /> ) :
-                error && !project ? ( <p className="text-gray-600 text-center mt-10">Error: {error}</p> ) :
+                error && !project ? ( <p className="text-white text-center mt-10">Error: {error}</p> ) :
                 project ? (
-                    <div className="max-w-4xl mx-auto py-12 bg-white rounded-2xl shadow-lg border border-gray-100">
-                        {/* Project Header */}
-                        <div className="px-8 py-6 border-b border-gray-100">
-                            <div className="flex items-center justify-between mb-4">
-                                <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
-                                    {project.projectName}
-                                </h1>
-                                <div className="flex items-center space-x-2">
-                                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                                        project.status === 'Development' ? 'bg-yellow-100 text-yellow-800' :
-                                        project.status === 'Pre-Production' ? 'bg-blue-100 text-blue-800' :
-                                        project.status === 'Production' ? 'bg-green-100 text-green-800' :
-                                        project.status === 'Post-Production' ? 'bg-purple-100 text-purple-800' :
-                                        project.status === 'Completed' ? 'bg-gray-100 text-gray-800' :
-                                        'bg-red-100 text-red-800'
-                                    }`}>
-                                        {project.status}
-                                    </span>
-                                </div>
-                            </div>
-                            
-                            {project.productionCompany && (
-                                <p className="text-lg text-gray-600 mb-2">
-                                    {project.productionCompany}
-                                </p>
-                            )}
-                            
-                            {project.genre && (
-                                <div className="flex items-center space-x-2">
-                                    <span className="text-sm text-gray-500">Genre:</span>
-                                    <span className="text-sm font-medium text-gray-700">{project.genre}</span>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Cover Image */}
+                    <div className="max-w-4xl mx-auto py-12">
+                        {/* MODIFICATION 1: Small, fixed-size cover image at the top */}
                         {project.coverImageUrl && (
-                            <div className="px-8 py-6">
+                            <div className="mb-6 flex justify-center"> {/* Centers the image container */}
                                 <img
                                     src={project.coverImageUrl}
                                     alt={`${project.projectName} ${t('projectDetail.coverAlt')}`}
-                                    className="w-full max-w-2xl mx-auto h-auto max-h-96 object-cover rounded-xl shadow-lg"
+                                    className="w-64 h-auto max-h-48 object-contain rounded-md shadow-lg"
                                     onError={imageErrorFallback}
                                 />
                             </div>
                         )}
 
-                        {/* Project Content */}
-                        <div className="px-8 py-6">
-                            <ProjectShowcase
-                                project={project}
-                                userId={currentUser?.uid}
-                                onEditClick={handleEditClick}
-                            />
+                        <ProjectShowcase
+                            project={project}
+                            userId={currentUser?.uid}
+                            // Pass onEditClick if ProjectShowcase itself renders an edit button for the owner.
+                            // If the edit button is handled *only* below, this prop might not be needed by ProjectShowcase.
+                            onEditClick={handleEditClick}
+                        />
+                        {reviewSection}
 
-                            {/* Action Buttons */}
-                            <div className="mt-8 pt-6 border-t border-gray-100">
-                                {currentUser && currentUser.uid === project.owner_uid ? (
-                                    <div className="flex gap-4 justify-center">
-                                        <Link
-                                            to={`/projects/${projectId}/manage`}
-                                            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg transition-all duration-200 font-medium shadow-md hover:shadow-lg"
-                                        >
-                                            {t('projects.manageProject')}
-                                        </Link>
-                                        <button
-                                            onClick={handleEditClick}
-                                            className="px-6 py-3 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white rounded-lg transition-all duration-200 font-medium shadow-md hover:shadow-lg"
-                                        >
-                                            {t('projects.editProject')}
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <div className="text-center">
-                                        <button
-                                            onClick={handleSuggestClick}
-                                            className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-lg transition-all duration-200 font-medium shadow-md hover:shadow-lg"
-                                        >
-                                            {t('projects.suggestUpdate')}
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
+                        {/* MODIFICATION 2: Conditional Edit/Suggest Button */}
+                        <div className="mt-10 text-center"> {/* Ensures buttons are centered */}
+                            {currentUser && currentUser.uid === project.owner_uid ? (
+                                <div className="flex gap-4 justify-center">
+                                    <Link
+                                        to={`/projects/${projectId}/manage`}
+                                        className="px-5 py-2 bg-green-600 hover:bg-green-500 text-white rounded-md transition-colors"
+                                    >
+                                        {t('projects.manageProject')}
+                                    </Link>
+                                    <button
+                                        onClick={handleEditClick} // This will set isEditing to true
+                                        className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-md transition-colors"
+                                    >
+                                        {t('projects.editProject')}
+                                    </button>
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={handleSuggestClick}
+                                    className="px-5 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md"
+                                >
+                                    {t('projects.suggestUpdate')}
+                                </button>
+                            )}
                         </div>
                     </div>
                 ) : (
-                    <div className="text-gray-600 text-center mt-10">{t('projects.projectNotFound')}</div>
+                    <div className="text-white text-center mt-10">{t('projects.projectNotFound')}</div>
                 )
             )}
         </div>

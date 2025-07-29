@@ -18,8 +18,6 @@ interface Project {
   genres?: string[];
   country?: string;
   productionLocations?: Array<{ country: string; city?: string }>;
-  startDate?: string;
-  endDate?: string;
   owner_uid?: string;
   isFavorite?: boolean;
 }
@@ -193,8 +191,6 @@ const ProjectsPage: React.FC = () => {
                     producer={project.producer}
                     coverImageUrl={project.coverImageUrl}
                     genres={project.genres}
-                    startDate={project.startDate}
-                    endDate={project.endDate}
                     showDetails={true}
                   />
                   {tab === 'mine' && user && project.owner_uid === user.uid && (
