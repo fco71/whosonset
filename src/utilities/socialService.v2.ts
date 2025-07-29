@@ -280,7 +280,7 @@ export class SocialService {
         .filter(profile => !followingIds.has(profile.id));
       
       // Shuffle and return the requested number of profiles
-      return this.shuffleArray(profiles).slice(0, limitCount);
+      return this.shuffleArray(profiles).slice(0, limitCount) as SocialUser[];
     } catch (error) {
       console.error('Error getting suggested users:', error);
       return [];
