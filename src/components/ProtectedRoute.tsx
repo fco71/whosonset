@@ -14,10 +14,17 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const { currentUser } = useAuth();
   const location = useLocation();
 
+  console.log('[ProtectedRoute] Checking access:', { 
+    pathname: location.pathname, 
+    hasUser: !!currentUser 
+  });
+
   if (!currentUser) {
+    console.log('[ProtectedRoute] Redirecting to:', redirectTo);
     return <Navigate to={redirectTo} state={{ from: location.pathname }} replace />;
   }
 
+  console.log('[ProtectedRoute] Allowing access to:', location.pathname);
   return <>{children}</>;
 };
 
@@ -32,9 +39,15 @@ export const PublicRoute: React.FC<PublicRouteProps> = ({
 }) => {
   const { currentUser } = useAuth();
   
+  console.log('[PublicRoute] Checking access:', { 
+    hasUser: !!currentUser 
+  });
+  
   if (currentUser) {
+    console.log('[PublicRoute] Redirecting to:', redirectTo);
     return <Navigate to={redirectTo} replace />;
   }
   
+  console.log('[PublicRoute] Allowing access');
   return <>{children}</>;
 }; 

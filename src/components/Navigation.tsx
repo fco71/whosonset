@@ -1,6 +1,6 @@
 // src/components/Navigation.tsx
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 interface NavigationProps {
     authUser: any;
@@ -8,38 +8,47 @@ interface NavigationProps {
 }
 
 const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
+    const location = useLocation();
+    
+    console.log('[Navigation] Current location:', location.pathname);
+    console.log('[Navigation] Auth user:', !!authUser);
+
+    const handleLinkClick = (path: string) => {
+        console.log('[Navigation] Link clicked:', path);
+    };
+
     return (
         <nav className="fixed top-0 left-0 w-full z-50 bg-white border-b border-gray-200">
             <div className="max-w-7xl mx-auto px-4 py-4">
                 <div className="flex items-center justify-between">
                     {/* Logo */}
-                    <Link to="/" className="text-xl font-bold">
+                    <Link to="/" className="text-xl font-bold" onClick={() => handleLinkClick('/')}>
                         WHOSONSET
                     </Link>
 
                     {/* Desktop Navigation */}
                     <div className="hidden md:flex items-center space-x-4">
-                        <Link to="/" className="px-4 py-2 text-gray-700 hover:text-gray-900">
+                        <Link to="/" className="px-4 py-2 text-gray-700 hover:text-gray-900" onClick={() => handleLinkClick('/')}>
                             Home
                         </Link>
-                        <Link to="/crew" className="px-4 py-2 text-gray-700 hover:text-gray-900">
+                        <Link to="/crew" className="px-4 py-2 text-gray-700 hover:text-gray-900" onClick={() => handleLinkClick('/crew')}>
                             Crew
                         </Link>
-                        <Link to="/jobs" className="px-4 py-2 text-gray-700 hover:text-gray-900">
+                        <Link to="/jobs" className="px-4 py-2 text-gray-700 hover:text-gray-900" onClick={() => handleLinkClick('/jobs')}>
                             Jobs
                         </Link>
-                        <Link to="/projects" className="px-4 py-2 text-gray-700 hover:text-gray-900">
+                        <Link to="/projects" className="px-4 py-2 text-gray-700 hover:text-gray-900" onClick={() => handleLinkClick('/projects')}>
                             Projects
                         </Link>
-                        <Link to="/collaboration" className="px-4 py-2 text-gray-700 hover:text-gray-900">
+                        <Link to="/collaboration" className="px-4 py-2 text-gray-700 hover:text-gray-900" onClick={() => handleLinkClick('/collaboration')}>
                             Collaboration
                         </Link>
                         {authUser && (
                             <>
-                                <Link to="/social" className="px-4 py-2 text-gray-700 hover:text-gray-900">
+                                <Link to="/social" className="px-4 py-2 text-gray-700 hover:text-gray-900" onClick={() => handleLinkClick('/social')}>
                                     Social
                                 </Link>
-                                <Link to="/edit-profile" className="px-4 py-2 text-gray-700 hover:text-gray-900">
+                                <Link to="/edit-profile" className="px-4 py-2 text-gray-700 hover:text-gray-900" onClick={() => handleLinkClick('/edit-profile')}>
                                     Resume Builder
                                 </Link>
                             </>
@@ -63,11 +72,13 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                                 <Link 
                                     to="/login" 
                                     className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+                                    onClick={() => handleLinkClick('/login')}
                                 >
                                     Sign In
                                 </Link>
                                 <button 
                                     onClick={() => {
+                                        console.log('[Navigation] Get Started button clicked');
                                         window.location.href = '/register';
                                     }}
                                     className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-sm hover:shadow-md"
