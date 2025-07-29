@@ -19,10 +19,13 @@ import {
   limit,
   getDoc,
   Timestamp,
-  DocumentData,
+  DocumentData as FirebaseDocumentData,
   QueryDocumentSnapshot,
   FieldValue
 } from "firebase/firestore";
+
+// Define DocumentData type for compatibility
+type DocumentData = FirebaseDocumentData;
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
