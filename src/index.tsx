@@ -6,9 +6,9 @@ import './styles/globals.css';
 import './i18n';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter as Router } from 'react-router-dom';
+import { RouterProvider } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
-import App from './App';
+import { createAppRouter } from './router';
 
 // Global handler for all <img> errors (for blob URLs)
 document.addEventListener(
@@ -37,9 +37,12 @@ window.addEventListener('unhandledrejection', function (e) {
   }
 });
 
+// Create router instance once
+const router = createAppRouter();
+
 const RootWithProvider = () => (
   <AuthProvider>
-    <App />
+    <RouterProvider router={router} />
   </AuthProvider>
 );
 
