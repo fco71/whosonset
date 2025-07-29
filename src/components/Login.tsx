@@ -69,6 +69,8 @@ const Login: React.FC = () => {
           ? t('auth.errors.popupClosed')
           : error.code === 'auth/popup-blocked'
           ? t('auth.errors.popupBlocked')
+          : error.message && error.message.includes('not enabled')
+          ? 'Google sign-in is not enabled. Please contact support.'
           : t('auth.errors.googleSignInError')
       );
     } finally {
@@ -91,6 +93,8 @@ const Login: React.FC = () => {
           ? t('auth.errors.popupClosed')
           : error.code === 'auth/popup-blocked'
           ? t('auth.errors.popupBlocked')
+          : error.message && error.message.includes('not enabled')
+          ? 'Apple sign-in is not enabled. Please contact support.'
           : t('auth.errors.appleSignInError')
       );
     } finally {
