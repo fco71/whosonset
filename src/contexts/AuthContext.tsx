@@ -5,7 +5,10 @@ import {
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   signOut,
-  updateProfile
+  updateProfile,
+  GoogleAuthProvider,
+  signInWithPopup,
+  OAuthProvider
 } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 
@@ -15,6 +18,8 @@ interface AuthContextType {
   userProfile: any | null;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, firstName?: string, lastName?: string) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
+  loginWithApple: () => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -39,6 +44,103 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (email: string, password: string) => {
     await signInWithEmailAndPassword(auth, email, password);
+  };
+
+  const loginWithGoogle = async () => {
+    try {
+      console.log('[AuthContext] Starting Google sign-in process');
+      
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      
+      console.log('[AuthContext] Google sign-in successful for:', user.email);
+      
+      // Check if user profile exists, if not create it
+      await createUserProfileIfNeeded(user);
+      
+    } catch (error) {
+      console.error('[AuthContext] Google sign-in error:', error);
+      throw error;
+    }
+  };
+
+  const loginWithApple = async () => {
+    try {
+      console.log('[AuthContext] Starting Apple sign-in process');
+      
+      const provider = new OAuthProvider('apple.com');
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      
+      console.log('[AuthContext] Apple sign-in successful for:', user.email);
+      
+      // Check if user profile exists, if not create it
+      await createUserProfileIfNeeded(user);
+      
+    } catch (error) {
+      console.error('[AuthContext] Apple sign-in error:', error);
+      throw error;
+    }
+  };
+
+  const createUserProfileIfNeeded = async (user: User) => {
+    try {
+      // Check if crew profile already exists
+      const crewProfileDoc = await getDoc(doc(db, 'crewProfiles', user.uid));
+      
+      if (!crewProfileDoc.exists()) {
+        console.log('[AuthContext] Creating crew profile for OAuth user');
+        
+        // Create display name from user info or email fallback
+        const displayName = user.displayName || user.email?.split('@')[0] || 'User';
+        
+        // Create crew profile
+        const crewProfileData = {
+          uid: user.uid,
+          name: displayName,
+          email: user.email,
+          bio: '',
+          profileImageUrl: user.photoURL || '/bust-avatar.svg',
+          username: user.email?.split('@')[0] || '',
+          jobTitles: [],
+          residences: [],
+          contactInfo: {
+            email: user.email || '',
+            phone: '',
+            website: '',
+            instagram: ''
+          },
+          languages: [],
+          projects: [],
+          education: [],
+          otherInfo: '',
+          availability: 'available',
+          isPublished: true,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        };
+        
+        await setDoc(doc(db, 'crewProfiles', user.uid), crewProfileData);
+        console.log('[AuthContext] Crew profile created for OAuth user');
+        
+        // Create user collections document
+        const userCollectionsData = {
+          savedProjects: [],
+          savedCrew: [],
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        };
+        
+        await setDoc(doc(db, 'UserCollections', user.uid), userCollectionsData);
+        console.log('[AuthContext] UserCollections document created for OAuth user');
+      } else {
+        console.log('[AuthContext] Crew profile already exists for OAuth user');
+      }
+    } catch (error) {
+      console.error('[AuthContext] Error creating user profile for OAuth:', error);
+      // Don't throw error here as the user is already signed in
+    }
   };
 
   const signup = async (email: string, password: string, firstName?: string, lastName?: string) => {
@@ -163,6 +265,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     userProfile,
     login,
     signup,
+    loginWithGoogle,
+    loginWithApple,
     logout
   };
 
