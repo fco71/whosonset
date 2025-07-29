@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { db, auth } from '../../firebase';
 import { Project } from '../../models/Project';
 import { ProjectCrew, ProjectBudget, ProjectTimeline, ProjectDocument } from '../../types/ProjectManagement';
@@ -10,13 +10,10 @@ import ProjectTimelineView from './ProjectTimelineView';
 import ProjectDocuments from './ProjectDocuments';
 import CollaborativeTasksHub from '../../components/CollaborativeTasks/CollaborativeTasksHub';
 
-interface ProjectDashboardProps {
-  projectId: string;
-}
-
 type TabType = 'overview' | 'crew' | 'budget' | 'timeline' | 'documents' | 'tasks';
 
-const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ projectId }) => {
+const ProjectDashboard: React.FC = () => {
+  const { projectId } = useParams<{ projectId: string }>();
   const [project, setProject] = useState<Project | null>(null);
   const [crew, setCrew] = useState<ProjectCrew[]>([]);
   const [budget, setBudget] = useState<ProjectBudget | null>(null);

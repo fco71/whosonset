@@ -17,6 +17,8 @@ interface Project {
   genres?: string[];
   country?: string;
   productionLocations?: Array<{ country: string; city?: string }>;
+  startDate?: string;
+  endDate?: string;
 }
 
 const MyProjectsPage: React.FC = () => {
@@ -122,6 +124,8 @@ const MyProjectsPage: React.FC = () => {
                     producer={project.producer}
                     coverImageUrl={project.coverImageUrl}
                     genres={project.genres}
+                    startDate={project.startDate}
+                    endDate={project.endDate}
                     showDetails={true}
                   />
                   <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">

@@ -203,6 +203,8 @@ const FavoritesPage: React.FC = () => {
                       producer={project.producer}
                       coverImageUrl={project.coverImageUrl}
                       genres={project.genres}
+                      startDate={project.startDate}
+                      endDate={project.endDate}
                       showDetails={true}
                       onBookmark={handleBookmark}
                       isBookmarked={true}

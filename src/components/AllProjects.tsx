@@ -30,6 +30,8 @@ interface Project {
   genres?: string[];
   country?: string;
   productionLocations?: Array<{ country: string; city?: string }>;
+  startDate?: string;
+  endDate?: string;
 }
 
 const PROJECTS_PER_PAGE = 48;
@@ -318,6 +320,8 @@ const AllProjects: React.FC = () => {
                       producer={project.producer}
                       coverImageUrl={project.coverImageUrl || project.photoURL || project.imageUrl}
                       genres={project.genres}
+                      startDate={project.startDate}
+                      endDate={project.endDate}
                       showDetails={true}
                       onBookmark={authUser ? handleBookmark : undefined}
                       isBookmarked={favoriteIds.includes(project.id)}

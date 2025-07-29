@@ -36,6 +36,7 @@ const ApplicationAnalytics = React.lazy(() => import('./components/JobSearch/App
 const JobPosterAnalytics = React.lazy(() => import('./components/JobSearch/JobPosterAnalytics'));
 const ProjectsPage = React.lazy(() => import('./pages/ProjectsPage'));
 const ProjectDetailPage = React.lazy(() => import('./pages/ProjectDetailPage'));
+const ProjectDashboard = React.lazy(() => import('./pages/ProjectManagement/ProjectDashboard'));
 
 // Import the main App component that will handle the layout
 import App from './App';
@@ -68,6 +69,14 @@ export function createAppRouter() {
           element: (
             <ProtectedRoute>
               <ProjectDetailPage />
+            </ProtectedRoute>
+          ) 
+        },
+        { 
+          path: 'projects/:projectId/manage', 
+          element: (
+            <ProtectedRoute>
+              <ProjectDashboard />
             </ProtectedRoute>
           ) 
         },

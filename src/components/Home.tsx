@@ -25,6 +25,8 @@ interface Project {
     synopsis: string;
     owner_uid: string;
     coverImageUrl: string;
+    startDate?: string;
+    endDate?: string;
 }
 
 const DEPARTMENT_OPTIONS = [
@@ -289,6 +291,8 @@ const Home: React.FC = () => {
                                                 status={project.status}
                                                 summary={project.synopsis}
                                                 coverImageUrl={project.coverImageUrl}
+                                                startDate={project.startDate}
+                                                endDate={project.endDate}
                                                 showDetails={false}
                                                 onBookmark={user ? handleBookmark : () => alert('Please log in to bookmark projects.')}
                                                 isBookmarked={favoriteIds.includes(project.id)}
