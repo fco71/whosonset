@@ -25,7 +25,6 @@ const HomePage: React.FC = () => {
   const [stats, setStats] = useState([
     { number: t('home.loading'), label: t('home.stats.activeProfessionals'), icon: <Users className="w-5 h-5" /> },
     { number: t('home.loading'), label: t('home.stats.projectsCompleted'), icon: <Film className="w-5 h-5" /> },
-    { number: t('home.loading'), label: t('home.stats.successRate'), icon: <TrendingUp className="w-5 h-5" /> },
     { number: t('home.loading'), label: t('home.stats.countries'), icon: <Globe className="w-5 h-5" /> }
   ]);
   const [loading, setLoading] = useState(true);
@@ -101,7 +100,6 @@ const HomePage: React.FC = () => {
         setStats([
           { number: `${crewCount}+`, label: t('home.stats.activeProfessionals'), icon: <Users className="w-5 h-5" /> },
           { number: `${projectsCount}+`, label: t('home.stats.projectsCompleted'), icon: <Film className="w-5 h-5" /> },
-          { number: `${successRate}%`, label: t('home.stats.successRate'), icon: <TrendingUp className="w-5 h-5" /> },
           { number: `${countries.size}+`, label: t('home.stats.countries'), icon: <Globe className="w-5 h-5" /> }
         ]);
       } catch (error) {
@@ -110,7 +108,6 @@ const HomePage: React.FC = () => {
         setStats([
           { number: '—', label: t('home.stats.activeProfessionals'), icon: <Users className="w-5 h-5" /> },
           { number: '—', label: t('home.stats.projectsCompleted'), icon: <Film className="w-5 h-5" /> },
-          { number: '—', label: t('home.stats.successRate'), icon: <TrendingUp className="w-5 h-5" /> },
           { number: '—', label: t('home.stats.countries'), icon: <Globe className="w-5 h-5" /> }
         ]);
       }
@@ -173,7 +170,7 @@ const HomePage: React.FC = () => {
             </div>
 
             {/* Stats Section */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 max-w-5xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 max-w-4xl mx-auto">
               {stats.map((stat, index) => (
                 <div key={index} className="text-center p-6 bg-white/60 backdrop-blur-sm rounded-xl border border-gray-100 hover:bg-white/80 transition-all duration-300">
                   <div className="flex justify-center mb-2 text-blue-600">
