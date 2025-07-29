@@ -9,12 +9,41 @@ interface NavigationProps {
 
 const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
     const location = useLocation();
-    
-    console.log('[Navigation] Current location:', location.pathname);
-    console.log('[Navigation] Auth user:', !!authUser);
 
-    const handleLinkClick = (path: string) => {
-        console.log('[Navigation] Link clicked:', path);
+    // Function to get user initials from email or display name
+    const getUserInitials = (user: any) => {
+        if (user?.displayName) {
+            const names = user.displayName.split(' ');
+            if (names.length >= 2) {
+                return `${names[0][0]}${names[1][0]}`.toUpperCase();
+            }
+            return names[0][0].toUpperCase();
+        }
+        
+        if (user?.email) {
+            const emailName = user.email.split('@')[0];
+            if (emailName.length >= 2) {
+                return emailName.substring(0, 2).toUpperCase();
+            }
+            return emailName[0].toUpperCase();
+        }
+        
+        return 'U';
+    };
+
+    // Function to get user display name
+    const getUserDisplayName = (user: any) => {
+        if (user?.displayName) {
+            return user.displayName;
+        }
+        
+        if (user?.email) {
+            const emailName = user.email.split('@')[0];
+            // Capitalize first letter and limit length
+            return emailName.charAt(0).toUpperCase() + emailName.slice(1, 12);
+        }
+        
+        return 'User';
     };
 
     return (
@@ -22,33 +51,33 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
             <div className="max-w-7xl mx-auto px-4 py-4">
                 <div className="flex items-center justify-between">
                     {/* Logo */}
-                    <Link to="/" className="text-xl font-bold" onClick={() => handleLinkClick('/')}>
+                    <Link to="/" className="text-xl font-bold">
                         WHOSONSET
                     </Link>
 
                     {/* Desktop Navigation */}
                     <div className="hidden md:flex items-center space-x-4">
-                        <Link to="/" className="px-4 py-2 text-gray-700 hover:text-gray-900" onClick={() => handleLinkClick('/')}>
+                        <Link to="/" className="px-4 py-2 text-gray-700 hover:text-gray-900">
                             Home
                         </Link>
-                        <Link to="/crew" className="px-4 py-2 text-gray-700 hover:text-gray-900" onClick={() => handleLinkClick('/crew')}>
+                        <Link to="/crew" className="px-4 py-2 text-gray-700 hover:text-gray-900">
                             Crew
                         </Link>
-                        <Link to="/jobs" className="px-4 py-2 text-gray-700 hover:text-gray-900" onClick={() => handleLinkClick('/jobs')}>
+                        <Link to="/jobs" className="px-4 py-2 text-gray-700 hover:text-gray-900">
                             Jobs
                         </Link>
-                        <Link to="/projects" className="px-4 py-2 text-gray-700 hover:text-gray-900" onClick={() => handleLinkClick('/projects')}>
+                        <Link to="/projects" className="px-4 py-2 text-gray-700 hover:text-gray-900">
                             Projects
                         </Link>
-                        <Link to="/collaboration" className="px-4 py-2 text-gray-700 hover:text-gray-900" onClick={() => handleLinkClick('/collaboration')}>
+                        <Link to="/collaboration" className="px-4 py-2 text-gray-700 hover:text-gray-900">
                             Collaboration
                         </Link>
                         {authUser && (
                             <>
-                                <Link to="/social" className="px-4 py-2 text-gray-700 hover:text-gray-900" onClick={() => handleLinkClick('/social')}>
+                                <Link to="/social" className="px-4 py-2 text-gray-700 hover:text-gray-900">
                                     Social
                                 </Link>
-                                <Link to="/edit-profile" className="px-4 py-2 text-gray-700 hover:text-gray-900" onClick={() => handleLinkClick('/edit-profile')}>
+                                <Link to="/edit-profile" className="px-4 py-2 text-gray-700 hover:text-gray-900">
                                     Resume Builder
                                 </Link>
                             </>
@@ -58,11 +87,21 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                     {/* Right side actions */}
                     <div className="flex items-center space-x-3">
                         {authUser ? (
-                            <div className="flex items-center space-x-2">
-                                <span className="text-sm text-gray-700">{authUser.email}</span>
+                            <div className="flex items-center space-x-3">
+                                {/* User Avatar and Name */}
+                                <div className="flex items-center space-x-2">
+                                    <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-sm font-medium shadow-sm">
+                                        {getUserInitials(authUser)}
+                                    </div>
+                                    <span className="text-sm font-medium text-gray-700 hidden sm:block">
+                                        {getUserDisplayName(authUser)}
+                                    </span>
+                                </div>
+                                
+                                {/* Sign Out Button */}
                                 <button 
                                     onClick={userSignOut}
-                                    className="px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                    className="px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 rounded-md transition-colors"
                                 >
                                     Sign Out
                                 </button>
@@ -72,13 +111,11 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                                 <Link 
                                     to="/login" 
                                     className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
-                                    onClick={() => handleLinkClick('/login')}
                                 >
                                     Sign In
                                 </Link>
                                 <button 
                                     onClick={() => {
-                                        console.log('[Navigation] Get Started button clicked');
                                         window.location.href = '/register';
                                     }}
                                     className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-sm hover:shadow-md"
