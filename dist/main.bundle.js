@@ -1286,6 +1286,7 @@ const ApplicationDashboard = react.lazy(() => Promise.all(/* import() */[__webpa
 const ApplicationAnalytics = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(6093), __webpack_require__.e(4873)]).then(__webpack_require__.bind(__webpack_require__, 4873)));
 const JobPosterAnalytics = react.lazy(() => __webpack_require__.e(/* import() */ 4493).then(__webpack_require__.bind(__webpack_require__, 4493)));
 const ProjectsPage = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(1928), __webpack_require__.e(1263)]).then(__webpack_require__.bind(__webpack_require__, 1263)));
+const ProjectDetailPage = react.lazy(() => __webpack_require__.e(/* import() */ 7949).then(__webpack_require__.bind(__webpack_require__, 7949)));
 // Import the main App component that will handle the layout
 
 function createAppRouter() {
@@ -1302,6 +1303,10 @@ function createAppRouter() {
                 {
                     path: 'projects',
                     element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(ProjectsPage, {}) }))
+                },
+                {
+                    path: 'projects/:projectId',
+                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(ProjectDetailPage, {}) }))
                 },
                 {
                     path: 'login',
