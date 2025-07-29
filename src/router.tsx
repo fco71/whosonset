@@ -46,8 +46,22 @@ export function createAppRouter() {
       element: <App />,
       children: [
         { index: true, element: <HomePage /> },
-        { path: 'crew', element: <ProducerView /> },
-        { path: 'projects', element: <ProjectsPage /> },
+        { 
+          path: 'crew', 
+          element: (
+            <ProtectedRoute>
+              <ProducerView />
+            </ProtectedRoute>
+          ) 
+        },
+        { 
+          path: 'projects', 
+          element: (
+            <ProtectedRoute>
+              <ProjectsPage />
+            </ProtectedRoute>
+          ) 
+        },
         { 
           path: 'login', 
           element: (
@@ -137,8 +151,22 @@ export function createAppRouter() {
           ) 
         },
         { path: 'resume/:uid', element: <PublicResumePage /> },
-        { path: 'jobs', element: <JobsPage /> },
-        { path: 'jobs/:jobId', element: <JobDetailPage /> },
+        { 
+          path: 'jobs', 
+          element: (
+            <ProtectedRoute>
+              <JobsPage />
+            </ProtectedRoute>
+          ) 
+        },
+        { 
+          path: 'jobs/:jobId', 
+          element: (
+            <ProtectedRoute>
+              <JobDetailPage />
+            </ProtectedRoute>
+          ) 
+        },
         { 
           path: 'jobs/:jobId/apply', 
           element: (

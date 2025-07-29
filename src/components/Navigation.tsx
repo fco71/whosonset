@@ -114,7 +114,7 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                         >
                             <div className="relative">
                                 <div className="text-2xl font-bold bg-gradient-to-r from-gray-900 via-gray-700 to-gray-900 bg-clip-text text-transparent tracking-tight">
-                                    WHOSONSET
+                                    My Film Jobs
                                 </div>
                                 <div className="absolute -inset-1 bg-gradient-to-r from-blue-600/10 to-purple-600/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-sm -z-10"></div>
                             </div>
