@@ -364,17 +364,17 @@ const ProjectCard: React.FC<ProjectCardProps> = (props) => {
             onClick={handleBookmarkClick}
             className={`absolute top-2 right-2 z-10 p-1.5 rounded-full transition-all duration-200 ${
               isBookmarked 
-                ? 'bg-blue-500/90 hover:bg-blue-600/90 shadow-md' 
-                : 'bg-white/30 hover:bg-white/60 shadow-sm hover:shadow-md'
+                ? 'bg-blue-500/20 hover:bg-blue-500/30 shadow-sm' 
+                : 'bg-white/10 hover:bg-white/20 shadow-sm'
             }`}
             title={isBookmarked ? t('projectCard.removeBookmark') : t('projectCard.addBookmark')}
             style={{ pointerEvents: 'auto' }}
             data-testid="bookmark-button"
           >
             {isBookmarked ? (
-              <BookmarkCheck size={14} className="text-white" />
+              <BookmarkCheck size={16} className="text-blue-600 fill-current" />
             ) : (
-              <Bookmark size={14} className="text-gray-700 hover:text-blue-600" />
+              <Bookmark size={16} className="text-gray-600 hover:text-blue-500" />
             )}
           </button>
         )}
