@@ -1,112 +1,104 @@
-import { collection, doc, setDoc, deleteDoc, getDocs, query, where, orderBy } from 'firebase/firestore';
+import { collection, doc, setDoc, deleteDoc, getDoc, getDocs, query, where, orderBy } from 'firebase/firestore';
 import { db, auth } from '../firebase';
-import { CrewProfile } from '../types/CrewProfile';
 
-export interface FavoriteCrewProfile {
+export interface FavoriteCrew {
   id: string;
-  crewId: string;
   userId: string;
+  crewId: string;
+  crewName: string;
+  jobTitle?: string;
+  location?: string;
+  profileImageUrl?: string;
   addedAt: Date;
-  crewData?: {
-    name: string;
-    profileImageUrl?: string;
-    jobTitles?: string[];
-    residences?: string[];
-    availability?: string;
-  };
 }
 
 export class CrewFavoritesService {
   private static COLLECTION_NAME = 'crewFavorites';
 
-  /**
-   * Add a crew profile to user's favorites
-   */
-  static async addToFavorites(crewId: string, crewData?: CrewProfile): Promise<void> {
+  static async addToFavorites(crewId: string, crewData: {
+    crewName: string;
+    jobTitle?: string;
+    location?: string;
+    profileImageUrl?: string;
+  }): Promise<void> {
     const user = auth.currentUser;
-    if (!user) {
-      throw new Error('User must be authenticated to add favorites');
-    }
-    const favoriteData: FavoriteCrewProfile = {
-      id: `${user.uid}_${crewId}`,
-      crewId,
+    if (!user) throw new Error('User not authenticated');
+
+    const favoriteId = `${user.uid}_${crewId}`;
+    const favoriteData = {
       userId: user.uid,
-      addedAt: new Date(),
-      crewData: crewData ? {
-        name: crewData.name,
-        profileImageUrl: crewData.profileImageUrl,
-        jobTitles: crewData.jobTitles?.map(jt => jt.title),
-        residences: crewData.residences?.map(r => `${r.city}, ${r.country}`),
-        availability: crewData.availability,
-      } : undefined
+      crewId,
+      crewName: crewData.crewName,
+      jobTitle: crewData.jobTitle,
+      location: crewData.location,
+      profileImageUrl: crewData.profileImageUrl,
+      addedAt: new Date()
     };
-    await setDoc(doc(db, this.COLLECTION_NAME, favoriteData.id), favoriteData);
+
+    await setDoc(doc(db, this.COLLECTION_NAME, favoriteId), favoriteData);
   }
 
-  /**
-   * Remove a crew profile from user's favorites
-   */
   static async removeFromFavorites(crewId: string): Promise<void> {
     const user = auth.currentUser;
-    if (!user) {
-      throw new Error('User must be authenticated to remove favorites');
-    }
+    if (!user) throw new Error('User not authenticated');
+
     const favoriteId = `${user.uid}_${crewId}`;
     await deleteDoc(doc(db, this.COLLECTION_NAME, favoriteId));
   }
 
-  /**
-   * Check if a crew profile is in user's favorites
-   */
   static async isFavorite(crewId: string): Promise<boolean> {
     const user = auth.currentUser;
     if (!user) return false;
-    const favoriteId = `${user.uid}_${crewId}`;
-    const favoriteDoc = await getDocs(query(
-      collection(db, this.COLLECTION_NAME),
-      where('id', '==', favoriteId)
-    ));
-    return !favoriteDoc.empty;
+
+    try {
+      const favoriteId = `${user.uid}_${crewId}`;
+      const favoriteDoc = await getDoc(doc(db, this.COLLECTION_NAME, favoriteId));
+      return favoriteDoc.exists();
+    } catch (error) {
+      console.error('Error checking if crew is favorite:', error);
+      return false;
+    }
   }
 
-  /**
-   * Get all user's favorite crew profiles
-   */
-  static async getFavorites(): Promise<FavoriteCrewProfile[]> {
+  static async getFavorites(): Promise<FavoriteCrew[]> {
     const user = auth.currentUser;
     if (!user) return [];
-    const favoritesQuery = query(
-      collection(db, this.COLLECTION_NAME),
-      where('userId', '==', user.uid),
-      orderBy('addedAt', 'asc'),
-      orderBy('__name__', 'asc')
-    );
-    const snapshot = await getDocs(favoritesQuery);
-    return snapshot.docs.map(doc => ({
-      ...doc.data(),
-      addedAt: doc.data().addedAt.toDate()
-    } as FavoriteCrewProfile));
+
+    try {
+      const favoritesQuery = query(
+        collection(db, this.COLLECTION_NAME),
+        where('userId', '==', user.uid),
+        orderBy('addedAt', 'asc')
+      );
+      const snapshot = await getDocs(favoritesQuery);
+      
+      return snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          ...data,
+          addedAt: data.addedAt?.toDate ? data.addedAt.toDate() : data.addedAt
+        } as FavoriteCrew;
+      });
+    } catch (error) {
+      console.error('Error getting crew favorites:', error);
+      return [];
+    }
   }
 
-  /**
-   * Get favorite crew profile IDs for a user
-   */
   static async getFavoriteCrewIds(): Promise<string[]> {
-    const favorites = await this.getFavorites();
-    return favorites.map(fav => fav.crewId);
-  }
+    const user = auth.currentUser;
+    if (!user) return [];
 
-  /**
-   * Toggle favorite status
-   */
-  static async toggleFavorite(crewId: string, crewData?: CrewProfile): Promise<boolean> {
-    const isCurrentlyFavorite = await this.isFavorite(crewId);
-    if (isCurrentlyFavorite) {
-      await this.removeFromFavorites(crewId);
-      return false;
-    } else {
-      await this.addToFavorites(crewId, crewData);
-      return true;
+    try {
+      const favoritesQuery = query(
+        collection(db, this.COLLECTION_NAME),
+        where('userId', '==', user.uid)
+      );
+      const snapshot = await getDocs(favoritesQuery);
+      return snapshot.docs.map(doc => doc.data().crewId);
+    } catch (error) {
+      console.error('Error getting favorite crew IDs:', error);
+      return [];
     }
   }
 }

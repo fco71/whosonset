@@ -29,8 +29,21 @@ const CrewProfileHeader: React.FC<CrewProfileHeaderProps> = ({ profile }) => {
     if (!currentUser) return;
     setBookmarking(true);
     try {
-      const newStatus = await CrewFavoritesService.toggleFavorite(profile.uid, profile);
-      setIsBookmarked(newStatus);
+      if (isBookmarked) {
+        await CrewFavoritesService.removeFromFavorites(profile.uid);
+        setIsBookmarked(false);
+      } else {
+        await CrewFavoritesService.addToFavorites(profile.uid, {
+          crewName: profile.name,
+          jobTitle: profile.jobTitles?.[0]?.title,
+          location: profile.residences?.[0] ? 
+            `${profile.residences[0].city}, ${profile.residences[0].country}` : undefined,
+          profileImageUrl: profile.profileImageUrl,
+        });
+        setIsBookmarked(true);
+      }
+    } catch (error) {
+      console.error('Error toggling bookmark:', error);
     } finally {
       setBookmarking(false);
     }

@@ -1,55 +1,47 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { db, auth } from '../firebase';
-import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { FaDownload, FaBookmark, FaRegBookmark } from 'react-icons/fa';
 import { CrewProfile } from '../types/CrewProfile';
 import FollowButton from './Social/FollowButton';
 import { imageErrorFallback } from '../utilities/imageErrorFallback';
 import { useTranslation } from 'react-i18next';
+import { CrewFavoritesService } from '../utilities/crewFavoritesService';
+import { Bookmark, BookmarkCheck } from 'lucide-react';
 
 interface CrewProfileCardProps {
   profile: CrewProfile;
   index?: number;
   isFiltering?: boolean;
   currentUserId?: string;
+  isBookmarked?: boolean;
+  onBookmark?: (crewId: string, isBookmarked: boolean) => void;
 }
 
 const CrewProfileCard: React.FC<CrewProfileCardProps> = ({ 
   profile, 
   index = 0, 
   isFiltering = false,
-  currentUserId 
+  currentUserId,
+  isBookmarked = false,
+  onBookmark
 }) => {
   const { t } = useTranslation();
   const [user] = useAuthState(auth);
-  const [isBookmarked, setIsBookmarked] = useState(false);
   const [isBookmarking, setIsBookmarking] = useState(false);
 
-  const handleBookmark = async (e: React.MouseEvent) => {
+  const handleBookmarkClick = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
-    if (!user || !currentUserId) return;
+    if (!user || !onBookmark) return;
     
     setIsBookmarking(true);
     try {
-      const userRef = doc(db, 'users', currentUserId);
-      
-      if (isBookmarked) {
-        await updateDoc(userRef, {
-          bookmarkedCrew: arrayRemove(profile.uid)
-        });
-        setIsBookmarked(false);
-      } else {
-        await updateDoc(userRef, {
-          bookmarkedCrew: arrayUnion(profile.uid)
-        });
-        setIsBookmarked(true);
-      }
+      onBookmark(profile.uid, !isBookmarked);
     } catch (error) {
-      console.error('Error updating bookmark:', error);
+      console.error('Error toggling bookmark:', error);
     } finally {
       setIsBookmarking(false);
     }
@@ -99,26 +91,23 @@ const CrewProfileCard: React.FC<CrewProfileCardProps> = ({
           onError={imageErrorFallback}
         />
         {/* Bookmark Button */}
-        {user && currentUserId && (
+        {user && onBookmark && (
           <button
-            onClick={handleBookmark}
+            onClick={handleBookmarkClick}
             disabled={isBookmarking}
-            className="absolute top-3 right-3 p-2 bg-white/80 backdrop-blur-sm rounded-full shadow-lg hover:bg-white transition-all duration-300 hover:scale-110 disabled:opacity-50"
+            className={`absolute top-3 right-3 p-1.5 rounded-full transition-all duration-200 ${
+              isBookmarked 
+                ? 'bg-blue-500/20 hover:bg-blue-500/30 shadow-sm' 
+                : 'bg-white/10 hover:bg-white/20 shadow-sm'
+            }`}
             title={isBookmarked ? t('crew.removeFromBookmarks') : t('crew.addToBookmarks')}
+            style={{ pointerEvents: 'auto' }}
           >
-            <svg 
-              className={`w-5 h-5 ${isBookmarked ? 'text-yellow-500 fill-current' : 'text-gray-600'}`} 
-              fill={isBookmarked ? 'currentColor' : 'none'} 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-            >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" 
-              />
-            </svg>
+            {isBookmarked ? (
+              <BookmarkCheck size={16} className="text-blue-600 fill-current" />
+            ) : (
+              <Bookmark size={16} className="text-gray-600 hover:text-blue-500" />
+            )}
           </button>
         )}
         {/* Availability Badge */}

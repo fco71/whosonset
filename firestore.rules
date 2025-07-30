@@ -23,7 +23,7 @@ service cloud.firestore {
     // Crew profiles - allow public read for homepage stats, authenticated users can read/write all
     match /crewProfiles/{profileId} {
       allow read: if true; // Allow public read for homepage statistics
-      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      allow create: if request.auth != null && resource.data.uid == request.auth.uid;
       allow update: if request.auth != null && resource.data.uid == request.auth.uid;
       allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
 
@@ -164,6 +164,12 @@ service cloud.firestore {
     
     // Favorites - users can only access their own favorites
     match /favorites/{favoriteId} {
+      allow read, write: if request.auth != null && 
+        (resource.data.userId == request.auth.uid || 
+         request.resource.data.userId == request.auth.uid);
+    }
+
+    match /crewFavorites/{favoriteId} {
       allow read, write: if request.auth != null && 
         (resource.data.userId == request.auth.uid || 
          request.resource.data.userId == request.auth.uid);

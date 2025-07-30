@@ -7,6 +7,9 @@ import { ProjectEntry } from '../types/ProjectEntry';
 import { auth } from '../firebase';
 import FollowButton from '../components/Social/FollowButton';
 import { useTranslation } from 'react-i18next';
+import { CrewFavoritesService } from '../utilities/crewFavoritesService';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { Bookmark, BookmarkCheck } from 'lucide-react';
 
 interface JobDepartment {
   name: string;
@@ -20,6 +23,7 @@ interface Country {
 
 const ProducerView: React.FC = () => {
   const { t } = useTranslation();
+  const [user] = useAuthState(auth);
   const [crewProfiles, setCrewProfiles] = useState<CrewProfile[]>([]);
   const [filteredProfiles, setFilteredProfiles] = useState<CrewProfile[]>([]);
   const [departments, setDepartments] = useState<JobDepartment[]>([]);
@@ -27,6 +31,7 @@ const ProducerView: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isFiltering, setIsFiltering] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string>('');
+  const [favoriteCrewIds, setFavoriteCrewIds] = useState<string[]>([]);
 
   // Filter states
   const [filters, setFilters] = useState({
@@ -48,6 +53,61 @@ const ProducerView: React.FC = () => {
   });
 
   const [isSearching, setIsSearching] = useState(false);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+
+  // Load favorite crew IDs
+  useEffect(() => {
+    const loadFavoriteCrewIds = async () => {
+      if (user) {
+        try {
+          const favoriteIds = await CrewFavoritesService.getFavoriteCrewIds();
+          setFavoriteCrewIds(favoriteIds);
+        } catch (error) {
+          console.error('Error loading favorite crew IDs:', error);
+        }
+      }
+    };
+
+    loadFavoriteCrewIds();
+  }, [user]);
+
+  // Filter profiles by favorites when toggle is enabled
+  useEffect(() => {
+    if (showFavoritesOnly) {
+      const favoriteProfiles = crewProfiles.filter(profile => 
+        favoriteCrewIds.includes(profile.uid)
+      );
+      setFilteredProfiles(favoriteProfiles);
+    } else {
+      setFilteredProfiles(crewProfiles);
+    }
+  }, [showFavoritesOnly, crewProfiles, favoriteCrewIds]);
+
+  // Handle crew bookmarking
+  const handleCrewBookmark = async (crewId: string, isBookmarked: boolean) => {
+    if (!user) return;
+
+    try {
+      const crewProfile = crewProfiles.find(p => p.uid === crewId);
+      if (!crewProfile) return;
+
+      if (isBookmarked) {
+        await CrewFavoritesService.addToFavorites(crewId, {
+          crewName: crewProfile.name,
+          jobTitle: crewProfile.jobTitles?.[0]?.title,
+          location: crewProfile.residences?.[0] ? 
+            `${crewProfile.residences[0].city}, ${crewProfile.residences[0].country}` : undefined,
+          profileImageUrl: crewProfile.profileImageUrl,
+        });
+        setFavoriteCrewIds(prev => [...prev, crewId]);
+      } else {
+        await CrewFavoritesService.removeFromFavorites(crewId);
+        setFavoriteCrewIds(prev => prev.filter(id => id !== crewId));
+      }
+    } catch (error) {
+      console.error('Error toggling crew bookmark:', error);
+    }
+  };
 
   // Fetch departments and countries
   useEffect(() => {
@@ -376,6 +436,24 @@ const ProducerView: React.FC = () => {
 
             {/* Action Buttons - Compact */}
             <div className="flex items-center gap-1 ml-auto">
+              {/* Favorites Toggle */}
+              {user && (
+                <button
+                  type="button"
+                  onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+                  className={`px-2 py-1.5 text-xs font-medium transition-colors duration-200 flex items-center border rounded-md ${
+                    showFavoritesOnly 
+                      ? 'text-blue-600 border-blue-200 bg-blue-50 hover:bg-blue-100' 
+                      : 'text-gray-500 border-gray-200 bg-white hover:bg-gray-50 hover:text-gray-700'
+                  }`}
+                  title={showFavoritesOnly ? 'Show all profiles' : 'Show favorites only'}
+                >
+                  <svg className="w-3 h-3 mr-1" fill={showFavoritesOnly ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                  </svg>
+                  {showFavoritesOnly ? 'Favorites' : 'Favs'}
+                </button>
+              )}
               <button
                 type="button"
                 onClick={clearFilters}
@@ -470,6 +548,8 @@ const ProducerView: React.FC = () => {
                     index={index}
                     isFiltering={isFiltering}
                     currentUserId={currentUserId}
+                    isBookmarked={favoriteCrewIds.includes(profile.uid)}
+                    onBookmarkToggle={handleCrewBookmark}
                   />
                 </div>
               ))}
@@ -564,19 +644,59 @@ const CrewProfileCard: React.FC<{
   index: number;
   isFiltering: boolean;
   currentUserId: string;
-}> = ({ profile, index, isFiltering, currentUserId }) => {
+  isBookmarked: boolean;
+  onBookmarkToggle: (crewId: string, isBookmarked: boolean) => Promise<void>;
+}> = ({ profile, index, isFiltering, currentUserId, isBookmarked, onBookmarkToggle }) => {
   const primaryJob = profile.jobTitles[0];
   const primaryResidence = profile.residences[0];
+  const [isBookmarking, setIsBookmarking] = useState(false);
+
+  const handleBookmarkClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!currentUserId || isBookmarking) return;
+    
+    setIsBookmarking(true);
+    try {
+      await onBookmarkToggle(profile.uid, !isBookmarked);
+    } catch (error) {
+      console.error('Error toggling bookmark:', error);
+    } finally {
+      setIsBookmarking(false);
+    }
+  };
 
   return (
     <div 
-      className={`group bg-white rounded-2xl p-8 hover:shadow-2xl transition-all duration-700 cursor-pointer border border-gray-100 hover:border-gray-200 animate-card-entrance`}
+      className={`group bg-white rounded-2xl p-8 hover:shadow-2xl transition-all duration-700 cursor-pointer border border-gray-100 hover:border-gray-200 animate-card-entrance relative`}
       style={{
         animationDelay: `${index * 100}ms`,
         transform: isFiltering ? 'scale(0.95) opacity(0.5)' : 'scale(1) opacity(1)',
         transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
       }}
     >
+      {/* Bookmark Button */}
+      {currentUserId && (
+        <button
+          onClick={handleBookmarkClick}
+          disabled={isBookmarking}
+          className={`absolute top-3 right-3 p-1.5 rounded-full transition-all duration-200 ${
+            isBookmarked 
+              ? 'bg-blue-500/20 hover:bg-blue-500/30 shadow-sm' 
+              : 'bg-white/10 hover:bg-white/20 shadow-sm'
+          }`}
+          title={isBookmarked ? 'Remove from bookmarks' : 'Add to bookmarks'}
+          style={{ pointerEvents: 'auto' }}
+        >
+          {isBookmarked ? (
+            <BookmarkCheck size={16} className="text-blue-600 fill-current" />
+          ) : (
+            <Bookmark size={16} className="text-gray-600 hover:text-blue-500" />
+          )}
+        </button>
+      )}
+
       <div className="flex items-start gap-6 mb-6">
         {profile.profileImageUrl ? (
           <img

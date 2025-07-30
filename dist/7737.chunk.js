@@ -1,5 +1,5 @@
 "use strict";
-(self["webpackChunkwhosonset"] = self["webpackChunkwhosonset"] || []).push([[7900],{
+(self["webpackChunkwhosonset"] = self["webpackChunkwhosonset"] || []).push([[7737],{
 
 /***/ 684:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
@@ -399,6 +399,35 @@ const Users = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"]
 
 /***/ }),
 
+/***/ 4316:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   A: () => (/* binding */ BookmarkCheck)
+/* harmony export */ });
+/* unused harmony export __iconNode */
+/* harmony import */ var _createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9407);
+/**
+ * @license lucide-react v0.525.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+
+
+
+const __iconNode = [
+  ["path", { d: "m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2Z", key: "169p4p" }],
+  ["path", { d: "m9 10 2 2 4-4", key: "1gnqz4" }]
+];
+const BookmarkCheck = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .A)("bookmark-check", __iconNode);
+
+
+//# sourceMappingURL=bookmark-check.js.map
+
+
+/***/ }),
+
 /***/ 4948:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
@@ -541,7 +570,35 @@ const DollarSign = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["defa
 
 /***/ }),
 
-/***/ 7900:
+/***/ 7157:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   A: () => (/* binding */ Bookmark)
+/* harmony export */ });
+/* unused harmony export __iconNode */
+/* harmony import */ var _createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9407);
+/**
+ * @license lucide-react v0.525.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+
+
+
+const __iconNode = [
+  ["path", { d: "m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z", key: "1fy3hk" }]
+];
+const Bookmark = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .A)("bookmark", __iconNode);
+
+
+//# sourceMappingURL=bookmark.js.map
+
+
+/***/ }),
+
+/***/ 7737:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 // ESM COMPAT FLAG
@@ -574,45 +631,10 @@ var building = __webpack_require__(1393);
 var map_pin = __webpack_require__(6069);
 // EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/globe.js
 var globe = __webpack_require__(684);
-// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/createLucideIcon.js + 3 modules
-var createLucideIcon = __webpack_require__(9407);
-;// ./node_modules/lucide-react/dist/esm/icons/bookmark-check.js
-/**
- * @license lucide-react v0.525.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-
-
-
-const __iconNode = [
-  ["path", { d: "m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2Z", key: "169p4p" }],
-  ["path", { d: "m9 10 2 2 4-4", key: "1gnqz4" }]
-];
-const BookmarkCheck = (0,createLucideIcon/* default */.A)("bookmark-check", __iconNode);
-
-
-//# sourceMappingURL=bookmark-check.js.map
-
-;// ./node_modules/lucide-react/dist/esm/icons/bookmark.js
-/**
- * @license lucide-react v0.525.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-
-
-
-const bookmark_iconNode = [
-  ["path", { d: "m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z", key: "1fy3hk" }]
-];
-const Bookmark = (0,createLucideIcon/* default */.A)("bookmark", bookmark_iconNode);
-
-
-//# sourceMappingURL=bookmark.js.map
-
+// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/bookmark-check.js
+var bookmark_check = __webpack_require__(4316);
+// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/bookmark.js
+var bookmark = __webpack_require__(7157);
 // EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/dollar-sign.js
 var dollar_sign = __webpack_require__(6589);
 // EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/calendar.js
@@ -625,6 +647,8 @@ var briefcase = __webpack_require__(2201);
 var users = __webpack_require__(3893);
 // EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/search.js
 var search = __webpack_require__(8445);
+// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/createLucideIcon.js + 3 modules
+var createLucideIcon = __webpack_require__(9407);
 ;// ./node_modules/lucide-react/dist/esm/icons/funnel.js
 /**
  * @license lucide-react v0.525.0 - ISC
@@ -635,7 +659,7 @@ var search = __webpack_require__(8445);
 
 
 
-const funnel_iconNode = [
+const __iconNode = [
   [
     "path",
     {
@@ -644,7 +668,7 @@ const funnel_iconNode = [
     }
   ]
 ];
-const Funnel = (0,createLucideIcon/* default */.A)("funnel", funnel_iconNode);
+const Funnel = (0,createLucideIcon/* default */.A)("funnel", __iconNode);
 
 
 //# sourceMappingURL=funnel.js.map
@@ -757,7 +781,7 @@ const JobCard = ({ job, currentUserId, onEdit }) => {
     };
     return ((0,jsx_runtime.jsx)(Card/* default */.Ay, { variant: "elevated", hoverable: true, className: "group cursor-pointer overflow-hidden", onClick: () => navigate(`/jobs/${job.id}`), onMouseEnter: () => setIsHovered(true), onMouseLeave: () => setIsHovered(false), children: (0,jsx_runtime.jsxs)(Card/* CardBody */.bw, { className: "p-6", children: [(0,jsx_runtime.jsxs)("div", { className: "flex items-start justify-between mb-4", children: [(0,jsx_runtime.jsxs)("div", { className: "flex-1", children: [(0,jsx_runtime.jsx)(Card/* CardTitle */.ZB, { className: "text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors mb-2", children: job.title || t('jobs.untitledPosition') }), (0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-4 text-sm text-gray-600 mb-3", children: [(0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-1", children: [(0,jsx_runtime.jsx)(building/* default */.A, { className: "w-4 h-4" }), (0,jsx_runtime.jsx)("span", { children: job.department || t('jobs.various') })] }), (0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-1", children: [(0,jsx_runtime.jsx)(map_pin/* default */.A, { className: "w-4 h-4" }), (0,jsx_runtime.jsx)("span", { children: job.location })] }), job.isRemote && ((0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-1 text-blue-600", children: [(0,jsx_runtime.jsx)(globe/* default */.A, { className: "w-4 h-4" }), (0,jsx_runtime.jsx)("span", { children: t('jobs.remote') })] }))] })] }), (0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-2", children: [currentUser && ((0,jsx_runtime.jsx)("button", { className: `p-2 rounded-lg transition-colors ${isSaving ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-100"} ${isSaved
                                         ? "text-blue-600 hover:text-blue-700"
-                                        : "text-gray-400 hover:text-blue-600"}`, title: isSaved ? t('jobs.removeFromSaved') : t('jobs.saveJob'), onClick: handleSave, disabled: isSaving, children: isSaving ? ((0,jsx_runtime.jsx)("div", { className: "animate-spin rounded-full h-4 w-4 border-b-2 border-current" })) : isSaved ? ((0,jsx_runtime.jsx)(BookmarkCheck, { className: "w-5 h-5 fill-current" })) : ((0,jsx_runtime.jsx)(Bookmark, { className: "w-5 h-5" })) })), currentUserId && job.postedById === currentUserId && ((0,jsx_runtime.jsx)("button", { className: "p-2 rounded-lg hover:bg-gray-100 transition-colors", title: t('jobs.editJob'), onClick: e => {
+                                        : "text-gray-400 hover:text-blue-600"}`, title: isSaved ? t('jobs.removeFromSaved') : t('jobs.saveJob'), onClick: handleSave, disabled: isSaving, children: isSaving ? ((0,jsx_runtime.jsx)("div", { className: "animate-spin rounded-full h-4 w-4 border-b-2 border-current" })) : isSaved ? ((0,jsx_runtime.jsx)(bookmark_check/* default */.A, { className: "w-5 h-5 fill-current" })) : ((0,jsx_runtime.jsx)(bookmark/* default */.A, { className: "w-5 h-5" })) })), currentUserId && job.postedById === currentUserId && ((0,jsx_runtime.jsx)("button", { className: "p-2 rounded-lg hover:bg-gray-100 transition-colors", title: t('jobs.editJob'), onClick: e => {
                                         e.stopPropagation();
                                         onEdit ? onEdit(job) : navigate(`/edit-job/${job.id}`);
                                     }, children: (0,jsx_runtime.jsx)("svg", { className: "w-5 h-5 text-gray-500", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24", children: (0,jsx_runtime.jsx)("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M15.232 5.232l3.536 3.536M9 13l6-6 3 3-6 6H9v-3z" }) }) }))] })] }), (0,jsx_runtime.jsxs)("div", { className: "flex flex-wrap gap-2 mb-4", children: [hasValue(job.jobType) && ((0,jsx_runtime.jsx)("span", { className: "px-3 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full", children: job.jobType?.replace('_', ' ') })), hasValue(job.experienceLevel) && ((0,jsx_runtime.jsxs)("span", { className: "px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full", children: [job.experienceLevel, " ", t('jobs.level')] })), job.isPaid && ((0,jsx_runtime.jsx)("span", { className: "px-3 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full", children: t('jobs.paid') }))] }), hasValue(job.description) && ((0,jsx_runtime.jsx)(Card/* CardDescription */.BT, { className: "text-gray-600 text-sm mb-4 line-clamp-2", children: job.description })), (0,jsx_runtime.jsxs)("div", { className: "flex items-center justify-between", children: [(0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-4 text-sm text-gray-500", children: [job.showSalary && (job.salaryMin || job.salaryMax) && ((0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-1", children: [(0,jsx_runtime.jsx)(dollar_sign/* default */.A, { className: "w-4 h-4" }), (0,jsx_runtime.jsx)("span", { className: "font-medium", children: formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod) })] })), (0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-1", children: [(0,jsx_runtime.jsx)(calendar/* default */.A, { className: "w-4 h-4" }), (0,jsx_runtime.jsxs)("span", { children: [t('jobs.posted'), " ", formatDate(job.createdAt)] })] })] }), (0,jsx_runtime.jsxs)("div", { className: `flex items-center gap-1 text-blue-600 text-sm font-medium transition-transform ${isHovered ? 'translate-x-1' : ''}`, children: [(0,jsx_runtime.jsx)("span", { children: t('jobs.viewDetails') }), (0,jsx_runtime.jsx)(arrow_right/* default */.A, { className: "w-4 h-4" })] })] })] }) }));
@@ -931,4 +955,4 @@ const ArrowRight = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["defa
 /***/ })
 
 }]);
-//# sourceMappingURL=7900.chunk.js.map
+//# sourceMappingURL=7737.chunk.js.map

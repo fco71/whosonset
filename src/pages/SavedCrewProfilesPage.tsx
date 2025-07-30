@@ -1,30 +1,57 @@
 // src/pages/SavedCrewProfilesPage.tsx
 import React, { useEffect, useState } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import CrewProfileCard from '../components/CrewProfileCard';
 import { CrewProfile } from '../types/CrewProfile';
 import { useTranslation } from 'react-i18next';
+import { CrewFavoritesService } from '../utilities/crewFavoritesService';
 
 const SavedCrewProfilesPage: React.FC = () => {
   const { t } = useTranslation();
   const [user] = useAuthState(auth);
   const [savedProfiles, setSavedProfiles] = useState<CrewProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [favoriteCrewIds, setFavoriteCrewIds] = useState<string[]>([]);
 
+  // Load favorite crew profiles
   useEffect(() => {
     const fetchSavedProfiles = async () => {
       if (!user) return;
 
       try {
-        const savedProfilesRef = collection(db, `collections/${user.uid}/savedCrew`);
-        const querySnapshot = await getDocs(savedProfilesRef);
-        const profiles = querySnapshot.docs.map(doc => ({
-          uid: doc.id,
-          ...doc.data()
-        })) as CrewProfile[];
+        setLoading(true);
         
+        // Get favorite crew IDs
+        const favoriteIds = await CrewFavoritesService.getFavoriteCrewIds();
+        setFavoriteCrewIds(favoriteIds);
+
+        if (favoriteIds.length === 0) {
+          setSavedProfiles([]);
+          return;
+        }
+
+        // Fetch crew profiles for favorite IDs
+        const crewProfilesRef = collection(db, 'crewProfiles');
+        const profiles: CrewProfile[] = [];
+
+        for (const crewId of favoriteIds) {
+          try {
+            const crewQuery = query(crewProfilesRef, where('uid', '==', crewId));
+            const crewSnapshot = await getDocs(crewQuery);
+            if (!crewSnapshot.empty) {
+              const crewData = crewSnapshot.docs[0].data() as CrewProfile;
+              profiles.push({
+                uid: crewId,
+                ...crewData
+              });
+            }
+          } catch (error) {
+            console.error(`Error fetching crew profile for ${crewId}:`, error);
+          }
+        }
+
         setSavedProfiles(profiles);
       } catch (error) {
         console.error('Error fetching saved profiles:', error);
@@ -35,6 +62,33 @@ const SavedCrewProfilesPage: React.FC = () => {
 
     fetchSavedProfiles();
   }, [user]);
+
+  // Handle crew bookmarking
+  const handleCrewBookmark = async (crewId: string, isBookmarked: boolean) => {
+    if (!user) return;
+
+    try {
+      const crewProfile = savedProfiles.find(p => p.uid === crewId);
+      if (!crewProfile) return;
+
+      if (isBookmarked) {
+        await CrewFavoritesService.addToFavorites(crewId, {
+          crewName: crewProfile.name,
+          jobTitle: crewProfile.jobTitles?.[0]?.title,
+          location: crewProfile.residences?.[0] ? 
+            `${crewProfile.residences[0].city}, ${crewProfile.residences[0].country}` : undefined,
+          profileImageUrl: crewProfile.profileImageUrl,
+        });
+        setFavoriteCrewIds(prev => [...prev, crewId]);
+      } else {
+        await CrewFavoritesService.removeFromFavorites(crewId);
+        setFavoriteCrewIds(prev => prev.filter(id => id !== crewId));
+        setSavedProfiles(prev => prev.filter(p => p.uid !== crewId));
+      }
+    } catch (error) {
+      console.error('Error toggling crew bookmark:', error);
+    }
+  };
 
   if (loading) {
     return (
@@ -117,7 +171,12 @@ const SavedCrewProfilesPage: React.FC = () => {
                 className="animate-card-entrance"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
-                <CrewProfileCard profile={profile} />
+                <CrewProfileCard 
+                  profile={profile} 
+                  isBookmarked={favoriteCrewIds.includes(profile.uid)}
+                  onBookmark={handleCrewBookmark}
+                  currentUserId={user?.uid}
+                />
               </div>
             ))}
           </div>
