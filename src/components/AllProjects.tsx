@@ -112,6 +112,17 @@ const AllProjects: React.FC = () => {
       const snapshot = await getDocs(q);
       const docs = snapshot.docs;
       const data = docs.map((doc) => ({ id: doc.id, ...(doc.data() as Omit<Project, 'id'>) })) as Project[];
+      
+      // Debug: Log the first project's dates to see what's in the database
+      if (data.length > 0) {
+        console.log('First project dates:', {
+          projectName: data[0].projectName,
+          startDate: data[0].startDate,
+          endDate: data[0].endDate,
+          startDateType: typeof data[0].startDate,
+          endDateType: typeof data[0].endDate
+        });
+      }
 
       setProjects(data);
       setLastVisible(docs[docs.length - 1] || null);
