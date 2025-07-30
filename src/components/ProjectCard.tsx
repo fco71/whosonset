@@ -83,6 +83,14 @@ const ProjectCard: React.FC<ProjectCardProps> = (props) => {
     className = '',
   } = props;
 
+  // Debug: Log the dates being passed to this component
+  console.log('ProjectCard dates for', projectName, ':', {
+    startDate: startDate,
+    endDate: endDate,
+    startDateType: typeof startDate,
+    endDateType: typeof endDate
+  });
+
   // State to manage the cover image URL with error handling
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
@@ -422,6 +430,7 @@ const ProjectCard: React.FC<ProjectCardProps> = (props) => {
               <Calendar size={12} className="mr-1" />
               <span>
                 {startDate && startDate.trim() ? formatDateWithFallback(startDate) : t('projectStatus.tbd')} - {endDate && endDate.trim() ? formatDateWithFallback(endDate) : t('projectStatus.tbd')}
+                {/* Debug: {startDate} | {endDate} */}
               </span>
             </div>
             {/* View Details Button */}
