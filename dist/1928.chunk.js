@@ -122,13 +122,6 @@ const getStatusStyles = (status) => {
 const ProjectCard = (props) => {
     const { t } = (0,es/* useTranslation */.Bd)();
     const { id, projectName, productionCompany, country, productionLocations, status = 'development', summary, director, producer, genres = [], coverImageUrl: initialCoverImageUrl, startDate, endDate, showDetails = false, onBookmark, isBookmarked = false, className = '', } = props;
-    // Debug: Log the dates being passed to this component
-    console.log('ProjectCard dates for', projectName, ':', {
-        startDate: startDate,
-        endDate: endDate,
-        startDateType: typeof startDate,
-        endDateType: typeof endDate
-    });
     // State to manage the cover image URL with error handling
     const [coverImageUrl, setCoverImageUrl] = (0,react.useState)(null);
     const [imageError, setImageError] = (0,react.useState)(false);
@@ -318,11 +311,12 @@ const ProjectCard = (props) => {
         // Handle Firestore Timestamp objects
         if (dateString && typeof dateString === 'object' && dateString.toDate) {
             const date = dateString.toDate();
-            return new Intl.DateTimeFormat('en-US', {
+            const formatted = new Intl.DateTimeFormat('en-US', {
                 year: 'numeric',
                 month: 'short',
                 day: 'numeric',
             }).format(date);
+            return formatted;
         }
         // Handle string dates
         if (typeof dateString === 'string') {
@@ -331,11 +325,12 @@ const ProjectCard = (props) => {
             if (isNaN(date.getTime())) {
                 return '';
             }
-            return new Intl.DateTimeFormat('en-US', {
+            const formatted = new Intl.DateTimeFormat('en-US', {
                 year: 'numeric',
                 month: 'short',
                 day: 'numeric',
             }).format(date);
+            return formatted;
         }
         return '';
     };

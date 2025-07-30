@@ -88,7 +88,7 @@ const CrewProfileCard: React.FC<CrewProfileCardProps> = ({
   return (
     <div 
       className={`group card-base card-hover animate-entrance ${isFiltering ? 'opacity-50 scale-95' : 'opacity-100 scale-100'}`}
-      style={{ animationDelay: `${index * 0.1}s`, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 24 }}
+      style={{ animationDelay: `${index * 0.1}s`, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 24, minHeight: 280 }}
     >
       <div className="h-48 card-image-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
         <img 
@@ -135,7 +135,7 @@ const CrewProfileCard: React.FC<CrewProfileCardProps> = ({
         <div style={{ color: '#6b7280', fontWeight: 500, fontSize: 15, marginBottom: 4 }}>{primaryJobTitle}</div>
         <div style={{ color: '#9ca3af', fontSize: 14 }}>{primaryLocation}</div>
       </div>
-      <div style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: 12, marginTop: 8 }}>
+      <div style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: 12, marginTop: 'auto' }}>
         {user && user.uid !== profile.uid && (
           <div className="btn-secondary" style={{ display: 'inline-block' }}>
             <FollowButton 

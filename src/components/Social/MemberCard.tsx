@@ -100,7 +100,7 @@ const MemberCard: React.FC<MemberCardProps> = ({
         'flex flex-col items-center p-6',
         className
       )}
-      style={{ animationDelay: `${index * 0.1}s` }}
+      style={{ animationDelay: `${index * 0.1}s`, minHeight: 280 }}
     >
       <div className="h-48 card-image-container flex flex-col items-center justify-center mb-4">
         <img 
@@ -150,7 +150,7 @@ const MemberCard: React.FC<MemberCardProps> = ({
         <p className="text-xs text-gray-500">{primaryLocation}</p>
       </div>
       
-      <div className="w-full flex justify-center gap-3">
+      <div className="w-full flex justify-center gap-3 mt-auto">
         {user && user.uid !== profileId && (
           <div className="w-full">
             <FollowButton 

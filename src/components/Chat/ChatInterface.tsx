@@ -300,31 +300,29 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   const sendPendingAttachment = useCallback(async () => {
     if (!pendingAttachment || !selectedUser || sending) return;
-    
+
     setSending(true);
     try {
-      let content = `📎 ${pendingAttachment.name}`;
-      let messageType: 'text' | 'image' | 'file' | 'voice' = 'file';
-      let fileUrl: string | undefined;
-      
-      // Determine message type and content
-      if (pendingAttachment.type.startsWith('image/')) {
-        content = `📷 ${pendingAttachment.name}`;
-        messageType = 'image';
-      } else if (pendingAttachment.type.startsWith('audio/')) {
-        content = `🎤 ${pendingAttachment.name}`;
-        messageType = 'voice';
+      // Upload file to storage first
+      let fileUrl = '';
+      if (pendingAttachmentType?.startsWith('audio/')) {
+        // For voice messages, upload to storage
+        fileUrl = await MessagingService.uploadFileToStorage(pendingAttachment, 'voice-messages');
+      } else {
+        // For other files, use existing logic
+        fileUrl = await MessagingService.uploadFileToStorage(pendingAttachment);
       }
+
+      const content = pendingAttachmentType?.startsWith('audio/') 
+        ? 'Voice message' 
+        : pendingAttachment.name;
       
-      // Upload file to storage
-      try {
-        fileUrl = await MessagingService.uploadFileToStorage(pendingAttachment, 'chat-uploads');
-        console.log('File uploaded successfully:', fileUrl);
-      } catch (uploadError) {
-        console.error('File upload failed:', uploadError);
-        // Continue with message even if upload fails
-      }
-      
+      const messageType = pendingAttachmentType?.startsWith('audio/') 
+        ? 'voice' 
+        : pendingAttachmentType?.startsWith('image/') 
+        ? 'image' 
+        : 'file';
+
       const optimisticMessage: DirectMessage = {
         id: `temp_${Date.now()}`,
         senderId: currentUserId,
@@ -332,8 +330,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         content,
         timestamp: new Date(),
         isRead: false,
-        messageType,
         status: 'sending',
+        messageType,
         fileUrl,
         fileName: pendingAttachment.name,
         fileSize: pendingAttachment.size,
@@ -354,6 +352,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     } catch (error) {
       console.error('Error sending file:', error);
       setMessages(prev => prev.filter(msg => msg.id !== `temp_${Date.now()}`));
+      setError('Failed to send attachment. Please try again.');
     } finally {
       setSending(false);
     }
@@ -362,6 +361,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   // Voice recording - optimized
   const startRecording = useCallback(async () => {
     try {
+      // Check if microphone is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setError('Microphone not supported in this browser. Please use a modern browser.');
+        return;
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream);
       const chunks: Blob[] = [];
@@ -397,9 +402,23 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       mediaRecorderRef.current = mediaRecorder;
       recordingTimerRef.current = timer;
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error starting recording:', error);
-      setError('Could not access microphone');
+      
+      // Provide specific guidance based on error type
+      let errorMessage = 'Could not access microphone';
+      
+      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+        errorMessage = 'Microphone access denied. Please allow microphone access in your browser settings and try again.';
+      } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+        errorMessage = 'No microphone found. Please connect a microphone and try again.';
+      } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
+        errorMessage = 'Microphone is already in use by another application. Please close other apps using the microphone and try again.';
+      } else if (error.name === 'OverconstrainedError') {
+        errorMessage = 'Microphone does not meet the required constraints. Please try a different microphone.';
+      }
+      
+      setError(errorMessage);
     }
   }, []);
 
@@ -501,6 +520,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const renderMessage = useCallback((message: DirectMessage) => {
     const isSent = message.senderId === currentUserId;
     
+    // Defensive programming - ensure message has required properties
+    if (!message || !message.id) {
+      return null;
+    }
+    
     return (
       <div
         key={message.id}
@@ -537,10 +561,41 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           ) : message.messageType === 'voice' && message.fileUrl && !message.fileUrl.startsWith('FILE_TOO_LARGE:') && !message.fileUrl.startsWith('UPLOAD_FAILED:') ? (
             <div className="message-voice">
               <div className="voice-player">
-                <audio controls>
-                  <source src={message.fileUrl} type="audio/wav" />
-                  Your browser does not support the audio element.
-                </audio>
+                <div className="custom-audio-player">
+                  <button 
+                    className="play-button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      const audio = e.currentTarget.nextElementSibling as HTMLAudioElement;
+                      if (audio && audio.paused) {
+                        audio.play().catch(err => {
+                          console.error('Error playing audio:', err);
+                        });
+                        e.currentTarget.innerHTML = '⏸️';
+                      } else if (audio) {
+                        audio.pause();
+                        e.currentTarget.innerHTML = '▶️';
+                      }
+                    }}
+                    type="button"
+                  >
+                    ▶️
+                  </button>
+                  <audio 
+                    src={message.fileUrl} 
+                    preload="metadata"
+                    onEnded={(e) => {
+                      const button = e.currentTarget.previousElementSibling as HTMLButtonElement;
+                      if (button) button.innerHTML = '▶️';
+                    }}
+                    onError={(e) => {
+                      console.error('Audio error:', e);
+                    }}
+                  />
+                  <div className="audio-info">
+                    <span className="audio-duration">Voice message</span>
+                  </div>
+                </div>
               </div>
               {message.content && <p className="voice-caption">{message.content}</p>}
             </div>
@@ -650,7 +705,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     <div className="chat-interface">
       {error && (
         <div className="error-banner">
-          {error}
+          <span>{error}</span>
+          <button 
+            onClick={() => setError(null)} 
+            className="error-close-btn"
+            title="Dismiss error"
+            type="button"
+          >
+            ✕
+          </button>
         </div>
       )}
       

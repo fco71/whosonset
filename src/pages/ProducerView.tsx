@@ -609,11 +609,12 @@ const CrewProfileCard: React.FC<{
         </div>
       </div>
 
-      {profile.bio && (
+      {/* Remove bio section to standardize card sizes */}
+      {/* {profile.bio && (
         <p className="text-gray-600 font-light leading-relaxed mb-6 line-clamp-3 transition-colors duration-300 group-hover:text-gray-700">
           {profile.bio}
         </p>
-      )}
+      )} */}
 
       {profile.availability && (
         <div className="mb-6">
