@@ -122,6 +122,13 @@ const getStatusStyles = (status) => {
 const ProjectCard = (props) => {
     const { t } = (0,es/* useTranslation */.Bd)();
     const { id, projectName, productionCompany, country, productionLocations, status = 'development', summary, director, producer, genres = [], coverImageUrl: initialCoverImageUrl, startDate, endDate, showDetails = false, onBookmark, isBookmarked = false, className = '', } = props;
+    // Debug: Log the dates being passed to this component
+    console.log('ProjectCard dates for', projectName, ':', {
+        startDate: startDate,
+        endDate: endDate,
+        startDateType: typeof startDate,
+        endDateType: typeof endDate
+    });
     // State to manage the cover image URL with error handling
     const [coverImageUrl, setCoverImageUrl] = (0,react.useState)(null);
     const [imageError, setImageError] = (0,react.useState)(false);
@@ -304,39 +311,69 @@ const ProjectCard = (props) => {
         }
     };
     const formatDateWithFallback = (dateString) => {
-        if (!dateString)
-            return t('projectStatus.tbd');
-        const date = new Date(dateString);
-        return new Intl.DateTimeFormat('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-        }).format(date);
-    };
-    return ((0,jsx_runtime.jsxs)(Card/* default */.Ay, { className: `bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300 flex flex-col ${className}`, style: { padding: 20, minHeight: 340, maxWidth: 370, margin: 'auto', boxSizing: 'border-box' }, hoverable: true, onClick: handleCardClick, role: "button", tabIndex: 0, "aria-label": `View details for ${projectName || 'Untitled Project'}`, onKeyDown: e => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                handleCardClick();
+        // Handle empty strings or falsy values
+        if (!dateString || (typeof dateString === 'string' && dateString.trim() === '')) {
+            return '';
+        }
+        // Handle Firestore Timestamp objects
+        if (dateString && typeof dateString === 'object' && dateString.toDate) {
+            const date = dateString.toDate();
+            return new Intl.DateTimeFormat('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+            }).format(date);
+        }
+        // Handle string dates
+        if (typeof dateString === 'string') {
+            const date = new Date(dateString);
+            // Check if the date is valid
+            if (isNaN(date.getTime())) {
+                return '';
             }
-        }, children: [(0,jsx_runtime.jsx)("div", { style: { width: '100%', height: 180, position: 'relative', borderRadius: 12, overflow: 'hidden', marginBottom: 12, background: '#f8fafc' }, children: coverImageUrl && !imageError ? ((0,jsx_runtime.jsx)("img", { src: coverImageUrl, alt: `${projectName || 'Untitled Project'} cover`, className: "w-full h-full object-cover transition-transform duration-500 group-hover:scale-105", loading: "lazy", onError: e => { handleImageError(e); (0,imageErrorFallback/* imageErrorFallback */.i)(e, getPlaceholderImage()); }, onLoad: () => setImageError(false) }, coverImageUrl)) : ((0,jsx_runtime.jsxs)("div", { className: "w-full h-full bg-gradient-to-br from-blue-50 to-purple-50 flex flex-col items-center justify-center text-center p-4", children: [(0,jsx_runtime.jsx)(ImageOff, { size: 32, className: "text-gray-400 mb-2" }), (0,jsx_runtime.jsx)("p", { className: "text-sm text-gray-500", children: retryCount > 0 && retryCount <= maxRetries
+            return new Intl.DateTimeFormat('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+            }).format(date);
+        }
+        return '';
+    };
+    return ((0,jsx_runtime.jsxs)(Card/* default */.Ay, { className: `bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300 flex flex-col ${className}`, style: { padding: 20, minHeight: 340, maxWidth: 370, margin: 'auto', boxSizing: 'border-box' }, hoverable: true, children: [(0,jsx_runtime.jsx)("div", { style: { width: '100%', height: 180, position: 'relative', borderRadius: 12, overflow: 'hidden', marginBottom: 12, background: '#f8fafc' }, children: coverImageUrl && !imageError ? ((0,jsx_runtime.jsx)("img", { src: coverImageUrl, alt: `${projectName || 'Untitled Project'} cover`, className: "w-full h-full object-cover transition-transform duration-500 group-hover:scale-105", loading: "lazy", onError: e => { handleImageError(e); (0,imageErrorFallback/* imageErrorFallback */.i)(e, getPlaceholderImage()); }, onLoad: () => setImageError(false) }, coverImageUrl)) : ((0,jsx_runtime.jsxs)("div", { className: "w-full h-full bg-gradient-to-br from-blue-50 to-purple-50 flex flex-col items-center justify-center text-center p-4", children: [(0,jsx_runtime.jsx)(ImageOff, { size: 32, className: "text-gray-400 mb-2" }), (0,jsx_runtime.jsx)("p", { className: "text-sm text-gray-500", children: retryCount > 0 && retryCount <= maxRetries
                                 ? `${t('projectStatus.loadingImage', { count: retryCount, max: maxRetries })}`
-                                : t('projectStatus.imageNotAvailable') }), (0,jsx_runtime.jsx)("p", { className: "text-xs text-gray-500", children: initialCoverImageUrl ? t('projectStatus.failedToLoadImage') : t('projectStatus.noImageAvailable') })] })) }), (0,jsx_runtime.jsxs)(Card/* CardBody */.bw, { className: "flex-1 flex flex-col", children: [(0,jsx_runtime.jsxs)("div", { className: "flex-1", children: [(0,jsx_runtime.jsxs)(jsx_runtime.Fragment, { children: [(() => { console.log('ProjectCard projectName:', projectName); return null; })(), (0,jsx_runtime.jsx)("div", { className: "text-base font-medium mb-2 leading-tight truncate", title: projectName && projectName.trim() ? projectName : 'Untitled Project', style: {
-                                            minHeight: 20,
-                                            letterSpacing: '-0.01em',
-                                            background: 'rgba(250,252,255,0.92)',
-                                            color: '#23272f',
-                                            padding: '5px 10px',
-                                            borderRadius: 8,
-                                            marginBottom: 8,
-                                            boxShadow: '0 1px 4px 0 rgba(0,0,0,0.03)',
-                                            border: '1px solid #e5e7eb',
-                                            maxWidth: '96%',
-                                            marginLeft: 'auto',
-                                            marginRight: 'auto',
-                                            fontWeight: 500,
-                                            zIndex: 2,
-                                            textShadow: 'none'
-                                        }, children: projectName && projectName.trim() ? projectName : 'Untitled Project' })] }), (0,jsx_runtime.jsxs)("div", { className: `inline-flex items-center gap-2 px-2 py-0.5 rounded-full text-xs font-medium mb-2 ${statusStyles.bg} ${statusStyles.text}`, style: { minHeight: 24 }, children: [statusStyles.icon, (0,jsx_runtime.jsx)("span", { children: formatStatusText(status) })] }), productionCompany && ((0,jsx_runtime.jsxs)(Card/* CardDescription */.BT, { className: "flex items-center text-sm mb-3", children: [(0,jsx_runtime.jsx)(film/* default */.A, { size: 14, className: "mr-1.5 text-gray-400" }), productionCompany] })), primaryLocation && ((0,jsx_runtime.jsxs)("div", { className: "flex items-center text-sm text-gray-500 mb-3", children: [(0,jsx_runtime.jsx)(map_pin/* default */.A, { size: 14, className: "mr-1.5 text-gray-400" }), primaryLocation] })), summary && ((0,jsx_runtime.jsx)("p", { className: "text-sm text-gray-600 mb-4 line-clamp-3", children: summary })), genres.length > 0 && ((0,jsx_runtime.jsxs)("div", { className: "flex flex-wrap gap-2 mt-3 mb-4", children: [genres.slice(0, 3).map((genre, index) => ((0,jsx_runtime.jsx)("span", { className: "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800", children: genre }, `${genre}-${index}`))), genres.length > 3 && ((0,jsx_runtime.jsxs)("span", { className: "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600", children: ["+", genres.length - 3, " more"] }))] }))] }), (0,jsx_runtime.jsx)(Card/* CardFooter */.wL, { className: "pt-4 border-t border-gray-100", children: (0,jsx_runtime.jsxs)("div", { className: "flex items-center justify-between w-full", children: [(0,jsx_runtime.jsxs)("div", { className: "flex items-center text-xs text-gray-500", children: [(0,jsx_runtime.jsx)(calendar/* default */.A, { size: 12, className: "mr-1" }), (0,jsx_runtime.jsxs)("span", { children: [startDate ? formatDateWithFallback(startDate) : t('projectStatus.tbd'), " - ", endDate ? formatDateWithFallback(endDate) : t('projectStatus.tbd')] })] }), (0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "ghost", size: "sm", className: "text-blue-600 hover:text-blue-700 hover:bg-blue-50", children: [t('projectStatus.viewDetails'), " \u2192"] })] }) })] })] }));
+                                : t('projectStatus.imageNotAvailable') }), (0,jsx_runtime.jsx)("p", { className: "text-xs text-gray-500", children: initialCoverImageUrl ? t('projectStatus.failedToLoadImage') : t('projectStatus.noImageAvailable') })] })) }), (0,jsx_runtime.jsxs)(Card/* CardBody */.bw, { className: "flex-1 flex flex-col", children: [(0,jsx_runtime.jsxs)("div", { className: "flex-1", children: [(0,jsx_runtime.jsx)(jsx_runtime.Fragment, { children: (0,jsx_runtime.jsx)("div", { className: "text-base font-medium mb-2 leading-tight truncate", title: projectName && projectName.trim() ? projectName : 'Untitled Project', style: {
+                                        minHeight: 20,
+                                        letterSpacing: '-0.01em',
+                                        background: 'rgba(250,252,255,0.92)',
+                                        color: '#23272f',
+                                        padding: '5px 10px',
+                                        borderRadius: 8,
+                                        marginBottom: 8,
+                                        boxShadow: '0 1px 4px 0 rgba(0,0,0,0.03)',
+                                        border: '1px solid #e5e7eb',
+                                        maxWidth: '96%',
+                                        marginLeft: 'auto',
+                                        marginRight: 'auto',
+                                        fontWeight: 500,
+                                        zIndex: 2,
+                                        textShadow: 'none'
+                                    }, children: projectName && projectName.trim() ? projectName : 'Untitled Project' }) }), (0,jsx_runtime.jsxs)("div", { className: `inline-flex items-center gap-2 px-2 py-0.5 rounded-full text-xs font-medium mb-2 ${statusStyles.bg} ${statusStyles.text}`, style: { minHeight: 24 }, children: [statusStyles.icon, (0,jsx_runtime.jsx)("span", { children: formatStatusText(status) })] }), productionCompany && ((0,jsx_runtime.jsxs)(Card/* CardDescription */.BT, { className: "flex items-center text-sm mb-3", children: [(0,jsx_runtime.jsx)(film/* default */.A, { size: 14, className: "mr-1.5 text-gray-400" }), productionCompany] })), primaryLocation && ((0,jsx_runtime.jsxs)("div", { className: "flex items-center text-sm text-gray-500 mb-3", children: [(0,jsx_runtime.jsx)(map_pin/* default */.A, { size: 14, className: "mr-1.5 text-gray-400" }), primaryLocation] })), summary && ((0,jsx_runtime.jsx)("p", { className: "text-sm text-gray-600 mb-4 line-clamp-3", children: summary })), genres.length > 0 && ((0,jsx_runtime.jsxs)("div", { className: "flex flex-wrap gap-2 mt-3 mb-4", children: [genres.slice(0, 3).map((genre, index) => ((0,jsx_runtime.jsx)("span", { className: "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800", children: genre }, `${genre}-${index}`))), genres.length > 3 && ((0,jsx_runtime.jsxs)("span", { className: "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600", children: ["+", genres.length - 3, " more"] }))] }))] }), (0,jsx_runtime.jsx)(Card/* CardFooter */.wL, { className: "pt-4 border-t border-gray-100", children: (0,jsx_runtime.jsxs)("div", { className: "flex items-center justify-between w-full", children: [(0,jsx_runtime.jsxs)("div", { className: "flex items-center text-xs text-gray-500", children: [(0,jsx_runtime.jsx)(calendar/* default */.A, { size: 12, className: "mr-1" }), (0,jsx_runtime.jsx)("span", { children: (() => {
+                                                const startDateFormatted = formatDateWithFallback(startDate);
+                                                const endDateFormatted = formatDateWithFallback(endDate);
+                                                if (!startDateFormatted && !endDateFormatted) {
+                                                    return '';
+                                                }
+                                                if (startDateFormatted && endDateFormatted) {
+                                                    return `${startDateFormatted} - ${endDateFormatted}`;
+                                                }
+                                                if (startDateFormatted) {
+                                                    return startDateFormatted;
+                                                }
+                                                if (endDateFormatted) {
+                                                    return endDateFormatted;
+                                                }
+                                                return '';
+                                            })() })] }), (0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "ghost", size: "sm", className: "text-blue-600 hover:text-blue-700 hover:bg-blue-50", onClick: handleCardClick, children: [t('projectStatus.viewDetails'), " \u2192"] })] }) })] })] }));
 };
 /* harmony default export */ const components_ProjectCard = (ProjectCard);
 

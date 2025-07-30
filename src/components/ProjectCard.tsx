@@ -298,7 +298,10 @@ const ProjectCard: React.FC<ProjectCardProps> = (props) => {
   };
 
   const formatDateWithFallback = (dateString?: string | any): string => {
-    if (!dateString) return t('projectStatus.tbd');
+    // Handle empty strings or falsy values
+    if (!dateString || (typeof dateString === 'string' && dateString.trim() === '')) {
+      return '';
+    }
     
     // Handle Firestore Timestamp objects
     if (dateString && typeof dateString === 'object' && dateString.toDate) {
@@ -313,6 +316,10 @@ const ProjectCard: React.FC<ProjectCardProps> = (props) => {
     // Handle string dates
     if (typeof dateString === 'string') {
       const date = new Date(dateString);
+      // Check if the date is valid
+      if (isNaN(date.getTime())) {
+        return '';
+      }
       return new Intl.DateTimeFormat('en-US', {
         year: 'numeric',
         month: 'short',
@@ -320,7 +327,7 @@ const ProjectCard: React.FC<ProjectCardProps> = (props) => {
       }).format(date);
     }
     
-    return t('projectStatus.tbd');
+    return '';
   };
 
   return (
@@ -328,16 +335,6 @@ const ProjectCard: React.FC<ProjectCardProps> = (props) => {
       className={`bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300 flex flex-col ${className}`}
       style={{ padding: 20, minHeight: 340, maxWidth: 370, margin: 'auto', boxSizing: 'border-box' }}
       hoverable
-      onClick={handleCardClick}
-      role="button"
-      tabIndex={0}
-      aria-label={`View details for ${projectName || 'Untitled Project'}`}
-      onKeyDown={e => { 
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          handleCardClick();
-        }
-      }}
     >
       {/* Cover Image with subtle project name overlay */}
       <div style={{ width: '100%', height: 180, position: 'relative', borderRadius: 12, overflow: 'hidden', marginBottom: 12, background: '#f8fafc' }}>
@@ -444,7 +441,28 @@ const ProjectCard: React.FC<ProjectCardProps> = (props) => {
             <div className="flex items-center text-xs text-gray-500">
               <Calendar size={12} className="mr-1" />
               <span>
-                {startDate && (typeof startDate === 'string' ? startDate.trim() : startDate) ? formatDateWithFallback(startDate) : t('projectStatus.tbd')} - {endDate && (typeof endDate === 'string' ? endDate.trim() : endDate) ? formatDateWithFallback(endDate) : t('projectStatus.tbd')}
+                {(() => {
+                  const startDateFormatted = formatDateWithFallback(startDate);
+                  const endDateFormatted = formatDateWithFallback(endDate);
+                  
+                  if (!startDateFormatted && !endDateFormatted) {
+                    return '';
+                  }
+                  
+                  if (startDateFormatted && endDateFormatted) {
+                    return `${startDateFormatted} - ${endDateFormatted}`;
+                  }
+                  
+                  if (startDateFormatted) {
+                    return startDateFormatted;
+                  }
+                  
+                  if (endDateFormatted) {
+                    return endDateFormatted;
+                  }
+                  
+                  return '';
+                })()}
               </span>
             </div>
             {/* View Details Button */}
@@ -452,6 +470,7 @@ const ProjectCard: React.FC<ProjectCardProps> = (props) => {
               variant="ghost"
               size="sm"
               className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+              onClick={handleCardClick}
             >
               {t('projectStatus.viewDetails')} →
             </Button>

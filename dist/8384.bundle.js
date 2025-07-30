@@ -126,10 +126,11 @@ module.exports = __webpack_require__.p + "084676038be5b1c38324.woff2";
 // EXPORTS
 __webpack_require__.d(__webpack_exports__, {
   l$: () => (/* binding */ Oe),
+  Ay: () => (/* binding */ Vt),
   oR: () => (/* binding */ dist_c)
 });
 
-// UNUSED EXPORTS: CheckmarkIcon, ErrorIcon, LoaderIcon, ToastBar, ToastIcon, default, resolveValue, useToaster, useToasterStore
+// UNUSED EXPORTS: CheckmarkIcon, ErrorIcon, LoaderIcon, ToastBar, ToastIcon, resolveValue, useToaster, useToasterStore
 
 // EXTERNAL MODULE: ./node_modules/react/index.js
 var react = __webpack_require__(6540);
@@ -314,7 +315,7 @@ to {
   > * {
     pointer-events: auto;
   }
-`,R=16,Oe=({reverseOrder:e,position:t="top-center",toastOptions:r,gutter:s,children:a,containerStyle:o,containerClassName:n})=>{let{toasts:i,handlers:p}=O(r);return react.createElement("div",{id:"_rht_toaster",style:{position:"fixed",zIndex:9999,top:R,left:R,right:R,bottom:R,pointerEvents:"none",...o},className:n,onMouseEnter:p.startPause,onMouseLeave:p.endPause},i.map(d=>{let h=d.position||t,v=p.calculateOffset(d,{reverseOrder:e,gutter:s,defaultPosition:t}),S=Ee(h,v);return react.createElement(ve,{id:d.id,key:d.id,onHeightUpdate:p.updateHeight,className:d.visible?De:"",style:S},d.type==="custom"?dist_f(d.message,d):a?a(d):react.createElement(C,{toast:d,position:h}))}))};var Vt=(/* unused pure expression or super */ null && (dist_c));
+`,R=16,Oe=({reverseOrder:e,position:t="top-center",toastOptions:r,gutter:s,children:a,containerStyle:o,containerClassName:n})=>{let{toasts:i,handlers:p}=O(r);return react.createElement("div",{id:"_rht_toaster",style:{position:"fixed",zIndex:9999,top:R,left:R,right:R,bottom:R,pointerEvents:"none",...o},className:n,onMouseEnter:p.startPause,onMouseLeave:p.endPause},i.map(d=>{let h=d.position||t,v=p.calculateOffset(d,{reverseOrder:e,gutter:s,defaultPosition:t}),S=Ee(h,v);return react.createElement(ve,{id:d.id,key:d.id,onHeightUpdate:p.updateHeight,className:d.visible?De:"",style:S},d.type==="custom"?dist_f(d.message,d):a?a(d):react.createElement(C,{toast:d,position:h}))}))};var Vt=dist_c;
 //# sourceMappingURL=index.mjs.map
 
 /***/ }),

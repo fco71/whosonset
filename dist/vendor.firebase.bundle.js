@@ -13423,10 +13423,11 @@ __webpack_require__.d(__webpack_exports__, {
   qk: () => (/* reexport */ getDownloadURL),
   c7: () => (/* reexport */ getStorage),
   KR: () => (/* reexport */ ref),
-  D: () => (/* reexport */ uploadBytes)
+  D: () => (/* reexport */ uploadBytes),
+  bp: () => (/* reexport */ uploadBytesResumable)
 });
 
-// UNUSED EXPORTS: StorageError, StorageErrorCode, StringFormat, _FbsBlob, _Location, _TaskEvent, _TaskState, _UploadTask, _dataFromString, _getChild, _invalidArgument, _invalidRootOperation, connectStorageEmulator, getBlob, getBytes, getMetadata, getStream, list, listAll, updateMetadata, uploadBytesResumable, uploadString
+// UNUSED EXPORTS: StorageError, StorageErrorCode, StringFormat, _FbsBlob, _Location, _TaskEvent, _TaskState, _UploadTask, _dataFromString, _getChild, _invalidArgument, _invalidRootOperation, connectStorageEmulator, getBlob, getBytes, getMetadata, getStream, list, listAll, updateMetadata, uploadString
 
 // EXTERNAL MODULE: ./node_modules/@firebase/app/dist/esm/index.esm2017.js
 var index_esm2017 = __webpack_require__(8461);
@@ -15343,7 +15344,7 @@ function getResumableUploadStatus(service, location, url, blob) {
  * Any uploads via the resumable upload API must transfer a number of bytes
  * that is a multiple of this number.
  */
-const RESUMABLE_UPLOAD_CHUNK_SIZE = (/* unused pure expression or super */ null && (256 * 1024));
+const RESUMABLE_UPLOAD_CHUNK_SIZE = 256 * 1024;
 /**
  * @param url From a call to fbs.requests.createResumableUpload.
  * @param chunkSize Number of bytes to upload.
@@ -16875,7 +16876,7 @@ function uploadString(ref, value, format, metadata) {
  * @returns An UploadTask
  */
 function uploadBytesResumable(ref, data, metadata) {
-    ref = getModularInstance(ref);
+    ref = (0,dist_index_esm2017/* getModularInstance */.Ku)(ref);
     return uploadBytesResumable$1(ref, data, metadata);
 }
 /**
@@ -17774,13 +17775,12 @@ __webpack_require__.d(__webpack_exports__, {
   P: () => (/* reexport */ query),
   O5: () => (/* reexport */ serverTimestamp),
   BN: () => (/* reexport */ setDoc),
-  HM: () => (/* reexport */ startAfter),
   mZ: () => (/* reexport */ updateDoc),
   _M: () => (/* reexport */ where),
   wP: () => (/* reexport */ writeBatch)
 });
 
-// UNUSED EXPORTS: AbstractUserDataWriter, AggregateField, AggregateQuerySnapshot, Bytes, CACHE_SIZE_UNLIMITED, CollectionReference, DocumentReference, DocumentSnapshot, FieldPath, FieldValue, Firestore, FirestoreError, GeoPoint, LoadBundleTask, PersistentCacheIndexManager, Query, QueryCompositeFilterConstraint, QueryConstraint, QueryDocumentSnapshot, QueryEndAtConstraint, QueryFieldFilterConstraint, QueryLimitConstraint, QueryOrderByConstraint, QuerySnapshot, QueryStartAtConstraint, SnapshotMetadata, Timestamp, Transaction, VectorValue, WriteBatch, _AutoId, _ByteString, _DatabaseId, _DocumentKey, _EmptyAppCheckTokenProvider, _EmptyAuthCredentialsProvider, _FieldPath, _TestingHooks, _cast, _debugAssert, _internalAggregationQueryToProtoRunAggregationQueryRequest, _internalQueryToProtoQueryTarget, _isBase64Available, _logWarn, _validateIsNotUsedTogether, aggregateFieldEqual, aggregateQuerySnapshotEqual, and, average, clearIndexedDbPersistence, collectionGroup, connectFirestoreEmulator, count, deleteAllPersistentCacheIndexes, deleteField, disableNetwork, disablePersistentCacheIndexAutoCreation, documentId, enableIndexedDbPersistence, enableMultiTabIndexedDbPersistence, enableNetwork, enablePersistentCacheIndexAutoCreation, endAt, endBefore, ensureFirestoreConfigured, executeWrite, getAggregateFromServer, getCountFromServer, getDocFromCache, getDocFromServer, getDocsFromCache, getDocsFromServer, getPersistentCacheIndexManager, limitToLast, loadBundle, memoryEagerGarbageCollector, memoryLocalCache, memoryLruGarbageCollector, namedQuery, onSnapshotsInSync, or, persistentLocalCache, persistentMultipleTabManager, persistentSingleTabManager, queryEqual, refEqual, runTransaction, setIndexConfiguration, setLogLevel, snapshotEqual, startAt, sum, terminate, vector, waitForPendingWrites
+// UNUSED EXPORTS: AbstractUserDataWriter, AggregateField, AggregateQuerySnapshot, Bytes, CACHE_SIZE_UNLIMITED, CollectionReference, DocumentReference, DocumentSnapshot, FieldPath, FieldValue, Firestore, FirestoreError, GeoPoint, LoadBundleTask, PersistentCacheIndexManager, Query, QueryCompositeFilterConstraint, QueryConstraint, QueryDocumentSnapshot, QueryEndAtConstraint, QueryFieldFilterConstraint, QueryLimitConstraint, QueryOrderByConstraint, QuerySnapshot, QueryStartAtConstraint, SnapshotMetadata, Timestamp, Transaction, VectorValue, WriteBatch, _AutoId, _ByteString, _DatabaseId, _DocumentKey, _EmptyAppCheckTokenProvider, _EmptyAuthCredentialsProvider, _FieldPath, _TestingHooks, _cast, _debugAssert, _internalAggregationQueryToProtoRunAggregationQueryRequest, _internalQueryToProtoQueryTarget, _isBase64Available, _logWarn, _validateIsNotUsedTogether, aggregateFieldEqual, aggregateQuerySnapshotEqual, and, average, clearIndexedDbPersistence, collectionGroup, connectFirestoreEmulator, count, deleteAllPersistentCacheIndexes, deleteField, disableNetwork, disablePersistentCacheIndexAutoCreation, documentId, enableIndexedDbPersistence, enableMultiTabIndexedDbPersistence, enableNetwork, enablePersistentCacheIndexAutoCreation, endAt, endBefore, ensureFirestoreConfigured, executeWrite, getAggregateFromServer, getCountFromServer, getDocFromCache, getDocFromServer, getDocsFromCache, getDocsFromServer, getPersistentCacheIndexManager, limitToLast, loadBundle, memoryEagerGarbageCollector, memoryLocalCache, memoryLruGarbageCollector, namedQuery, onSnapshotsInSync, or, persistentLocalCache, persistentMultipleTabManager, persistentSingleTabManager, queryEqual, refEqual, runTransaction, setIndexConfiguration, setLogLevel, snapshotEqual, startAfter, startAt, sum, terminate, vector, waitForPendingWrites
 
 // EXTERNAL MODULE: ./node_modules/@firebase/app/dist/esm/index.esm2017.js
 var index_esm2017 = __webpack_require__(8461);

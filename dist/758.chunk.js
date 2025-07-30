@@ -45,7 +45,7 @@ function getPhotoUrl(profile) {
         url = profile.avatarUrl || profile.photoURL || profile.profileImageUrl;
     }
     if (!url || typeof url !== 'string' || url.trim() === '') {
-        return '/bust-avatar.svg';
+        return '/default-avatar.svg';
     }
     return url;
 }

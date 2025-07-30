@@ -57,7 +57,7 @@ export function getPhotoUrl(profile: Profile): string | undefined {
     url = (profile as any).avatarUrl || (profile as any).photoURL || (profile as any).profileImageUrl;
   }
   if (!url || typeof url !== 'string' || url.trim() === '') {
-    return '/bust-avatar.svg';
+    return '/default-avatar.svg';
   }
   return url;
 }
