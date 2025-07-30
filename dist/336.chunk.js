@@ -497,57 +497,65 @@ const ChatInterface_ChatInterface = ({ currentUserId, currentUserName, currentUs
     }, []);
     // Memoized message rendering to improve performance
     const renderMessage = (0,react.useCallback)((message) => {
-        const isSent = message.senderId === currentUserId;
-        // Defensive programming - ensure message has required properties
-        if (!message || !message.id) {
-            return null;
+        try {
+            const isSent = message.senderId === currentUserId;
+            // Defensive programming - ensure message has required properties
+            if (!message || !message.id) {
+                return null;
+            }
+            return ((0,jsx_runtime.jsxs)("div", { className: `message ${isSent ? 'sent' : 'received'}`, style: { position: 'relative' }, children: [(0,jsx_runtime.jsxs)("div", { className: "message-content", children: [['deleted_text', 'deleted_image', 'deleted_audio', 'deleted_file'].includes(message.messageType) ? ((0,jsx_runtime.jsxs)("div", { className: "deleted-message-placeholder", style: {
+                                    display: 'flex', alignItems: 'center', gap: 6,
+                                    color: '#b0b6be',
+                                    fontStyle: 'italic',
+                                    fontSize: 13,
+                                    background: 'none',
+                                    borderRadius: 0,
+                                    padding: 0,
+                                    margin: '2px 0 0 0',
+                                    boxShadow: 'none',
+                                    minHeight: 0
+                                }, children: [(0,jsx_runtime.jsx)("span", { style: { fontSize: 15, opacity: 0.7, marginRight: 2 }, children: "\uD83D\uDDD1\uFE0F" }), message.content] })) : message.messageType === 'image' && message.fileUrl && !message.fileUrl.startsWith('FILE_TOO_LARGE:') && !message.fileUrl.startsWith('UPLOAD_FAILED:') ? ((0,jsx_runtime.jsxs)("div", { className: "message-image", children: [(0,jsx_runtime.jsx)("img", { src: message.fileUrl, alt: message.fileName || 'Image', className: "message-image-content", onError: imageErrorFallback/* imageErrorFallback */.i }), message.content && (0,jsx_runtime.jsx)("p", { className: "image-caption", children: message.content })] })) : message.messageType === 'voice' && message.fileUrl && !message.fileUrl.startsWith('FILE_TOO_LARGE:') && !message.fileUrl.startsWith('UPLOAD_FAILED:') ? ((0,jsx_runtime.jsxs)("div", { className: "message-voice", children: [(0,jsx_runtime.jsx)("div", { className: "voice-player", children: (0,jsx_runtime.jsxs)("div", { className: "custom-audio-player", children: [(0,jsx_runtime.jsx)("button", { className: "play-button", onClick: (e) => {
+                                                        e.preventDefault();
+                                                        const audioElement = e.currentTarget.parentElement?.querySelector('audio');
+                                                        if (audioElement) {
+                                                            if (audioElement.paused) {
+                                                                audioElement.play().catch(err => {
+                                                                    console.error('Error playing audio:', err);
+                                                                });
+                                                                e.currentTarget.innerHTML = '⏸️';
+                                                            }
+                                                            else {
+                                                                audioElement.pause();
+                                                                e.currentTarget.innerHTML = '▶️';
+                                                            }
+                                                        }
+                                                    }, type: "button", children: "\u25B6\uFE0F" }), (0,jsx_runtime.jsx)("audio", { src: message.fileUrl, preload: "metadata", onEnded: (e) => {
+                                                        const button = e.currentTarget.parentElement?.querySelector('.play-button');
+                                                        if (button)
+                                                            button.innerHTML = '▶️';
+                                                    }, onError: (e) => {
+                                                        console.error('Audio error:', e);
+                                                    } }), (0,jsx_runtime.jsx)("div", { className: "audio-info", children: (0,jsx_runtime.jsx)("span", { className: "audio-duration", children: "Voice message" }) })] }) }), message.content && (0,jsx_runtime.jsx)("p", { className: "voice-caption", children: message.content })] })) : ((0,jsx_runtime.jsx)("div", { className: "message-text", children: message.content })), (0,jsx_runtime.jsxs)("div", { className: "message-meta", children: [(0,jsx_runtime.jsx)("span", { className: "message-time", children: formatTime(message.timestamp) }), isSent && ((0,jsx_runtime.jsxs)("span", { className: "message-status", children: [message.status === 'sending' && '⏳', message.status === 'sent' && '✓', message.status === 'delivered' && '✓✓', message.status === 'read' && '✓✓'] }))] }), message.reactions && message.reactions.length > 0 && ((0,jsx_runtime.jsx)("div", { className: "message-reactions", children: Object.entries(message.reactions.reduce((acc, reaction) => {
+                                    acc[reaction.emoji] = (acc[reaction.emoji] || 0) + 1;
+                                    return acc;
+                                }, {})).map(([emoji, count], index) => ((0,jsx_runtime.jsxs)("span", { className: "reaction", children: [emoji, (0,jsx_runtime.jsx)("span", { className: "reaction-count", children: count })] }, index))) }))] }), (0,jsx_runtime.jsxs)("div", { className: "message-actions", children: [(0,jsx_runtime.jsx)("button", { title: "Add reaction", className: "reaction-button", onClick: () => toggleReactionPicker(message.id), children: "\uD83D\uDE00" }), isSent && !['deleted_text', 'deleted_image', 'deleted_audio', 'deleted_file'].includes(message.messageType) && ((0,jsx_runtime.jsx)("button", { title: "Delete message", className: "delete-message-button", onClick: async () => {
+                                    const confirmMessage = 'Delete this message for everyone?';
+                                    if (window.confirm(confirmMessage)) {
+                                        try {
+                                            await messagingService/* MessagingService */.U.deleteMessage(message.id, message.fileUrl, message.messageType);
+                                            // The message will be updated via the listener, no need to manually update state
+                                        }
+                                        catch (error) {
+                                            console.error('Error deleting message:', error);
+                                            setError('Failed to delete message. Please try again.');
+                                        }
+                                    }
+                                }, children: "\uD83D\uDDD1\uFE0F" }))] }), showReactionPicker === message.id && ((0,jsx_runtime.jsx)("div", { className: "reaction-picker", children: reactionEmojis.map((emoji, index) => ((0,jsx_runtime.jsx)("button", { onClick: () => addReaction(message.id, emoji), className: "reaction-option", children: emoji }, index))) }))] }, message.id));
         }
-        return ((0,jsx_runtime.jsxs)("div", { className: `message ${isSent ? 'sent' : 'received'}`, style: { position: 'relative' }, children: [(0,jsx_runtime.jsxs)("div", { className: "message-content", children: [['deleted_text', 'deleted_image', 'deleted_audio', 'deleted_file'].includes(message.messageType) ? ((0,jsx_runtime.jsxs)("div", { className: "deleted-message-placeholder", style: {
-                                display: 'flex', alignItems: 'center', gap: 6,
-                                color: '#b0b6be',
-                                fontStyle: 'italic',
-                                fontSize: 13,
-                                background: 'none',
-                                borderRadius: 0,
-                                padding: 0,
-                                margin: '2px 0 0 0',
-                                boxShadow: 'none',
-                                minHeight: 0
-                            }, children: [(0,jsx_runtime.jsx)("span", { style: { fontSize: 15, opacity: 0.7, marginRight: 2 }, children: "\uD83D\uDDD1\uFE0F" }), message.content] })) : message.messageType === 'image' && message.fileUrl && !message.fileUrl.startsWith('FILE_TOO_LARGE:') && !message.fileUrl.startsWith('UPLOAD_FAILED:') ? ((0,jsx_runtime.jsxs)("div", { className: "message-image", children: [(0,jsx_runtime.jsx)("img", { src: message.fileUrl, alt: message.fileName || 'Image', className: "message-image-content", onError: imageErrorFallback/* imageErrorFallback */.i }), message.content && (0,jsx_runtime.jsx)("p", { className: "image-caption", children: message.content })] })) : message.messageType === 'voice' && message.fileUrl && !message.fileUrl.startsWith('FILE_TOO_LARGE:') && !message.fileUrl.startsWith('UPLOAD_FAILED:') ? ((0,jsx_runtime.jsxs)("div", { className: "message-voice", children: [(0,jsx_runtime.jsx)("div", { className: "voice-player", children: (0,jsx_runtime.jsxs)("div", { className: "custom-audio-player", children: [(0,jsx_runtime.jsx)("button", { className: "play-button", onClick: (e) => {
-                                                    e.preventDefault();
-                                                    const audio = e.currentTarget.nextElementSibling;
-                                                    if (audio && audio.paused) {
-                                                        audio.play().catch(err => {
-                                                            console.error('Error playing audio:', err);
-                                                        });
-                                                        e.currentTarget.innerHTML = '⏸️';
-                                                    }
-                                                    else if (audio) {
-                                                        audio.pause();
-                                                        e.currentTarget.innerHTML = '▶️';
-                                                    }
-                                                }, type: "button", children: "\u25B6\uFE0F" }), (0,jsx_runtime.jsx)("audio", { src: message.fileUrl, preload: "metadata", onEnded: (e) => {
-                                                    const button = e.currentTarget.previousElementSibling;
-                                                    if (button)
-                                                        button.innerHTML = '▶️';
-                                                }, onError: (e) => {
-                                                    console.error('Audio error:', e);
-                                                } }), (0,jsx_runtime.jsx)("div", { className: "audio-info", children: (0,jsx_runtime.jsx)("span", { className: "audio-duration", children: "Voice message" }) })] }) }), message.content && (0,jsx_runtime.jsx)("p", { className: "voice-caption", children: message.content })] })) : ((0,jsx_runtime.jsx)("div", { className: "message-text", children: message.content })), (0,jsx_runtime.jsxs)("div", { className: "message-meta", children: [(0,jsx_runtime.jsx)("span", { className: "message-time", children: formatTime(message.timestamp) }), isSent && ((0,jsx_runtime.jsxs)("span", { className: "message-status", children: [message.status === 'sending' && '⏳', message.status === 'sent' && '✓', message.status === 'delivered' && '✓✓', message.status === 'read' && '✓✓'] }))] }), message.reactions && message.reactions.length > 0 && ((0,jsx_runtime.jsx)("div", { className: "message-reactions", children: Object.entries(message.reactions.reduce((acc, reaction) => {
-                                acc[reaction.emoji] = (acc[reaction.emoji] || 0) + 1;
-                                return acc;
-                            }, {})).map(([emoji, count], index) => ((0,jsx_runtime.jsxs)("span", { className: "reaction", children: [emoji, (0,jsx_runtime.jsx)("span", { className: "reaction-count", children: count })] }, index))) }))] }), (0,jsx_runtime.jsxs)("div", { className: "message-actions", children: [(0,jsx_runtime.jsx)("button", { title: "Add reaction", className: "reaction-button", onClick: () => toggleReactionPicker(message.id), children: "\uD83D\uDE00" }), isSent && !['deleted_text', 'deleted_image', 'deleted_audio', 'deleted_file'].includes(message.messageType) && ((0,jsx_runtime.jsx)("button", { title: "Delete message", className: "delete-message-button", onClick: async () => {
-                                const confirmMessage = 'Delete this message for everyone?';
-                                if (window.confirm(confirmMessage)) {
-                                    try {
-                                        await messagingService/* MessagingService */.U.deleteMessage(message.id, message.fileUrl, message.messageType);
-                                        // The message will be updated via the listener, no need to manually update state
-                                    }
-                                    catch (error) {
-                                        console.error('Error deleting message:', error);
-                                        setError('Failed to delete message. Please try again.');
-                                    }
-                                }
-                            }, children: "\uD83D\uDDD1\uFE0F" }))] }), showReactionPicker === message.id && ((0,jsx_runtime.jsx)("div", { className: "reaction-picker", children: reactionEmojis.map((emoji, index) => ((0,jsx_runtime.jsx)("button", { onClick: () => addReaction(message.id, emoji), className: "reaction-option", children: emoji }, index))) }))] }, message.id));
+        catch (error) {
+            console.error('Error rendering message:', error);
+            return null; // Return null to avoid rendering a broken message
+        }
     }, [currentUserId, formatTime, showReactionPicker, reactionEmojis, addReaction, toggleReactionPicker]);
     if (loading) {
         return ((0,jsx_runtime.jsx)("div", { className: "chat-interface", children: (0,jsx_runtime.jsxs)("div", { className: "loading-container", children: [(0,jsx_runtime.jsx)("div", { className: "loading-spinner" }), (0,jsx_runtime.jsx)("p", { children: "Loading conversations..." })] }) }));

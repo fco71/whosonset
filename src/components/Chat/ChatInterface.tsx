@@ -518,176 +518,183 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   // Memoized message rendering to improve performance
   const renderMessage = useCallback((message: DirectMessage) => {
-    const isSent = message.senderId === currentUserId;
-    
-    // Defensive programming - ensure message has required properties
-    if (!message || !message.id) {
-      return null;
-    }
-    
-    return (
-      <div
-        key={message.id}
-        className={`message ${isSent ? 'sent' : 'received'}`}
-        style={{ position: 'relative' }}
-      >
-        <div className="message-content">
-          {['deleted_text', 'deleted_image', 'deleted_audio', 'deleted_file'].includes(message.messageType) ? (
-            <div className="deleted-message-placeholder" style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              color: '#b0b6be',
-              fontStyle: 'italic',
-              fontSize: 13,
-              background: 'none',
-              borderRadius: 0,
-              padding: 0,
-              margin: '2px 0 0 0',
-              boxShadow: 'none',
-              minHeight: 0
-            }}>
-              <span style={{ fontSize: 15, opacity: 0.7, marginRight: 2 }}>🗑️</span>
-              {message.content}
-            </div>
-          ) : message.messageType === 'image' && message.fileUrl && !message.fileUrl.startsWith('FILE_TOO_LARGE:') && !message.fileUrl.startsWith('UPLOAD_FAILED:') ? (
-            <div className="message-image">
-              <img 
-                src={message.fileUrl} 
-                alt={message.fileName || 'Image'} 
-                className="message-image-content"
-                onError={imageErrorFallback}
-              />
-              {message.content && <p className="image-caption">{message.content}</p>}
-            </div>
-          ) : message.messageType === 'voice' && message.fileUrl && !message.fileUrl.startsWith('FILE_TOO_LARGE:') && !message.fileUrl.startsWith('UPLOAD_FAILED:') ? (
-            <div className="message-voice">
-              <div className="voice-player">
-                <div className="custom-audio-player">
-                  <button 
-                    className="play-button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      const audio = e.currentTarget.nextElementSibling as HTMLAudioElement;
-                      if (audio && audio.paused) {
-                        audio.play().catch(err => {
-                          console.error('Error playing audio:', err);
-                        });
-                        e.currentTarget.innerHTML = '⏸️';
-                      } else if (audio) {
-                        audio.pause();
-                        e.currentTarget.innerHTML = '▶️';
-                      }
-                    }}
-                    type="button"
-                  >
-                    ▶️
-                  </button>
-                  <audio 
-                    src={message.fileUrl} 
-                    preload="metadata"
-                    onEnded={(e) => {
-                      const button = e.currentTarget.previousElementSibling as HTMLButtonElement;
-                      if (button) button.innerHTML = '▶️';
-                    }}
-                    onError={(e) => {
-                      console.error('Audio error:', e);
-                    }}
-                  />
-                  <div className="audio-info">
-                    <span className="audio-duration">Voice message</span>
+    try {
+      const isSent = message.senderId === currentUserId;
+      
+      // Defensive programming - ensure message has required properties
+      if (!message || !message.id) {
+        return null;
+      }
+      
+      return (
+        <div
+          key={message.id}
+          className={`message ${isSent ? 'sent' : 'received'}`}
+          style={{ position: 'relative' }}
+        >
+          <div className="message-content">
+            {['deleted_text', 'deleted_image', 'deleted_audio', 'deleted_file'].includes(message.messageType) ? (
+              <div className="deleted-message-placeholder" style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                color: '#b0b6be',
+                fontStyle: 'italic',
+                fontSize: 13,
+                background: 'none',
+                borderRadius: 0,
+                padding: 0,
+                margin: '2px 0 0 0',
+                boxShadow: 'none',
+                minHeight: 0
+              }}>
+                <span style={{ fontSize: 15, opacity: 0.7, marginRight: 2 }}>🗑️</span>
+                {message.content}
+              </div>
+            ) : message.messageType === 'image' && message.fileUrl && !message.fileUrl.startsWith('FILE_TOO_LARGE:') && !message.fileUrl.startsWith('UPLOAD_FAILED:') ? (
+              <div className="message-image">
+                <img 
+                  src={message.fileUrl} 
+                  alt={message.fileName || 'Image'} 
+                  className="message-image-content"
+                  onError={imageErrorFallback}
+                />
+                {message.content && <p className="image-caption">{message.content}</p>}
+              </div>
+            ) : message.messageType === 'voice' && message.fileUrl && !message.fileUrl.startsWith('FILE_TOO_LARGE:') && !message.fileUrl.startsWith('UPLOAD_FAILED:') ? (
+              <div className="message-voice">
+                <div className="voice-player">
+                  <div className="custom-audio-player">
+                    <button 
+                      className="play-button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        const audioElement = e.currentTarget.parentElement?.querySelector('audio') as HTMLAudioElement;
+                        if (audioElement) {
+                          if (audioElement.paused) {
+                            audioElement.play().catch(err => {
+                              console.error('Error playing audio:', err);
+                            });
+                            e.currentTarget.innerHTML = '⏸️';
+                          } else {
+                            audioElement.pause();
+                            e.currentTarget.innerHTML = '▶️';
+                          }
+                        }
+                      }}
+                      type="button"
+                    >
+                      ▶️
+                    </button>
+                    <audio 
+                      src={message.fileUrl} 
+                      preload="metadata"
+                      onEnded={(e) => {
+                        const button = e.currentTarget.parentElement?.querySelector('.play-button') as HTMLButtonElement;
+                        if (button) button.innerHTML = '▶️';
+                      }}
+                      onError={(e) => {
+                        console.error('Audio error:', e);
+                      }}
+                    />
+                    <div className="audio-info">
+                      <span className="audio-duration">Voice message</span>
+                    </div>
                   </div>
                 </div>
+                {message.content && <p className="voice-caption">{message.content}</p>}
               </div>
-              {message.content && <p className="voice-caption">{message.content}</p>}
-            </div>
-          ) : (
-            <div className="message-text">
-              {message.content}
-            </div>
-          )}
-          
-          <div className="message-meta">
-            <span className="message-time">
-              {formatTime(message.timestamp)}
-            </span>
-            {isSent && (
-              <span className="message-status">
-                {message.status === 'sending' && '⏳'}
-                {message.status === 'sent' && '✓'}
-                {message.status === 'delivered' && '✓✓'}
-                {message.status === 'read' && '✓✓'}
+            ) : (
+              <div className="message-text">
+                {message.content}
+              </div>
+            )}
+            
+            <div className="message-meta">
+              <span className="message-time">
+                {formatTime(message.timestamp)}
               </span>
+              {isSent && (
+                <span className="message-status">
+                  {message.status === 'sending' && '⏳'}
+                  {message.status === 'sent' && '✓'}
+                  {message.status === 'delivered' && '✓✓'}
+                  {message.status === 'read' && '✓✓'}
+                </span>
+              )}
+            </div>
+
+            {/* Reactions */}
+            {message.reactions && message.reactions.length > 0 && (
+              <div className="message-reactions">
+                {/* Group reactions by emoji */}
+                {Object.entries(
+                  message.reactions.reduce((acc, reaction) => {
+                    acc[reaction.emoji] = (acc[reaction.emoji] || 0) + 1;
+                    return acc;
+                  }, {} as Record<string, number>)
+                ).map(([emoji, count], index) => (
+                  <span key={index} className="reaction">
+                    {emoji}
+                    <span className="reaction-count">{count}</span>
+                  </span>
+                ))}
+              </div>
             )}
           </div>
 
-          {/* Reactions */}
-          {message.reactions && message.reactions.length > 0 && (
-            <div className="message-reactions">
-              {/* Group reactions by emoji */}
-              {Object.entries(
-                message.reactions.reduce((acc, reaction) => {
-                  acc[reaction.emoji] = (acc[reaction.emoji] || 0) + 1;
-                  return acc;
-                }, {} as Record<string, number>)
-              ).map(([emoji, count], index) => (
-                <span key={index} className="reaction">
+          {/* Action buttons */}
+          <div className="message-actions">
+            {/* Reaction button */}
+            <button
+              title="Add reaction"
+              className="reaction-button"
+              onClick={() => toggleReactionPicker(message.id)}
+            >
+              😀
+            </button>
+
+            {/* Delete button for sender's messages */}
+            {isSent && !['deleted_text', 'deleted_image', 'deleted_audio', 'deleted_file'].includes(message.messageType) && (
+              <button
+                title="Delete message"
+                className="delete-message-button"
+                onClick={async () => {
+                  const confirmMessage = 'Delete this message for everyone?';
+                  if (window.confirm(confirmMessage)) {
+                    try {
+                      await MessagingService.deleteMessage(message.id, message.fileUrl, message.messageType);
+                      // The message will be updated via the listener, no need to manually update state
+                    } catch (error) {
+                      console.error('Error deleting message:', error);
+                      setError('Failed to delete message. Please try again.');
+                    }
+                  }
+                }}
+              >
+                🗑️
+              </button>
+            )}
+          </div>
+
+          {/* Reaction picker */}
+          {showReactionPicker === message.id && (
+            <div className="reaction-picker">
+              {reactionEmojis.map((emoji, index) => (
+                <button
+                  key={index}
+                  onClick={() => addReaction(message.id, emoji)}
+                  className="reaction-option"
+                >
                   {emoji}
-                  <span className="reaction-count">{count}</span>
-                </span>
+                </button>
               ))}
             </div>
           )}
         </div>
-
-        {/* Action buttons */}
-        <div className="message-actions">
-          {/* Reaction button */}
-          <button
-            title="Add reaction"
-            className="reaction-button"
-            onClick={() => toggleReactionPicker(message.id)}
-          >
-            😀
-          </button>
-
-          {/* Delete button for sender's messages */}
-          {isSent && !['deleted_text', 'deleted_image', 'deleted_audio', 'deleted_file'].includes(message.messageType) && (
-            <button
-              title="Delete message"
-              className="delete-message-button"
-              onClick={async () => {
-                const confirmMessage = 'Delete this message for everyone?';
-                if (window.confirm(confirmMessage)) {
-                  try {
-                    await MessagingService.deleteMessage(message.id, message.fileUrl, message.messageType);
-                    // The message will be updated via the listener, no need to manually update state
-                  } catch (error) {
-                    console.error('Error deleting message:', error);
-                    setError('Failed to delete message. Please try again.');
-                  }
-                }
-              }}
-            >
-              🗑️
-            </button>
-          )}
-        </div>
-
-        {/* Reaction picker */}
-        {showReactionPicker === message.id && (
-          <div className="reaction-picker">
-            {reactionEmojis.map((emoji, index) => (
-              <button
-                key={index}
-                onClick={() => addReaction(message.id, emoji)}
-                className="reaction-option"
-              >
-                {emoji}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-    );
+      );
+    } catch (error) {
+      console.error('Error rendering message:', error);
+      return null; // Return null to avoid rendering a broken message
+    }
   }, [currentUserId, formatTime, showReactionPicker, reactionEmojis, addReaction, toggleReactionPicker]);
 
   if (loading) {

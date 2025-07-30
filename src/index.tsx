@@ -10,6 +10,20 @@ import { RouterProvider } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { createAppRouter } from './router';
 
+// Global error handler to catch any runtime errors
+window.addEventListener('error', function(event) {
+  console.error('Global error caught:', {
+    message: event.message,
+    filename: event.filename,
+    lineno: event.lineno,
+    colno: event.colno,
+    error: event.error
+  });
+  
+  // Prevent the error from being logged multiple times
+  event.preventDefault();
+});
+
 // Global handler for all <img> errors (for blob URLs)
 document.addEventListener(
   'error',
@@ -34,6 +48,10 @@ window.addEventListener('unhandledrejection', function (e) {
     // Prevent the error from being logged to console
     e.preventDefault();
     console.warn('Blob URL not found, this is expected when blobs are cleaned up');
+  } else {
+    // Log other unhandled promise rejections
+    console.error('Unhandled promise rejection:', e.reason);
+    e.preventDefault();
   }
 });
 

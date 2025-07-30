@@ -609,868 +609,6 @@ const ThemeProvider = ({ children, }) => {
 
 /***/ }),
 
-/***/ 6630:
-/***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
-
-
-// EXTERNAL MODULE: ./node_modules/react/jsx-runtime.js
-var jsx_runtime = __webpack_require__(4848);
-// EXTERNAL MODULE: ./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js
-var injectStylesIntoStyleTag = __webpack_require__(5072);
-var injectStylesIntoStyleTag_default = /*#__PURE__*/__webpack_require__.n(injectStylesIntoStyleTag);
-// EXTERNAL MODULE: ./node_modules/style-loader/dist/runtime/styleDomAPI.js
-var styleDomAPI = __webpack_require__(7825);
-var styleDomAPI_default = /*#__PURE__*/__webpack_require__.n(styleDomAPI);
-// EXTERNAL MODULE: ./node_modules/style-loader/dist/runtime/insertBySelector.js
-var insertBySelector = __webpack_require__(7659);
-var insertBySelector_default = /*#__PURE__*/__webpack_require__.n(insertBySelector);
-// EXTERNAL MODULE: ./node_modules/style-loader/dist/runtime/setAttributesWithoutAttributes.js
-var setAttributesWithoutAttributes = __webpack_require__(5056);
-var setAttributesWithoutAttributes_default = /*#__PURE__*/__webpack_require__.n(setAttributesWithoutAttributes);
-// EXTERNAL MODULE: ./node_modules/style-loader/dist/runtime/insertStyleElement.js
-var insertStyleElement = __webpack_require__(540);
-var insertStyleElement_default = /*#__PURE__*/__webpack_require__.n(insertStyleElement);
-// EXTERNAL MODULE: ./node_modules/style-loader/dist/runtime/styleTagTransform.js
-var styleTagTransform = __webpack_require__(1113);
-var styleTagTransform_default = /*#__PURE__*/__webpack_require__.n(styleTagTransform);
-// EXTERNAL MODULE: ./node_modules/css-loader/dist/cjs.js!./node_modules/postcss-loader/dist/cjs.js!./src/styles/globals.css
-var globals = __webpack_require__(8321);
-;// ./src/styles/globals.css
-
-      
-      
-      
-      
-      
-      
-      
-      
-      
-
-var options = {};
-
-options.styleTagTransform = (styleTagTransform_default());
-options.setAttributes = (setAttributesWithoutAttributes_default());
-options.insert = insertBySelector_default().bind(null, "head");
-options.domAPI = (styleDomAPI_default());
-options.insertStyleElement = (insertStyleElement_default());
-
-var update = injectStylesIntoStyleTag_default()(globals/* default */.A, options);
-
-
-
-
-       /* harmony default export */ const styles_globals = (globals/* default */.A && globals/* default */.A.locals ? globals/* default */.A.locals : undefined);
-
-// EXTERNAL MODULE: ./node_modules/i18next/dist/esm/i18next.js
-var i18next = __webpack_require__(2635);
-// EXTERNAL MODULE: ./node_modules/react-i18next/dist/es/index.js + 15 modules
-var es = __webpack_require__(2389);
-// EXTERNAL MODULE: ./node_modules/i18next-browser-languagedetector/dist/esm/i18nextBrowserLanguageDetector.js
-var i18nextBrowserLanguageDetector = __webpack_require__(4997);
-;// ./src/locales/en/translation.json
-const translation_namespaceObject = /*#__PURE__*/JSON.parse('{"nav":{"home":"Home","crew":"Crew","jobs":"Jobs","projects":"Projects","collaboration":"Collaboration","social":"Social","favorites":"Favorites","resumeBuilder":"Resume Builder","myPostedJobs":"My Posted Jobs","jobAnalytics":"Job Analytics","postNewJob":"Post New Job","myApplications":"My Applications","postedJobs":"Posted Jobs","settings":"Settings","signOut":"Sign Out","signIn":"Sign In","getStarted":"Get Started"},"home":{"loading":"Loading...","stats":{"activeProfessionals":"Active Professionals","projectsCompleted":"Projects Completed","successRate":"Success Rate","countries":"Countries"},"hero":{"banner":"The Film Industry\'s Premier Networking Platform","title1":"Connect Film","title2":"Professionals","subtitle":"Join thousands of filmmakers, crew members, and industry professionals connecting, collaborating, and creating amazing projects together.","ctaPrimary":"Start Your Journey","ctaSecondary":"Browse Jobs"},"features":{"title":"Everything You Need to Succeed","subtitle":"From project showcase to real-time collaboration, we provide all the tools you need to advance your film career.","projectShowcase":{"title":"Project Showcase","desc":"Display your best work and connect with industry professionals"},"crewNetworking":{"title":"Crew Networking","desc":"Build meaningful connections with talented filmmakers worldwide"},"jobBoard":{"title":"Job Board","desc":"Find and post film production jobs across all departments"},"globalReach":{"title":"Global Reach","desc":"Connect with professionals from around the world"},"industryRecognition":{"title":"Industry Recognition","desc":"Showcase your awards and achievements to stand out"},"realTimeCollab":{"title":"Real-time Collaboration","desc":"Work together seamlessly with integrated communication tools"}},"howItWorks":{"title":"How It Works","subtitle":"Get started in just three simple steps and join the largest film industry network.","step1":{"title":"Create Your Profile","desc":"Build your professional profile and showcase your best work to stand out from the crowd."},"step2":{"title":"Connect & Network","desc":"Find and connect with industry professionals, join projects, and build your network."},"step3":{"title":"Collaborate & Grow","desc":"Work on amazing projects, share opportunities, and grow your career in the film industry."}},"cta":{"title":"Ready to Take Your Career to the Next Level?","subtitle":"Join thousands of film professionals who are already using our platform to grow their careers.","ctaPrimary":"Join the Community","ctaSecondary":"Explore Profiles"}},"auth":{"login":{"title":"Welcome back","subtitle":"Sign in to your account to continue","email":"Email Address","emailPlaceholder":"Enter your email","password":"Password","passwordPlaceholder":"Enter your password","showPassword":"Show password","hidePassword":"Hide password","signingIn":"Signing in...","signIn":"Sign In","continueWithGoogle":"Continue with Google","continueWithApple":"Continue with Apple","or":"or","noAccount":"Don\'t have an account?","createAccount":"Create one here","termsPrivacy":"By signing in, you agree to our","termsService":"Terms of Service","privacyPolicy":"Privacy Policy","and":"and"},"register":{"title":"Create your account","subtitle":"Join My Film Jobs to connect with the film industry","personalInfo":"Personal Information","firstName":"First Name","firstNamePlaceholder":"John","lastName":"Last Name","lastNamePlaceholder":"Doe","accountDetails":"Account Details","email":"Email Address","emailPlaceholder":"john.doe@example.com","password":"Password","passwordPlaceholder":"Create a strong password","passwordHelper":"Must be at least 6 characters long","confirmPassword":"Confirm Password","confirmPasswordPlaceholder":"Confirm your password","creatingAccount":"Creating account...","createAccount":"Create Account","haveAccount":"Already have an account?","signInHere":"Sign in here","termsPrivacy":"By creating an account, you agree to our"},"errors":{"emailPasswordRequired":"Please enter both email and password.","invalidCredentials":"Invalid email or password.","tooManyRequests":"Too many failed attempts. Please try again later.","loginError":"An error occurred during login. Please try again.","popupClosed":"Sign-in was cancelled. Please try again.","popupBlocked":"Sign-in popup was blocked. Please allow popups and try again.","googleSignInError":"Google sign-in failed. Please try again.","appleSignInError":"Apple sign-in failed. Please try again.","nameRequired":"First name and last name are required","emailRequired":"Email is required","passwordLength":"Password must be at least 6 characters long","passwordMatch":"Passwords do not match","emailInUse":"An account with this email already exists","weakPassword":"Password is too weak. Please choose a stronger password.","invalidEmail":"Please enter a valid email address","registrationError":"An error occurred during registration. Please try again.","accountCreated":"Account created successfully! Redirecting...","loginRequired":"Please log in to save jobs"}},"jobs":{"title":"Jobs","heroTitle":"Find Your Next Film Industry Role","heroSubtitle":"Discover opportunities with leading productions, connect with industry professionals, and advance your career in film and television.","searchPlaceholder":"Search jobs by title, company, or keywords...","search":"Search jobs...","filters":"Filters","showFilters":"Show Filters","hideFilters":"Hide Filters","noJobsFound":"No jobs found","loadingJobs":"Loading jobs...","allDepartments":"All Departments","allLocations":"All Locations","allJobTypes":"All Job Types","remoteOnly":"Remote Only","applyFilters":"Apply Filters","clearFilters":"Clear Filters","saveJob":"Save job for later","removeFromSaved":"Remove from saved jobs","jobSaved":"Job saved successfully","jobRemoved":"Job removed from saved","failedToSave":"Failed to save job. Please try again.","viewDetails":"View Details","editJob":"Edit Job","untitledPosition":"Untitled Position","various":"Various","remote":"Remote","paid":"Paid","level":"level","posted":"Posted","activeJobs":"Active Jobs","companies":"Companies","locations":"Locations","remoteJobs":"Remote Jobs","invalidJobData":"Invalid job data","myApplications":"My Applications","savedJobs":"Saved Jobs","postJob":"Post Job","myPostedJobs":"My Posted Jobs","jobAnalytics":"Job Analytics","postNewJob":"Post New Job","jobsAvailable":"Jobs Available","allAvailablePositions":"All Available Positions","sortBy":"Sort by","newestFirst":"Newest First","oldestFirst":"Oldest First","salaryHighToLow":"Salary: High to Low","salaryLowToHigh":"Salary: Low to High","loadMoreJobs":"Load More Jobs","department":"Department","location":"Location","enterLocation":"Enter location","jobType":"Job Type","filteredResults":"Filtered results","tryAdjustingFilters":"Try adjusting your search or filters to find more opportunities.","departments":{"camera":"Camera","sound":"Sound","lighting":"Lighting","art":"Art","costume":"Costume","makeup":"Makeup","hair":"Hair","production":"Production","postProduction":"Post-Production","vfx":"VFX","stunts":"Stunts","transportation":"Transportation","catering":"Catering"},"jobTypes":{"fullTime":"Full Time","partTime":"Part Time","contract":"Contract","freelance":"Freelance","temporary":"Temporary","internship":"Internship"}},"crew":{"title":"Crew","discoverTalent":"Discover Creative Talent","discoverSubtitle":"Connect with exceptional crew members from around the world.","refineSearch":"Refine Your Search","findPerfectCrew":"Find the perfect crew member for your project","searchCrew":"Search crew members...","searchPlaceholder":"Search by name, role, or skills...","search":"Search","filters":"Filters","clearFilters":"Clear All Filters","resetFilters":"Reset Filters","applyFilters":"Apply Filters","noResults":"No crew members found","tryAdjusting":"Try adjusting your search or filters to find more crew members.","browseAllCrew":"Browse All Crew","viewAllCrew":"View All Crew","crewProfiles":"Crew Profiles","savedCrew":"Saved Crew","savedCrewProfiles":"Saved Crew Profiles","myCrew":"My Crew","teamMembers":"Team Members","loading":"Loading crew...","loadingProfiles":"Loading profiles...","department":"Department","allDepartments":"All Departments","role":"Role","allRoles":"All Roles","jobTitle":"Job Title","allJobTitles":"All Job Titles","location":"Location","allLocations":"All Locations","country":"Country","allCountries":"All Countries","city":"City","availability":"Availability","allAvailability":"All Availability","allStatus":"All Status","available":"Available","soon":"Available Soon","unavailable":"Unavailable","crewMember":"Crew Member","locationNotSpecified":"Location not specified","addToBookmarks":"Add to bookmarks","removeFromBookmarks":"Remove from bookmarks","bookmarkAdded":"Crew member bookmarked","bookmarkRemoved":"Bookmark removed","follow":"Follow","following":"Following","unfollow":"Unfollow","sendMessage":"Send Message","viewProfile":"View Profile","editProfile":"Edit Profile","profileNotFound":"Profile not found","noSavedProfiles":"No Saved Profiles Yet","startBuilding":"Start building your collection by browsing crew profiles and saving the ones you\'re interested in.","browseCrewProfiles":"Browse Crew Profiles","curatedCollection":"Your curated collection of talented crew members","talentsFound":"Talents Found","totalResults":"crew members found","showingResults":"Showing results matching your filters","loadMore":"Load More","sortBy":"Sort by","name":"Name","experience":"Experience","rating":"Rating","recentlyAdded":"Recently Added","alphabetical":"Alphabetical","byAvailability":"By Availability","addCrew":"Add Crew","addCrewMember":"Add Crew Member","editCrewMember":"Edit Crew Member","removeCrewMember":"Remove Crew Member","confirmRemove":"Are you sure you want to remove this crew member?","status":"Status","salary":"Salary","startDate":"Start Date","endDate":"End Date","notes":"Notes","pending":"Pending","confirmed":"Confirmed","active":"Active","completed":"Completed","cancelled":"Cancelled"},"postJob":{"title":"Post a New Job","subtitle":"Fill out the form below to post a new job listing.","postNewJob":"Post a New Job","postJobDescription":"Fill out the form below to post a new job listing.","signInRequired":"Sign in required","signInMessage":"You must be signed in to post a job. Please sign in or register to continue.","signIn":"sign in","register":"register","basicInfo":"Basic Information","jobTitle":"Job Title","jobTitleRequired":"Job Title *","jobTitlePlaceholder":"e.g. Gaffer, Key Grip, Production Designer","department":"Department","departmentRequired":"Department *","selectDepartment":"Select a department","location":"Location","locationRequired":"Location *","locationPlaceholder":"e.g. Los Angeles, CA or Remote","jobType":"Job Type","selectJobType":"Select job type","fullTime":"Full-time","partTime":"Part-time","contract":"Contract","freelance":"Freelance","temporary":"Temporary","internship":"Internship","volunteer":"Volunteer","experienceLevel":"Experience Level","intern":"Intern","entry":"Entry","associate":"Associate","mid":"Mid","senior":"Senior","lead":"Lead","manager":"Manager","director":"Director","executive":"Executive","jobDescription":"Job Description","jobDescriptionRequired":"Job Description *","jobDescriptionPlaceholder":"Detailed description of the job","requirements":"Requirements","requirementsPlaceholder":"List the requirements for this job","responsibilities":"Responsibilities","responsibilitiesPlaceholder":"List the responsibilities for this job","benefits":"Benefits & Perks","perks":"Perks","benefitsPlaceholder":"List the benefits and perks for this job","skills":"Skills","skillsPlaceholder":"List required skills for this job","compensation":"Compensation","minimumSalary":"Minimum Salary","minimumSalaryPlaceholder":"e.g. 50000","maximumSalary":"Maximum Salary","maximumSalaryPlaceholder":"e.g. 70000","salaryPeriod":"Salary Period","perYear":"Per Year","perMonth":"Per Month","perWeek":"Per Week","perDay":"Per Day","perHour":"Per Hour","showSalary":"Show salary on job posting","showSalaryOnJobPosting":"Show salary on job posting","projectInfo":"Project Information","projectName":"Project Name","projectLink":"Project Link","projectType":"Project Type","feature":"Feature","short":"Short","tv":"TV","commercial":"Commercial","musicVideo":"Music Video","corporate":"Corporate","documentary":"Documentary","other":"Other","timeline":"Timeline","startDate":"Start Date","startDateRequired":"Start Date *","endDate":"End Date","contactInfo":"Contact Information","contactInformation":"Contact Information","contactInfoSubtitle":"How should applicants contact you?","howToContact":"How should applicants contact you?","contactName":"Contact Name","contactNameRequired":"Contact Name *","contactEmail":"Contact Email","contactEmailRequired":"Contact Email *","contactPhone":"Contact Phone","showContactEmail":"Show email address publicly on job posting","showEmailOnJobPosting":"Show email address publicly on job posting","showContactEmailNote":"If unchecked, applicants will only see your name and can contact you through the application system.","showEmailExplanation":"If unchecked, applicants will only see your name and can contact you through the application system.","additionalInfo":"Additional Information","isPaid":"Paid position","isUnion":"Union job","isRemote":"Remote work allowed","visaSponsorship":"Visa sponsorship available","relocationAssistance":"Relocation assistance available","cancel":"Cancel","publishJob":"Publish Job","publishing":"Publishing...","pleaseFixErrors":"Please fix the errors in the form before submitting.","fixErrors":"Please fix the errors in the form before submitting.","jobPostedSuccess":"Job posted successfully!","jobPostingFailed":"Failed to post job. Please try again."},"applyJob":{"backToJob":"Back to Job","applyFor":"Apply for","completeApplication":"Complete your application for this position","urgent":"Urgent","coverLetter":"Cover Letter (Optional)","coverLetterPlaceholder":"Tell us why you\'re interested in this position and why you\'d be a great fit... (optional)","coverLetterNote":"Optional: 300-500 words recommended if provided.","expectedSalary":"Expected Salary (Optional)","expectedSalaryPlaceholder":"e.g., 75000","perYear":"per year","salaryNote":"This helps us understand your salary expectations","availabilityDate":"Availability Date","availabilityNote":"When can you start this position?","additionalNotes":"Additional Notes (Optional)","additionalNotesPlaceholder":"Any additional information you\'d like to share...","portfolio":"Portfolio/Website (Optional)","portfolioPlaceholder":"Link to your portfolio or website","submitApplication":"Submit Application","submitting":"Submitting...","applicationSubmitted":"Application submitted successfully!","applicationFailed":"Failed to submit application. Please try again.","pleaseCompleteRequired":"Please complete all required fields.","loading":"Loading job details...","jobNotFound":"Job not found","applicationClosed":"Application period has closed for this position."},"jobDashboard":{"title":"Job Poster Dashboard","subtitle":"Manage your job postings, track applications, and analyze performance.","loading":"Loading dashboard...","overview":"Overview","postedJobs":"Posted Jobs","applications":"Applications","analytics":"Analytics","totalJobsPosted":"Total Jobs Posted","activeJobs":"Active Jobs","totalApplications":"Total Applications","pendingApplications":"Pending Applications","avgApplicationsJob":"Avg Applications/Job","totalViews":"Total Views","yourPostedJobs":"Your Posted Jobs","postNewJob":"+ Post New Job","noJobsPosted":"No jobs posted yet","startPosting":"Start posting jobs to see them here and track applications.","postFirstJob":"Post Your First Job","applicants":"Applicants","views":"Views","view":"View","apps":"Apps","edit":"Edit","allApplications":"All Applications","noApplicationsYet":"No applications yet","applicationsWillAppear":"Applications from your job postings will appear here.","applicant":"Applicant","appliedOn":"Applied on","viewApplication":"View Application","viewJob":"View Job","jobPerformance":"Job Performance","applicationStatus":"Application Status","pending":"pending","reviewed":"reviewed","shortlisted":"shortlisted","hired":"hired","postedBy":"Posted by","postedOn":"Posted on","you":"You"},"jobAnalytics":{"title":"Job Poster Analytics","subtitle":"Insights into your job postings and applicants","backToDashboard":"← Back to Dashboard","totalJobsPosted":"Total Jobs Posted","totalApplications":"Total Applications","avgApplicationsJob":"Avg Applications / Job","avgTimeToFill":"Avg Time to Fill","notAvailable":"N/A","applicationStatusBreakdown":"Application Status Breakdown","topJobsByApplicants":"Top Jobs by Applicants","monthlyApplicationTrends":"Monthly Application Trends","applicants":"applicants","noData":"No data available","performanceMetrics":"Performance Metrics","conversionRate":"Conversion Rate","responseTime":"Response Time","fillRate":"Fill Rate"},"projects":{"title":"Projects","subtitle":"Discover, create, and manage film projects. You can also view and edit your own projects.","subtitleLoggedOut":"Discover, create, and manage film projects.","allProjects":"All Projects","myProjects":"My Projects","createNewProject":"+ Create New Project","loading":"Loading...","loadingProjects":"Loading projects...","errorLoading":"Error loading projects.","noProjectsFound":"No projects found","noProjectsYet":"You haven\'t added any projects yet.","noProjectsAvailable":"No projects available.","edit":"Edit","delete":"Delete","confirmDelete":"Are you sure you want to delete this project? This cannot be undone.","deleteSuccess":"Project deleted successfully.","deleteFailed":"Failed to delete project.","backToProjects":"← Back to All Projects","viewDetails":"View Details","manageProject":"Manage Project","editProject":"Edit Project","suggestUpdate":"Suggest Update","projectNotFound":"Project not found or not available.","mustBeLoggedIn":"You must be logged in to view your projects."},"projectForm":{"generalInfo":"General Information","generalInfoDesc":"Basic project details and company information","creativeInfo":"Creative Information","creativeInfoDesc":"Story details and creative team","basicInfo":"Basic Information","storyInfo":"Story Info","productionTimeline":"Production Timeline","creativeTeam":"Creative Team","media":"Media","additional":"Additional","projectName":"Project Name","projectNamePlaceholder":"Enter project name","productionCompany":"Production Company","productionCompanyPlaceholder":"Enter production company","country":"Country","status":"Status","statusPlaceholder":"Select project status","logline":"Logline","loglinePlaceholder":"Brief one-sentence summary of the project","loglineHelper":"A concise summary that captures the essence of your project","synopsis":"Synopsis","synopsisPlaceholder":"Detailed project description","synopsisHelper":"A comprehensive overview of your project\'s story and vision","startDate":"Start Date","endDate":"End Date","genre":"Genre","genres":"Genres (comma-separated)","genresPlaceholder":"e.g., Action, Comedy","director":"Director","producer":"Producer","coverImage":"Cover Image","website":"Website","budget":"Budget","companyContact":"Company Contact","cancel":"Cancel","saveChanges":"Save Changes","saving":"Saving...","delete":"Delete Project","confirmDelete":"Are you sure you want to delete this project? This action cannot be undone.","deleteFailed":"Failed to delete project. Please try again.","updateSuccess":"Project updated successfully!","updateFailed":"Failed to update project.","createProject":"Create Project","updateProject":"Update Project"},"projectStatus":{"development":"Development","preProduction":"Pre-Production","production":"Production","inProduction":"In Production","filming":"Filming","postProduction":"Post-Production","completed":"Completed","cancelled":"Cancelled","canceled":"Canceled","unknown":"Unknown","tbd":"TBD","loadingImage":"Loading image... ({{count}}/{{max}})","imageNotAvailable":"Image not available","failedToLoadImage":"Failed to load image","noImageAvailable":"No image available","viewDetails":"View Details"},"projectCard":{"viewProject":"View Project","by":"by","directed":"Directed by","produced":"Produced by","bookmark":"Bookmark","bookmarked":"Bookmarked","removeBookmark":"Remove Bookmark","addBookmark":"Add Bookmark","noImage":"No Image Available","untitledProject":"Untitled Project"},"projectDetail":{"backToAllProjects":"Back to All Projects","coverAlt":"Cover","newCoverPreview":"New Cover Preview","currentCover":"Current Cover","reviews":"Reviews","noReviews":"No reviews yet","previous":"← Previous","next":"Next →","page":"Page","loadingReviews":"Loading reviews..."},"myProjects":{"title":"My","subtitle":"Projects","description":"View, edit, or delete your own film projects.","noProjects":"You don\'t have any projects yet.","createFirst":"Create your first project to get started.","loginRequired":"You must be logged in to view your projects."},"collaboration":{"title":"Collaboration Hub","subtitle":"Work together on projects, tasks, and creative content","workspaces":"Workspaces","tasks":"Tasks","screenplays":"Screenplays","loading":"Loading...","noWorkspaces":"No workspaces available","createWorkspace":"Create New Workspace","joinWorkspace":"Join","addMember":"Add Member","settings":"Settings","members":"Members","online":"Online","offline":"Offline","view":"View","delete":"Delete","workspacesTab":{"title":"Workspaces","createWorkspace":"Create Workspace"},"workspaceTypes":{"project":"Project","department":"Department","general":"General"},"createWorkspaceModal":{"title":"Create New Workspace","step1":"Step 1: Workspace Details","step2":"Step 2: Add Members","step3":"Step 3: Workspace Settings","workspaceName":"Workspace Name","workspaceNamePlaceholder":"Enter workspace name","description":"Description","descriptionPlaceholder":"Enter workspace description","workspaceType":"Workspace Type","searchUsers":"Search Users","searchPlaceholder":"Search by name, email, or role...","allowGuestAccess":"Allow Guest Access","requireApproval":"Require Approval for New Members","autoArchive":"Auto-archive Inactive Content","retentionPeriod":"Retention Period (days)","maxFileSize":"Max File Size (MB)","cancel":"Cancel","next":"Next","createWorkspace":"Create Workspace","searching":"Searching...","noFriendsFound":"No friends found.","startTyping":"Start typing to search for users"},"workspaceSettings":{"title":"Workspace Settings","saveSettings":"Save Settings"},"addMemberModal":{"title":"Add Member to Workspace"},"tasksTab":{"title":"Tasks","subtitle":"Manage collaborative tasks and project workflows"},"screenplaysTab":{"title":"Screenplays","subtitle":"Upload and collaborate on screenplay breakdowns","uploadScreenplay":"Upload Screenplay","uploading":"Uploading...","deleteConfirm":"Are you sure you want to delete this screenplay?","deleteSuccess":"Screenplay deleted successfully","deleteFailed":"Failed to delete screenplay","uploadSuccess":"uploaded successfully!","uploadFailed":"Failed to upload screenplay"},"workspaceDeleteConfirm":"Are you sure you want to delete this workspace and all its data? This action cannot be undone."},"tasks":{"title":"Collaborative Tasks","subtitle":"Manage team tasks, deadlines, and reminders","createTask":"Create Task","editTask":"Edit Task","deleteTask":"Delete Task","loading":"Loading tasks...","noTasks":"No tasks found","noTasksDescription":"Create your first task to get started","searchTasks":"Search tasks...","addComment":"Add Comment","viewModes":{"list":"List","calendar":"Calendar","kanban":"Kanban","analytics":"Analytics"},"comingSoon":{"calendar":"Calendar view coming soon...","kanban":"Kanban view coming soon...","analytics":"Analytics view coming soon..."},"stats":{"total":"Total Tasks","completed":"Completed","inProgress":"In Progress","overdue":"Overdue"},"status":{"pending":"Not Started","in_progress":"In Progress","completed":"Completed","cancelled":"Cancelled","overdue":"Overdue","blocked":"Blocked"},"filters":{"allStatus":"All Status","allCategories":"All Categories","pending":"Pending","inProgress":"In Progress","completed":"Completed","cancelled":"Cancelled","overdue":"Overdue"},"categories":{"preProduction":"Pre-Production","production":"Production","postProduction":"Post-Production","marketing":"Marketing","distribution":"Distribution","other":"Other"},"taskForm":{"createTask":"Create New Task","editTask":"Edit Task","taskName":"Task Name","description":"Description","dueDate":"Due Date","assignee":"Assignee","category":"Category","priority":"Priority","status":"Status","cancel":"Cancel","save":"Save Task","update":"Update Task"},"task":{"dueDate":"Due:","assignedTo":"Assigned to:","category":"Category:","priority":"Priority:","createdBy":"Created by:","comments":"Comments","noComments":"No comments yet","addComment":"Add a comment...","showComments":"Show Comments","hideComments":"Hide Comments","expand":"Expand","collapse":"Collapse","completedBadge":"✔ Completed","edit":"Edit","notes":"Notes","tags":"Tags","teamMembers":"Team Members","estimatedHours":"Estimated Hours","location":"Location","subtasks":"Subtasks","subtasksCompleted":"completed","noMembersAssigned":"No members assigned","moreMembers":"more members","due":"Due","noDueDate":"No due date","subtasksCount":"subtasks","changeStatus":"Change task status","editTask":"Edit Task"},"errors":{"loginRequired":"You must be logged in to create tasks","createFailed":"Failed to create task. Please try again.","updateFailed":"Failed to update task. Please try again.","deleteFailed":"Failed to delete task. Please try again.","completeFailed":"Failed to complete task. Please try again.","startFailed":"Failed to start task. Please try again.","restoreFailed":"Failed to restore task. Please try again.","commentFailed":"Failed to add comment. Please try again.","saveFailed":"Failed to save task"}},"social":{"title":"Social","subtitle":"Connect with other professionals in your network","searchPeople":"Search people...","searchPlaceholder":"Search for people to connect with","messages":"Messages","loading":"Loading...","tabs":{"following":"Following","followers":"Followers","discover":"Discover","requests":"Requests","notifications":"Notifications","connections":"Connections"},"actions":{"connect":"Connect","unfollow":"Unfollow","follow":"Follow","viewProfile":"View Profile","message":"Message","accept":"Accept","decline":"Decline","remove":"Remove","block":"Block","report":"Report"},"status":{"online":"Online","offline":"Offline","away":"Away","busy":"Busy"},"networking":{"title":"🎬 Film Industry Network","subtitle":"Connect, collaborate, and grow your career in the film industry","tabs":{"feed":"📰 Activity Feed","discover":"🔍 Discover People","groups":"👥 Industry Groups","events":"📅 Events","connections":"🤝 My Connections","discoverCrew":"🔍 Discover Crew","collaborations":"🤝 Collaborations","industryEvents":"📅 Industry Events"},"search":{"placeholder":"Search by name, skills, or job title...","noResults":"No crew members found","filterBy":"Filter by"},"industryEventsTitle":"Industry Events & Networking","filters":{"allDepartments":"All Departments","allLocations":"All Locations"},"eventActions":{"addEvent":"+ Add Event","rsvp":"RSVP","attending":"attending"},"feed":{"title":"Recent Activity","noActivity":"No recent activity to show"},"discover":{"title":"Discover Amazing Professionals","noProfiles":"No profiles found"},"groups":{"title":"Industry Groups","join":"Join","leave":"Leave","viewDetails":"View Details","members":"members","noGroups":"No groups available"},"events":{"title":"Upcoming Events","attend":"Attend","viewDetails":"View Details","attending":"attending","maxAttendees":"Max","noEvents":"No upcoming events"},"connections":{"title":"My Network","comingSoon":"Connection management coming soon..."}},"profile":{"followers":"followers","following":"following","projects":"projects","connections":"connections","posts":"posts","location":"Location","department":"Department","experience":"Experience","availability":"Availability","skills":"Skills","bio":"Bio","contactInfo":"Contact Information","socialLinks":"Social Links","endorsements":"Endorsements","reviews":"Reviews"},"messaging":{"startConversation":"Start Conversation","typeMessage":"Type a message...","send":"Send","attachFile":"Attach File","emoji":"Emoji","voiceCall":"Voice Call","videoCall":"Video Call","moreOptions":"More Options","edited":"(edited)","newMessage":"New Message","selectContact":"Select a contact to start messaging","noConversationsFound":"No conversations found"},"errors":{"loadFailed":"Failed to load data","connectFailed":"Failed to connect","messageFailed":"Failed to send message","followFailed":"Failed to follow user","unfollowFailed":"Failed to unfollow user","profileLoadFailed":"Failed to load profile"},"empty":{"noConnections":"No connections yet","noRequests":"No pending requests","noNotifications":"No new notifications","noMessages":"No messages yet","noFollowers":"No followers yet","noFollowing":"Not following anyone yet"},"headers":{"connectionRequests":"Connection Requests","sentRequests":"Sent Requests","discoverPeople":"Discover People","yourNotifications":"Your notifications will appear here."},"statusText":{"pendingRequests":"pending requests","following":"following","followers":"followers"}},"screenplay":{"addCollaborator":"Add Collaborator","collaborators":"Collaborators","noCollaborators":"No collaborators yet.","annotations":"Annotations","tags":"Tags","categories":{"cast_member":"Cast Member","background_actors":"Background Actors","stunts":"Stunts","vehicles":"Vehicles","props":"Props","camera":"Camera","special_effects":"Special Effects","wardrobe":"Wardrobe","makeup_hair":"Makeup/Hair","animals":"Animals","animal_wrangler":"Animal Wrangler","music":"Music","sound":"Sound","art_department":"Art Department","set_dressing":"Set Dressing","greenery":"Greenery","special_equipment":"Special Equipment","security":"Security","additional_labor":"Additional Labor","vfx":"VFX - Visual Effects","mechanical_effects":"Mechanical Effects","miscellaneous":"Miscellaneous","notes":"Notes","comments":"Comments","set":"Set","sequence":"Sequence","script_day":"Script Day","unit":"Unit","location":"Location","other":"Other"},"actions":{"goTo":"Go to","delete":"Delete","resolve":"Resolve","reopen":"Reopen","reply":"Reply"},"popup":{"addToSelection":"Add to selection:","addAnnotation":"Add Annotation","addTag":"Add Tag","cancel":"Cancel","save":"Save","enterAnnotation":"Enter your annotation...","enterTag":"Enter tag content...","writeReply":"Write a reply..."},"navigation":{"navigatingTo":"Navigating to annotation..."}},"common":{"loading":"Loading...","error":"Error","success":"Success","cancel":"Cancel","save":"Save","edit":"Edit","delete":"Delete","confirm":"Confirm","yes":"Yes","no":"No","back":"Back","next":"Next","submit":"Submit","close":"Close","search":"Search","filter":"Filter","sort":"Sort","view":"View","select":"Select","required":"Required","optional":"Optional","or":"or","toContinue":"to continue"},"chat":{"typeMessage":"Type a message...","send":"Send","sending":"Sending...","attachFile":"Attach file","emoji":"Emoji","voiceMessage":"Voice message","stopRecording":"Stop recording"},"favorites":{"title":"Your Favorites","subtitle":"Projects you\'ve bookmarked for easy access","auth":{"signInRequired":"Sign in to view your favorites","signInDescription":"Create an account or sign in to save and view your favorite projects","signInButton":"Sign In"},"loading":"Loading your favorites...","empty":{"title":"No favorites yet","description":"Start exploring projects and bookmark the ones you like","exploreButton":"Explore Projects"},"count":{"singular":"Favorite","plural":"Favorites"}},"resume":{"loading":"Loading resume...","errors":{"notFound":"Resume Not Found","notAvailable":"Resume Not Available","notFoundDescription":"This resume could not be found. Please check the link.","notAvailableDescription":"This resume is not available. Please check the link or contact the profile owner."},"sections":{"languages":"Languages","professionalExperience":"Professional Experience","selectedProjects":"Selected Projects","education":"Education","contactInformation":"Contact Information","additionalInformation":"Additional Information"},"labels":{"present":"Present","showingTop":"Showing top {count} {type} - prioritize most relevant first","showingMostRecent":"Showing {count} most recent - prioritize most relevant first"},"types":{"positions":"positions","projects":"projects"},"builder":{"title":"Resume Builder","description":"Easily create, update, and download your professional film industry resume. Showcase your experience, skills, and projects to producers and collaborators.","edit":"Edit","crewProfile":"Crew Profile","updateDescription":"Update your professional information and showcase your experience. Keep your profile current to attract the best opportunities.","profileInformation":"Profile Information","published":"🌐 Published","private":"🔒 Private","fullName":"Full Name","fullNamePlaceholder":"Enter your full name","bio":"Bio","bioPlaceholder":"Tell us about yourself and your experience","languages":"Languages (up to 3, optional)","languagePlaceholder":"e.g., English, Spanish, French","addLanguage":"+ Add Language","projects":"Projects","addProject":"+ Add Project","projectName":"Project Name","projectNamePlaceholder":"Enter project name","yourRole":"Your Role","yourRolePlaceholder":"Enter your role","projectDescription":"Description (Optional)","descriptionPlaceholder":"Short description of your contribution","removeProject":"Remove Project","education":"Education","educationEntries":"{count} {count, plural, one {entry} other {entries}}","noEducationTitle":"No education added","noEducationDescription":"Add your education history to showcase your background","addEducation":"Add Education","save":"Save Profile","cancel":"Cancel","loading":"Saving...","loadingBuilder":"Loading resume builder...","signInRequired":"Please sign in to edit your profile","savedMessage":"Profile saved!","saveError":"Failed to save.","shareResume":"Share Your Resume","copyLink":"Copy","linkCopied":"Link copied to clipboard!","shareDescription":"Share this link with potential employers or collaborators","resumePreview":"Resume Preview","downloadPDF":"Download as PDF"},"page":{"title":"Edit Your Profile","description":"Manage your professional information and build your resume"}},"events":{"title":"Upcoming Events","attend":"Attend","viewDetails":"View Details","attending":"attending","maxAttendees":"Max","noEvents":"No upcoming events"}}');
-;// ./src/locales/es/translation.json
-const es_translation_namespaceObject = /*#__PURE__*/JSON.parse('{"nav":{"home":"Inicio","crew":"Equipo","jobs":"Trabajos","projects":"Proyectos","collaboration":"Colaboración","social":"Social","favorites":"Favoritos","resumeBuilder":"Constructor de CV","myPostedJobs":"Mis Trabajos Publicados","jobAnalytics":"Analíticas de Trabajos","postNewJob":"Publicar Nuevo Trabajo","myApplications":"Mis Aplicaciones","postedJobs":"Trabajos Publicados","settings":"Configuración","signOut":"Cerrar Sesión","signIn":"Iniciar Sesión","getStarted":"Comenzar"},"home":{"loading":"Cargando...","stats":{"activeProfessionals":"Profesionales Activos","projectsCompleted":"Proyectos Completados","successRate":"Tasa de Éxito","countries":"Países"},"hero":{"banner":"La Plataforma Premier de Networking de la Industria Cinematográfica","title1":"Conecta Profesionales","title2":"del Cine","subtitle":"Únete a miles de cineastas, miembros del equipo y profesionales de la industria que se conectan, colaboran y crean proyectos increíbles juntos.","ctaPrimary":"Comienza Tu Viaje","ctaSecondary":"Explorar Trabajos"},"features":{"title":"Todo lo que Necesitas para Tener Éxito","subtitle":"Desde el escaparate de proyectos hasta la colaboración en tiempo real, proporcionamos todas las herramientas que necesitas para avanzar en tu carrera cinematográfica.","projectShowcase":{"title":"Escaparate de Proyectos","desc":"Muestra tu mejor trabajo y conecta con profesionales de la industria"},"crewNetworking":{"title":"Red de Equipo","desc":"Construye conexiones significativas con cineastas talentosos de todo el mundo"},"jobBoard":{"title":"Tablero de Trabajos","desc":"Encuentra y publica trabajos de producción cinematográfica en todos los departamentos"},"globalReach":{"title":"Alcance Global","desc":"Conecta con profesionales de todo el mundo"},"industryRecognition":{"title":"Reconocimiento de la Industria","desc":"Muestra tus premios y logros para destacar"},"realTimeCollab":{"title":"Colaboración en Tiempo Real","desc":"Trabaja juntos sin problemas con herramientas de comunicación integradas"}},"howItWorks":{"title":"Cómo Funciona","subtitle":"Comienza en solo tres pasos simples y únete a la red más grande de la industria cinematográfica.","step1":{"title":"Crea Tu Perfil","desc":"Construye tu perfil profesional y muestra tu mejor trabajo para destacar entre la multitud."},"step2":{"title":"Conecta y Haz Networking","desc":"Encuentra y conecta con profesionales de la industria, únete a proyectos y construye tu red."},"step3":{"title":"Colabora y Crece","desc":"Trabaja en proyectos increíbles, comparte oportunidades y haz crecer tu carrera en la industria cinematográfica."}},"cta":{"title":"¿Listo para Llevar Tu Carrera al Siguiente Nivel?","subtitle":"Únete a miles de profesionales del cine que ya están usando nuestra plataforma para hacer crecer sus carreras.","ctaPrimary":"Únete a la Comunidad","ctaSecondary":"Explorar Perfiles"}},"auth":{"login":{"title":"Bienvenido de vuelta","subtitle":"Inicia sesión en tu cuenta para continuar","email":"Dirección de Correo","emailPlaceholder":"Ingresa tu correo","password":"Contraseña","passwordPlaceholder":"Ingresa tu contraseña","showPassword":"Mostrar contraseña","hidePassword":"Ocultar contraseña","signingIn":"Iniciando sesión...","signIn":"Iniciar Sesión","continueWithGoogle":"Continuar con Google","continueWithApple":"Continuar con Apple","or":"o","noAccount":"¿No tienes una cuenta?","createAccount":"Crea una aquí","termsPrivacy":"Al iniciar sesión, aceptas nuestros","termsService":"Términos de Servicio","privacyPolicy":"Política de Privacidad","and":"y"},"register":{"title":"Crea tu cuenta","subtitle":"Únete a My Film Jobs para conectar con la industria cinematográfica","personalInfo":"Información Personal","firstName":"Nombre","firstNamePlaceholder":"Juan","lastName":"Apellido","lastNamePlaceholder":"Pérez","accountDetails":"Detalles de la Cuenta","email":"Dirección de Correo","emailPlaceholder":"juan.perez@ejemplo.com","password":"Contraseña","passwordPlaceholder":"Crea una contraseña fuerte","passwordHelper":"Debe tener al menos 6 caracteres","confirmPassword":"Confirmar Contraseña","confirmPasswordPlaceholder":"Confirma tu contraseña","creatingAccount":"Creando cuenta...","createAccount":"Crear Cuenta","haveAccount":"¿Ya tienes una cuenta?","signInHere":"Inicia sesión aquí","termsPrivacy":"Al crear una cuenta, aceptas nuestros"},"errors":{"emailPasswordRequired":"Por favor ingresa tanto el correo como la contraseña.","invalidCredentials":"Correo o contraseña inválidos.","tooManyRequests":"Demasiados intentos fallidos. Por favor intenta de nuevo más tarde.","loginError":"Ocurrió un error durante el inicio de sesión. Por favor intenta de nuevo.","popupClosed":"El inicio de sesión fue cancelado. Por favor intenta de nuevo.","popupBlocked":"La ventana emergente de inicio de sesión fue bloqueada. Por favor permite ventanas emergentes e intenta de nuevo.","googleSignInError":"El inicio de sesión con Google falló. Por favor intenta de nuevo.","appleSignInError":"El inicio de sesión con Apple falló. Por favor intenta de nuevo.","nameRequired":"El nombre y apellido son requeridos","emailRequired":"El correo es requerido","passwordLength":"La contraseña debe tener al menos 6 caracteres","passwordMatch":"Las contraseñas no coinciden","emailInUse":"Ya existe una cuenta con este correo","weakPassword":"La contraseña es muy débil. Por favor elige una contraseña más fuerte.","invalidEmail":"Por favor ingresa una dirección de correo válida","registrationError":"Ocurrió un error durante el registro. Por favor intenta de nuevo.","accountCreated":"¡Cuenta creada exitosamente! Redirigiendo...","loginRequired":"Por favor inicia sesión para guardar trabajos"}},"jobs":{"title":"Trabajos","heroTitle":"Encuentra Tu Próximo Rol en la Industria Cinematográfica","heroSubtitle":"Descubre oportunidades con producciones líderes, conecta con profesionales de la industria y avanza tu carrera en cine y televisión.","searchPlaceholder":"Buscar trabajos por título, compañía o palabras clave...","search":"Buscar trabajos...","filters":"Filtros","showFilters":"Mostrar Filtros","hideFilters":"Ocultar Filtros","noJobsFound":"No se encontraron trabajos","loadingJobs":"Cargando trabajos...","allDepartments":"Todos los Departamentos","allLocations":"Todas las Ubicaciones","allJobTypes":"Todos los Tipos de Trabajo","remoteOnly":"Solo Remoto","applyFilters":"Aplicar Filtros","clearFilters":"Limpiar Filtros","saveJob":"Guardar trabajo para después","removeFromSaved":"Remover de trabajos guardados","jobSaved":"Trabajo guardado exitosamente","jobRemoved":"Trabajo removido de guardados","failedToSave":"Falló al guardar trabajo. Por favor intenta de nuevo.","viewDetails":"Ver Detalles","editJob":"Editar Trabajo","untitledPosition":"Posición Sin Título","various":"Varios","remote":"Remoto","paid":"Pagado","level":"nivel","posted":"Publicado","activeJobs":"Trabajos Activos","companies":"Compañías","locations":"Ubicaciones","remoteJobs":"Trabajos Remotos","invalidJobData":"Datos de trabajo inválidos","myApplications":"Mis Aplicaciones","savedJobs":"Trabajos Guardados","postJob":"Publicar Trabajo","myPostedJobs":"Mis Trabajos Publicados","jobAnalytics":"Analíticas de Trabajos","postNewJob":"Publicar Nuevo Trabajo","jobsAvailable":"Trabajos Disponibles","allAvailablePositions":"Todas las Posiciones Disponibles","sortBy":"Ordenar por","newestFirst":"Más Recientes Primero","oldestFirst":"Más Antiguos Primero","salaryHighToLow":"Salario: Alto a Bajo","salaryLowToHigh":"Salario: Bajo a Alto","loadMoreJobs":"Cargar Más Trabajos","department":"Departamento","location":"Ubicación","enterLocation":"Ingresa ubicación","jobType":"Tipo de Trabajo","filteredResults":"Resultados filtrados","tryAdjustingFilters":"Intenta ajustar tu búsqueda o filtros para encontrar más oportunidades.","departments":{"camera":"Cámara","sound":"Sonido","lighting":"Iluminación","art":"Arte","costume":"Vestuario","makeup":"Maquillaje","hair":"Cabello","production":"Producción","postProduction":"Post-Producción","vfx":"Efectos Visuales","stunts":"Acrobacias","transportation":"Transporte","catering":"Catering"},"jobTypes":{"fullTime":"Tiempo Completo","partTime":"Tiempo Parcial","contract":"Contrato","freelance":"Freelance","temporary":"Temporal","internship":"Prácticas"}},"crew":{"title":"Equipo","discoverTalent":"Descubre Talento Creativo","discoverSubtitle":"Conecta con miembros excepcionales del equipo de todo el mundo.","refineSearch":"Refina Tu Búsqueda","findPerfectCrew":"Encuentra el miembro perfecto del equipo para tu proyecto","searchCrew":"Buscar miembros del equipo...","searchPlaceholder":"Buscar por nombre, rol o habilidades...","search":"Buscar","filters":"Filtros","clearFilters":"Limpiar Todos los Filtros","resetFilters":"Restablecer Filtros","applyFilters":"Aplicar Filtros","noResults":"No se encontraron miembros del equipo","tryAdjusting":"Intenta ajustar tu búsqueda o filtros para encontrar más miembros del equipo.","browseAllCrew":"Explorar Todo el Equipo","viewAllCrew":"Ver Todo el Equipo","crewProfiles":"Perfiles del Equipo","savedCrew":"Equipo Guardado","savedCrewProfiles":"Perfiles de Equipo Guardados","myCrew":"Mi Equipo","teamMembers":"Miembros del Equipo","loading":"Cargando equipo...","loadingProfiles":"Cargando perfiles...","department":"Departamento","allDepartments":"Todos los Departamentos","role":"Rol","allRoles":"Todos los Roles","jobTitle":"Título del Trabajo","allJobTitles":"Todos los Títulos","location":"Ubicación","allLocations":"Todas las Ubicaciones","country":"País","allCountries":"Todos los Países","city":"Ciudad","availability":"Disponibilidad","allAvailability":"Toda Disponibilidad","allStatus":"Todos los Estados","available":"Disponible","soon":"Disponible Pronto","unavailable":"No Disponible","crewMember":"Miembro del Equipo","locationNotSpecified":"Ubicación no especificada","addToBookmarks":"Agregar a marcadores","removeFromBookmarks":"Remover de marcadores","bookmarkAdded":"Miembro del equipo marcado","bookmarkRemoved":"Marcador removido","follow":"Seguir","following":"Siguiendo","unfollow":"Dejar de seguir","sendMessage":"Enviar Mensaje","viewProfile":"Ver Perfil","editProfile":"Editar Perfil","profileNotFound":"Perfil no encontrado","noSavedProfiles":"No Hay Perfiles Guardados Aún","startBuilding":"Comienza construyendo tu colección navegando perfiles del equipo y guardando los que te interesen.","browseCrewProfiles":"Explorar Perfiles del Equipo","curatedCollection":"Tu colección curada de miembros talentosos del equipo","talentsFound":"Talentos Encontrados","totalResults":"miembros del equipo encontrados","showingResults":"Mostrando resultados que coinciden con tus filtros","loadMore":"Cargar Más","sortBy":"Ordenar por","name":"Nombre","experience":"Experiencia","rating":"Calificación","recentlyAdded":"Agregados Recientemente","alphabetical":"Alfabético","byAvailability":"Por Disponibilidad","addCrew":"Agregar Equipo","addCrewMember":"Agregar Miembro del Equipo","editCrewMember":"Editar Miembro del Equipo","removeCrewMember":"Remover Miembro del Equipo","confirmRemove":"¿Estás seguro de que quieres remover este miembro del equipo?","status":"Estado","salary":"Salario","startDate":"Fecha de Inicio","endDate":"Fecha de Fin","notes":"Notas","pending":"Pendiente","confirmed":"Confirmado","active":"Activo","completed":"Completado","cancelled":"Cancelado"},"postJob":{"title":"Publicar un Nuevo Trabajo","subtitle":"Completa el formulario a continuación para publicar una nueva oferta de trabajo.","postNewJob":"Publicar un Nuevo Trabajo","postJobDescription":"Completa el formulario a continuación para publicar una nueva oferta de trabajo.","signInRequired":"Inicio de sesión requerido","signInMessage":"Debes iniciar sesión para publicar un trabajo. Por favor inicia sesión o regístrate para continuar.","signIn":"iniciar sesión","register":"registrarse","basicInfo":"Información Básica","jobTitle":"Título del Trabajo","jobTitleRequired":"Título del Trabajo *","jobTitlePlaceholder":"ej. Gaffer, Key Grip, Diseñador de Producción","department":"Departamento","departmentRequired":"Departamento *","selectDepartment":"Selecciona un departamento","location":"Ubicación","locationRequired":"Ubicación *","locationPlaceholder":"ej. Los Ángeles, CA o Remoto","jobType":"Tipo de Trabajo","selectJobType":"Selecciona tipo de trabajo","fullTime":"Tiempo completo","partTime":"Tiempo parcial","contract":"Contrato","freelance":"Freelance","temporary":"Temporal","internship":"Prácticas","volunteer":"Voluntario","experienceLevel":"Nivel de Experiencia","intern":"Practicante","entry":"Inicial","associate":"Asociado","mid":"Intermedio","senior":"Senior","lead":"Líder","manager":"Gerente","director":"Director","executive":"Ejecutivo","jobDescription":"Descripción del Trabajo","jobDescriptionRequired":"Descripción del Trabajo *","jobDescriptionPlaceholder":"Descripción detallada del trabajo","requirements":"Requisitos","requirementsPlaceholder":"Lista los requisitos para este trabajo","responsibilities":"Responsabilidades","responsibilitiesPlaceholder":"Lista las responsabilidades para este trabajo","benefits":"Beneficios y Ventajas","perks":"Ventajas","benefitsPlaceholder":"Lista los beneficios y ventajas para este trabajo","skills":"Habilidades","skillsPlaceholder":"Lista las habilidades requeridas para este trabajo","compensation":"Compensación","minimumSalary":"Salario Mínimo","minimumSalaryPlaceholder":"ej. 50000","maximumSalary":"Salario Máximo","maximumSalaryPlaceholder":"ej. 70000","salaryPeriod":"Período de Salario","perYear":"Por Año","perMonth":"Por Mes","perWeek":"Por Semana","perDay":"Por Día","perHour":"Por Hora","showSalary":"Mostrar salario en la publicación del trabajo","showSalaryOnJobPosting":"Mostrar salario en la publicación del trabajo","projectInfo":"Información del Proyecto","projectName":"Nombre del Proyecto","projectLink":"Enlace del Proyecto","projectType":"Tipo de Proyecto","feature":"Largometraje","short":"Cortometraje","tv":"TV","commercial":"Comercial","musicVideo":"Video Musical","corporate":"Corporativo","documentary":"Documental","other":"Otro","timeline":"Cronograma","startDate":"Fecha de Inicio","startDateRequired":"Fecha de Inicio *","endDate":"Fecha de Fin","contactInfo":"Información de Contacto","contactInformation":"Información de Contacto","contactInfoSubtitle":"¿Cómo deben contactarte los solicitantes?","howToContact":"¿Cómo deben contactarte los solicitantes?","contactName":"Nombre de Contacto","contactNameRequired":"Nombre de Contacto *","contactEmail":"Email de Contacto","contactEmailRequired":"Email de Contacto *","contactPhone":"Teléfono de Contacto","showContactEmail":"Mostrar dirección de email públicamente en la publicación del trabajo","showEmailOnJobPosting":"Mostrar dirección de email públicamente en la publicación del trabajo","showContactEmailNote":"Si no está marcado, los solicitantes solo verán tu nombre y podrán contactarte a través del sistema de aplicaciones.","showEmailExplanation":"Si no está marcado, los solicitantes solo verán tu nombre y podrán contactarte a través del sistema de aplicaciones.","additionalInfo":"Información Adicional","isPaid":"Posición pagada","isUnion":"Trabajo sindical","isRemote":"Trabajo remoto permitido","visaSponsorship":"Patrocinio de visa disponible","relocationAssistance":"Asistencia de reubicación disponible","cancel":"Cancelar","publishJob":"Publicar Trabajo","publishing":"Publicando...","pleaseFixErrors":"Por favor corrige los errores en el formulario antes de enviar.","fixErrors":"Por favor corrige los errores en el formulario antes de enviar.","jobPostedSuccess":"¡Trabajo publicado exitosamente!","jobPostingFailed":"Falló al publicar el trabajo. Por favor intenta de nuevo."},"applyJob":{"backToJob":"Volver al Trabajo","applyFor":"Aplicar para","completeApplication":"Completa tu aplicación para esta posición","urgent":"Urgente","coverLetter":"Carta de Presentación (Opcional)","coverLetterPlaceholder":"Cuéntanos por qué estás interesado en esta posición y por qué serías perfecto para el puesto... (opcional)","coverLetterNote":"Opcional: Se recomiendan 300-500 palabras si se proporciona.","expectedSalary":"Salario Esperado (Opcional)","expectedSalaryPlaceholder":"ej., 75000","perYear":"por año","salaryNote":"Esto nos ayuda a entender tus expectativas salariales","availabilityDate":"Fecha de Disponibilidad","availabilityNote":"¿Cuándo puedes comenzar esta posición?","additionalNotes":"Notas Adicionales (Opcional)","additionalNotesPlaceholder":"Cualquier información adicional que te gustaría compartir...","portfolio":"Portafolio/Sitio Web (Opcional)","portfolioPlaceholder":"Enlace a tu portafolio o sitio web","submitApplication":"Enviar Aplicación","submitting":"Enviando...","applicationSubmitted":"¡Aplicación enviada exitosamente!","applicationFailed":"Falló al enviar la aplicación. Por favor intenta de nuevo.","pleaseCompleteRequired":"Por favor completa todos los campos requeridos.","loading":"Cargando detalles del trabajo...","jobNotFound":"Trabajo no encontrado","applicationClosed":"El período de aplicación ha cerrado para esta posición."},"jobDashboard":{"title":"Panel de Publicador de Trabajos","subtitle":"Gestiona tus publicaciones de trabajo, rastrea aplicaciones y analiza el rendimiento.","loading":"Cargando panel...","overview":"Resumen","postedJobs":"Trabajos Publicados","applications":"Aplicaciones","analytics":"Analíticas","totalJobsPosted":"Total de Trabajos Publicados","activeJobs":"Trabajos Activos","totalApplications":"Total de Aplicaciones","pendingApplications":"Aplicaciones Pendientes","avgApplicationsJob":"Promedio Aplicaciones/Trabajo","totalViews":"Total de Vistas","yourPostedJobs":"Tus Trabajos Publicados","postNewJob":"+ Publicar Nuevo Trabajo","noJobsPosted":"No hay trabajos publicados aún","startPosting":"Comienza publicando trabajos para verlos aquí y rastrear aplicaciones.","postFirstJob":"Publica Tu Primer Trabajo","applicants":"Solicitantes","views":"Vistas","view":"Ver","apps":"Apps","edit":"Editar","allApplications":"Todas las Aplicaciones","noApplicationsYet":"No hay aplicaciones aún","applicationsWillAppear":"Las aplicaciones de tus publicaciones de trabajo aparecerán aquí.","applicant":"Solicitante","appliedOn":"Aplicó el","viewApplication":"Ver Aplicación","viewJob":"Ver Trabajo","jobPerformance":"Rendimiento del Trabajo","applicationStatus":"Estado de Aplicación","pending":"pendientes","reviewed":"revisadas","shortlisted":"preseleccionadas","hired":"contratadas","postedBy":"Publicado por","postedOn":"Publicado el","you":"Tú"},"jobAnalytics":{"title":"Analíticas del Publicador de Trabajos","subtitle":"Insights sobre tus publicaciones de trabajo y solicitantes","backToDashboard":"← Volver al Panel","totalJobsPosted":"Total de Trabajos Publicados","totalApplications":"Total de Aplicaciones","avgApplicationsJob":"Promedio Aplicaciones / Trabajo","avgTimeToFill":"Tiempo Promedio para Llenar","notAvailable":"N/D","applicationStatusBreakdown":"Desglose del Estado de Aplicaciones","topJobsByApplicants":"Mejores Trabajos por Solicitantes","monthlyApplicationTrends":"Tendencias Mensuales de Aplicaciones","applicants":"solicitantes","noData":"No hay datos disponibles","performanceMetrics":"Métricas de Rendimiento","conversionRate":"Tasa de Conversión","responseTime":"Tiempo de Respuesta","fillRate":"Tasa de Llenado"},"projects":{"title":"Proyectos","subtitle":"Descubre, crea y gestiona proyectos cinematográficos. También puedes ver y editar tus propios proyectos.","subtitleLoggedOut":"Descubre, crea y gestiona proyectos cinematográficos.","allProjects":"Todos los Proyectos","myProjects":"Mis Proyectos","createNewProject":"+ Crear Nuevo Proyecto","loading":"Cargando...","loadingProjects":"Cargando proyectos...","errorLoading":"Error al cargar proyectos.","noProjectsFound":"No se encontraron proyectos","noProjectsYet":"Aún no has agregado ningún proyecto.","noProjectsAvailable":"No hay proyectos disponibles.","edit":"Editar","delete":"Eliminar","confirmDelete":"¿Estás seguro de que quieres eliminar este proyecto? Esto no se puede deshacer.","deleteSuccess":"Proyecto eliminado exitosamente.","deleteFailed":"Error al eliminar proyecto.","backToProjects":"← Volver a Todos los Proyectos","viewDetails":"Ver Detalles","manageProject":"Gestionar Proyecto","editProject":"Editar Proyecto","suggestUpdate":"Sugerir Actualización","projectNotFound":"Proyecto no encontrado o no disponible.","mustBeLoggedIn":"Debes iniciar sesión para ver tus proyectos."},"projectForm":{"generalInfo":"Información General","generalInfoDesc":"Detalles básicos del proyecto e información de la empresa","creativeInfo":"Información Creativa","creativeInfoDesc":"Detalles de la historia y equipo creativo","basicInfo":"Información Básica","storyInfo":"Información de la Historia","productionTimeline":"Cronograma de Producción","creativeTeam":"Equipo Creativo","media":"Medios","additional":"Adicional","projectName":"Nombre del Proyecto","projectNamePlaceholder":"Ingresa el nombre del proyecto","productionCompany":"Compañía Productora","productionCompanyPlaceholder":"Ingresa la compañía productora","country":"País","status":"Estado","statusPlaceholder":"Selecciona el estado del proyecto","logline":"Sinopsis Breve","loglinePlaceholder":"Resumen breve de una oración del proyecto","loglineHelper":"Un resumen conciso que captura la esencia de tu proyecto","synopsis":"Sinopsis","synopsisPlaceholder":"Descripción detallada del proyecto","synopsisHelper":"Una visión general completa de la historia y visión de tu proyecto","startDate":"Fecha de Inicio","endDate":"Fecha de Fin","genre":"Género","genres":"Géneros (separados por comas)","genresPlaceholder":"ej., Acción, Comedia","director":"Director","producer":"Productor","coverImage":"Imagen de Portada","website":"Sitio Web","budget":"Presupuesto","companyContact":"Contacto de la Empresa","cancel":"Cancelar","saveChanges":"Guardar Cambios","saving":"Guardando...","delete":"Eliminar Proyecto","confirmDelete":"¿Estás seguro de que quieres eliminar este proyecto? Esta acción no se puede deshacer.","deleteFailed":"Error al eliminar el proyecto. Por favor, inténtalo de nuevo.","updateSuccess":"¡Proyecto actualizado exitosamente!","updateFailed":"Error al actualizar proyecto.","createProject":"Crear Proyecto","updateProject":"Actualizar Proyecto"},"projectStatus":{"development":"Desarrollo","preProduction":"Pre-Producción","production":"Producción","inProduction":"En Producción","filming":"Filmación","postProduction":"Post-Producción","completed":"Completado","cancelled":"Cancelado","canceled":"Cancelado","unknown":"Desconocido","tbd":"Por Determinar","loadingImage":"Cargando imagen... ({{count}}/{{max}})","imageNotAvailable":"Imagen no disponible","failedToLoadImage":"Error al cargar imagen","noImageAvailable":"No hay imagen disponible","viewDetails":"Ver Detalles"},"projectCard":{"viewProject":"Ver Proyecto","by":"por","directed":"Dirigido por","produced":"Producido por","bookmark":"Marcar","bookmarked":"Marcado","removeBookmark":"Quitar Marca","addBookmark":"Agregar Marca","noImage":"No Hay Imagen Disponible","untitledProject":"Proyecto Sin Título"},"projectDetail":{"backToAllProjects":"Volver a Todos los Proyectos","coverAlt":"Portada","newCoverPreview":"Vista Previa de Nueva Portada","currentCover":"Portada Actual","reviews":"Reseñas","noReviews":"No hay reseñas aún","previous":"← Anterior","next":"Siguiente →","page":"Página","loadingReviews":"Cargando reseñas..."},"myProjects":{"title":"Mis","subtitle":"Proyectos","description":"Ve, edita o elimina tus propios proyectos cinematográficos.","noProjects":"Aún no tienes ningún proyecto.","createFirst":"Crea tu primer proyecto para comenzar.","loginRequired":"Debes iniciar sesión para ver tus proyectos."},"collaboration":{"title":"Centro de Colaboración","subtitle":"Trabaja en conjunto en proyectos, tareas y contenido creativo","workspaces":"Espacios de Trabajo","tasks":"Tareas","screenplays":"Guiones","loading":"Cargando...","noWorkspaces":"No hay espacios de trabajo disponibles","createWorkspace":"Crear Nuevo Espacio de Trabajo","joinWorkspace":"Unirse","addMember":"Agregar Miembro","settings":"Configuración","members":"Miembros","online":"En línea","offline":"Desconectado","view":"Ver","delete":"Eliminar","workspacesTab":{"title":"Espacios de Trabajo","createWorkspace":"Crear Espacio de Trabajo"},"workspaceTypes":{"project":"Proyecto","department":"Departamento","general":"General"},"createWorkspaceModal":{"title":"Crear Nuevo Espacio de Trabajo","step1":"Paso 1: Detalles del Espacio de Trabajo","step2":"Paso 2: Agregar Miembros","step3":"Paso 3: Configuración del Espacio de Trabajo","workspaceName":"Nombre del Espacio de Trabajo","workspaceNamePlaceholder":"Ingrese el nombre del espacio de trabajo","description":"Descripción","descriptionPlaceholder":"Ingrese la descripción del espacio de trabajo","workspaceType":"Tipo de Espacio de Trabajo","searchUsers":"Buscar Usuarios","searchPlaceholder":"Buscar por nombre, email o rol...","allowGuestAccess":"Permitir Acceso de Invitados","requireApproval":"Requerir Aprobación para Nuevos Miembros","autoArchive":"Archivar Automáticamente Contenido Inactivo","retentionPeriod":"Período de Retención (días)","maxFileSize":"Tamaño Máximo de Archivo (MB)","cancel":"Cancelar","next":"Siguiente","createWorkspace":"Crear Espacio de Trabajo","searching":"Buscando...","noFriendsFound":"No se encontraron amigos.","startTyping":"Comience a escribir para buscar usuarios"},"workspaceSettings":{"title":"Configuración del Espacio de Trabajo","saveSettings":"Guardar Configuración"},"addMemberModal":{"title":"Agregar Miembro al Espacio de Trabajo"},"tasksTab":{"title":"Tareas","subtitle":"Gestiona tareas colaborativas y flujos de trabajo del proyecto"},"screenplaysTab":{"title":"Guiones","subtitle":"Sube y colabora en desgloses de guiones","uploadScreenplay":"Subir Guión","uploading":"Subiendo...","deleteConfirm":"¿Estás seguro de que quieres eliminar este guión?","deleteSuccess":"Guión eliminado exitosamente","deleteFailed":"Error al eliminar guión","uploadSuccess":"subido exitosamente!","uploadFailed":"Error al subir guión"},"workspaceDeleteConfirm":"¿Estás seguro de que quieres eliminar este espacio de trabajo y todos sus datos? Esta acción no se puede deshacer."},"tasks":{"title":"Tareas Colaborativas","subtitle":"Gestiona tareas del equipo, fechas límite y recordatorios","createTask":"Crear Tarea","editTask":"Editar Tarea","deleteTask":"Eliminar Tarea","loading":"Cargando tareas...","noTasks":"No se encontraron tareas","noTasksDescription":"Crea tu primera tarea para comenzar","searchTasks":"Buscar tareas...","addComment":"Agregar Comentario","viewModes":{"list":"Lista","calendar":"Calendario","kanban":"Kanban","analytics":"Analíticas"},"comingSoon":{"calendar":"Vista de calendario próximamente...","kanban":"Vista Kanban próximamente...","analytics":"Vista de analíticas próximamente..."},"stats":{"total":"Total de Tareas","completed":"Completadas","inProgress":"En Progreso","overdue":"Vencidas"},"status":{"pending":"Sin Empezar","in_progress":"En Progreso","completed":"Completado","cancelled":"Cancelado","overdue":"Atrasado","blocked":"Bloqueado"},"filters":{"allStatus":"Todos los Estados","allCategories":"Todas las Categorías","pending":"Pendiente","inProgress":"En Progreso","completed":"Completada","cancelled":"Cancelada","overdue":"Vencida"},"categories":{"preProduction":"Pre-Producción","production":"Producción","postProduction":"Post-Producción","marketing":"Marketing","distribution":"Distribución","other":"Otro"},"taskForm":{"createTask":"Crear Nueva Tarea","editTask":"Editar Tarea","taskName":"Nombre de la Tarea","description":"Descripción","dueDate":"Fecha Límite","assignee":"Asignado a","category":"Categoría","priority":"Prioridad","status":"Estado","cancel":"Cancelar","save":"Guardar Tarea","update":"Actualizar Tarea"},"task":{"dueDate":"Vence:","assignedTo":"Asignado a:","category":"Categoría:","priority":"Prioridad:","createdBy":"Creado por:","comments":"Comentarios","noComments":"No hay comentarios aún","addComment":"Agregar un comentario...","showComments":"Mostrar Comentarios","hideComments":"Ocultar Comentarios","expand":"Expandir","collapse":"Contraer","completedBadge":"✔ Completada","edit":"Editar","notes":"Notas","tags":"Etiquetas","teamMembers":"Miembros del Equipo","estimatedHours":"Horas Estimadas","location":"Ubicación","subtasks":"Subtareas","subtasksCompleted":"completadas","noMembersAssigned":"No hay miembros asignados","moreMembers":"más miembros","due":"Vence","noDueDate":"Sin fecha de vencimiento","subtasksCount":"subtareas","changeStatus":"Cambiar estado de la tarea","editTask":"Editar Tarea"},"errors":{"loginRequired":"Debes iniciar sesión para crear tareas","createFailed":"Error al crear la tarea. Inténtalo de nuevo.","updateFailed":"Error al actualizar la tarea. Inténtalo de nuevo.","deleteFailed":"Error al eliminar la tarea. Inténtalo de nuevo.","completeFailed":"Error al completar la tarea. Inténtalo de nuevo.","startFailed":"Error al iniciar la tarea. Inténtalo de nuevo.","restoreFailed":"Error al restaurar la tarea. Inténtalo de nuevo.","commentFailed":"Error al agregar comentario. Inténtalo de nuevo.","saveFailed":"Error al guardar la tarea"}},"social":{"title":"Social","subtitle":"Conecta con otros profesionales en tu red","searchPeople":"Buscar personas...","searchPlaceholder":"Buscar personas para conectar","messages":"Mensajes","loading":"Cargando...","tabs":{"following":"Siguiendo","followers":"Seguidores","discover":"Descubrir","requests":"Solicitudes","notifications":"Notificaciones","connections":"Conexiones"},"actions":{"connect":"Conectar","unfollow":"Dejar de seguir","follow":"Seguir","viewProfile":"Ver Perfil","message":"Mensaje","accept":"Aceptar","decline":"Rechazar","remove":"Eliminar","block":"Bloquear","report":"Reportar"},"status":{"online":"En línea","offline":"Desconectado","away":"Ausente","busy":"Ocupado"},"networking":{"title":"🎬 Red de la Industria Cinematográfica","subtitle":"Conecta, colabora y haz crecer tu carrera en la industria del cine","tabs":{"feed":"📰 Feed de Actividad","discover":"🔍 Descubrir Personas","groups":"👥 Grupos de la Industria","events":"📅 Eventos","connections":"🤝 Mis Conexiones","discoverCrew":"🔍 Descubrir Equipo","collaborations":"🤝 Colaboraciones","industryEvents":"📅 Eventos de la Industria"},"search":{"placeholder":"Buscar por nombre, habilidades o puesto de trabajo...","noResults":"No se encontraron miembros del equipo","filterBy":"Filtrar por"},"industryEventsTitle":"Eventos de la Industria y Networking","filters":{"allDepartments":"Todos los Departamentos","allLocations":"Todas las Ubicaciones"},"eventActions":{"addEvent":"+ Agregar Evento","rsvp":"Confirmar","attending":"asistiendo"},"feed":{"title":"Actividad Reciente","noActivity":"No hay actividad reciente para mostrar"},"discover":{"title":"Descubre Profesionales Increíbles","noProfiles":"No se encontraron perfiles"},"groups":{"title":"Grupos de la Industria","join":"Unirse","leave":"Salir","viewDetails":"Ver Detalles","members":"miembros","noGroups":"No hay grupos disponibles"},"events":{"title":"Próximos Eventos","attend":"Asistir","viewDetails":"Ver Detalles","attending":"asistiendo","maxAttendees":"Máx","noEvents":"No hay próximos eventos"},"connections":{"title":"Mi Red","comingSoon":"Gestión de conexiones próximamente..."}},"profile":{"followers":"seguidores","following":"siguiendo","projects":"proyectos","connections":"conexiones","posts":"publicaciones","location":"Ubicación","department":"Departamento","experience":"Experiencia","availability":"Disponibilidad","skills":"Habilidades","bio":"Biografía","contactInfo":"Información de Contacto","socialLinks":"Enlaces Sociales","endorsements":"Recomendaciones","reviews":"Reseñas"},"messaging":{"startConversation":"Iniciar Conversación","typeMessage":"Escribe un mensaje...","send":"Enviar","attachFile":"Adjuntar Archivo","emoji":"Emoji","voiceCall":"Llamada de Voz","videoCall":"Videollamada","moreOptions":"Más Opciones","edited":"(editado)","newMessage":"Nuevo Mensaje","selectContact":"Selecciona un contacto para comenzar a conversar","noConversationsFound":"No se encontraron conversaciones"},"errors":{"loadFailed":"Error al cargar datos","connectFailed":"Error al conectar","messageFailed":"Error al enviar mensaje","followFailed":"Error al seguir usuario","unfollowFailed":"Error al dejar de seguir usuario","profileLoadFailed":"Error al cargar perfil"},"empty":{"noConnections":"No hay conexiones aún","noRequests":"No hay solicitudes pendientes","noNotifications":"No hay nuevas notificaciones","noMessages":"No hay mensajes aún","noFollowers":"No hay seguidores aún","noFollowing":"No sigues a nadie aún"},"headers":{"connectionRequests":"Solicitudes de Conexión","sentRequests":"Solicitudes Enviadas","discoverPeople":"Descubrir Personas","yourNotifications":"Tus notificaciones aparecerán aquí."},"statusText":{"pendingRequests":"solicitudes pendientes","following":"siguiendo","followers":"seguidores"}},"screenplay":{"addCollaborator":"Agregar Colaborador","collaborators":"Colaboradores","noCollaborators":"Aún no hay colaboradores.","annotations":"Anotaciones","tags":"Etiquetas","categories":{"cast_member":"Miembro del Reparto","background_actors":"Actores de Fondo","stunts":"Acrobacias","vehicles":"Vehículos","props":"Utilería","camera":"Cámara","special_effects":"Efectos Especiales","wardrobe":"Vestuario","makeup_hair":"Maquillaje/Cabello","animals":"Animales","animal_wrangler":"Entrenador de Animales","music":"Música","sound":"Sonido","art_department":"Departamento de Arte","set_dressing":"Decoración de Set","greenery":"Plantas/Vegetación","special_equipment":"Equipo Especial","security":"Seguridad","additional_labor":"Mano de Obra Adicional","vfx":"VFX - Efectos Visuales","mechanical_effects":"Efectos Mecánicos","miscellaneous":"Varios","notes":"Notas","comments":"Comentarios","set":"Set","sequence":"Secuencia","script_day":"Día de Guión","unit":"Unidad","location":"Ubicación","other":"Otro"},"actions":{"goTo":"Ir a","delete":"Eliminar","resolve":"Resolver","reopen":"Reabrir","reply":"Responder"},"popup":{"addToSelection":"Agregar a la selección:","addAnnotation":"Agregar Anotación","addTag":"Agregar Etiqueta","cancel":"Cancelar","save":"Guardar","enterAnnotation":"Ingresa tu anotación...","enterTag":"Ingresa el contenido de la etiqueta...","writeReply":"Escribe una respuesta..."},"navigation":{"navigatingTo":"Navegando a la anotación..."}},"common":{"loading":"Cargando...","error":"Error","success":"Éxito","cancel":"Cancelar","save":"Guardar","edit":"Editar","delete":"Eliminar","confirm":"Confirmar","yes":"Sí","no":"No","back":"Volver","next":"Siguiente","submit":"Enviar","close":"Cerrar","search":"Buscar","filter":"Filtrar","sort":"Ordenar","view":"Ver","select":"Seleccionar","required":"Requerido","optional":"Opcional","or":"o","toContinue":"para continuar"},"chat":{"typeMessage":"Escribe un mensaje...","send":"Enviar","sending":"Enviando...","attachFile":"Adjuntar archivo","emoji":"Emoji","voiceMessage":"Mensaje de voz","stopRecording":"Detener grabación"},"favorites":{"title":"Tus Favoritos","subtitle":"Proyectos que has guardado para fácil acceso","auth":{"signInRequired":"Inicia sesión para ver tus favoritos","signInDescription":"Crea una cuenta o inicia sesión para guardar y ver tus proyectos favoritos","signInButton":"Iniciar Sesión"},"loading":"Cargando tus favoritos...","empty":{"title":"No hay favoritos aún","description":"Comienza a explorar proyectos y marca los que te gusten","exploreButton":"Explorar Proyectos"},"count":{"singular":"Favorito","plural":"Favoritos"}},"resume":{"loading":"Cargando currículum...","errors":{"notFound":"Currículum No Encontrado","notAvailable":"Currículum No Disponible","notFoundDescription":"No se pudo encontrar este currículum. Por favor verifica el enlace.","notAvailableDescription":"Este currículum no está disponible. Por favor verifica el enlace o contacta al propietario del perfil."},"sections":{"languages":"Idiomas","professionalExperience":"Experiencia Profesional","selectedProjects":"Proyectos Seleccionados","education":"Educación","contactInformation":"Información de Contacto","additionalInformation":"Información Adicional"},"labels":{"present":"Presente","showingTop":"Mostrando los {count} {type} principales - prioriza los más relevantes primero","showingMostRecent":"Mostrando los {count} más recientes - prioriza los más relevantes primero"},"types":{"positions":"puestos","projects":"proyectos"},"builder":{"title":"Constructor de Currículum","description":"Crea, actualiza y descarga fácilmente tu currículum profesional de la industria cinematográfica. Muestra tu experiencia, habilidades y proyectos a productores y colaboradores.","edit":"Editar","crewProfile":"Perfil de Equipo","updateDescription":"Actualiza tu información profesional y muestra tu experiencia. Mantén tu perfil actualizado para atraer las mejores oportunidades.","profileInformation":"Información del Perfil","published":"🌐 Publicado","private":"🔒 Privado","fullName":"Nombre Completo","fullNamePlaceholder":"Ingresa tu nombre completo","bio":"Biografía","bioPlaceholder":"Cuéntanos sobre ti y tu experiencia","languages":"Idiomas (hasta 3, opcional)","languagePlaceholder":"ej., Inglés, Español, Francés","addLanguage":"+ Agregar Idioma","projects":"Proyectos","addProject":"+ Agregar Proyecto","projectName":"Nombre del Proyecto","projectNamePlaceholder":"Ingresa el nombre del proyecto","yourRole":"Tu Rol","yourRolePlaceholder":"Ingresa tu rol","projectDescription":"Descripción (Opcional)","descriptionPlaceholder":"Breve descripción de tu contribución","removeProject":"Eliminar Proyecto","education":"Educación","educationEntries":"{count} {count, plural, one {entrada} other {entradas}}","noEducationTitle":"No se ha agregado educación","noEducationDescription":"Agrega tu historial educativo para mostrar tu formación","addEducation":"Agregar Educación","save":"Guardar Perfil","cancel":"Cancelar","loading":"Guardando...","loadingBuilder":"Cargando constructor de currículum...","signInRequired":"Por favor inicia sesión para editar tu perfil","savedMessage":"¡Perfil guardado!","saveError":"Error al guardar.","shareResume":"Compartir Tu Currículum","copyLink":"Copiar","linkCopied":"¡Enlace copiado al portapapeles!","shareDescription":"Comparte este enlace con potenciales empleadores o colaboradores","resumePreview":"Vista Previa del Currículum","downloadPDF":"Descargar como PDF"},"page":{"title":"Editar Tu Perfil","description":"Administra tu información profesional y construye tu currículum"}},"events":{"title":"Próximos Eventos","attend":"Asistir","viewDetails":"Ver Detalles","attending":"asistiendo","maxAttendees":"Máx","noEvents":"No hay próximos eventos"}}');
-;// ./src/i18n.ts
-
-
-
-
-
-const resources = {
-    en: { translation: translation_namespaceObject },
-    es: { translation: es_translation_namespaceObject },
-};
-i18next/* default.use */.Ay.use(i18nextBrowserLanguageDetector/* default */.A)
-    .use(es/* initReactI18next */.r9)
-    .init({
-    resources,
-    fallbackLng: 'en',
-    debug: "production" === 'development',
-    interpolation: {
-        escapeValue: false, // React already escapes
-    },
-    detection: {
-        order: ['localStorage', 'navigator', 'htmlTag', 'path', 'subdomain'],
-        caches: ['localStorage'],
-    },
-});
-/* harmony default export */ const src_i18n = ((/* unused pure expression or super */ null && (i18n)));
-
-// EXTERNAL MODULE: ./node_modules/react/index.js
-var react = __webpack_require__(6540);
-// EXTERNAL MODULE: ./node_modules/react-dom/client.js
-var client = __webpack_require__(5338);
-// EXTERNAL MODULE: ./node_modules/react-router-dom/dist/index.js
-var dist = __webpack_require__(4976);
-// EXTERNAL MODULE: ./src/contexts/AuthContext.tsx
-var AuthContext = __webpack_require__(2584);
-// EXTERNAL MODULE: ./node_modules/react-router/dist/index.js
-var react_router_dist = __webpack_require__(7767);
-;// ./src/components/ProtectedRoute.tsx
-
-
-
-const ProtectedRoute = ({ children, redirectTo = '/login' }) => {
-    const { currentUser } = (0,AuthContext/* useAuth */.A)();
-    const location = (0,react_router_dist/* useLocation */.zy)();
-    if (!currentUser) {
-        return (0,jsx_runtime.jsx)(react_router_dist/* Navigate */.C5, { to: redirectTo, state: { from: location.pathname }, replace: true });
-    }
-    return (0,jsx_runtime.jsx)(jsx_runtime.Fragment, { children: children });
-};
-const PublicRoute = ({ children, redirectTo = '/' }) => {
-    const { currentUser } = (0,AuthContext/* useAuth */.A)();
-    if (currentUser) {
-        return (0,jsx_runtime.jsx)(react_router_dist/* Navigate */.C5, { to: redirectTo, replace: true });
-    }
-    return (0,jsx_runtime.jsx)(jsx_runtime.Fragment, { children: children });
-};
-
-// EXTERNAL MODULE: ./node_modules/react-hot-toast/dist/index.mjs + 1 modules
-var react_hot_toast_dist = __webpack_require__(888);
-// EXTERNAL MODULE: ./src/theme/ThemeProvider.tsx + 1 modules
-var ThemeProvider = __webpack_require__(3049);
-// EXTERNAL MODULE: ./node_modules/@fontsource/inter/400.css
-var _400 = __webpack_require__(6019);
-// EXTERNAL MODULE: ./node_modules/@fontsource/inter/500.css
-var _500 = __webpack_require__(422);
-// EXTERNAL MODULE: ./node_modules/@fontsource/inter/600.css
-var _600 = __webpack_require__(8765);
-// EXTERNAL MODULE: ./node_modules/@fontsource/inter/700.css
-var _700 = __webpack_require__(2888);
-// EXTERNAL MODULE: ./node_modules/css-loader/dist/cjs.js!./node_modules/postcss-loader/dist/cjs.js!./node_modules/sass-loader/dist/cjs.js!./src/App.module.scss
-var App_module = __webpack_require__(2096);
-;// ./src/App.module.scss
-
-      
-      
-      
-      
-      
-      
-      
-      
-      
-
-var App_module_options = {};
-
-App_module_options.styleTagTransform = (styleTagTransform_default());
-App_module_options.setAttributes = (setAttributesWithoutAttributes_default());
-App_module_options.insert = insertBySelector_default().bind(null, "head");
-App_module_options.domAPI = (styleDomAPI_default());
-App_module_options.insertStyleElement = (insertStyleElement_default());
-
-var App_module_update = injectStylesIntoStyleTag_default()(App_module/* default */.Ay, App_module_options);
-
-
-
-
-       /* harmony default export */ const src_App_module = (App_module/* default */.Ay && App_module/* default */.Ay.locals ? App_module/* default */.Ay.locals : undefined);
-
-// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/bell.js
-var bell = __webpack_require__(9436);
-// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/chevron-down.js
-var chevron_down = __webpack_require__(5107);
-// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/settings.js
-var settings = __webpack_require__(964);
-// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/x.js
-var x = __webpack_require__(8697);
-// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/menu.js
-var menu = __webpack_require__(9230);
-// EXTERNAL MODULE: ./node_modules/firebase/firestore/dist/esm/index.esm.js + 3 modules
-var index_esm = __webpack_require__(7594);
-// EXTERNAL MODULE: ./src/firebase.ts
-var firebase = __webpack_require__(9487);
-;// ./src/hooks/useNotifications.ts
-
-
-
-
-function useNotifications() {
-    const { currentUser } = (0,AuthContext/* useAuth */.A)();
-    const [notifications, setNotifications] = (0,react.useState)([]);
-    const [loading, setLoading] = (0,react.useState)(true);
-    (0,react.useEffect)(() => {
-        if (!currentUser) {
-            setNotifications([]);
-            setLoading(false);
-            return;
-        }
-        const q = (0,index_esm/* query */.P)((0,index_esm/* collection */.rJ)(firebase.db, "users", currentUser.uid, "notifications"), (0,index_esm/* orderBy */.My)("timestamp", "desc"));
-        const unsubscribe = (0,index_esm/* onSnapshot */.aQ)(q, (snapshot) => {
-            const notifs = snapshot.docs.map((doc) => ({
-                id: doc.id,
-                ...doc.data(),
-            }));
-            setNotifications(notifs);
-            setLoading(false);
-        });
-        return () => unsubscribe();
-    }, [currentUser]);
-    const markAsRead = async (notificationId) => {
-        if (!currentUser)
-            return;
-        try {
-            const notifRef = (0,index_esm.doc)(firebase.db, "users", currentUser.uid, "notifications", notificationId);
-            await (0,index_esm/* updateDoc */.mZ)(notifRef, { read: true });
-            // Update local state to mark as read (don't remove)
-            setNotifications(prev => prev.map(notif => notif.id === notificationId ? { ...notif, read: true } : notif));
-        }
-        catch (error) {
-            console.error('Error marking notification as read:', error);
-            // Don't throw - just log the error
-        }
-    };
-    const markAllAsRead = async () => {
-        if (!currentUser)
-            return;
-        try {
-            // Mark all unread notifications as read in Firestore
-            const batch = (0,index_esm/* writeBatch */.wP)(firebase.db);
-            const unreadNotifications = notifications.filter(notification => !notification.read);
-            unreadNotifications.forEach(notification => {
-                const notifRef = (0,index_esm.doc)(firebase.db, "users", currentUser.uid, "notifications", notification.id);
-                batch.update(notifRef, { read: true });
-            });
-            await batch.commit();
-            // Update local state to mark as read
-            setNotifications(prev => prev.map(notification => ({ ...notification, read: true })));
-        }
-        catch (error) {
-            console.error('Error marking all as read:', error);
-            // Don't throw - just log the error
-        }
-    };
-    const clearAll = async () => {
-        if (!currentUser)
-            return;
-        try {
-            // Delete all notifications from Firestore
-            const batch = (0,index_esm/* writeBatch */.wP)(firebase.db);
-            notifications.forEach(notification => {
-                const notifRef = (0,index_esm.doc)(firebase.db, "users", currentUser.uid, "notifications", notification.id);
-                batch.delete(notifRef);
-            });
-            await batch.commit();
-            // Clear from local state immediately
-            setNotifications([]);
-        }
-        catch (error) {
-            console.error('Error clearing notifications:', error);
-            // Don't throw - just log the error
-        }
-    };
-    const deleteOldNotifications = async (daysOld = 30) => {
-        if (!currentUser)
-            return;
-        try {
-            const cutoffDate = new Date();
-            cutoffDate.setDate(cutoffDate.getDate() - daysOld);
-            const oldNotifications = notifications.filter(notification => {
-                const notificationDate = notification.timestamp?.toDate?.() || new Date(notification.timestamp);
-                return notificationDate < cutoffDate;
-            });
-            if (oldNotifications.length === 0)
-                return;
-            const batch = (0,index_esm/* writeBatch */.wP)(firebase.db);
-            oldNotifications.forEach(notification => {
-                const notifRef = (0,index_esm.doc)(firebase.db, "users", currentUser.uid, "notifications", notification.id);
-                batch.delete(notifRef);
-            });
-            await batch.commit();
-            // Remove from local state
-            setNotifications(prev => prev.filter(notification => {
-                const notificationDate = notification.timestamp?.toDate?.() || new Date(notification.timestamp);
-                return notificationDate >= cutoffDate;
-            }));
-            console.log(`Deleted ${oldNotifications.length} old notifications`);
-        }
-        catch (error) {
-            console.error('Error deleting old notifications:', error);
-            throw error;
-        }
-    };
-    const deleteNotification = async (notificationId) => {
-        if (!currentUser)
-            return;
-        try {
-            await (0,index_esm/* deleteDoc */.kd)((0,index_esm.doc)(firebase.db, "users", currentUser.uid, "notifications", notificationId));
-            // Remove from local state immediately
-            setNotifications(prev => prev.filter(notif => notif.id !== notificationId));
-        }
-        catch (error) {
-            console.error('Error deleting notification:', error);
-            // Don't throw - just log the error
-        }
-    };
-    return { notifications, loading, markAsRead, markAllAsRead, clearAll, deleteNotification, deleteOldNotifications };
-}
-
-// EXTERNAL MODULE: ./src/components/ui/Button.tsx
-var Button = __webpack_require__(774);
-// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/user-plus.js
-var user_plus = __webpack_require__(1999);
-// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/message-square.js
-var message_square = __webpack_require__(7504);
-// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/circle-check-big.js
-var circle_check_big = __webpack_require__(4471);
-// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/circle-x.js
-var circle_x = __webpack_require__(180);
-// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/trash-2.js
-var trash_2 = __webpack_require__(2708);
-;// ./src/components/NotificationCenter.tsx
-
-
-
-
-
-
-
-
-const NotificationCenter = ({ isOpen, onClose }) => {
-    const navigate = (0,react_router_dist/* useNavigate */.Zp)();
-    const { currentUser } = (0,AuthContext/* useAuth */.A)();
-    const { notifications, loading, markAsRead, markAllAsRead, clearAll, deleteNotification } = useNotifications();
-    // Dismiss on escape key
-    (0,react.useEffect)(() => {
-        if (!isOpen)
-            return;
-        const handleKeyDown = (e) => {
-            if (e.key === 'Escape') {
-                e.preventDefault();
-                onClose();
-            }
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isOpen, onClose]);
-    // Dismiss on click outside
-    const handleOverlayClick = (0,react.useCallback)((e) => {
-        if (e.target === e.currentTarget) {
-            e.preventDefault();
-            onClose();
-        }
-    }, [onClose]);
-    const handleMarkAsRead = async (notificationId) => {
-        try {
-            await markAsRead(notificationId);
-            // Don't show toast for individual mark as read to reduce noise
-        }
-        catch (error) {
-            console.error('Error marking notification as read:', error);
-            // Don't show toast for individual errors to reduce noise
-        }
-    };
-    const handleMarkAllAsRead = async () => {
-        try {
-            await markAllAsRead();
-            react_hot_toast_dist/* toast */.oR.success('All notifications marked as read');
-        }
-        catch (error) {
-            console.error('Error marking all as read:', error);
-            // Don't show error toast - function handles errors internally
-        }
-    };
-    const handleDeleteNotification = async (notificationId) => {
-        try {
-            await deleteNotification(notificationId);
-            react_hot_toast_dist/* toast */.oR.success('Notification deleted');
-        }
-        catch (error) {
-            console.error('Error deleting notification:', error);
-            react_hot_toast_dist/* toast */.oR.error('Failed to delete notification');
-        }
-    };
-    const handleClearAll = async () => {
-        try {
-            await clearAll();
-            react_hot_toast_dist/* toast */.oR.success('All notifications cleared');
-            // Close the notification center after clearing
-            onClose();
-        }
-        catch (error) {
-            console.error('Error clearing notifications:', error);
-            // Don't show error toast - function handles errors internally
-        }
-    };
-    const handleNotificationClick = (notification) => {
-        // Mark as read if not already read
-        if (!notification.read) {
-            handleMarkAsRead(notification.id);
-        }
-        // Navigate based on notification type
-        switch (notification.type) {
-            case 'job_application':
-                navigate(`/jobs/${notification.relatedId}/applications`);
-                break;
-            case 'application_message':
-                navigate(`/applications/${notification.applicationId}`);
-                break;
-            case 'application_status_update':
-                navigate(`/applications/${notification.applicationId}`);
-                break;
-            case 'message':
-                // Navigate to chat with the sender
-                if (notification.senderId && notification.conversationId) {
-                    navigate(`/chat?user=${notification.senderId}`);
-                }
-                break;
-            default:
-                // Default navigation
-                break;
-        }
-        // Close the notification center after navigation
-        onClose();
-    };
-    const getNotificationIcon = (type) => {
-        switch (type) {
-            case 'job_application':
-                return (0,jsx_runtime.jsx)(user_plus/* default */.A, { className: "w-5 h-5 text-blue-600" });
-            case 'application_message':
-                return (0,jsx_runtime.jsx)(message_square/* default */.A, { className: "w-5 h-5 text-green-600" });
-            case 'application_status_update':
-                return (0,jsx_runtime.jsx)(circle_check_big/* default */.A, { className: "w-5 h-5 text-purple-600" });
-            case 'message':
-                return (0,jsx_runtime.jsx)(message_square/* default */.A, { className: "w-5 h-5 text-indigo-600" });
-            default:
-                return (0,jsx_runtime.jsx)(bell/* default */.A, { className: "w-5 h-5 text-gray-600" });
-        }
-    };
-    const getNotificationColor = (type) => {
-        switch (type) {
-            case 'job_application':
-                return 'bg-blue-50 border-blue-200';
-            case 'application_message':
-                return 'bg-green-50 border-green-200';
-            case 'application_status_update':
-                return 'bg-purple-50 border-purple-200';
-            case 'message':
-                return 'bg-indigo-50 border-indigo-200';
-            default:
-                return 'bg-gray-50 border-gray-200';
-        }
-    };
-    const formatDate = (date) => {
-        if (!date)
-            return 'Just now';
-        const dateObj = date.toDate ? date.toDate() : new Date(date);
-        const now = new Date();
-        const diffInMinutes = Math.floor((now.getTime() - dateObj.getTime()) / (1000 * 60));
-        if (diffInMinutes < 1)
-            return 'Just now';
-        if (diffInMinutes < 60)
-            return `${diffInMinutes}m ago`;
-        if (diffInMinutes < 1440)
-            return `${Math.floor(diffInMinutes / 60)}h ago`;
-        return dateObj.toLocaleDateString();
-    };
-    const sortedNotifications = notifications.sort((a, b) => {
-        const dateA = a.timestamp?.toDate?.() || new Date(a.timestamp);
-        const dateB = b.timestamp?.toDate?.() || new Date(b.timestamp);
-        return dateB.getTime() - dateA.getTime();
-    });
-    const unreadCount = notifications.filter(n => !n.read).length;
-    if (!isOpen)
-        return null;
-    return ((0,jsx_runtime.jsx)("div", { className: "fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-[9999] pt-16", onClick: handleOverlayClick, children: (0,jsx_runtime.jsxs)("div", { className: "bg-white rounded-xl w-full max-w-md max-h-[calc(100vh-8rem)] flex flex-col shadow-lg relative overflow-hidden", onClick: e => e.stopPropagation(), children: [(0,jsx_runtime.jsxs)("div", { className: "flex items-center justify-between p-3 border-b border-gray-200 bg-white z-10", children: [(0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-2", children: [(0,jsx_runtime.jsx)(bell/* default */.A, { className: "w-5 h-5 text-gray-600" }), (0,jsx_runtime.jsx)("h2", { className: "text-lg font-semibold text-gray-900", children: "Notifications" }), unreadCount > 0 && ((0,jsx_runtime.jsxs)("span", { className: "bg-red-500 text-white text-xs rounded-full px-2 py-1", children: [unreadCount, " new"] }))] }), (0,jsx_runtime.jsxs)("div", { className: "flex gap-2 items-center", children: [unreadCount > 0 && ((0,jsx_runtime.jsx)("button", { onClick: handleMarkAllAsRead, className: "p-2 text-xs text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors", "aria-label": "Mark all as read", children: "Mark All Read" })), notifications.length > 0 && ((0,jsx_runtime.jsx)("button", { onClick: handleClearAll, className: "p-2 text-xs text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors", "aria-label": "Clear all notifications", children: "Clear All" })), (0,jsx_runtime.jsx)("button", { onClick: onClose, className: "p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500 hover:text-gray-700", "aria-label": "Close notifications", title: "Close notifications", children: (0,jsx_runtime.jsx)(circle_x/* default */.A, { className: "w-5 h-5" }) })] })] }), (0,jsx_runtime.jsx)("div", { className: "flex-1 overflow-y-auto min-h-0", children: (0,jsx_runtime.jsx)("div", { className: "p-3", children: loading ? ((0,jsx_runtime.jsxs)("div", { className: "text-center py-8", children: [(0,jsx_runtime.jsx)("div", { className: "animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4" }), (0,jsx_runtime.jsx)("p", { className: "text-gray-600", children: "Loading notifications..." })] })) : sortedNotifications.length === 0 ? ((0,jsx_runtime.jsxs)("div", { className: "text-center py-8", children: [(0,jsx_runtime.jsx)(bell/* default */.A, { className: "w-12 h-12 text-gray-300 mx-auto mb-4" }), (0,jsx_runtime.jsx)("h3", { className: "text-lg font-medium text-gray-900 mb-2", children: "No notifications" }), (0,jsx_runtime.jsx)("p", { className: "text-gray-600", children: notifications.length === 0
-                                        ? "You're all caught up! No notifications yet."
-                                        : "No notifications match your current filters." })] })) : ((0,jsx_runtime.jsx)("div", { className: "space-y-3", children: sortedNotifications.map((notification) => ((0,jsx_runtime.jsx)("div", { className: `p-4 rounded-lg border cursor-pointer transition-all hover:shadow-md ${notification.read ? 'opacity-75 bg-gray-50' : 'bg-white'} ${getNotificationColor(notification.type)} ${!notification.read ? 'border-l-4 border-l-blue-500' : ''}`, onClick: () => handleNotificationClick(notification), children: (0,jsx_runtime.jsxs)("div", { className: "flex items-start gap-3", children: [(0,jsx_runtime.jsx)("div", { className: "flex-shrink-0 mt-1", children: getNotificationIcon(notification.type) }), (0,jsx_runtime.jsx)("div", { className: "flex-1 min-w-0", children: (0,jsx_runtime.jsxs)("div", { className: "flex items-start justify-between", children: [(0,jsx_runtime.jsxs)("div", { className: "flex-1", children: [(0,jsx_runtime.jsx)("p", { className: `text-sm font-medium ${notification.read ? 'text-gray-600' : 'text-gray-900'}`, children: notification.message }), notification.extra && ((0,jsx_runtime.jsxs)("div", { className: "mt-2 text-xs text-gray-500", children: [notification.extra.senderName && ((0,jsx_runtime.jsxs)("span", { children: ["From: ", notification.extra.senderName] })), notification.extra.jobTitle && ((0,jsx_runtime.jsxs)("span", { children: [" \u2022 Job: ", notification.extra.jobTitle] }))] })), (0,jsx_runtime.jsx)("p", { className: "text-xs text-gray-400 mt-1", children: formatDate(notification.timestamp) })] }), (0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-1 ml-2", children: [!notification.read && ((0,jsx_runtime.jsx)("div", { className: "w-2 h-2 bg-blue-500 rounded-full" })), (0,jsx_runtime.jsx)("div", { className: "relative group", children: (0,jsx_runtime.jsx)(Button/* Button */.$, { variant: "outline", size: "sm", className: "opacity-0 group-hover:opacity-100 transition-opacity", onClick: (e) => {
-                                                                        e.stopPropagation();
-                                                                        handleDeleteNotification(notification.id);
-                                                                    }, children: (0,jsx_runtime.jsx)(trash_2/* default */.A, { className: "w-3 h-3" }) }) })] })] }) })] }) }, notification.id))) })) }) }), (0,jsx_runtime.jsx)("div", { className: "p-3 border-t border-gray-200 bg-gray-50", children: (0,jsx_runtime.jsx)("div", { className: "flex items-center justify-between", children: (0,jsx_runtime.jsxs)("div", { className: "flex flex-col", children: [(0,jsx_runtime.jsx)("p", { className: "text-sm text-gray-600", children: unreadCount > 0 ? (`${unreadCount} unread notification${unreadCount !== 1 ? 's' : ''}`) : (notifications.length > 0 ? "All notifications read" : "No notifications") }), notifications.length > 0 && ((0,jsx_runtime.jsx)("p", { className: "text-xs text-gray-400 mt-1", children: "Click notifications to mark as read \u2022 \"Clear all\" deletes permanently" }))] }) }) })] }) }));
-};
-/* harmony default export */ const components_NotificationCenter = (NotificationCenter);
-
-;// ./src/components/Navigation.tsx
-
-// src/components/Navigation.tsx
-
-
-
-
-
-
-const Navigation = ({ authUser, userSignOut }) => {
-    const location = (0,react_router_dist/* useLocation */.zy)();
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = (0,react.useState)(false);
-    const [isUserMenuOpen, setIsUserMenuOpen] = (0,react.useState)(false);
-    const [activePath, setActivePath] = (0,react.useState)('/');
-    const [isScrolled, setIsScrolled] = (0,react.useState)(false);
-    const [showNotificationCenter, setShowNotificationCenter] = (0,react.useState)(false);
-    const { t, i18n } = (0,es/* useTranslation */.Bd)();
-    (0,react.useEffect)(() => {
-        setActivePath(location.pathname);
-    }, [location]);
-    (0,react.useEffect)(() => {
-        const handleScroll = () => {
-            setIsScrolled(window.scrollY > 10);
-        };
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
-    const toggleMobileMenu = () => {
-        setIsMobileMenuOpen(!isMobileMenuOpen);
-        if (!isMobileMenuOpen) {
-            setIsUserMenuOpen(false);
-        }
-    };
-    const toggleUserMenu = () => {
-        setIsUserMenuOpen(!isUserMenuOpen);
-        if (!isUserMenuOpen) {
-            setIsMobileMenuOpen(false);
-        }
-    };
-    const closeAllMenus = () => {
-        setIsMobileMenuOpen(false);
-        setIsUserMenuOpen(false);
-    };
-    const isActive = (path) => {
-        return activePath === path;
-    };
-    const navigationLinks = [
-        { to: '/', label: t('nav.home') },
-        { to: '/crew', label: t('nav.crew') },
-        { to: '/jobs', label: t('nav.jobs') },
-        { to: '/projects', label: t('nav.projects') },
-        { to: '/collaboration', label: t('nav.collaboration') },
-    ];
-    const authenticatedLinks = [
-        { to: '/social', label: t('nav.social') },
-        { to: '/edit-profile', label: t('nav.resumeBuilder') },
-    ];
-    const jobManagementLinks = [
-        { to: '/jobs/posted', label: t('nav.myPostedJobs') },
-        { to: '/jobs/analytics', label: t('nav.jobAnalytics') },
-        { to: '/post-job', label: t('nav.postNewJob') },
-    ];
-    const { notifications, loading, markAsRead } = useNotifications();
-    const unreadCount = notifications.filter(n => !n.read).length;
-    const languages = [
-        { code: 'en', label: 'EN' },
-        { code: 'es', label: 'ES' },
-    ];
-    // Function to get user display name (like "franciscovaldez")
-    const getUserDisplayName = (user) => {
-        if (user?.displayName) {
-            return user.displayName.toLowerCase().replace(/\s+/g, '');
-        }
-        if (user?.email) {
-            const emailName = user.email.split('@')[0];
-            return emailName.toLowerCase();
-        }
-        return 'user';
-    };
-    return ((0,jsx_runtime.jsxs)("nav", { className: `fixed top-0 left-0 w-full z-50 transition-all duration-300 ${isScrolled
-            ? 'bg-white/95 backdrop-blur-md shadow-lg border-b border-gray-200/50'
-            : 'bg-white/80 backdrop-blur-sm border-b border-gray-100/50'}`, children: [(0,jsx_runtime.jsx)("div", { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8", children: (0,jsx_runtime.jsxs)("div", { className: "flex items-center justify-between h-16", children: [(0,jsx_runtime.jsx)("div", { className: "flex items-center", children: (0,jsx_runtime.jsx)(dist/* Link */.N_, { to: "/", className: "group flex items-center space-x-2", onClick: closeAllMenus, children: (0,jsx_runtime.jsxs)("div", { className: "relative", children: [(0,jsx_runtime.jsx)("div", { className: "text-2xl font-bold bg-gradient-to-r from-gray-900 via-gray-700 to-gray-900 bg-clip-text text-transparent tracking-tight", children: "My Film Jobs" }), (0,jsx_runtime.jsx)("div", { className: "absolute -inset-1 bg-gradient-to-r from-blue-600/10 to-purple-600/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-sm -z-10" })] }) }) }), (0,jsx_runtime.jsxs)("div", { className: "hidden md:flex items-center space-x-1", children: [navigationLinks.map((link) => {
-                                    // Special handling for Jobs dropdown
-                                    if (link.to === '/jobs') {
-                                        return ((0,jsx_runtime.jsxs)("div", { className: "relative group", children: [(0,jsx_runtime.jsxs)(dist/* Link */.N_, { to: "/jobs", className: `relative px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 flex items-center gap-1 ${isActive('/jobs') || isActive('/jobs/posted') || isActive('/jobs/analytics') || isActive('/post-job')
-                                                        ? 'text-blue-600 bg-blue-50/80 shadow-sm'
-                                                        : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50/80'}`, onClick: closeAllMenus, style: { zIndex: 2, position: 'relative' }, children: [(0,jsx_runtime.jsx)("span", { children: t('nav.jobs') }), (0,jsx_runtime.jsx)("svg", { className: "w-4 h-4 ml-1 inline-block", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24", children: (0,jsx_runtime.jsx)("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M19 9l-7 7-7-7" }) })] }), (0,jsx_runtime.jsx)("div", { className: "absolute top-full left-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50", children: (0,jsx_runtime.jsxs)("div", { className: "py-2", children: [(0,jsx_runtime.jsx)(dist/* Link */.N_, { to: "/jobs", className: "block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900", onClick: closeAllMenus, children: t('nav.jobs') }), authUser && ((0,jsx_runtime.jsxs)(jsx_runtime.Fragment, { children: [(0,jsx_runtime.jsx)(dist/* Link */.N_, { to: "/jobs/posted", className: "block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900", onClick: closeAllMenus, children: t('nav.myPostedJobs') }), (0,jsx_runtime.jsx)(dist/* Link */.N_, { to: "/jobs/analytics", className: "block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900", onClick: closeAllMenus, children: t('nav.jobAnalytics') }), (0,jsx_runtime.jsx)(dist/* Link */.N_, { to: "/post-job", className: "block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900", onClick: closeAllMenus, children: t('nav.postNewJob') })] }))] }) })] }, link.to));
-                                    }
-                                    // Regular link handling
-                                    return ((0,jsx_runtime.jsxs)(dist/* Link */.N_, { to: link.to, className: `relative px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${isActive(link.to)
-                                            ? 'text-blue-600 bg-blue-50/80 shadow-sm'
-                                            : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50/80'}`, onClick: closeAllMenus, children: [link.label, isActive(link.to) && ((0,jsx_runtime.jsx)("div", { className: "absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-blue-600 rounded-full" }))] }, link.to));
-                                }), authUser && authenticatedLinks.map((link) => ((0,jsx_runtime.jsxs)(dist/* Link */.N_, { to: link.to, className: `relative px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${isActive(link.to)
-                                        ? 'text-blue-600 bg-blue-50/80 shadow-sm'
-                                        : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50/80'}`, onClick: closeAllMenus, children: [link.label, isActive(link.to) && ((0,jsx_runtime.jsx)("div", { className: "absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-blue-600 rounded-full" }))] }, link.to))), (0,jsx_runtime.jsxs)("button", { onClick: () => setShowNotificationCenter(true), className: "relative ml-2 p-2 rounded-full hover:bg-gray-100 transition", children: [(0,jsx_runtime.jsx)(bell/* default */.A, { className: "w-6 h-6 text-gray-700" }), unreadCount > 0 && ((0,jsx_runtime.jsx)("span", { className: "absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 shadow-lg", children: unreadCount }))] })] }), (0,jsx_runtime.jsxs)("div", { className: "flex items-center space-x-3", children: [(0,jsx_runtime.jsx)("div", { className: "relative", children: (0,jsx_runtime.jsx)("button", { className: "flex items-center px-2 py-1 rounded-lg text-gray-600 hover:text-blue-700 hover:bg-blue-50/60 transition-colors text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-200", "aria-label": "Change language", tabIndex: 0, children: languages.map((lang, idx) => ((0,jsx_runtime.jsxs)("span", { onClick: e => {
-                                                e.stopPropagation();
-                                                i18n.changeLanguage(lang.code);
-                                            }, className: `cursor-pointer ${i18n.language === lang.code ? 'text-blue-700 font-bold' : 'text-gray-500 hover:text-blue-600'}`, children: [lang.label, idx < languages.length - 1 && (0,jsx_runtime.jsx)("span", { className: "mx-1 text-gray-300", children: "/" })] }, lang.code))) }) }), authUser ? ((0,jsx_runtime.jsx)(jsx_runtime.Fragment, { children: (0,jsx_runtime.jsxs)("div", { className: "relative", children: [(0,jsx_runtime.jsxs)("button", { onClick: toggleUserMenu, className: "flex items-center space-x-2 px-3 py-2 rounded-lg bg-gray-100/80 hover:bg-gray-200/80 transition-all duration-200 group", children: [(0,jsx_runtime.jsx)("div", { className: "w-7 h-7 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white text-sm font-medium", children: authUser.email?.[0].toUpperCase() || 'U' }), (0,jsx_runtime.jsx)("span", { className: "hidden sm:block text-sm font-medium text-gray-700 group-hover:text-gray-900", children: getUserDisplayName(authUser) }), (0,jsx_runtime.jsx)(chevron_down/* default */.A, { size: 16, className: `text-gray-500 transition-transform duration-200 ${isUserMenuOpen ? 'rotate-180' : ''}` })] }), isUserMenuOpen && ((0,jsx_runtime.jsxs)("div", { className: "absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200/50 py-2 z-50 backdrop-blur-sm", children: [(0,jsx_runtime.jsxs)("div", { className: "px-4 py-3 border-b border-gray-100", children: [(0,jsx_runtime.jsx)("p", { className: "text-sm font-medium text-gray-900", children: authUser.email }), (0,jsx_runtime.jsx)("p", { className: "text-xs text-gray-500 mt-1", children: "Film Professional" })] }), (0,jsx_runtime.jsxs)("div", { className: "py-2", children: [authenticatedLinks.map((link) => ((0,jsx_runtime.jsx)(dist/* Link */.N_, { to: link.to, className: "flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors", onClick: closeAllMenus, children: link.label }, link.to))), (0,jsx_runtime.jsxs)(dist/* Link */.N_, { to: "/applications", className: "flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors", onClick: closeAllMenus, children: ["\uD83D\uDCDD ", t('nav.myApplications')] }), (0,jsx_runtime.jsxs)(dist/* Link */.N_, { to: "/jobs/posted", className: "flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors", onClick: closeAllMenus, children: ["\uD83D\uDCBC ", t('nav.postedJobs')] }), (0,jsx_runtime.jsxs)(dist/* Link */.N_, { to: "/settings", className: "flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors", onClick: closeAllMenus, children: [(0,jsx_runtime.jsx)(settings/* default */.A, { size: 16, className: "mr-2" }), t('nav.settings')] })] }), (0,jsx_runtime.jsx)("div", { className: "border-t border-gray-100 pt-2", children: (0,jsx_runtime.jsx)("button", { onClick: () => {
-                                                                userSignOut();
-                                                                closeAllMenus();
-                                                            }, className: "block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors", children: t('nav.signOut') }) })] }))] }) })) : ((0,jsx_runtime.jsxs)("div", { className: "flex items-center space-x-3", children: [(0,jsx_runtime.jsx)(dist/* Link */.N_, { to: "/login", className: "px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors", children: t('nav.signIn') }), (0,jsx_runtime.jsx)("button", { onClick: () => {
-                                                closeAllMenus();
-                                                window.location.href = '/register';
-                                            }, className: "px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-sm hover:shadow-md", children: t('nav.getStarted') })] })), (0,jsx_runtime.jsx)("div", { className: "md:hidden", children: (0,jsx_runtime.jsx)("button", { onClick: toggleMobileMenu, className: "p-2 rounded-lg text-gray-700 hover:text-gray-900 hover:bg-gray-100/80 transition-colors", "aria-label": "Toggle mobile menu", children: isMobileMenuOpen ? (0,jsx_runtime.jsx)(x/* default */.A, { size: 24 }) : (0,jsx_runtime.jsx)(menu/* default */.A, { size: 24 }) }) })] })] }) }), isMobileMenuOpen && ((0,jsx_runtime.jsx)("div", { className: "md:hidden absolute top-full left-0 right-0 bg-white/95 backdrop-blur-md border-b border-gray-200/50 shadow-lg", children: (0,jsx_runtime.jsxs)("div", { className: "px-4 py-6 space-y-4", children: [(0,jsx_runtime.jsx)("div", { className: "space-y-2", children: navigationLinks.map((link) => ((0,jsx_runtime.jsx)(dist/* Link */.N_, { to: link.to, className: `block px-4 py-3 rounded-lg font-medium transition-colors ${isActive(link.to)
-                                    ? 'text-blue-600 bg-blue-50'
-                                    : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'}`, onClick: closeAllMenus, children: link.label }, link.to))) }), authUser && ((0,jsx_runtime.jsx)(jsx_runtime.Fragment, { children: (0,jsx_runtime.jsxs)("div", { className: "border-t border-gray-200 pt-4", children: [(0,jsx_runtime.jsx)("p", { className: "px-4 text-xs font-medium text-gray-500 uppercase tracking-wider mb-3", children: "My Account" }), (0,jsx_runtime.jsxs)("div", { className: "space-y-2", children: [authenticatedLinks.map((link) => ((0,jsx_runtime.jsx)(dist/* Link */.N_, { to: link.to, className: `block px-4 py-3 rounded-lg font-medium transition-colors ${isActive(link.to)
-                                                    ? 'text-blue-600 bg-blue-50'
-                                                    : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'}`, onClick: closeAllMenus, children: link.label }, link.to))), (0,jsx_runtime.jsxs)(dist/* Link */.N_, { to: "/applications", className: `block px-4 py-3 rounded-lg font-medium transition-colors ${isActive('/applications')
-                                                    ? 'text-blue-600 bg-blue-50'
-                                                    : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'}`, onClick: closeAllMenus, children: ["\uD83D\uDCDD ", t('nav.myApplications')] }), (0,jsx_runtime.jsxs)(dist/* Link */.N_, { to: "/jobs/posted", className: `block px-4 py-3 rounded-lg font-medium transition-colors ${isActive('/jobs/posted')
-                                                    ? 'text-blue-600 bg-blue-50'
-                                                    : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'}`, onClick: closeAllMenus, children: ["\uD83D\uDCBC ", t('nav.postedJobs')] })] })] }) })), (0,jsx_runtime.jsx)("div", { className: "border-t border-gray-200 pt-4 space-y-3", children: !authUser ? ((0,jsx_runtime.jsxs)(jsx_runtime.Fragment, { children: [(0,jsx_runtime.jsx)(dist/* Link */.N_, { to: "/login", className: "block w-full px-4 py-3 text-center font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors", onClick: closeAllMenus, children: t('nav.signIn') }), (0,jsx_runtime.jsx)("button", { onClick: () => {
-                                            closeAllMenus();
-                                            window.location.href = '/register';
-                                        }, className: "block w-full px-4 py-3 text-center bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-sm", children: t('nav.getStarted') })] })) : ((0,jsx_runtime.jsxs)(jsx_runtime.Fragment, { children: [(0,jsx_runtime.jsxs)("div", { className: "px-4 py-3 bg-gray-50 rounded-lg", children: [(0,jsx_runtime.jsx)("p", { className: "text-sm font-medium text-gray-900", children: authUser.email }), (0,jsx_runtime.jsx)("p", { className: "text-xs text-gray-500 mt-1", children: "Film Professional" })] }), (0,jsx_runtime.jsx)("button", { onClick: () => {
-                                            userSignOut();
-                                            closeAllMenus();
-                                        }, className: "block w-full px-4 py-3 text-center font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors", children: t('nav.signOut') })] })) })] }) })), isMobileMenuOpen && ((0,jsx_runtime.jsx)("div", { className: "fixed inset-0 bg-black/20 backdrop-blur-sm z-40 md:hidden", onClick: closeAllMenus, style: { top: '64px' } })), (0,jsx_runtime.jsx)(components_NotificationCenter, { isOpen: showNotificationCenter, onClose: () => setShowNotificationCenter(false) })] }));
-};
-/* harmony default export */ const components_Navigation = (Navigation);
-
-;// ./src/App.tsx
-
-
-
-
-
-
-
-
-
-
-
-// Import components
-
-function App() {
-    const { currentUser, logout } = (0,AuthContext/* useAuth */.A)();
-    const handleSignOut = async () => {
-        try {
-            await logout();
-            console.log('User signed out successfully');
-        }
-        catch (error) {
-            console.error('Error signing out:', error);
-        }
-    };
-    return ((0,jsx_runtime.jsx)(ThemeProvider/* ThemeProvider */.NP, { children: (0,jsx_runtime.jsxs)("div", { className: "min-h-screen bg-background text-foreground", style: { fontFamily: 'Inter, sans-serif' }, children: [(0,jsx_runtime.jsxs)("div", { className: "min-h-screen bg-gray-50 text-gray-900", children: [(0,jsx_runtime.jsx)(components_Navigation, { authUser: currentUser, userSignOut: handleSignOut }), (0,jsx_runtime.jsx)("main", { className: "container mx-auto px-4 py-8 pt-24", children: (0,jsx_runtime.jsx)(react.Suspense, { fallback: (0,jsx_runtime.jsx)("div", { className: "flex items-center justify-center min-h-[400px]", children: (0,jsx_runtime.jsx)("div", { className: "animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" }) }), children: (0,jsx_runtime.jsx)(react_router_dist/* Outlet */.sv, {}) }) })] }), (0,jsx_runtime.jsx)(react_hot_toast_dist/* Toaster */.l$, { position: "top-right", toastOptions: {
-                        duration: 4000,
-                        className: '!bg-white dark:!bg-gray-800 !text-gray-900 dark:!text-gray-100',
-                        success: {
-                            iconTheme: {
-                                primary: '#10B981',
-                                secondary: 'white',
-                            },
-                        },
-                        error: {
-                            iconTheme: {
-                                primary: '#EF4444',
-                                secondary: 'white',
-                            },
-                        },
-                    } })] }) }));
-}
-/* harmony default export */ const src_App = (App);
-
-;// ./src/router.tsx
-
-
-
-
-// Lazy load pages for better performance
-const ProducerView = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(9505), __webpack_require__.e(4528)]).then(__webpack_require__.bind(__webpack_require__, 4528)));
-const HomePage = react.lazy(() => __webpack_require__.e(/* import() */ 1415).then(__webpack_require__.bind(__webpack_require__, 1415)));
-const MyProjectsPage = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(1928), __webpack_require__.e(4008)]).then(__webpack_require__.bind(__webpack_require__, 4008)));
-const SavedCrewProfilesPage = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(6354), __webpack_require__.e(9505), __webpack_require__.e(3608)]).then(__webpack_require__.bind(__webpack_require__, 3608)));
-const SavedProjectsPage = react.lazy(() => __webpack_require__.e(/* import() */ 4087).then(__webpack_require__.bind(__webpack_require__, 4087)));
-const CollectionsHubPage = react.lazy(() => __webpack_require__.e(/* import() */ 3124).then(__webpack_require__.bind(__webpack_require__, 743)));
-const SocialPage = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(856), __webpack_require__.e(9505), __webpack_require__.e(758), __webpack_require__.e(3778)]).then(__webpack_require__.bind(__webpack_require__, 3778)));
-const CollaborationPage = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(6372), __webpack_require__.e(1409), __webpack_require__.e(6060), __webpack_require__.e(9651)]).then(__webpack_require__.bind(__webpack_require__, 9651)));
-const SettingsPage = react.lazy(() => __webpack_require__.e(/* import() */ 2443).then(__webpack_require__.bind(__webpack_require__, 2443)));
-const JobsPage = react.lazy(() => __webpack_require__.e(/* import() */ 7900).then(__webpack_require__.bind(__webpack_require__, 7900)));
-const PostJobPage = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(856), __webpack_require__.e(1409), __webpack_require__.e(7011)]).then(__webpack_require__.bind(__webpack_require__, 7011)));
-const JobDetailPage = react.lazy(() => __webpack_require__.e(/* import() */ 8004).then(__webpack_require__.bind(__webpack_require__, 8004)));
-const DebugJobsPage = react.lazy(() => __webpack_require__.e(/* import() */ 9009).then(__webpack_require__.bind(__webpack_require__, 9009)));
-const EditProfilePage = react.lazy(() => __webpack_require__.e(/* import() */ 6134).then(__webpack_require__.bind(__webpack_require__, 6134)));
-const PublicResumePage = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(3833), __webpack_require__.e(9505), __webpack_require__.e(1149)]).then(__webpack_require__.bind(__webpack_require__, 1149)));
-const ChatTestPage = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(758), __webpack_require__.e(336)]).then(__webpack_require__.bind(__webpack_require__, 336)));
-const LoginPage = react.lazy(() => __webpack_require__.e(/* import() */ 8139).then(__webpack_require__.bind(__webpack_require__, 8139)));
-const RegisterPage = react.lazy(() => __webpack_require__.e(/* import() */ 5).then(__webpack_require__.bind(__webpack_require__, 5)));
-const ApplicationDetailPage = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(3398), __webpack_require__.e(4567)]).then(__webpack_require__.bind(__webpack_require__, 4567)));
-const JobApplicationForm = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(6093), __webpack_require__.e(2192)]).then(__webpack_require__.bind(__webpack_require__, 2192)));
-const JobApplicationDashboard = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(6093), __webpack_require__.e(7748)]).then(__webpack_require__.bind(__webpack_require__, 7748)));
-const ApplicationSuccessPage = react.lazy(() => __webpack_require__.e(/* import() */ 8897).then(__webpack_require__.bind(__webpack_require__, 8897)));
-const EditJobApplication = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(6093), __webpack_require__.e(7482)]).then(__webpack_require__.bind(__webpack_require__, 7482)));
-const JobPosterDashboard = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(6093), __webpack_require__.e(7269)]).then(__webpack_require__.bind(__webpack_require__, 7269)));
-const JobApplicationsPage = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(856), __webpack_require__.e(6093), __webpack_require__.e(8158)]).then(__webpack_require__.bind(__webpack_require__, 8158)));
-const JobApplicantsPage = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(856), __webpack_require__.e(3398), __webpack_require__.e(766)]).then(__webpack_require__.bind(__webpack_require__, 766)));
-const AppliedJobsPage = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(6093), __webpack_require__.e(7757)]).then(__webpack_require__.bind(__webpack_require__, 7757)));
-const SavedJobsPage = react.lazy(() => __webpack_require__.e(/* import() */ 1603).then(__webpack_require__.bind(__webpack_require__, 1603)));
-const ApplicationDashboard = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(4032), __webpack_require__.e(6093), __webpack_require__.e(3029)]).then(__webpack_require__.bind(__webpack_require__, 3029)));
-const ApplicationAnalytics = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(6093), __webpack_require__.e(4873)]).then(__webpack_require__.bind(__webpack_require__, 4873)));
-const JobPosterAnalytics = react.lazy(() => __webpack_require__.e(/* import() */ 4493).then(__webpack_require__.bind(__webpack_require__, 4493)));
-const ProjectsPage = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(1928), __webpack_require__.e(1263)]).then(__webpack_require__.bind(__webpack_require__, 1263)));
-const ProjectDetailPage = react.lazy(() => __webpack_require__.e(/* import() */ 7949).then(__webpack_require__.bind(__webpack_require__, 7949)));
-const ProjectDashboard = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(6372), __webpack_require__.e(2608), __webpack_require__.e(6060), __webpack_require__.e(4381)]).then(__webpack_require__.bind(__webpack_require__, 4381)));
-const AddProject = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(6354), __webpack_require__.e(898), __webpack_require__.e(1530)]).then(__webpack_require__.bind(__webpack_require__, 1530)));
-// Import the main App component that will handle the layout
-
-function createAppRouter() {
-    return (0,dist/* createBrowserRouter */.Ys)([
-        {
-            path: '/',
-            element: (0,jsx_runtime.jsx)(src_App, {}),
-            children: [
-                { index: true, element: (0,jsx_runtime.jsx)(HomePage, {}) },
-                {
-                    path: 'crew',
-                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(ProducerView, {}) }))
-                },
-                {
-                    path: 'projects',
-                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(ProjectsPage, {}) }))
-                },
-                {
-                    path: 'projects/create',
-                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(AddProject, {}) }))
-                },
-                {
-                    path: 'projects/:projectId',
-                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(ProjectDetailPage, {}) }))
-                },
-                {
-                    path: 'projects/:projectId/manage',
-                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(ProjectDashboard, {}) }))
-                },
-                {
-                    path: 'login',
-                    element: ((0,jsx_runtime.jsx)(PublicRoute, { children: (0,jsx_runtime.jsx)(LoginPage, {}) }))
-                },
-                {
-                    path: 'register',
-                    element: ((0,jsx_runtime.jsx)(PublicRoute, { children: (0,jsx_runtime.jsx)(RegisterPage, {}) }))
-                },
-                {
-                    path: 'my-projects',
-                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(MyProjectsPage, {}) }))
-                },
-                {
-                    path: 'saved-crew',
-                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(SavedCrewProfilesPage, {}) }))
-                },
-                {
-                    path: 'saved-projects',
-                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(SavedProjectsPage, {}) }))
-                },
-                {
-                    path: 'collections',
-                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(CollectionsHubPage, {}) }))
-                },
-                {
-                    path: 'social',
-                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(SocialPage, {}) }))
-                },
-                {
-                    path: 'chat',
-                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(ChatTestPage, {}) }))
-                },
-                {
-                    path: 'collaboration',
-                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(CollaborationPage, {}) }))
-                },
-                {
-                    path: 'settings',
-                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(SettingsPage, {}) }))
-                },
-                {
-                    path: 'edit-profile',
-                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(EditProfilePage, {}) }))
-                },
-                { path: 'resume/:uid', element: (0,jsx_runtime.jsx)(PublicResumePage, {}) },
-                {
-                    path: 'jobs',
-                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(JobsPage, {}) }))
-                },
-                {
-                    path: 'jobs/:jobId',
-                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(JobDetailPage, {}) }))
-                },
-                {
-                    path: 'jobs/:jobId/apply',
-                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(JobApplicationForm, {}) }))
-                },
-                {
-                    path: 'applications',
-                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(JobApplicationDashboard, {}) }))
-                },
-                {
-                    path: 'applications/:applicationId',
-                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(ApplicationDetailPage, {}) }))
-                },
-                {
-                    path: 'applications/:applicationId/edit',
-                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(EditJobApplication, {}) }))
-                },
-                {
-                    path: 'applications/:applicationId/success',
-                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(ApplicationSuccessPage, {}) }))
-                },
-                {
-                    path: 'jobs/posted',
-                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(JobPosterDashboard, {}) }))
-                },
-                {
-                    path: 'jobs/:jobId/applications',
-                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(JobApplicantsPage, {}) }))
-                },
-                {
-                    path: 'post-job',
-                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(PostJobPage, {}) }))
-                },
-                {
-                    path: 'jobs/applied',
-                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(AppliedJobsPage, {}) }))
-                },
-                {
-                    path: 'jobs/saved',
-                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(SavedJobsPage, {}) }))
-                },
-                {
-                    path: 'applications/dashboard',
-                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(ApplicationDashboard, {}) }))
-                },
-                {
-                    path: 'applications/analytics',
-                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(ApplicationAnalytics, {}) }))
-                },
-                {
-                    path: 'jobs/analytics',
-                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(JobPosterAnalytics, {}) }))
-                },
-                ...( false ? 0 : []),
-            ],
-        },
-    ]);
-}
-
-;// ./src/index.tsx
-
-// Initialize console filter BEFORE anything else to catch Firebase errors
-// import './utilities/consoleFilter';
-
-
-
-
-
-
-
-// Global handler for all <img> errors (for blob URLs)
-document.addEventListener('error', function (e) {
-    const target = e.target;
-    if (target.tagName === 'IMG' &&
-        target.src.startsWith('blob:') &&
-        !target.src.endsWith('/default-avatar.svg')) {
-        // Prevent the error from being logged to console
-        e.preventDefault();
-        target.src = '/default-avatar.svg';
-    }
-}, true);
-// Global handler for unhandled promise rejections (for blob URL fetch errors)
-window.addEventListener('unhandledrejection', function (e) {
-    if (e.reason && typeof e.reason === 'string' && e.reason.includes('blob:') && e.reason.includes('net::ERR_FILE_NOT_FOUND')) {
-        // Prevent the error from being logged to console
-        e.preventDefault();
-        console.warn('Blob URL not found, this is expected when blobs are cleaned up');
-    }
-});
-// Create router instance once
-const router = createAppRouter();
-const RootWithProvider = () => ((0,jsx_runtime.jsx)(AuthContext/* AuthProvider */.O, { children: (0,jsx_runtime.jsx)(dist/* RouterProvider */.pg, { router: router }) }));
-const rootElement = document.getElementById('root');
-if (rootElement) {
-    const root = client.createRoot(rootElement);
-    root.render((0,jsx_runtime.jsx)(react.StrictMode, { children: (0,jsx_runtime.jsx)(RootWithProvider, {}) }));
-}
-
-
-/***/ }),
-
 /***/ 8321:
 /***/ ((module, __webpack_exports__, __webpack_require__) => {
 
@@ -6356,6 +5494,1015 @@ select::-webkit-scrollbar-thumb:hover {
 
 /***/ }),
 
+/***/ 8322:
+/***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
+
+
+// EXTERNAL MODULE: ./node_modules/react/jsx-runtime.js
+var jsx_runtime = __webpack_require__(4848);
+// EXTERNAL MODULE: ./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js
+var injectStylesIntoStyleTag = __webpack_require__(5072);
+var injectStylesIntoStyleTag_default = /*#__PURE__*/__webpack_require__.n(injectStylesIntoStyleTag);
+// EXTERNAL MODULE: ./node_modules/style-loader/dist/runtime/styleDomAPI.js
+var styleDomAPI = __webpack_require__(7825);
+var styleDomAPI_default = /*#__PURE__*/__webpack_require__.n(styleDomAPI);
+// EXTERNAL MODULE: ./node_modules/style-loader/dist/runtime/insertBySelector.js
+var insertBySelector = __webpack_require__(7659);
+var insertBySelector_default = /*#__PURE__*/__webpack_require__.n(insertBySelector);
+// EXTERNAL MODULE: ./node_modules/style-loader/dist/runtime/setAttributesWithoutAttributes.js
+var setAttributesWithoutAttributes = __webpack_require__(5056);
+var setAttributesWithoutAttributes_default = /*#__PURE__*/__webpack_require__.n(setAttributesWithoutAttributes);
+// EXTERNAL MODULE: ./node_modules/style-loader/dist/runtime/insertStyleElement.js
+var insertStyleElement = __webpack_require__(540);
+var insertStyleElement_default = /*#__PURE__*/__webpack_require__.n(insertStyleElement);
+// EXTERNAL MODULE: ./node_modules/style-loader/dist/runtime/styleTagTransform.js
+var styleTagTransform = __webpack_require__(1113);
+var styleTagTransform_default = /*#__PURE__*/__webpack_require__.n(styleTagTransform);
+// EXTERNAL MODULE: ./node_modules/css-loader/dist/cjs.js!./node_modules/postcss-loader/dist/cjs.js!./src/styles/globals.css
+var globals = __webpack_require__(8321);
+;// ./src/styles/globals.css
+
+      
+      
+      
+      
+      
+      
+      
+      
+      
+
+var options = {};
+
+options.styleTagTransform = (styleTagTransform_default());
+options.setAttributes = (setAttributesWithoutAttributes_default());
+options.insert = insertBySelector_default().bind(null, "head");
+options.domAPI = (styleDomAPI_default());
+options.insertStyleElement = (insertStyleElement_default());
+
+var update = injectStylesIntoStyleTag_default()(globals/* default */.A, options);
+
+
+
+
+       /* harmony default export */ const styles_globals = (globals/* default */.A && globals/* default */.A.locals ? globals/* default */.A.locals : undefined);
+
+// EXTERNAL MODULE: ./node_modules/i18next/dist/esm/i18next.js
+var i18next = __webpack_require__(2635);
+// EXTERNAL MODULE: ./node_modules/react-i18next/dist/es/index.js + 15 modules
+var es = __webpack_require__(2389);
+// EXTERNAL MODULE: ./node_modules/i18next-browser-languagedetector/dist/esm/i18nextBrowserLanguageDetector.js
+var i18nextBrowserLanguageDetector = __webpack_require__(4997);
+;// ./src/locales/en/translation.json
+const translation_namespaceObject = /*#__PURE__*/JSON.parse('{"nav":{"home":"Home","crew":"Crew","jobs":"Jobs","projects":"Projects","collaboration":"Collaboration","social":"Social","favorites":"Favorites","resumeBuilder":"Resume Builder","myPostedJobs":"My Posted Jobs","jobAnalytics":"Job Analytics","postNewJob":"Post New Job","myApplications":"My Applications","postedJobs":"Posted Jobs","settings":"Settings","signOut":"Sign Out","signIn":"Sign In","getStarted":"Get Started"},"home":{"loading":"Loading...","stats":{"activeProfessionals":"Active Professionals","projectsCompleted":"Projects Completed","successRate":"Success Rate","countries":"Countries"},"hero":{"banner":"The Film Industry\'s Premier Networking Platform","title1":"Connect Film","title2":"Professionals","subtitle":"Join thousands of filmmakers, crew members, and industry professionals connecting, collaborating, and creating amazing projects together.","ctaPrimary":"Start Your Journey","ctaSecondary":"Browse Jobs"},"features":{"title":"Everything You Need to Succeed","subtitle":"From project showcase to real-time collaboration, we provide all the tools you need to advance your film career.","projectShowcase":{"title":"Project Showcase","desc":"Display your best work and connect with industry professionals"},"crewNetworking":{"title":"Crew Networking","desc":"Build meaningful connections with talented filmmakers worldwide"},"jobBoard":{"title":"Job Board","desc":"Find and post film production jobs across all departments"},"globalReach":{"title":"Global Reach","desc":"Connect with professionals from around the world"},"industryRecognition":{"title":"Industry Recognition","desc":"Showcase your awards and achievements to stand out"},"realTimeCollab":{"title":"Real-time Collaboration","desc":"Work together seamlessly with integrated communication tools"}},"howItWorks":{"title":"How It Works","subtitle":"Get started in just three simple steps and join the largest film industry network.","step1":{"title":"Create Your Profile","desc":"Build your professional profile and showcase your best work to stand out from the crowd."},"step2":{"title":"Connect & Network","desc":"Find and connect with industry professionals, join projects, and build your network."},"step3":{"title":"Collaborate & Grow","desc":"Work on amazing projects, share opportunities, and grow your career in the film industry."}},"cta":{"title":"Ready to Take Your Career to the Next Level?","subtitle":"Join thousands of film professionals who are already using our platform to grow their careers.","ctaPrimary":"Join the Community","ctaSecondary":"Explore Profiles"}},"auth":{"login":{"title":"Welcome back","subtitle":"Sign in to your account to continue","email":"Email Address","emailPlaceholder":"Enter your email","password":"Password","passwordPlaceholder":"Enter your password","showPassword":"Show password","hidePassword":"Hide password","signingIn":"Signing in...","signIn":"Sign In","continueWithGoogle":"Continue with Google","continueWithApple":"Continue with Apple","or":"or","noAccount":"Don\'t have an account?","createAccount":"Create one here","termsPrivacy":"By signing in, you agree to our","termsService":"Terms of Service","privacyPolicy":"Privacy Policy","and":"and"},"register":{"title":"Create your account","subtitle":"Join My Film Jobs to connect with the film industry","personalInfo":"Personal Information","firstName":"First Name","firstNamePlaceholder":"John","lastName":"Last Name","lastNamePlaceholder":"Doe","accountDetails":"Account Details","email":"Email Address","emailPlaceholder":"john.doe@example.com","password":"Password","passwordPlaceholder":"Create a strong password","passwordHelper":"Must be at least 6 characters long","confirmPassword":"Confirm Password","confirmPasswordPlaceholder":"Confirm your password","creatingAccount":"Creating account...","createAccount":"Create Account","haveAccount":"Already have an account?","signInHere":"Sign in here","termsPrivacy":"By creating an account, you agree to our"},"errors":{"emailPasswordRequired":"Please enter both email and password.","invalidCredentials":"Invalid email or password.","tooManyRequests":"Too many failed attempts. Please try again later.","loginError":"An error occurred during login. Please try again.","popupClosed":"Sign-in was cancelled. Please try again.","popupBlocked":"Sign-in popup was blocked. Please allow popups and try again.","googleSignInError":"Google sign-in failed. Please try again.","appleSignInError":"Apple sign-in failed. Please try again.","nameRequired":"First name and last name are required","emailRequired":"Email is required","passwordLength":"Password must be at least 6 characters long","passwordMatch":"Passwords do not match","emailInUse":"An account with this email already exists","weakPassword":"Password is too weak. Please choose a stronger password.","invalidEmail":"Please enter a valid email address","registrationError":"An error occurred during registration. Please try again.","accountCreated":"Account created successfully! Redirecting...","loginRequired":"Please log in to save jobs"}},"jobs":{"title":"Jobs","heroTitle":"Find Your Next Film Industry Role","heroSubtitle":"Discover opportunities with leading productions, connect with industry professionals, and advance your career in film and television.","searchPlaceholder":"Search jobs by title, company, or keywords...","search":"Search jobs...","filters":"Filters","showFilters":"Show Filters","hideFilters":"Hide Filters","noJobsFound":"No jobs found","loadingJobs":"Loading jobs...","allDepartments":"All Departments","allLocations":"All Locations","allJobTypes":"All Job Types","remoteOnly":"Remote Only","applyFilters":"Apply Filters","clearFilters":"Clear Filters","saveJob":"Save job for later","removeFromSaved":"Remove from saved jobs","jobSaved":"Job saved successfully","jobRemoved":"Job removed from saved","failedToSave":"Failed to save job. Please try again.","viewDetails":"View Details","editJob":"Edit Job","untitledPosition":"Untitled Position","various":"Various","remote":"Remote","paid":"Paid","level":"level","posted":"Posted","activeJobs":"Active Jobs","companies":"Companies","locations":"Locations","remoteJobs":"Remote Jobs","invalidJobData":"Invalid job data","myApplications":"My Applications","savedJobs":"Saved Jobs","postJob":"Post Job","myPostedJobs":"My Posted Jobs","jobAnalytics":"Job Analytics","postNewJob":"Post New Job","jobsAvailable":"Jobs Available","allAvailablePositions":"All Available Positions","sortBy":"Sort by","newestFirst":"Newest First","oldestFirst":"Oldest First","salaryHighToLow":"Salary: High to Low","salaryLowToHigh":"Salary: Low to High","loadMoreJobs":"Load More Jobs","department":"Department","location":"Location","enterLocation":"Enter location","jobType":"Job Type","filteredResults":"Filtered results","tryAdjustingFilters":"Try adjusting your search or filters to find more opportunities.","departments":{"camera":"Camera","sound":"Sound","lighting":"Lighting","art":"Art","costume":"Costume","makeup":"Makeup","hair":"Hair","production":"Production","postProduction":"Post-Production","vfx":"VFX","stunts":"Stunts","transportation":"Transportation","catering":"Catering"},"jobTypes":{"fullTime":"Full Time","partTime":"Part Time","contract":"Contract","freelance":"Freelance","temporary":"Temporary","internship":"Internship"}},"crew":{"title":"Crew","discoverTalent":"Discover Creative Talent","discoverSubtitle":"Connect with exceptional crew members from around the world.","refineSearch":"Refine Your Search","findPerfectCrew":"Find the perfect crew member for your project","searchCrew":"Search crew members...","searchPlaceholder":"Search by name, role, or skills...","search":"Search","filters":"Filters","clearFilters":"Clear All Filters","resetFilters":"Reset Filters","applyFilters":"Apply Filters","noResults":"No crew members found","tryAdjusting":"Try adjusting your search or filters to find more crew members.","browseAllCrew":"Browse All Crew","viewAllCrew":"View All Crew","crewProfiles":"Crew Profiles","savedCrew":"Saved Crew","savedCrewProfiles":"Saved Crew Profiles","myCrew":"My Crew","teamMembers":"Team Members","loading":"Loading crew...","loadingProfiles":"Loading profiles...","department":"Department","allDepartments":"All Departments","role":"Role","allRoles":"All Roles","jobTitle":"Job Title","allJobTitles":"All Job Titles","location":"Location","allLocations":"All Locations","country":"Country","allCountries":"All Countries","city":"City","availability":"Availability","allAvailability":"All Availability","allStatus":"All Status","available":"Available","soon":"Available Soon","unavailable":"Unavailable","crewMember":"Crew Member","locationNotSpecified":"Location not specified","addToBookmarks":"Add to bookmarks","removeFromBookmarks":"Remove from bookmarks","bookmarkAdded":"Crew member bookmarked","bookmarkRemoved":"Bookmark removed","follow":"Follow","following":"Following","unfollow":"Unfollow","sendMessage":"Send Message","viewProfile":"View Profile","editProfile":"Edit Profile","profileNotFound":"Profile not found","noSavedProfiles":"No Saved Profiles Yet","startBuilding":"Start building your collection by browsing crew profiles and saving the ones you\'re interested in.","browseCrewProfiles":"Browse Crew Profiles","curatedCollection":"Your curated collection of talented crew members","talentsFound":"Talents Found","totalResults":"crew members found","showingResults":"Showing results matching your filters","loadMore":"Load More","sortBy":"Sort by","name":"Name","experience":"Experience","rating":"Rating","recentlyAdded":"Recently Added","alphabetical":"Alphabetical","byAvailability":"By Availability","addCrew":"Add Crew","addCrewMember":"Add Crew Member","editCrewMember":"Edit Crew Member","removeCrewMember":"Remove Crew Member","confirmRemove":"Are you sure you want to remove this crew member?","status":"Status","salary":"Salary","startDate":"Start Date","endDate":"End Date","notes":"Notes","pending":"Pending","confirmed":"Confirmed","active":"Active","completed":"Completed","cancelled":"Cancelled"},"postJob":{"title":"Post a New Job","subtitle":"Fill out the form below to post a new job listing.","postNewJob":"Post a New Job","postJobDescription":"Fill out the form below to post a new job listing.","signInRequired":"Sign in required","signInMessage":"You must be signed in to post a job. Please sign in or register to continue.","signIn":"sign in","register":"register","basicInfo":"Basic Information","jobTitle":"Job Title","jobTitleRequired":"Job Title *","jobTitlePlaceholder":"e.g. Gaffer, Key Grip, Production Designer","department":"Department","departmentRequired":"Department *","selectDepartment":"Select a department","location":"Location","locationRequired":"Location *","locationPlaceholder":"e.g. Los Angeles, CA or Remote","jobType":"Job Type","selectJobType":"Select job type","fullTime":"Full-time","partTime":"Part-time","contract":"Contract","freelance":"Freelance","temporary":"Temporary","internship":"Internship","volunteer":"Volunteer","experienceLevel":"Experience Level","intern":"Intern","entry":"Entry","associate":"Associate","mid":"Mid","senior":"Senior","lead":"Lead","manager":"Manager","director":"Director","executive":"Executive","jobDescription":"Job Description","jobDescriptionRequired":"Job Description *","jobDescriptionPlaceholder":"Detailed description of the job","requirements":"Requirements","requirementsPlaceholder":"List the requirements for this job","responsibilities":"Responsibilities","responsibilitiesPlaceholder":"List the responsibilities for this job","benefits":"Benefits & Perks","perks":"Perks","benefitsPlaceholder":"List the benefits and perks for this job","skills":"Skills","skillsPlaceholder":"List required skills for this job","compensation":"Compensation","minimumSalary":"Minimum Salary","minimumSalaryPlaceholder":"e.g. 50000","maximumSalary":"Maximum Salary","maximumSalaryPlaceholder":"e.g. 70000","salaryPeriod":"Salary Period","perYear":"Per Year","perMonth":"Per Month","perWeek":"Per Week","perDay":"Per Day","perHour":"Per Hour","showSalary":"Show salary on job posting","showSalaryOnJobPosting":"Show salary on job posting","projectInfo":"Project Information","projectName":"Project Name","projectLink":"Project Link","projectType":"Project Type","feature":"Feature","short":"Short","tv":"TV","commercial":"Commercial","musicVideo":"Music Video","corporate":"Corporate","documentary":"Documentary","other":"Other","timeline":"Timeline","startDate":"Start Date","startDateRequired":"Start Date *","endDate":"End Date","contactInfo":"Contact Information","contactInformation":"Contact Information","contactInfoSubtitle":"How should applicants contact you?","howToContact":"How should applicants contact you?","contactName":"Contact Name","contactNameRequired":"Contact Name *","contactEmail":"Contact Email","contactEmailRequired":"Contact Email *","contactPhone":"Contact Phone","showContactEmail":"Show email address publicly on job posting","showEmailOnJobPosting":"Show email address publicly on job posting","showContactEmailNote":"If unchecked, applicants will only see your name and can contact you through the application system.","showEmailExplanation":"If unchecked, applicants will only see your name and can contact you through the application system.","additionalInfo":"Additional Information","isPaid":"Paid position","isUnion":"Union job","isRemote":"Remote work allowed","visaSponsorship":"Visa sponsorship available","relocationAssistance":"Relocation assistance available","cancel":"Cancel","publishJob":"Publish Job","publishing":"Publishing...","pleaseFixErrors":"Please fix the errors in the form before submitting.","fixErrors":"Please fix the errors in the form before submitting.","jobPostedSuccess":"Job posted successfully!","jobPostingFailed":"Failed to post job. Please try again."},"applyJob":{"backToJob":"Back to Job","applyFor":"Apply for","completeApplication":"Complete your application for this position","urgent":"Urgent","coverLetter":"Cover Letter (Optional)","coverLetterPlaceholder":"Tell us why you\'re interested in this position and why you\'d be a great fit... (optional)","coverLetterNote":"Optional: 300-500 words recommended if provided.","expectedSalary":"Expected Salary (Optional)","expectedSalaryPlaceholder":"e.g., 75000","perYear":"per year","salaryNote":"This helps us understand your salary expectations","availabilityDate":"Availability Date","availabilityNote":"When can you start this position?","additionalNotes":"Additional Notes (Optional)","additionalNotesPlaceholder":"Any additional information you\'d like to share...","portfolio":"Portfolio/Website (Optional)","portfolioPlaceholder":"Link to your portfolio or website","submitApplication":"Submit Application","submitting":"Submitting...","applicationSubmitted":"Application submitted successfully!","applicationFailed":"Failed to submit application. Please try again.","pleaseCompleteRequired":"Please complete all required fields.","loading":"Loading job details...","jobNotFound":"Job not found","applicationClosed":"Application period has closed for this position."},"jobDashboard":{"title":"Job Poster Dashboard","subtitle":"Manage your job postings, track applications, and analyze performance.","loading":"Loading dashboard...","overview":"Overview","postedJobs":"Posted Jobs","applications":"Applications","analytics":"Analytics","totalJobsPosted":"Total Jobs Posted","activeJobs":"Active Jobs","totalApplications":"Total Applications","pendingApplications":"Pending Applications","avgApplicationsJob":"Avg Applications/Job","totalViews":"Total Views","yourPostedJobs":"Your Posted Jobs","postNewJob":"+ Post New Job","noJobsPosted":"No jobs posted yet","startPosting":"Start posting jobs to see them here and track applications.","postFirstJob":"Post Your First Job","applicants":"Applicants","views":"Views","view":"View","apps":"Apps","edit":"Edit","allApplications":"All Applications","noApplicationsYet":"No applications yet","applicationsWillAppear":"Applications from your job postings will appear here.","applicant":"Applicant","appliedOn":"Applied on","viewApplication":"View Application","viewJob":"View Job","jobPerformance":"Job Performance","applicationStatus":"Application Status","pending":"pending","reviewed":"reviewed","shortlisted":"shortlisted","hired":"hired","postedBy":"Posted by","postedOn":"Posted on","you":"You"},"jobAnalytics":{"title":"Job Poster Analytics","subtitle":"Insights into your job postings and applicants","backToDashboard":"← Back to Dashboard","totalJobsPosted":"Total Jobs Posted","totalApplications":"Total Applications","avgApplicationsJob":"Avg Applications / Job","avgTimeToFill":"Avg Time to Fill","notAvailable":"N/A","applicationStatusBreakdown":"Application Status Breakdown","topJobsByApplicants":"Top Jobs by Applicants","monthlyApplicationTrends":"Monthly Application Trends","applicants":"applicants","noData":"No data available","performanceMetrics":"Performance Metrics","conversionRate":"Conversion Rate","responseTime":"Response Time","fillRate":"Fill Rate"},"projects":{"title":"Projects","subtitle":"Discover, create, and manage film projects. You can also view and edit your own projects.","subtitleLoggedOut":"Discover, create, and manage film projects.","allProjects":"All Projects","myProjects":"My Projects","createNewProject":"+ Create New Project","loading":"Loading...","loadingProjects":"Loading projects...","errorLoading":"Error loading projects.","noProjectsFound":"No projects found","noProjectsYet":"You haven\'t added any projects yet.","noProjectsAvailable":"No projects available.","edit":"Edit","delete":"Delete","confirmDelete":"Are you sure you want to delete this project? This cannot be undone.","deleteSuccess":"Project deleted successfully.","deleteFailed":"Failed to delete project.","backToProjects":"← Back to All Projects","viewDetails":"View Details","manageProject":"Manage Project","editProject":"Edit Project","suggestUpdate":"Suggest Update","projectNotFound":"Project not found or not available.","mustBeLoggedIn":"You must be logged in to view your projects."},"projectForm":{"generalInfo":"General Information","generalInfoDesc":"Basic project details and company information","creativeInfo":"Creative Information","creativeInfoDesc":"Story details and creative team","basicInfo":"Basic Information","storyInfo":"Story Info","productionTimeline":"Production Timeline","creativeTeam":"Creative Team","media":"Media","additional":"Additional","projectName":"Project Name","projectNamePlaceholder":"Enter project name","productionCompany":"Production Company","productionCompanyPlaceholder":"Enter production company","country":"Country","status":"Status","statusPlaceholder":"Select project status","logline":"Logline","loglinePlaceholder":"Brief one-sentence summary of the project","loglineHelper":"A concise summary that captures the essence of your project","synopsis":"Synopsis","synopsisPlaceholder":"Detailed project description","synopsisHelper":"A comprehensive overview of your project\'s story and vision","startDate":"Start Date","endDate":"End Date","genre":"Genre","genres":"Genres (comma-separated)","genresPlaceholder":"e.g., Action, Comedy","director":"Director","producer":"Producer","coverImage":"Cover Image","website":"Website","budget":"Budget","companyContact":"Company Contact","cancel":"Cancel","saveChanges":"Save Changes","saving":"Saving...","delete":"Delete Project","confirmDelete":"Are you sure you want to delete this project? This action cannot be undone.","deleteFailed":"Failed to delete project. Please try again.","updateSuccess":"Project updated successfully!","updateFailed":"Failed to update project.","createProject":"Create Project","updateProject":"Update Project"},"projectStatus":{"development":"Development","preProduction":"Pre-Production","production":"Production","inProduction":"In Production","filming":"Filming","postProduction":"Post-Production","completed":"Completed","cancelled":"Cancelled","canceled":"Canceled","unknown":"Unknown","tbd":"TBD","loadingImage":"Loading image... ({{count}}/{{max}})","imageNotAvailable":"Image not available","failedToLoadImage":"Failed to load image","noImageAvailable":"No image available","viewDetails":"View Details"},"projectCard":{"viewProject":"View Project","by":"by","directed":"Directed by","produced":"Produced by","bookmark":"Bookmark","bookmarked":"Bookmarked","removeBookmark":"Remove Bookmark","addBookmark":"Add Bookmark","noImage":"No Image Available","untitledProject":"Untitled Project"},"projectDetail":{"backToAllProjects":"Back to All Projects","coverAlt":"Cover","newCoverPreview":"New Cover Preview","currentCover":"Current Cover","reviews":"Reviews","noReviews":"No reviews yet","previous":"← Previous","next":"Next →","page":"Page","loadingReviews":"Loading reviews..."},"myProjects":{"title":"My","subtitle":"Projects","description":"View, edit, or delete your own film projects.","noProjects":"You don\'t have any projects yet.","createFirst":"Create your first project to get started.","loginRequired":"You must be logged in to view your projects."},"collaboration":{"title":"Collaboration Hub","subtitle":"Work together on projects, tasks, and creative content","workspaces":"Workspaces","tasks":"Tasks","screenplays":"Screenplays","loading":"Loading...","noWorkspaces":"No workspaces available","createWorkspace":"Create New Workspace","joinWorkspace":"Join","addMember":"Add Member","settings":"Settings","members":"Members","online":"Online","offline":"Offline","view":"View","delete":"Delete","workspacesTab":{"title":"Workspaces","createWorkspace":"Create Workspace"},"workspaceTypes":{"project":"Project","department":"Department","general":"General"},"createWorkspaceModal":{"title":"Create New Workspace","step1":"Step 1: Workspace Details","step2":"Step 2: Add Members","step3":"Step 3: Workspace Settings","workspaceName":"Workspace Name","workspaceNamePlaceholder":"Enter workspace name","description":"Description","descriptionPlaceholder":"Enter workspace description","workspaceType":"Workspace Type","searchUsers":"Search Users","searchPlaceholder":"Search by name, email, or role...","allowGuestAccess":"Allow Guest Access","requireApproval":"Require Approval for New Members","autoArchive":"Auto-archive Inactive Content","retentionPeriod":"Retention Period (days)","maxFileSize":"Max File Size (MB)","cancel":"Cancel","next":"Next","createWorkspace":"Create Workspace","searching":"Searching...","noFriendsFound":"No friends found.","startTyping":"Start typing to search for users"},"workspaceSettings":{"title":"Workspace Settings","saveSettings":"Save Settings"},"addMemberModal":{"title":"Add Member to Workspace"},"tasksTab":{"title":"Tasks","subtitle":"Manage collaborative tasks and project workflows"},"screenplaysTab":{"title":"Screenplays","subtitle":"Upload and collaborate on screenplay breakdowns","uploadScreenplay":"Upload Screenplay","uploading":"Uploading...","deleteConfirm":"Are you sure you want to delete this screenplay?","deleteSuccess":"Screenplay deleted successfully","deleteFailed":"Failed to delete screenplay","uploadSuccess":"uploaded successfully!","uploadFailed":"Failed to upload screenplay"},"workspaceDeleteConfirm":"Are you sure you want to delete this workspace and all its data? This action cannot be undone."},"tasks":{"title":"Collaborative Tasks","subtitle":"Manage team tasks, deadlines, and reminders","createTask":"Create Task","editTask":"Edit Task","deleteTask":"Delete Task","loading":"Loading tasks...","noTasks":"No tasks found","noTasksDescription":"Create your first task to get started","searchTasks":"Search tasks...","addComment":"Add Comment","viewModes":{"list":"List","calendar":"Calendar","kanban":"Kanban","analytics":"Analytics"},"comingSoon":{"calendar":"Calendar view coming soon...","kanban":"Kanban view coming soon...","analytics":"Analytics view coming soon..."},"stats":{"total":"Total Tasks","completed":"Completed","inProgress":"In Progress","overdue":"Overdue"},"status":{"pending":"Not Started","in_progress":"In Progress","completed":"Completed","cancelled":"Cancelled","overdue":"Overdue","blocked":"Blocked"},"filters":{"allStatus":"All Status","allCategories":"All Categories","pending":"Pending","inProgress":"In Progress","completed":"Completed","cancelled":"Cancelled","overdue":"Overdue"},"categories":{"preProduction":"Pre-Production","production":"Production","postProduction":"Post-Production","marketing":"Marketing","distribution":"Distribution","other":"Other"},"taskForm":{"createTask":"Create New Task","editTask":"Edit Task","taskName":"Task Name","description":"Description","dueDate":"Due Date","assignee":"Assignee","category":"Category","priority":"Priority","status":"Status","cancel":"Cancel","save":"Save Task","update":"Update Task"},"task":{"dueDate":"Due:","assignedTo":"Assigned to:","category":"Category:","priority":"Priority:","createdBy":"Created by:","comments":"Comments","noComments":"No comments yet","addComment":"Add a comment...","showComments":"Show Comments","hideComments":"Hide Comments","expand":"Expand","collapse":"Collapse","completedBadge":"✔ Completed","edit":"Edit","notes":"Notes","tags":"Tags","teamMembers":"Team Members","estimatedHours":"Estimated Hours","location":"Location","subtasks":"Subtasks","subtasksCompleted":"completed","noMembersAssigned":"No members assigned","moreMembers":"more members","due":"Due","noDueDate":"No due date","subtasksCount":"subtasks","changeStatus":"Change task status","editTask":"Edit Task"},"errors":{"loginRequired":"You must be logged in to create tasks","createFailed":"Failed to create task. Please try again.","updateFailed":"Failed to update task. Please try again.","deleteFailed":"Failed to delete task. Please try again.","completeFailed":"Failed to complete task. Please try again.","startFailed":"Failed to start task. Please try again.","restoreFailed":"Failed to restore task. Please try again.","commentFailed":"Failed to add comment. Please try again.","saveFailed":"Failed to save task"}},"social":{"title":"Social","subtitle":"Connect with other professionals in your network","searchPeople":"Search people...","searchPlaceholder":"Search for people to connect with","messages":"Messages","loading":"Loading...","tabs":{"following":"Following","followers":"Followers","discover":"Discover","requests":"Requests","notifications":"Notifications","connections":"Connections"},"actions":{"connect":"Connect","unfollow":"Unfollow","follow":"Follow","viewProfile":"View Profile","message":"Message","accept":"Accept","decline":"Decline","remove":"Remove","block":"Block","report":"Report"},"status":{"online":"Online","offline":"Offline","away":"Away","busy":"Busy"},"networking":{"title":"🎬 Film Industry Network","subtitle":"Connect, collaborate, and grow your career in the film industry","tabs":{"feed":"📰 Activity Feed","discover":"🔍 Discover People","groups":"👥 Industry Groups","events":"📅 Events","connections":"🤝 My Connections","discoverCrew":"🔍 Discover Crew","collaborations":"🤝 Collaborations","industryEvents":"📅 Industry Events"},"search":{"placeholder":"Search by name, skills, or job title...","noResults":"No crew members found","filterBy":"Filter by"},"industryEventsTitle":"Industry Events & Networking","filters":{"allDepartments":"All Departments","allLocations":"All Locations"},"eventActions":{"addEvent":"+ Add Event","rsvp":"RSVP","attending":"attending"},"feed":{"title":"Recent Activity","noActivity":"No recent activity to show"},"discover":{"title":"Discover Amazing Professionals","noProfiles":"No profiles found"},"groups":{"title":"Industry Groups","join":"Join","leave":"Leave","viewDetails":"View Details","members":"members","noGroups":"No groups available"},"events":{"title":"Upcoming Events","attend":"Attend","viewDetails":"View Details","attending":"attending","maxAttendees":"Max","noEvents":"No upcoming events"},"connections":{"title":"My Network","comingSoon":"Connection management coming soon..."}},"profile":{"followers":"followers","following":"following","projects":"projects","connections":"connections","posts":"posts","location":"Location","department":"Department","experience":"Experience","availability":"Availability","skills":"Skills","bio":"Bio","contactInfo":"Contact Information","socialLinks":"Social Links","endorsements":"Endorsements","reviews":"Reviews"},"messaging":{"startConversation":"Start Conversation","typeMessage":"Type a message...","send":"Send","attachFile":"Attach File","emoji":"Emoji","voiceCall":"Voice Call","videoCall":"Video Call","moreOptions":"More Options","edited":"(edited)","newMessage":"New Message","selectContact":"Select a contact to start messaging","noConversationsFound":"No conversations found"},"errors":{"loadFailed":"Failed to load data","connectFailed":"Failed to connect","messageFailed":"Failed to send message","followFailed":"Failed to follow user","unfollowFailed":"Failed to unfollow user","profileLoadFailed":"Failed to load profile"},"empty":{"noConnections":"No connections yet","noRequests":"No pending requests","noNotifications":"No new notifications","noMessages":"No messages yet","noFollowers":"No followers yet","noFollowing":"Not following anyone yet"},"headers":{"connectionRequests":"Connection Requests","sentRequests":"Sent Requests","discoverPeople":"Discover People","yourNotifications":"Your notifications will appear here."},"statusText":{"pendingRequests":"pending requests","following":"following","followers":"followers"}},"screenplay":{"addCollaborator":"Add Collaborator","collaborators":"Collaborators","noCollaborators":"No collaborators yet.","annotations":"Annotations","tags":"Tags","categories":{"cast_member":"Cast Member","background_actors":"Background Actors","stunts":"Stunts","vehicles":"Vehicles","props":"Props","camera":"Camera","special_effects":"Special Effects","wardrobe":"Wardrobe","makeup_hair":"Makeup/Hair","animals":"Animals","animal_wrangler":"Animal Wrangler","music":"Music","sound":"Sound","art_department":"Art Department","set_dressing":"Set Dressing","greenery":"Greenery","special_equipment":"Special Equipment","security":"Security","additional_labor":"Additional Labor","vfx":"VFX - Visual Effects","mechanical_effects":"Mechanical Effects","miscellaneous":"Miscellaneous","notes":"Notes","comments":"Comments","set":"Set","sequence":"Sequence","script_day":"Script Day","unit":"Unit","location":"Location","other":"Other"},"actions":{"goTo":"Go to","delete":"Delete","resolve":"Resolve","reopen":"Reopen","reply":"Reply"},"popup":{"addToSelection":"Add to selection:","addAnnotation":"Add Annotation","addTag":"Add Tag","cancel":"Cancel","save":"Save","enterAnnotation":"Enter your annotation...","enterTag":"Enter tag content...","writeReply":"Write a reply..."},"navigation":{"navigatingTo":"Navigating to annotation..."}},"common":{"loading":"Loading...","error":"Error","success":"Success","cancel":"Cancel","save":"Save","edit":"Edit","delete":"Delete","confirm":"Confirm","yes":"Yes","no":"No","back":"Back","next":"Next","submit":"Submit","close":"Close","search":"Search","filter":"Filter","sort":"Sort","view":"View","select":"Select","required":"Required","optional":"Optional","or":"or","toContinue":"to continue"},"chat":{"typeMessage":"Type a message...","send":"Send","sending":"Sending...","attachFile":"Attach file","emoji":"Emoji","voiceMessage":"Voice message","stopRecording":"Stop recording"},"favorites":{"title":"Your Favorites","subtitle":"Projects you\'ve bookmarked for easy access","auth":{"signInRequired":"Sign in to view your favorites","signInDescription":"Create an account or sign in to save and view your favorite projects","signInButton":"Sign In"},"loading":"Loading your favorites...","empty":{"title":"No favorites yet","description":"Start exploring projects and bookmark the ones you like","exploreButton":"Explore Projects"},"count":{"singular":"Favorite","plural":"Favorites"}},"resume":{"loading":"Loading resume...","errors":{"notFound":"Resume Not Found","notAvailable":"Resume Not Available","notFoundDescription":"This resume could not be found. Please check the link.","notAvailableDescription":"This resume is not available. Please check the link or contact the profile owner."},"sections":{"languages":"Languages","professionalExperience":"Professional Experience","selectedProjects":"Selected Projects","education":"Education","contactInformation":"Contact Information","additionalInformation":"Additional Information"},"labels":{"present":"Present","showingTop":"Showing top {count} {type} - prioritize most relevant first","showingMostRecent":"Showing {count} most recent - prioritize most relevant first"},"types":{"positions":"positions","projects":"projects"},"builder":{"title":"Resume Builder","description":"Easily create, update, and download your professional film industry resume. Showcase your experience, skills, and projects to producers and collaborators.","edit":"Edit","crewProfile":"Crew Profile","updateDescription":"Update your professional information and showcase your experience. Keep your profile current to attract the best opportunities.","profileInformation":"Profile Information","published":"🌐 Published","private":"🔒 Private","fullName":"Full Name","fullNamePlaceholder":"Enter your full name","bio":"Bio","bioPlaceholder":"Tell us about yourself and your experience","languages":"Languages (up to 3, optional)","languagePlaceholder":"e.g., English, Spanish, French","addLanguage":"+ Add Language","projects":"Projects","addProject":"+ Add Project","projectName":"Project Name","projectNamePlaceholder":"Enter project name","yourRole":"Your Role","yourRolePlaceholder":"Enter your role","projectDescription":"Description (Optional)","descriptionPlaceholder":"Short description of your contribution","removeProject":"Remove Project","education":"Education","educationEntries":"{count} {count, plural, one {entry} other {entries}}","noEducationTitle":"No education added","noEducationDescription":"Add your education history to showcase your background","addEducation":"Add Education","save":"Save Profile","cancel":"Cancel","loading":"Saving...","loadingBuilder":"Loading resume builder...","signInRequired":"Please sign in to edit your profile","savedMessage":"Profile saved!","saveError":"Failed to save.","shareResume":"Share Your Resume","copyLink":"Copy","linkCopied":"Link copied to clipboard!","shareDescription":"Share this link with potential employers or collaborators","resumePreview":"Resume Preview","downloadPDF":"Download as PDF"},"page":{"title":"Edit Your Profile","description":"Manage your professional information and build your resume"}},"events":{"title":"Upcoming Events","attend":"Attend","viewDetails":"View Details","attending":"attending","maxAttendees":"Max","noEvents":"No upcoming events"}}');
+;// ./src/locales/es/translation.json
+const es_translation_namespaceObject = /*#__PURE__*/JSON.parse('{"nav":{"home":"Inicio","crew":"Equipo","jobs":"Trabajos","projects":"Proyectos","collaboration":"Colaboración","social":"Social","favorites":"Favoritos","resumeBuilder":"Constructor de CV","myPostedJobs":"Mis Trabajos Publicados","jobAnalytics":"Analíticas de Trabajos","postNewJob":"Publicar Nuevo Trabajo","myApplications":"Mis Aplicaciones","postedJobs":"Trabajos Publicados","settings":"Configuración","signOut":"Cerrar Sesión","signIn":"Iniciar Sesión","getStarted":"Comenzar"},"home":{"loading":"Cargando...","stats":{"activeProfessionals":"Profesionales Activos","projectsCompleted":"Proyectos Completados","successRate":"Tasa de Éxito","countries":"Países"},"hero":{"banner":"La Plataforma Premier de Networking de la Industria Cinematográfica","title1":"Conecta Profesionales","title2":"del Cine","subtitle":"Únete a miles de cineastas, miembros del equipo y profesionales de la industria que se conectan, colaboran y crean proyectos increíbles juntos.","ctaPrimary":"Comienza Tu Viaje","ctaSecondary":"Explorar Trabajos"},"features":{"title":"Todo lo que Necesitas para Tener Éxito","subtitle":"Desde el escaparate de proyectos hasta la colaboración en tiempo real, proporcionamos todas las herramientas que necesitas para avanzar en tu carrera cinematográfica.","projectShowcase":{"title":"Escaparate de Proyectos","desc":"Muestra tu mejor trabajo y conecta con profesionales de la industria"},"crewNetworking":{"title":"Red de Equipo","desc":"Construye conexiones significativas con cineastas talentosos de todo el mundo"},"jobBoard":{"title":"Tablero de Trabajos","desc":"Encuentra y publica trabajos de producción cinematográfica en todos los departamentos"},"globalReach":{"title":"Alcance Global","desc":"Conecta con profesionales de todo el mundo"},"industryRecognition":{"title":"Reconocimiento de la Industria","desc":"Muestra tus premios y logros para destacar"},"realTimeCollab":{"title":"Colaboración en Tiempo Real","desc":"Trabaja juntos sin problemas con herramientas de comunicación integradas"}},"howItWorks":{"title":"Cómo Funciona","subtitle":"Comienza en solo tres pasos simples y únete a la red más grande de la industria cinematográfica.","step1":{"title":"Crea Tu Perfil","desc":"Construye tu perfil profesional y muestra tu mejor trabajo para destacar entre la multitud."},"step2":{"title":"Conecta y Haz Networking","desc":"Encuentra y conecta con profesionales de la industria, únete a proyectos y construye tu red."},"step3":{"title":"Colabora y Crece","desc":"Trabaja en proyectos increíbles, comparte oportunidades y haz crecer tu carrera en la industria cinematográfica."}},"cta":{"title":"¿Listo para Llevar Tu Carrera al Siguiente Nivel?","subtitle":"Únete a miles de profesionales del cine que ya están usando nuestra plataforma para hacer crecer sus carreras.","ctaPrimary":"Únete a la Comunidad","ctaSecondary":"Explorar Perfiles"}},"auth":{"login":{"title":"Bienvenido de vuelta","subtitle":"Inicia sesión en tu cuenta para continuar","email":"Dirección de Correo","emailPlaceholder":"Ingresa tu correo","password":"Contraseña","passwordPlaceholder":"Ingresa tu contraseña","showPassword":"Mostrar contraseña","hidePassword":"Ocultar contraseña","signingIn":"Iniciando sesión...","signIn":"Iniciar Sesión","continueWithGoogle":"Continuar con Google","continueWithApple":"Continuar con Apple","or":"o","noAccount":"¿No tienes una cuenta?","createAccount":"Crea una aquí","termsPrivacy":"Al iniciar sesión, aceptas nuestros","termsService":"Términos de Servicio","privacyPolicy":"Política de Privacidad","and":"y"},"register":{"title":"Crea tu cuenta","subtitle":"Únete a My Film Jobs para conectar con la industria cinematográfica","personalInfo":"Información Personal","firstName":"Nombre","firstNamePlaceholder":"Juan","lastName":"Apellido","lastNamePlaceholder":"Pérez","accountDetails":"Detalles de la Cuenta","email":"Dirección de Correo","emailPlaceholder":"juan.perez@ejemplo.com","password":"Contraseña","passwordPlaceholder":"Crea una contraseña fuerte","passwordHelper":"Debe tener al menos 6 caracteres","confirmPassword":"Confirmar Contraseña","confirmPasswordPlaceholder":"Confirma tu contraseña","creatingAccount":"Creando cuenta...","createAccount":"Crear Cuenta","haveAccount":"¿Ya tienes una cuenta?","signInHere":"Inicia sesión aquí","termsPrivacy":"Al crear una cuenta, aceptas nuestros"},"errors":{"emailPasswordRequired":"Por favor ingresa tanto el correo como la contraseña.","invalidCredentials":"Correo o contraseña inválidos.","tooManyRequests":"Demasiados intentos fallidos. Por favor intenta de nuevo más tarde.","loginError":"Ocurrió un error durante el inicio de sesión. Por favor intenta de nuevo.","popupClosed":"El inicio de sesión fue cancelado. Por favor intenta de nuevo.","popupBlocked":"La ventana emergente de inicio de sesión fue bloqueada. Por favor permite ventanas emergentes e intenta de nuevo.","googleSignInError":"El inicio de sesión con Google falló. Por favor intenta de nuevo.","appleSignInError":"El inicio de sesión con Apple falló. Por favor intenta de nuevo.","nameRequired":"El nombre y apellido son requeridos","emailRequired":"El correo es requerido","passwordLength":"La contraseña debe tener al menos 6 caracteres","passwordMatch":"Las contraseñas no coinciden","emailInUse":"Ya existe una cuenta con este correo","weakPassword":"La contraseña es muy débil. Por favor elige una contraseña más fuerte.","invalidEmail":"Por favor ingresa una dirección de correo válida","registrationError":"Ocurrió un error durante el registro. Por favor intenta de nuevo.","accountCreated":"¡Cuenta creada exitosamente! Redirigiendo...","loginRequired":"Por favor inicia sesión para guardar trabajos"}},"jobs":{"title":"Trabajos","heroTitle":"Encuentra Tu Próximo Rol en la Industria Cinematográfica","heroSubtitle":"Descubre oportunidades con producciones líderes, conecta con profesionales de la industria y avanza tu carrera en cine y televisión.","searchPlaceholder":"Buscar trabajos por título, compañía o palabras clave...","search":"Buscar trabajos...","filters":"Filtros","showFilters":"Mostrar Filtros","hideFilters":"Ocultar Filtros","noJobsFound":"No se encontraron trabajos","loadingJobs":"Cargando trabajos...","allDepartments":"Todos los Departamentos","allLocations":"Todas las Ubicaciones","allJobTypes":"Todos los Tipos de Trabajo","remoteOnly":"Solo Remoto","applyFilters":"Aplicar Filtros","clearFilters":"Limpiar Filtros","saveJob":"Guardar trabajo para después","removeFromSaved":"Remover de trabajos guardados","jobSaved":"Trabajo guardado exitosamente","jobRemoved":"Trabajo removido de guardados","failedToSave":"Falló al guardar trabajo. Por favor intenta de nuevo.","viewDetails":"Ver Detalles","editJob":"Editar Trabajo","untitledPosition":"Posición Sin Título","various":"Varios","remote":"Remoto","paid":"Pagado","level":"nivel","posted":"Publicado","activeJobs":"Trabajos Activos","companies":"Compañías","locations":"Ubicaciones","remoteJobs":"Trabajos Remotos","invalidJobData":"Datos de trabajo inválidos","myApplications":"Mis Aplicaciones","savedJobs":"Trabajos Guardados","postJob":"Publicar Trabajo","myPostedJobs":"Mis Trabajos Publicados","jobAnalytics":"Analíticas de Trabajos","postNewJob":"Publicar Nuevo Trabajo","jobsAvailable":"Trabajos Disponibles","allAvailablePositions":"Todas las Posiciones Disponibles","sortBy":"Ordenar por","newestFirst":"Más Recientes Primero","oldestFirst":"Más Antiguos Primero","salaryHighToLow":"Salario: Alto a Bajo","salaryLowToHigh":"Salario: Bajo a Alto","loadMoreJobs":"Cargar Más Trabajos","department":"Departamento","location":"Ubicación","enterLocation":"Ingresa ubicación","jobType":"Tipo de Trabajo","filteredResults":"Resultados filtrados","tryAdjustingFilters":"Intenta ajustar tu búsqueda o filtros para encontrar más oportunidades.","departments":{"camera":"Cámara","sound":"Sonido","lighting":"Iluminación","art":"Arte","costume":"Vestuario","makeup":"Maquillaje","hair":"Cabello","production":"Producción","postProduction":"Post-Producción","vfx":"Efectos Visuales","stunts":"Acrobacias","transportation":"Transporte","catering":"Catering"},"jobTypes":{"fullTime":"Tiempo Completo","partTime":"Tiempo Parcial","contract":"Contrato","freelance":"Freelance","temporary":"Temporal","internship":"Prácticas"}},"crew":{"title":"Equipo","discoverTalent":"Descubre Talento Creativo","discoverSubtitle":"Conecta con miembros excepcionales del equipo de todo el mundo.","refineSearch":"Refina Tu Búsqueda","findPerfectCrew":"Encuentra el miembro perfecto del equipo para tu proyecto","searchCrew":"Buscar miembros del equipo...","searchPlaceholder":"Buscar por nombre, rol o habilidades...","search":"Buscar","filters":"Filtros","clearFilters":"Limpiar Todos los Filtros","resetFilters":"Restablecer Filtros","applyFilters":"Aplicar Filtros","noResults":"No se encontraron miembros del equipo","tryAdjusting":"Intenta ajustar tu búsqueda o filtros para encontrar más miembros del equipo.","browseAllCrew":"Explorar Todo el Equipo","viewAllCrew":"Ver Todo el Equipo","crewProfiles":"Perfiles del Equipo","savedCrew":"Equipo Guardado","savedCrewProfiles":"Perfiles de Equipo Guardados","myCrew":"Mi Equipo","teamMembers":"Miembros del Equipo","loading":"Cargando equipo...","loadingProfiles":"Cargando perfiles...","department":"Departamento","allDepartments":"Todos los Departamentos","role":"Rol","allRoles":"Todos los Roles","jobTitle":"Título del Trabajo","allJobTitles":"Todos los Títulos","location":"Ubicación","allLocations":"Todas las Ubicaciones","country":"País","allCountries":"Todos los Países","city":"Ciudad","availability":"Disponibilidad","allAvailability":"Toda Disponibilidad","allStatus":"Todos los Estados","available":"Disponible","soon":"Disponible Pronto","unavailable":"No Disponible","crewMember":"Miembro del Equipo","locationNotSpecified":"Ubicación no especificada","addToBookmarks":"Agregar a marcadores","removeFromBookmarks":"Remover de marcadores","bookmarkAdded":"Miembro del equipo marcado","bookmarkRemoved":"Marcador removido","follow":"Seguir","following":"Siguiendo","unfollow":"Dejar de seguir","sendMessage":"Enviar Mensaje","viewProfile":"Ver Perfil","editProfile":"Editar Perfil","profileNotFound":"Perfil no encontrado","noSavedProfiles":"No Hay Perfiles Guardados Aún","startBuilding":"Comienza construyendo tu colección navegando perfiles del equipo y guardando los que te interesen.","browseCrewProfiles":"Explorar Perfiles del Equipo","curatedCollection":"Tu colección curada de miembros talentosos del equipo","talentsFound":"Talentos Encontrados","totalResults":"miembros del equipo encontrados","showingResults":"Mostrando resultados que coinciden con tus filtros","loadMore":"Cargar Más","sortBy":"Ordenar por","name":"Nombre","experience":"Experiencia","rating":"Calificación","recentlyAdded":"Agregados Recientemente","alphabetical":"Alfabético","byAvailability":"Por Disponibilidad","addCrew":"Agregar Equipo","addCrewMember":"Agregar Miembro del Equipo","editCrewMember":"Editar Miembro del Equipo","removeCrewMember":"Remover Miembro del Equipo","confirmRemove":"¿Estás seguro de que quieres remover este miembro del equipo?","status":"Estado","salary":"Salario","startDate":"Fecha de Inicio","endDate":"Fecha de Fin","notes":"Notas","pending":"Pendiente","confirmed":"Confirmado","active":"Activo","completed":"Completado","cancelled":"Cancelado"},"postJob":{"title":"Publicar un Nuevo Trabajo","subtitle":"Completa el formulario a continuación para publicar una nueva oferta de trabajo.","postNewJob":"Publicar un Nuevo Trabajo","postJobDescription":"Completa el formulario a continuación para publicar una nueva oferta de trabajo.","signInRequired":"Inicio de sesión requerido","signInMessage":"Debes iniciar sesión para publicar un trabajo. Por favor inicia sesión o regístrate para continuar.","signIn":"iniciar sesión","register":"registrarse","basicInfo":"Información Básica","jobTitle":"Título del Trabajo","jobTitleRequired":"Título del Trabajo *","jobTitlePlaceholder":"ej. Gaffer, Key Grip, Diseñador de Producción","department":"Departamento","departmentRequired":"Departamento *","selectDepartment":"Selecciona un departamento","location":"Ubicación","locationRequired":"Ubicación *","locationPlaceholder":"ej. Los Ángeles, CA o Remoto","jobType":"Tipo de Trabajo","selectJobType":"Selecciona tipo de trabajo","fullTime":"Tiempo completo","partTime":"Tiempo parcial","contract":"Contrato","freelance":"Freelance","temporary":"Temporal","internship":"Prácticas","volunteer":"Voluntario","experienceLevel":"Nivel de Experiencia","intern":"Practicante","entry":"Inicial","associate":"Asociado","mid":"Intermedio","senior":"Senior","lead":"Líder","manager":"Gerente","director":"Director","executive":"Ejecutivo","jobDescription":"Descripción del Trabajo","jobDescriptionRequired":"Descripción del Trabajo *","jobDescriptionPlaceholder":"Descripción detallada del trabajo","requirements":"Requisitos","requirementsPlaceholder":"Lista los requisitos para este trabajo","responsibilities":"Responsabilidades","responsibilitiesPlaceholder":"Lista las responsabilidades para este trabajo","benefits":"Beneficios y Ventajas","perks":"Ventajas","benefitsPlaceholder":"Lista los beneficios y ventajas para este trabajo","skills":"Habilidades","skillsPlaceholder":"Lista las habilidades requeridas para este trabajo","compensation":"Compensación","minimumSalary":"Salario Mínimo","minimumSalaryPlaceholder":"ej. 50000","maximumSalary":"Salario Máximo","maximumSalaryPlaceholder":"ej. 70000","salaryPeriod":"Período de Salario","perYear":"Por Año","perMonth":"Por Mes","perWeek":"Por Semana","perDay":"Por Día","perHour":"Por Hora","showSalary":"Mostrar salario en la publicación del trabajo","showSalaryOnJobPosting":"Mostrar salario en la publicación del trabajo","projectInfo":"Información del Proyecto","projectName":"Nombre del Proyecto","projectLink":"Enlace del Proyecto","projectType":"Tipo de Proyecto","feature":"Largometraje","short":"Cortometraje","tv":"TV","commercial":"Comercial","musicVideo":"Video Musical","corporate":"Corporativo","documentary":"Documental","other":"Otro","timeline":"Cronograma","startDate":"Fecha de Inicio","startDateRequired":"Fecha de Inicio *","endDate":"Fecha de Fin","contactInfo":"Información de Contacto","contactInformation":"Información de Contacto","contactInfoSubtitle":"¿Cómo deben contactarte los solicitantes?","howToContact":"¿Cómo deben contactarte los solicitantes?","contactName":"Nombre de Contacto","contactNameRequired":"Nombre de Contacto *","contactEmail":"Email de Contacto","contactEmailRequired":"Email de Contacto *","contactPhone":"Teléfono de Contacto","showContactEmail":"Mostrar dirección de email públicamente en la publicación del trabajo","showEmailOnJobPosting":"Mostrar dirección de email públicamente en la publicación del trabajo","showContactEmailNote":"Si no está marcado, los solicitantes solo verán tu nombre y podrán contactarte a través del sistema de aplicaciones.","showEmailExplanation":"Si no está marcado, los solicitantes solo verán tu nombre y podrán contactarte a través del sistema de aplicaciones.","additionalInfo":"Información Adicional","isPaid":"Posición pagada","isUnion":"Trabajo sindical","isRemote":"Trabajo remoto permitido","visaSponsorship":"Patrocinio de visa disponible","relocationAssistance":"Asistencia de reubicación disponible","cancel":"Cancelar","publishJob":"Publicar Trabajo","publishing":"Publicando...","pleaseFixErrors":"Por favor corrige los errores en el formulario antes de enviar.","fixErrors":"Por favor corrige los errores en el formulario antes de enviar.","jobPostedSuccess":"¡Trabajo publicado exitosamente!","jobPostingFailed":"Falló al publicar el trabajo. Por favor intenta de nuevo."},"applyJob":{"backToJob":"Volver al Trabajo","applyFor":"Aplicar para","completeApplication":"Completa tu aplicación para esta posición","urgent":"Urgente","coverLetter":"Carta de Presentación (Opcional)","coverLetterPlaceholder":"Cuéntanos por qué estás interesado en esta posición y por qué serías perfecto para el puesto... (opcional)","coverLetterNote":"Opcional: Se recomiendan 300-500 palabras si se proporciona.","expectedSalary":"Salario Esperado (Opcional)","expectedSalaryPlaceholder":"ej., 75000","perYear":"por año","salaryNote":"Esto nos ayuda a entender tus expectativas salariales","availabilityDate":"Fecha de Disponibilidad","availabilityNote":"¿Cuándo puedes comenzar esta posición?","additionalNotes":"Notas Adicionales (Opcional)","additionalNotesPlaceholder":"Cualquier información adicional que te gustaría compartir...","portfolio":"Portafolio/Sitio Web (Opcional)","portfolioPlaceholder":"Enlace a tu portafolio o sitio web","submitApplication":"Enviar Aplicación","submitting":"Enviando...","applicationSubmitted":"¡Aplicación enviada exitosamente!","applicationFailed":"Falló al enviar la aplicación. Por favor intenta de nuevo.","pleaseCompleteRequired":"Por favor completa todos los campos requeridos.","loading":"Cargando detalles del trabajo...","jobNotFound":"Trabajo no encontrado","applicationClosed":"El período de aplicación ha cerrado para esta posición."},"jobDashboard":{"title":"Panel de Publicador de Trabajos","subtitle":"Gestiona tus publicaciones de trabajo, rastrea aplicaciones y analiza el rendimiento.","loading":"Cargando panel...","overview":"Resumen","postedJobs":"Trabajos Publicados","applications":"Aplicaciones","analytics":"Analíticas","totalJobsPosted":"Total de Trabajos Publicados","activeJobs":"Trabajos Activos","totalApplications":"Total de Aplicaciones","pendingApplications":"Aplicaciones Pendientes","avgApplicationsJob":"Promedio Aplicaciones/Trabajo","totalViews":"Total de Vistas","yourPostedJobs":"Tus Trabajos Publicados","postNewJob":"+ Publicar Nuevo Trabajo","noJobsPosted":"No hay trabajos publicados aún","startPosting":"Comienza publicando trabajos para verlos aquí y rastrear aplicaciones.","postFirstJob":"Publica Tu Primer Trabajo","applicants":"Solicitantes","views":"Vistas","view":"Ver","apps":"Apps","edit":"Editar","allApplications":"Todas las Aplicaciones","noApplicationsYet":"No hay aplicaciones aún","applicationsWillAppear":"Las aplicaciones de tus publicaciones de trabajo aparecerán aquí.","applicant":"Solicitante","appliedOn":"Aplicó el","viewApplication":"Ver Aplicación","viewJob":"Ver Trabajo","jobPerformance":"Rendimiento del Trabajo","applicationStatus":"Estado de Aplicación","pending":"pendientes","reviewed":"revisadas","shortlisted":"preseleccionadas","hired":"contratadas","postedBy":"Publicado por","postedOn":"Publicado el","you":"Tú"},"jobAnalytics":{"title":"Analíticas del Publicador de Trabajos","subtitle":"Insights sobre tus publicaciones de trabajo y solicitantes","backToDashboard":"← Volver al Panel","totalJobsPosted":"Total de Trabajos Publicados","totalApplications":"Total de Aplicaciones","avgApplicationsJob":"Promedio Aplicaciones / Trabajo","avgTimeToFill":"Tiempo Promedio para Llenar","notAvailable":"N/D","applicationStatusBreakdown":"Desglose del Estado de Aplicaciones","topJobsByApplicants":"Mejores Trabajos por Solicitantes","monthlyApplicationTrends":"Tendencias Mensuales de Aplicaciones","applicants":"solicitantes","noData":"No hay datos disponibles","performanceMetrics":"Métricas de Rendimiento","conversionRate":"Tasa de Conversión","responseTime":"Tiempo de Respuesta","fillRate":"Tasa de Llenado"},"projects":{"title":"Proyectos","subtitle":"Descubre, crea y gestiona proyectos cinematográficos. También puedes ver y editar tus propios proyectos.","subtitleLoggedOut":"Descubre, crea y gestiona proyectos cinematográficos.","allProjects":"Todos los Proyectos","myProjects":"Mis Proyectos","createNewProject":"+ Crear Nuevo Proyecto","loading":"Cargando...","loadingProjects":"Cargando proyectos...","errorLoading":"Error al cargar proyectos.","noProjectsFound":"No se encontraron proyectos","noProjectsYet":"Aún no has agregado ningún proyecto.","noProjectsAvailable":"No hay proyectos disponibles.","edit":"Editar","delete":"Eliminar","confirmDelete":"¿Estás seguro de que quieres eliminar este proyecto? Esto no se puede deshacer.","deleteSuccess":"Proyecto eliminado exitosamente.","deleteFailed":"Error al eliminar proyecto.","backToProjects":"← Volver a Todos los Proyectos","viewDetails":"Ver Detalles","manageProject":"Gestionar Proyecto","editProject":"Editar Proyecto","suggestUpdate":"Sugerir Actualización","projectNotFound":"Proyecto no encontrado o no disponible.","mustBeLoggedIn":"Debes iniciar sesión para ver tus proyectos."},"projectForm":{"generalInfo":"Información General","generalInfoDesc":"Detalles básicos del proyecto e información de la empresa","creativeInfo":"Información Creativa","creativeInfoDesc":"Detalles de la historia y equipo creativo","basicInfo":"Información Básica","storyInfo":"Información de la Historia","productionTimeline":"Cronograma de Producción","creativeTeam":"Equipo Creativo","media":"Medios","additional":"Adicional","projectName":"Nombre del Proyecto","projectNamePlaceholder":"Ingresa el nombre del proyecto","productionCompany":"Compañía Productora","productionCompanyPlaceholder":"Ingresa la compañía productora","country":"País","status":"Estado","statusPlaceholder":"Selecciona el estado del proyecto","logline":"Sinopsis Breve","loglinePlaceholder":"Resumen breve de una oración del proyecto","loglineHelper":"Un resumen conciso que captura la esencia de tu proyecto","synopsis":"Sinopsis","synopsisPlaceholder":"Descripción detallada del proyecto","synopsisHelper":"Una visión general completa de la historia y visión de tu proyecto","startDate":"Fecha de Inicio","endDate":"Fecha de Fin","genre":"Género","genres":"Géneros (separados por comas)","genresPlaceholder":"ej., Acción, Comedia","director":"Director","producer":"Productor","coverImage":"Imagen de Portada","website":"Sitio Web","budget":"Presupuesto","companyContact":"Contacto de la Empresa","cancel":"Cancelar","saveChanges":"Guardar Cambios","saving":"Guardando...","delete":"Eliminar Proyecto","confirmDelete":"¿Estás seguro de que quieres eliminar este proyecto? Esta acción no se puede deshacer.","deleteFailed":"Error al eliminar el proyecto. Por favor, inténtalo de nuevo.","updateSuccess":"¡Proyecto actualizado exitosamente!","updateFailed":"Error al actualizar proyecto.","createProject":"Crear Proyecto","updateProject":"Actualizar Proyecto"},"projectStatus":{"development":"Desarrollo","preProduction":"Pre-Producción","production":"Producción","inProduction":"En Producción","filming":"Filmación","postProduction":"Post-Producción","completed":"Completado","cancelled":"Cancelado","canceled":"Cancelado","unknown":"Desconocido","tbd":"Por Determinar","loadingImage":"Cargando imagen... ({{count}}/{{max}})","imageNotAvailable":"Imagen no disponible","failedToLoadImage":"Error al cargar imagen","noImageAvailable":"No hay imagen disponible","viewDetails":"Ver Detalles"},"projectCard":{"viewProject":"Ver Proyecto","by":"por","directed":"Dirigido por","produced":"Producido por","bookmark":"Marcar","bookmarked":"Marcado","removeBookmark":"Quitar Marca","addBookmark":"Agregar Marca","noImage":"No Hay Imagen Disponible","untitledProject":"Proyecto Sin Título"},"projectDetail":{"backToAllProjects":"Volver a Todos los Proyectos","coverAlt":"Portada","newCoverPreview":"Vista Previa de Nueva Portada","currentCover":"Portada Actual","reviews":"Reseñas","noReviews":"No hay reseñas aún","previous":"← Anterior","next":"Siguiente →","page":"Página","loadingReviews":"Cargando reseñas..."},"myProjects":{"title":"Mis","subtitle":"Proyectos","description":"Ve, edita o elimina tus propios proyectos cinematográficos.","noProjects":"Aún no tienes ningún proyecto.","createFirst":"Crea tu primer proyecto para comenzar.","loginRequired":"Debes iniciar sesión para ver tus proyectos."},"collaboration":{"title":"Centro de Colaboración","subtitle":"Trabaja en conjunto en proyectos, tareas y contenido creativo","workspaces":"Espacios de Trabajo","tasks":"Tareas","screenplays":"Guiones","loading":"Cargando...","noWorkspaces":"No hay espacios de trabajo disponibles","createWorkspace":"Crear Nuevo Espacio de Trabajo","joinWorkspace":"Unirse","addMember":"Agregar Miembro","settings":"Configuración","members":"Miembros","online":"En línea","offline":"Desconectado","view":"Ver","delete":"Eliminar","workspacesTab":{"title":"Espacios de Trabajo","createWorkspace":"Crear Espacio de Trabajo"},"workspaceTypes":{"project":"Proyecto","department":"Departamento","general":"General"},"createWorkspaceModal":{"title":"Crear Nuevo Espacio de Trabajo","step1":"Paso 1: Detalles del Espacio de Trabajo","step2":"Paso 2: Agregar Miembros","step3":"Paso 3: Configuración del Espacio de Trabajo","workspaceName":"Nombre del Espacio de Trabajo","workspaceNamePlaceholder":"Ingrese el nombre del espacio de trabajo","description":"Descripción","descriptionPlaceholder":"Ingrese la descripción del espacio de trabajo","workspaceType":"Tipo de Espacio de Trabajo","searchUsers":"Buscar Usuarios","searchPlaceholder":"Buscar por nombre, email o rol...","allowGuestAccess":"Permitir Acceso de Invitados","requireApproval":"Requerir Aprobación para Nuevos Miembros","autoArchive":"Archivar Automáticamente Contenido Inactivo","retentionPeriod":"Período de Retención (días)","maxFileSize":"Tamaño Máximo de Archivo (MB)","cancel":"Cancelar","next":"Siguiente","createWorkspace":"Crear Espacio de Trabajo","searching":"Buscando...","noFriendsFound":"No se encontraron amigos.","startTyping":"Comience a escribir para buscar usuarios"},"workspaceSettings":{"title":"Configuración del Espacio de Trabajo","saveSettings":"Guardar Configuración"},"addMemberModal":{"title":"Agregar Miembro al Espacio de Trabajo"},"tasksTab":{"title":"Tareas","subtitle":"Gestiona tareas colaborativas y flujos de trabajo del proyecto"},"screenplaysTab":{"title":"Guiones","subtitle":"Sube y colabora en desgloses de guiones","uploadScreenplay":"Subir Guión","uploading":"Subiendo...","deleteConfirm":"¿Estás seguro de que quieres eliminar este guión?","deleteSuccess":"Guión eliminado exitosamente","deleteFailed":"Error al eliminar guión","uploadSuccess":"subido exitosamente!","uploadFailed":"Error al subir guión"},"workspaceDeleteConfirm":"¿Estás seguro de que quieres eliminar este espacio de trabajo y todos sus datos? Esta acción no se puede deshacer."},"tasks":{"title":"Tareas Colaborativas","subtitle":"Gestiona tareas del equipo, fechas límite y recordatorios","createTask":"Crear Tarea","editTask":"Editar Tarea","deleteTask":"Eliminar Tarea","loading":"Cargando tareas...","noTasks":"No se encontraron tareas","noTasksDescription":"Crea tu primera tarea para comenzar","searchTasks":"Buscar tareas...","addComment":"Agregar Comentario","viewModes":{"list":"Lista","calendar":"Calendario","kanban":"Kanban","analytics":"Analíticas"},"comingSoon":{"calendar":"Vista de calendario próximamente...","kanban":"Vista Kanban próximamente...","analytics":"Vista de analíticas próximamente..."},"stats":{"total":"Total de Tareas","completed":"Completadas","inProgress":"En Progreso","overdue":"Vencidas"},"status":{"pending":"Sin Empezar","in_progress":"En Progreso","completed":"Completado","cancelled":"Cancelado","overdue":"Atrasado","blocked":"Bloqueado"},"filters":{"allStatus":"Todos los Estados","allCategories":"Todas las Categorías","pending":"Pendiente","inProgress":"En Progreso","completed":"Completada","cancelled":"Cancelada","overdue":"Vencida"},"categories":{"preProduction":"Pre-Producción","production":"Producción","postProduction":"Post-Producción","marketing":"Marketing","distribution":"Distribución","other":"Otro"},"taskForm":{"createTask":"Crear Nueva Tarea","editTask":"Editar Tarea","taskName":"Nombre de la Tarea","description":"Descripción","dueDate":"Fecha Límite","assignee":"Asignado a","category":"Categoría","priority":"Prioridad","status":"Estado","cancel":"Cancelar","save":"Guardar Tarea","update":"Actualizar Tarea"},"task":{"dueDate":"Vence:","assignedTo":"Asignado a:","category":"Categoría:","priority":"Prioridad:","createdBy":"Creado por:","comments":"Comentarios","noComments":"No hay comentarios aún","addComment":"Agregar un comentario...","showComments":"Mostrar Comentarios","hideComments":"Ocultar Comentarios","expand":"Expandir","collapse":"Contraer","completedBadge":"✔ Completada","edit":"Editar","notes":"Notas","tags":"Etiquetas","teamMembers":"Miembros del Equipo","estimatedHours":"Horas Estimadas","location":"Ubicación","subtasks":"Subtareas","subtasksCompleted":"completadas","noMembersAssigned":"No hay miembros asignados","moreMembers":"más miembros","due":"Vence","noDueDate":"Sin fecha de vencimiento","subtasksCount":"subtareas","changeStatus":"Cambiar estado de la tarea","editTask":"Editar Tarea"},"errors":{"loginRequired":"Debes iniciar sesión para crear tareas","createFailed":"Error al crear la tarea. Inténtalo de nuevo.","updateFailed":"Error al actualizar la tarea. Inténtalo de nuevo.","deleteFailed":"Error al eliminar la tarea. Inténtalo de nuevo.","completeFailed":"Error al completar la tarea. Inténtalo de nuevo.","startFailed":"Error al iniciar la tarea. Inténtalo de nuevo.","restoreFailed":"Error al restaurar la tarea. Inténtalo de nuevo.","commentFailed":"Error al agregar comentario. Inténtalo de nuevo.","saveFailed":"Error al guardar la tarea"}},"social":{"title":"Social","subtitle":"Conecta con otros profesionales en tu red","searchPeople":"Buscar personas...","searchPlaceholder":"Buscar personas para conectar","messages":"Mensajes","loading":"Cargando...","tabs":{"following":"Siguiendo","followers":"Seguidores","discover":"Descubrir","requests":"Solicitudes","notifications":"Notificaciones","connections":"Conexiones"},"actions":{"connect":"Conectar","unfollow":"Dejar de seguir","follow":"Seguir","viewProfile":"Ver Perfil","message":"Mensaje","accept":"Aceptar","decline":"Rechazar","remove":"Eliminar","block":"Bloquear","report":"Reportar"},"status":{"online":"En línea","offline":"Desconectado","away":"Ausente","busy":"Ocupado"},"networking":{"title":"🎬 Red de la Industria Cinematográfica","subtitle":"Conecta, colabora y haz crecer tu carrera en la industria del cine","tabs":{"feed":"📰 Feed de Actividad","discover":"🔍 Descubrir Personas","groups":"👥 Grupos de la Industria","events":"📅 Eventos","connections":"🤝 Mis Conexiones","discoverCrew":"🔍 Descubrir Equipo","collaborations":"🤝 Colaboraciones","industryEvents":"📅 Eventos de la Industria"},"search":{"placeholder":"Buscar por nombre, habilidades o puesto de trabajo...","noResults":"No se encontraron miembros del equipo","filterBy":"Filtrar por"},"industryEventsTitle":"Eventos de la Industria y Networking","filters":{"allDepartments":"Todos los Departamentos","allLocations":"Todas las Ubicaciones"},"eventActions":{"addEvent":"+ Agregar Evento","rsvp":"Confirmar","attending":"asistiendo"},"feed":{"title":"Actividad Reciente","noActivity":"No hay actividad reciente para mostrar"},"discover":{"title":"Descubre Profesionales Increíbles","noProfiles":"No se encontraron perfiles"},"groups":{"title":"Grupos de la Industria","join":"Unirse","leave":"Salir","viewDetails":"Ver Detalles","members":"miembros","noGroups":"No hay grupos disponibles"},"events":{"title":"Próximos Eventos","attend":"Asistir","viewDetails":"Ver Detalles","attending":"asistiendo","maxAttendees":"Máx","noEvents":"No hay próximos eventos"},"connections":{"title":"Mi Red","comingSoon":"Gestión de conexiones próximamente..."}},"profile":{"followers":"seguidores","following":"siguiendo","projects":"proyectos","connections":"conexiones","posts":"publicaciones","location":"Ubicación","department":"Departamento","experience":"Experiencia","availability":"Disponibilidad","skills":"Habilidades","bio":"Biografía","contactInfo":"Información de Contacto","socialLinks":"Enlaces Sociales","endorsements":"Recomendaciones","reviews":"Reseñas"},"messaging":{"startConversation":"Iniciar Conversación","typeMessage":"Escribe un mensaje...","send":"Enviar","attachFile":"Adjuntar Archivo","emoji":"Emoji","voiceCall":"Llamada de Voz","videoCall":"Videollamada","moreOptions":"Más Opciones","edited":"(editado)","newMessage":"Nuevo Mensaje","selectContact":"Selecciona un contacto para comenzar a conversar","noConversationsFound":"No se encontraron conversaciones"},"errors":{"loadFailed":"Error al cargar datos","connectFailed":"Error al conectar","messageFailed":"Error al enviar mensaje","followFailed":"Error al seguir usuario","unfollowFailed":"Error al dejar de seguir usuario","profileLoadFailed":"Error al cargar perfil"},"empty":{"noConnections":"No hay conexiones aún","noRequests":"No hay solicitudes pendientes","noNotifications":"No hay nuevas notificaciones","noMessages":"No hay mensajes aún","noFollowers":"No hay seguidores aún","noFollowing":"No sigues a nadie aún"},"headers":{"connectionRequests":"Solicitudes de Conexión","sentRequests":"Solicitudes Enviadas","discoverPeople":"Descubrir Personas","yourNotifications":"Tus notificaciones aparecerán aquí."},"statusText":{"pendingRequests":"solicitudes pendientes","following":"siguiendo","followers":"seguidores"}},"screenplay":{"addCollaborator":"Agregar Colaborador","collaborators":"Colaboradores","noCollaborators":"Aún no hay colaboradores.","annotations":"Anotaciones","tags":"Etiquetas","categories":{"cast_member":"Miembro del Reparto","background_actors":"Actores de Fondo","stunts":"Acrobacias","vehicles":"Vehículos","props":"Utilería","camera":"Cámara","special_effects":"Efectos Especiales","wardrobe":"Vestuario","makeup_hair":"Maquillaje/Cabello","animals":"Animales","animal_wrangler":"Entrenador de Animales","music":"Música","sound":"Sonido","art_department":"Departamento de Arte","set_dressing":"Decoración de Set","greenery":"Plantas/Vegetación","special_equipment":"Equipo Especial","security":"Seguridad","additional_labor":"Mano de Obra Adicional","vfx":"VFX - Efectos Visuales","mechanical_effects":"Efectos Mecánicos","miscellaneous":"Varios","notes":"Notas","comments":"Comentarios","set":"Set","sequence":"Secuencia","script_day":"Día de Guión","unit":"Unidad","location":"Ubicación","other":"Otro"},"actions":{"goTo":"Ir a","delete":"Eliminar","resolve":"Resolver","reopen":"Reabrir","reply":"Responder"},"popup":{"addToSelection":"Agregar a la selección:","addAnnotation":"Agregar Anotación","addTag":"Agregar Etiqueta","cancel":"Cancelar","save":"Guardar","enterAnnotation":"Ingresa tu anotación...","enterTag":"Ingresa el contenido de la etiqueta...","writeReply":"Escribe una respuesta..."},"navigation":{"navigatingTo":"Navegando a la anotación..."}},"common":{"loading":"Cargando...","error":"Error","success":"Éxito","cancel":"Cancelar","save":"Guardar","edit":"Editar","delete":"Eliminar","confirm":"Confirmar","yes":"Sí","no":"No","back":"Volver","next":"Siguiente","submit":"Enviar","close":"Cerrar","search":"Buscar","filter":"Filtrar","sort":"Ordenar","view":"Ver","select":"Seleccionar","required":"Requerido","optional":"Opcional","or":"o","toContinue":"para continuar"},"chat":{"typeMessage":"Escribe un mensaje...","send":"Enviar","sending":"Enviando...","attachFile":"Adjuntar archivo","emoji":"Emoji","voiceMessage":"Mensaje de voz","stopRecording":"Detener grabación"},"favorites":{"title":"Tus Favoritos","subtitle":"Proyectos que has guardado para fácil acceso","auth":{"signInRequired":"Inicia sesión para ver tus favoritos","signInDescription":"Crea una cuenta o inicia sesión para guardar y ver tus proyectos favoritos","signInButton":"Iniciar Sesión"},"loading":"Cargando tus favoritos...","empty":{"title":"No hay favoritos aún","description":"Comienza a explorar proyectos y marca los que te gusten","exploreButton":"Explorar Proyectos"},"count":{"singular":"Favorito","plural":"Favoritos"}},"resume":{"loading":"Cargando currículum...","errors":{"notFound":"Currículum No Encontrado","notAvailable":"Currículum No Disponible","notFoundDescription":"No se pudo encontrar este currículum. Por favor verifica el enlace.","notAvailableDescription":"Este currículum no está disponible. Por favor verifica el enlace o contacta al propietario del perfil."},"sections":{"languages":"Idiomas","professionalExperience":"Experiencia Profesional","selectedProjects":"Proyectos Seleccionados","education":"Educación","contactInformation":"Información de Contacto","additionalInformation":"Información Adicional"},"labels":{"present":"Presente","showingTop":"Mostrando los {count} {type} principales - prioriza los más relevantes primero","showingMostRecent":"Mostrando los {count} más recientes - prioriza los más relevantes primero"},"types":{"positions":"puestos","projects":"proyectos"},"builder":{"title":"Constructor de Currículum","description":"Crea, actualiza y descarga fácilmente tu currículum profesional de la industria cinematográfica. Muestra tu experiencia, habilidades y proyectos a productores y colaboradores.","edit":"Editar","crewProfile":"Perfil de Equipo","updateDescription":"Actualiza tu información profesional y muestra tu experiencia. Mantén tu perfil actualizado para atraer las mejores oportunidades.","profileInformation":"Información del Perfil","published":"🌐 Publicado","private":"🔒 Privado","fullName":"Nombre Completo","fullNamePlaceholder":"Ingresa tu nombre completo","bio":"Biografía","bioPlaceholder":"Cuéntanos sobre ti y tu experiencia","languages":"Idiomas (hasta 3, opcional)","languagePlaceholder":"ej., Inglés, Español, Francés","addLanguage":"+ Agregar Idioma","projects":"Proyectos","addProject":"+ Agregar Proyecto","projectName":"Nombre del Proyecto","projectNamePlaceholder":"Ingresa el nombre del proyecto","yourRole":"Tu Rol","yourRolePlaceholder":"Ingresa tu rol","projectDescription":"Descripción (Opcional)","descriptionPlaceholder":"Breve descripción de tu contribución","removeProject":"Eliminar Proyecto","education":"Educación","educationEntries":"{count} {count, plural, one {entrada} other {entradas}}","noEducationTitle":"No se ha agregado educación","noEducationDescription":"Agrega tu historial educativo para mostrar tu formación","addEducation":"Agregar Educación","save":"Guardar Perfil","cancel":"Cancelar","loading":"Guardando...","loadingBuilder":"Cargando constructor de currículum...","signInRequired":"Por favor inicia sesión para editar tu perfil","savedMessage":"¡Perfil guardado!","saveError":"Error al guardar.","shareResume":"Compartir Tu Currículum","copyLink":"Copiar","linkCopied":"¡Enlace copiado al portapapeles!","shareDescription":"Comparte este enlace con potenciales empleadores o colaboradores","resumePreview":"Vista Previa del Currículum","downloadPDF":"Descargar como PDF"},"page":{"title":"Editar Tu Perfil","description":"Administra tu información profesional y construye tu currículum"}},"events":{"title":"Próximos Eventos","attend":"Asistir","viewDetails":"Ver Detalles","attending":"asistiendo","maxAttendees":"Máx","noEvents":"No hay próximos eventos"}}');
+;// ./src/i18n.ts
+
+
+
+
+
+const resources = {
+    en: { translation: translation_namespaceObject },
+    es: { translation: es_translation_namespaceObject },
+};
+i18next/* default.use */.Ay.use(i18nextBrowserLanguageDetector/* default */.A)
+    .use(es/* initReactI18next */.r9)
+    .init({
+    resources,
+    fallbackLng: 'en',
+    debug: "production" === 'development',
+    interpolation: {
+        escapeValue: false, // React already escapes
+    },
+    detection: {
+        order: ['localStorage', 'navigator', 'htmlTag', 'path', 'subdomain'],
+        caches: ['localStorage'],
+    },
+});
+/* harmony default export */ const src_i18n = ((/* unused pure expression or super */ null && (i18n)));
+
+// EXTERNAL MODULE: ./node_modules/react/index.js
+var react = __webpack_require__(6540);
+// EXTERNAL MODULE: ./node_modules/react-dom/client.js
+var client = __webpack_require__(5338);
+// EXTERNAL MODULE: ./node_modules/react-router-dom/dist/index.js
+var dist = __webpack_require__(4976);
+// EXTERNAL MODULE: ./src/contexts/AuthContext.tsx
+var AuthContext = __webpack_require__(2584);
+// EXTERNAL MODULE: ./node_modules/react-router/dist/index.js
+var react_router_dist = __webpack_require__(7767);
+;// ./src/components/ProtectedRoute.tsx
+
+
+
+const ProtectedRoute = ({ children, redirectTo = '/login' }) => {
+    const { currentUser } = (0,AuthContext/* useAuth */.A)();
+    const location = (0,react_router_dist/* useLocation */.zy)();
+    if (!currentUser) {
+        return (0,jsx_runtime.jsx)(react_router_dist/* Navigate */.C5, { to: redirectTo, state: { from: location.pathname }, replace: true });
+    }
+    return (0,jsx_runtime.jsx)(jsx_runtime.Fragment, { children: children });
+};
+const PublicRoute = ({ children, redirectTo = '/' }) => {
+    const { currentUser } = (0,AuthContext/* useAuth */.A)();
+    if (currentUser) {
+        return (0,jsx_runtime.jsx)(react_router_dist/* Navigate */.C5, { to: redirectTo, replace: true });
+    }
+    return (0,jsx_runtime.jsx)(jsx_runtime.Fragment, { children: children });
+};
+
+// EXTERNAL MODULE: ./node_modules/react-hot-toast/dist/index.mjs + 1 modules
+var react_hot_toast_dist = __webpack_require__(888);
+// EXTERNAL MODULE: ./src/theme/ThemeProvider.tsx + 1 modules
+var ThemeProvider = __webpack_require__(3049);
+// EXTERNAL MODULE: ./src/components/ui/Button.tsx
+var Button = __webpack_require__(774);
+// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/triangle-alert.js
+var triangle_alert = __webpack_require__(418);
+// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/refresh-cw.js
+var refresh_cw = __webpack_require__(5977);
+// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/house.js
+var house = __webpack_require__(1805);
+// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/bug.js
+var bug = __webpack_require__(215);
+;// ./src/components/ErrorBoundary.tsx
+
+
+
+
+
+class ErrorBoundary extends react.Component {
+    constructor(props) {
+        super(props);
+        this.reportError = (error, errorInfo) => {
+            // In a real app, you would send this to your error tracking service
+            // For now, we'll just log it
+            const errorReport = {
+                errorId: this.state.errorId,
+                message: error.message,
+                stack: error.stack,
+                componentStack: errorInfo.componentStack,
+                timestamp: new Date().toISOString(),
+                userAgent: navigator.userAgent,
+                url: window.location.href
+            };
+            console.log('Error Report:', errorReport);
+            // You could send this to a service like Sentry, LogRocket, etc.
+            // Example: Sentry.captureException(error, { extra: errorReport });
+        };
+        this.handleRetry = () => {
+            this.setState({
+                hasError: false,
+                error: null,
+                errorInfo: null,
+                errorId: '',
+                showDetails: false
+            });
+        };
+        this.handleGoHome = () => {
+            window.location.href = '/';
+        };
+        this.handleReload = () => {
+            window.location.reload();
+        };
+        this.toggleDetails = () => {
+            this.setState(prev => ({ showDetails: !prev.showDetails }));
+        };
+        this.copyErrorDetails = () => {
+            const errorDetails = `
+Error ID: ${this.state.errorId}
+Message: ${this.state.error?.message}
+Stack: ${this.state.error?.stack}
+Component Stack: ${this.state.errorInfo?.componentStack}
+URL: ${window.location.href}
+Timestamp: ${new Date().toISOString()}
+    `.trim();
+            navigator.clipboard.writeText(errorDetails).then(() => {
+                react_hot_toast_dist/* toast */.oR.success('Error details copied to clipboard');
+            }).catch(() => {
+                react_hot_toast_dist/* toast */.oR.error('Failed to copy error details');
+            });
+        };
+        this.state = {
+            hasError: false,
+            error: null,
+            errorInfo: null,
+            errorId: '',
+            showDetails: false
+        };
+    }
+    static getDerivedStateFromError(error) {
+        return {
+            hasError: true,
+            error,
+            errorId: `error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        };
+    }
+    componentDidCatch(error, errorInfo) {
+        this.setState({ errorInfo });
+        // Log error to console
+        console.error('ErrorBoundary caught an error:', error, errorInfo);
+        // Call custom error handler if provided
+        if (this.props.onError) {
+            this.props.onError(error, errorInfo);
+        }
+        // Send error to analytics (if available)
+        this.reportError(error, errorInfo);
+        // Show toast notification
+        react_hot_toast_dist/* toast */.oR.error('Something went wrong. Please try again.', {
+            duration: 5000,
+            id: this.state.errorId
+        });
+    }
+    render() {
+        if (this.state.hasError) {
+            // Custom fallback UI
+            if (this.props.fallback) {
+                return this.props.fallback;
+            }
+            return ((0,jsx_runtime.jsx)("div", { className: "min-h-screen bg-gray-50 flex items-center justify-center p-4", children: (0,jsx_runtime.jsxs)("div", { className: "max-w-md w-full bg-white rounded-xl shadow-lg border border-gray-200", children: [(0,jsx_runtime.jsx)("div", { className: "p-6 border-b border-gray-100", children: (0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-3", children: [(0,jsx_runtime.jsx)("div", { className: "w-10 h-10 bg-red-100 rounded-full flex items-center justify-center", children: (0,jsx_runtime.jsx)(triangle_alert/* default */.A, { className: "w-5 h-5 text-red-600" }) }), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h1", { className: "text-lg font-semibold text-gray-900", children: "Oops! Something went wrong" }), (0,jsx_runtime.jsx)("p", { className: "text-sm text-gray-600", children: "We've encountered an unexpected error" })] })] }) }), (0,jsx_runtime.jsxs)("div", { className: "p-6", children: [(0,jsx_runtime.jsxs)("div", { className: "mb-6", children: [(0,jsx_runtime.jsx)("p", { className: "text-gray-700 mb-4", children: "Don't worry, this is not your fault. Our team has been notified and we're working to fix this issue." }), (0,jsx_runtime.jsx)("div", { className: "bg-gray-50 rounded-lg p-3 mb-4", children: (0,jsx_runtime.jsxs)("div", { className: "flex items-center justify-between", children: [(0,jsx_runtime.jsx)("span", { className: "text-sm font-medium text-gray-700", children: "Error ID" }), (0,jsx_runtime.jsx)("span", { className: "text-sm text-gray-500 font-mono", children: this.state.errorId })] }) })] }), (0,jsx_runtime.jsxs)("div", { className: "space-y-3", children: [(0,jsx_runtime.jsxs)(Button/* Button */.$, { onClick: this.handleRetry, className: "w-full flex items-center justify-center gap-2", children: [(0,jsx_runtime.jsx)(refresh_cw/* default */.A, { className: "w-4 h-4" }), "Try Again"] }), (0,jsx_runtime.jsxs)(Button/* Button */.$, { onClick: this.handleGoHome, variant: "outline", className: "w-full flex items-center justify-center gap-2", children: [(0,jsx_runtime.jsx)(house/* default */.A, { className: "w-4 h-4" }), "Go to Home"] }), (0,jsx_runtime.jsxs)(Button/* Button */.$, { onClick: this.handleReload, variant: "outline", className: "w-full flex items-center justify-center gap-2", children: [(0,jsx_runtime.jsx)(refresh_cw/* default */.A, { className: "w-4 h-4" }), "Reload Page"] })] }), (0,jsx_runtime.jsx)("div", { className: "mt-6 pt-4 border-t border-gray-100", children: (0,jsx_runtime.jsxs)("button", { onClick: this.toggleDetails, className: "flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors", children: [(0,jsx_runtime.jsx)(bug/* default */.A, { className: "w-4 h-4" }), this.state.showDetails ? 'Hide' : 'Show', " Technical Details"] }) }), this.state.showDetails && ((0,jsx_runtime.jsxs)("div", { className: "mt-4 p-4 bg-gray-50 rounded-lg", children: [(0,jsx_runtime.jsxs)("div", { className: "flex items-center justify-between mb-3", children: [(0,jsx_runtime.jsx)("h3", { className: "text-sm font-medium text-gray-700", children: "Error Details" }), (0,jsx_runtime.jsx)("button", { onClick: this.copyErrorDetails, className: "text-xs text-blue-600 hover:text-blue-700", children: "Copy" })] }), (0,jsx_runtime.jsxs)("div", { className: "space-y-2 text-xs", children: [(0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("span", { className: "font-medium text-gray-600", children: "Message:" }), (0,jsx_runtime.jsx)("p", { className: "text-gray-800 font-mono break-words", children: this.state.error?.message })] }), this.state.error?.stack && ((0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("span", { className: "font-medium text-gray-600", children: "Stack Trace:" }), (0,jsx_runtime.jsx)("pre", { className: "text-gray-800 font-mono text-xs overflow-x-auto whitespace-pre-wrap", children: this.state.error.stack })] })), this.state.errorInfo?.componentStack && ((0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("span", { className: "font-medium text-gray-600", children: "Component Stack:" }), (0,jsx_runtime.jsx)("pre", { className: "text-gray-800 font-mono text-xs overflow-x-auto whitespace-pre-wrap", children: this.state.errorInfo.componentStack })] }))] })] }))] }), (0,jsx_runtime.jsx)("div", { className: "p-4 bg-gray-50 rounded-b-xl", children: (0,jsx_runtime.jsxs)("p", { className: "text-xs text-gray-500 text-center", children: ["If this problem persists, please contact support with Error ID: ", this.state.errorId] }) })] }) }));
+        }
+        return this.props.children;
+    }
+}
+// Higher-order component for wrapping components with error boundary
+const withErrorBoundary = (Component, fallback, onError) => {
+    const WrappedComponent = (props) => (_jsx(ErrorBoundary, { fallback: fallback, onError: onError, children: _jsx(Component, { ...props }) }));
+    WrappedComponent.displayName = `withErrorBoundary(${Component.displayName || Component.name})`;
+    return WrappedComponent;
+};
+// Hook for throwing errors programmatically
+const useErrorBoundary = () => {
+    const throwError = (error) => {
+        throw error;
+    };
+    const throwErrorWithMessage = (message) => {
+        throw new Error(message);
+    };
+    return {
+        throwError,
+        throwErrorWithMessage
+    };
+};
+/* harmony default export */ const components_ErrorBoundary = (ErrorBoundary);
+
+// EXTERNAL MODULE: ./node_modules/@fontsource/inter/400.css
+var _400 = __webpack_require__(6019);
+// EXTERNAL MODULE: ./node_modules/@fontsource/inter/500.css
+var _500 = __webpack_require__(422);
+// EXTERNAL MODULE: ./node_modules/@fontsource/inter/600.css
+var _600 = __webpack_require__(8765);
+// EXTERNAL MODULE: ./node_modules/@fontsource/inter/700.css
+var _700 = __webpack_require__(2888);
+// EXTERNAL MODULE: ./node_modules/css-loader/dist/cjs.js!./node_modules/postcss-loader/dist/cjs.js!./node_modules/sass-loader/dist/cjs.js!./src/App.module.scss
+var App_module = __webpack_require__(2096);
+;// ./src/App.module.scss
+
+      
+      
+      
+      
+      
+      
+      
+      
+      
+
+var App_module_options = {};
+
+App_module_options.styleTagTransform = (styleTagTransform_default());
+App_module_options.setAttributes = (setAttributesWithoutAttributes_default());
+App_module_options.insert = insertBySelector_default().bind(null, "head");
+App_module_options.domAPI = (styleDomAPI_default());
+App_module_options.insertStyleElement = (insertStyleElement_default());
+
+var App_module_update = injectStylesIntoStyleTag_default()(App_module/* default */.Ay, App_module_options);
+
+
+
+
+       /* harmony default export */ const src_App_module = (App_module/* default */.Ay && App_module/* default */.Ay.locals ? App_module/* default */.Ay.locals : undefined);
+
+// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/bell.js
+var bell = __webpack_require__(9436);
+// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/chevron-down.js
+var chevron_down = __webpack_require__(5107);
+// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/settings.js
+var settings = __webpack_require__(964);
+// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/x.js
+var x = __webpack_require__(8697);
+// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/menu.js
+var menu = __webpack_require__(9230);
+// EXTERNAL MODULE: ./node_modules/firebase/firestore/dist/esm/index.esm.js + 3 modules
+var index_esm = __webpack_require__(7594);
+// EXTERNAL MODULE: ./src/firebase.ts
+var firebase = __webpack_require__(9487);
+;// ./src/hooks/useNotifications.ts
+
+
+
+
+function useNotifications() {
+    const { currentUser } = (0,AuthContext/* useAuth */.A)();
+    const [notifications, setNotifications] = (0,react.useState)([]);
+    const [loading, setLoading] = (0,react.useState)(true);
+    (0,react.useEffect)(() => {
+        if (!currentUser) {
+            setNotifications([]);
+            setLoading(false);
+            return;
+        }
+        const q = (0,index_esm/* query */.P)((0,index_esm/* collection */.rJ)(firebase.db, "users", currentUser.uid, "notifications"), (0,index_esm/* orderBy */.My)("timestamp", "desc"));
+        const unsubscribe = (0,index_esm/* onSnapshot */.aQ)(q, (snapshot) => {
+            const notifs = snapshot.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data(),
+            }));
+            setNotifications(notifs);
+            setLoading(false);
+        });
+        return () => unsubscribe();
+    }, [currentUser]);
+    const markAsRead = async (notificationId) => {
+        if (!currentUser)
+            return;
+        try {
+            const notifRef = (0,index_esm.doc)(firebase.db, "users", currentUser.uid, "notifications", notificationId);
+            await (0,index_esm/* updateDoc */.mZ)(notifRef, { read: true });
+            // Update local state to mark as read (don't remove)
+            setNotifications(prev => prev.map(notif => notif.id === notificationId ? { ...notif, read: true } : notif));
+        }
+        catch (error) {
+            console.error('Error marking notification as read:', error);
+            // Don't throw - just log the error
+        }
+    };
+    const markAllAsRead = async () => {
+        if (!currentUser)
+            return;
+        try {
+            // Mark all unread notifications as read in Firestore
+            const batch = (0,index_esm/* writeBatch */.wP)(firebase.db);
+            const unreadNotifications = notifications.filter(notification => !notification.read);
+            unreadNotifications.forEach(notification => {
+                const notifRef = (0,index_esm.doc)(firebase.db, "users", currentUser.uid, "notifications", notification.id);
+                batch.update(notifRef, { read: true });
+            });
+            await batch.commit();
+            // Update local state to mark as read
+            setNotifications(prev => prev.map(notification => ({ ...notification, read: true })));
+        }
+        catch (error) {
+            console.error('Error marking all as read:', error);
+            // Don't throw - just log the error
+        }
+    };
+    const clearAll = async () => {
+        if (!currentUser)
+            return;
+        try {
+            // Delete all notifications from Firestore
+            const batch = (0,index_esm/* writeBatch */.wP)(firebase.db);
+            notifications.forEach(notification => {
+                const notifRef = (0,index_esm.doc)(firebase.db, "users", currentUser.uid, "notifications", notification.id);
+                batch.delete(notifRef);
+            });
+            await batch.commit();
+            // Clear from local state immediately
+            setNotifications([]);
+        }
+        catch (error) {
+            console.error('Error clearing notifications:', error);
+            // Don't throw - just log the error
+        }
+    };
+    const deleteOldNotifications = async (daysOld = 30) => {
+        if (!currentUser)
+            return;
+        try {
+            const cutoffDate = new Date();
+            cutoffDate.setDate(cutoffDate.getDate() - daysOld);
+            const oldNotifications = notifications.filter(notification => {
+                const notificationDate = notification.timestamp?.toDate?.() || new Date(notification.timestamp);
+                return notificationDate < cutoffDate;
+            });
+            if (oldNotifications.length === 0)
+                return;
+            const batch = (0,index_esm/* writeBatch */.wP)(firebase.db);
+            oldNotifications.forEach(notification => {
+                const notifRef = (0,index_esm.doc)(firebase.db, "users", currentUser.uid, "notifications", notification.id);
+                batch.delete(notifRef);
+            });
+            await batch.commit();
+            // Remove from local state
+            setNotifications(prev => prev.filter(notification => {
+                const notificationDate = notification.timestamp?.toDate?.() || new Date(notification.timestamp);
+                return notificationDate >= cutoffDate;
+            }));
+            console.log(`Deleted ${oldNotifications.length} old notifications`);
+        }
+        catch (error) {
+            console.error('Error deleting old notifications:', error);
+            throw error;
+        }
+    };
+    const deleteNotification = async (notificationId) => {
+        if (!currentUser)
+            return;
+        try {
+            await (0,index_esm/* deleteDoc */.kd)((0,index_esm.doc)(firebase.db, "users", currentUser.uid, "notifications", notificationId));
+            // Remove from local state immediately
+            setNotifications(prev => prev.filter(notif => notif.id !== notificationId));
+        }
+        catch (error) {
+            console.error('Error deleting notification:', error);
+            // Don't throw - just log the error
+        }
+    };
+    return { notifications, loading, markAsRead, markAllAsRead, clearAll, deleteNotification, deleteOldNotifications };
+}
+
+// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/user-plus.js
+var user_plus = __webpack_require__(1999);
+// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/message-square.js
+var message_square = __webpack_require__(7504);
+// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/circle-check-big.js
+var circle_check_big = __webpack_require__(4471);
+// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/circle-x.js
+var circle_x = __webpack_require__(180);
+// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/trash-2.js
+var trash_2 = __webpack_require__(2708);
+;// ./src/components/NotificationCenter.tsx
+
+
+
+
+
+
+
+
+const NotificationCenter = ({ isOpen, onClose }) => {
+    const navigate = (0,react_router_dist/* useNavigate */.Zp)();
+    const { currentUser } = (0,AuthContext/* useAuth */.A)();
+    const { notifications, loading, markAsRead, markAllAsRead, clearAll, deleteNotification } = useNotifications();
+    // Dismiss on escape key
+    (0,react.useEffect)(() => {
+        if (!isOpen)
+            return;
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                onClose();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, onClose]);
+    // Dismiss on click outside
+    const handleOverlayClick = (0,react.useCallback)((e) => {
+        if (e.target === e.currentTarget) {
+            e.preventDefault();
+            onClose();
+        }
+    }, [onClose]);
+    const handleMarkAsRead = async (notificationId) => {
+        try {
+            await markAsRead(notificationId);
+            // Don't show toast for individual mark as read to reduce noise
+        }
+        catch (error) {
+            console.error('Error marking notification as read:', error);
+            // Don't show toast for individual errors to reduce noise
+        }
+    };
+    const handleMarkAllAsRead = async () => {
+        try {
+            await markAllAsRead();
+            react_hot_toast_dist/* toast */.oR.success('All notifications marked as read');
+        }
+        catch (error) {
+            console.error('Error marking all as read:', error);
+            // Don't show error toast - function handles errors internally
+        }
+    };
+    const handleDeleteNotification = async (notificationId) => {
+        try {
+            await deleteNotification(notificationId);
+            react_hot_toast_dist/* toast */.oR.success('Notification deleted');
+        }
+        catch (error) {
+            console.error('Error deleting notification:', error);
+            react_hot_toast_dist/* toast */.oR.error('Failed to delete notification');
+        }
+    };
+    const handleClearAll = async () => {
+        try {
+            await clearAll();
+            react_hot_toast_dist/* toast */.oR.success('All notifications cleared');
+            // Close the notification center after clearing
+            onClose();
+        }
+        catch (error) {
+            console.error('Error clearing notifications:', error);
+            // Don't show error toast - function handles errors internally
+        }
+    };
+    const handleNotificationClick = (notification) => {
+        // Mark as read if not already read
+        if (!notification.read) {
+            handleMarkAsRead(notification.id);
+        }
+        // Navigate based on notification type
+        switch (notification.type) {
+            case 'job_application':
+                navigate(`/jobs/${notification.relatedId}/applications`);
+                break;
+            case 'application_message':
+                navigate(`/applications/${notification.applicationId}`);
+                break;
+            case 'application_status_update':
+                navigate(`/applications/${notification.applicationId}`);
+                break;
+            case 'message':
+                // Navigate to chat with the sender
+                if (notification.senderId && notification.conversationId) {
+                    navigate(`/chat?user=${notification.senderId}`);
+                }
+                break;
+            default:
+                // Default navigation
+                break;
+        }
+        // Close the notification center after navigation
+        onClose();
+    };
+    const getNotificationIcon = (type) => {
+        switch (type) {
+            case 'job_application':
+                return (0,jsx_runtime.jsx)(user_plus/* default */.A, { className: "w-5 h-5 text-blue-600" });
+            case 'application_message':
+                return (0,jsx_runtime.jsx)(message_square/* default */.A, { className: "w-5 h-5 text-green-600" });
+            case 'application_status_update':
+                return (0,jsx_runtime.jsx)(circle_check_big/* default */.A, { className: "w-5 h-5 text-purple-600" });
+            case 'message':
+                return (0,jsx_runtime.jsx)(message_square/* default */.A, { className: "w-5 h-5 text-indigo-600" });
+            default:
+                return (0,jsx_runtime.jsx)(bell/* default */.A, { className: "w-5 h-5 text-gray-600" });
+        }
+    };
+    const getNotificationColor = (type) => {
+        switch (type) {
+            case 'job_application':
+                return 'bg-blue-50 border-blue-200';
+            case 'application_message':
+                return 'bg-green-50 border-green-200';
+            case 'application_status_update':
+                return 'bg-purple-50 border-purple-200';
+            case 'message':
+                return 'bg-indigo-50 border-indigo-200';
+            default:
+                return 'bg-gray-50 border-gray-200';
+        }
+    };
+    const formatDate = (date) => {
+        if (!date)
+            return 'Just now';
+        const dateObj = date.toDate ? date.toDate() : new Date(date);
+        const now = new Date();
+        const diffInMinutes = Math.floor((now.getTime() - dateObj.getTime()) / (1000 * 60));
+        if (diffInMinutes < 1)
+            return 'Just now';
+        if (diffInMinutes < 60)
+            return `${diffInMinutes}m ago`;
+        if (diffInMinutes < 1440)
+            return `${Math.floor(diffInMinutes / 60)}h ago`;
+        return dateObj.toLocaleDateString();
+    };
+    const sortedNotifications = notifications.sort((a, b) => {
+        const dateA = a.timestamp?.toDate?.() || new Date(a.timestamp);
+        const dateB = b.timestamp?.toDate?.() || new Date(b.timestamp);
+        return dateB.getTime() - dateA.getTime();
+    });
+    const unreadCount = notifications.filter(n => !n.read).length;
+    if (!isOpen)
+        return null;
+    return ((0,jsx_runtime.jsx)("div", { className: "fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-[9999] pt-16", onClick: handleOverlayClick, children: (0,jsx_runtime.jsxs)("div", { className: "bg-white rounded-xl w-full max-w-md max-h-[calc(100vh-8rem)] flex flex-col shadow-lg relative overflow-hidden", onClick: e => e.stopPropagation(), children: [(0,jsx_runtime.jsxs)("div", { className: "flex items-center justify-between p-3 border-b border-gray-200 bg-white z-10", children: [(0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-2", children: [(0,jsx_runtime.jsx)(bell/* default */.A, { className: "w-5 h-5 text-gray-600" }), (0,jsx_runtime.jsx)("h2", { className: "text-lg font-semibold text-gray-900", children: "Notifications" }), unreadCount > 0 && ((0,jsx_runtime.jsxs)("span", { className: "bg-red-500 text-white text-xs rounded-full px-2 py-1", children: [unreadCount, " new"] }))] }), (0,jsx_runtime.jsxs)("div", { className: "flex gap-2 items-center", children: [unreadCount > 0 && ((0,jsx_runtime.jsx)("button", { onClick: handleMarkAllAsRead, className: "p-2 text-xs text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors", "aria-label": "Mark all as read", children: "Mark All Read" })), notifications.length > 0 && ((0,jsx_runtime.jsx)("button", { onClick: handleClearAll, className: "p-2 text-xs text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors", "aria-label": "Clear all notifications", children: "Clear All" })), (0,jsx_runtime.jsx)("button", { onClick: onClose, className: "p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500 hover:text-gray-700", "aria-label": "Close notifications", title: "Close notifications", children: (0,jsx_runtime.jsx)(circle_x/* default */.A, { className: "w-5 h-5" }) })] })] }), (0,jsx_runtime.jsx)("div", { className: "flex-1 overflow-y-auto min-h-0", children: (0,jsx_runtime.jsx)("div", { className: "p-3", children: loading ? ((0,jsx_runtime.jsxs)("div", { className: "text-center py-8", children: [(0,jsx_runtime.jsx)("div", { className: "animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4" }), (0,jsx_runtime.jsx)("p", { className: "text-gray-600", children: "Loading notifications..." })] })) : sortedNotifications.length === 0 ? ((0,jsx_runtime.jsxs)("div", { className: "text-center py-8", children: [(0,jsx_runtime.jsx)(bell/* default */.A, { className: "w-12 h-12 text-gray-300 mx-auto mb-4" }), (0,jsx_runtime.jsx)("h3", { className: "text-lg font-medium text-gray-900 mb-2", children: "No notifications" }), (0,jsx_runtime.jsx)("p", { className: "text-gray-600", children: notifications.length === 0
+                                        ? "You're all caught up! No notifications yet."
+                                        : "No notifications match your current filters." })] })) : ((0,jsx_runtime.jsx)("div", { className: "space-y-3", children: sortedNotifications.map((notification) => ((0,jsx_runtime.jsx)("div", { className: `p-4 rounded-lg border cursor-pointer transition-all hover:shadow-md ${notification.read ? 'opacity-75 bg-gray-50' : 'bg-white'} ${getNotificationColor(notification.type)} ${!notification.read ? 'border-l-4 border-l-blue-500' : ''}`, onClick: () => handleNotificationClick(notification), children: (0,jsx_runtime.jsxs)("div", { className: "flex items-start gap-3", children: [(0,jsx_runtime.jsx)("div", { className: "flex-shrink-0 mt-1", children: getNotificationIcon(notification.type) }), (0,jsx_runtime.jsx)("div", { className: "flex-1 min-w-0", children: (0,jsx_runtime.jsxs)("div", { className: "flex items-start justify-between", children: [(0,jsx_runtime.jsxs)("div", { className: "flex-1", children: [(0,jsx_runtime.jsx)("p", { className: `text-sm font-medium ${notification.read ? 'text-gray-600' : 'text-gray-900'}`, children: notification.message }), notification.extra && ((0,jsx_runtime.jsxs)("div", { className: "mt-2 text-xs text-gray-500", children: [notification.extra.senderName && ((0,jsx_runtime.jsxs)("span", { children: ["From: ", notification.extra.senderName] })), notification.extra.jobTitle && ((0,jsx_runtime.jsxs)("span", { children: [" \u2022 Job: ", notification.extra.jobTitle] }))] })), (0,jsx_runtime.jsx)("p", { className: "text-xs text-gray-400 mt-1", children: formatDate(notification.timestamp) })] }), (0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-1 ml-2", children: [!notification.read && ((0,jsx_runtime.jsx)("div", { className: "w-2 h-2 bg-blue-500 rounded-full" })), (0,jsx_runtime.jsx)("div", { className: "relative group", children: (0,jsx_runtime.jsx)(Button/* Button */.$, { variant: "outline", size: "sm", className: "opacity-0 group-hover:opacity-100 transition-opacity", onClick: (e) => {
+                                                                        e.stopPropagation();
+                                                                        handleDeleteNotification(notification.id);
+                                                                    }, children: (0,jsx_runtime.jsx)(trash_2/* default */.A, { className: "w-3 h-3" }) }) })] })] }) })] }) }, notification.id))) })) }) }), (0,jsx_runtime.jsx)("div", { className: "p-3 border-t border-gray-200 bg-gray-50", children: (0,jsx_runtime.jsx)("div", { className: "flex items-center justify-between", children: (0,jsx_runtime.jsxs)("div", { className: "flex flex-col", children: [(0,jsx_runtime.jsx)("p", { className: "text-sm text-gray-600", children: unreadCount > 0 ? (`${unreadCount} unread notification${unreadCount !== 1 ? 's' : ''}`) : (notifications.length > 0 ? "All notifications read" : "No notifications") }), notifications.length > 0 && ((0,jsx_runtime.jsx)("p", { className: "text-xs text-gray-400 mt-1", children: "Click notifications to mark as read \u2022 \"Clear all\" deletes permanently" }))] }) }) })] }) }));
+};
+/* harmony default export */ const components_NotificationCenter = (NotificationCenter);
+
+;// ./src/components/Navigation.tsx
+
+// src/components/Navigation.tsx
+
+
+
+
+
+
+const Navigation = ({ authUser, userSignOut }) => {
+    const location = (0,react_router_dist/* useLocation */.zy)();
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = (0,react.useState)(false);
+    const [isUserMenuOpen, setIsUserMenuOpen] = (0,react.useState)(false);
+    const [activePath, setActivePath] = (0,react.useState)('/');
+    const [isScrolled, setIsScrolled] = (0,react.useState)(false);
+    const [showNotificationCenter, setShowNotificationCenter] = (0,react.useState)(false);
+    const { t, i18n } = (0,es/* useTranslation */.Bd)();
+    (0,react.useEffect)(() => {
+        setActivePath(location.pathname);
+    }, [location]);
+    (0,react.useEffect)(() => {
+        const handleScroll = () => {
+            setIsScrolled(window.scrollY > 10);
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+    const toggleMobileMenu = () => {
+        setIsMobileMenuOpen(!isMobileMenuOpen);
+        if (!isMobileMenuOpen) {
+            setIsUserMenuOpen(false);
+        }
+    };
+    const toggleUserMenu = () => {
+        setIsUserMenuOpen(!isUserMenuOpen);
+        if (!isUserMenuOpen) {
+            setIsMobileMenuOpen(false);
+        }
+    };
+    const closeAllMenus = () => {
+        setIsMobileMenuOpen(false);
+        setIsUserMenuOpen(false);
+    };
+    const isActive = (path) => {
+        return activePath === path;
+    };
+    const navigationLinks = [
+        { to: '/', label: t('nav.home') },
+        { to: '/crew', label: t('nav.crew') },
+        { to: '/jobs', label: t('nav.jobs') },
+        { to: '/projects', label: t('nav.projects') },
+        { to: '/collaboration', label: t('nav.collaboration') },
+    ];
+    const authenticatedLinks = [
+        { to: '/social', label: t('nav.social') },
+        { to: '/edit-profile', label: t('nav.resumeBuilder') },
+    ];
+    const jobManagementLinks = [
+        { to: '/jobs/posted', label: t('nav.myPostedJobs') },
+        { to: '/jobs/analytics', label: t('nav.jobAnalytics') },
+        { to: '/post-job', label: t('nav.postNewJob') },
+    ];
+    const { notifications, loading, markAsRead } = useNotifications();
+    const unreadCount = notifications.filter(n => !n.read).length;
+    const languages = [
+        { code: 'en', label: 'EN' },
+        { code: 'es', label: 'ES' },
+    ];
+    // Function to get user display name (like "franciscovaldez")
+    const getUserDisplayName = (user) => {
+        if (user?.displayName) {
+            return user.displayName.toLowerCase().replace(/\s+/g, '');
+        }
+        if (user?.email) {
+            const emailName = user.email.split('@')[0];
+            return emailName.toLowerCase();
+        }
+        return 'user';
+    };
+    return ((0,jsx_runtime.jsxs)("nav", { className: `fixed top-0 left-0 w-full z-50 transition-all duration-300 ${isScrolled
+            ? 'bg-white/95 backdrop-blur-md shadow-lg border-b border-gray-200/50'
+            : 'bg-white/80 backdrop-blur-sm border-b border-gray-100/50'}`, children: [(0,jsx_runtime.jsx)("div", { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8", children: (0,jsx_runtime.jsxs)("div", { className: "flex items-center justify-between h-16", children: [(0,jsx_runtime.jsx)("div", { className: "flex items-center", children: (0,jsx_runtime.jsx)(dist/* Link */.N_, { to: "/", className: "group flex items-center space-x-2", onClick: closeAllMenus, children: (0,jsx_runtime.jsxs)("div", { className: "relative", children: [(0,jsx_runtime.jsx)("div", { className: "text-2xl font-bold bg-gradient-to-r from-gray-900 via-gray-700 to-gray-900 bg-clip-text text-transparent tracking-tight", children: "My Film Jobs" }), (0,jsx_runtime.jsx)("div", { className: "absolute -inset-1 bg-gradient-to-r from-blue-600/10 to-purple-600/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-sm -z-10" })] }) }) }), (0,jsx_runtime.jsxs)("div", { className: "hidden md:flex items-center space-x-1", children: [navigationLinks.map((link) => {
+                                    // Special handling for Jobs dropdown
+                                    if (link.to === '/jobs') {
+                                        return ((0,jsx_runtime.jsxs)("div", { className: "relative group", children: [(0,jsx_runtime.jsxs)(dist/* Link */.N_, { to: "/jobs", className: `relative px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 flex items-center gap-1 ${isActive('/jobs') || isActive('/jobs/posted') || isActive('/jobs/analytics') || isActive('/post-job')
+                                                        ? 'text-blue-600 bg-blue-50/80 shadow-sm'
+                                                        : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50/80'}`, onClick: closeAllMenus, style: { zIndex: 2, position: 'relative' }, children: [(0,jsx_runtime.jsx)("span", { children: t('nav.jobs') }), (0,jsx_runtime.jsx)("svg", { className: "w-4 h-4 ml-1 inline-block", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24", children: (0,jsx_runtime.jsx)("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M19 9l-7 7-7-7" }) })] }), (0,jsx_runtime.jsx)("div", { className: "absolute top-full left-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50", children: (0,jsx_runtime.jsxs)("div", { className: "py-2", children: [(0,jsx_runtime.jsx)(dist/* Link */.N_, { to: "/jobs", className: "block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900", onClick: closeAllMenus, children: t('nav.jobs') }), authUser && ((0,jsx_runtime.jsxs)(jsx_runtime.Fragment, { children: [(0,jsx_runtime.jsx)(dist/* Link */.N_, { to: "/jobs/posted", className: "block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900", onClick: closeAllMenus, children: t('nav.myPostedJobs') }), (0,jsx_runtime.jsx)(dist/* Link */.N_, { to: "/jobs/analytics", className: "block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900", onClick: closeAllMenus, children: t('nav.jobAnalytics') }), (0,jsx_runtime.jsx)(dist/* Link */.N_, { to: "/post-job", className: "block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900", onClick: closeAllMenus, children: t('nav.postNewJob') })] }))] }) })] }, link.to));
+                                    }
+                                    // Regular link handling
+                                    return ((0,jsx_runtime.jsxs)(dist/* Link */.N_, { to: link.to, className: `relative px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${isActive(link.to)
+                                            ? 'text-blue-600 bg-blue-50/80 shadow-sm'
+                                            : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50/80'}`, onClick: closeAllMenus, children: [link.label, isActive(link.to) && ((0,jsx_runtime.jsx)("div", { className: "absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-blue-600 rounded-full" }))] }, link.to));
+                                }), authUser && authenticatedLinks.map((link) => ((0,jsx_runtime.jsxs)(dist/* Link */.N_, { to: link.to, className: `relative px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${isActive(link.to)
+                                        ? 'text-blue-600 bg-blue-50/80 shadow-sm'
+                                        : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50/80'}`, onClick: closeAllMenus, children: [link.label, isActive(link.to) && ((0,jsx_runtime.jsx)("div", { className: "absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-blue-600 rounded-full" }))] }, link.to))), (0,jsx_runtime.jsxs)("button", { onClick: () => setShowNotificationCenter(true), className: "relative ml-2 p-2 rounded-full hover:bg-gray-100 transition", children: [(0,jsx_runtime.jsx)(bell/* default */.A, { className: "w-6 h-6 text-gray-700" }), unreadCount > 0 && ((0,jsx_runtime.jsx)("span", { className: "absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 shadow-lg", children: unreadCount }))] })] }), (0,jsx_runtime.jsxs)("div", { className: "flex items-center space-x-3", children: [(0,jsx_runtime.jsx)("div", { className: "relative", children: (0,jsx_runtime.jsx)("button", { className: "flex items-center px-2 py-1 rounded-lg text-gray-600 hover:text-blue-700 hover:bg-blue-50/60 transition-colors text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-200", "aria-label": "Change language", tabIndex: 0, children: languages.map((lang, idx) => ((0,jsx_runtime.jsxs)("span", { onClick: e => {
+                                                e.stopPropagation();
+                                                i18n.changeLanguage(lang.code);
+                                            }, className: `cursor-pointer ${i18n.language === lang.code ? 'text-blue-700 font-bold' : 'text-gray-500 hover:text-blue-600'}`, children: [lang.label, idx < languages.length - 1 && (0,jsx_runtime.jsx)("span", { className: "mx-1 text-gray-300", children: "/" })] }, lang.code))) }) }), authUser ? ((0,jsx_runtime.jsx)(jsx_runtime.Fragment, { children: (0,jsx_runtime.jsxs)("div", { className: "relative", children: [(0,jsx_runtime.jsxs)("button", { onClick: toggleUserMenu, className: "flex items-center space-x-2 px-3 py-2 rounded-lg bg-gray-100/80 hover:bg-gray-200/80 transition-all duration-200 group", children: [(0,jsx_runtime.jsx)("div", { className: "w-7 h-7 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white text-sm font-medium", children: authUser.email?.[0].toUpperCase() || 'U' }), (0,jsx_runtime.jsx)("span", { className: "hidden sm:block text-sm font-medium text-gray-700 group-hover:text-gray-900", children: getUserDisplayName(authUser) }), (0,jsx_runtime.jsx)(chevron_down/* default */.A, { size: 16, className: `text-gray-500 transition-transform duration-200 ${isUserMenuOpen ? 'rotate-180' : ''}` })] }), isUserMenuOpen && ((0,jsx_runtime.jsxs)("div", { className: "absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200/50 py-2 z-50 backdrop-blur-sm", children: [(0,jsx_runtime.jsxs)("div", { className: "px-4 py-3 border-b border-gray-100", children: [(0,jsx_runtime.jsx)("p", { className: "text-sm font-medium text-gray-900", children: authUser.email }), (0,jsx_runtime.jsx)("p", { className: "text-xs text-gray-500 mt-1", children: "Film Professional" })] }), (0,jsx_runtime.jsxs)("div", { className: "py-2", children: [authenticatedLinks.map((link) => ((0,jsx_runtime.jsx)(dist/* Link */.N_, { to: link.to, className: "flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors", onClick: closeAllMenus, children: link.label }, link.to))), (0,jsx_runtime.jsxs)(dist/* Link */.N_, { to: "/applications", className: "flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors", onClick: closeAllMenus, children: ["\uD83D\uDCDD ", t('nav.myApplications')] }), (0,jsx_runtime.jsxs)(dist/* Link */.N_, { to: "/jobs/posted", className: "flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors", onClick: closeAllMenus, children: ["\uD83D\uDCBC ", t('nav.postedJobs')] }), (0,jsx_runtime.jsxs)(dist/* Link */.N_, { to: "/settings", className: "flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors", onClick: closeAllMenus, children: [(0,jsx_runtime.jsx)(settings/* default */.A, { size: 16, className: "mr-2" }), t('nav.settings')] })] }), (0,jsx_runtime.jsx)("div", { className: "border-t border-gray-100 pt-2", children: (0,jsx_runtime.jsx)("button", { onClick: () => {
+                                                                userSignOut();
+                                                                closeAllMenus();
+                                                            }, className: "block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors", children: t('nav.signOut') }) })] }))] }) })) : ((0,jsx_runtime.jsxs)("div", { className: "flex items-center space-x-3", children: [(0,jsx_runtime.jsx)(dist/* Link */.N_, { to: "/login", className: "px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors", children: t('nav.signIn') }), (0,jsx_runtime.jsx)("button", { onClick: () => {
+                                                closeAllMenus();
+                                                window.location.href = '/register';
+                                            }, className: "px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-sm hover:shadow-md", children: t('nav.getStarted') })] })), (0,jsx_runtime.jsx)("div", { className: "md:hidden", children: (0,jsx_runtime.jsx)("button", { onClick: toggleMobileMenu, className: "p-2 rounded-lg text-gray-700 hover:text-gray-900 hover:bg-gray-100/80 transition-colors", "aria-label": "Toggle mobile menu", children: isMobileMenuOpen ? (0,jsx_runtime.jsx)(x/* default */.A, { size: 24 }) : (0,jsx_runtime.jsx)(menu/* default */.A, { size: 24 }) }) })] })] }) }), isMobileMenuOpen && ((0,jsx_runtime.jsx)("div", { className: "md:hidden absolute top-full left-0 right-0 bg-white/95 backdrop-blur-md border-b border-gray-200/50 shadow-lg", children: (0,jsx_runtime.jsxs)("div", { className: "px-4 py-6 space-y-4", children: [(0,jsx_runtime.jsx)("div", { className: "space-y-2", children: navigationLinks.map((link) => ((0,jsx_runtime.jsx)(dist/* Link */.N_, { to: link.to, className: `block px-4 py-3 rounded-lg font-medium transition-colors ${isActive(link.to)
+                                    ? 'text-blue-600 bg-blue-50'
+                                    : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'}`, onClick: closeAllMenus, children: link.label }, link.to))) }), authUser && ((0,jsx_runtime.jsx)(jsx_runtime.Fragment, { children: (0,jsx_runtime.jsxs)("div", { className: "border-t border-gray-200 pt-4", children: [(0,jsx_runtime.jsx)("p", { className: "px-4 text-xs font-medium text-gray-500 uppercase tracking-wider mb-3", children: "My Account" }), (0,jsx_runtime.jsxs)("div", { className: "space-y-2", children: [authenticatedLinks.map((link) => ((0,jsx_runtime.jsx)(dist/* Link */.N_, { to: link.to, className: `block px-4 py-3 rounded-lg font-medium transition-colors ${isActive(link.to)
+                                                    ? 'text-blue-600 bg-blue-50'
+                                                    : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'}`, onClick: closeAllMenus, children: link.label }, link.to))), (0,jsx_runtime.jsxs)(dist/* Link */.N_, { to: "/applications", className: `block px-4 py-3 rounded-lg font-medium transition-colors ${isActive('/applications')
+                                                    ? 'text-blue-600 bg-blue-50'
+                                                    : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'}`, onClick: closeAllMenus, children: ["\uD83D\uDCDD ", t('nav.myApplications')] }), (0,jsx_runtime.jsxs)(dist/* Link */.N_, { to: "/jobs/posted", className: `block px-4 py-3 rounded-lg font-medium transition-colors ${isActive('/jobs/posted')
+                                                    ? 'text-blue-600 bg-blue-50'
+                                                    : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'}`, onClick: closeAllMenus, children: ["\uD83D\uDCBC ", t('nav.postedJobs')] })] })] }) })), (0,jsx_runtime.jsx)("div", { className: "border-t border-gray-200 pt-4 space-y-3", children: !authUser ? ((0,jsx_runtime.jsxs)(jsx_runtime.Fragment, { children: [(0,jsx_runtime.jsx)(dist/* Link */.N_, { to: "/login", className: "block w-full px-4 py-3 text-center font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors", onClick: closeAllMenus, children: t('nav.signIn') }), (0,jsx_runtime.jsx)("button", { onClick: () => {
+                                            closeAllMenus();
+                                            window.location.href = '/register';
+                                        }, className: "block w-full px-4 py-3 text-center bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-sm", children: t('nav.getStarted') })] })) : ((0,jsx_runtime.jsxs)(jsx_runtime.Fragment, { children: [(0,jsx_runtime.jsxs)("div", { className: "px-4 py-3 bg-gray-50 rounded-lg", children: [(0,jsx_runtime.jsx)("p", { className: "text-sm font-medium text-gray-900", children: authUser.email }), (0,jsx_runtime.jsx)("p", { className: "text-xs text-gray-500 mt-1", children: "Film Professional" })] }), (0,jsx_runtime.jsx)("button", { onClick: () => {
+                                            userSignOut();
+                                            closeAllMenus();
+                                        }, className: "block w-full px-4 py-3 text-center font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors", children: t('nav.signOut') })] })) })] }) })), isMobileMenuOpen && ((0,jsx_runtime.jsx)("div", { className: "fixed inset-0 bg-black/20 backdrop-blur-sm z-40 md:hidden", onClick: closeAllMenus, style: { top: '64px' } })), (0,jsx_runtime.jsx)(components_NotificationCenter, { isOpen: showNotificationCenter, onClose: () => setShowNotificationCenter(false) })] }));
+};
+/* harmony default export */ const components_Navigation = (Navigation);
+
+;// ./src/App.tsx
+
+
+
+
+
+
+
+
+
+
+
+
+// Import components
+
+function App() {
+    const { currentUser, logout } = (0,AuthContext/* useAuth */.A)();
+    const handleSignOut = async () => {
+        try {
+            await logout();
+            console.log('User signed out successfully');
+        }
+        catch (error) {
+            console.error('Error signing out:', error);
+        }
+    };
+    return ((0,jsx_runtime.jsx)(ThemeProvider/* ThemeProvider */.NP, { children: (0,jsx_runtime.jsxs)("div", { className: "min-h-screen bg-background text-foreground", style: { fontFamily: 'Inter, sans-serif' }, children: [(0,jsx_runtime.jsxs)("div", { className: "min-h-screen bg-gray-50 text-gray-900", children: [(0,jsx_runtime.jsx)(components_Navigation, { authUser: currentUser, userSignOut: handleSignOut }), (0,jsx_runtime.jsx)("main", { className: "container mx-auto px-4 py-8 pt-24", children: (0,jsx_runtime.jsx)(react.Suspense, { fallback: (0,jsx_runtime.jsx)("div", { className: "flex items-center justify-center min-h-[400px]", children: (0,jsx_runtime.jsx)("div", { className: "animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" }) }), children: (0,jsx_runtime.jsx)(components_ErrorBoundary, { children: (0,jsx_runtime.jsx)(react_router_dist/* Outlet */.sv, {}) }) }) })] }), (0,jsx_runtime.jsx)(react_hot_toast_dist/* Toaster */.l$, { position: "top-right", toastOptions: {
+                        duration: 4000,
+                        className: '!bg-white dark:!bg-gray-800 !text-gray-900 dark:!text-gray-100',
+                        success: {
+                            iconTheme: {
+                                primary: '#10B981',
+                                secondary: 'white',
+                            },
+                        },
+                        error: {
+                            iconTheme: {
+                                primary: '#EF4444',
+                                secondary: 'white',
+                            },
+                        },
+                    } })] }) }));
+}
+/* harmony default export */ const src_App = (App);
+
+;// ./src/router.tsx
+
+
+
+
+// Lazy load pages for better performance
+const ProducerView = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(9505), __webpack_require__.e(4528)]).then(__webpack_require__.bind(__webpack_require__, 4528)));
+const HomePage = react.lazy(() => __webpack_require__.e(/* import() */ 1415).then(__webpack_require__.bind(__webpack_require__, 1415)));
+const MyProjectsPage = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(1928), __webpack_require__.e(4008)]).then(__webpack_require__.bind(__webpack_require__, 4008)));
+const SavedCrewProfilesPage = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(6354), __webpack_require__.e(9505), __webpack_require__.e(3608)]).then(__webpack_require__.bind(__webpack_require__, 3608)));
+const SavedProjectsPage = react.lazy(() => __webpack_require__.e(/* import() */ 4087).then(__webpack_require__.bind(__webpack_require__, 4087)));
+const CollectionsHubPage = react.lazy(() => __webpack_require__.e(/* import() */ 3124).then(__webpack_require__.bind(__webpack_require__, 743)));
+const SocialPage = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(856), __webpack_require__.e(9505), __webpack_require__.e(758), __webpack_require__.e(3778)]).then(__webpack_require__.bind(__webpack_require__, 3778)));
+const CollaborationPage = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(6372), __webpack_require__.e(1409), __webpack_require__.e(6060), __webpack_require__.e(9651)]).then(__webpack_require__.bind(__webpack_require__, 9651)));
+const SettingsPage = react.lazy(() => __webpack_require__.e(/* import() */ 2443).then(__webpack_require__.bind(__webpack_require__, 2443)));
+const JobsPage = react.lazy(() => __webpack_require__.e(/* import() */ 7900).then(__webpack_require__.bind(__webpack_require__, 7900)));
+const PostJobPage = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(856), __webpack_require__.e(1409), __webpack_require__.e(7011)]).then(__webpack_require__.bind(__webpack_require__, 7011)));
+const JobDetailPage = react.lazy(() => __webpack_require__.e(/* import() */ 8004).then(__webpack_require__.bind(__webpack_require__, 8004)));
+const DebugJobsPage = react.lazy(() => __webpack_require__.e(/* import() */ 9009).then(__webpack_require__.bind(__webpack_require__, 9009)));
+const EditProfilePage = react.lazy(() => __webpack_require__.e(/* import() */ 6134).then(__webpack_require__.bind(__webpack_require__, 6134)));
+const PublicResumePage = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(3833), __webpack_require__.e(9505), __webpack_require__.e(1149)]).then(__webpack_require__.bind(__webpack_require__, 1149)));
+const ChatTestPage = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(758), __webpack_require__.e(336)]).then(__webpack_require__.bind(__webpack_require__, 336)));
+const LoginPage = react.lazy(() => __webpack_require__.e(/* import() */ 8139).then(__webpack_require__.bind(__webpack_require__, 8139)));
+const RegisterPage = react.lazy(() => __webpack_require__.e(/* import() */ 5).then(__webpack_require__.bind(__webpack_require__, 5)));
+const ApplicationDetailPage = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(3398), __webpack_require__.e(4567)]).then(__webpack_require__.bind(__webpack_require__, 4567)));
+const JobApplicationForm = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(6093), __webpack_require__.e(2192)]).then(__webpack_require__.bind(__webpack_require__, 2192)));
+const JobApplicationDashboard = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(6093), __webpack_require__.e(7748)]).then(__webpack_require__.bind(__webpack_require__, 7748)));
+const ApplicationSuccessPage = react.lazy(() => __webpack_require__.e(/* import() */ 8897).then(__webpack_require__.bind(__webpack_require__, 8897)));
+const EditJobApplication = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(6093), __webpack_require__.e(7482)]).then(__webpack_require__.bind(__webpack_require__, 7482)));
+const JobPosterDashboard = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(6093), __webpack_require__.e(7269)]).then(__webpack_require__.bind(__webpack_require__, 7269)));
+const JobApplicationsPage = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(856), __webpack_require__.e(6093), __webpack_require__.e(8158)]).then(__webpack_require__.bind(__webpack_require__, 8158)));
+const JobApplicantsPage = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(856), __webpack_require__.e(3398), __webpack_require__.e(766)]).then(__webpack_require__.bind(__webpack_require__, 766)));
+const AppliedJobsPage = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(6093), __webpack_require__.e(7757)]).then(__webpack_require__.bind(__webpack_require__, 7757)));
+const SavedJobsPage = react.lazy(() => __webpack_require__.e(/* import() */ 1603).then(__webpack_require__.bind(__webpack_require__, 1603)));
+const ApplicationDashboard = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(4032), __webpack_require__.e(6093), __webpack_require__.e(3029)]).then(__webpack_require__.bind(__webpack_require__, 3029)));
+const ApplicationAnalytics = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(6093), __webpack_require__.e(4873)]).then(__webpack_require__.bind(__webpack_require__, 4873)));
+const JobPosterAnalytics = react.lazy(() => __webpack_require__.e(/* import() */ 4493).then(__webpack_require__.bind(__webpack_require__, 4493)));
+const ProjectsPage = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(1928), __webpack_require__.e(1263)]).then(__webpack_require__.bind(__webpack_require__, 1263)));
+const ProjectDetailPage = react.lazy(() => __webpack_require__.e(/* import() */ 7949).then(__webpack_require__.bind(__webpack_require__, 7949)));
+const ProjectDashboard = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(6372), __webpack_require__.e(2608), __webpack_require__.e(6060), __webpack_require__.e(4381)]).then(__webpack_require__.bind(__webpack_require__, 4381)));
+const AddProject = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(6354), __webpack_require__.e(898), __webpack_require__.e(1530)]).then(__webpack_require__.bind(__webpack_require__, 1530)));
+// Import the main App component that will handle the layout
+
+function createAppRouter() {
+    return (0,dist/* createBrowserRouter */.Ys)([
+        {
+            path: '/',
+            element: (0,jsx_runtime.jsx)(src_App, {}),
+            children: [
+                { index: true, element: (0,jsx_runtime.jsx)(HomePage, {}) },
+                {
+                    path: 'crew',
+                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(ProducerView, {}) }))
+                },
+                {
+                    path: 'projects',
+                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(ProjectsPage, {}) }))
+                },
+                {
+                    path: 'projects/create',
+                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(AddProject, {}) }))
+                },
+                {
+                    path: 'projects/:projectId',
+                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(ProjectDetailPage, {}) }))
+                },
+                {
+                    path: 'projects/:projectId/manage',
+                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(ProjectDashboard, {}) }))
+                },
+                {
+                    path: 'login',
+                    element: ((0,jsx_runtime.jsx)(PublicRoute, { children: (0,jsx_runtime.jsx)(LoginPage, {}) }))
+                },
+                {
+                    path: 'register',
+                    element: ((0,jsx_runtime.jsx)(PublicRoute, { children: (0,jsx_runtime.jsx)(RegisterPage, {}) }))
+                },
+                {
+                    path: 'my-projects',
+                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(MyProjectsPage, {}) }))
+                },
+                {
+                    path: 'saved-crew',
+                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(SavedCrewProfilesPage, {}) }))
+                },
+                {
+                    path: 'saved-projects',
+                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(SavedProjectsPage, {}) }))
+                },
+                {
+                    path: 'collections',
+                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(CollectionsHubPage, {}) }))
+                },
+                {
+                    path: 'social',
+                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(SocialPage, {}) }))
+                },
+                {
+                    path: 'chat',
+                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(ChatTestPage, {}) }))
+                },
+                {
+                    path: 'collaboration',
+                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(CollaborationPage, {}) }))
+                },
+                {
+                    path: 'settings',
+                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(SettingsPage, {}) }))
+                },
+                {
+                    path: 'edit-profile',
+                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(EditProfilePage, {}) }))
+                },
+                { path: 'resume/:uid', element: (0,jsx_runtime.jsx)(PublicResumePage, {}) },
+                {
+                    path: 'jobs',
+                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(JobsPage, {}) }))
+                },
+                {
+                    path: 'jobs/:jobId',
+                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(JobDetailPage, {}) }))
+                },
+                {
+                    path: 'jobs/:jobId/apply',
+                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(JobApplicationForm, {}) }))
+                },
+                {
+                    path: 'applications',
+                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(JobApplicationDashboard, {}) }))
+                },
+                {
+                    path: 'applications/:applicationId',
+                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(ApplicationDetailPage, {}) }))
+                },
+                {
+                    path: 'applications/:applicationId/edit',
+                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(EditJobApplication, {}) }))
+                },
+                {
+                    path: 'applications/:applicationId/success',
+                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(ApplicationSuccessPage, {}) }))
+                },
+                {
+                    path: 'jobs/posted',
+                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(JobPosterDashboard, {}) }))
+                },
+                {
+                    path: 'jobs/:jobId/applications',
+                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(JobApplicantsPage, {}) }))
+                },
+                {
+                    path: 'post-job',
+                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(PostJobPage, {}) }))
+                },
+                {
+                    path: 'jobs/applied',
+                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(AppliedJobsPage, {}) }))
+                },
+                {
+                    path: 'jobs/saved',
+                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(SavedJobsPage, {}) }))
+                },
+                {
+                    path: 'applications/dashboard',
+                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(ApplicationDashboard, {}) }))
+                },
+                {
+                    path: 'applications/analytics',
+                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(ApplicationAnalytics, {}) }))
+                },
+                {
+                    path: 'jobs/analytics',
+                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(JobPosterAnalytics, {}) }))
+                },
+                ...( false ? 0 : []),
+            ],
+        },
+    ]);
+}
+
+;// ./src/index.tsx
+
+// Initialize console filter BEFORE anything else to catch Firebase errors
+// import './utilities/consoleFilter';
+
+
+
+
+
+
+
+// Global error handler to catch any runtime errors
+window.addEventListener('error', function (event) {
+    console.error('Global error caught:', {
+        message: event.message,
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno,
+        error: event.error
+    });
+    // Prevent the error from being logged multiple times
+    event.preventDefault();
+});
+// Global handler for all <img> errors (for blob URLs)
+document.addEventListener('error', function (e) {
+    const target = e.target;
+    if (target.tagName === 'IMG' &&
+        target.src.startsWith('blob:') &&
+        !target.src.endsWith('/default-avatar.svg')) {
+        // Prevent the error from being logged to console
+        e.preventDefault();
+        target.src = '/default-avatar.svg';
+    }
+}, true);
+// Global handler for unhandled promise rejections (for blob URL fetch errors)
+window.addEventListener('unhandledrejection', function (e) {
+    if (e.reason && typeof e.reason === 'string' && e.reason.includes('blob:') && e.reason.includes('net::ERR_FILE_NOT_FOUND')) {
+        // Prevent the error from being logged to console
+        e.preventDefault();
+        console.warn('Blob URL not found, this is expected when blobs are cleaned up');
+    }
+    else {
+        // Log other unhandled promise rejections
+        console.error('Unhandled promise rejection:', e.reason);
+        e.preventDefault();
+    }
+});
+// Create router instance once
+const router = createAppRouter();
+const RootWithProvider = () => ((0,jsx_runtime.jsx)(AuthContext/* AuthProvider */.O, { children: (0,jsx_runtime.jsx)(dist/* RouterProvider */.pg, { router: router }) }));
+const rootElement = document.getElementById('root');
+if (rootElement) {
+    const root = client.createRoot(rootElement);
+    root.render((0,jsx_runtime.jsx)(react.StrictMode, { children: (0,jsx_runtime.jsx)(RootWithProvider, {}) }));
+}
+
+
+/***/ }),
+
 /***/ 9487:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
@@ -6421,7 +6568,7 @@ window.addEventListener('unhandledrejection', (event) => {
 },
 /******/ __webpack_require__ => { // webpackRuntimeModules
 /******/ var __webpack_exec__ = (moduleId) => (__webpack_require__(__webpack_require__.s = moduleId))
-/******/ __webpack_require__.O(0, [1578,7070,753,7043,8384], () => (__webpack_exec__(6630)));
+/******/ __webpack_require__.O(0, [1578,7070,753,7043,8219], () => (__webpack_exec__(8322)));
 /******/ var __webpack_exports__ = __webpack_require__.O();
 /******/ }
 ]);
