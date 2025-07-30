@@ -445,7 +445,6 @@ const ProjectCard: React.FC<ProjectCardProps> = (props) => {
               <Calendar size={12} className="mr-1" />
               <span>
                 {startDate && (typeof startDate === 'string' ? startDate.trim() : startDate) ? formatDateWithFallback(startDate) : t('projectStatus.tbd')} - {endDate && (typeof endDate === 'string' ? endDate.trim() : endDate) ? formatDateWithFallback(endDate) : t('projectStatus.tbd')}
-                Debug: {startDate} | {endDate}
               </span>
             </div>
             {/* View Details Button */}

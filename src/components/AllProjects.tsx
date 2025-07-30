@@ -122,6 +122,8 @@ const AllProjects: React.FC = () => {
           startDateType: typeof data[0].startDate,
           endDateType: typeof data[0].endDate
         });
+        // NEW: Log the full project object
+        console.log('First full project object:', data[0]);
       }
 
       setProjects(data);
