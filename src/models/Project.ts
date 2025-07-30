@@ -20,6 +20,10 @@ export interface Project {
     createdAt?: any; // serverTimestamp
     genres?: string[];
     
+    // Crew management fields
+    crewMembers?: ProjectCrewMember[];
+    invitedCrewMembers?: ProjectInvitation[];
+    
     // New enhanced fields
     hierarchy: ProjectHierarchy;
     verificationStatus: 'pending' | 'verified' | 'rejected' | 'flagged';
@@ -110,4 +114,30 @@ export interface ProjectSchedule {
     equipment?: string[];
     notes?: string;
     status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+}
+
+export interface ProjectCrewMember {
+    userId: string;
+    userEmail: string;
+    displayName: string;
+    role: string;
+    department: string;
+    joinedAt: any;
+    status: 'active' | 'inactive' | 'pending';
+    permissions: string[];
+    canEdit: boolean;
+    canInvite: boolean;
+    canRemoveSelf: boolean;
+}
+
+export interface ProjectInvitation {
+    userId: string;
+    userEmail: string;
+    displayName: string;
+    role: string;
+    department: string;
+    invitedAt: any;
+    invitedBy: string;
+    status: 'pending' | 'accepted' | 'declined' | 'expired';
+    expiresAt: any;
 }

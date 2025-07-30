@@ -1,5 +1,5 @@
 "use strict";
-(self["webpackChunkwhosonset"] = self["webpackChunkwhosonset"] || []).push([[3778],{
+(self["webpackChunkwhosonset"] = self["webpackChunkwhosonset"] || []).push([[5932],{
 
 /***/ 633:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
@@ -62,7 +62,7 @@ const Plus = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"] 
 
 /***/ }),
 
-/***/ 3778:
+/***/ 5932:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 // ESM COMPAT FLAG
@@ -79,35 +79,16 @@ var jsx_runtime = __webpack_require__(4848);
 var react = __webpack_require__(6540);
 // EXTERNAL MODULE: ./node_modules/react-router/dist/index.js
 var dist = __webpack_require__(7767);
-// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/createLucideIcon.js + 3 modules
-var createLucideIcon = __webpack_require__(9407);
-;// ./node_modules/lucide-react/dist/esm/icons/user-x.js
-/**
- * @license lucide-react v0.525.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-
-
-
-const __iconNode = [
-  ["path", { d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2", key: "1yyitq" }],
-  ["circle", { cx: "9", cy: "7", r: "4", key: "nufk8" }],
-  ["line", { x1: "17", x2: "22", y1: "8", y2: "13", key: "3nzzx3" }],
-  ["line", { x1: "22", x2: "17", y1: "8", y2: "13", key: "1swrse" }]
-];
-const UserX = (0,createLucideIcon/* default */.A)("user-x", __iconNode);
-
-
-//# sourceMappingURL=user-x.js.map
-
+// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/user-x.js
+var user_x = __webpack_require__(6079);
 // EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/user-check.js
 var user_check = __webpack_require__(7623);
 // EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/user-plus.js
 var user_plus = __webpack_require__(1999);
 // EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/bell.js
 var bell = __webpack_require__(9436);
+// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/createLucideIcon.js + 3 modules
+var createLucideIcon = __webpack_require__(9407);
 ;// ./node_modules/lucide-react/dist/esm/icons/message-circle.js
 /**
  * @license lucide-react v0.525.0 - ISC
@@ -118,10 +99,10 @@ var bell = __webpack_require__(9436);
 
 
 
-const message_circle_iconNode = [
+const __iconNode = [
   ["path", { d: "M7.9 20A9 9 0 1 0 4 16.1L2 22Z", key: "vv11sd" }]
 ];
-const MessageCircle = (0,createLucideIcon/* default */.A)("message-circle", message_circle_iconNode);
+const MessageCircle = (0,createLucideIcon/* default */.A)("message-circle", __iconNode);
 
 
 //# sourceMappingURL=message-circle.js.map
@@ -527,9 +508,9 @@ const SocialPage = () => {
         }
         switch (activeTab) {
             case 'connections':
-                return ((0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h2", { className: "text-xl font-semibold mb-4", children: "Your Connections" }), connections.length > 0 ? ((0,jsx_runtime.jsx)("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4", children: connections.map((profile) => ((0,jsx_runtime.jsx)(UserCard, { profile: profile, action: (0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "outline", size: "sm", className: "whitespace-nowrap text-xs px-3 py-1.5", onClick: () => handleFollowChange((0,Profile/* getProfileId */.Lx)(profile), false), children: [(0,jsx_runtime.jsx)(UserX, { className: "h-3.5 w-3.5 mr-1.5" }), t('social.actions.unfollow')] }) }, (0,Profile/* getProfileId */.Lx)(profile)))) })) : ((0,jsx_runtime.jsx)("p", { className: "text-gray-500", children: "You don't have any connections yet." }))] }));
+                return ((0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h2", { className: "text-xl font-semibold mb-4", children: "Your Connections" }), connections.length > 0 ? ((0,jsx_runtime.jsx)("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4", children: connections.map((profile) => ((0,jsx_runtime.jsx)(UserCard, { profile: profile, action: (0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "outline", size: "sm", className: "whitespace-nowrap text-xs px-3 py-1.5", onClick: () => handleFollowChange((0,Profile/* getProfileId */.Lx)(profile), false), children: [(0,jsx_runtime.jsx)(user_x/* default */.A, { className: "h-3.5 w-3.5 mr-1.5" }), t('social.actions.unfollow')] }) }, (0,Profile/* getProfileId */.Lx)(profile)))) })) : ((0,jsx_runtime.jsx)("p", { className: "text-gray-500", children: "You don't have any connections yet." }))] }));
             case 'requests':
-                return ((0,jsx_runtime.jsxs)("div", { className: "space-y-4", children: [connectionRequests.length > 0 && ((0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h3", { className: "text-lg font-medium mb-2", children: t('social.headers.connectionRequests') }), (0,jsx_runtime.jsx)("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6", children: connectionRequests.map((profile) => ((0,jsx_runtime.jsx)(UserCard, { profile: profile, action: (0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "default", size: "sm", className: "whitespace-nowrap", onClick: () => handleFollowRequest((0,Profile/* getProfileId */.Lx)(profile), 'accept'), children: [(0,jsx_runtime.jsx)(user_check/* default */.A, { className: "h-4 w-4 mr-2" }), t('social.actions.accept')] }) }, (0,Profile/* getProfileId */.Lx)(profile)))) })] })), sentRequests.length > 0 && ((0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h3", { className: "text-lg font-medium mb-2", children: t('social.headers.sentRequests') }), (0,jsx_runtime.jsx)("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4", children: sentRequests.map((profile) => ((0,jsx_runtime.jsx)(UserCard, { profile: profile, action: (0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "outline", size: "sm", className: "whitespace-nowrap", onClick: () => handleFollowRequest((0,Profile/* getProfileId */.Lx)(profile), 'reject'), children: [(0,jsx_runtime.jsx)(UserX, { className: "h-4 w-4 mr-2" }), "Cancel"] }) }, (0,Profile/* getProfileId */.Lx)(profile)))) })] })), connectionRequests.length === 0 && sentRequests.length === 0 && ((0,jsx_runtime.jsx)("p", { className: "text-gray-500", children: t('social.empty.noRequests') }))] }));
+                return ((0,jsx_runtime.jsxs)("div", { className: "space-y-4", children: [connectionRequests.length > 0 && ((0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h3", { className: "text-lg font-medium mb-2", children: t('social.headers.connectionRequests') }), (0,jsx_runtime.jsx)("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6", children: connectionRequests.map((profile) => ((0,jsx_runtime.jsx)(UserCard, { profile: profile, action: (0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "default", size: "sm", className: "whitespace-nowrap", onClick: () => handleFollowRequest((0,Profile/* getProfileId */.Lx)(profile), 'accept'), children: [(0,jsx_runtime.jsx)(user_check/* default */.A, { className: "h-4 w-4 mr-2" }), t('social.actions.accept')] }) }, (0,Profile/* getProfileId */.Lx)(profile)))) })] })), sentRequests.length > 0 && ((0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h3", { className: "text-lg font-medium mb-2", children: t('social.headers.sentRequests') }), (0,jsx_runtime.jsx)("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4", children: sentRequests.map((profile) => ((0,jsx_runtime.jsx)(UserCard, { profile: profile, action: (0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "outline", size: "sm", className: "whitespace-nowrap", onClick: () => handleFollowRequest((0,Profile/* getProfileId */.Lx)(profile), 'reject'), children: [(0,jsx_runtime.jsx)(user_x/* default */.A, { className: "h-4 w-4 mr-2" }), "Cancel"] }) }, (0,Profile/* getProfileId */.Lx)(profile)))) })] })), connectionRequests.length === 0 && sentRequests.length === 0 && ((0,jsx_runtime.jsx)("p", { className: "text-gray-500", children: t('social.empty.noRequests') }))] }));
             case 'discover':
                 return ((0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h2", { className: "text-xl font-semibold mb-4", children: t('social.headers.discoverPeople') }), filteredProfiles.length > 0 ? ((0,jsx_runtime.jsx)("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4", children: filteredProfiles.map((profile) => ((0,jsx_runtime.jsx)(UserCard, { profile: profile, action: (0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "default", size: "sm", className: "whitespace-nowrap", onClick: () => handleFollowChange((0,Profile/* getProfileId */.Lx)(profile), true), children: [(0,jsx_runtime.jsx)(user_plus/* default */.A, { className: "h-4 w-4 mr-2" }), t('social.actions.follow')] }) }, (0,Profile/* getProfileId */.Lx)(profile)))) })) : ((0,jsx_runtime.jsx)("p", { className: "text-gray-500", children: "No suggestions found." }))] }));
             case 'notifications':
@@ -616,9 +597,40 @@ const SocialPage = () => {
     return ((0,jsx_runtime.jsxs)("div", { className: "container mx-auto px-4 py-6 max-w-7xl", children: [(0,jsx_runtime.jsxs)("div", { className: "flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8", children: [(0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h1", { className: "text-2xl font-bold text-gray-900", children: t('social.title') }), (0,jsx_runtime.jsx)("p", { className: "text-gray-500", children: t('social.subtitle') })] }), (0,jsx_runtime.jsxs)("div", { className: "flex items-center space-x-3", children: [(0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "outline", size: "sm", onClick: () => {
                                     // Navigate to full messaging environment
                                     navigate('/chat');
-                                }, className: "flex items-center space-x-2", children: [(0,jsx_runtime.jsx)(MessageCircle, { className: "h-4 w-4" }), (0,jsx_runtime.jsx)("span", { children: t('social.messages') })] }), (0,jsx_runtime.jsx)("div", { className: "w-full md:w-96", children: (0,jsx_runtime.jsxs)("div", { className: "relative", children: [(0,jsx_runtime.jsx)(search/* default */.A, { className: "absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" }), (0,jsx_runtime.jsx)(Input/* Input */.p, { type: "text", placeholder: t('social.searchPeople'), className: "pl-10 w-full", value: searchQuery, onChange: handleSearchChange })] }) })] })] }), (0,jsx_runtime.jsxs)("div", { className: "flex space-x-4 mb-6 overflow-x-auto pb-2", children: [(0,jsx_runtime.jsx)(TabButton, { active: activeTab === 'connections', onClick: () => setActiveTab('connections'), icon: user_check/* default */.A, children: t('social.tabs.connections') }), (0,jsx_runtime.jsx)(TabButton, { active: activeTab === 'requests', onClick: () => setActiveTab('requests'), count: connectionRequests.length, icon: UserX, children: t('social.tabs.requests') }), (0,jsx_runtime.jsx)(TabButton, { active: activeTab === 'discover', onClick: () => setActiveTab('discover'), icon: user_plus/* default */.A, children: t('social.tabs.discover') }), (0,jsx_runtime.jsx)(TabButton, { active: activeTab === 'notifications', onClick: () => setActiveTab('notifications'), icon: bell/* default */.A, children: t('social.tabs.notifications') })] }), (0,jsx_runtime.jsx)("div", { className: "space-y-6", children: renderTabContent() }), (0,jsx_runtime.jsx)(MessagePane, {}), (0,jsx_runtime.jsx)(StartConversationModal, {})] }));
+                                }, className: "flex items-center space-x-2", children: [(0,jsx_runtime.jsx)(MessageCircle, { className: "h-4 w-4" }), (0,jsx_runtime.jsx)("span", { children: t('social.messages') })] }), (0,jsx_runtime.jsx)("div", { className: "w-full md:w-96", children: (0,jsx_runtime.jsxs)("div", { className: "relative", children: [(0,jsx_runtime.jsx)(search/* default */.A, { className: "absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" }), (0,jsx_runtime.jsx)(Input/* Input */.p, { type: "text", placeholder: t('social.searchPeople'), className: "pl-10 w-full", value: searchQuery, onChange: handleSearchChange })] }) })] })] }), (0,jsx_runtime.jsxs)("div", { className: "flex space-x-4 mb-6 overflow-x-auto pb-2", children: [(0,jsx_runtime.jsx)(TabButton, { active: activeTab === 'connections', onClick: () => setActiveTab('connections'), icon: user_check/* default */.A, children: t('social.tabs.connections') }), (0,jsx_runtime.jsx)(TabButton, { active: activeTab === 'requests', onClick: () => setActiveTab('requests'), count: connectionRequests.length, icon: user_x/* default */.A, children: t('social.tabs.requests') }), (0,jsx_runtime.jsx)(TabButton, { active: activeTab === 'discover', onClick: () => setActiveTab('discover'), icon: user_plus/* default */.A, children: t('social.tabs.discover') }), (0,jsx_runtime.jsx)(TabButton, { active: activeTab === 'notifications', onClick: () => setActiveTab('notifications'), icon: bell/* default */.A, children: t('social.tabs.notifications') })] }), (0,jsx_runtime.jsx)("div", { className: "space-y-6", children: renderTabContent() }), (0,jsx_runtime.jsx)(MessagePane, {}), (0,jsx_runtime.jsx)(StartConversationModal, {})] }));
 };
 /* harmony default export */ const pages_SocialPage = (SocialPage);
+
+
+/***/ }),
+
+/***/ 6079:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   A: () => (/* binding */ UserX)
+/* harmony export */ });
+/* unused harmony export __iconNode */
+/* harmony import */ var _createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9407);
+/**
+ * @license lucide-react v0.525.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+
+
+
+const __iconNode = [
+  ["path", { d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2", key: "1yyitq" }],
+  ["circle", { cx: "9", cy: "7", r: "4", key: "nufk8" }],
+  ["line", { x1: "17", x2: "22", y1: "8", y2: "13", key: "3nzzx3" }],
+  ["line", { x1: "22", x2: "17", y1: "8", y2: "13", key: "1swrse" }]
+];
+const UserX = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .A)("user-x", __iconNode);
+
+
+//# sourceMappingURL=user-x.js.map
 
 
 /***/ }),
@@ -867,4 +879,4 @@ function isValidEmail(email) {
 /***/ })
 
 }]);
-//# sourceMappingURL=3778.chunk.js.map
+//# sourceMappingURL=5932.chunk.js.map

@@ -7,40 +7,12 @@ import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
+import { Project } from '../models/Project';
 
 import ProjectShowcase from '../components/ProjectShowcase';
+import ProjectCrewManagement from '../components/ProjectCrewManagement';
 // import LoadingSpinner from '../components/LoadingSpinner';
 import { imageErrorFallback } from '../utilities/imageErrorFallback';
-
-interface Project {
-id: string;
-projectName: string;
-country: string;
-productionCompany: string;
-status: string;
-logline: string;
-synopsis: string;
-startDate: string;
-endDate: string;
-productionLocations?: Array<{
-  country: string;
-  city?: string;
-}>;
-genre: string;
-director: string;
-producer: string;
-coverImageUrl: string;
-// Removed posterImageUrl
-projectWebsite: string;
-productionBudget: string;
-productionCompanyContact: string;
-isVerified: boolean;
-owner_uid: string;
-genres?: string[];
-ownerId?: string;
-}
-
-
 
 const LoadingSpinner: React.FC = () => <div className="text-white text-center mt-10 p-4">{useTranslation().t('common.loading')}</div>;
 
@@ -50,7 +22,7 @@ const ProjectDetail: React.FC = () => {
     const { currentUser } = useAuth();
     const navigate = useNavigate();
     
-    const [project, setProject] = useState<Project | null>(null);
+    const [project, setProject] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isEditing, setIsEditing] = useState(false);
@@ -62,61 +34,69 @@ const ProjectDetail: React.FC = () => {
     const coverImageBlobRef = useRef<string | null>(null);
     
 
+    const [formState, setFormState] = useState<any>({});
 
-    const [formState, setFormState] = useState<Partial<Project>>({});
+    const fetchProject = async () => {
+        setLoading(true);
+        setError(null);
+        setProject(null);
+        try {
+            if (projectId) {
+                const projectDocRef = doc(db, 'Projects', projectId);
+                const projectDocSnapshot = await getDoc(projectDocRef);
+
+                if (projectDocSnapshot.exists()) {
+                    const firestoreData = projectDocSnapshot.data();
+                    const projectWithDefaults = {
+                        id: projectDocSnapshot.id,
+                        projectName: firestoreData.projectName || '',
+                        country: firestoreData.country || '',
+                        productionCompany: firestoreData.productionCompany || '',
+                        status: firestoreData.status || 'pre_production',
+                        logline: firestoreData.logline || '',
+                        synopsis: firestoreData.synopsis || '',
+                        startDate: firestoreData.startDate || '',
+                        endDate: firestoreData.endDate || '',
+                        productionLocations: firestoreData.productionLocations || [],
+                        genre: firestoreData.genre || '',
+                        director: firestoreData.director || '',
+                        producer: firestoreData.producer || '',
+                        coverImageUrl: firestoreData.coverImageUrl || '',
+                        projectWebsite: firestoreData.projectWebsite || '',
+                        productionBudget: firestoreData.productionBudget || '',
+                        productionCompanyContact: firestoreData.productionCompanyContact || '',
+                        isVerified: typeof firestoreData.isVerified === 'boolean' ? firestoreData.isVerified : false,
+                        owner_uid: firestoreData.owner_uid || '',
+                        genres: firestoreData.genres || (firestoreData.genre ? [firestoreData.genre] : []),
+                        ownerId: firestoreData.ownerId || '',
+                        // Required Project model properties
+                        hierarchy: firestoreData.hierarchy || { level: 'junior', department: '', role: '', permissions: [], canEdit: false, canApprove: false, canInvite: false },
+                        verificationStatus: firestoreData.verificationStatus || 'pending',
+                        accessLevel: firestoreData.accessLevel || 'public',
+                        isExclusive: firestoreData.isExclusive || false,
+                        priority: firestoreData.priority || 'medium',
+                        lastUpdated: firestoreData.lastUpdated || null,
+                        updateCount: firestoreData.updateCount || 0
+                    };
+                    setProject(projectWithDefaults);
+                    setFormState(projectWithDefaults);
+                } else {
+                    setError('Project not found.');
+                }
+            } else {
+                setError('Project ID is missing.');
+            }
+        } catch (err: any) {
+            console.error("Error fetching project:", err);
+            setError(err.message || 'Failed to fetch project data.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+
 
     useEffect(() => {
-        const fetchProject = async () => {
-            setLoading(true);
-            setError(null);
-            setProject(null);
-            try {
-                if (projectId) {
-                    const projectDocRef = doc(db, 'Projects', projectId);
-                    const projectDocSnapshot = await getDoc(projectDocRef);
-
-                    if (projectDocSnapshot.exists()) {
-                        const firestoreData = projectDocSnapshot.data();
-                        const projectWithDefaults: Project = {
-                            id: projectDocSnapshot.id,
-                            projectName: firestoreData.projectName || '',
-                            country: firestoreData.country || '',
-                            productionCompany: firestoreData.productionCompany || '',
-                            status: firestoreData.status || 'Pre-Production',
-                            logline: firestoreData.logline || '',
-                            synopsis: firestoreData.synopsis || '',
-                            startDate: firestoreData.startDate || '',
-                            endDate: firestoreData.endDate || '',
-                            productionLocations: firestoreData.productionLocations || [],
-                            genre: firestoreData.genre || '',
-                            director: firestoreData.director || '',
-                            producer: firestoreData.producer || '',
-                            coverImageUrl: firestoreData.coverImageUrl || '',
-                            // Removed posterImageUrl from default assignment
-                            projectWebsite: firestoreData.projectWebsite || '',
-                            productionBudget: firestoreData.productionBudget || '',
-                            productionCompanyContact: firestoreData.productionCompanyContact || '',
-                            isVerified: typeof firestoreData.isVerified === 'boolean' ? firestoreData.isVerified : false,
-                            owner_uid: firestoreData.owner_uid || '',
-                            genres: firestoreData.genres || (firestoreData.genre ? [firestoreData.genre] : []),
-                            ownerId: firestoreData.ownerId || '',
-                        };
-                        setProject(projectWithDefaults);
-                        setFormState(projectWithDefaults);
-                    } else {
-                        setError('Project not found.');
-                    }
-                } else {
-                    setError('Project ID is missing.');
-                }
-            } catch (err: any) {
-                console.error("Error fetching project:", err);
-                setError(err.message || 'Failed to fetch project data.');
-            } finally {
-                setLoading(false);
-            }
-        };
-
         if (projectId) {
             fetchProject();
         } else {
@@ -155,7 +135,7 @@ const ProjectDetail: React.FC = () => {
             projectName: project?.projectName || '',
             country: project?.country || '',
             productionCompany: project?.productionCompany || '',
-            status: project?.status || 'Pre-Production',
+            status: project?.status || 'pre_production',
             logline: project?.logline || '',
             synopsis: project?.synopsis || '',
             startDate: project?.startDate || '',
@@ -481,6 +461,17 @@ const ProjectDetail: React.FC = () => {
                             // If the edit button is handled *only* below, this prop might not be needed by ProjectShowcase.
                             onEditClick={handleEditClick}
                         />
+
+                        {/* Crew Management Section */}
+                        <div className="mt-8">
+                            <ProjectCrewManagement 
+                                project={project}
+                                onUpdate={() => {
+                                    // Refresh project data when crew is updated
+                                    fetchProject();
+                                }}
+                            />
+                        </div>
 
                         {/* MODIFICATION 2: Conditional Edit/Suggest Button */}
                         <div className="mt-10 text-center"> {/* Ensures buttons are centered */}
