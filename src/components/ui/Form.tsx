@@ -267,7 +267,11 @@ const FormSelect = forwardRef<HTMLSelectElement, FormSelectProps>(({
         <select
           ref={ref}
           id={selectId}
-          className={clsx(selectClasses, 'w-full bg-white text-gray-900 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all')}
+          className="w-full bg-white text-gray-900 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all !pr-3"
+          style={{
+            paddingRight: '0.75rem !important',
+            backgroundImage: 'none !important'
+          }}
           onChange={handleChange}
           {...props}
         >

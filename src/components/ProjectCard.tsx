@@ -180,7 +180,7 @@ const ProjectCard: React.FC<ProjectCardProps> = (props) => {
       return;
     }
 
-    // Set a timeout for image loading (10 seconds)
+    // Set a timeout for image loading (5 seconds)
     const timeoutId = setTimeout(() => {
       console.warn(`[ProjectCard] Image load timed out: ${url}`);
       setCoverImageUrl(getPlaceholderImage());
@@ -190,7 +190,7 @@ const ProjectCard: React.FC<ProjectCardProps> = (props) => {
         console.log(`[ProjectCard] Retrying image load (attempt ${retryCount + 1}/${maxRetries})`);
         setRetryCount(prev => prev + 1);
       }
-    }, 10000);
+    }, 5000);
 
     // Create a new image object to test loading
     const testImage = new Image();
@@ -421,7 +421,8 @@ const ProjectCard: React.FC<ProjectCardProps> = (props) => {
             <div className="flex items-center text-xs text-gray-500">
               <Calendar size={12} className="mr-1" />
               <span>
-                {startDate ? formatDateWithFallback(startDate) : 'TBD'} - {endDate ? formatDateWithFallback(endDate) : 'TBD'}
+                {startDate ? formatDateWithFallback(startDate) : t('projectStatus.tbd')} - {endDate ? formatDateWithFallback(endDate) : t('projectStatus.tbd')}
+                Debug: startDate={startDate}, endDate={endDate}
               </span>
             </div>
             {/* View Details Button */}
