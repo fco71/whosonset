@@ -402,7 +402,8 @@ const ProjectDetail: React.FC = () => {
                     </div>
                     <div>
                         <h3 className="text-xl font-semibold mb-4 border-b pb-1">{t('projectForm.creativeTeam')}</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div><label htmlFor="genre" className="block text-sm font-medium">{t('projectForm.genre')}</label><input type="text" id="genre" name="genre" value={formState.genre || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" placeholder="e.g., Drama, Comedy, Action" /></div>
                             <div><label htmlFor="director" className="block text-sm font-medium">{t('projectForm.director')}</label><input type="text" id="director" name="director" value={formState.director || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" /></div>
                             <div><label htmlFor="producer" className="block text-sm font-medium">{t('projectForm.producer')}</label><input type="text" id="producer" name="producer" value={formState.producer || ''} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" /></div>
                         </div>

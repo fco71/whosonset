@@ -6311,7 +6311,7 @@ const JobPosterAnalytics = react.lazy(() => __webpack_require__.e(/* import() */
 const ProjectsPage = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(1928), __webpack_require__.e(1263)]).then(__webpack_require__.bind(__webpack_require__, 1263)));
 const ProjectDetailPage = react.lazy(() => __webpack_require__.e(/* import() */ 4649).then(__webpack_require__.bind(__webpack_require__, 4649)));
 const ProjectDashboard = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(6372), __webpack_require__.e(2608), __webpack_require__.e(6060), __webpack_require__.e(4381)]).then(__webpack_require__.bind(__webpack_require__, 4381)));
-const AddProject = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(6354), __webpack_require__.e(898), __webpack_require__.e(7006)]).then(__webpack_require__.bind(__webpack_require__, 7006)));
+const AddProject = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(6354), __webpack_require__.e(898), __webpack_require__.e(1530)]).then(__webpack_require__.bind(__webpack_require__, 1530)));
 // Import the main App component that will handle the layout
 
 function createAppRouter() {

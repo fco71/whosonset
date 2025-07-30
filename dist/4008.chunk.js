@@ -125,7 +125,7 @@ class ProjectCrewService {
             }
             const newCrewMember = {
                 ...crewMember,
-                joinedAt: (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_1__/* .serverTimestamp */ .O5)()
+                joinedAt: firebase_firestore__WEBPACK_IMPORTED_MODULE_1__/* .Timestamp */ .Dc.now()
             };
             console.log('[ProjectCrewService] New crew member to add:', newCrewMember);
             await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_1__/* .updateDoc */ .mZ)(projectRef, {

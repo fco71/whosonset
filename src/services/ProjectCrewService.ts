@@ -53,7 +53,7 @@ export class ProjectCrewService {
 
       const newCrewMember: ProjectCrewMember = {
         ...crewMember,
-        joinedAt: serverTimestamp()
+        joinedAt: Timestamp.now()
       };
 
       console.log('[ProjectCrewService] New crew member to add:', newCrewMember);

@@ -10,34 +10,33 @@ const getCroppedImg = async (imageSrc: string, crop: PixelCrop): Promise<Blob> =
       console.log('[getCroppedImg] Image source:', imageSrc);
       console.log('[getCroppedImg] Crop dimensions:', crop);
       
-      const image = new window.Image();
-      // Remove crossOrigin to prevent black images
-      // image.crossOrigin = 'anonymous';
-      image.src = imageSrc;
+      const image = new Image();
       
+      // Set up image loading
       image.onload = () => {
         try {
-          console.log('[getCroppedImg] Image loaded, dimensions:', image.width, 'x', image.height);
+          console.log('[getCroppedImg] Image loaded successfully');
+          console.log('[getCroppedImg] Original image dimensions:', image.width, 'x', image.height);
           
           const canvas = document.createElement('canvas');
-          canvas.width = crop.width;
-          canvas.height = crop.height;
-          
-          console.log('[getCroppedImg] Canvas created with dimensions:', canvas.width, 'x', canvas.height);
-          
           const ctx = canvas.getContext('2d');
+          
           if (!ctx) {
             console.error('[getCroppedImg] No 2d context available');
             return reject(new Error('No 2d context'));
           }
           
-          // Clear the canvas first
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          // Set canvas dimensions to crop size
+          canvas.width = crop.width;
+          canvas.height = crop.height;
           
-          // Set composite operation to ensure proper drawing
-          ctx.globalCompositeOperation = 'source-over';
+          console.log('[getCroppedImg] Canvas created with dimensions:', canvas.width, 'x', canvas.height);
           
-          // Ensure we're drawing with proper dimensions
+          // Clear canvas and set background to white (in case of transparency issues)
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          
+          // Draw the cropped portion of the image
           ctx.drawImage(
             image,
             crop.x,
@@ -52,26 +51,17 @@ const getCroppedImg = async (imageSrc: string, crop: PixelCrop): Promise<Blob> =
           
           console.log('[getCroppedImg] Image drawn to canvas');
           
-          // Verify canvas has content
-          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          const hasContent = imageData.data.some(pixel => pixel !== 0);
-          
-          if (!hasContent) {
-            console.error('[getCroppedImg] Canvas appears to be empty (all pixels are 0)');
-            return reject(new Error('Canvas is empty - no image content detected'));
-          }
-          
-          console.log('[getCroppedImg] Canvas has content, creating blob...');
-          
+          // Convert to blob
           canvas.toBlob((blob) => {
             if (blob) {
               console.log('[getCroppedImg] Cropped image created successfully:', blob.size, 'bytes');
               resolve(blob);
             } else {
-              console.error('[getCroppedImg] Canvas is empty');
-              reject(new Error('Canvas is empty'));
+              console.error('[getCroppedImg] Canvas toBlob returned null');
+              reject(new Error('Failed to create blob from canvas'));
             }
-          }, 'image/jpeg', 0.9); // Add quality parameter
+          }, 'image/jpeg', 0.9);
+          
         } catch (err) {
           console.error('[getCroppedImg] Error in canvas drawing:', err);
           reject(new Error('Failed to crop image: ' + (err instanceof Error ? err.message : String(err))));
@@ -80,8 +70,12 @@ const getCroppedImg = async (imageSrc: string, crop: PixelCrop): Promise<Blob> =
       
       image.onerror = (err) => {
         console.error('[getCroppedImg] Error loading image for cropping:', err);
-        reject(new Error('Failed to load image for cropping: ' + (err instanceof Error ? err.message : String(err))));
+        reject(new Error('Failed to load image for cropping'));
       };
+      
+      // Set the image source AFTER setting up the event handlers
+      image.src = imageSrc;
+      
     } catch (err) {
       console.error('[getCroppedImg] Unexpected error in getCroppedImg:', err);
       reject(new Error('Unexpected error in getCroppedImg: ' + (err instanceof Error ? err.message : String(err))));

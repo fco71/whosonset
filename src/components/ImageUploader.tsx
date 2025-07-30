@@ -186,17 +186,21 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
           console.log('[ImageUploader] Converted blob:', croppedBlob.size, 'bytes');
         }
       } else {
-        // TEMPORARILY: Use original file instead of cropping to fix black image issue
-        console.log('[ImageUploader] Crop selection detected, but using original file to avoid black image');
-        const fileInput = fileInputRef.current;
-        if (fileInput && fileInput.files && fileInput.files[0]) {
-          croppedBlob = fileInput.files[0];
-          console.log('[ImageUploader] Using original file instead of crop:', croppedBlob.size, 'bytes');
-        } else {
-          // Fallback: convert blob URL back to blob
-          const response = await fetch(imageSrc);
-          croppedBlob = await response.blob();
-          console.log('[ImageUploader] Using converted blob instead of crop:', croppedBlob.size, 'bytes');
+        // Only crop if user actually selected an area
+        console.log('[ImageUploader] Cropping image with selection:', croppedAreaPixels);
+        try {
+          croppedBlob = await getCroppedImg(imageSrc, croppedAreaPixels);
+          console.log('[ImageUploader] Cropped blob created:', croppedBlob.size, 'bytes');
+        } catch (cropError) {
+          console.error('[ImageUploader] Cropping failed, using original file:', cropError);
+          // Fallback to original file if cropping fails
+          const fileInput = fileInputRef.current;
+          if (fileInput && fileInput.files && fileInput.files[0]) {
+            croppedBlob = fileInput.files[0];
+            console.log('[ImageUploader] Using original file as fallback:', croppedBlob.size, 'bytes');
+          } else {
+            throw cropError;
+          }
         }
       }
       

@@ -120,8 +120,8 @@ const ProjectCrewManagement: React.FC<ProjectCrewManagementProps> = ({ project, 
   };
 
   const handleInviteCrewMember = async () => {
-    if (!selectedUser || !inviteRole || !inviteDepartment) {
-      setError(t('crewManagement.fillAllFields'));
+    if (!selectedUser) {
+      setError(t('crewManagement.selectUser'));
       return;
     }
 
@@ -130,16 +130,16 @@ const ProjectCrewManagement: React.FC<ProjectCrewManagementProps> = ({ project, 
       console.log('[CrewManagement] Starting to add crew member:', selectedUser.name);
       console.log('[CrewManagement] Project ID:', project.id);
       console.log('[CrewManagement] User ID:', selectedUser.id);
-      console.log('[CrewManagement] Role:', inviteRole);
-      console.log('[CrewManagement] Department:', inviteDepartment);
+      console.log('[CrewManagement] Role:', inviteRole || 'Crew Member');
+      console.log('[CrewManagement] Department:', inviteDepartment || 'General');
       
       // For now, allow adding any crew member without authentication requirements
       await ProjectCrewService.addCrewMember(project.id, {
         userId: selectedUser.id,
         userEmail: selectedUser.email,
         displayName: selectedUser.name,
-        role: inviteRole,
-        department: inviteDepartment,
+        role: inviteRole || 'Crew Member',
+        department: inviteDepartment || 'General',
         status: 'active',
         permissions: [],
         canEdit: false,
@@ -196,6 +196,13 @@ const ProjectCrewManagement: React.FC<ProjectCrewManagementProps> = ({ project, 
   const canInvite = isOwner || currentUserCrewMember?.canInvite;
   const canRemove = isOwner || (currentUserCrewMember?.canEdit && currentUserCrewMember?.userId === currentUser?.uid);
 
+  console.log('[CrewManagement] Debug info:', {
+    isOwner,
+    currentUserCrewMember,
+    canInvite,
+    currentUser: currentUser?.uid
+  });
+
   if (loading) {
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-6">
@@ -225,6 +232,7 @@ const ProjectCrewManagement: React.FC<ProjectCrewManagementProps> = ({ project, 
         <button
           onClick={() => setShowInviteForm(true)}
           className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          style={{ display: canInvite ? 'flex' : 'none' }}
         >
           <Plus className="w-4 h-4" />
           Add Crew Member
@@ -358,7 +366,7 @@ const ProjectCrewManagement: React.FC<ProjectCrewManagementProps> = ({ project, 
           <div className="flex gap-3 mt-4">
             <button
               onClick={handleInviteCrewMember}
-              disabled={!selectedUser || !inviteRole || !inviteDepartment}
+              disabled={!selectedUser}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Add Crew Member
