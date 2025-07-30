@@ -277,7 +277,11 @@ const ProjectCrewManagement = ({ project, onUpdate }) => {
         }
         try {
             setError(null);
-            console.log('[CrewManagement] Inviting crew member:', selectedUser.name);
+            console.log('[CrewManagement] Starting to add crew member:', selectedUser.name);
+            console.log('[CrewManagement] Project ID:', project.id);
+            console.log('[CrewManagement] User ID:', selectedUser.id);
+            console.log('[CrewManagement] Role:', inviteRole);
+            console.log('[CrewManagement] Department:', inviteDepartment);
             // For now, allow adding any crew member without authentication requirements
             await ProjectCrewService/* ProjectCrewService */.g.addCrewMember(project.id, {
                 userId: selectedUser.id,
@@ -303,6 +307,11 @@ const ProjectCrewManagement = ({ project, onUpdate }) => {
         }
         catch (err) {
             console.error('[CrewManagement] Error adding crew member:', err);
+            console.error('[CrewManagement] Error details:', {
+                message: err.message,
+                code: err.code,
+                stack: err.stack
+            });
             setError(err.message || t('crewManagement.failedToInvite'));
         }
     };
@@ -830,30 +839,37 @@ class ProjectCrewService {
      */
     static async addCrewMember(projectId, crewMember) {
         try {
+            console.log('[ProjectCrewService] Adding crew member to project:', projectId);
+            console.log('[ProjectCrewService] Crew member data:', crewMember);
             const projectRef = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_1__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_0__.db, this.PROJECTS_COLLECTION, projectId);
             const projectDoc = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_1__.getDoc)(projectRef);
             if (!projectDoc.exists()) {
+                console.error('[ProjectCrewService] Project not found:', projectId);
                 throw new Error('Project not found');
             }
             const projectData = projectDoc.data();
             const existingCrew = projectData.crewMembers || [];
+            console.log('[ProjectCrewService] Existing crew members:', existingCrew.length);
             // Check if user is already a crew member
             const isAlreadyCrewMember = existingCrew.some(member => member.userId === crewMember.userId);
             if (isAlreadyCrewMember) {
+                console.error('[ProjectCrewService] User is already a crew member:', crewMember.userId);
                 throw new Error('User is already a crew member of this project');
             }
             const newCrewMember = {
                 ...crewMember,
                 joinedAt: (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_1__/* .serverTimestamp */ .O5)()
             };
+            console.log('[ProjectCrewService] New crew member to add:', newCrewMember);
             await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_1__/* .updateDoc */ .mZ)(projectRef, {
                 crewMembers: (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_1__/* .arrayUnion */ .hq)(newCrewMember),
                 lastUpdated: (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_1__/* .serverTimestamp */ .O5)(),
                 updateCount: (projectData.updateCount || 0) + 1
             });
+            console.log('[ProjectCrewService] Crew member added successfully');
         }
         catch (error) {
-            console.error('Error adding crew member:', error);
+            console.error('[ProjectCrewService] Error adding crew member:', error);
             throw error;
         }
     }

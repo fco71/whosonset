@@ -1,5 +1,5 @@
 "use strict";
-(self["webpackChunkwhosonset"] = self["webpackChunkwhosonset"] || []).push([[1530],{
+(self["webpackChunkwhosonset"] = self["webpackChunkwhosonset"] || []).push([[7006],{
 
 /***/ 676:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
@@ -18,7 +18,7 @@ function imageErrorFallback(e, fallback = '/default-avatar.svg') {
 
 /***/ }),
 
-/***/ 1530:
+/***/ 7006:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 // ESM COMPAT FLAG
@@ -47,79 +47,9 @@ var esm_index_esm = __webpack_require__(2539);
 var ReactCrop = __webpack_require__(3972);
 // EXTERNAL MODULE: ./node_modules/react-image-crop/dist/index.js
 var react_image_crop_dist = __webpack_require__(2869);
-;// ./src/components/getCroppedImg.ts
-// getCroppedImg.ts
-// Helper for react-image-crop to crop an image and return a Blob
-const getCroppedImg = async (imageSrc, crop) => {
-    return new Promise((resolve, reject) => {
-        try {
-            console.log('[getCroppedImg] Starting crop process');
-            console.log('[getCroppedImg] Image source:', imageSrc);
-            console.log('[getCroppedImg] Crop dimensions:', crop);
-            const image = new window.Image();
-            // Remove crossOrigin to prevent black images
-            // image.crossOrigin = 'anonymous';
-            image.src = imageSrc;
-            image.onload = () => {
-                try {
-                    console.log('[getCroppedImg] Image loaded, dimensions:', image.width, 'x', image.height);
-                    const canvas = document.createElement('canvas');
-                    canvas.width = crop.width;
-                    canvas.height = crop.height;
-                    console.log('[getCroppedImg] Canvas created with dimensions:', canvas.width, 'x', canvas.height);
-                    const ctx = canvas.getContext('2d');
-                    if (!ctx) {
-                        console.error('[getCroppedImg] No 2d context available');
-                        return reject(new Error('No 2d context'));
-                    }
-                    // Clear the canvas first
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    // Set composite operation to ensure proper drawing
-                    ctx.globalCompositeOperation = 'source-over';
-                    // Ensure we're drawing with proper dimensions
-                    ctx.drawImage(image, crop.x, crop.y, crop.width, crop.height, 0, 0, crop.width, crop.height);
-                    console.log('[getCroppedImg] Image drawn to canvas');
-                    // Verify canvas has content
-                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    const hasContent = imageData.data.some(pixel => pixel !== 0);
-                    if (!hasContent) {
-                        console.error('[getCroppedImg] Canvas appears to be empty (all pixels are 0)');
-                        return reject(new Error('Canvas is empty - no image content detected'));
-                    }
-                    console.log('[getCroppedImg] Canvas has content, creating blob...');
-                    canvas.toBlob((blob) => {
-                        if (blob) {
-                            console.log('[getCroppedImg] Cropped image created successfully:', blob.size, 'bytes');
-                            resolve(blob);
-                        }
-                        else {
-                            console.error('[getCroppedImg] Canvas is empty');
-                            reject(new Error('Canvas is empty'));
-                        }
-                    }, 'image/jpeg', 0.9); // Add quality parameter
-                }
-                catch (err) {
-                    console.error('[getCroppedImg] Error in canvas drawing:', err);
-                    reject(new Error('Failed to crop image: ' + (err instanceof Error ? err.message : String(err))));
-                }
-            };
-            image.onerror = (err) => {
-                console.error('[getCroppedImg] Error loading image for cropping:', err);
-                reject(new Error('Failed to load image for cropping: ' + (err instanceof Error ? err.message : String(err))));
-            };
-        }
-        catch (err) {
-            console.error('[getCroppedImg] Unexpected error in getCroppedImg:', err);
-            reject(new Error('Unexpected error in getCroppedImg: ' + (err instanceof Error ? err.message : String(err))));
-        }
-    });
-};
-/* harmony default export */ const components_getCroppedImg = (getCroppedImg);
-
 // EXTERNAL MODULE: ./src/utilities/imageErrorFallback.ts
 var imageErrorFallback = __webpack_require__(676);
 ;// ./src/components/ImageUploader.tsx
-
 
 
 
@@ -260,23 +190,18 @@ const ImageUploader = ({ onImageUploaded, onCropStart, onCropCancel, aspectRatio
                 }
             }
             else {
-                // Only crop if user actually selected an area
-                console.log('[ImageUploader] Cropping image with selection:', croppedAreaPixels);
-                try {
-                    croppedBlob = await components_getCroppedImg(imageSrc, croppedAreaPixels);
-                    console.log('[ImageUploader] Cropped blob created:', croppedBlob.size, 'bytes');
+                // TEMPORARILY: Use original file instead of cropping to fix black image issue
+                console.log('[ImageUploader] Crop selection detected, but using original file to avoid black image');
+                const fileInput = fileInputRef.current;
+                if (fileInput && fileInput.files && fileInput.files[0]) {
+                    croppedBlob = fileInput.files[0];
+                    console.log('[ImageUploader] Using original file instead of crop:', croppedBlob.size, 'bytes');
                 }
-                catch (cropError) {
-                    console.error('[ImageUploader] Cropping failed, using original file:', cropError);
-                    // Fallback to original file if cropping fails
-                    const fileInput = fileInputRef.current;
-                    if (fileInput && fileInput.files && fileInput.files[0]) {
-                        croppedBlob = fileInput.files[0];
-                        console.log('[ImageUploader] Using original file as fallback:', croppedBlob.size, 'bytes');
-                    }
-                    else {
-                        throw cropError;
-                    }
+                else {
+                    // Fallback: convert blob URL back to blob
+                    const response = await fetch(imageSrc);
+                    croppedBlob = await response.blob();
+                    console.log('[ImageUploader] Using converted blob instead of crop:', croppedBlob.size, 'bytes');
                 }
             }
             // Generate unique filename based on project name and timestamp
@@ -647,4 +572,4 @@ const AddProject = () => {
 /***/ })
 
 }]);
-//# sourceMappingURL=1530.chunk.js.map
+//# sourceMappingURL=7006.chunk.js.map

@@ -127,7 +127,11 @@ const ProjectCrewManagement: React.FC<ProjectCrewManagementProps> = ({ project, 
 
     try {
       setError(null);
-      console.log('[CrewManagement] Inviting crew member:', selectedUser.name);
+      console.log('[CrewManagement] Starting to add crew member:', selectedUser.name);
+      console.log('[CrewManagement] Project ID:', project.id);
+      console.log('[CrewManagement] User ID:', selectedUser.id);
+      console.log('[CrewManagement] Role:', inviteRole);
+      console.log('[CrewManagement] Department:', inviteDepartment);
       
       // For now, allow adding any crew member without authentication requirements
       await ProjectCrewService.addCrewMember(project.id, {
@@ -154,6 +158,11 @@ const ProjectCrewManagement: React.FC<ProjectCrewManagementProps> = ({ project, 
       loadCrewData();
     } catch (err: any) {
       console.error('[CrewManagement] Error adding crew member:', err);
+      console.error('[CrewManagement] Error details:', {
+        message: err.message,
+        code: err.code,
+        stack: err.stack
+      });
       setError(err.message || t('crewManagement.failedToInvite'));
     }
   };

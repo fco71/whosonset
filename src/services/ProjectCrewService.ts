@@ -25,15 +25,21 @@ export class ProjectCrewService {
     crewMember: Omit<ProjectCrewMember, 'joinedAt'>
   ): Promise<void> {
     try {
+      console.log('[ProjectCrewService] Adding crew member to project:', projectId);
+      console.log('[ProjectCrewService] Crew member data:', crewMember);
+      
       const projectRef = doc(db, this.PROJECTS_COLLECTION, projectId);
       const projectDoc = await getDoc(projectRef);
       
       if (!projectDoc.exists()) {
+        console.error('[ProjectCrewService] Project not found:', projectId);
         throw new Error('Project not found');
       }
 
       const projectData = projectDoc.data() as Project;
       const existingCrew = projectData.crewMembers || [];
+      
+      console.log('[ProjectCrewService] Existing crew members:', existingCrew.length);
       
       // Check if user is already a crew member
       const isAlreadyCrewMember = existingCrew.some(
@@ -41,6 +47,7 @@ export class ProjectCrewService {
       );
       
       if (isAlreadyCrewMember) {
+        console.error('[ProjectCrewService] User is already a crew member:', crewMember.userId);
         throw new Error('User is already a crew member of this project');
       }
 
@@ -49,13 +56,17 @@ export class ProjectCrewService {
         joinedAt: serverTimestamp()
       };
 
+      console.log('[ProjectCrewService] New crew member to add:', newCrewMember);
+
       await updateDoc(projectRef, {
         crewMembers: arrayUnion(newCrewMember),
         lastUpdated: serverTimestamp(),
         updateCount: (projectData.updateCount || 0) + 1
       });
+      
+      console.log('[ProjectCrewService] Crew member added successfully');
     } catch (error) {
-      console.error('Error adding crew member:', error);
+      console.error('[ProjectCrewService] Error adding crew member:', error);
       throw error;
     }
   }
