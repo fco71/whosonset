@@ -44,15 +44,14 @@ document.addEventListener(
 
 // Global handler for unhandled promise rejections (for blob URL fetch errors)
 window.addEventListener('unhandledrejection', function (e) {
-  if (e.reason && typeof e.reason === 'string' && e.reason.includes('blob:') && e.reason.includes('net::ERR_FILE_NOT_FOUND')) {
-    // Prevent the error from being logged to console
-    e.preventDefault();
-    console.warn('Blob URL not found, this is expected when blobs are cleaned up');
+  // Log the entire event for debugging
+  console.error('Unhandled promise rejection event:', e);
+  if (e.reason) {
+    console.error('Unhandled promise rejection reason:', e.reason);
   } else {
-    // Log other unhandled promise rejections
-    console.error('Unhandled promise rejection:', e.reason);
-    e.preventDefault();
+    console.error('Unhandled promise rejection with unknown reason:', e);
   }
+  e.preventDefault();
 });
 
 // Create router instance once
