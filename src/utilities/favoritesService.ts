@@ -7,7 +7,9 @@ import {
   query, 
   where, 
   orderBy,
-  DocumentData 
+  DocumentData,
+  getDoc,
+  limit
 } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 
@@ -36,6 +38,8 @@ export class FavoritesService {
       throw new Error('User must be authenticated to add favorites');
     }
 
+    console.log('[FavoritesService] Adding to favorites:', { projectId, userId: user.uid });
+
     const favoriteData: FavoriteProject = {
       id: `${user.uid}_${projectId}`,
       projectId,
@@ -49,7 +53,9 @@ export class FavoritesService {
       } : undefined
     };
 
+    console.log('[FavoritesService] Favorite data:', favoriteData);
     await setDoc(doc(db, this.COLLECTION_NAME, favoriteData.id), favoriteData);
+    console.log('[FavoritesService] Successfully added to favorites');
   }
 
   /**
@@ -62,8 +68,10 @@ export class FavoritesService {
     }
 
     try {
+      console.log('[FavoritesService] Removing from favorites:', { projectId, userId: user.uid });
       const favoriteId = `${user.uid}_${projectId}`;
       await deleteDoc(doc(db, this.COLLECTION_NAME, favoriteId));
+      console.log('[FavoritesService] Successfully removed from favorites');
     } catch (error) {
       console.error('Error removing from favorites:', error);
       throw error;
@@ -77,13 +85,14 @@ export class FavoritesService {
     const user = auth.currentUser;
     if (!user) return false;
 
-    const favoriteId = `${user.uid}_${projectId}`;
-    const favoriteDoc = await getDocs(query(
-      collection(db, this.COLLECTION_NAME),
-      where('id', '==', favoriteId)
-    ));
-
-    return !favoriteDoc.empty;
+    try {
+      const favoriteId = `${user.uid}_${projectId}`;
+      const favoriteDoc = await getDoc(doc(db, this.COLLECTION_NAME, favoriteId));
+      return favoriteDoc.exists();
+    } catch (error) {
+      console.error('Error checking if project is favorite:', error);
+      return false;
+    }
   }
 
   /**
@@ -91,9 +100,26 @@ export class FavoritesService {
    */
   static async getFavorites(): Promise<FavoriteProject[]> {
     const user = auth.currentUser;
-    if (!user) return [];
+    console.log('[FavoritesService] Getting favorites for user:', user?.uid);
+    
+    if (!user) {
+      console.log('[FavoritesService] No user, returning empty array');
+      return [];
+    }
 
     try {
+      console.log('[FavoritesService] Querying favorites collection...');
+      
+      // Test if we can access the collection at all
+      try {
+        const testQuery = query(collection(db, this.COLLECTION_NAME), limit(1));
+        const testSnapshot = await getDocs(testQuery);
+        console.log('[FavoritesService] Can access favorites collection, test query returned:', testSnapshot.docs.length, 'documents');
+      } catch (testError) {
+        console.error('[FavoritesService] Cannot access favorites collection:', testError);
+        return [];
+      }
+      
       const favoritesQuery = query(
         collection(db, this.COLLECTION_NAME),
         where('userId', '==', user.uid),
@@ -102,15 +128,20 @@ export class FavoritesService {
       );
 
       const snapshot = await getDocs(favoritesQuery);
-      return snapshot.docs.map(doc => {
+      console.log('[FavoritesService] Found favorites documents:', snapshot.docs.length);
+      
+      const favorites = snapshot.docs.map(doc => {
         const data = doc.data();
         return {
           ...data,
           addedAt: data.addedAt?.toDate ? data.addedAt.toDate() : data.addedAt
         } as FavoriteProject;
       });
+      
+      console.log('[FavoritesService] Processed favorites:', favorites.map(f => ({ id: f.id, projectId: f.projectId })));
+      return favorites;
     } catch (error) {
-      console.error('Error getting favorites:', error);
+      console.error('[FavoritesService] Error getting favorites:', error);
       return [];
     }
   }
@@ -119,8 +150,24 @@ export class FavoritesService {
    * Get favorite project IDs for a user
    */
   static async getFavoriteProjectIds(): Promise<string[]> {
-    const favorites = await this.getFavorites();
-    return favorites.map(fav => fav.projectId);
+    console.log('[FavoritesService] Getting favorite project IDs...');
+    const user = auth.currentUser;
+    console.log('[FavoritesService] Current user:', user?.uid);
+    
+    if (!user) {
+      console.log('[FavoritesService] No user authenticated, returning empty array');
+      return [];
+    }
+
+    try {
+      const favorites = await this.getFavorites();
+      const favoriteIds = favorites.map(fav => fav.projectId);
+      console.log('[FavoritesService] Found favorite IDs:', favoriteIds);
+      return favoriteIds;
+    } catch (error) {
+      console.error('[FavoritesService] Error getting favorite project IDs:', error);
+      return [];
+    }
   }
 
   /**

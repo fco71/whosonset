@@ -107,11 +107,37 @@ const ProjectCard: React.FC<ProjectCardProps> = (props) => {
     navigate(`/projects/${id}`);
   };
 
+  // Debug onBookmark prop
+  useEffect(() => {
+    console.log('[ProjectCard] ProjectCard rendered:', { 
+      id, 
+      isBookmarked, 
+      onBookmark: !!onBookmark,
+      projectName,
+      hasBookmarkButton: !!onBookmark
+    });
+  }, [id, isBookmarked, onBookmark, projectName]);
+
   // Handle bookmark click
   const handleBookmarkClick = (e: React.MouseEvent) => {
+    console.log('[ProjectCard] Bookmark clicked:', { 
+      id, 
+      isBookmarked, 
+      onBookmark: !!onBookmark,
+      event: e,
+      target: e.target,
+      currentTarget: e.currentTarget,
+      willToggleTo: !isBookmarked
+    });
     e.stopPropagation();
     e.preventDefault(); // Prevent navigation if inside a link
-    onBookmark?.(id, !isBookmarked);
+    
+    if (onBookmark) {
+      console.log('[ProjectCard] Calling onBookmark with:', { id, isBookmarked: !isBookmarked });
+      onBookmark(id, !isBookmarked);
+    } else {
+      console.log('[ProjectCard] No onBookmark handler provided');
+    }
   };
 
   // Handle image URL changes and validate
@@ -336,13 +362,19 @@ const ProjectCard: React.FC<ProjectCardProps> = (props) => {
         {onBookmark && (
           <button
             onClick={handleBookmarkClick}
-            className="absolute top-2 right-2 z-10 p-2 rounded-full bg-white/80 hover:bg-white transition-colors shadow-sm"
+            className={`absolute top-2 right-2 z-10 p-1.5 rounded-full transition-all duration-200 ${
+              isBookmarked 
+                ? 'bg-blue-500/90 hover:bg-blue-600/90 shadow-md' 
+                : 'bg-white/30 hover:bg-white/60 shadow-sm hover:shadow-md'
+            }`}
             title={isBookmarked ? t('projectCard.removeBookmark') : t('projectCard.addBookmark')}
+            style={{ pointerEvents: 'auto' }}
+            data-testid="bookmark-button"
           >
             {isBookmarked ? (
-              <BookmarkCheck size={16} className="text-blue-600" />
+              <BookmarkCheck size={14} className="text-white" />
             ) : (
-              <Bookmark size={16} className="text-gray-600 hover:text-blue-600" />
+              <Bookmark size={14} className="text-gray-700 hover:text-blue-600" />
             )}
           </button>
         )}
@@ -451,21 +483,8 @@ const ProjectCard: React.FC<ProjectCardProps> = (props) => {
               <Calendar size={12} className="mr-1" />
               <span>
                 {(() => {
-                  // Debug: Log the dates being processed
-                  console.log('ProjectCard dates for', projectName, ':', {
-                    startDate: startDate,
-                    endDate: endDate,
-                    startDateType: typeof startDate,
-                    endDateType: typeof endDate
-                  });
-                  
                   const startDateFormatted = formatDateWithFallback(startDate);
                   const endDateFormatted = formatDateWithFallback(endDate);
-                  
-                  console.log('Formatted dates:', {
-                    startDateFormatted,
-                    endDateFormatted
-                  });
                   
                   if (!startDateFormatted && !endDateFormatted) {
                     return '';

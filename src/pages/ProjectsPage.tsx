@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { collection, query, where, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { useNavigate } from 'react-router-dom';
@@ -38,69 +38,126 @@ const ProjectsPage: React.FC = () => {
   const navigate = useNavigate();
   const user = auth.currentUser;
 
+  console.log('[ProjectsPage] Component rendered, user:', user?.uid, 'authenticated:', !!user);
+
+  // Test authentication
   useEffect(() => {
-    const fetchProjects = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const q = query(collection(db, 'Projects'));
-        const snapshot = await getDocs(q);
-        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Project[];
-        
-        // Mark projects as favorites if they're in the user's favorites
-        if (user) {
+    console.log('[ProjectsPage] Auth state check:', {
+      user: user?.uid,
+      userEmail: user?.email,
+      isAuthenticated: !!user,
+      authCurrentUser: auth.currentUser?.uid
+    });
+    
+    // Test bookmark functionality
+    if (user && projects.length > 0) {
+      console.log('[ProjectsPage] Testing bookmark functionality...');
+      const testProject = projects[0];
+      console.log('[ProjectsPage] Test project:', { id: testProject.id, name: testProject.projectName, isFavorite: testProject.isFavorite });
+    }
+  }, [user, projects]);
+
+  const fetchProjects = useCallback(async () => {
+    console.log('[ProjectsPage] fetchProjects called');
+    setLoading(true);
+    setError(null);
+    try {
+      console.log('[ProjectsPage] Starting to fetch projects, user:', user?.uid);
+      const q = query(collection(db, 'Projects'));
+      const snapshot = await getDocs(q);
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Project[];
+      console.log('[ProjectsPage] Found projects:', data.length);
+      
+      // Mark projects as favorites if they're in the user's favorites
+      if (user) {
+        console.log('[ProjectsPage] User is authenticated, loading favorites...');
+        try {
           const favoriteIds = await FavoritesService.getFavoriteProjectIds();
+          console.log('[ProjectsPage] Favorite IDs:', favoriteIds);
           const projectsWithFavorites = data.map(project => ({
             ...project,
             isFavorite: favoriteIds.includes(project.id)
           }));
+          console.log('[ProjectsPage] Projects with favorites:', projectsWithFavorites.map(p => ({ id: p.id, name: p.projectName, isFavorite: p.isFavorite })));
           setProjects(projectsWithFavorites);
-        } else {
+        } catch (favoritesError) {
+          console.error('[ProjectsPage] Error loading favorites:', favoritesError);
+          // Set projects without favorites if there's an error
           setProjects(data);
         }
-      } catch (err: any) {
-        setError(t('projects.errorLoading'));
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    const fetchMyProjects = async () => {
-      if (!user) return;
-      
-      try {
-        // Fetch owned projects
-        const ownedQuery = query(collection(db, 'Projects'), where('owner_uid', '==', user.uid));
-        const ownedSnapshot = await getDocs(ownedQuery);
-        const ownedData = ownedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Project[];
-        setOwnedProjects(ownedData);
-
-        // Fetch projects where user is a crew member
-        const crewProjectsData = await ProjectCrewService.getProjectsForCrewMember(user.uid);
-        setCrewProjects(crewProjectsData);
-      } catch (err: any) {
-        console.error('Error fetching my projects:', err);
-      }
-    };
-    
-    const loadFavorites = async () => {
-      if (user) {
-        try {
-          const userFavorites = await FavoritesService.getFavorites();
-          setFavorites(userFavorites);
-        } catch (error) {
-          console.error('Error loading favorites:', error);
-          setFavorites([]); // Set empty array on error
-        }
       } else {
-        setFavorites([]); // Clear favorites when no user
+        console.log('[ProjectsPage] No user authenticated, setting projects without favorites');
+        setProjects(data);
       }
-    };
+    } catch (err: any) {
+      console.error('[ProjectsPage] Error fetching projects:', err);
+      setError(t('projects.errorLoading'));
+    } finally {
+      setLoading(false);
+    }
+  }, [user, t]);
 
-    fetchProjects();
-    fetchMyProjects();
-    loadFavorites();
-  }, [t, user]);
+  const fetchMyProjects = useCallback(async () => {
+    if (!user) return;
+    
+    try {
+      // Fetch owned projects
+      const ownedQuery = query(collection(db, 'Projects'), where('owner_uid', '==', user.uid));
+      const ownedSnapshot = await getDocs(ownedQuery);
+      const ownedData = ownedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Project[];
+      
+      // Fetch projects where user is a crew member
+      const crewProjectsData = await ProjectCrewService.getProjectsForCrewMember(user.uid);
+      
+      // Mark projects as favorites if they're in the user's favorites
+      const favoriteIds = await FavoritesService.getFavoriteProjectIds();
+      
+      const ownedWithFavorites = ownedData.map(project => ({
+        ...project,
+        isFavorite: favoriteIds.includes(project.id)
+      }));
+      
+      const crewWithFavorites = crewProjectsData.map(project => ({
+        ...project,
+        isFavorite: favoriteIds.includes(project.id)
+      }));
+      
+      console.log('[ProjectsPage] Owned projects with favorites:', ownedWithFavorites.map(p => ({ id: p.id, name: p.projectName, isFavorite: p.isFavorite })));
+      console.log('[ProjectsPage] Crew projects with favorites:', crewWithFavorites.map(p => ({ id: p.id, name: p.projectName, isFavorite: p.isFavorite })));
+      
+      setOwnedProjects(ownedWithFavorites);
+      setCrewProjects(crewWithFavorites);
+    } catch (err: any) {
+      console.error('Error fetching my projects:', err);
+    }
+  }, [user]);
+
+  const loadFavorites = useCallback(async () => {
+    if (user) {
+      try {
+        const userFavorites = await FavoritesService.getFavorites();
+        setFavorites(userFavorites);
+      } catch (error) {
+        console.error('Error loading favorites:', error);
+        setFavorites([]); // Set empty array on error
+      }
+    } else {
+      setFavorites([]); // Clear favorites when no user
+    }
+  }, [user]);
+
+  useEffect(() => {
+    console.log('[ProjectsPage] Component rendered, user:', user?.uid, 'authenticated:', !!user);
+    if (user) {
+      console.log('[ProjectsPage] User authenticated, calling fetchProjects and fetchMyProjects');
+      fetchProjects();
+      fetchMyProjects();
+      loadFavorites();
+    } else {
+      console.log('[ProjectsPage] No user, only calling fetchProjects');
+      fetchProjects();
+    }
+  }, [user, fetchProjects, fetchMyProjects, loadFavorites]);
 
   const handleEdit = (projectId: string) => {
     navigate(`/edit-project/${projectId}`);
@@ -117,19 +174,30 @@ const ProjectsPage: React.FC = () => {
   };
 
   const handleBookmark = async (projectId: string, isBookmarked: boolean) => {
+    console.log('[ProjectsPage] Bookmark clicked:', { projectId, isBookmarked, user: user?.uid });
+    
     if (!user) {
+      console.log('[ProjectsPage] No user authenticated');
       alert('You must be logged in to bookmark projects');
       return;
     }
 
+    console.log('[ProjectsPage] User authenticated:', user.uid);
+
     try {
-      const project = projects.find(p => p.id === projectId);
-      if (!project) return;
+      // Find the project in any of the project arrays
+      const allProjects = [...projects, ...ownedProjects, ...crewProjects];
+      const project = allProjects.find(p => p.id === projectId);
+      
+      if (!project) {
+        console.error('[ProjectsPage] Project not found:', projectId);
+        return;
+      }
+
+      console.log('[ProjectsPage] Found project:', project.projectName);
 
       if (isBookmarked) {
-        await FavoritesService.removeFromFavorites(projectId);
-        setFavorites(prev => prev.filter(fav => fav.projectId !== projectId));
-      } else {
+        console.log('[ProjectsPage] Adding to favorites...');
         await FavoritesService.addToFavorites(projectId, {
           projectName: project.projectName,
           productionCompany: project.productionCompany,
@@ -139,14 +207,31 @@ const ProjectsPage: React.FC = () => {
         // Refresh favorites list
         const userFavorites = await FavoritesService.getFavorites();
         setFavorites(userFavorites);
+        console.log('[ProjectsPage] Added to favorites');
+      } else {
+        console.log('[ProjectsPage] Removing from favorites...');
+        await FavoritesService.removeFromFavorites(projectId);
+        setFavorites(prev => prev.filter(fav => fav.projectId !== projectId));
+        console.log('[ProjectsPage] Removed from favorites');
       }
 
-      // Update the project's favorite status in the local state
+      // Update the project's favorite status in ALL relevant states
+      // isBookmarked is the NEW state we want to set
       setProjects(prev => prev.map(p => 
-        p.id === projectId ? { ...p, isFavorite: !isBookmarked } : p
+        p.id === projectId ? { ...p, isFavorite: isBookmarked } : p
       ));
+      
+      setOwnedProjects(prev => prev.map(p => 
+        p.id === projectId ? { ...p, isFavorite: isBookmarked } : p
+      ));
+      
+      setCrewProjects(prev => prev.map(p => 
+        p.id === projectId ? { ...p, isFavorite: isBookmarked } : p
+      ));
+      
+      console.log('[ProjectsPage] Updated all project states with isFavorite:', isBookmarked);
     } catch (error) {
-      console.error('Error toggling bookmark:', error);
+      console.error('[ProjectsPage] Error toggling bookmark:', error);
       alert('Failed to update bookmark');
     }
   };
