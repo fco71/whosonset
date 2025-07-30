@@ -1,5 +1,5 @@
 "use strict";
-(self["webpackChunkwhosonset"] = self["webpackChunkwhosonset"] || []).push([[1149],{
+(self["webpackChunkwhosonset"] = self["webpackChunkwhosonset"] || []).push([[3388],{
 
 /***/ 676:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
@@ -18,7 +18,7 @@ function imageErrorFallback(e, fallback = '/default-avatar.svg') {
 
 /***/ }),
 
-/***/ 1149:
+/***/ 3388:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 // ESM COMPAT FLAG
@@ -45,93 +45,8 @@ var firebase = __webpack_require__(9487);
 var ResumeView = __webpack_require__(3542);
 // EXTERNAL MODULE: ./src/components/Social/FollowButton.tsx
 var FollowButton = __webpack_require__(6024);
-;// ./src/utilities/crewFavoritesService.ts
-
-
-class CrewFavoritesService {
-    /**
-     * Add a crew profile to user's favorites
-     */
-    static async addToFavorites(crewId, crewData) {
-        const user = firebase/* auth */.j2.currentUser;
-        if (!user) {
-            throw new Error('User must be authenticated to add favorites');
-        }
-        const favoriteData = {
-            id: `${user.uid}_${crewId}`,
-            crewId,
-            userId: user.uid,
-            addedAt: new Date(),
-            crewData: crewData ? {
-                name: crewData.name,
-                profileImageUrl: crewData.profileImageUrl,
-                jobTitles: crewData.jobTitles?.map(jt => jt.title),
-                residences: crewData.residences?.map(r => `${r.city}, ${r.country}`),
-                availability: crewData.availability,
-            } : undefined
-        };
-        await (0,index_esm/* setDoc */.BN)((0,index_esm.doc)(firebase.db, this.COLLECTION_NAME, favoriteData.id), favoriteData);
-    }
-    /**
-     * Remove a crew profile from user's favorites
-     */
-    static async removeFromFavorites(crewId) {
-        const user = firebase/* auth */.j2.currentUser;
-        if (!user) {
-            throw new Error('User must be authenticated to remove favorites');
-        }
-        const favoriteId = `${user.uid}_${crewId}`;
-        await (0,index_esm/* deleteDoc */.kd)((0,index_esm.doc)(firebase.db, this.COLLECTION_NAME, favoriteId));
-    }
-    /**
-     * Check if a crew profile is in user's favorites
-     */
-    static async isFavorite(crewId) {
-        const user = firebase/* auth */.j2.currentUser;
-        if (!user)
-            return false;
-        const favoriteId = `${user.uid}_${crewId}`;
-        const favoriteDoc = await (0,index_esm/* getDocs */.GG)((0,index_esm/* query */.P)((0,index_esm/* collection */.rJ)(firebase.db, this.COLLECTION_NAME), (0,index_esm/* where */._M)('id', '==', favoriteId)));
-        return !favoriteDoc.empty;
-    }
-    /**
-     * Get all user's favorite crew profiles
-     */
-    static async getFavorites() {
-        const user = firebase/* auth */.j2.currentUser;
-        if (!user)
-            return [];
-        const favoritesQuery = (0,index_esm/* query */.P)((0,index_esm/* collection */.rJ)(firebase.db, this.COLLECTION_NAME), (0,index_esm/* where */._M)('userId', '==', user.uid), (0,index_esm/* orderBy */.My)('addedAt', 'asc'), (0,index_esm/* orderBy */.My)('__name__', 'asc'));
-        const snapshot = await (0,index_esm/* getDocs */.GG)(favoritesQuery);
-        return snapshot.docs.map(doc => ({
-            ...doc.data(),
-            addedAt: doc.data().addedAt.toDate()
-        }));
-    }
-    /**
-     * Get favorite crew profile IDs for a user
-     */
-    static async getFavoriteCrewIds() {
-        const favorites = await this.getFavorites();
-        return favorites.map(fav => fav.crewId);
-    }
-    /**
-     * Toggle favorite status
-     */
-    static async toggleFavorite(crewId, crewData) {
-        const isCurrentlyFavorite = await this.isFavorite(crewId);
-        if (isCurrentlyFavorite) {
-            await this.removeFromFavorites(crewId);
-            return false;
-        }
-        else {
-            await this.addToFavorites(crewId, crewData);
-            return true;
-        }
-    }
-}
-CrewFavoritesService.COLLECTION_NAME = 'crewFavorites';
-
+// EXTERNAL MODULE: ./src/utilities/crewFavoritesService.ts
+var crewFavoritesService = __webpack_require__(6838);
 // EXTERNAL MODULE: ./src/contexts/AuthContext.tsx
 var AuthContext = __webpack_require__(2584);
 ;// ./src/components/MessageButton.tsx
@@ -162,7 +77,7 @@ const CrewProfileHeader = ({ profile }) => {
     (0,react.useEffect)(() => {
         const checkFavorite = async () => {
             if (currentUser && profile?.uid) {
-                setIsBookmarked(await CrewFavoritesService.isFavorite(profile.uid));
+                setIsBookmarked(await crewFavoritesService/* CrewFavoritesService */.e.isFavorite(profile.uid));
             }
         };
         checkFavorite();
@@ -172,8 +87,23 @@ const CrewProfileHeader = ({ profile }) => {
             return;
         setBookmarking(true);
         try {
-            const newStatus = await CrewFavoritesService.toggleFavorite(profile.uid, profile);
-            setIsBookmarked(newStatus);
+            if (isBookmarked) {
+                await crewFavoritesService/* CrewFavoritesService */.e.removeFromFavorites(profile.uid);
+                setIsBookmarked(false);
+            }
+            else {
+                await crewFavoritesService/* CrewFavoritesService */.e.addToFavorites(profile.uid, {
+                    crewName: profile.name,
+                    jobTitle: profile.jobTitles?.[0]?.title,
+                    location: profile.residences?.[0] ?
+                        `${profile.residences[0].city}, ${profile.residences[0].country}` : undefined,
+                    profileImageUrl: profile.profileImageUrl,
+                });
+                setIsBookmarked(true);
+            }
+        }
+        catch (error) {
+            console.error('Error toggling bookmark:', error);
         }
         finally {
             setBookmarking(false);
@@ -726,7 +656,95 @@ const FollowButton = ({ currentUserId, targetUserId, onFollowRequest, className 
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (FollowButton);
 
 
+/***/ }),
+
+/***/ 6838:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   e: () => (/* binding */ CrewFavoritesService)
+/* harmony export */ });
+/* harmony import */ var firebase_firestore__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(7594);
+/* harmony import */ var _firebase__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(9487);
+
+
+class CrewFavoritesService {
+    static async addToFavorites(crewId, crewData) {
+        const user = _firebase__WEBPACK_IMPORTED_MODULE_1__/* .auth */ .j2.currentUser;
+        if (!user)
+            throw new Error('User not authenticated');
+        const favoriteId = `${user.uid}_${crewId}`;
+        const favoriteData = {
+            userId: user.uid,
+            crewId,
+            crewName: crewData.crewName,
+            jobTitle: crewData.jobTitle,
+            location: crewData.location,
+            profileImageUrl: crewData.profileImageUrl,
+            addedAt: new Date()
+        };
+        await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .setDoc */ .BN)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, this.COLLECTION_NAME, favoriteId), favoriteData);
+    }
+    static async removeFromFavorites(crewId) {
+        const user = _firebase__WEBPACK_IMPORTED_MODULE_1__/* .auth */ .j2.currentUser;
+        if (!user)
+            throw new Error('User not authenticated');
+        const favoriteId = `${user.uid}_${crewId}`;
+        await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .deleteDoc */ .kd)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, this.COLLECTION_NAME, favoriteId));
+    }
+    static async isFavorite(crewId) {
+        const user = _firebase__WEBPACK_IMPORTED_MODULE_1__/* .auth */ .j2.currentUser;
+        if (!user)
+            return false;
+        try {
+            const favoriteId = `${user.uid}_${crewId}`;
+            const favoriteDoc = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__.getDoc)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, this.COLLECTION_NAME, favoriteId));
+            return favoriteDoc.exists();
+        }
+        catch (error) {
+            console.error('Error checking if crew is favorite:', error);
+            return false;
+        }
+    }
+    static async getFavorites() {
+        const user = _firebase__WEBPACK_IMPORTED_MODULE_1__/* .auth */ .j2.currentUser;
+        if (!user)
+            return [];
+        try {
+            const favoritesQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, this.COLLECTION_NAME), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .where */ ._M)('userId', '==', user.uid), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .orderBy */ .My)('addedAt', 'asc'));
+            const snapshot = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .getDocs */ .GG)(favoritesQuery);
+            return snapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                    ...data,
+                    addedAt: data.addedAt?.toDate ? data.addedAt.toDate() : data.addedAt
+                };
+            });
+        }
+        catch (error) {
+            console.error('Error getting crew favorites:', error);
+            return [];
+        }
+    }
+    static async getFavoriteCrewIds() {
+        const user = _firebase__WEBPACK_IMPORTED_MODULE_1__/* .auth */ .j2.currentUser;
+        if (!user)
+            return [];
+        try {
+            const favoritesQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, this.COLLECTION_NAME), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .where */ ._M)('userId', '==', user.uid));
+            const snapshot = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .getDocs */ .GG)(favoritesQuery);
+            return snapshot.docs.map(doc => doc.data().crewId);
+        }
+        catch (error) {
+            console.error('Error getting favorite crew IDs:', error);
+            return [];
+        }
+    }
+}
+CrewFavoritesService.COLLECTION_NAME = 'crewFavorites';
+
+
 /***/ })
 
 }]);
-//# sourceMappingURL=1149.chunk.js.map
+//# sourceMappingURL=3388.chunk.js.map

@@ -45,6 +45,10 @@ var FollowButton = __webpack_require__(6024);
 var imageErrorFallback = __webpack_require__(676);
 // EXTERNAL MODULE: ./node_modules/react-i18next/dist/es/index.js + 15 modules
 var es = __webpack_require__(2389);
+// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/bookmark-check.js
+var bookmark_check = __webpack_require__(4316);
+// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/bookmark.js
+var bookmark = __webpack_require__(7157);
 ;// ./src/components/CrewProfileCard.tsx
 
 
@@ -54,34 +58,21 @@ var es = __webpack_require__(2389);
 
 
 
-const CrewProfileCard = ({ profile, index = 0, isFiltering = false, currentUserId }) => {
+const CrewProfileCard = ({ profile, index = 0, isFiltering = false, currentUserId, isBookmarked = false, onBookmark }) => {
     const { t } = (0,es/* useTranslation */.Bd)();
     const [user] = (0,dist_index_esm/* useAuthState */.hD)(firebase/* auth */.j2);
-    const [isBookmarked, setIsBookmarked] = (0,react.useState)(false);
     const [isBookmarking, setIsBookmarking] = (0,react.useState)(false);
-    const handleBookmark = async (e) => {
+    const handleBookmarkClick = async (e) => {
         e.preventDefault();
         e.stopPropagation();
-        if (!user || !currentUserId)
+        if (!user || !onBookmark)
             return;
         setIsBookmarking(true);
         try {
-            const userRef = (0,index_esm.doc)(firebase.db, 'users', currentUserId);
-            if (isBookmarked) {
-                await (0,index_esm/* updateDoc */.mZ)(userRef, {
-                    bookmarkedCrew: (0,index_esm/* arrayRemove */.C3)(profile.uid)
-                });
-                setIsBookmarked(false);
-            }
-            else {
-                await (0,index_esm/* updateDoc */.mZ)(userRef, {
-                    bookmarkedCrew: (0,index_esm/* arrayUnion */.hq)(profile.uid)
-                });
-                setIsBookmarked(true);
-            }
+            onBookmark(profile.uid, !isBookmarked);
         }
         catch (error) {
-            console.error('Error updating bookmark:', error);
+            console.error('Error toggling bookmark:', error);
         }
         finally {
             setIsBookmarking(false);
@@ -114,13 +105,18 @@ const CrewProfileCard = ({ profile, index = 0, isFiltering = false, currentUserI
     const primaryJobTitle = profile.jobTitles?.[0]?.title || t('crew.crewMember');
     const primaryLocation = profile.residences?.[0] ?
         `${profile.residences[0].city}, ${profile.residences[0].country}` : t('crew.locationNotSpecified');
-    return ((0,jsx_runtime.jsxs)("div", { className: `group card-base card-hover animate-entrance ${isFiltering ? 'opacity-50 scale-95' : 'opacity-100 scale-100'}`, style: { animationDelay: `${index * 0.1}s`, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 24, height: 320, width: '100%' }, children: [(0,jsx_runtime.jsxs)("div", { className: "h-48 card-image-container", style: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }, children: [(0,jsx_runtime.jsx)("img", { src: profile.profileImageUrl || "/default-avatar.svg", alt: profile.name, className: "card-image", style: { width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', marginBottom: 8, border: '3px solid #e5e7eb' }, onError: imageErrorFallback/* imageErrorFallback */.i }), user && currentUserId && ((0,jsx_runtime.jsx)("button", { onClick: handleBookmark, disabled: isBookmarking, className: "absolute top-3 right-3 p-2 bg-white/80 backdrop-blur-sm rounded-full shadow-lg hover:bg-white transition-all duration-300 hover:scale-110 disabled:opacity-50", title: isBookmarked ? t('crew.removeFromBookmarks') : t('crew.addToBookmarks'), children: (0,jsx_runtime.jsx)("svg", { className: `w-5 h-5 ${isBookmarked ? 'text-yellow-500 fill-current' : 'text-gray-600'}`, fill: isBookmarked ? 'currentColor' : 'none', stroke: "currentColor", viewBox: "0 0 24 24", children: (0,jsx_runtime.jsx)("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" }) }) })), profile.availability && ((0,jsx_runtime.jsx)("div", { className: "absolute bottom-3 left-3", children: (0,jsx_runtime.jsx)("span", { className: `badge-base ${getAvailabilityColor(profile.availability)}`, children: getAvailabilityText(profile.availability) }) }))] }), (0,jsx_runtime.jsxs)("div", { style: { width: '100%', textAlign: 'center', marginBottom: 12 }, children: [(0,jsx_runtime.jsx)("h3", { style: { fontWeight: 600, color: '#1f2937', fontSize: 20, margin: 0 }, children: profile.name }), (0,jsx_runtime.jsx)("div", { style: { color: '#6b7280', fontWeight: 500, fontSize: 15, marginBottom: 4 }, children: primaryJobTitle }), (0,jsx_runtime.jsx)("div", { style: { color: '#9ca3af', fontSize: 14 }, children: primaryLocation })] }), (0,jsx_runtime.jsx)("div", { style: { width: '100%', display: 'flex', justifyContent: 'center', gap: 12, marginTop: 'auto' }, children: user && user.uid !== profile.uid && ((0,jsx_runtime.jsx)("div", { className: "btn-secondary", style: { display: 'inline-block' }, children: (0,jsx_runtime.jsx)(FollowButton/* default */.A, { currentUserId: user.uid, targetUserId: profile.uid }) })) })] }));
+    return ((0,jsx_runtime.jsxs)("div", { className: `group card-base card-hover animate-entrance ${isFiltering ? 'opacity-50 scale-95' : 'opacity-100 scale-100'}`, style: { animationDelay: `${index * 0.1}s`, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 24, height: 320, width: '100%' }, children: [(0,jsx_runtime.jsxs)("div", { className: "h-48 card-image-container", style: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }, children: [(0,jsx_runtime.jsx)("img", { src: profile.profileImageUrl || "/default-avatar.svg", alt: profile.name, className: "card-image", style: { width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', marginBottom: 8, border: '3px solid #e5e7eb' }, onError: imageErrorFallback/* imageErrorFallback */.i }), user && onBookmark && ((0,jsx_runtime.jsx)("button", { onClick: handleBookmarkClick, disabled: isBookmarking, className: `absolute top-3 right-3 p-1.5 rounded-full transition-all duration-200 ${isBookmarked
+                            ? 'bg-blue-500/20 hover:bg-blue-500/30 shadow-sm'
+                            : 'bg-white/10 hover:bg-white/20 shadow-sm'}`, title: isBookmarked ? t('crew.removeFromBookmarks') : t('crew.addToBookmarks'), style: { pointerEvents: 'auto' }, children: isBookmarked ? ((0,jsx_runtime.jsx)(bookmark_check/* default */.A, { size: 16, className: "text-blue-600 fill-current" })) : ((0,jsx_runtime.jsx)(bookmark/* default */.A, { size: 16, className: "text-gray-600 hover:text-blue-500" })) })), profile.availability && ((0,jsx_runtime.jsx)("div", { className: "absolute bottom-3 left-3", children: (0,jsx_runtime.jsx)("span", { className: `badge-base ${getAvailabilityColor(profile.availability)}`, children: getAvailabilityText(profile.availability) }) }))] }), (0,jsx_runtime.jsxs)("div", { style: { width: '100%', textAlign: 'center', marginBottom: 12 }, children: [(0,jsx_runtime.jsx)("h3", { style: { fontWeight: 600, color: '#1f2937', fontSize: 20, margin: 0 }, children: profile.name }), (0,jsx_runtime.jsx)("div", { style: { color: '#6b7280', fontWeight: 500, fontSize: 15, marginBottom: 4 }, children: primaryJobTitle }), (0,jsx_runtime.jsx)("div", { style: { color: '#9ca3af', fontSize: 14 }, children: primaryLocation })] }), (0,jsx_runtime.jsx)("div", { style: { width: '100%', display: 'flex', justifyContent: 'center', gap: 12, marginTop: 'auto' }, children: user && user.uid !== profile.uid && ((0,jsx_runtime.jsx)("div", { className: "btn-secondary", style: { display: 'inline-block' }, children: (0,jsx_runtime.jsx)(FollowButton/* default */.A, { currentUserId: user.uid, targetUserId: profile.uid }) })) })] }));
 };
 /* harmony default export */ const components_CrewProfileCard = (CrewProfileCard);
 
+// EXTERNAL MODULE: ./src/utilities/crewFavoritesService.ts
+var crewFavoritesService = __webpack_require__(6838);
 ;// ./src/pages/SavedCrewProfilesPage.tsx
 
 // src/pages/SavedCrewProfilesPage.tsx
+
 
 
 
@@ -132,17 +128,40 @@ const SavedCrewProfilesPage = () => {
     const [user] = (0,dist_index_esm/* useAuthState */.hD)(firebase/* auth */.j2);
     const [savedProfiles, setSavedProfiles] = (0,react.useState)([]);
     const [loading, setLoading] = (0,react.useState)(true);
+    const [favoriteCrewIds, setFavoriteCrewIds] = (0,react.useState)([]);
+    // Load favorite crew profiles
     (0,react.useEffect)(() => {
         const fetchSavedProfiles = async () => {
             if (!user)
                 return;
             try {
-                const savedProfilesRef = (0,index_esm/* collection */.rJ)(firebase.db, `collections/${user.uid}/savedCrew`);
-                const querySnapshot = await (0,index_esm/* getDocs */.GG)(savedProfilesRef);
-                const profiles = querySnapshot.docs.map(doc => ({
-                    uid: doc.id,
-                    ...doc.data()
-                }));
+                setLoading(true);
+                // Get favorite crew IDs
+                const favoriteIds = await crewFavoritesService/* CrewFavoritesService */.e.getFavoriteCrewIds();
+                setFavoriteCrewIds(favoriteIds);
+                if (favoriteIds.length === 0) {
+                    setSavedProfiles([]);
+                    return;
+                }
+                // Fetch crew profiles for favorite IDs
+                const crewProfilesRef = (0,index_esm/* collection */.rJ)(firebase.db, 'crewProfiles');
+                const profiles = [];
+                for (const crewId of favoriteIds) {
+                    try {
+                        const crewQuery = (0,index_esm/* query */.P)(crewProfilesRef, (0,index_esm/* where */._M)('uid', '==', crewId));
+                        const crewSnapshot = await (0,index_esm/* getDocs */.GG)(crewQuery);
+                        if (!crewSnapshot.empty) {
+                            const crewData = crewSnapshot.docs[0].data();
+                            profiles.push({
+                                uid: crewId,
+                                ...crewData
+                            });
+                        }
+                    }
+                    catch (error) {
+                        console.error(`Error fetching crew profile for ${crewId}:`, error);
+                    }
+                }
                 setSavedProfiles(profiles);
             }
             catch (error) {
@@ -154,12 +173,69 @@ const SavedCrewProfilesPage = () => {
         };
         fetchSavedProfiles();
     }, [user]);
+    // Handle crew bookmarking
+    const handleCrewBookmark = async (crewId, isBookmarked) => {
+        if (!user)
+            return;
+        try {
+            const crewProfile = savedProfiles.find(p => p.uid === crewId);
+            if (!crewProfile)
+                return;
+            if (isBookmarked) {
+                await crewFavoritesService/* CrewFavoritesService */.e.addToFavorites(crewId, {
+                    crewName: crewProfile.name,
+                    jobTitle: crewProfile.jobTitles?.[0]?.title,
+                    location: crewProfile.residences?.[0] ?
+                        `${crewProfile.residences[0].city}, ${crewProfile.residences[0].country}` : undefined,
+                    profileImageUrl: crewProfile.profileImageUrl,
+                });
+                setFavoriteCrewIds(prev => [...prev, crewId]);
+            }
+            else {
+                await crewFavoritesService/* CrewFavoritesService */.e.removeFromFavorites(crewId);
+                setFavoriteCrewIds(prev => prev.filter(id => id !== crewId));
+                setSavedProfiles(prev => prev.filter(p => p.uid !== crewId));
+            }
+        }
+        catch (error) {
+            console.error('Error toggling crew bookmark:', error);
+        }
+    };
     if (loading) {
         return ((0,jsx_runtime.jsxs)("div", { className: "min-h-screen bg-white", children: [(0,jsx_runtime.jsx)("div", { className: "bg-gradient-to-br from-gray-50 to-white border-b border-gray-100", children: (0,jsx_runtime.jsx)("div", { className: "max-w-7xl mx-auto px-8 py-24", children: (0,jsx_runtime.jsxs)("div", { className: "text-center mb-16 animate-fade-in", children: [(0,jsx_runtime.jsx)("h1", { className: "text-6xl font-light text-gray-900 mb-6 tracking-tight animate-slide-up", children: t('crew.savedCrew') }), (0,jsx_runtime.jsx)("h2", { className: "text-4xl font-light text-gray-600 mb-8 tracking-wide animate-slide-up-delay", children: t('crew.crewProfiles') })] }) }) }), (0,jsx_runtime.jsx)("div", { className: "max-w-7xl mx-auto px-8 py-16", children: (0,jsx_runtime.jsx)("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8", children: [...Array(8)].map((_, i) => ((0,jsx_runtime.jsxs)("div", { className: "bg-white rounded-xl shadow-sm p-6 animate-pulse", children: [(0,jsx_runtime.jsx)("div", { className: "h-48 bg-gray-200 rounded-lg mb-4" }), (0,jsx_runtime.jsx)("div", { className: "h-6 bg-gray-200 rounded mb-2" }), (0,jsx_runtime.jsx)("div", { className: "h-4 bg-gray-200 rounded mb-4" }), (0,jsx_runtime.jsx)("div", { className: "h-4 bg-gray-200 rounded mb-6" }), (0,jsx_runtime.jsxs)("div", { className: "flex gap-3", children: [(0,jsx_runtime.jsx)("div", { className: "flex-1 h-10 bg-gray-200 rounded-lg" }), (0,jsx_runtime.jsx)("div", { className: "w-20 h-10 bg-gray-200 rounded-lg" })] })] }, i))) }) })] }));
     }
-    return ((0,jsx_runtime.jsxs)("div", { className: "min-h-screen bg-white", children: [(0,jsx_runtime.jsx)("div", { className: "bg-gradient-to-br from-gray-50 to-white border-b border-gray-100", children: (0,jsx_runtime.jsx)("div", { className: "max-w-7xl mx-auto px-8 py-24", children: (0,jsx_runtime.jsxs)("div", { className: "text-center mb-16 animate-fade-in", children: [(0,jsx_runtime.jsx)("h1", { className: "text-6xl font-light text-gray-900 mb-6 tracking-tight animate-slide-up", children: t('crew.savedCrew') }), (0,jsx_runtime.jsx)("h2", { className: "text-4xl font-light text-gray-600 mb-8 tracking-wide animate-slide-up-delay", children: t('crew.crewProfiles') }), (0,jsx_runtime.jsx)("p", { className: "text-xl font-light text-gray-500 max-w-2xl mx-auto animate-slide-up-delay-2", children: t('crew.curatedCollection') })] }) }) }), (0,jsx_runtime.jsx)("div", { className: "max-w-7xl mx-auto px-8 py-16", children: savedProfiles.length === 0 ? ((0,jsx_runtime.jsxs)("div", { className: "text-center py-16", children: [(0,jsx_runtime.jsx)("div", { className: "text-6xl mb-6", children: "\uD83D\uDCC1" }), (0,jsx_runtime.jsx)("h3", { className: "text-2xl font-light text-gray-900 mb-4 tracking-wide", children: t('crew.noSavedProfiles') }), (0,jsx_runtime.jsx)("p", { className: "text-gray-600 font-light mb-8 max-w-md mx-auto", children: t('crew.startBuilding') }), (0,jsx_runtime.jsxs)("a", { href: "/producer-view", className: "inline-flex items-center px-6 py-3 bg-gray-900 text-white rounded-lg font-light tracking-wide hover:bg-black transition-all duration-300 hover:scale-105", children: [t('crew.browseCrewProfiles'), " \u2192"] })] })) : ((0,jsx_runtime.jsx)("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8", children: savedProfiles.map((profile, index) => ((0,jsx_runtime.jsx)("div", { className: "animate-card-entrance", style: { animationDelay: `${index * 100}ms` }, children: (0,jsx_runtime.jsx)(components_CrewProfileCard, { profile: profile }) }, profile.uid))) })) })] }));
+    return ((0,jsx_runtime.jsxs)("div", { className: "min-h-screen bg-white", children: [(0,jsx_runtime.jsx)("div", { className: "bg-gradient-to-br from-gray-50 to-white border-b border-gray-100", children: (0,jsx_runtime.jsx)("div", { className: "max-w-7xl mx-auto px-8 py-24", children: (0,jsx_runtime.jsxs)("div", { className: "text-center mb-16 animate-fade-in", children: [(0,jsx_runtime.jsx)("h1", { className: "text-6xl font-light text-gray-900 mb-6 tracking-tight animate-slide-up", children: t('crew.savedCrew') }), (0,jsx_runtime.jsx)("h2", { className: "text-4xl font-light text-gray-600 mb-8 tracking-wide animate-slide-up-delay", children: t('crew.crewProfiles') }), (0,jsx_runtime.jsx)("p", { className: "text-xl font-light text-gray-500 max-w-2xl mx-auto animate-slide-up-delay-2", children: t('crew.curatedCollection') })] }) }) }), (0,jsx_runtime.jsx)("div", { className: "max-w-7xl mx-auto px-8 py-16", children: savedProfiles.length === 0 ? ((0,jsx_runtime.jsxs)("div", { className: "text-center py-16", children: [(0,jsx_runtime.jsx)("div", { className: "text-6xl mb-6", children: "\uD83D\uDCC1" }), (0,jsx_runtime.jsx)("h3", { className: "text-2xl font-light text-gray-900 mb-4 tracking-wide", children: t('crew.noSavedProfiles') }), (0,jsx_runtime.jsx)("p", { className: "text-gray-600 font-light mb-8 max-w-md mx-auto", children: t('crew.startBuilding') }), (0,jsx_runtime.jsxs)("a", { href: "/producer-view", className: "inline-flex items-center px-6 py-3 bg-gray-900 text-white rounded-lg font-light tracking-wide hover:bg-black transition-all duration-300 hover:scale-105", children: [t('crew.browseCrewProfiles'), " \u2192"] })] })) : ((0,jsx_runtime.jsx)("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8", children: savedProfiles.map((profile, index) => ((0,jsx_runtime.jsx)("div", { className: "animate-card-entrance", style: { animationDelay: `${index * 100}ms` }, children: (0,jsx_runtime.jsx)(components_CrewProfileCard, { profile: profile, isBookmarked: favoriteCrewIds.includes(profile.uid), onBookmark: handleCrewBookmark, currentUserId: user?.uid }) }, profile.uid))) })) })] }));
 };
 /* harmony default export */ const pages_SavedCrewProfilesPage = (SavedCrewProfilesPage);
+
+
+/***/ }),
+
+/***/ 4316:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   A: () => (/* binding */ BookmarkCheck)
+/* harmony export */ });
+/* unused harmony export __iconNode */
+/* harmony import */ var _createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9407);
+/**
+ * @license lucide-react v0.525.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+
+
+
+const __iconNode = [
+  ["path", { d: "m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2Z", key: "169p4p" }],
+  ["path", { d: "m9 10 2 2 4-4", key: "1gnqz4" }]
+];
+const BookmarkCheck = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .A)("bookmark-check", __iconNode);
+
+
+//# sourceMappingURL=bookmark-check.js.map
 
 
 /***/ }),
@@ -268,6 +344,122 @@ const FollowButton = ({ currentUserId, targetUserId, onFollowRequest, className 
     return ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", { className: "flex items-center gap-2", children: [renderButton(), showCount && followersCount > 0 && ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("span", { className: "text-xs text-gray-500", children: [followersCount, " follower", followersCount !== 1 ? 's' : ''] }))] }));
 };
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (FollowButton);
+
+
+/***/ }),
+
+/***/ 6838:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   e: () => (/* binding */ CrewFavoritesService)
+/* harmony export */ });
+/* harmony import */ var firebase_firestore__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(7594);
+/* harmony import */ var _firebase__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(9487);
+
+
+class CrewFavoritesService {
+    static async addToFavorites(crewId, crewData) {
+        const user = _firebase__WEBPACK_IMPORTED_MODULE_1__/* .auth */ .j2.currentUser;
+        if (!user)
+            throw new Error('User not authenticated');
+        const favoriteId = `${user.uid}_${crewId}`;
+        const favoriteData = {
+            userId: user.uid,
+            crewId,
+            crewName: crewData.crewName,
+            jobTitle: crewData.jobTitle,
+            location: crewData.location,
+            profileImageUrl: crewData.profileImageUrl,
+            addedAt: new Date()
+        };
+        await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .setDoc */ .BN)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, this.COLLECTION_NAME, favoriteId), favoriteData);
+    }
+    static async removeFromFavorites(crewId) {
+        const user = _firebase__WEBPACK_IMPORTED_MODULE_1__/* .auth */ .j2.currentUser;
+        if (!user)
+            throw new Error('User not authenticated');
+        const favoriteId = `${user.uid}_${crewId}`;
+        await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .deleteDoc */ .kd)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, this.COLLECTION_NAME, favoriteId));
+    }
+    static async isFavorite(crewId) {
+        const user = _firebase__WEBPACK_IMPORTED_MODULE_1__/* .auth */ .j2.currentUser;
+        if (!user)
+            return false;
+        try {
+            const favoriteId = `${user.uid}_${crewId}`;
+            const favoriteDoc = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__.getDoc)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, this.COLLECTION_NAME, favoriteId));
+            return favoriteDoc.exists();
+        }
+        catch (error) {
+            console.error('Error checking if crew is favorite:', error);
+            return false;
+        }
+    }
+    static async getFavorites() {
+        const user = _firebase__WEBPACK_IMPORTED_MODULE_1__/* .auth */ .j2.currentUser;
+        if (!user)
+            return [];
+        try {
+            const favoritesQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, this.COLLECTION_NAME), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .where */ ._M)('userId', '==', user.uid), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .orderBy */ .My)('addedAt', 'asc'));
+            const snapshot = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .getDocs */ .GG)(favoritesQuery);
+            return snapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                    ...data,
+                    addedAt: data.addedAt?.toDate ? data.addedAt.toDate() : data.addedAt
+                };
+            });
+        }
+        catch (error) {
+            console.error('Error getting crew favorites:', error);
+            return [];
+        }
+    }
+    static async getFavoriteCrewIds() {
+        const user = _firebase__WEBPACK_IMPORTED_MODULE_1__/* .auth */ .j2.currentUser;
+        if (!user)
+            return [];
+        try {
+            const favoritesQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, this.COLLECTION_NAME), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .where */ ._M)('userId', '==', user.uid));
+            const snapshot = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .getDocs */ .GG)(favoritesQuery);
+            return snapshot.docs.map(doc => doc.data().crewId);
+        }
+        catch (error) {
+            console.error('Error getting favorite crew IDs:', error);
+            return [];
+        }
+    }
+}
+CrewFavoritesService.COLLECTION_NAME = 'crewFavorites';
+
+
+/***/ }),
+
+/***/ 7157:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   A: () => (/* binding */ Bookmark)
+/* harmony export */ });
+/* unused harmony export __iconNode */
+/* harmony import */ var _createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9407);
+/**
+ * @license lucide-react v0.525.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+
+
+
+const __iconNode = [
+  ["path", { d: "m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z", key: "1fy3hk" }]
+];
+const Bookmark = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .A)("bookmark", __iconNode);
+
+
+//# sourceMappingURL=bookmark.js.map
 
 
 /***/ })

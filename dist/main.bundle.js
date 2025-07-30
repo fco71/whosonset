@@ -6291,7 +6291,7 @@ function App() {
 
 
 // Lazy load pages for better performance
-const ProducerView = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(9505), __webpack_require__.e(4528)]).then(__webpack_require__.bind(__webpack_require__, 4528)));
+const ProducerView = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(6354), __webpack_require__.e(9505), __webpack_require__.e(4528)]).then(__webpack_require__.bind(__webpack_require__, 4528)));
 const HomePage = react.lazy(() => __webpack_require__.e(/* import() */ 1415).then(__webpack_require__.bind(__webpack_require__, 1415)));
 const MyProjectsPage = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(6901), __webpack_require__.e(4008)]).then(__webpack_require__.bind(__webpack_require__, 4008)));
 const SavedCrewProfilesPage = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(6354), __webpack_require__.e(9505), __webpack_require__.e(3608)]).then(__webpack_require__.bind(__webpack_require__, 3608)));
@@ -6305,7 +6305,7 @@ const PostJobPage = react.lazy(() => Promise.all(/* import() */[__webpack_requir
 const JobDetailPage = react.lazy(() => __webpack_require__.e(/* import() */ 8004).then(__webpack_require__.bind(__webpack_require__, 8004)));
 const DebugJobsPage = react.lazy(() => __webpack_require__.e(/* import() */ 9009).then(__webpack_require__.bind(__webpack_require__, 9009)));
 const EditProfilePage = react.lazy(() => __webpack_require__.e(/* import() */ 6134).then(__webpack_require__.bind(__webpack_require__, 6134)));
-const PublicResumePage = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(3833), __webpack_require__.e(9505), __webpack_require__.e(1149)]).then(__webpack_require__.bind(__webpack_require__, 1149)));
+const PublicResumePage = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(3833), __webpack_require__.e(9505), __webpack_require__.e(3388)]).then(__webpack_require__.bind(__webpack_require__, 3388)));
 const ChatTestPage = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(758), __webpack_require__.e(336)]).then(__webpack_require__.bind(__webpack_require__, 336)));
 const LoginPage = react.lazy(() => __webpack_require__.e(/* import() */ 8139).then(__webpack_require__.bind(__webpack_require__, 8139)));
 const RegisterPage = react.lazy(() => __webpack_require__.e(/* import() */ 5).then(__webpack_require__.bind(__webpack_require__, 5)));
