@@ -53,42 +53,53 @@ var react_image_crop_dist = __webpack_require__(2869);
 const getCroppedImg = async (imageSrc, crop) => {
     return new Promise((resolve, reject) => {
         try {
+            console.log('[getCroppedImg] Starting crop process');
+            console.log('[getCroppedImg] Image source:', imageSrc);
+            console.log('[getCroppedImg] Crop dimensions:', crop);
             const image = new window.Image();
             // Remove crossOrigin to prevent black images
             // image.crossOrigin = 'anonymous';
             image.src = imageSrc;
             image.onload = () => {
                 try {
+                    console.log('[getCroppedImg] Image loaded, dimensions:', image.width, 'x', image.height);
                     const canvas = document.createElement('canvas');
                     canvas.width = crop.width;
                     canvas.height = crop.height;
+                    console.log('[getCroppedImg] Canvas created with dimensions:', canvas.width, 'x', canvas.height);
                     const ctx = canvas.getContext('2d');
-                    if (!ctx)
+                    if (!ctx) {
+                        console.error('[getCroppedImg] No 2d context available');
                         return reject(new Error('No 2d context'));
+                    }
+                    // Clear the canvas first
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
                     // Ensure we're drawing with proper dimensions
                     ctx.drawImage(image, crop.x, crop.y, crop.width, crop.height, 0, 0, crop.width, crop.height);
+                    console.log('[getCroppedImg] Image drawn to canvas');
                     canvas.toBlob((blob) => {
                         if (blob) {
-                            console.log('Cropped image created successfully:', blob.size, 'bytes');
+                            console.log('[getCroppedImg] Cropped image created successfully:', blob.size, 'bytes');
                             resolve(blob);
                         }
                         else {
+                            console.error('[getCroppedImg] Canvas is empty');
                             reject(new Error('Canvas is empty'));
                         }
                     }, 'image/jpeg', 0.9); // Add quality parameter
                 }
                 catch (err) {
-                    console.error('Error in canvas drawing:', err);
+                    console.error('[getCroppedImg] Error in canvas drawing:', err);
                     reject(new Error('Failed to crop image: ' + (err instanceof Error ? err.message : String(err))));
                 }
             };
             image.onerror = (err) => {
-                console.error('Error loading image for cropping:', err);
+                console.error('[getCroppedImg] Error loading image for cropping:', err);
                 reject(new Error('Failed to load image for cropping: ' + (err instanceof Error ? err.message : String(err))));
             };
         }
         catch (err) {
-            console.error('Unexpected error in getCroppedImg:', err);
+            console.error('[getCroppedImg] Unexpected error in getCroppedImg:', err);
             reject(new Error('Unexpected error in getCroppedImg: ' + (err instanceof Error ? err.message : String(err))));
         }
     });
@@ -206,6 +217,9 @@ const ImageUploader = ({ onImageUploaded, onCropStart, onCropCancel, aspectRatio
             alert('No image selected.');
             return;
         }
+        console.log('[ImageUploader] Starting crop save process...');
+        console.log('[ImageUploader] Image source:', imageSrc);
+        console.log('[ImageUploader] Crop pixels:', croppedAreaPixels);
         // Only set cropping state if user actually selected a crop area
         const hasCropSelection = croppedAreaPixels && croppedAreaPixels.width > 0 && croppedAreaPixels.height > 0;
         if (hasCropSelection) {
@@ -218,30 +232,38 @@ const ImageUploader = ({ onImageUploaded, onCropStart, onCropCancel, aspectRatio
             let croppedBlob;
             // If no crop area is selected, use the original file directly
             if (!hasCropSelection) {
+                console.log('[ImageUploader] No crop selection, using original file');
                 // Get the original file from the file input
                 const fileInput = fileInputRef.current;
                 if (fileInput && fileInput.files && fileInput.files[0]) {
                     croppedBlob = fileInput.files[0];
+                    console.log('[ImageUploader] Using original file:', croppedBlob.size, 'bytes');
                 }
                 else {
                     // Fallback: convert blob URL back to blob
+                    console.log('[ImageUploader] Converting blob URL to blob');
                     const response = await fetch(imageSrc);
                     croppedBlob = await response.blob();
+                    console.log('[ImageUploader] Converted blob:', croppedBlob.size, 'bytes');
                 }
             }
             else {
                 // Only crop if user actually selected an area
+                console.log('[ImageUploader] Cropping image with selection:', croppedAreaPixels);
                 croppedBlob = await components_getCroppedImg(imageSrc, croppedAreaPixels);
+                console.log('[ImageUploader] Cropped blob created:', croppedBlob.size, 'bytes');
             }
             // Generate unique filename based on project name and timestamp
             const timestamp = Date.now();
             const sanitizedProjectName = projectName.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
             const fileName = `${sanitizedProjectName}-cover-${timestamp}.jpg`;
-            const croppedFile = new File([croppedBlob], fileName, { type: croppedBlob.type });
+            const croppedFile = new File([croppedBlob], fileName, { type: 'image/jpeg' });
+            console.log('[ImageUploader] Created file:', fileName, croppedFile.size, 'bytes');
             // Create preview URL for the cropped image
             const previewURL = URL.createObjectURL(croppedBlob);
             currentPreviewBlobRef.current = previewURL;
             setPreviewUrl(previewURL);
+            console.log('[ImageUploader] Created preview URL:', previewURL);
             // Upload to Firebase Storage
             setUploading(true);
             const storage = (0,esm_index_esm/* getStorage */.c7)(firebase/* app */.yA);
@@ -251,19 +273,24 @@ const ImageUploader = ({ onImageUploaded, onCropStart, onCropCancel, aspectRatio
             uploadTask.on('state_changed', (snapshot) => {
                 const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
                 setUploadProgress(progress);
+                console.log('[ImageUploader] Upload progress:', progress.toFixed(1) + '%');
             }, (error) => {
+                console.error('[ImageUploader] Upload error:', error);
                 setUploading(false);
                 setCropping(false);
                 setShowCrop(false);
                 alert('Image upload failed: ' + error.message);
             }, async () => {
+                console.log('[ImageUploader] Upload completed successfully');
                 setUploading(false);
                 setUploadSuccess(true);
                 try {
                     const url = await (0,esm_index_esm/* getDownloadURL */.qk)(storageRef);
+                    console.log('[ImageUploader] Got download URL:', url);
                     onImageUploaded(url);
                 }
                 catch (err) {
+                    console.error('[ImageUploader] Failed to get download URL:', err);
                     alert('Failed to get download URL.');
                 }
                 setShowCrop(false);
@@ -277,6 +304,7 @@ const ImageUploader = ({ onImageUploaded, onCropStart, onCropCancel, aspectRatio
             });
         }
         catch (err) {
+            console.error('[ImageUploader] Error in crop save:', err);
             setCropping(false);
             setUploading(false);
             setShowCrop(false);

@@ -149,6 +149,10 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
       return;
     }
     
+    console.log('[ImageUploader] Starting crop save process...');
+    console.log('[ImageUploader] Image source:', imageSrc);
+    console.log('[ImageUploader] Crop pixels:', croppedAreaPixels);
+    
     // Only set cropping state if user actually selected a crop area
     const hasCropSelection = croppedAreaPixels && croppedAreaPixels.width > 0 && croppedAreaPixels.height > 0;
     
@@ -164,30 +168,40 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
       
       // If no crop area is selected, use the original file directly
       if (!hasCropSelection) {
+        console.log('[ImageUploader] No crop selection, using original file');
         // Get the original file from the file input
         const fileInput = fileInputRef.current;
         if (fileInput && fileInput.files && fileInput.files[0]) {
           croppedBlob = fileInput.files[0];
+          console.log('[ImageUploader] Using original file:', croppedBlob.size, 'bytes');
         } else {
           // Fallback: convert blob URL back to blob
+          console.log('[ImageUploader] Converting blob URL to blob');
           const response = await fetch(imageSrc);
           croppedBlob = await response.blob();
+          console.log('[ImageUploader] Converted blob:', croppedBlob.size, 'bytes');
         }
       } else {
         // Only crop if user actually selected an area
+        console.log('[ImageUploader] Cropping image with selection:', croppedAreaPixels);
         croppedBlob = await getCroppedImg(imageSrc, croppedAreaPixels);
+        console.log('[ImageUploader] Cropped blob created:', croppedBlob.size, 'bytes');
       }
       
       // Generate unique filename based on project name and timestamp
       const timestamp = Date.now();
       const sanitizedProjectName = projectName.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
       const fileName = `${sanitizedProjectName}-cover-${timestamp}.jpg`;
-      const croppedFile = new File([croppedBlob], fileName, { type: croppedBlob.type });
+      const croppedFile = new File([croppedBlob], fileName, { type: 'image/jpeg' });
+      
+      console.log('[ImageUploader] Created file:', fileName, croppedFile.size, 'bytes');
       
       // Create preview URL for the cropped image
       const previewURL = URL.createObjectURL(croppedBlob);
       currentPreviewBlobRef.current = previewURL;
       setPreviewUrl(previewURL);
+      
+      console.log('[ImageUploader] Created preview URL:', previewURL);
       
       // Upload to Firebase Storage
       setUploading(true);
@@ -199,20 +213,25 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
         (snapshot) => {
           const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
           setUploadProgress(progress);
+          console.log('[ImageUploader] Upload progress:', progress.toFixed(1) + '%');
         },
         (error) => {
+          console.error('[ImageUploader] Upload error:', error);
           setUploading(false);
           setCropping(false);
           setShowCrop(false);
           alert('Image upload failed: ' + error.message);
         },
         async () => {
+          console.log('[ImageUploader] Upload completed successfully');
           setUploading(false);
           setUploadSuccess(true);
           try {
             const url = await getDownloadURL(storageRef);
+            console.log('[ImageUploader] Got download URL:', url);
             onImageUploaded(url);
           } catch (err) {
+            console.error('[ImageUploader] Failed to get download URL:', err);
             alert('Failed to get download URL.');
           }
           setShowCrop(false);
@@ -226,6 +245,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
         }
       );
     } catch (err) {
+      console.error('[ImageUploader] Error in crop save:', err);
       setCropping(false);
       setUploading(false);
       setShowCrop(false);

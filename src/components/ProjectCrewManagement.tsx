@@ -127,16 +127,23 @@ const ProjectCrewManagement: React.FC<ProjectCrewManagementProps> = ({ project, 
 
     try {
       setError(null);
+      console.log('[CrewManagement] Inviting crew member:', selectedUser.name);
       
-      await ProjectCrewService.inviteCrewMember(project.id, {
+      // For now, allow adding any crew member without authentication requirements
+      await ProjectCrewService.addCrewMember(project.id, {
         userId: selectedUser.id,
         userEmail: selectedUser.email,
         displayName: selectedUser.name,
         role: inviteRole,
         department: inviteDepartment,
-        invitedBy: currentUser?.uid || ''
+        status: 'active',
+        permissions: [],
+        canEdit: false,
+        canInvite: false,
+        canRemoveSelf: true
       });
 
+      console.log('[CrewManagement] Crew member added successfully');
       setSelectedUser(null);
       setInviteRole('');
       setInviteDepartment('');
@@ -146,7 +153,7 @@ const ProjectCrewManagement: React.FC<ProjectCrewManagementProps> = ({ project, 
       onUpdate();
       loadCrewData();
     } catch (err: any) {
-      console.error('Error inviting crew member:', err);
+      console.error('[CrewManagement] Error adding crew member:', err);
       setError(err.message || t('crewManagement.failedToInvite'));
     }
   };
@@ -212,7 +219,7 @@ const ProjectCrewManagement: React.FC<ProjectCrewManagementProps> = ({ project, 
             className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <Plus className="w-4 h-4" />
-            {t('crewManagement.inviteCrewMember')}
+            Add Crew Member
           </button>
         )}
       </div>
@@ -227,7 +234,7 @@ const ProjectCrewManagement: React.FC<ProjectCrewManagementProps> = ({ project, 
       {showInviteForm && (
         <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
           <div className="flex items-center justify-between mb-4">
-            <h4 className="font-medium text-gray-900">{t('crewManagement.inviteNewCrewMember')}</h4>
+            <h4 className="font-medium text-gray-900">Add New Crew Member</h4>
             <button
               onClick={() => {
                 setShowInviteForm(false);
@@ -347,7 +354,7 @@ const ProjectCrewManagement: React.FC<ProjectCrewManagementProps> = ({ project, 
               disabled={!selectedUser || !inviteRole || !inviteDepartment}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {t('crewManagement.sendInvitation')}
+              Add Crew Member
             </button>
             <button
               onClick={() => {

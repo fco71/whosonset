@@ -6,17 +6,33 @@ import { PixelCrop } from 'react-image-crop';
 const getCroppedImg = async (imageSrc: string, crop: PixelCrop): Promise<Blob> => {
   return new Promise((resolve, reject) => {
     try {
+      console.log('[getCroppedImg] Starting crop process');
+      console.log('[getCroppedImg] Image source:', imageSrc);
+      console.log('[getCroppedImg] Crop dimensions:', crop);
+      
       const image = new window.Image();
       // Remove crossOrigin to prevent black images
       // image.crossOrigin = 'anonymous';
       image.src = imageSrc;
+      
       image.onload = () => {
         try {
+          console.log('[getCroppedImg] Image loaded, dimensions:', image.width, 'x', image.height);
+          
           const canvas = document.createElement('canvas');
           canvas.width = crop.width;
           canvas.height = crop.height;
+          
+          console.log('[getCroppedImg] Canvas created with dimensions:', canvas.width, 'x', canvas.height);
+          
           const ctx = canvas.getContext('2d');
-          if (!ctx) return reject(new Error('No 2d context'));
+          if (!ctx) {
+            console.error('[getCroppedImg] No 2d context available');
+            return reject(new Error('No 2d context'));
+          }
+          
+          // Clear the canvas first
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
           
           // Ensure we're drawing with proper dimensions
           ctx.drawImage(
@@ -31,25 +47,29 @@ const getCroppedImg = async (imageSrc: string, crop: PixelCrop): Promise<Blob> =
             crop.height
           );
           
+          console.log('[getCroppedImg] Image drawn to canvas');
+          
           canvas.toBlob((blob) => {
             if (blob) {
-              console.log('Cropped image created successfully:', blob.size, 'bytes');
+              console.log('[getCroppedImg] Cropped image created successfully:', blob.size, 'bytes');
               resolve(blob);
             } else {
+              console.error('[getCroppedImg] Canvas is empty');
               reject(new Error('Canvas is empty'));
             }
           }, 'image/jpeg', 0.9); // Add quality parameter
         } catch (err) {
-          console.error('Error in canvas drawing:', err);
+          console.error('[getCroppedImg] Error in canvas drawing:', err);
           reject(new Error('Failed to crop image: ' + (err instanceof Error ? err.message : String(err))));
         }
       };
+      
       image.onerror = (err) => {
-        console.error('Error loading image for cropping:', err);
+        console.error('[getCroppedImg] Error loading image for cropping:', err);
         reject(new Error('Failed to load image for cropping: ' + (err instanceof Error ? err.message : String(err))));
       };
     } catch (err) {
-      console.error('Unexpected error in getCroppedImg:', err);
+      console.error('[getCroppedImg] Unexpected error in getCroppedImg:', err);
       reject(new Error('Unexpected error in getCroppedImg: ' + (err instanceof Error ? err.message : String(err))));
     }
   });
