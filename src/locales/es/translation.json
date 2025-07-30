@@ -627,7 +627,9 @@
     "description": "Ve, edita o elimina tus propios proyectos cinematográficos.",
     "noProjects": "Aún no tienes ningún proyecto.",
     "createFirst": "Crea tu primer proyecto para comenzar.",
-    "loginRequired": "Debes iniciar sesión para ver tus proyectos."
+    "loginRequired": "Debes iniciar sesión para ver tus proyectos.",
+    "ownedProjects": "Proyectos Propios",
+    "crewProjects": "Proyectos de Equipo"
   },
   "collaboration": {
     "title": "Centro de Colaboración",

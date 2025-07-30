@@ -332,6 +332,21 @@ const ProjectCard: React.FC<ProjectCardProps> = (props) => {
     >
       {/* Cover Image with subtle project name overlay */}
       <div style={{ width: '100%', height: 180, position: 'relative', borderRadius: 12, overflow: 'hidden', marginBottom: 12, background: '#f8fafc' }}>
+        {/* Bookmark Button */}
+        {onBookmark && (
+          <button
+            onClick={handleBookmarkClick}
+            className="absolute top-2 right-2 z-10 p-2 rounded-full bg-white/80 hover:bg-white transition-colors shadow-sm"
+            title={isBookmarked ? t('projectCard.removeBookmark') : t('projectCard.addBookmark')}
+          >
+            {isBookmarked ? (
+              <BookmarkCheck size={16} className="text-blue-600" />
+            ) : (
+              <Bookmark size={16} className="text-gray-600 hover:text-blue-600" />
+            )}
+          </button>
+        )}
+        
         {coverImageUrl && !imageError ? (
           <img
             key={coverImageUrl} // Force re-render when URL changes

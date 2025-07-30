@@ -628,8 +628,8 @@
     "noProjects": "You don't have any projects yet.",
     "createFirst": "Create your first project to get started.",
     "loginRequired": "You must be logged in to view your projects.",
-    "ownedProjects": "My Owned Projects",
-    "crewProjects": "Projects I'm Part Of"
+    "ownedProjects": "Owned Projects",
+    "crewProjects": "Crew Projects"
   },
   "crewManagement": {
     "title": "Crew Members",

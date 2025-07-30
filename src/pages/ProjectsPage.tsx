@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import ProjectCard from '../components/ProjectCard';
 import { useTranslation } from 'react-i18next';
 import { FavoritesService, FavoriteProject } from '../utilities/favoritesService';
+import { ProjectCrewService } from '../services/ProjectCrewService';
 
 interface Project {
   id: string;
@@ -20,11 +21,16 @@ interface Project {
   productionLocations?: Array<{ country: string; city?: string }>;
   owner_uid?: string;
   isFavorite?: boolean;
+  startDate?: string;
+  endDate?: string;
+  projectType?: 'owned' | 'crew' | 'favorite' | 'all';
 }
 
 const ProjectsPage: React.FC = () => {
   const { t } = useTranslation();
   const [projects, setProjects] = useState<Project[]>([]);
+  const [ownedProjects, setOwnedProjects] = useState<Project[]>([]);
+  const [crewProjects, setCrewProjects] = useState<Project[]>([]);
   const [favorites, setFavorites] = useState<FavoriteProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -40,11 +46,40 @@ const ProjectsPage: React.FC = () => {
         const q = query(collection(db, 'Projects'));
         const snapshot = await getDocs(q);
         const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Project[];
-        setProjects(data);
+        
+        // Mark projects as favorites if they're in the user's favorites
+        if (user) {
+          const favoriteIds = await FavoritesService.getFavoriteProjectIds();
+          const projectsWithFavorites = data.map(project => ({
+            ...project,
+            isFavorite: favoriteIds.includes(project.id)
+          }));
+          setProjects(projectsWithFavorites);
+        } else {
+          setProjects(data);
+        }
       } catch (err: any) {
         setError(t('projects.errorLoading'));
       } finally {
         setLoading(false);
+      }
+    };
+    
+    const fetchMyProjects = async () => {
+      if (!user) return;
+      
+      try {
+        // Fetch owned projects
+        const ownedQuery = query(collection(db, 'Projects'), where('owner_uid', '==', user.uid));
+        const ownedSnapshot = await getDocs(ownedQuery);
+        const ownedData = ownedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Project[];
+        setOwnedProjects(ownedData);
+
+        // Fetch projects where user is a crew member
+        const crewProjectsData = await ProjectCrewService.getProjectsForCrewMember(user.uid);
+        setCrewProjects(crewProjectsData);
+      } catch (err: any) {
+        console.error('Error fetching my projects:', err);
       }
     };
     
@@ -63,6 +98,7 @@ const ProjectsPage: React.FC = () => {
     };
 
     fetchProjects();
+    fetchMyProjects();
     loadFavorites();
   }, [t, user]);
 
@@ -80,6 +116,41 @@ const ProjectsPage: React.FC = () => {
     }
   };
 
+  const handleBookmark = async (projectId: string, isBookmarked: boolean) => {
+    if (!user) {
+      alert('You must be logged in to bookmark projects');
+      return;
+    }
+
+    try {
+      const project = projects.find(p => p.id === projectId);
+      if (!project) return;
+
+      if (isBookmarked) {
+        await FavoritesService.removeFromFavorites(projectId);
+        setFavorites(prev => prev.filter(fav => fav.projectId !== projectId));
+      } else {
+        await FavoritesService.addToFavorites(projectId, {
+          projectName: project.projectName,
+          productionCompany: project.productionCompany,
+          status: project.status,
+          coverImageUrl: project.coverImageUrl,
+        });
+        // Refresh favorites list
+        const userFavorites = await FavoritesService.getFavorites();
+        setFavorites(userFavorites);
+      }
+
+      // Update the project's favorite status in the local state
+      setProjects(prev => prev.map(p => 
+        p.id === projectId ? { ...p, isFavorite: !isBookmarked } : p
+      ));
+    } catch (error) {
+      console.error('Error toggling bookmark:', error);
+      alert('Failed to update bookmark');
+    }
+  };
+
   const handleRemoveFromFavorites = async (projectId: string) => {
     if (!user) return;
     
@@ -94,7 +165,10 @@ const ProjectsPage: React.FC = () => {
 
   const filteredProjects = (() => {
     if (tab === 'mine' && user) {
-      return projects.filter(p => p.owner_uid === user.uid);
+      // Combine owned and crew projects, marking them appropriately
+      const ownedWithType = ownedProjects.map(p => ({ ...p, projectType: 'owned' as const }));
+      const crewWithType = crewProjects.map(p => ({ ...p, projectType: 'crew' as const }));
+      return [...ownedWithType, ...crewWithType];
     } else if (tab === 'favorites' && user) {
       // Convert favorites to project format for display
       return favorites.map(fav => ({
@@ -110,10 +184,11 @@ const ProjectsPage: React.FC = () => {
         country: undefined,
         productionLocations: undefined,
         owner_uid: undefined,
-        isFavorite: true
+        isFavorite: true,
+        projectType: 'favorite' as const
       })) as Project[];
     } else {
-      return projects;
+      return projects.map(p => ({ ...p, projectType: 'all' as const }));
     }
   })();
 
@@ -191,22 +266,34 @@ const ProjectsPage: React.FC = () => {
                     producer={project.producer}
                     coverImageUrl={project.coverImageUrl}
                     genres={project.genres}
+                    startDate={project.startDate}
+                    endDate={project.endDate}
                     showDetails={true}
+                    onBookmark={handleBookmark}
+                    isBookmarked={project.isFavorite}
                   />
-                  {tab === 'mine' && user && project.owner_uid === user.uid && (
+                  {tab === 'mine' && user && (
                     <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => handleEdit(project.id)}
-                        className="btn-secondary px-3 py-1 text-xs"
-                      >
-                        {t('projects.edit')}
-                      </button>
-                      <button
-                        onClick={() => handleDelete(project.id)}
-                        className="btn-danger px-3 py-1 text-xs"
-                      >
-                        {t('projects.delete')}
-                      </button>
+                      {project.projectType === 'owned' ? (
+                        <>
+                          <button
+                            onClick={() => handleEdit(project.id)}
+                            className="btn-secondary px-3 py-1 text-xs"
+                          >
+                            {t('projects.edit')}
+                          </button>
+                          <button
+                            onClick={() => handleDelete(project.id)}
+                            className="btn-danger px-3 py-1 text-xs"
+                          >
+                            {t('projects.delete')}
+                          </button>
+                        </>
+                      ) : (
+                        <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-1 rounded-full">
+                          Crew Member
+                        </span>
+                      )}
                     </div>
                   )}
                   {tab === 'favorites' && user && (

@@ -50,18 +50,20 @@ var react_image_crop_dist = __webpack_require__(2869);
 ;// ./src/components/getCroppedImg.ts
 // getCroppedImg.ts
 // Helper for react-image-crop to crop an image and return a Blob
-const getCroppedImg = async (imageSrc, crop) => {
+const getCroppedImg = async (imageSrc, crop, imageElement) => {
     return new Promise((resolve, reject) => {
         try {
             console.log('[getCroppedImg] Starting crop process');
             console.log('[getCroppedImg] Image source:', imageSrc);
             console.log('[getCroppedImg] Crop dimensions:', crop);
+            console.log('[getCroppedImg] Using provided image element:', !!imageElement);
             const image = new Image();
             // Set up image loading
             image.onload = () => {
                 try {
                     console.log('[getCroppedImg] Image loaded successfully');
-                    console.log('[getCroppedImg] Original image dimensions:', image.width, 'x', image.height);
+                    console.log('[getCroppedImg] Image dimensions:', image.width, 'x', image.height);
+                    console.log('[getCroppedImg] Natural image dimensions:', image.naturalWidth, 'x', image.naturalHeight);
                     const canvas = document.createElement('canvas');
                     const ctx = canvas.getContext('2d');
                     if (!ctx) {
@@ -75,9 +77,80 @@ const getCroppedImg = async (imageSrc, crop) => {
                     // Clear canvas and set background to white (in case of transparency issues)
                     ctx.fillStyle = '#FFFFFF';
                     ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    // If we have the actual image element from ReactCrop, use its natural dimensions
+                    // Otherwise, use the loaded image's natural dimensions
+                    const sourceImage = imageElement || image;
+                    const naturalWidth = sourceImage.naturalWidth;
+                    const naturalHeight = sourceImage.naturalHeight;
+                    console.log('[getCroppedImg] Using natural dimensions:', naturalWidth, 'x', naturalHeight);
+                    // ReactCrop provides coordinates relative to the displayed image
+                    // We need to scale these coordinates to match the natural image dimensions
+                    const displayedWidth = sourceImage.width;
+                    const displayedHeight = sourceImage.height;
+                    console.log('[getCroppedImg] Displayed dimensions:', displayedWidth, 'x', displayedHeight);
+                    // Validate that we have valid dimensions
+                    if (naturalWidth === 0 || naturalHeight === 0) {
+                        console.error('[getCroppedImg] Invalid natural dimensions');
+                        return reject(new Error('Image has invalid natural dimensions'));
+                    }
+                    if (displayedWidth === 0 || displayedHeight === 0) {
+                        console.error('[getCroppedImg] Invalid displayed dimensions');
+                        return reject(new Error('Image has invalid displayed dimensions'));
+                    }
+                    // Calculate scale factors
+                    const scaleX = naturalWidth / displayedWidth;
+                    const scaleY = naturalHeight / displayedHeight;
+                    console.log('[getCroppedImg] Scale factors:', { scaleX, scaleY });
+                    // Validate scale factors
+                    if (scaleX <= 0 || scaleY <= 0) {
+                        console.error('[getCroppedImg] Invalid scale factors');
+                        return reject(new Error('Invalid scale factors calculated'));
+                    }
+                    // Scale the crop coordinates to match the natural image dimensions
+                    const scaledCrop = {
+                        x: Math.round(crop.x * scaleX),
+                        y: Math.round(crop.y * scaleY),
+                        width: Math.round(crop.width * scaleX),
+                        height: Math.round(crop.height * scaleY)
+                    };
+                    console.log('[getCroppedImg] Scaled crop coordinates:', scaledCrop);
+                    // Ensure crop coordinates are within bounds of the natural image
+                    const safeX = Math.max(0, Math.min(scaledCrop.x, naturalWidth - scaledCrop.width));
+                    const safeY = Math.max(0, Math.min(scaledCrop.y, naturalHeight - scaledCrop.height));
+                    const safeWidth = Math.min(scaledCrop.width, naturalWidth - safeX);
+                    const safeHeight = Math.min(scaledCrop.height, naturalHeight - safeY);
+                    console.log('[getCroppedImg] Safe crop coordinates:', { x: safeX, y: safeY, width: safeWidth, height: safeHeight });
+                    // Validate that we have valid crop dimensions
+                    if (safeWidth <= 0 || safeHeight <= 0) {
+                        console.error('[getCroppedImg] Invalid crop dimensions after bounds checking');
+                        return reject(new Error('Invalid crop dimensions'));
+                    }
                     // Draw the cropped portion of the image
-                    ctx.drawImage(image, crop.x, crop.y, crop.width, crop.height, 0, 0, crop.width, crop.height);
+                    ctx.drawImage(image, // Use the loaded image (which has the correct natural dimensions)
+                    safeX, safeY, safeWidth, safeHeight, 0, 0, crop.width, crop.height);
                     console.log('[getCroppedImg] Image drawn to canvas');
+                    // Verify the canvas has content by checking if it's not completely transparent
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const hasContent = imageData.data.some(pixel => pixel !== 0);
+                    if (!hasContent) {
+                        console.error('[getCroppedImg] Canvas appears to be empty after drawing');
+                        // Try fallback approach: use original crop coordinates directly
+                        console.log('[getCroppedImg] Trying fallback approach with original coordinates');
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        ctx.fillStyle = '#FFFFFF';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        // Use original crop coordinates without scaling
+                        ctx.drawImage(image, crop.x, crop.y, crop.width, crop.height, 0, 0, crop.width, crop.height);
+                        // Check again
+                        const fallbackImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        const fallbackHasContent = fallbackImageData.data.some(pixel => pixel !== 0);
+                        if (!fallbackHasContent) {
+                            console.error('[getCroppedImg] Fallback approach also failed');
+                            return reject(new Error('Cropped image appears to be empty even with fallback'));
+                        }
+                        console.log('[getCroppedImg] Fallback approach succeeded');
+                    }
+                    console.log('[getCroppedImg] Canvas has content, proceeding to blob conversion');
                     // Convert to blob
                     canvas.toBlob((blob) => {
                         if (blob) {
@@ -215,6 +288,9 @@ const ImageUploader = ({ onImageUploaded, onCropStart, onCropCancel, aspectRatio
     };
     const onCropComplete = (0,react.useCallback)((crop, percentageCrop) => {
         console.log('[ImageUploader] Crop complete - pixels:', crop, 'percentage:', percentageCrop);
+        console.log('[ImageUploader] Current zoom level:', zoom);
+        console.log('[ImageUploader] Image ref dimensions:', imageRef.current?.width, 'x', imageRef.current?.height);
+        console.log('[ImageUploader] Image natural dimensions:', imageRef.current?.naturalWidth, 'x', imageRef.current?.naturalHeight);
         if (crop.width > 0 && crop.height > 0) {
             console.log('[ImageUploader] Setting cropped area pixels:', crop);
             setCroppedAreaPixels(crop);
@@ -222,15 +298,38 @@ const ImageUploader = ({ onImageUploaded, onCropStart, onCropCancel, aspectRatio
         else {
             console.log('[ImageUploader] Crop area too small or invalid, not setting');
         }
-    }, []);
+    }, [zoom]);
     const handleCropSave = async () => {
         if (!imageSrc) {
             alert('No image selected.');
             return;
         }
+        // Validate that the image is properly loaded
+        if (!imageRef.current || !imageRef.current.complete) {
+            alert('Image is still loading. Please wait a moment and try again.');
+            return;
+        }
+        // Additional validation for image dimensions
+        if (!imageRef.current.naturalWidth || !imageRef.current.naturalHeight) {
+            alert('Image failed to load properly. Please try selecting the image again.');
+            return;
+        }
+        // Validate crop selection
+        if (croppedAreaPixels && (croppedAreaPixels.width <= 0 || croppedAreaPixels.height <= 0)) {
+            alert('Invalid crop selection. Please select a valid area to crop.');
+            return;
+        }
         console.log('[ImageUploader] Starting crop save process...');
         console.log('[ImageUploader] Image source:', imageSrc);
         console.log('[ImageUploader] Crop pixels:', croppedAreaPixels);
+        console.log('[ImageUploader] Current zoom level:', zoom);
+        console.log('[ImageUploader] Image ref available:', !!imageRef.current);
+        if (imageRef.current) {
+            console.log('[ImageUploader] Image ref dimensions:', imageRef.current.width, 'x', imageRef.current.height);
+            console.log('[ImageUploader] Image natural dimensions:', imageRef.current.naturalWidth, 'x', imageRef.current.naturalHeight);
+            console.log('[ImageUploader] Image complete:', imageRef.current.complete);
+            console.log('[ImageUploader] Image currentSrc:', imageRef.current.currentSrc);
+        }
         // Only set cropping state if user actually selected a crop area
         const hasCropSelection = croppedAreaPixels && croppedAreaPixels.width > 0 && croppedAreaPixels.height > 0;
         if (hasCropSelection) {
@@ -262,8 +361,12 @@ const ImageUploader = ({ onImageUploaded, onCropStart, onCropCancel, aspectRatio
                 // Only crop if user actually selected an area
                 console.log('[ImageUploader] Cropping image with selection:', croppedAreaPixels);
                 try {
-                    croppedBlob = await components_getCroppedImg(imageSrc, croppedAreaPixels);
+                    croppedBlob = await components_getCroppedImg(imageSrc, croppedAreaPixels, imageRef.current);
                     console.log('[ImageUploader] Cropped blob created:', croppedBlob.size, 'bytes');
+                    // Verify the blob has content
+                    if (croppedBlob.size === 0) {
+                        throw new Error('Cropped blob is empty');
+                    }
                 }
                 catch (cropError) {
                     console.error('[ImageUploader] Cropping failed, using original file:', cropError);
@@ -274,7 +377,11 @@ const ImageUploader = ({ onImageUploaded, onCropStart, onCropCancel, aspectRatio
                         console.log('[ImageUploader] Using original file as fallback:', croppedBlob.size, 'bytes');
                     }
                     else {
-                        throw cropError;
+                        // Last resort: convert blob URL back to blob
+                        console.log('[ImageUploader] Converting blob URL to blob as last resort');
+                        const response = await fetch(imageSrc);
+                        croppedBlob = await response.blob();
+                        console.log('[ImageUploader] Converted blob as fallback:', croppedBlob.size, 'bytes');
                     }
                 }
             }
@@ -370,7 +477,19 @@ const ImageUploader = ({ onImageUploaded, onCropStart, onCropCancel, aspectRatio
                             URL.revokeObjectURL(previousPreviewUrlRef.current);
                         }
                         previousPreviewUrlRef.current = previewUrl;
-                    }, onError: imageErrorFallback/* imageErrorFallback */.i }) })), showCrop && imageSrc && ((0,jsx_runtime.jsx)("div", { className: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50", onClick: e => e.stopPropagation(), onKeyDown: e => e.stopPropagation(), children: (0,jsx_runtime.jsxs)("div", { className: "bg-white p-4 rounded-lg max-w-4xl max-h-[90vh] overflow-auto", onClick: e => e.stopPropagation(), onKeyDown: e => e.stopPropagation(), tabIndex: -1, children: [(0,jsx_runtime.jsxs)("div", { className: "flex justify-between items-center mb-4", children: [(0,jsx_runtime.jsx)("h3", { className: "text-lg font-semibold", children: "Crop Image" }), (0,jsx_runtime.jsxs)("div", { className: "flex gap-2", children: [(0,jsx_runtime.jsx)("button", { onClick: handleCropCancelInternal, className: "px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600", disabled: cropping || uploading, children: "Cancel" }), (0,jsx_runtime.jsx)("button", { onClick: handleCropSave, className: "px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50", disabled: cropping || uploading, children: cropping ? 'Cropping...' : uploading ? 'Uploading...' : uploadSuccess ? 'Uploaded!' : 'Save Crop' })] })] }), (0,jsx_runtime.jsxs)("div", { className: "mb-4", children: [(0,jsx_runtime.jsxs)("label", { className: "block text-sm font-medium mb-2", children: ["Zoom: ", zoom.toFixed(2), "x"] }), (0,jsx_runtime.jsx)("input", { type: "range", min: "1", max: "3", step: "0.1", value: zoom, onChange: (e) => setZoom(Number(e.target.value)), className: "w-full" })] }), (0,jsx_runtime.jsx)("div", { className: "flex justify-center", children: (0,jsx_runtime.jsx)(react_image_crop_dist/* default */.Ay, { crop: crop, onChange: (c) => setCrop(c), onComplete: onCropComplete, aspect: undefined, minWidth: 50, minHeight: 50, keepSelection: true, children: (0,jsx_runtime.jsx)("img", { ref: imageRef, src: imageSrc, alt: "Crop", style: { transform: `scale(${zoom})` }, className: "max-w-full h-auto" }) }) }), (uploading || uploadSuccess) && ((0,jsx_runtime.jsxs)("div", { className: "mt-4 flex flex-col items-center", children: [uploading && ((0,jsx_runtime.jsxs)(jsx_runtime.Fragment, { children: [(0,jsx_runtime.jsx)("div", { className: "w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700", children: (0,jsx_runtime.jsx)("div", { className: "bg-blue-600 h-2.5 rounded-full", style: { width: `${uploadProgress}%` } }) }), (0,jsx_runtime.jsxs)("span", { className: "text-xs text-gray-600 mt-2", children: ["Uploading: ", uploadProgress.toFixed(0), "%"] })] })), uploadSuccess && ((0,jsx_runtime.jsx)("span", { className: "text-green-600 font-semibold mt-2", children: "\u2713 Upload complete!" }))] }))] }) }))] }));
+                    }, onError: imageErrorFallback/* imageErrorFallback */.i }) })), showCrop && imageSrc && ((0,jsx_runtime.jsx)("div", { className: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50", onClick: e => e.stopPropagation(), onKeyDown: e => e.stopPropagation(), children: (0,jsx_runtime.jsxs)("div", { className: "bg-white p-4 rounded-lg max-w-4xl max-h-[90vh] overflow-auto", onClick: e => e.stopPropagation(), onKeyDown: e => e.stopPropagation(), tabIndex: -1, children: [(0,jsx_runtime.jsxs)("div", { className: "flex justify-between items-center mb-4", children: [(0,jsx_runtime.jsx)("h3", { className: "text-lg font-semibold", children: "Crop Image" }), (0,jsx_runtime.jsxs)("div", { className: "flex gap-2", children: [(0,jsx_runtime.jsx)("button", { onClick: handleCropCancelInternal, className: "px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600", disabled: cropping || uploading, children: "Cancel" }), (0,jsx_runtime.jsx)("button", { onClick: handleCropSave, className: "px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50", disabled: cropping || uploading, children: cropping ? 'Cropping...' : uploading ? 'Uploading...' : uploadSuccess ? 'Uploaded!' : 'Save Crop' })] })] }), (0,jsx_runtime.jsxs)("div", { className: "mb-4", children: [(0,jsx_runtime.jsxs)("label", { className: "block text-sm font-medium mb-2", children: ["Zoom: ", zoom.toFixed(2), "x"] }), (0,jsx_runtime.jsx)("input", { type: "range", min: "1", max: "3", step: "0.1", value: zoom, onChange: (e) => setZoom(Number(e.target.value)), className: "w-full" })] }), (0,jsx_runtime.jsx)("div", { className: "flex justify-center", children: (0,jsx_runtime.jsx)(react_image_crop_dist/* default */.Ay, { crop: crop, onChange: (c) => setCrop(c), onComplete: onCropComplete, aspect: undefined, minWidth: 50, minHeight: 50, keepSelection: true, children: (0,jsx_runtime.jsx)("img", { ref: imageRef, src: imageSrc, alt: "Crop", style: {
+                                        maxWidth: '100%',
+                                        height: 'auto',
+                                        transform: `scale(${zoom})`,
+                                        transformOrigin: 'center'
+                                    }, className: "max-w-full h-auto", onLoad: () => {
+                                        console.log('[ImageUploader] Crop image loaded');
+                                        console.log('[ImageUploader] Image dimensions:', imageRef.current?.width, 'x', imageRef.current?.height);
+                                        console.log('[ImageUploader] Natural dimensions:', imageRef.current?.naturalWidth, 'x', imageRef.current?.naturalHeight);
+                                    }, onError: (e) => {
+                                        console.error('[ImageUploader] Crop image failed to load:', e);
+                                        (0,imageErrorFallback/* imageErrorFallback */.i)(e);
+                                    } }) }) }), (uploading || uploadSuccess) && ((0,jsx_runtime.jsxs)("div", { className: "mt-4 flex flex-col items-center", children: [uploading && ((0,jsx_runtime.jsxs)(jsx_runtime.Fragment, { children: [(0,jsx_runtime.jsx)("div", { className: "w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700", children: (0,jsx_runtime.jsx)("div", { className: "bg-blue-600 h-2.5 rounded-full", style: { width: `${uploadProgress}%` } }) }), (0,jsx_runtime.jsxs)("span", { className: "text-xs text-gray-600 mt-2", children: ["Uploading: ", uploadProgress.toFixed(0), "%"] })] })), uploadSuccess && ((0,jsx_runtime.jsx)("span", { className: "text-green-600 font-semibold mt-2", children: "\u2713 Upload complete!" }))] }))] }) }))] }));
 };
 /* harmony default export */ const components_ImageUploader = (ImageUploader);
 
