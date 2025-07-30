@@ -88,7 +88,7 @@ const CrewProfileCard: React.FC<CrewProfileCardProps> = ({
   return (
     <div 
       className={`group card-base card-hover animate-entrance ${isFiltering ? 'opacity-50 scale-95' : 'opacity-100 scale-100'}`}
-      style={{ animationDelay: `${index * 0.1}s`, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 24, minHeight: 280 }}
+      style={{ animationDelay: `${index * 0.1}s`, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 24, height: 320, width: '100%' }}
     >
       <div className="h-48 card-image-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
         <img 

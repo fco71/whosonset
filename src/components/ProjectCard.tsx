@@ -436,8 +436,21 @@ const ProjectCard: React.FC<ProjectCardProps> = (props) => {
               <Calendar size={12} className="mr-1" />
               <span>
                 {(() => {
+                  // Debug: Log the dates being processed
+                  console.log('ProjectCard dates for', projectName, ':', {
+                    startDate: startDate,
+                    endDate: endDate,
+                    startDateType: typeof startDate,
+                    endDateType: typeof endDate
+                  });
+                  
                   const startDateFormatted = formatDateWithFallback(startDate);
                   const endDateFormatted = formatDateWithFallback(endDate);
+                  
+                  console.log('Formatted dates:', {
+                    startDateFormatted,
+                    endDateFormatted
+                  });
                   
                   if (!startDateFormatted && !endDateFormatted) {
                     return '';

@@ -353,8 +353,19 @@ const ProjectCard = (props) => {
                                         zIndex: 2,
                                         textShadow: 'none'
                                     }, children: projectName && projectName.trim() ? projectName : 'Untitled Project' }) }), (0,jsx_runtime.jsxs)("div", { className: `inline-flex items-center gap-2 px-2 py-0.5 rounded-full text-xs font-medium mb-2 ${statusStyles.bg} ${statusStyles.text}`, style: { minHeight: 24 }, children: [statusStyles.icon, (0,jsx_runtime.jsx)("span", { children: formatStatusText(status) })] }), productionCompany && ((0,jsx_runtime.jsxs)(Card/* CardDescription */.BT, { className: "flex items-center text-sm mb-3", children: [(0,jsx_runtime.jsx)(film/* default */.A, { size: 14, className: "mr-1.5 text-gray-400" }), productionCompany] })), primaryLocation && ((0,jsx_runtime.jsxs)("div", { className: "flex items-center text-sm text-gray-500 mb-3", children: [(0,jsx_runtime.jsx)(map_pin/* default */.A, { size: 14, className: "mr-1.5 text-gray-400" }), primaryLocation] })), summary && ((0,jsx_runtime.jsx)("p", { className: "text-sm text-gray-600 mb-4 line-clamp-3", children: summary })), genres.length > 0 && ((0,jsx_runtime.jsxs)("div", { className: "flex flex-wrap gap-2 mt-3 mb-4", children: [genres.slice(0, 3).map((genre, index) => ((0,jsx_runtime.jsx)("span", { className: "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800", children: genre }, `${genre}-${index}`))), genres.length > 3 && ((0,jsx_runtime.jsxs)("span", { className: "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600", children: ["+", genres.length - 3, " more"] }))] }))] }), (0,jsx_runtime.jsx)(Card/* CardFooter */.wL, { className: "pt-4 border-t border-gray-100", children: (0,jsx_runtime.jsxs)("div", { className: "flex items-center justify-between w-full", children: [(0,jsx_runtime.jsxs)("div", { className: "flex items-center text-xs text-gray-500", children: [(0,jsx_runtime.jsx)(calendar/* default */.A, { size: 12, className: "mr-1" }), (0,jsx_runtime.jsx)("span", { children: (() => {
+                                                // Debug: Log the dates being processed
+                                                console.log('ProjectCard dates for', projectName, ':', {
+                                                    startDate: startDate,
+                                                    endDate: endDate,
+                                                    startDateType: typeof startDate,
+                                                    endDateType: typeof endDate
+                                                });
                                                 const startDateFormatted = formatDateWithFallback(startDate);
                                                 const endDateFormatted = formatDateWithFallback(endDate);
+                                                console.log('Formatted dates:', {
+                                                    startDateFormatted,
+                                                    endDateFormatted
+                                                });
                                                 if (!startDateFormatted && !endDateFormatted) {
                                                     return '';
                                                 }

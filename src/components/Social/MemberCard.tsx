@@ -100,7 +100,7 @@ const MemberCard: React.FC<MemberCardProps> = ({
         'flex flex-col items-center p-6',
         className
       )}
-      style={{ animationDelay: `${index * 0.1}s`, minHeight: 280 }}
+      style={{ animationDelay: `${index * 0.1}s`, height: 320, width: '100%' }}
     >
       <div className="h-48 card-image-container flex flex-col items-center justify-center mb-4">
         <img 
