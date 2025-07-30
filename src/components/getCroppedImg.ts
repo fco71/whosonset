@@ -34,6 +34,9 @@ const getCroppedImg = async (imageSrc: string, crop: PixelCrop): Promise<Blob> =
           // Clear the canvas first
           ctx.clearRect(0, 0, canvas.width, canvas.height);
           
+          // Set composite operation to ensure proper drawing
+          ctx.globalCompositeOperation = 'source-over';
+          
           // Ensure we're drawing with proper dimensions
           ctx.drawImage(
             image,
@@ -48,6 +51,17 @@ const getCroppedImg = async (imageSrc: string, crop: PixelCrop): Promise<Blob> =
           );
           
           console.log('[getCroppedImg] Image drawn to canvas');
+          
+          // Verify canvas has content
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const hasContent = imageData.data.some(pixel => pixel !== 0);
+          
+          if (!hasContent) {
+            console.error('[getCroppedImg] Canvas appears to be empty (all pixels are 0)');
+            return reject(new Error('Canvas is empty - no image content detected'));
+          }
+          
+          console.log('[getCroppedImg] Canvas has content, creating blob...');
           
           canvas.toBlob((blob) => {
             if (blob) {

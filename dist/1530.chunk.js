@@ -74,9 +74,19 @@ const getCroppedImg = async (imageSrc, crop) => {
                     }
                     // Clear the canvas first
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    // Set composite operation to ensure proper drawing
+                    ctx.globalCompositeOperation = 'source-over';
                     // Ensure we're drawing with proper dimensions
                     ctx.drawImage(image, crop.x, crop.y, crop.width, crop.height, 0, 0, crop.width, crop.height);
                     console.log('[getCroppedImg] Image drawn to canvas');
+                    // Verify canvas has content
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const hasContent = imageData.data.some(pixel => pixel !== 0);
+                    if (!hasContent) {
+                        console.error('[getCroppedImg] Canvas appears to be empty (all pixels are 0)');
+                        return reject(new Error('Canvas is empty - no image content detected'));
+                    }
+                    console.log('[getCroppedImg] Canvas has content, creating blob...');
                     canvas.toBlob((blob) => {
                         if (blob) {
                             console.log('[getCroppedImg] Cropped image created successfully:', blob.size, 'bytes');
@@ -189,6 +199,7 @@ const ImageUploader = ({ onImageUploaded, onCropStart, onCropCancel, aspectRatio
             alert('File size must be less than 5MB');
             return;
         }
+        console.log('[ImageUploader] File selected:', selectedFile.name, selectedFile.size, 'bytes');
         // Clean up existing blob URLs before creating new ones
         if (currentImageBlobRef.current) {
             revokeBlobUrl(currentImageBlobRef.current);
@@ -199,6 +210,7 @@ const ImageUploader = ({ onImageUploaded, onCropStart, onCropCancel, aspectRatio
         const objectURL = URL.createObjectURL(selectedFile);
         currentImageBlobRef.current = objectURL;
         setImageSrc(objectURL);
+        console.log('[ImageUploader] Created blob URL:', objectURL);
         if (cropEnabled) {
             setShowCrop(true);
         }
@@ -250,8 +262,22 @@ const ImageUploader = ({ onImageUploaded, onCropStart, onCropCancel, aspectRatio
             else {
                 // Only crop if user actually selected an area
                 console.log('[ImageUploader] Cropping image with selection:', croppedAreaPixels);
-                croppedBlob = await components_getCroppedImg(imageSrc, croppedAreaPixels);
-                console.log('[ImageUploader] Cropped blob created:', croppedBlob.size, 'bytes');
+                try {
+                    croppedBlob = await components_getCroppedImg(imageSrc, croppedAreaPixels);
+                    console.log('[ImageUploader] Cropped blob created:', croppedBlob.size, 'bytes');
+                }
+                catch (cropError) {
+                    console.error('[ImageUploader] Cropping failed, using original file:', cropError);
+                    // Fallback to original file if cropping fails
+                    const fileInput = fileInputRef.current;
+                    if (fileInput && fileInput.files && fileInput.files[0]) {
+                        croppedBlob = fileInput.files[0];
+                        console.log('[ImageUploader] Using original file as fallback:', croppedBlob.size, 'bytes');
+                    }
+                    else {
+                        throw cropError;
+                    }
+                }
             }
             // Generate unique filename based on project name and timestamp
             const timestamp = Date.now();

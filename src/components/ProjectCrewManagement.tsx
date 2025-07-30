@@ -213,15 +213,13 @@ const ProjectCrewManagement: React.FC<ProjectCrewManagementProps> = ({ project, 
           </span>
         </div>
         
-        {canInvite && (
-          <button
-            onClick={() => setShowInviteForm(true)}
-            className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Add Crew Member
-          </button>
-        )}
+        <button
+          onClick={() => setShowInviteForm(true)}
+          className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          Add Crew Member
+        </button>
       </div>
 
       {error && (

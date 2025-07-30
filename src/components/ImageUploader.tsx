@@ -117,6 +117,8 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
       return;
     }
 
+    console.log('[ImageUploader] File selected:', selectedFile.name, selectedFile.size, 'bytes');
+
     // Clean up existing blob URLs before creating new ones
     if (currentImageBlobRef.current) {
       revokeBlobUrl(currentImageBlobRef.current);
@@ -128,6 +130,8 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
     const objectURL = URL.createObjectURL(selectedFile);
     currentImageBlobRef.current = objectURL;
     setImageSrc(objectURL);
+    
+    console.log('[ImageUploader] Created blob URL:', objectURL);
     
     if (cropEnabled) {
       setShowCrop(true);
@@ -184,8 +188,20 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
       } else {
         // Only crop if user actually selected an area
         console.log('[ImageUploader] Cropping image with selection:', croppedAreaPixels);
-        croppedBlob = await getCroppedImg(imageSrc, croppedAreaPixels);
-        console.log('[ImageUploader] Cropped blob created:', croppedBlob.size, 'bytes');
+        try {
+          croppedBlob = await getCroppedImg(imageSrc, croppedAreaPixels);
+          console.log('[ImageUploader] Cropped blob created:', croppedBlob.size, 'bytes');
+        } catch (cropError) {
+          console.error('[ImageUploader] Cropping failed, using original file:', cropError);
+          // Fallback to original file if cropping fails
+          const fileInput = fileInputRef.current;
+          if (fileInput && fileInput.files && fileInput.files[0]) {
+            croppedBlob = fileInput.files[0];
+            console.log('[ImageUploader] Using original file as fallback:', croppedBlob.size, 'bytes');
+          } else {
+            throw cropError;
+          }
+        }
       }
       
       // Generate unique filename based on project name and timestamp
