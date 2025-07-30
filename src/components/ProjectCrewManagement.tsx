@@ -2,8 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { ProjectCrewService } from '../services/ProjectCrewService';
 import { Project, ProjectCrewMember, ProjectInvitation } from '../models/Project';
-import { User, Plus, X, Users, Mail, Calendar, Trash2, UserCheck, UserX } from 'lucide-react';
+import { User, Plus, X, Users, Mail, Calendar, Trash2, UserCheck, UserX, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { db } from '../firebase';
+
+interface UserSearchResult {
+  id: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  role?: string;
+  company?: string;
+}
 
 interface ProjectCrewManagementProps {
   project: Project;
@@ -18,9 +29,14 @@ const ProjectCrewManagement: React.FC<ProjectCrewManagementProps> = ({ project, 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showInviteForm, setShowInviteForm] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('');
   const [inviteDepartment, setInviteDepartment] = useState('');
+  
+  // User search state
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [userSearchResults, setUserSearchResults] = useState<UserSearchResult[]>([]);
+  const [isSearchingUsers, setIsSearchingUsers] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserSearchResult | null>(null);
 
   const isOwner = currentUser?.uid === project.owner_uid;
   const currentUserCrewMember = crewMembers.find(member => member.userId === currentUser?.uid);
@@ -49,8 +65,62 @@ const ProjectCrewManagement: React.FC<ProjectCrewManagementProps> = ({ project, 
     }
   };
 
+  // User search functionality
+  const searchUsers = async (queryStr: string) => {
+    if (!queryStr.trim()) {
+      setUserSearchResults([]);
+      return;
+    }
+    setIsSearchingUsers(true);
+    try {
+      // Search crew profiles
+      const crewProfilesRef = collection(db, 'crewProfiles');
+      const crewQuery = query(
+        crewProfilesRef,
+        where('isPublished', '==', true),
+        limit(20)
+      );
+      const crewSnapshot = await getDocs(crewQuery);
+      
+      const results: UserSearchResult[] = [];
+      crewSnapshot.docs.forEach(doc => {
+        const data = doc.data() as any;
+        const name = data.name || data.displayName || data.firstName || '';
+        
+        if (doc.id !== currentUser?.uid && 
+            name.toLowerCase().includes(queryStr.toLowerCase())) {
+          results.push({
+            id: doc.id,
+            name: name || `Crew Member ${doc.id.slice(-4)}`,
+            email: data.email || '',
+            avatar: data.profileImageUrl || data.avatarUrl,
+            role: data.jobTitles?.[0]?.title || data.role || 'Crew Member',
+            company: data.company || ''
+          });
+        }
+      });
+      
+      console.log('[CrewManagement] Found users:', results.length);
+      setUserSearchResults(results);
+    } catch (error) {
+      console.error('[CrewManagement] Error searching users:', error);
+      setUserSearchResults([]);
+    } finally {
+      setIsSearchingUsers(false);
+    }
+  };
+
+  const handleUserSearchChange = (query: string) => {
+    setUserSearchQuery(query);
+    if (query.trim()) {
+      setTimeout(() => searchUsers(query), 300);
+    } else {
+      setUserSearchResults([]);
+    }
+  };
+
   const handleInviteCrewMember = async () => {
-    if (!inviteEmail || !inviteRole || !inviteDepartment) {
+    if (!selectedUser || !inviteRole || !inviteDepartment) {
       setError(t('crewManagement.fillAllFields'));
       return;
     }
@@ -59,18 +129,20 @@ const ProjectCrewManagement: React.FC<ProjectCrewManagementProps> = ({ project, 
       setError(null);
       
       await ProjectCrewService.inviteCrewMember(project.id, {
-        userId: '', // Will be set when user accepts
-        userEmail: inviteEmail,
-        displayName: inviteEmail.split('@')[0], // Fallback display name
+        userId: selectedUser.id,
+        userEmail: selectedUser.email,
+        displayName: selectedUser.name,
         role: inviteRole,
         department: inviteDepartment,
         invitedBy: currentUser?.uid || ''
       });
 
-      setInviteEmail('');
+      setSelectedUser(null);
       setInviteRole('');
       setInviteDepartment('');
       setShowInviteForm(false);
+      setUserSearchQuery('');
+      setUserSearchResults([]);
       onUpdate();
       loadCrewData();
     } catch (err: any) {
@@ -157,27 +229,91 @@ const ProjectCrewManagement: React.FC<ProjectCrewManagementProps> = ({ project, 
           <div className="flex items-center justify-between mb-4">
             <h4 className="font-medium text-gray-900">{t('crewManagement.inviteNewCrewMember')}</h4>
             <button
-              onClick={() => setShowInviteForm(false)}
+              onClick={() => {
+                setShowInviteForm(false);
+                setSelectedUser(null);
+                setUserSearchQuery('');
+                setUserSearchResults([]);
+              }}
               className="text-gray-400 hover:text-gray-600"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('crewManagement.email')}
-              </label>
+          {/* User Search */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Search Crew Members
+            </label>
+            <div className="relative">
               <input
-                type="email"
-                value={inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder={t('crewManagement.emailPlaceholder')}
+                type="text"
+                value={userSearchQuery}
+                onChange={(e) => handleUserSearchChange(e.target.value)}
+                className="w-full px-3 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Search by name, role, or company..."
               />
+              <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
             </div>
             
+            {/* Search Results */}
+            {userSearchResults.length > 0 && (
+              <div className="mt-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg">
+                {userSearchResults.map((user) => (
+                  <div
+                    key={user.id}
+                    onClick={() => setSelectedUser(user)}
+                    className={`p-3 cursor-pointer hover:bg-gray-50 border-b border-gray-100 last:border-b-0 ${
+                      selectedUser?.id === user.id ? 'bg-blue-50 border-blue-200' : ''
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        {user.avatar ? (
+                          <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full" />
+                        ) : (
+                          <User className="w-4 h-4 text-blue-600" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-900">{user.name}</p>
+                        <p className="text-sm text-gray-600">{user.role} • {user.company}</p>
+                      </div>
+                      {selectedUser?.id === user.id && (
+                        <UserCheck className="w-4 h-4 text-blue-600" />
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {isSearchingUsers && (
+              <div className="mt-2 text-sm text-gray-500">Searching...</div>
+            )}
+          </div>
+          
+          {/* Selected User Display */}
+          {selectedUser && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                  {selectedUser.avatar ? (
+                    <img src={selectedUser.avatar} alt={selectedUser.name} className="w-10 h-10 rounded-full" />
+                  ) : (
+                    <User className="w-5 h-5 text-blue-600" />
+                  )}
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900">{selectedUser.name}</p>
+                  <p className="text-sm text-gray-600">{selectedUser.role} • {selectedUser.company}</p>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 {t('crewManagement.role')}
@@ -208,12 +344,18 @@ const ProjectCrewManagement: React.FC<ProjectCrewManagementProps> = ({ project, 
           <div className="flex gap-3 mt-4">
             <button
               onClick={handleInviteCrewMember}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              disabled={!selectedUser || !inviteRole || !inviteDepartment}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {t('crewManagement.sendInvitation')}
             </button>
             <button
-              onClick={() => setShowInviteForm(false)}
+              onClick={() => {
+                setShowInviteForm(false);
+                setSelectedUser(null);
+                setUserSearchQuery('');
+                setUserSearchResults([]);
+              }}
               className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
             >
               {t('crewManagement.cancel')}

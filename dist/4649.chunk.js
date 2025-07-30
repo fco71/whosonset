@@ -162,17 +162,21 @@ var users = __webpack_require__(3893);
 var plus = __webpack_require__(697);
 // EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/x.js
 var x = __webpack_require__(8697);
+// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/search.js
+var search = __webpack_require__(8445);
 // EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/user.js
-var user = __webpack_require__(8686);
+var icons_user = __webpack_require__(8686);
+// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/user-check.js
+var user_check = __webpack_require__(7623);
 // EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/trash-2.js
 var trash_2 = __webpack_require__(2708);
 // EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/mail.js
 var mail = __webpack_require__(3954);
-// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/user-check.js
-var user_check = __webpack_require__(7623);
 // EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/user-x.js
 var user_x = __webpack_require__(6079);
 ;// ./src/components/ProjectCrewManagement.tsx
+
+
 
 
 
@@ -187,9 +191,13 @@ const ProjectCrewManagement = ({ project, onUpdate }) => {
     const [loading, setLoading] = (0,react.useState)(true);
     const [error, setError] = (0,react.useState)(null);
     const [showInviteForm, setShowInviteForm] = (0,react.useState)(false);
-    const [inviteEmail, setInviteEmail] = (0,react.useState)('');
     const [inviteRole, setInviteRole] = (0,react.useState)('');
     const [inviteDepartment, setInviteDepartment] = (0,react.useState)('');
+    // User search state
+    const [userSearchQuery, setUserSearchQuery] = (0,react.useState)('');
+    const [userSearchResults, setUserSearchResults] = (0,react.useState)([]);
+    const [isSearchingUsers, setIsSearchingUsers] = (0,react.useState)(false);
+    const [selectedUser, setSelectedUser] = (0,react.useState)(null);
     const isOwner = currentUser?.uid === project.owner_uid;
     const currentUserCrewMember = crewMembers.find(member => member.userId === currentUser?.uid);
     (0,react.useEffect)(() => {
@@ -214,25 +222,75 @@ const ProjectCrewManagement = ({ project, onUpdate }) => {
             setLoading(false);
         }
     };
+    // User search functionality
+    const searchUsers = async (queryStr) => {
+        if (!queryStr.trim()) {
+            setUserSearchResults([]);
+            return;
+        }
+        setIsSearchingUsers(true);
+        try {
+            // Search crew profiles
+            const crewProfilesRef = (0,index_esm/* collection */.rJ)(firebase.db, 'crewProfiles');
+            const crewQuery = (0,index_esm/* query */.P)(crewProfilesRef, (0,index_esm/* where */._M)('isPublished', '==', true), (0,index_esm/* limit */.AB)(20));
+            const crewSnapshot = await (0,index_esm/* getDocs */.GG)(crewQuery);
+            const results = [];
+            crewSnapshot.docs.forEach(doc => {
+                const data = doc.data();
+                const name = data.name || data.displayName || data.firstName || '';
+                if (doc.id !== currentUser?.uid &&
+                    name.toLowerCase().includes(queryStr.toLowerCase())) {
+                    results.push({
+                        id: doc.id,
+                        name: name || `Crew Member ${doc.id.slice(-4)}`,
+                        email: data.email || '',
+                        avatar: data.profileImageUrl || data.avatarUrl,
+                        role: data.jobTitles?.[0]?.title || data.role || 'Crew Member',
+                        company: data.company || ''
+                    });
+                }
+            });
+            console.log('[CrewManagement] Found users:', results.length);
+            setUserSearchResults(results);
+        }
+        catch (error) {
+            console.error('[CrewManagement] Error searching users:', error);
+            setUserSearchResults([]);
+        }
+        finally {
+            setIsSearchingUsers(false);
+        }
+    };
+    const handleUserSearchChange = (query) => {
+        setUserSearchQuery(query);
+        if (query.trim()) {
+            setTimeout(() => searchUsers(query), 300);
+        }
+        else {
+            setUserSearchResults([]);
+        }
+    };
     const handleInviteCrewMember = async () => {
-        if (!inviteEmail || !inviteRole || !inviteDepartment) {
+        if (!selectedUser || !inviteRole || !inviteDepartment) {
             setError(t('crewManagement.fillAllFields'));
             return;
         }
         try {
             setError(null);
             await ProjectCrewService/* ProjectCrewService */.g.inviteCrewMember(project.id, {
-                userId: '', // Will be set when user accepts
-                userEmail: inviteEmail,
-                displayName: inviteEmail.split('@')[0], // Fallback display name
+                userId: selectedUser.id,
+                userEmail: selectedUser.email,
+                displayName: selectedUser.name,
                 role: inviteRole,
                 department: inviteDepartment,
                 invitedBy: currentUser?.uid || ''
             });
-            setInviteEmail('');
+            setSelectedUser(null);
             setInviteRole('');
             setInviteDepartment('');
             setShowInviteForm(false);
+            setUserSearchQuery('');
+            setUserSearchResults([]);
             onUpdate();
             loadCrewData();
         }
@@ -272,7 +330,17 @@ const ProjectCrewManagement = ({ project, onUpdate }) => {
     if (loading) {
         return ((0,jsx_runtime.jsx)("div", { className: "bg-white rounded-lg border border-gray-200 p-6", children: (0,jsx_runtime.jsxs)("div", { className: "animate-pulse", children: [(0,jsx_runtime.jsx)("div", { className: "h-6 bg-gray-200 rounded w-1/3 mb-4" }), (0,jsx_runtime.jsx)("div", { className: "space-y-3", children: [1, 2, 3].map(i => ((0,jsx_runtime.jsx)("div", { className: "h-16 bg-gray-200 rounded" }, i))) })] }) }));
     }
-    return ((0,jsx_runtime.jsxs)("div", { className: "bg-white rounded-lg border border-gray-200 p-6", children: [(0,jsx_runtime.jsxs)("div", { className: "flex items-center justify-between mb-6", children: [(0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-2", children: [(0,jsx_runtime.jsx)(users/* default */.A, { className: "w-5 h-5 text-gray-600" }), (0,jsx_runtime.jsx)("h3", { className: "text-lg font-semibold text-gray-900", children: t('crewManagement.title') }), (0,jsx_runtime.jsx)("span", { className: "bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full", children: crewMembers.length })] }), canInvite && ((0,jsx_runtime.jsxs)("button", { onClick: () => setShowInviteForm(true), className: "flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors", children: [(0,jsx_runtime.jsx)(plus/* default */.A, { className: "w-4 h-4" }), t('crewManagement.inviteCrewMember')] }))] }), error && ((0,jsx_runtime.jsx)("div", { className: "mb-4 p-3 bg-red-50 border border-red-200 rounded-lg", children: (0,jsx_runtime.jsx)("p", { className: "text-red-700 text-sm", children: error }) })), showInviteForm && ((0,jsx_runtime.jsxs)("div", { className: "mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200", children: [(0,jsx_runtime.jsxs)("div", { className: "flex items-center justify-between mb-4", children: [(0,jsx_runtime.jsx)("h4", { className: "font-medium text-gray-900", children: t('crewManagement.inviteNewCrewMember') }), (0,jsx_runtime.jsx)("button", { onClick: () => setShowInviteForm(false), className: "text-gray-400 hover:text-gray-600", children: (0,jsx_runtime.jsx)(x/* default */.A, { className: "w-5 h-5" }) })] }), (0,jsx_runtime.jsxs)("div", { className: "grid grid-cols-1 md:grid-cols-3 gap-4", children: [(0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("label", { className: "block text-sm font-medium text-gray-700 mb-1", children: t('crewManagement.email') }), (0,jsx_runtime.jsx)("input", { type: "email", value: inviteEmail, onChange: (e) => setInviteEmail(e.target.value), className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500", placeholder: t('crewManagement.emailPlaceholder') })] }), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("label", { className: "block text-sm font-medium text-gray-700 mb-1", children: t('crewManagement.role') }), (0,jsx_runtime.jsx)("input", { type: "text", value: inviteRole, onChange: (e) => setInviteRole(e.target.value), className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500", placeholder: t('crewManagement.rolePlaceholder') })] }), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("label", { className: "block text-sm font-medium text-gray-700 mb-1", children: t('crewManagement.department') }), (0,jsx_runtime.jsx)("input", { type: "text", value: inviteDepartment, onChange: (e) => setInviteDepartment(e.target.value), className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500", placeholder: t('crewManagement.departmentPlaceholder') })] })] }), (0,jsx_runtime.jsxs)("div", { className: "flex gap-3 mt-4", children: [(0,jsx_runtime.jsx)("button", { onClick: handleInviteCrewMember, className: "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors", children: t('crewManagement.sendInvitation') }), (0,jsx_runtime.jsx)("button", { onClick: () => setShowInviteForm(false), className: "px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors", children: t('crewManagement.cancel') })] })] })), (0,jsx_runtime.jsx)("div", { className: "space-y-3", children: crewMembers.length === 0 ? ((0,jsx_runtime.jsxs)("div", { className: "text-center py-8 text-gray-500", children: [(0,jsx_runtime.jsx)(users/* default */.A, { className: "w-12 h-12 mx-auto mb-3 text-gray-300" }), (0,jsx_runtime.jsx)("p", { children: t('crewManagement.noCrewMembers') }), canInvite && ((0,jsx_runtime.jsx)("p", { className: "text-sm mt-1", children: t('crewManagement.inviteToGetStarted') }))] })) : (crewMembers.map((member) => ((0,jsx_runtime.jsxs)("div", { className: "flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200", children: [(0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-3", children: [(0,jsx_runtime.jsx)("div", { className: "w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center", children: (0,jsx_runtime.jsx)(user/* default */.A, { className: "w-5 h-5 text-blue-600" }) }), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("p", { className: "font-medium text-gray-900", children: member.displayName }), (0,jsx_runtime.jsxs)("p", { className: "text-sm text-gray-600", children: [member.role, " \u2022 ", member.department] }), (0,jsx_runtime.jsx)("p", { className: "text-xs text-gray-500", children: t('crewManagement.joinedRecently') })] })] }), (0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-2", children: [member.status === 'active' && ((0,jsx_runtime.jsx)("span", { className: "bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full", children: t('crewManagement.active') })), (isOwner || (member.userId === currentUser?.uid && member.canRemoveSelf)) && ((0,jsx_runtime.jsx)("button", { onClick: () => handleRemoveCrewMember(member.userId), className: "p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors", title: t('crewManagement.removeFromProject'), children: (0,jsx_runtime.jsx)(trash_2/* default */.A, { className: "w-4 h-4" }) }))] })] }, member.userId)))) }), invitations.filter(invite => invite.status === 'pending').length > 0 && ((0,jsx_runtime.jsxs)("div", { className: "mt-6", children: [(0,jsx_runtime.jsx)("h4", { className: "font-medium text-gray-900 mb-3", children: t('crewManagement.pendingInvitations') }), (0,jsx_runtime.jsx)("div", { className: "space-y-3", children: invitations
+    return ((0,jsx_runtime.jsxs)("div", { className: "bg-white rounded-lg border border-gray-200 p-6", children: [(0,jsx_runtime.jsxs)("div", { className: "flex items-center justify-between mb-6", children: [(0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-2", children: [(0,jsx_runtime.jsx)(users/* default */.A, { className: "w-5 h-5 text-gray-600" }), (0,jsx_runtime.jsx)("h3", { className: "text-lg font-semibold text-gray-900", children: t('crewManagement.title') }), (0,jsx_runtime.jsx)("span", { className: "bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full", children: crewMembers.length })] }), canInvite && ((0,jsx_runtime.jsxs)("button", { onClick: () => setShowInviteForm(true), className: "flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors", children: [(0,jsx_runtime.jsx)(plus/* default */.A, { className: "w-4 h-4" }), t('crewManagement.inviteCrewMember')] }))] }), error && ((0,jsx_runtime.jsx)("div", { className: "mb-4 p-3 bg-red-50 border border-red-200 rounded-lg", children: (0,jsx_runtime.jsx)("p", { className: "text-red-700 text-sm", children: error }) })), showInviteForm && ((0,jsx_runtime.jsxs)("div", { className: "mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200", children: [(0,jsx_runtime.jsxs)("div", { className: "flex items-center justify-between mb-4", children: [(0,jsx_runtime.jsx)("h4", { className: "font-medium text-gray-900", children: t('crewManagement.inviteNewCrewMember') }), (0,jsx_runtime.jsx)("button", { onClick: () => {
+                                    setShowInviteForm(false);
+                                    setSelectedUser(null);
+                                    setUserSearchQuery('');
+                                    setUserSearchResults([]);
+                                }, className: "text-gray-400 hover:text-gray-600", children: (0,jsx_runtime.jsx)(x/* default */.A, { className: "w-5 h-5" }) })] }), (0,jsx_runtime.jsxs)("div", { className: "mb-4", children: [(0,jsx_runtime.jsx)("label", { className: "block text-sm font-medium text-gray-700 mb-2", children: "Search Crew Members" }), (0,jsx_runtime.jsxs)("div", { className: "relative", children: [(0,jsx_runtime.jsx)("input", { type: "text", value: userSearchQuery, onChange: (e) => handleUserSearchChange(e.target.value), className: "w-full px-3 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500", placeholder: "Search by name, role, or company..." }), (0,jsx_runtime.jsx)(search/* default */.A, { className: "absolute left-3 top-2.5 w-4 h-4 text-gray-400" })] }), userSearchResults.length > 0 && ((0,jsx_runtime.jsx)("div", { className: "mt-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg", children: userSearchResults.map((user) => ((0,jsx_runtime.jsx)("div", { onClick: () => setSelectedUser(user), className: `p-3 cursor-pointer hover:bg-gray-50 border-b border-gray-100 last:border-b-0 ${selectedUser?.id === user.id ? 'bg-blue-50 border-blue-200' : ''}`, children: (0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-3", children: [(0,jsx_runtime.jsx)("div", { className: "w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center", children: user.avatar ? ((0,jsx_runtime.jsx)("img", { src: user.avatar, alt: user.name, className: "w-8 h-8 rounded-full" })) : ((0,jsx_runtime.jsx)(icons_user/* default */.A, { className: "w-4 h-4 text-blue-600" })) }), (0,jsx_runtime.jsxs)("div", { className: "flex-1", children: [(0,jsx_runtime.jsx)("p", { className: "font-medium text-gray-900", children: user.name }), (0,jsx_runtime.jsxs)("p", { className: "text-sm text-gray-600", children: [user.role, " \u2022 ", user.company] })] }), selectedUser?.id === user.id && ((0,jsx_runtime.jsx)(user_check/* default */.A, { className: "w-4 h-4 text-blue-600" }))] }) }, user.id))) })), isSearchingUsers && ((0,jsx_runtime.jsx)("div", { className: "mt-2 text-sm text-gray-500", children: "Searching..." }))] }), selectedUser && ((0,jsx_runtime.jsx)("div", { className: "mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg", children: (0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-3", children: [(0,jsx_runtime.jsx)("div", { className: "w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center", children: selectedUser.avatar ? ((0,jsx_runtime.jsx)("img", { src: selectedUser.avatar, alt: selectedUser.name, className: "w-10 h-10 rounded-full" })) : ((0,jsx_runtime.jsx)(icons_user/* default */.A, { className: "w-5 h-5 text-blue-600" })) }), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("p", { className: "font-medium text-gray-900", children: selectedUser.name }), (0,jsx_runtime.jsxs)("p", { className: "text-sm text-gray-600", children: [selectedUser.role, " \u2022 ", selectedUser.company] })] })] }) })), (0,jsx_runtime.jsxs)("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4", children: [(0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("label", { className: "block text-sm font-medium text-gray-700 mb-1", children: t('crewManagement.role') }), (0,jsx_runtime.jsx)("input", { type: "text", value: inviteRole, onChange: (e) => setInviteRole(e.target.value), className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500", placeholder: t('crewManagement.rolePlaceholder') })] }), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("label", { className: "block text-sm font-medium text-gray-700 mb-1", children: t('crewManagement.department') }), (0,jsx_runtime.jsx)("input", { type: "text", value: inviteDepartment, onChange: (e) => setInviteDepartment(e.target.value), className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500", placeholder: t('crewManagement.departmentPlaceholder') })] })] }), (0,jsx_runtime.jsxs)("div", { className: "flex gap-3 mt-4", children: [(0,jsx_runtime.jsx)("button", { onClick: handleInviteCrewMember, disabled: !selectedUser || !inviteRole || !inviteDepartment, className: "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed", children: t('crewManagement.sendInvitation') }), (0,jsx_runtime.jsx)("button", { onClick: () => {
+                                    setShowInviteForm(false);
+                                    setSelectedUser(null);
+                                    setUserSearchQuery('');
+                                    setUserSearchResults([]);
+                                }, className: "px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors", children: t('crewManagement.cancel') })] })] })), (0,jsx_runtime.jsx)("div", { className: "space-y-3", children: crewMembers.length === 0 ? ((0,jsx_runtime.jsxs)("div", { className: "text-center py-8 text-gray-500", children: [(0,jsx_runtime.jsx)(users/* default */.A, { className: "w-12 h-12 mx-auto mb-3 text-gray-300" }), (0,jsx_runtime.jsx)("p", { children: t('crewManagement.noCrewMembers') }), canInvite && ((0,jsx_runtime.jsx)("p", { className: "text-sm mt-1", children: t('crewManagement.inviteToGetStarted') }))] })) : (crewMembers.map((member) => ((0,jsx_runtime.jsxs)("div", { className: "flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200", children: [(0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-3", children: [(0,jsx_runtime.jsx)("div", { className: "w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center", children: (0,jsx_runtime.jsx)(icons_user/* default */.A, { className: "w-5 h-5 text-blue-600" }) }), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("p", { className: "font-medium text-gray-900", children: member.displayName }), (0,jsx_runtime.jsxs)("p", { className: "text-sm text-gray-600", children: [member.role, " \u2022 ", member.department] }), (0,jsx_runtime.jsx)("p", { className: "text-xs text-gray-500", children: t('crewManagement.joinedRecently') })] })] }), (0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-2", children: [member.status === 'active' && ((0,jsx_runtime.jsx)("span", { className: "bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full", children: t('crewManagement.active') })), (isOwner || (member.userId === currentUser?.uid && member.canRemoveSelf)) && ((0,jsx_runtime.jsx)("button", { onClick: () => handleRemoveCrewMember(member.userId), className: "p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors", title: t('crewManagement.removeFromProject'), children: (0,jsx_runtime.jsx)(trash_2/* default */.A, { className: "w-4 h-4" }) }))] })] }, member.userId)))) }), invitations.filter(invite => invite.status === 'pending').length > 0 && ((0,jsx_runtime.jsxs)("div", { className: "mt-6", children: [(0,jsx_runtime.jsx)("h4", { className: "font-medium text-gray-900 mb-3", children: t('crewManagement.pendingInvitations') }), (0,jsx_runtime.jsx)("div", { className: "space-y-3", children: invitations
                             .filter(invite => invite.status === 'pending')
                             .map((invitation) => ((0,jsx_runtime.jsxs)("div", { className: "flex items-center justify-between p-4 bg-yellow-50 rounded-lg border border-yellow-200", children: [(0,jsx_runtime.jsxs)("div", { className: "flex items-center gap-3", children: [(0,jsx_runtime.jsx)("div", { className: "w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center", children: (0,jsx_runtime.jsx)(mail/* default */.A, { className: "w-5 h-5 text-yellow-600" }) }), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("p", { className: "font-medium text-gray-900", children: invitation.displayName }), (0,jsx_runtime.jsxs)("p", { className: "text-sm text-gray-600", children: [invitation.role, " \u2022 ", invitation.department] }), (0,jsx_runtime.jsx)("p", { className: "text-xs text-gray-500", children: invitation.userEmail })] })] }), invitation.userId === currentUser?.uid && ((0,jsx_runtime.jsxs)("div", { className: "flex gap-2", children: [(0,jsx_runtime.jsx)("button", { onClick: () => handleRespondToInvitation(invitation, 'accepted'), className: "px-3 py-1 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors", children: (0,jsx_runtime.jsx)(user_check/* default */.A, { className: "w-4 h-4" }) }), (0,jsx_runtime.jsx)("button", { onClick: () => handleRespondToInvitation(invitation, 'declined'), className: "px-3 py-1 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors", children: (0,jsx_runtime.jsx)(user_x/* default */.A, { className: "w-4 h-4" }) })] }))] }, invitation.userId))) })] }))] }));
 };
@@ -850,16 +918,20 @@ class ProjectCrewService {
      */
     static async getProjectCrewMembers(projectId) {
         try {
+            console.log('[ProjectCrewService] Getting crew members for project:', projectId);
             const projectRef = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_1__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_0__.db, this.PROJECTS_COLLECTION, projectId);
             const projectDoc = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_1__.getDoc)(projectRef);
             if (!projectDoc.exists()) {
+                console.error('[ProjectCrewService] Project not found:', projectId);
                 throw new Error('Project not found');
             }
             const projectData = projectDoc.data();
-            return projectData.crewMembers || [];
+            const crewMembers = projectData.crewMembers || [];
+            console.log('[ProjectCrewService] Found crew members:', crewMembers.length);
+            return crewMembers;
         }
         catch (error) {
-            console.error('Error getting project crew members:', error);
+            console.error('[ProjectCrewService] Error getting project crew members:', error);
             throw error;
         }
     }
@@ -1000,7 +1072,36 @@ class ProjectCrewService {
         }
     }
 }
-ProjectCrewService.PROJECTS_COLLECTION = 'projects';
+ProjectCrewService.PROJECTS_COLLECTION = 'Projects';
+
+
+/***/ }),
+
+/***/ 8445:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   A: () => (/* binding */ Search)
+/* harmony export */ });
+/* unused harmony export __iconNode */
+/* harmony import */ var _createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9407);
+/**
+ * @license lucide-react v0.525.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+
+
+
+const __iconNode = [
+  ["path", { d: "m21 21-4.34-4.34", key: "14j7rj" }],
+  ["circle", { cx: "11", cy: "11", r: "8", key: "4ej97u" }]
+];
+const Search = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .A)("search", __iconNode);
+
+
+//# sourceMappingURL=search.js.map
 
 
 /***/ }),

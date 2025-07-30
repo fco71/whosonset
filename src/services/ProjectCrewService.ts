@@ -15,7 +15,7 @@ import {
 import { Project, ProjectCrewMember, ProjectInvitation } from '../models/Project';
 
 export class ProjectCrewService {
-  private static readonly PROJECTS_COLLECTION = 'projects';
+  private static readonly PROJECTS_COLLECTION = 'Projects';
 
   /**
    * Add a crew member to a project
@@ -151,17 +151,23 @@ export class ProjectCrewService {
    */
   static async getProjectCrewMembers(projectId: string): Promise<ProjectCrewMember[]> {
     try {
+      console.log('[ProjectCrewService] Getting crew members for project:', projectId);
+      
       const projectRef = doc(db, this.PROJECTS_COLLECTION, projectId);
       const projectDoc = await getDoc(projectRef);
       
       if (!projectDoc.exists()) {
+        console.error('[ProjectCrewService] Project not found:', projectId);
         throw new Error('Project not found');
       }
 
       const projectData = projectDoc.data() as Project;
-      return projectData.crewMembers || [];
+      const crewMembers = projectData.crewMembers || [];
+      
+      console.log('[ProjectCrewService] Found crew members:', crewMembers.length);
+      return crewMembers;
     } catch (error) {
-      console.error('Error getting project crew members:', error);
+      console.error('[ProjectCrewService] Error getting project crew members:', error);
       throw error;
     }
   }

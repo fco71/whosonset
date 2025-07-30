@@ -201,16 +201,20 @@ class ProjectCrewService {
      */
     static async getProjectCrewMembers(projectId) {
         try {
+            console.log('[ProjectCrewService] Getting crew members for project:', projectId);
             const projectRef = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_1__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_0__.db, this.PROJECTS_COLLECTION, projectId);
             const projectDoc = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_1__.getDoc)(projectRef);
             if (!projectDoc.exists()) {
+                console.error('[ProjectCrewService] Project not found:', projectId);
                 throw new Error('Project not found');
             }
             const projectData = projectDoc.data();
-            return projectData.crewMembers || [];
+            const crewMembers = projectData.crewMembers || [];
+            console.log('[ProjectCrewService] Found crew members:', crewMembers.length);
+            return crewMembers;
         }
         catch (error) {
-            console.error('Error getting project crew members:', error);
+            console.error('[ProjectCrewService] Error getting project crew members:', error);
             throw error;
         }
     }
@@ -351,7 +355,7 @@ class ProjectCrewService {
         }
     }
 }
-ProjectCrewService.PROJECTS_COLLECTION = 'projects';
+ProjectCrewService.PROJECTS_COLLECTION = 'Projects';
 
 
 /***/ })
