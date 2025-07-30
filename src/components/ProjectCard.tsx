@@ -297,15 +297,30 @@ const ProjectCard: React.FC<ProjectCardProps> = (props) => {
     }
   };
 
-  const formatDateWithFallback = (dateString?: string): string => {
+  const formatDateWithFallback = (dateString?: string | any): string => {
     if (!dateString) return t('projectStatus.tbd');
     
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    }).format(date);
+    // Handle Firestore Timestamp objects
+    if (dateString && typeof dateString === 'object' && dateString.toDate) {
+      const date = dateString.toDate();
+      return new Intl.DateTimeFormat('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      }).format(date);
+    }
+    
+    // Handle string dates
+    if (typeof dateString === 'string') {
+      const date = new Date(dateString);
+      return new Intl.DateTimeFormat('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      }).format(date);
+    }
+    
+    return t('projectStatus.tbd');
   };
 
   return (
@@ -429,8 +444,8 @@ const ProjectCard: React.FC<ProjectCardProps> = (props) => {
             <div className="flex items-center text-xs text-gray-500">
               <Calendar size={12} className="mr-1" />
               <span>
-                {startDate && startDate.trim() ? formatDateWithFallback(startDate) : t('projectStatus.tbd')} - {endDate && endDate.trim() ? formatDateWithFallback(endDate) : t('projectStatus.tbd')}
-                {/* Debug: {startDate} | {endDate} */}
+                {startDate && (typeof startDate === 'string' ? startDate.trim() : startDate) ? formatDateWithFallback(startDate) : t('projectStatus.tbd')} - {endDate && (typeof endDate === 'string' ? endDate.trim() : endDate) ? formatDateWithFallback(endDate) : t('projectStatus.tbd')}
+                Debug: {startDate} | {endDate}
               </span>
             </div>
             {/* View Details Button */}
