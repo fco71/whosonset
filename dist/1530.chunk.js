@@ -214,8 +214,13 @@ const ImageUploader = ({ onImageUploaded, onCropStart, onCropCancel, aspectRatio
         }
     };
     const onCropComplete = (0,react.useCallback)((crop, percentageCrop) => {
+        console.log('[ImageUploader] Crop complete - pixels:', crop, 'percentage:', percentageCrop);
         if (crop.width > 0 && crop.height > 0) {
+            console.log('[ImageUploader] Setting cropped area pixels:', crop);
             setCroppedAreaPixels(crop);
+        }
+        else {
+            console.log('[ImageUploader] Crop area too small or invalid, not setting');
         }
     }, []);
     const handleCropSave = async () => {

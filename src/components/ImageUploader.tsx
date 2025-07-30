@@ -142,8 +142,12 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
   };
 
   const onCropComplete = useCallback((crop: PixelCrop, percentageCrop: Crop) => {
+    console.log('[ImageUploader] Crop complete - pixels:', crop, 'percentage:', percentageCrop);
     if (crop.width > 0 && crop.height > 0) {
+      console.log('[ImageUploader] Setting cropped area pixels:', crop);
       setCroppedAreaPixels(crop);
+    } else {
+      console.log('[ImageUploader] Crop area too small or invalid, not setting');
     }
   }, []);
 

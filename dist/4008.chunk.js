@@ -184,18 +184,23 @@ class ProjectCrewService {
      */
     static async getProjectsForCrewMember(userId) {
         try {
+            console.log('[ProjectCrewService] Getting projects for crew member:', userId);
             const projectsRef = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_1__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_0__.db, this.PROJECTS_COLLECTION);
             const snapshot = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_1__/* .getDocs */ .GG)(projectsRef);
             const projects = [];
+            console.log('[ProjectCrewService] Total projects found:', snapshot.docs.length);
             snapshot.forEach(doc => {
                 const projectData = doc.data();
                 const crewMembers = projectData.crewMembers || [];
+                console.log('[ProjectCrewService] Project:', doc.id, 'has crew members:', crewMembers.length);
                 // Check if user is in the crew members array
                 const isCrewMember = crewMembers.some(member => member.userId === userId && member.status === 'active');
                 if (isCrewMember) {
+                    console.log('[ProjectCrewService] User is crew member of project:', doc.id);
                     projects.push({ id: doc.id, ...projectData });
                 }
             });
+            console.log('[ProjectCrewService] Total crew projects found for user:', projects.length);
             return projects;
         }
         catch (error) {

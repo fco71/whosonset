@@ -132,13 +132,19 @@ export class ProjectCrewService {
    */
   static async getProjectsForCrewMember(userId: string): Promise<Project[]> {
     try {
+      console.log('[ProjectCrewService] Getting projects for crew member:', userId);
+      
       const projectsRef = collection(db, this.PROJECTS_COLLECTION);
       const snapshot = await getDocs(projectsRef);
       const projects: Project[] = [];
       
+      console.log('[ProjectCrewService] Total projects found:', snapshot.docs.length);
+      
       snapshot.forEach(doc => {
         const projectData = doc.data() as Project;
         const crewMembers = projectData.crewMembers || [];
+        
+        console.log('[ProjectCrewService] Project:', doc.id, 'has crew members:', crewMembers.length);
         
         // Check if user is in the crew members array
         const isCrewMember = crewMembers.some(
@@ -146,10 +152,12 @@ export class ProjectCrewService {
         );
         
         if (isCrewMember) {
+          console.log('[ProjectCrewService] User is crew member of project:', doc.id);
           projects.push({ id: doc.id, ...projectData });
         }
       });
       
+      console.log('[ProjectCrewService] Total crew projects found for user:', projects.length);
       return projects;
     } catch (error) {
       console.error('Error getting projects for crew member:', error);
