@@ -11,6 +11,12 @@ export interface UserPreferences {
   projectUpdateNotifications: boolean;
   applicationStatusNotifications: boolean;
   notificationFrequency: 'immediate' | 'daily' | 'weekly';
+  
+  // Daily digest settings
+  dailyDigestEnabled: boolean;
+  messageNotificationFrequency: 'immediate' | 'daily' | 'weekly';
+  digestTime: string; // e.g., "09:00"
+  
   timezone?: string;
   language?: string;
   theme?: 'light' | 'dark' | 'auto';
@@ -232,6 +238,12 @@ export class UserPreferencesService {
       projectUpdateNotifications: true,
       applicationStatusNotifications: true,
       notificationFrequency: 'immediate',
+      
+      // Daily digest settings
+      dailyDigestEnabled: false, // Default to false, user can enable
+      messageNotificationFrequency: 'immediate', // Default to immediate for messages
+      digestTime: '09:00', // Default to 9 AM
+      
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       language: 'en',
       theme: 'light'

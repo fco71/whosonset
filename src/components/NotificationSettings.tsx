@@ -202,6 +202,73 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ isOpen, onC
                 </div>
               </Card>
 
+              {/* Daily Digest Settings */}
+              <Card className="p-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">
+                  {t('notificationSettings.dailyDigest', 'Daily Digest Settings')}
+                </h3>
+                
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900">Enable Daily Digest</p>
+                      <p className="text-sm text-gray-500">Receive a daily summary of all notifications</p>
+                    </div>
+                    <button
+                      onClick={() => handleToggle('dailyDigestEnabled')}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        preferences.dailyDigestEnabled ? 'bg-blue-600' : 'bg-gray-200'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          preferences.dailyDigestEnabled ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {preferences.dailyDigestEnabled && (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-900">Message Notification Frequency</p>
+                          <p className="text-sm text-gray-500">How often to receive message notifications</p>
+                        </div>
+                        <select
+                          value={preferences.messageNotificationFrequency}
+                          onChange={(e) => setPreferences(prev => prev ? ({
+                            ...prev,
+                            messageNotificationFrequency: e.target.value as 'immediate' | 'daily' | 'weekly'
+                          }) : null)}
+                          className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="immediate">Immediate</option>
+                          <option value="daily">Daily Digest</option>
+                          <option value="weekly">Weekly Digest</option>
+                        </select>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-900">Digest Time</p>
+                          <p className="text-sm text-gray-500">When to receive your daily digest</p>
+                        </div>
+                        <input
+                          type="time"
+                          value={preferences.digestTime}
+                          onChange={(e) => setPreferences(prev => prev ? ({
+                            ...prev,
+                            digestTime: e.target.value
+                          }) : null)}
+                          className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
+              </Card>
+
               {/* Specific Notification Types */}
               <Card className="p-6">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">

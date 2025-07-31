@@ -116,6 +116,51 @@ export const testNotification = onRequest(async (req, res) => {
   }
 });
 
+// Daily digest function (to be called by Cloud Scheduler)
+export const sendDailyDigest = onRequest(async (req, res) => {
+  try {
+    const { DailyDigestService } = await import('./dailyDigestService');
+    
+    // Send daily digest to all users
+    await DailyDigestService.sendDailyDigestToAllUsers();
+    
+    res.json({ 
+      success: true, 
+      message: 'Daily digest sent to all users'
+    });
+  } catch (error) {
+    console.error('Daily digest error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Test daily digest for specific user
+export const testDailyDigest = onRequest(async (req, res) => {
+  try {
+    const { userId } = req.body;
+    
+    if (!userId) {
+      res.status(400).json({ 
+        error: 'Missing required field: userId' 
+      });
+      return;
+    }
+
+    const { DailyDigestService } = await import('./dailyDigestService');
+    
+    // Send daily digest to specific user
+    const success = await DailyDigestService.sendDailyDigest(userId);
+    
+    res.json({ 
+      success, 
+      message: success ? 'Daily digest sent successfully' : 'No digest to send or error occurred'
+    });
+  } catch (error) {
+    console.error('Test daily digest error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Job Application Notification
 export const notifyJobPosterOnApplication = onDocumentCreated("jobApplications/{applicationId}", async (event) => {
   const snap = event.data;
