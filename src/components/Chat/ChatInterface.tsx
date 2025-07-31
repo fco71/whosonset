@@ -687,7 +687,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                   const confirmMessage = 'Delete this message for everyone?';
                   if (window.confirm(confirmMessage)) {
                     try {
-                      await MessagingService.deleteMessage(message.id, message.fileUrl, message.messageType);
+                      await MessagingService.deleteMessage(message.id, message.fileUrl, message.messageType, currentUserId);
                       // The message will be updated via the listener, no need to manually update state
                     } catch (error) {
                       console.error('Error deleting message:', error);
@@ -826,11 +826,26 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     key={conversation.userId}
                     className={`conversation-item ${isSelected ? 'selected' : ''}`}
                     onClick={async () => {
+                      console.log('[ChatInterface] Selecting conversation:', conversation.userId, 'Unread count:', conversation.unreadCount);
                       setSelectedUser(conversation.userId);
+                      
                       // Mark conversation as read when selected
                       if (conversation.unreadCount > 0) {
                         try {
-                          await MessagingService.markConversationAsRead(currentUserId, conversation.userId);
+                          console.log('[ChatInterface] Marking conversation as read:', conversation.userId);
+                          
+                          // Add a small delay to make the unread count visible before clearing
+                          setTimeout(async () => {
+                            await MessagingService.markConversationAsRead(currentUserId, conversation.userId);
+                            console.log('[ChatInterface] Conversation marked as read successfully');
+                            
+                            // Update the conversation list to reflect the change
+                            setConversations(prev => prev.map(conv => 
+                              conv.userId === conversation.userId 
+                                ? { ...conv, unreadCount: 0 }
+                                : conv
+                            ));
+                          }, 100); // 100ms delay
                         } catch (error) {
                           console.error('Error marking conversation as read:', error);
                         }

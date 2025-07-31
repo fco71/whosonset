@@ -695,11 +695,12 @@ export class MessagingService {
       const senderProfile = await this.getUserProfile(senderId);
       const senderName = senderProfile?.displayName || 'Unknown User';
       
-      // Create notification directly without dynamic import
+      // Create notification with message preview
+      const messagePreview = content.length > 50 ? content.substring(0, 50) + '...' : content;
       await addDoc(collection(db, 'notifications'), {
         userId: receiverId,
         type: "message",
-        message: `New message from ${senderName}`,
+        message: `New message from ${senderName}: ${messagePreview}`,
         senderId: senderId,
         messageId: messageId,
         read: false,

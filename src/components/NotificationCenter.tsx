@@ -95,8 +95,19 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
 
   const handleNotificationClick = (notification: any) => {
     try {
+      // Always mark as read when clicked, regardless of current status
       if (!notification.read) {
         markAsRead(notification.id);
+      }
+      
+      // For message notifications, also mark the conversation as read
+      if (notification.type === 'message' && notification.senderId) {
+        // Import MessagingService dynamically to avoid circular dependencies
+        import('../utilities/messagingService').then(({ MessagingService }) => {
+          MessagingService.markConversationAsRead(currentUser?.uid, notification.senderId).catch(error => {
+            console.error('Error marking conversation as read from notification:', error);
+          });
+        });
       }
       
       // Handle navigation based on notification type
@@ -247,7 +258,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
                   await addDoc(collection(db, 'notifications'), {
                     userId: currentUser?.uid,
                     type: "test",
-                    message: "This is a test notification",
+                    message: "This is a test notification with a longer message to see if it displays properly",
                     read: false,
                     createdAt: serverTimestamp()
                   });
@@ -256,10 +267,20 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
                   console.error('Error creating test notification:', error);
                 }
               }}
-              className="text-green-600 hover:text-green-800 text-sm font-medium"
+              className="text-green-600 hover:text-green-800 text-sm font-medium mr-2"
               title="Create Test Notification"
             >
               Create Test
+            </button>
+            <button
+              onClick={() => {
+                console.log('Current notifications:', notifications);
+                console.log('Filtered notifications:', filteredNotifications);
+              }}
+              className="text-purple-600 hover:text-purple-800 text-sm font-medium"
+              title="Debug Notifications"
+            >
+              Debug
             </button>
             <button
               onClick={onClose}
@@ -378,10 +399,11 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <p className={`text-sm font-medium ${
+                          <p className={`text-sm ${
                             notification.read ? 'text-gray-700' : 'text-gray-900'
                           }`}>
                             {notification.message || 'No message'}
+                            {/* Debug: {JSON.stringify({message: notification.message, type: notification.type})} */}
                           </p>
                           <div className="flex items-center space-x-2 mt-1">
                             <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getNotificationColor(notification.type)}`}>
