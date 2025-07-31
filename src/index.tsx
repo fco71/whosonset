@@ -9,7 +9,6 @@ import ReactDOM from 'react-dom/client';
 import { RouterProvider } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { createAppRouter } from './router';
-import ErrorBoundary from './components/ErrorBoundary';
 
 // Global error handler to catch any runtime errors
 window.addEventListener('error', function(event) {
@@ -21,12 +20,6 @@ window.addEventListener('error', function(event) {
     error: event.error,
     stack: event.error?.stack
   });
-  
-  // Only prevent default for known safe errors
-  if (event.message && event.message.includes('Script error')) {
-    console.warn('Suppressing generic script error');
-    event.preventDefault();
-  }
 });
 
 // Global handler for all <img> errors (for blob URLs)
@@ -47,22 +40,9 @@ document.addEventListener(
   true
 );
 
-// Global handler for unhandled promise rejections (for blob URL fetch errors)
+// Global handler for unhandled promise rejections
 window.addEventListener('unhandledrejection', function (e) {
-  // Log the entire event for debugging
-  console.error('Unhandled promise rejection event:', e);
-  if (e.reason) {
-    console.error('Unhandled promise rejection reason:', e.reason);
-    console.error('Stack trace:', e.reason?.stack);
-  } else {
-    console.error('Unhandled promise rejection with unknown reason:', e);
-  }
-  
-  // Only prevent default for known safe errors
-  if (e.reason && typeof e.reason === 'string' && e.reason.includes('blob:')) {
-    console.warn('Suppressing blob URL error');
-    e.preventDefault();
-  }
+  console.error('Unhandled promise rejection:', e.reason);
 });
 
 // Create router instance once
@@ -70,9 +50,7 @@ const router = createAppRouter();
 
 const RootWithProvider = () => (
   <AuthProvider>
-    <ErrorBoundary>
-      <RouterProvider router={router} />
-    </ErrorBoundary>
+    <RouterProvider router={router} />
   </AuthProvider>
 );
 
@@ -81,9 +59,7 @@ const rootElement = document.getElementById('root');
 if (rootElement) {
   const root = ReactDOM.createRoot(rootElement);
   root.render(
-    <React.StrictMode>
-      <RootWithProvider />
-    </React.StrictMode>
+    <RootWithProvider />
   );
 }
 

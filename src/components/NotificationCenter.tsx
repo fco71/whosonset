@@ -4,6 +4,9 @@ import { Bell, X, Check, Trash2, Filter, Search, MoreVertical } from 'lucide-rea
 import { useTranslation } from 'react-i18next';
 import { formatDistanceToNow } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { db } from '../firebase';
+import { useAuth } from '../contexts/AuthContext';
 
 interface NotificationCenterProps {
   isOpen: boolean;
@@ -11,7 +14,26 @@ interface NotificationCenterProps {
 }
 
 const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose }) => {
-  const { notifications, markAsRead, deleteNotification, unreadCount } = useNotifications();
+  const { currentUser } = useAuth();
+  let notifications: any[] = [];
+  let markAsRead: any = () => {};
+  let deleteNotification: any = () => {};
+  let unreadCount = 0;
+  
+  try {
+    const notificationsData = useNotifications();
+    notifications = notificationsData.notifications || [];
+    markAsRead = notificationsData.markAsRead || (() => {});
+    deleteNotification = notificationsData.deleteNotification || (() => {});
+    unreadCount = notificationsData.unreadCount || 0;
+  } catch (error) {
+    console.error('[NotificationCenter] Error loading notifications:', error);
+    notifications = [];
+    markAsRead = () => {};
+    deleteNotification = () => {};
+    unreadCount = 0;
+  }
+  
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
@@ -40,8 +62,10 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
   const handleSelectAll = () => {
     if (selectedNotifications.length === filteredNotifications.length) {
       setSelectedNotifications([]);
+      setShowBulkActions(false);
     } else {
       setSelectedNotifications(filteredNotifications.map(n => n.id));
+      setShowBulkActions(true);
     }
   };
 
@@ -211,10 +235,31 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
           <div className="flex items-center space-x-2">
             <button
               onClick={() => navigate('/test-notifications')}
-              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+              className="text-blue-600 hover:text-blue-800 text-sm font-medium mr-2"
               title="Test Notifications"
             >
               Test
+            </button>
+            <button
+              onClick={async () => {
+                try {
+                  // Create a test notification
+                  await addDoc(collection(db, 'notifications'), {
+                    userId: currentUser?.uid,
+                    type: "test",
+                    message: "This is a test notification",
+                    read: false,
+                    createdAt: serverTimestamp()
+                  });
+                  console.log('Test notification created');
+                } catch (error) {
+                  console.error('Error creating test notification:', error);
+                }
+              }}
+              className="text-green-600 hover:text-green-800 text-sm font-medium"
+              title="Create Test Notification"
+            >
+              Create Test
             </button>
             <button
               onClick={onClose}
@@ -273,6 +318,8 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
               </div>
             </div>
           )}
+          
+
         </div>
 
         {/* Notifications List */}
@@ -299,23 +346,28 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
                 >
                   <div className="flex items-start space-x-3">
                     {/* Checkbox for bulk selection */}
-                    <input
-                      type="checkbox"
-                      checked={selectedNotifications.includes(notification.id)}
-                      onChange={(e) => {
-                        e.stopPropagation(); // Prevent triggering the card click
-                        if (e.target.checked) {
-                          setSelectedNotifications(prev => [...prev, notification.id]);
-                          setShowBulkActions(true);
-                        } else {
-                          setSelectedNotifications(prev => prev.filter(id => id !== notification.id));
-                          if (selectedNotifications.length === 1) {
-                            setShowBulkActions(false);
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={selectedNotifications.includes(notification.id)}
+                        onChange={(e) => {
+                          e.stopPropagation(); // Prevent triggering the card click
+                          if (e.target.checked) {
+                            setSelectedNotifications(prev => [...prev, notification.id]);
+                            setShowBulkActions(true);
+                          } else {
+                            setSelectedNotifications(prev => {
+                              const newSelected = prev.filter(id => id !== notification.id);
+                              if (newSelected.length === 0) {
+                                setShowBulkActions(false);
+                              }
+                              return newSelected;
+                            });
                           }
-                        }
-                      }}
-                      className="mt-1"
-                    />
+                        }}
+                        className="mt-1"
+                      />
+                    </div>
 
                     {/* Notification Icon */}
                     <div className="flex-shrink-0">
@@ -329,15 +381,26 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
                           <p className={`text-sm font-medium ${
                             notification.read ? 'text-gray-700' : 'text-gray-900'
                           }`}>
-                            {notification.message}
+                            {notification.message || 'No message'}
                           </p>
                           <div className="flex items-center space-x-2 mt-1">
                             <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getNotificationColor(notification.type)}`}>
                               {notification.type.replace('_', ' ')}
                             </span>
-                                                         <span className="text-xs text-gray-500">
-                               {formatDistanceToNow(new Date(notification.timestamp?.toDate?.() || notification.timestamp), { addSuffix: true })}
-                             </span>
+                                                                                     <span className="text-xs text-gray-500">
+                              {(() => {
+                                try {
+                                  const timestamp = notification.createdAt?.toDate?.() || notification.createdAt || notification.timestamp?.toDate?.() || notification.timestamp;
+                                  if (!timestamp) return 'Unknown time';
+                                  const date = new Date(timestamp);
+                                  if (isNaN(date.getTime())) return 'Unknown time';
+                                  return formatDistanceToNow(date, { addSuffix: true });
+                                } catch (error) {
+                                  console.error('Error formatting notification timestamp:', error);
+                                  return 'Unknown time';
+                                }
+                              })()}
+                            </span>
                           </div>
                         </div>
 

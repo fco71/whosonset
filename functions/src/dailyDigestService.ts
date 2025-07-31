@@ -281,24 +281,7 @@ The My Film Jobs Team
     };
   }
 
-  /**
-   * Mark digest notifications as read (optional)
-   */
-  private static async markDigestNotificationsAsRead(notificationIds: string[]): Promise<void> {
-    try {
-      const db = this.getDb();
-      const batch = db.batch();
-      
-      notificationIds.forEach(id => {
-        const ref = db.collection('notifications').doc(id);
-        batch.update(ref, { read: true, readAt: admin.firestore.FieldValue.serverTimestamp() });
-      });
-      
-      await batch.commit();
-    } catch (error) {
-      console.error('Error marking digest notifications as read:', error);
-    }
-  }
+
 
   /**
    * Schedule daily digest for all users (to be called by a scheduled function)

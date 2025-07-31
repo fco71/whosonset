@@ -80,8 +80,21 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
         { to: '/post-job', label: t('nav.postNewJob') },
     ];
 
-    const { notifications, loading, markAsRead } = useNotifications();
-    const unreadCount = notifications.filter(n => !n.read).length;
+    let notifications: any[] = [];
+    let loading = false;
+    let unreadCount = 0;
+    
+    try {
+      const notificationsData = useNotifications();
+      notifications = notificationsData.notifications || [];
+      loading = notificationsData.loading || false;
+      unreadCount = notificationsData.unreadCount || 0;
+    } catch (error) {
+      console.error('[Navigation] Error loading notifications:', error);
+      notifications = [];
+      loading = false;
+      unreadCount = 0;
+    }
     
     console.log('[Navigation] Notifications loaded:', notifications.length, 'Unread:', unreadCount);
 
@@ -505,13 +518,12 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
             )}
 
             {/* Notification Center */}
-            {/* Notification Center Modal */}
             <NotificationCenter 
                 isOpen={showNotificationCenter}
                 onClose={() => setShowNotificationCenter(false)}
             />
 
-            {/* Notification Settings Modal */}
+            {/* Notification Settings */}
             <NotificationSettings
                 isOpen={showNotificationSettings}
                 onClose={() => setShowNotificationSettings(false)}

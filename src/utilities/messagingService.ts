@@ -695,39 +695,16 @@ export class MessagingService {
       const senderProfile = await this.getUserProfile(senderId);
       const senderName = senderProfile?.displayName || 'Unknown User';
       
-      // Create notification content based on message type
-      let notificationMessage = `New message from ${senderName}`;
-      if (messageType === 'image') {
-        notificationMessage = `${senderName} sent you a photo`;
-      } else if (messageType === 'voice') {
-        notificationMessage = `${senderName} sent you a voice message`;
-      } else if (messageType === 'file') {
-        notificationMessage = `${senderName} sent you a file`;
-      } else if (content.length > 50) {
-        notificationMessage = `${senderName}: ${content.substring(0, 50)}...`;
-      } else {
-        notificationMessage = `${senderName}: ${content}`;
-      }
-      
-      // Create notification document
-      const notificationData = {
-        type: 'message',
-        message: notificationMessage,
-        timestamp: serverTimestamp(),
-        read: false,
+      // Create notification directly without dynamic import
+      await addDoc(collection(db, 'notifications'), {
         userId: receiverId,
+        type: "message",
+        message: `New message from ${senderName}`,
         senderId: senderId,
         messageId: messageId,
-        conversationId: await this.getConversationId(senderId, receiverId),
-        extra: {
-          content: content,
-          messageType: messageType
-        }
-      };
-      
-      // Add to user's notifications
-      const notificationsRef = collection(db, 'users', receiverId, 'notifications');
-      await addDoc(notificationsRef, notificationData);
+        read: false,
+        createdAt: serverTimestamp()
+      });
       
       console.log('[MessagingService] Message notification created successfully');
     } catch (error) {

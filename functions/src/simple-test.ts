@@ -1,5 +1,9 @@
-import { onRequest } from "firebase-functions/v2/https";
+import { onRequest } from 'firebase-functions/v2/https';
 
-export const simpleTest = onRequest(async (req, res) => {
-  res.json({ message: "Hello from Firebase Functions!", timestamp: new Date().toISOString() });
+export const simpleTest = onRequest((req, res) => {
+  res.json({
+    success: true,
+    message: 'Simple test function working!',
+    timestamp: new Date().toISOString()
+  });
 }); 

@@ -19,6 +19,7 @@ const TestNotificationsPage: React.FC = () => {
     setResult('');
 
     try {
+      console.log('[TestNotificationsPage] Sending test message...');
       // Send a test message to yourself
       const messageId = await MessagingService.sendDirectMessage(
         currentUser.uid,
@@ -29,7 +30,7 @@ const TestNotificationsPage: React.FC = () => {
 
       setResult(`✅ Test message sent successfully! Message ID: ${messageId}`);
     } catch (error) {
-      console.error('Error sending test message:', error);
+      console.error('[TestNotificationsPage] Error sending test message:', error);
       setResult(`❌ Error sending test message: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setLoading(false);
@@ -46,6 +47,7 @@ const TestNotificationsPage: React.FC = () => {
     setResult('');
 
     try {
+      console.log('[TestNotificationsPage] Creating test notification...');
       // Create a test notification directly
       await MessagingService.createMessageNotification(
         currentUser.uid,
@@ -57,7 +59,7 @@ const TestNotificationsPage: React.FC = () => {
 
       setResult('✅ Test notification created directly!');
     } catch (error) {
-      console.error('Error creating test notification:', error);
+      console.error('[TestNotificationsPage] Error creating test notification:', error);
       setResult(`❌ Error creating test notification: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setLoading(false);

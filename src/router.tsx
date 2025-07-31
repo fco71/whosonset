@@ -1,7 +1,6 @@
 import { createBrowserRouter } from 'react-router-dom';
 import React from 'react';
 import { ProtectedRoute, PublicRoute } from './components/ProtectedRoute';
-import ErrorBoundary from './components/ErrorBoundary';
 
 // Lazy load pages for better performance
 const ProducerView = React.lazy(() => import('./pages/ProducerView'));

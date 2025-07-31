@@ -3,7 +3,6 @@ import { Outlet } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from './theme/ThemeProvider';
 import { useAuth } from './contexts/AuthContext';
-import ErrorBoundary from './components/ErrorBoundary';
 import '@fontsource/inter/400.css';
 import '@fontsource/inter/500.css';
 import '@fontsource/inter/600.css';
@@ -24,8 +23,6 @@ function App() {
     
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
       console.error('Unhandled promise rejection:', event.reason);
-      // Prevent the default browser behavior
-      event.preventDefault();
     };
 
     const handleUnhandledError = (event: ErrorEvent) => {
@@ -54,20 +51,18 @@ function App() {
     <ThemeProvider>
       <div className="min-h-screen bg-background text-foreground" style={{ fontFamily: 'Inter, sans-serif' }}>
         <div className="min-h-screen bg-gray-50 text-gray-900">
-          <Navigation 
-            authUser={currentUser} 
-            userSignOut={handleSignOut} 
-          />
+                                  <Navigation 
+                          authUser={currentUser} 
+                          userSignOut={handleSignOut} 
+                        />
           <main className="container mx-auto px-4 py-8 pt-24">
-            <Suspense fallback={
-              <div className="flex items-center justify-center min-h-[400px]">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              </div>
-            }>
-              <ErrorBoundary>
-                <Outlet />
-              </ErrorBoundary>
-            </Suspense>
+                                    <Suspense fallback={
+                          <div className="flex items-center justify-center min-h-[400px]">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                          </div>
+                        }>
+                          <Outlet />
+                        </Suspense>
           </main>
           
           {/* Footer would go here */}

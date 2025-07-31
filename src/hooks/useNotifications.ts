@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { collection, onSnapshot, query, orderBy, updateDoc, doc, writeBatch, deleteDoc } from "firebase/firestore";
+import { collection, onSnapshot, query, orderBy, updateDoc, doc, writeBatch, deleteDoc, where } from "firebase/firestore";
 import { useAuth } from "../contexts/AuthContext";
 import { db } from "../firebase";
 
@@ -23,38 +23,65 @@ export function useNotifications() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('[useNotifications] Effect triggered with currentUser:', currentUser?.uid);
+    
     if (!currentUser) {
+      console.log('[useNotifications] No current user, clearing notifications');
       setNotifications([]);
       setLoading(false);
       return;
     }
-    const q = query(
-      collection(db, "users", currentUser.uid, "notifications"),
-      orderBy("timestamp", "desc")
-    );
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const notifs: Notification[] = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Notification[];
-      setNotifications(notifs);
+    
+    try {
+      console.log('[useNotifications] Setting up Firestore listener for user:', currentUser.uid);
+      
+      // Query notifications from the main notifications collection for the current user
+      const q = query(
+        collection(db, "notifications"),
+        where("userId", "==", currentUser.uid),
+        orderBy("createdAt", "desc")
+      );
+      
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        console.log('[useNotifications] Received snapshot with', snapshot.docs.length, 'notifications');
+        const notifs: Notification[] = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as Notification[];
+        setNotifications(notifs);
+        setLoading(false);
+      }, (error) => {
+        console.error('[useNotifications] Error fetching notifications:', error);
+        setLoading(false);
+        // Set empty notifications on error
+        setNotifications([]);
+      });
+      
+      return () => {
+        console.log('[useNotifications] Cleaning up listener');
+        unsubscribe();
+      };
+    } catch (error) {
+      console.error('[useNotifications] Error setting up listener:', error);
       setLoading(false);
-    });
-    return () => unsubscribe();
+      setNotifications([]);
+    }
   }, [currentUser]);
 
   const markAsRead = async (notificationId: string) => {
     if (!currentUser) return;
     try {
-      const notifRef = doc(db, "users", currentUser.uid, "notifications", notificationId);
+      console.log('[useNotifications] Marking notification as read:', notificationId);
+      const notifRef = doc(db, "notifications", notificationId);
       await updateDoc(notifRef, { read: true });
       
       // Update local state to mark as read (don't remove)
       setNotifications(prev => prev.map(notif => 
         notif.id === notificationId ? { ...notif, read: true } : notif
       ));
+      console.log('[useNotifications] Notification marked as read successfully');
     } catch (error) {
-      console.error('Error marking notification as read:', error);
+      console.error('[useNotifications] Error marking notification as read:', error);
       // Don't throw - just log the error
     }
   };
@@ -68,7 +95,7 @@ export function useNotifications() {
       const unreadNotifications = notifications.filter(notification => !notification.read);
       
       unreadNotifications.forEach(notification => {
-        const notifRef = doc(db, "users", currentUser.uid, "notifications", notification.id);
+        const notifRef = doc(db, "notifications", notification.id);
         batch.update(notifRef, { read: true });
       });
       await batch.commit();
@@ -88,7 +115,7 @@ export function useNotifications() {
       // Delete all notifications from Firestore
       const batch = writeBatch(db);
       notifications.forEach(notification => {
-        const notifRef = doc(db, "users", currentUser.uid, "notifications", notification.id);
+        const notifRef = doc(db, "notifications", notification.id);
         batch.delete(notifRef);
       });
       await batch.commit();
@@ -109,23 +136,26 @@ export function useNotifications() {
       cutoffDate.setDate(cutoffDate.getDate() - daysOld);
       
       const oldNotifications = notifications.filter(notification => {
-        const notificationDate = notification.timestamp?.toDate?.() || new Date(notification.timestamp);
-        return notificationDate < cutoffDate;
+        const notificationDate = notification.createdAt?.toDate?.() || notification.timestamp?.toDate?.();
+        return notificationDate && notificationDate < cutoffDate;
       });
       
-      if (oldNotifications.length === 0) return;
+      if (oldNotifications.length === 0) {
+        console.log('No old notifications to delete');
+        return;
+      }
       
       const batch = writeBatch(db);
       oldNotifications.forEach(notification => {
-        const notifRef = doc(db, "users", currentUser.uid, "notifications", notification.id);
+        const notifRef = doc(db, "notifications", notification.id);
         batch.delete(notifRef);
       });
       await batch.commit();
       
       // Remove from local state
       setNotifications(prev => prev.filter(notification => {
-        const notificationDate = notification.timestamp?.toDate?.() || new Date(notification.timestamp);
-        return notificationDate >= cutoffDate;
+        const notificationDate = notification.createdAt?.toDate?.() || notification.timestamp?.toDate?.();
+        return !notificationDate || notificationDate >= cutoffDate;
       }));
       
       console.log(`Deleted ${oldNotifications.length} old notifications`);
@@ -139,8 +169,10 @@ export function useNotifications() {
     if (!currentUser) return;
     
     try {
-      await deleteDoc(doc(db, "users", currentUser.uid, "notifications", notificationId));
-      // Remove from local state immediately
+      const notifRef = doc(db, "notifications", notificationId);
+      await deleteDoc(notifRef);
+      
+      // Remove from local state
       setNotifications(prev => prev.filter(notif => notif.id !== notificationId));
     } catch (error) {
       console.error('Error deleting notification:', error);
@@ -149,7 +181,16 @@ export function useNotifications() {
   };
 
   // Calculate unread count
-  const unreadCount = notifications.filter(notification => !notification.read).length;
+  const unreadCount = notifications.filter(n => !n.read).length;
 
-  return { notifications, loading, markAsRead, markAllAsRead, clearAll, deleteNotification, deleteOldNotifications, unreadCount };
+  return {
+    notifications,
+    loading,
+    unreadCount,
+    markAsRead,
+    markAllAsRead,
+    clearAll,
+    deleteOldNotifications,
+    deleteNotification
+  };
 } 

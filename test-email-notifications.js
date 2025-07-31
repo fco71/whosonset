@@ -7,7 +7,7 @@
  * It tests the local email configuration and provides guidance for testing.
  */
 
-const nodemailer = require('nodemailer');
+import nodemailer from 'nodemailer';
 
 // Configuration (same as in Firebase Functions)
 const config = {
