@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from './theme/ThemeProvider';
@@ -15,6 +15,31 @@ import Navigation from './components/Navigation';
 
 function App() {
   const { currentUser, logout } = useAuth();
+  
+  console.log('[App] Rendering with currentUser:', currentUser?.email);
+  
+  // Global error handler for unhandled promise rejections
+  useEffect(() => {
+    console.log('[App] Setting up global error handlers...');
+    
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      console.error('Unhandled promise rejection:', event.reason);
+      // Prevent the default browser behavior
+      event.preventDefault();
+    };
+
+    const handleUnhandledError = (event: ErrorEvent) => {
+      console.error('Unhandled error:', event.error);
+    };
+
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+    window.addEventListener('error', handleUnhandledError);
+
+    return () => {
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+      window.removeEventListener('error', handleUnhandledError);
+    };
+  }, []);
   
   const handleSignOut = async () => {
     try {

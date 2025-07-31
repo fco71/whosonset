@@ -26,11 +26,17 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+  try {
+    const context = useContext(AuthContext);
+    if (context === undefined) {
+      console.error('useAuth must be used within an AuthProvider');
+      throw new Error('useAuth must be used within an AuthProvider');
+    }
+    return context;
+  } catch (error) {
+    console.error('Error in useAuth hook:', error);
+    throw error;
   }
-  return context;
 };
 
 interface AuthProviderProps {
@@ -41,6 +47,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [userProfile, setUserProfile] = useState<any | null>(null);
+
+  // Add debugging
+  console.log('[AuthProvider] Initializing...');
 
   const login = async (email: string, password: string) => {
     await signInWithEmailAndPassword(auth, email, password);
@@ -258,27 +267,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      setCurrentUser(user);
-      setLoading(false);
+    try {
+      console.log('[AuthProvider] Setting up auth state listener...');
       
-      // Mock user profile for analytics
-      if (user) {
-        setUserProfile({
-          id: user.uid,
-          email: user.email,
-          displayName: user.displayName || 'User',
-          photoURL: user.photoURL,
-          role: 'crew_member', // Mock role
-          department: 'production', // Mock department
-          experience: 'intermediate', // Mock experience level
-        });
-      } else {
-        setUserProfile(null);
-      }
-    });
+      const unsubscribe = auth.onAuthStateChanged((user) => {
+        try {
+          console.log('[AuthProvider] Auth state changed:', user ? 'User logged in' : 'No user');
+          setCurrentUser(user);
+          setLoading(false);
+          
+          // Mock user profile for analytics
+          if (user) {
+            setUserProfile({
+              id: user.uid,
+              email: user.email,
+              displayName: user.displayName || 'User',
+              photoURL: user.photoURL,
+              role: 'crew_member', // Mock role
+              department: 'production', // Mock department
+              experience: 'intermediate', // Mock experience level
+            });
+          } else {
+            setUserProfile(null);
+          }
+        } catch (error) {
+          console.error('[AuthProvider] Error in auth state change handler:', error);
+          setLoading(false);
+        }
+      });
 
-    return unsubscribe;
+      return unsubscribe;
+    } catch (error) {
+      console.error('[AuthProvider] Error setting up auth state listener:', error);
+      setLoading(false);
+    }
   }, []);
 
   const value = {

@@ -9,6 +9,7 @@ import ReactDOM from 'react-dom/client';
 import { RouterProvider } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { createAppRouter } from './router';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Global error handler to catch any runtime errors
 window.addEventListener('error', function(event) {
@@ -17,11 +18,15 @@ window.addEventListener('error', function(event) {
     filename: event.filename,
     lineno: event.lineno,
     colno: event.colno,
-    error: event.error
+    error: event.error,
+    stack: event.error?.stack
   });
   
-  // Prevent the error from being logged multiple times
-  event.preventDefault();
+  // Only prevent default for known safe errors
+  if (event.message && event.message.includes('Script error')) {
+    console.warn('Suppressing generic script error');
+    event.preventDefault();
+  }
 });
 
 // Global handler for all <img> errors (for blob URLs)
@@ -48,10 +53,16 @@ window.addEventListener('unhandledrejection', function (e) {
   console.error('Unhandled promise rejection event:', e);
   if (e.reason) {
     console.error('Unhandled promise rejection reason:', e.reason);
+    console.error('Stack trace:', e.reason?.stack);
   } else {
     console.error('Unhandled promise rejection with unknown reason:', e);
   }
-  e.preventDefault();
+  
+  // Only prevent default for known safe errors
+  if (e.reason && typeof e.reason === 'string' && e.reason.includes('blob:')) {
+    console.warn('Suppressing blob URL error');
+    e.preventDefault();
+  }
 });
 
 // Create router instance once
@@ -59,7 +70,9 @@ const router = createAppRouter();
 
 const RootWithProvider = () => (
   <AuthProvider>
-    <RouterProvider router={router} />
+    <ErrorBoundary>
+      <RouterProvider router={router} />
+    </ErrorBoundary>
   </AuthProvider>
 );
 

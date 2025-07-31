@@ -14,9 +14,27 @@
     "myApplications": "My Applications",
     "postedJobs": "Posted Jobs",
     "settings": "Settings",
+    "notificationSettings": "Notification Settings",
     "signOut": "Sign Out",
     "signIn": "Sign In",
-    "getStarted": "Get Started"
+    "getStarted": "Get Started",
+    "chat": "Chat",
+    "profile": "Profile",
+    "logout": "Logout"
+  },
+  "notificationSettings": {
+    "title": "Notification Settings",
+    "general": "General Settings",
+    "specific": "Specific Notifications"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "search": "Search notifications...",
+    "all": "All",
+    "unread": "Unread",
+    "read": "Read",
+    "noResults": "No notifications match your criteria",
+    "empty": "No notifications yet"
   },
   "home": {
     "loading": "Loading...",

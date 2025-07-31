@@ -14,9 +14,24 @@
     "myApplications": "Mis Aplicaciones",
     "postedJobs": "Trabajos Publicados",
     "settings": "Configuración",
+    "notificationSettings": "Configuración de Notificaciones",
     "signOut": "Cerrar Sesión",
     "signIn": "Iniciar Sesión",
     "getStarted": "Comenzar"
+  },
+  "notificationSettings": {
+    "title": "Configuración de Notificaciones",
+    "general": "Configuración General",
+    "specific": "Notificaciones Específicas"
+  },
+  "notifications": {
+    "title": "Notificaciones",
+    "search": "Buscar notificaciones...",
+    "all": "Todas",
+    "unread": "No leídas",
+    "read": "Leídas",
+    "noResults": "No hay notificaciones que coincidan con tu búsqueda",
+    "empty": "Aún no hay notificaciones"
   },
   "home": {
     "loading": "Cargando...",

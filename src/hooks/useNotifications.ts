@@ -8,6 +8,7 @@ export interface Notification {
   type: string;
   message: string;
   timestamp: any;
+  createdAt?: any; // Add createdAt for compatibility
   read: boolean;
   userId: string;
   relatedId?: string;
@@ -130,7 +131,7 @@ export function useNotifications() {
       console.log(`Deleted ${oldNotifications.length} old notifications`);
     } catch (error) {
       console.error('Error deleting old notifications:', error);
-      throw error;
+      // Don't throw - just log the error
     }
   };
 
@@ -147,5 +148,8 @@ export function useNotifications() {
     }
   };
 
-  return { notifications, loading, markAsRead, markAllAsRead, clearAll, deleteNotification, deleteOldNotifications };
+  // Calculate unread count
+  const unreadCount = notifications.filter(notification => !notification.read).length;
+
+  return { notifications, loading, markAsRead, markAllAsRead, clearAll, deleteNotification, deleteOldNotifications, unreadCount };
 } 
