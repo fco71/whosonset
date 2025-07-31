@@ -54,10 +54,10 @@ export const testEmail = onRequest(async (req, res) => {
           <p>${message}</p>
           <p style="margin-top: 30px; font-size: 14px; color: #6b7280;">
             Best regards,<br>
-            The WhosOnSet Team
+            The My Film Jobs Team
           </p>
         </div>`,
-        text: `Test Email\n\n${message}\n\nBest regards,\nThe WhosOnSet Team`
+        text: `Test Email\n\n${message}\n\nBest regards,\nThe My Film Jobs Team`
       },
       data: { message }
     });
@@ -69,6 +69,49 @@ export const testEmail = onRequest(async (req, res) => {
     }
   } catch (error) {
     console.error('Test email error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Test notification function
+export const testNotification = onRequest(async (req, res) => {
+  try {
+    const { userId, type, message } = req.body;
+    
+    if (!userId || !type || !message) {
+      res.status(400).json({ 
+        error: 'Missing required fields: userId, type, message' 
+      });
+      return;
+    }
+
+    // Create a test notification
+    const notificationId = await NotificationService.createNotification({
+      userId,
+      type,
+      message,
+      sendEmail: true,
+      emailData: {
+        to: 'iam@myfilmjobs.com', // Test email
+        template: EmailService.getMessageNotificationTemplate(
+          'Test User',
+          'This is a test notification message'
+        ),
+        data: {
+          senderName: 'Test User',
+          messagePreview: 'This is a test notification message',
+          messageUrl: 'https://myfilmjobs.com/chat'
+        }
+      }
+    });
+
+    res.json({ 
+      success: true, 
+      message: 'Test notification created successfully',
+      notificationId 
+    });
+  } catch (error) {
+    console.error('Test notification error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

@@ -3,6 +3,7 @@ import { useNotifications } from '../hooks/useNotifications';
 import { Bell, X, Check, Trash2, Filter, Search, MoreVertical } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { formatDistanceToNow } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 
 interface NotificationCenterProps {
   isOpen: boolean;
@@ -12,6 +13,7 @@ interface NotificationCenterProps {
 const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose }) => {
   const { notifications, markAsRead, deleteNotification, unreadCount } = useNotifications();
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedNotifications, setSelectedNotifications] = useState<string[]>([]);
@@ -72,8 +74,79 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
       if (!notification.read) {
         markAsRead(notification.id);
       }
+      
       // Handle navigation based on notification type
-      // This would be implemented based on your routing logic
+      switch (notification.type) {
+        case 'message':
+          // Navigate to chat with the sender
+          if (notification.senderId) {
+            navigate(`/chat?user=${notification.senderId}`);
+          } else {
+            navigate('/social'); // Fallback to social page
+          }
+          break;
+          
+        case 'job_application':
+          // Navigate to job applications page
+          if (notification.relatedId) {
+            navigate(`/jobs/${notification.relatedId}/applications`);
+          } else {
+            navigate('/jobs');
+          }
+          break;
+          
+        case 'application_status_update':
+          // Navigate to application detail
+          if (notification.applicationId) {
+            navigate(`/applications/${notification.applicationId}`);
+          } else {
+            navigate('/jobs/applied');
+          }
+          break;
+          
+        case 'project_invitation':
+          // Navigate to project invitation
+          if (notification.relatedId) {
+            navigate(`/projects/${notification.relatedId}`);
+          } else {
+            navigate('/projects');
+          }
+          break;
+          
+        case 'task_assignment':
+          // Navigate to task management
+          if (notification.relatedId) {
+            navigate(`/projects/${notification.relatedId}/tasks`);
+          } else {
+            navigate('/collaboration');
+          }
+          break;
+          
+        case 'project_update':
+          // Navigate to project detail
+          if (notification.relatedId) {
+            navigate(`/projects/${notification.relatedId}`);
+          } else {
+            navigate('/projects');
+          }
+          break;
+          
+        default:
+          // Default navigation based on type
+          if (notification.type.includes('job')) {
+            navigate('/jobs');
+          } else if (notification.type.includes('project')) {
+            navigate('/projects');
+          } else if (notification.type.includes('message')) {
+            navigate('/social');
+          } else {
+            navigate('/'); // Home page as fallback
+          }
+          break;
+      }
+      
+      // Close the notification center after navigation
+      onClose();
     } catch (error) {
       console.error('Error handling notification click:', error);
     }
@@ -135,12 +208,21 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
               )}
             </h2>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => navigate('/test-notifications')}
+              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+              title="Test Notifications"
+            >
+              Test
+            </button>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
         </div>
 
         {/* Search and Filter */}
@@ -210,9 +292,10 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
               {filteredNotifications.map((notification) => (
                 <div
                   key={notification.id}
-                  className={`p-4 border rounded-lg transition-all hover:shadow-md ${
+                  className={`p-4 border rounded-lg transition-all hover:shadow-md cursor-pointer ${
                     notification.read ? 'bg-gray-50' : 'bg-white border-blue-200'
                   } ${selectedNotifications.includes(notification.id) ? 'ring-2 ring-blue-500' : ''}`}
+                  onClick={() => handleNotificationClick(notification)}
                 >
                   <div className="flex items-start space-x-3">
                     {/* Checkbox for bulk selection */}
@@ -220,6 +303,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
                       type="checkbox"
                       checked={selectedNotifications.includes(notification.id)}
                       onChange={(e) => {
+                        e.stopPropagation(); // Prevent triggering the card click
                         if (e.target.checked) {
                           setSelectedNotifications(prev => [...prev, notification.id]);
                           setShowBulkActions(true);
@@ -261,7 +345,10 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
                         <div className="flex items-center space-x-1">
                           {!notification.read && (
                             <button
-                              onClick={() => markAsRead(notification.id)}
+                              onClick={(e) => {
+                                e.stopPropagation(); // Prevent triggering the card click
+                                markAsRead(notification.id);
+                              }}
                               className="p-1 text-gray-400 hover:text-green-600 transition-colors"
                               title="Mark as read"
                             >
@@ -269,7 +356,10 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
                             </button>
                           )}
                           <button
-                            onClick={() => deleteNotification(notification.id)}
+                            onClick={(e) => {
+                              e.stopPropagation(); // Prevent triggering the card click
+                              deleteNotification(notification.id);
+                            }}
                             className="p-1 text-gray-400 hover:text-red-600 transition-colors"
                             title="Delete notification"
                           >

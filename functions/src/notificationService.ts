@@ -242,7 +242,7 @@ export class NotificationService {
             projectName: projectData.projectName,
             assignerName: assignerData.displayName || assignerData.email,
             dueDate: dueDate,
-            dashboardUrl: `${process.env.FRONTEND_URL || 'https://whosonset.com'}/tasks/${taskId}`
+            dashboardUrl: `${process.env.FRONTEND_URL || 'https://myfilmjobs.com'}/tasks/${taskId}`
           }
         }
       });

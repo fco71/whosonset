@@ -66,6 +66,7 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
         { to: '/jobs', label: t('nav.jobs') },
         { to: '/projects', label: t('nav.projects') },
         { to: '/collaboration', label: t('nav.collaboration') },
+        { to: '/test-notifications', label: 'Test Notifications' },
     ];
 
     const authenticatedLinks = [
@@ -79,17 +80,10 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
         { to: '/post-job', label: t('nav.postNewJob') },
     ];
 
-    // Temporarily disable notifications for debugging
-    // const { notifications, loading, markAsRead } = useNotifications();
-    // const unreadCount = notifications.filter(n => !n.read).length;
+    const { notifications, loading, markAsRead } = useNotifications();
+    const unreadCount = notifications.filter(n => !n.read).length;
     
-    // Mock data for debugging
-    const notifications: any[] = [];
-    const loading = false;
-    const markAsRead = () => {};
-    const unreadCount = 0;
-    
-    console.log('[Navigation] Using mock notifications data');
+    console.log('[Navigation] Notifications loaded:', notifications.length, 'Unread:', unreadCount);
 
     const languages = [
         { code: 'en', label: 'EN' },
@@ -512,22 +506,16 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
 
             {/* Notification Center */}
             {/* Notification Center Modal */}
-            {/* Temporarily disabled for debugging */}
-            {false && (
-                <NotificationCenter 
-                    isOpen={showNotificationCenter}
-                    onClose={() => setShowNotificationCenter(false)}
-                />
-            )}
+            <NotificationCenter 
+                isOpen={showNotificationCenter}
+                onClose={() => setShowNotificationCenter(false)}
+            />
 
             {/* Notification Settings Modal */}
-            {/* Temporarily disabled for debugging */}
-            {false && (
-                <NotificationSettings
-                    isOpen={showNotificationSettings}
-                    onClose={() => setShowNotificationSettings(false)}
-                />
-            )}
+            <NotificationSettings
+                isOpen={showNotificationSettings}
+                onClose={() => setShowNotificationSettings(false)}
+            />
         </>
     );
 };
