@@ -12,19 +12,21 @@ interface ChatInterfaceProps {
   currentUserName: string;
   currentUserAvatar?: string;
   demoUsers?: Record<string, any>;
+  initialSelectedUser?: string; // For deep linking to specific conversations
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
   currentUserId, 
   currentUserName,
   currentUserAvatar,
-  demoUsers = {}
+  demoUsers = {},
+  initialSelectedUser
 }) => {
   const { t } = useTranslation();
   
   // State
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
-  const [selectedUser, setSelectedUser] = useState<string | null>(null);
+  const [selectedUser, setSelectedUser] = useState<string | null>(initialSelectedUser || null);
   const [messages, setMessages] = useState<DirectMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -98,6 +100,23 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       cleanup();
     };
   }, [currentUserId]);
+
+  // Mark conversation as read when selected user changes
+  useEffect(() => {
+    if (selectedUser && conversations.length > 0) {
+      const conversation = conversations.find(c => c.userId === selectedUser);
+      if (conversation && conversation.unreadCount > 0) {
+        const markAsRead = async () => {
+          try {
+            await MessagingService.markConversationAsRead(currentUserId, selectedUser);
+          } catch (error) {
+            console.error('Error marking conversation as read:', error);
+          }
+        };
+        markAsRead();
+      }
+    }
+  }, [selectedUser, conversations, currentUserId]);
 
   // Set up message listener when user is selected
   useEffect(() => {
@@ -256,7 +275,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     setShowNewChat(false);
     setNewChatSearchQuery('');
     setSearchResults([]);
-  }, []);
+    
+    // Mark conversation as read when starting a new conversation
+    try {
+      await MessagingService.markConversationAsRead(currentUserId, userId);
+    } catch (error) {
+      console.error('Error marking conversation as read:', error);
+    }
+  }, [currentUserId]);
 
   const handleNewChatSearch = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
@@ -799,7 +825,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                   <div
                     key={conversation.userId}
                     className={`conversation-item ${isSelected ? 'selected' : ''}`}
-                    onClick={() => setSelectedUser(conversation.userId)}
+                    onClick={async () => {
+                      setSelectedUser(conversation.userId);
+                      // Mark conversation as read when selected
+                      if (conversation.unreadCount > 0) {
+                        try {
+                          await MessagingService.markConversationAsRead(currentUserId, conversation.userId);
+                        } catch (error) {
+                          console.error('Error marking conversation as read:', error);
+                        }
+                      }
+                    }}
                   >
                     <div className="conversation-avatar">
                       {conversation.userAvatar ? (
