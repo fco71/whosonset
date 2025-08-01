@@ -1,39 +1,28 @@
 import * as admin from "firebase-admin";
 import { onRequest } from "firebase-functions/v2/https";
-import * as functions from 'firebase-functions';
 
 admin.initializeApp();
 
-// Email configuration test function
-export const emailTest = onRequest(async (req, res) => {
-  try {
-    // Get Firebase Functions config
-    const config = functions.config();
-    
-    res.json({ 
-      message: "Email configuration test", 
-      config: {
-        smtp: {
-          host: config.smtp?.host,
-          port: config.smtp?.port,
-          user: config.smtp?.user,
-          // Don't include password for security
-        },
-        email: {
-          from: config.email?.from
-        }
-      },
-      timestamp: new Date().toISOString() 
-    });
-  } catch (error) {
-    res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
-  }
-});
+// CORS helper function
+const setCorsHeaders = (res: any) => {
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+};
 
-// Test email function (temporary for testing)
-export const testEmail = onRequest(async (req, res) => {
+// Email test function with CORS
+export const emailTest = onRequest(async (req, res) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    setCorsHeaders(res);
+    res.status(204).send('');
+    return;
+  }
+
+  setCorsHeaders(res);
+  
   try {
-    const { to, subject, message } = req.body;
+    const { to, subject, message, senderName } = req.body;
     
     if (!to || !subject || !message) {
       res.status(400).json({ 
@@ -42,11 +31,44 @@ export const testEmail = onRequest(async (req, res) => {
       return;
     }
 
-    // For now, just return success without sending email
     res.json({ 
       success: true, 
-      message: 'Email test endpoint working (email sending disabled for now)',
-      data: { to, subject, message }
+      message: 'Email test endpoint working with CORS',
+      data: { to, subject, message, senderName },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Email test error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Test email function with CORS
+export const testEmail = onRequest(async (req, res) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    setCorsHeaders(res);
+    res.status(204).send('');
+    return;
+  }
+
+  setCorsHeaders(res);
+  
+  try {
+    const { to, subject, message, senderName } = req.body;
+    
+    if (!to || !subject || !message) {
+      res.status(400).json({ 
+        error: 'Missing required fields: to, subject, message' 
+      });
+      return;
+    }
+
+    res.json({ 
+      success: true, 
+      message: 'Test email endpoint working with CORS',
+      data: { to, subject, message, senderName },
+      timestamp: new Date().toISOString()
     });
   } catch (error) {
     console.error('Test email error:', error);
@@ -54,275 +76,35 @@ export const testEmail = onRequest(async (req, res) => {
   }
 });
 
-// Test notification function
-export const testNotification = onRequest(async (req, res) => {
+// Simple email test function with CORS
+export const simpleEmailTest = onRequest(async (req, res) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    setCorsHeaders(res);
+    res.status(204).send('');
+    return;
+  }
+
+  setCorsHeaders(res);
+  
   try {
-    const { userId, type, message } = req.body;
+    const { to, subject, message, senderName } = req.body;
     
-    if (!userId || !type || !message) {
+    if (!to || !subject || !message) {
       res.status(400).json({ 
-        error: 'Missing required fields: userId, type, message' 
+        error: 'Missing required fields: to, subject, message' 
       });
       return;
     }
 
-    // Create a test notification in Firestore
-    const notificationRef = await admin.firestore().collection("notifications").add({
-      userId,
-      type,
-      message,
-      read: false,
-      createdAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-
     res.json({ 
       success: true, 
-      message: 'Test notification created successfully',
-      notificationId: notificationRef.id
+      message: 'Simple email test endpoint working with CORS',
+      data: { to, subject, message, senderName },
+      timestamp: new Date().toISOString()
     });
   } catch (error) {
-    console.error('Test notification error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Daily digest function (to be called by Cloud Scheduler)
-export const sendDailyDigest = onRequest(async (req, res) => {
-  try {
-    // For now, just return success without sending email
-    res.json({ 
-      success: true, 
-      message: 'Daily digest endpoint working (email sending disabled for now)'
-    });
-  } catch (error) {
-    console.error('Daily digest error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Test daily digest for specific user
-export const testDailyDigest = onRequest(async (req, res) => {
-  try {
-    const { userId } = req.body;
-    
-    if (!userId) {
-      res.status(400).json({ 
-        error: 'Missing required field: userId' 
-      });
-      return;
-    }
-
-    // For now, just return success without sending email
-    res.json({ 
-      success: true, 
-      message: 'Daily digest test endpoint working (email sending disabled for now)',
-      userId
-    });
-  } catch (error) {
-    console.error('Test daily digest error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Manual Job Application Notification Trigger
-export const triggerJobApplicationNotification = onRequest(async (req, res) => {
-  try {
-    const { jobId, applicationId, applicantId, postedById } = req.body;
-    
-    if (!jobId || !applicationId || !applicantId || !postedById) {
-      res.status(400).json({ 
-        error: 'Missing required fields: jobId, applicationId, applicantId, postedById' 
-      });
-      return;
-    }
-
-    // Create notification in Firestore
-    await admin.firestore().collection("notifications").add({
-      userId: postedById,
-      type: "job_application",
-      message: `New application received for job posting`,
-      relatedId: jobId,
-      applicationId: applicationId,
-      applicantId: applicantId,
-      read: false,
-      createdAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-
-    res.json({ 
-      success: true, 
-      message: 'Job application notification created successfully'
-    });
-  } catch (error) {
-    console.error('Error creating job application notification:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Manual Message Notification Trigger
-export const triggerMessageNotification = onRequest(async (req, res) => {
-  try {
-    const { receiverId, senderId, senderName, messageId } = req.body;
-    
-    if (!receiverId || !senderId || !messageId) {
-      res.status(400).json({ 
-        error: 'Missing required fields: receiverId, senderId, messageId' 
-      });
-      return;
-    }
-
-    // Create notification in Firestore
-    await admin.firestore().collection("notifications").add({
-      userId: receiverId,
-      type: "message",
-      message: `New message from ${senderName || 'User'}`,
-      senderId: senderId,
-      messageId: messageId,
-      read: false,
-      createdAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-
-    res.json({ 
-      success: true, 
-      message: 'Message notification created successfully'
-    });
-  } catch (error) {
-    console.error('Error creating message notification:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Manual Project Invitation Notification Trigger
-export const triggerProjectInvitationNotification = onRequest(async (req, res) => {
-  try {
-    const { invitedUserId, projectId, invitationId } = req.body;
-    
-    if (!invitedUserId || !projectId || !invitationId) {
-      res.status(400).json({ 
-        error: 'Missing required fields: invitedUserId, projectId, invitationId' 
-      });
-      return;
-    }
-
-    // Create notification in Firestore
-    await admin.firestore().collection("notifications").add({
-      userId: invitedUserId,
-      type: "project_invitation",
-      message: `You've been invited to join a project`,
-      relatedId: projectId,
-      invitationId: invitationId,
-      read: false,
-      createdAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-
-    res.json({ 
-      success: true, 
-      message: 'Project invitation notification created successfully'
-    });
-  } catch (error) {
-    console.error('Error creating project invitation notification:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Manual Task Assignment Notification Trigger
-export const triggerTaskAssignmentNotification = onRequest(async (req, res) => {
-  try {
-    const { assignedUserId, taskId, assignmentId } = req.body;
-    
-    if (!assignedUserId || !taskId || !assignmentId) {
-      res.status(400).json({ 
-        error: 'Missing required fields: assignedUserId, taskId, assignmentId' 
-      });
-      return;
-    }
-
-    // Create notification in Firestore
-    await admin.firestore().collection("notifications").add({
-      userId: assignedUserId,
-      type: "task_assignment",
-      message: `You've been assigned a new task`,
-      relatedId: taskId,
-      assignmentId: assignmentId,
-      read: false,
-      createdAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-
-    res.json({ 
-      success: true, 
-      message: 'Task assignment notification created successfully'
-    });
-  } catch (error) {
-    console.error('Error creating task assignment notification:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Manual Project Update Notification Trigger
-export const triggerProjectUpdateNotification = onRequest(async (req, res) => {
-  try {
-    const { projectId, userIds } = req.body;
-    
-    if (!projectId || !userIds || !Array.isArray(userIds)) {
-      res.status(400).json({ 
-        error: 'Missing required fields: projectId, userIds (array)' 
-      });
-      return;
-    }
-
-    // Create notifications for all project members
-    const batch = admin.firestore().batch();
-    userIds.forEach(userId => {
-      const ref = admin.firestore().collection("notifications").doc();
-      batch.set(ref, {
-        userId: userId,
-        type: "project_update",
-        message: `Project has been updated`,
-        relatedId: projectId,
-        read: false,
-        createdAt: admin.firestore.FieldValue.serverTimestamp()
-      });
-    });
-    await batch.commit();
-
-    res.json({ 
-      success: true, 
-      message: `Project update notifications created for ${userIds.length} users`
-    });
-  } catch (error) {
-    console.error('Error creating project update notifications:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Manual Application Status Update Notification Trigger
-export const triggerApplicationStatusUpdateNotification = onRequest(async (req, res) => {
-  try {
-    const { applicantId, applicationId, jobId, status } = req.body;
-    
-    if (!applicantId || !applicationId || !jobId || !status) {
-      res.status(400).json({ 
-        error: 'Missing required fields: applicantId, applicationId, jobId, status' 
-      });
-      return;
-    }
-
-    // Create notification in Firestore
-    await admin.firestore().collection("notifications").add({
-      userId: applicantId,
-      type: "application_status_update",
-      message: `Your job application status has been updated to: ${status}`,
-      applicationId: applicationId,
-      jobId: jobId,
-      read: false,
-      createdAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-
-    res.json({ 
-      success: true, 
-      message: 'Application status update notification created successfully'
-    });
-  } catch (error) {
-    console.error('Error creating application status update notification:', error);
+    console.error('Simple email test error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

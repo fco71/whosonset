@@ -193,6 +193,8 @@ const Home: React.FC = () => {
                 </div>
             </div>
 
+
+
             {/* Stats Section */}
             <div style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)', borderBottom: '1px solid #e2e8f0' }} aria-label="Platform Statistics">
                 <div className="container-base section-padding" style={{paddingLeft: 32, paddingRight: 32, maxWidth: 1200, margin: '0 auto'}}>

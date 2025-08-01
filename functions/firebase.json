@@ -1,1 +1,6 @@
-// Remove or comment out the predeploy lint step for functions 
+{
+  "functions": {
+    "source": ".",
+    "runtime": "nodejs18"
+  }
+} 

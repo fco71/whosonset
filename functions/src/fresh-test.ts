@@ -1,7 +1,7 @@
 import { onRequest } from "firebase-functions/v2/https";
 
-// Minimal test function with CORS
-export const minimalTest = onRequest(async (req, res) => {
+// Fresh simple test function with CORS
+export const freshTest = onRequest(async (req, res) => {
   // CORS headers
   res.set('Access-Control-Allow-Origin', '*');
   res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -13,9 +13,11 @@ export const minimalTest = onRequest(async (req, res) => {
     return;
   }
   
+  // Simple response
   res.json({ 
     success: true, 
-    message: 'Minimal test function working',
-    timestamp: new Date().toISOString()
+    message: 'Fresh test function working with CORS',
+    timestamp: new Date().toISOString(),
+    data: req.body || {}
   });
 }); 

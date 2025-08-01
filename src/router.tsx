@@ -38,7 +38,7 @@ const ProjectsPage = React.lazy(() => import('./pages/ProjectsPage'));
 const ProjectDetailPage = React.lazy(() => import('./pages/ProjectDetailPage'));
 const ProjectDashboard = React.lazy(() => import('./pages/ProjectManagement/ProjectDashboard'));
 const AddProject = React.lazy(() => import('./components/AddProject'));
-const TestNotificationsPage = React.lazy(() => import('./pages/TestNotificationsPage'));
+const SimpleEmailTestPage = React.lazy(() => import('./pages/SimpleEmailTestPage'));
 
 // Import the main App component that will handle the layout
 import App from './App';
@@ -91,12 +91,8 @@ export function createAppRouter() {
           ) 
         },
         { 
-          path: 'test-notifications', 
-          element: (
-            <ProtectedRoute>
-              <TestNotificationsPage />
-            </ProtectedRoute>
-          ) 
+          path: 'email-test', 
+          element: <SimpleEmailTestPage />
         },
         { 
           path: 'login', 
