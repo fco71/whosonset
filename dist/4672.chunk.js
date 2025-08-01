@@ -1,70 +1,12 @@
 "use strict";
-(self["webpackChunkwhosonset"] = self["webpackChunkwhosonset"] || []).push([[758],{
-
-/***/ 835:
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   Lx: () => (/* binding */ getProfileId),
-/* harmony export */   Mn: () => (/* binding */ getDisplayName),
-/* harmony export */   ed: () => (/* binding */ getPhotoUrl),
-/* harmony export */   pu: () => (/* binding */ isCrewProfile)
-/* harmony export */ });
-/* unused harmony export isUserProfile */
-// Type guard to check if a profile is a CrewProfile
-function isCrewProfile(profile) {
-    return 'jobTitles' in profile && 'residences' in profile;
-}
-// Type guard to check if a profile is a UserProfile
-function isUserProfile(profile) {
-    return !isCrewProfile(profile);
-}
-// Helper function to get a display name from any profile type
-function getDisplayName(profile) {
-    // Try all possible name/display fields for maximum compatibility
-    if (isCrewProfile(profile)) {
-        return (profile.name ||
-            profile.displayName ||
-            'Unknown Crew');
-    }
-    return (profile.displayName ||
-        profile.name ||
-        profile.firstName ||
-        profile.username ||
-        (typeof profile.email === 'string' ? profile.email.split('@')[0] : undefined) ||
-        'Unknown User');
-}
-// Helper function to get a photo URL from any profile type
-function getPhotoUrl(profile) {
-    // Try all possible image fields for maximum compatibility, fallback to default
-    let url = undefined;
-    if (isCrewProfile(profile)) {
-        url = profile.profileImageUrl || profile.photoURL || profile.avatarUrl;
-    }
-    else {
-        url = profile.avatarUrl || profile.photoURL || profile.profileImageUrl;
-    }
-    if (!url || typeof url !== 'string' || url.trim() === '') {
-        return '/default-avatar.svg';
-    }
-    return url;
-}
-// Helper to get the ID from any profile type
-function getProfileId(profile) {
-    if (isCrewProfile(profile)) {
-        return profile.uid || profile.id;
-    }
-    return profile.id;
-}
-
-
-/***/ }),
+(self["webpackChunkwhosonset"] = self["webpackChunkwhosonset"] || []).push([[4672],{
 
 /***/ 4672:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+__webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   U: () => (/* binding */ MessagingService)
+/* harmony export */   MessagingService: () => (/* binding */ MessagingService)
 /* harmony export */ });
 /* harmony import */ var firebase_firestore__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(7594);
 /* harmony import */ var _firebase__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(9487);
@@ -567,41 +509,17 @@ class MessagingService {
             // Get sender info
             const senderProfile = await this.getUserProfile(senderId);
             const senderName = senderProfile?.displayName || 'Unknown User';
-            // Create notification content based on message type
-            let notificationMessage = `New message from ${senderName}`;
-            if (messageType === 'image') {
-                notificationMessage = `${senderName} sent you a photo`;
-            }
-            else if (messageType === 'voice') {
-                notificationMessage = `${senderName} sent you a voice message`;
-            }
-            else if (messageType === 'file') {
-                notificationMessage = `${senderName} sent you a file`;
-            }
-            else if (content.length > 50) {
-                notificationMessage = `${senderName}: ${content.substring(0, 50)}...`;
-            }
-            else {
-                notificationMessage = `${senderName}: ${content}`;
-            }
-            // Create notification document
-            const notificationData = {
-                type: 'message',
-                message: notificationMessage,
-                timestamp: (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .serverTimestamp */ .O5)(),
-                read: false,
+            // Create notification with message preview
+            const messagePreview = content.length > 50 ? content.substring(0, 50) + '...' : content;
+            await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .addDoc */ .gS)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'notifications'), {
                 userId: receiverId,
+                type: "message",
+                message: `New message from ${senderName}: ${messagePreview}`,
                 senderId: senderId,
                 messageId: messageId,
-                conversationId: await this.getConversationId(senderId, receiverId),
-                extra: {
-                    content: content,
-                    messageType: messageType
-                }
-            };
-            // Add to user's notifications
-            const notificationsRef = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'users', receiverId, 'notifications');
-            await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .addDoc */ .gS)(notificationsRef, notificationData);
+                read: false,
+                createdAt: (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .serverTimestamp */ .O5)()
+            });
             console.log('[MessagingService] Message notification created successfully');
         }
         catch (error) {
@@ -814,4 +732,4 @@ MessagingService.typingUsers = new Map();
 /***/ })
 
 }]);
-//# sourceMappingURL=758.chunk.js.map
+//# sourceMappingURL=4672.chunk.js.map

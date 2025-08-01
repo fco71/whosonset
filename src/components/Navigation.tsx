@@ -38,6 +38,7 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
     }, []);
 
     const toggleMobileMenu = () => {
+        console.log('[Navigation] Toggle mobile menu clicked, current state:', isMobileMenuOpen);
         setIsMobileMenuOpen(!isMobileMenuOpen);
         if (!isMobileMenuOpen) {
             setIsUserMenuOpen(false);
@@ -66,7 +67,6 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
         { to: '/jobs', label: t('nav.jobs') },
         { to: '/projects', label: t('nav.projects') },
         { to: '/collaboration', label: t('nav.collaboration') },
-        { to: '/test-notifications', label: 'Test Notifications' },
     ];
 
     const authenticatedLinks = [
@@ -397,8 +397,9 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
 
             {/* Mobile Menu */}
             {isMobileMenuOpen && (
-                <div className="md:hidden absolute top-full left-0 right-0 bg-white/95 backdrop-blur-md border-b border-gray-200/50 shadow-lg">
-                    <div className="px-4 py-6 space-y-4">
+                <div className="md:hidden fixed top-16 left-0 right-0 bottom-0 bg-white z-50">
+                    <div className="px-4 py-6 space-y-4 h-full overflow-y-auto">
+                        
                         {/* Navigation Links */}
                         <div className="space-y-2">
                             {navigationLinks.map((link) => (

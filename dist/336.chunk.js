@@ -82,11 +82,11 @@ var update = injectStylesIntoStyleTag_default()(ChatInterface/* default */.A, op
 
 
 
-const ChatInterface_ChatInterface = ({ currentUserId, currentUserName, currentUserAvatar, demoUsers = {} }) => {
+const ChatInterface_ChatInterface = ({ currentUserId, currentUserName, currentUserAvatar, demoUsers = {}, initialSelectedUser }) => {
     const { t } = (0,es/* useTranslation */.Bd)();
     // State
     const [conversations, setConversations] = (0,react.useState)([]);
-    const [selectedUser, setSelectedUser] = (0,react.useState)(null);
+    const [selectedUser, setSelectedUser] = (0,react.useState)(initialSelectedUser || null);
     const [messages, setMessages] = (0,react.useState)([]);
     const [loading, setLoading] = (0,react.useState)(true);
     const [error, setError] = (0,react.useState)(null);
@@ -124,7 +124,7 @@ const ChatInterface_ChatInterface = ({ currentUserId, currentUserName, currentUs
                 setLoading(true);
                 setError(null);
                 // Set up conversation listener
-                const unsubscribe = messagingService/* MessagingService */.U.subscribeToConversations(currentUserId, (conversations) => {
+                const unsubscribe = messagingService.MessagingService.subscribeToConversations(currentUserId, (conversations) => {
                     setConversations(conversations);
                     setLoading(false);
                 });
@@ -141,12 +141,29 @@ const ChatInterface_ChatInterface = ({ currentUserId, currentUserName, currentUs
             cleanup();
         };
     }, [currentUserId]);
+    // Mark conversation as read when selected user changes
+    (0,react.useEffect)(() => {
+        if (selectedUser && conversations.length > 0) {
+            const conversation = conversations.find(c => c.userId === selectedUser);
+            if (conversation && conversation.unreadCount > 0) {
+                const markAsRead = async () => {
+                    try {
+                        await messagingService.MessagingService.markConversationAsRead(currentUserId, selectedUser);
+                    }
+                    catch (error) {
+                        console.error('Error marking conversation as read:', error);
+                    }
+                };
+                markAsRead();
+            }
+        }
+    }, [selectedUser, conversations, currentUserId]);
     // Set up message listener when user is selected
     (0,react.useEffect)(() => {
         if (!selectedUser || !currentUserId)
             return;
         const setupMessageListener = () => {
-            const unsubscribe = messagingService/* MessagingService */.U.subscribeToConversation(currentUserId, selectedUser, (messages) => {
+            const unsubscribe = messagingService.MessagingService.subscribeToConversation(currentUserId, selectedUser, (messages) => {
                 setMessages(messages);
                 // Scroll to bottom
                 setTimeout(() => {
@@ -154,7 +171,7 @@ const ChatInterface_ChatInterface = ({ currentUserId, currentUserName, currentUs
                 }, 100);
                 // Mark conversation as read when messages are loaded
                 if (messages.length > 0) {
-                    messagingService/* MessagingService */.U.markConversationAsRead(currentUserId, selectedUser).catch(error => {
+                    messagingService.MessagingService.markConversationAsRead(currentUserId, selectedUser).catch(error => {
                         console.error('[ChatInterface] Error marking conversation as read:', error);
                     });
                 }
@@ -163,7 +180,7 @@ const ChatInterface_ChatInterface = ({ currentUserId, currentUserName, currentUs
         };
         setupMessageListener();
         // Set up typing indicator listener
-        const typingUnsubscribe = messagingService/* MessagingService */.U.subscribeToTypingIndicators(selectedUser, (typingUsers) => {
+        const typingUnsubscribe = messagingService.MessagingService.subscribeToTypingIndicators(selectedUser, (typingUsers) => {
             setTypingUsers(typingUsers);
         });
         typingListenerRef.current = typingUnsubscribe;
@@ -191,7 +208,7 @@ const ChatInterface_ChatInterface = ({ currentUserId, currentUserName, currentUs
             // Mark each unread message as read
             unreadMessages.forEach(async (message) => {
                 try {
-                    await messagingService/* MessagingService */.U.markMessageAsRead(message.id);
+                    await messagingService.MessagingService.markMessageAsRead(message.id);
                 }
                 catch (error) {
                     console.error('[ChatInterface] Error marking message as read:', error);
@@ -214,7 +231,7 @@ const ChatInterface_ChatInterface = ({ currentUserId, currentUserName, currentUs
                 typingListenerRef.current();
                 typingListenerRef.current = null;
             }
-            messagingService/* MessagingService */.U.cleanup();
+            messagingService.MessagingService.cleanup();
         }
         catch (error) {
             console.error('Error during cleanup:', error);
@@ -262,7 +279,14 @@ const ChatInterface_ChatInterface = ({ currentUserId, currentUserName, currentUs
         setShowNewChat(false);
         setNewChatSearchQuery('');
         setSearchResults([]);
-    }, []);
+        // Mark conversation as read when starting a new conversation
+        try {
+            await messagingService.MessagingService.markConversationAsRead(currentUserId, userId);
+        }
+        catch (error) {
+            console.error('Error marking conversation as read:', error);
+        }
+    }, [currentUserId]);
     const handleNewChatSearch = (0,react.useCallback)((e) => {
         const query = e.target.value;
         setNewChatSearchQuery(query);
@@ -306,11 +330,11 @@ const ChatInterface_ChatInterface = ({ currentUserId, currentUserName, currentUs
             let fileUrl = '';
             if (pendingAttachmentType?.startsWith('audio/')) {
                 // For voice messages, upload to storage
-                fileUrl = await messagingService/* MessagingService */.U.uploadFileToStorage(pendingAttachment, 'voice-messages');
+                fileUrl = await messagingService.MessagingService.uploadFileToStorage(pendingAttachment, 'voice-messages');
             }
             else {
                 // For other files, use existing logic
-                fileUrl = await messagingService/* MessagingService */.U.uploadFileToStorage(pendingAttachment);
+                fileUrl = await messagingService.MessagingService.uploadFileToStorage(pendingAttachment);
             }
             const content = pendingAttachmentType?.startsWith('audio/')
                 ? 'Voice message'
@@ -335,7 +359,7 @@ const ChatInterface_ChatInterface = ({ currentUserId, currentUserName, currentUs
                 fileType: pendingAttachment.type
             };
             setMessages(prev => [...prev, optimisticMessage]);
-            await messagingService/* MessagingService */.U.sendDirectMessage(currentUserId, selectedUser, content, messageType, undefined, fileUrl);
+            await messagingService.MessagingService.sendDirectMessage(currentUserId, selectedUser, content, messageType, undefined, fileUrl);
             setMessages(prev => prev.map(msg => msg.id === optimisticMessage.id
                 ? { ...msg, status: 'sent' }
                 : msg));
@@ -427,7 +451,7 @@ const ChatInterface_ChatInterface = ({ currentUserId, currentUserName, currentUs
     // Reaction handling
     const addReaction = (0,react.useCallback)(async (messageId, emoji) => {
         try {
-            await messagingService/* MessagingService */.U.addMessageReaction(messageId, currentUserId, currentUserName, emoji);
+            await messagingService.MessagingService.addMessageReaction(messageId, currentUserId, currentUserName, emoji);
             setShowReactionPicker(null);
         }
         catch (error) {
@@ -456,7 +480,7 @@ const ChatInterface_ChatInterface = ({ currentUserId, currentUserName, currentUs
                 status: 'sending'
             };
             setMessages(prev => [...prev, optimisticMessage]);
-            await messagingService/* MessagingService */.U.sendDirectMessage(currentUserId, selectedUser, content, 'text');
+            await messagingService.MessagingService.sendDirectMessage(currentUserId, selectedUser, content, 'text');
             setMessages(prev => prev.map(msg => msg.id === optimisticMessage.id
                 ? { ...msg, status: 'sent' }
                 : msg));
@@ -542,7 +566,7 @@ const ChatInterface_ChatInterface = ({ currentUserId, currentUserName, currentUs
                                     const confirmMessage = 'Delete this message for everyone?';
                                     if (window.confirm(confirmMessage)) {
                                         try {
-                                            await messagingService/* MessagingService */.U.deleteMessage(message.id, message.fileUrl, message.messageType);
+                                            await messagingService.MessagingService.deleteMessage(message.id, message.fileUrl, message.messageType, currentUserId);
                                             // The message will be updated via the listener, no need to manually update state
                                         }
                                         catch (error) {
@@ -562,7 +586,28 @@ const ChatInterface_ChatInterface = ({ currentUserId, currentUserName, currentUs
     }
     return ((0,jsx_runtime.jsxs)("div", { className: "chat-interface", children: [error && ((0,jsx_runtime.jsxs)("div", { className: "error-banner", children: [(0,jsx_runtime.jsx)("span", { children: error }), (0,jsx_runtime.jsx)("button", { onClick: () => setError(null), className: "error-close-btn", title: "Dismiss error", type: "button", children: "\u2715" })] })), (0,jsx_runtime.jsxs)("div", { className: "chat-container", children: [(0,jsx_runtime.jsxs)("div", { className: "chat-sidebar", children: [(0,jsx_runtime.jsxs)("div", { className: "sidebar-header", children: [(0,jsx_runtime.jsx)("h2", { children: "Messages" }), (0,jsx_runtime.jsx)("button", { onClick: () => setShowNewChat(!showNewChat), className: "new-chat-button", children: "\u2795" })] }), showNewChat && ((0,jsx_runtime.jsxs)("div", { className: "new-chat-section", children: [(0,jsx_runtime.jsx)("h3", { children: "Start New Chat" }), (0,jsx_runtime.jsx)("input", { type: "text", placeholder: "Search users...", value: newChatSearchQuery, onChange: handleNewChatSearch, className: "search-input" }), isSearching && ((0,jsx_runtime.jsx)("div", { className: "search-loading", children: "Searching..." })), searchResults.length > 0 && ((0,jsx_runtime.jsx)("div", { className: "search-results", children: searchResults.map((user) => ((0,jsx_runtime.jsxs)("div", { className: "search-result-item", onClick: () => startNewConversation(user.id, user.name), children: [(0,jsx_runtime.jsx)("div", { className: "user-avatar", children: user.avatar ? ((0,jsx_runtime.jsx)("img", { src: user.avatar, alt: user.name, onError: imageErrorFallback/* imageErrorFallback */.i })) : ((0,jsx_runtime.jsx)("div", { className: "avatar-placeholder", children: user.name.charAt(0).toUpperCase() })) }), (0,jsx_runtime.jsxs)("div", { className: "user-info", children: [(0,jsx_runtime.jsx)("h4", { children: user.name }), user.role && (0,jsx_runtime.jsx)("p", { children: user.role })] })] }, user.id))) }))] })), (0,jsx_runtime.jsx)("div", { className: "conversations-list", children: conversations.length === 0 ? ((0,jsx_runtime.jsxs)("div", { className: "no-conversations", children: [(0,jsx_runtime.jsx)("p", { children: "No conversations yet" }), (0,jsx_runtime.jsx)("p", { children: "Start a new chat to begin messaging" })] })) : (conversations.map((conversation) => {
                                     const isSelected = selectedUser === conversation.userId;
-                                    return ((0,jsx_runtime.jsxs)("div", { className: `conversation-item ${isSelected ? 'selected' : ''}`, onClick: () => setSelectedUser(conversation.userId), children: [(0,jsx_runtime.jsxs)("div", { className: "conversation-avatar", children: [conversation.userAvatar ? ((0,jsx_runtime.jsx)("img", { src: conversation.userAvatar, alt: conversation.userName, onError: imageErrorFallback/* imageErrorFallback */.i })) : ((0,jsx_runtime.jsx)("div", { className: "avatar-placeholder", children: conversation.userName.charAt(0).toUpperCase() })), conversation.isOnline && ((0,jsx_runtime.jsx)("div", { className: "online-indicator" }))] }), (0,jsx_runtime.jsxs)("div", { className: "conversation-content", children: [(0,jsx_runtime.jsxs)("div", { className: "conversation-header", children: [(0,jsx_runtime.jsx)("h4", { children: conversation.userName }), conversation.lastMessageTime && ((0,jsx_runtime.jsx)("span", { children: formatTime(conversation.lastMessageTime) }))] }), (0,jsx_runtime.jsxs)("div", { className: "conversation-preview", children: [(0,jsx_runtime.jsx)("p", { children: conversation.lastMessage || 'No messages yet' }), conversation.unreadCount > 0 && ((0,jsx_runtime.jsx)("span", { className: "unread-badge", children: conversation.unreadCount }))] })] })] }, conversation.userId));
+                                    return ((0,jsx_runtime.jsxs)("div", { className: `conversation-item ${isSelected ? 'selected' : ''}`, onClick: async () => {
+                                            console.log('[ChatInterface] Selecting conversation:', conversation.userId, 'Unread count:', conversation.unreadCount);
+                                            setSelectedUser(conversation.userId);
+                                            // Mark conversation as read when selected
+                                            if (conversation.unreadCount > 0) {
+                                                try {
+                                                    console.log('[ChatInterface] Marking conversation as read:', conversation.userId);
+                                                    // Add a small delay to make the unread count visible before clearing
+                                                    setTimeout(async () => {
+                                                        await messagingService.MessagingService.markConversationAsRead(currentUserId, conversation.userId);
+                                                        console.log('[ChatInterface] Conversation marked as read successfully');
+                                                        // Update the conversation list to reflect the change
+                                                        setConversations(prev => prev.map(conv => conv.userId === conversation.userId
+                                                            ? { ...conv, unreadCount: 0 }
+                                                            : conv));
+                                                    }, 100); // 100ms delay
+                                                }
+                                                catch (error) {
+                                                    console.error('Error marking conversation as read:', error);
+                                                }
+                                            }
+                                        }, children: [(0,jsx_runtime.jsxs)("div", { className: "conversation-avatar", children: [conversation.userAvatar ? ((0,jsx_runtime.jsx)("img", { src: conversation.userAvatar, alt: conversation.userName, onError: imageErrorFallback/* imageErrorFallback */.i })) : ((0,jsx_runtime.jsx)("div", { className: "avatar-placeholder", children: conversation.userName.charAt(0).toUpperCase() })), conversation.isOnline && ((0,jsx_runtime.jsx)("div", { className: "online-indicator" }))] }), (0,jsx_runtime.jsxs)("div", { className: "conversation-content", children: [(0,jsx_runtime.jsxs)("div", { className: "conversation-header", children: [(0,jsx_runtime.jsx)("h4", { children: conversation.userName }), conversation.lastMessageTime && ((0,jsx_runtime.jsx)("span", { children: formatTime(conversation.lastMessageTime) }))] }), (0,jsx_runtime.jsxs)("div", { className: "conversation-preview", children: [(0,jsx_runtime.jsx)("p", { children: conversation.lastMessage || 'No messages yet' }), conversation.unreadCount > 0 && ((0,jsx_runtime.jsx)("span", { className: "unread-badge", children: conversation.unreadCount }))] })] })] }, conversation.userId));
                                 })) })] }), (0,jsx_runtime.jsx)("div", { className: "chat-area", children: selectedUser ? ((0,jsx_runtime.jsxs)("div", { className: "chat-messages-container", children: [(0,jsx_runtime.jsx)("div", { className: "chat-header", children: (0,jsx_runtime.jsxs)("div", { className: "chat-user-info", children: [selectedUser ? ((0,jsx_runtime.jsx)("img", { src: getUserInfo(selectedUser).avatar || '', alt: getUserInfo(selectedUser).name, onError: imageErrorFallback/* imageErrorFallback */.i })) : ((0,jsx_runtime.jsx)("div", { className: "avatar-placeholder", children: selectedUser ? getUserInfo(selectedUser).name.charAt(0).toUpperCase() : '' })), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h3", { children: selectedUser ? getUserInfo(selectedUser).name : '' }), typingUsers.includes(selectedUser) && ((0,jsx_runtime.jsx)("p", { className: "typing-indicator", children: "typing..." }))] })] }) }), (0,jsx_runtime.jsxs)("div", { className: "messages-container", children: [messages.map(renderMessage), typingUsers.includes(selectedUser) && ((0,jsx_runtime.jsx)("div", { className: "typing-indicator-message", children: (0,jsx_runtime.jsxs)("div", { className: "typing-dots", children: [(0,jsx_runtime.jsx)("span", {}), (0,jsx_runtime.jsx)("span", {}), (0,jsx_runtime.jsx)("span", {})] }) })), (0,jsx_runtime.jsx)("div", { ref: messagesEndRef })] }), (0,jsx_runtime.jsxs)("div", { className: "message-input-wrapper", children: [isRecording && ((0,jsx_runtime.jsxs)("div", { className: "recording-indicator", children: [(0,jsx_runtime.jsx)("div", { className: "recording-dot" }), (0,jsx_runtime.jsxs)("span", { children: ["Recording... ", formatRecordingTime(recordingTime)] }), (0,jsx_runtime.jsx)("button", { onClick: stopRecording, className: "stop-recording", children: "Stop" })] })), pendingAttachment && ((0,jsx_runtime.jsxs)("div", { className: "attachment-preview", children: [(0,jsx_runtime.jsxs)("div", { className: "preview-header", children: [(0,jsx_runtime.jsx)("span", { children: "\uD83D\uDCCE Attachment Preview" }), (0,jsx_runtime.jsx)("button", { onClick: cancelPendingAttachment, className: "close-preview", children: "\u2715" })] }), (0,jsx_runtime.jsx)("div", { className: "preview-content", children: pendingAttachmentType?.startsWith('image/') ? ((0,jsx_runtime.jsx)("img", { src: URL.createObjectURL(pendingAttachment), alt: "Preview", className: "image-preview" })) : pendingAttachmentType?.startsWith('audio/') ? ((0,jsx_runtime.jsxs)("div", { className: "audio-preview", children: [(0,jsx_runtime.jsx)("audio", { controls: true, src: URL.createObjectURL(pendingAttachment) }), (0,jsx_runtime.jsx)("span", { children: "\uD83C\uDFA4 Voice Message" })] })) : ((0,jsx_runtime.jsxs)("div", { className: "file-preview", children: [(0,jsx_runtime.jsxs)("span", { children: ["\uD83D\uDCC4 ", pendingAttachment.name] }), (0,jsx_runtime.jsxs)("span", { className: "file-size", children: ["(", (pendingAttachment.size / 1024).toFixed(1), " KB)"] })] })) }), (0,jsx_runtime.jsxs)("div", { className: "preview-actions", children: [(0,jsx_runtime.jsx)("button", { onClick: sendPendingAttachment, disabled: sending, className: "send-attachment-btn", children: sending ? 'Sending...' : 'Send' }), (0,jsx_runtime.jsx)("button", { onClick: cancelPendingAttachment, className: "cancel-attachment-btn", children: "Cancel" })] })] })), showEmojiPicker && ((0,jsx_runtime.jsx)("div", { className: "emoji-picker", children: emojis.map((emoji, index) => ((0,jsx_runtime.jsx)("button", { onClick: () => addEmoji(emoji), className: "emoji-button", children: emoji }, index))) })), (0,jsx_runtime.jsxs)("div", { className: "message-input-container", children: [(0,jsx_runtime.jsxs)("div", { className: "input-actions", children: [(0,jsx_runtime.jsx)("button", { onClick: () => fileInputRef.current?.click(), className: "action-button", title: t('chat.attachFile'), children: "\uD83D\uDCCE" }), (0,jsx_runtime.jsx)("button", { onClick: () => setShowEmojiPicker(!showEmojiPicker), className: "action-button", title: t('chat.emoji'), children: "\uD83D\uDE00" }), (0,jsx_runtime.jsx)("button", { onClick: isRecording ? stopRecording : startRecording, className: `action-button ${isRecording ? 'recording' : ''}`, title: isRecording ? t('chat.stopRecording') : t('chat.voiceMessage'), children: isRecording ? '⏹️' : '🎤' })] }), (0,jsx_runtime.jsx)("input", { type: "text", placeholder: t('chat.typeMessage'), value: messageInput, onChange: (e) => setMessageInput(e.target.value), onKeyPress: handleKeyPress, disabled: sending, className: "message-input" }), (0,jsx_runtime.jsx)("button", { onClick: sendMessage, disabled: sending || !messageInput.trim(), className: "send-button", children: sending ? t('chat.sending') : t('chat.send') })] }), (0,jsx_runtime.jsx)("input", { ref: fileInputRef, type: "file", onChange: handleFileSelect, style: { display: 'none' }, accept: "image/*,audio/*,video/*,.pdf,.doc,.docx,.txt" })] })] })) : ((0,jsx_runtime.jsxs)("div", { className: "no-conversation", children: [(0,jsx_runtime.jsx)("div", { className: "no-conversation-icon", children: "\uD83D\uDCAC" }), (0,jsx_runtime.jsx)("h3", { children: "Select a conversation" }), (0,jsx_runtime.jsx)("p", { children: "Choose a contact to start messaging" })] })) })] })] }));
 };
 /* harmony default export */ const components_Chat_ChatInterface = (ChatInterface_ChatInterface);
@@ -1049,6 +1094,65 @@ function imageErrorFallback(e, fallback = '/default-avatar.svg') {
     if (!target.src.endsWith(fallback)) {
         target.src = fallback;
     }
+}
+
+
+/***/ }),
+
+/***/ 835:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   Lx: () => (/* binding */ getProfileId),
+/* harmony export */   Mn: () => (/* binding */ getDisplayName),
+/* harmony export */   ed: () => (/* binding */ getPhotoUrl),
+/* harmony export */   pu: () => (/* binding */ isCrewProfile)
+/* harmony export */ });
+/* unused harmony export isUserProfile */
+// Type guard to check if a profile is a CrewProfile
+function isCrewProfile(profile) {
+    return 'jobTitles' in profile && 'residences' in profile;
+}
+// Type guard to check if a profile is a UserProfile
+function isUserProfile(profile) {
+    return !isCrewProfile(profile);
+}
+// Helper function to get a display name from any profile type
+function getDisplayName(profile) {
+    // Try all possible name/display fields for maximum compatibility
+    if (isCrewProfile(profile)) {
+        return (profile.name ||
+            profile.displayName ||
+            'Unknown Crew');
+    }
+    return (profile.displayName ||
+        profile.name ||
+        profile.firstName ||
+        profile.username ||
+        (typeof profile.email === 'string' ? profile.email.split('@')[0] : undefined) ||
+        'Unknown User');
+}
+// Helper function to get a photo URL from any profile type
+function getPhotoUrl(profile) {
+    // Try all possible image fields for maximum compatibility, fallback to default
+    let url = undefined;
+    if (isCrewProfile(profile)) {
+        url = profile.profileImageUrl || profile.photoURL || profile.avatarUrl;
+    }
+    else {
+        url = profile.avatarUrl || profile.photoURL || profile.profileImageUrl;
+    }
+    if (!url || typeof url !== 'string' || url.trim() === '') {
+        return '/default-avatar.svg';
+    }
+    return url;
+}
+// Helper to get the ID from any profile type
+function getProfileId(profile) {
+    if (isCrewProfile(profile)) {
+        return profile.uid || profile.id;
+    }
+    return profile.id;
 }
 
 

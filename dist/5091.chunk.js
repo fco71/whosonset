@@ -62,6 +62,65 @@ const Plus = (0,_createLucideIcon_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"] 
 
 /***/ }),
 
+/***/ 835:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   Lx: () => (/* binding */ getProfileId),
+/* harmony export */   Mn: () => (/* binding */ getDisplayName),
+/* harmony export */   ed: () => (/* binding */ getPhotoUrl),
+/* harmony export */   pu: () => (/* binding */ isCrewProfile)
+/* harmony export */ });
+/* unused harmony export isUserProfile */
+// Type guard to check if a profile is a CrewProfile
+function isCrewProfile(profile) {
+    return 'jobTitles' in profile && 'residences' in profile;
+}
+// Type guard to check if a profile is a UserProfile
+function isUserProfile(profile) {
+    return !isCrewProfile(profile);
+}
+// Helper function to get a display name from any profile type
+function getDisplayName(profile) {
+    // Try all possible name/display fields for maximum compatibility
+    if (isCrewProfile(profile)) {
+        return (profile.name ||
+            profile.displayName ||
+            'Unknown Crew');
+    }
+    return (profile.displayName ||
+        profile.name ||
+        profile.firstName ||
+        profile.username ||
+        (typeof profile.email === 'string' ? profile.email.split('@')[0] : undefined) ||
+        'Unknown User');
+}
+// Helper function to get a photo URL from any profile type
+function getPhotoUrl(profile) {
+    // Try all possible image fields for maximum compatibility, fallback to default
+    let url = undefined;
+    if (isCrewProfile(profile)) {
+        url = profile.profileImageUrl || profile.photoURL || profile.avatarUrl;
+    }
+    else {
+        url = profile.avatarUrl || profile.photoURL || profile.profileImageUrl;
+    }
+    if (!url || typeof url !== 'string' || url.trim() === '') {
+        return '/default-avatar.svg';
+    }
+    return url;
+}
+// Helper to get the ID from any profile type
+function getProfileId(profile) {
+    if (isCrewProfile(profile)) {
+        return profile.uid || profile.id;
+    }
+    return profile.id;
+}
+
+
+/***/ }),
+
 /***/ 5091:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
@@ -465,7 +524,7 @@ const SocialPage = () => {
     const loadConversations = (0,react.useCallback)(async () => {
         if (!user?.uid)
             return;
-        const unsubscribe = messagingService/* MessagingService */.U.subscribeToConversations(user.uid, (conversations) => {
+        const unsubscribe = messagingService.MessagingService.subscribeToConversations(user.uid, (conversations) => {
             setConversations(conversations);
         });
         return unsubscribe;
