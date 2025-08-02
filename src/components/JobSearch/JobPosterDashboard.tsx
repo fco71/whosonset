@@ -1,0 +1,457 @@
+import React, { useState, useEffect } from 'react';
+import { collection, query, where, orderBy, getDocs, doc, getDoc } from 'firebase/firestore';
+import { db } from '../../firebase';
+import { JobPosting, JobApplication } from '../../types/JobApplication';
+import { Link } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
+import { JobApplicationService } from '../../utilities/jobApplicationService';
+import { useAuth } from '../../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
+
+interface JobPosterStats {
+  totalJobs: number;
+  activeJobs: number;
+  totalApplications: number;
+  pendingApplications: number;
+  avgApplicationsPerJob: number;
+  totalViews: number;
+}
+
+interface JobWithApplications extends JobPosting {
+  applications: JobApplication[];
+  applicantCount: number;
+}
+
+const JobPosterDashboard: React.FC = () => {
+  const { t } = useTranslation();
+  const { currentUser } = useAuth();
+  const [postedJobs, setPostedJobs] = useState<JobWithApplications[]>([]);
+  const [stats, setStats] = useState<JobPosterStats>({
+    totalJobs: 0,
+    activeJobs: 0,
+    totalApplications: 0,
+    pendingApplications: 0,
+    avgApplicationsPerJob: 0,
+    totalViews: 0
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'overview' | 'jobs' | 'applications' | 'analytics'>('overview');
+
+  useEffect(() => {
+    if (currentUser) {
+      loadPostedJobs();
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    calculateStats();
+  }, [postedJobs]);
+
+  const loadPostedJobs = async () => {
+    if (!currentUser) return;
+    
+    setIsLoading(true);
+    try {
+      // Get jobs posted by current user (using postedById)
+      const jobsQuery = query(
+        collection(db, 'jobPostings'),
+        where('postedById', '==', currentUser.uid),
+        orderBy('postedAt', 'desc')
+      );
+      
+      const jobsSnapshot = await getDocs(jobsQuery);
+      const jobsData: JobWithApplications[] = [];
+      
+      // For each job, get the applications
+      for (const jobDoc of jobsSnapshot.docs) {
+        const jobData = {
+          id: jobDoc.id,
+          ...jobDoc.data()
+        } as JobPosting;
+        
+        // Get applications for this job
+        const applications = await JobApplicationService.getJobApplications(jobDoc.id);
+        
+        jobsData.push({
+          ...jobData,
+          applications,
+          applicantCount: applications.length
+        });
+      }
+      
+      setPostedJobs(jobsData);
+      console.log('Loaded posted jobs:', jobsData.length);
+    } catch (error) {
+      console.error('Error loading posted jobs:', error);
+      toast.error('Failed to load posted jobs');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const calculateStats = () => {
+    const totalJobs = postedJobs.length;
+    const activeJobs = postedJobs.filter(job => job.status === 'active' || job.status === 'published').length;
+    const totalApplications = postedJobs.reduce((sum, job) => sum + job.applicantCount, 0);
+    const pendingApplications = postedJobs.reduce((sum, job) => 
+      sum + job.applications.filter(app => app.status === 'pending').length, 0
+    );
+    const avgApplicationsPerJob = totalJobs > 0 ? totalApplications / totalJobs : 0;
+    const totalViews = postedJobs.reduce((sum, job) => sum + (job.views || 0), 0);
+
+    setStats({
+      totalJobs,
+      activeJobs,
+      totalApplications,
+      pendingApplications,
+      avgApplicationsPerJob,
+      totalViews
+    });
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active':
+      case 'published': return 'bg-green-100 text-green-800';
+      case 'draft': return 'bg-gray-100 text-gray-800';
+      case 'closed': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'active':
+      case 'published': return '✅';
+      case 'draft': return '📝';
+      case 'closed': return '🔒';
+      default: return '📋';
+    }
+  };
+
+  const formatDate = (date: any) => {
+    if (!date) return 'N/A';
+    const dateObj = date?.toDate ? date.toDate() : new Date(date);
+    return dateObj.toLocaleDateString();
+  };
+
+  const renderOverview = () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-light text-gray-600">{t('jobDashboard.totalJobsPosted')}</p>
+            <p className="text-3xl font-light text-gray-900">{stats.totalJobs}</p>
+          </div>
+          <div className="text-3xl opacity-20">💼</div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-light text-gray-600">{t('jobDashboard.activeJobs')}</p>
+            <p className="text-3xl font-light text-gray-900">{stats.activeJobs}</p>
+          </div>
+          <div className="text-3xl opacity-20">📊</div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-light text-gray-600">{t('jobDashboard.totalApplications')}</p>
+            <p className="text-3xl font-light text-gray-900">{stats.totalApplications}</p>
+          </div>
+          <div className="text-3xl opacity-20">📝</div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-light text-gray-600">{t('jobDashboard.pendingApplications')}</p>
+            <p className="text-3xl font-light text-gray-900">{stats.pendingApplications}</p>
+          </div>
+          <div className="text-3xl opacity-20">⏳</div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-light text-gray-600">{t('jobDashboard.avgApplicationsJob')}</p>
+            <p className="text-3xl font-light text-gray-900">{stats.avgApplicationsPerJob.toFixed(1)}</p>
+          </div>
+          <div className="text-3xl opacity-20">📈</div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-light text-gray-600">{t('jobDashboard.totalViews')}</p>
+            <p className="text-3xl font-light text-gray-900">{stats.totalViews}</p>
+          </div>
+          <div className="text-3xl opacity-20">👁️</div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderPostedJobs = () => (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="p-6 border-b border-gray-100 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+        <h3 className="text-xl font-light text-gray-900">{t('jobDashboard.yourPostedJobs')}</h3>
+        <Link
+          to="/jobs/post"
+          className="px-4 py-2 bg-blue-600 text-white font-light rounded-lg hover:bg-blue-700 transition-colors shadow-md"
+        >
+          {t('jobDashboard.postNewJob')}
+        </Link>
+      </div>
+      
+      {postedJobs.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="text-6xl mb-4 opacity-20">💼</div>
+          <h3 className="text-xl font-light text-gray-900 mb-2">{t('jobDashboard.noJobsPosted')}</h3>
+          <p className="text-gray-600 mb-4">{t('jobDashboard.startPosting')}</p>
+          <Link
+            to="/jobs/post"
+            className="px-6 py-3 bg-blue-600 text-white font-light rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            {t('jobDashboard.postFirstJob')}
+          </Link>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
+          {postedJobs.map((job) => (
+            <div
+              key={job.id}
+              className="group relative bg-white border border-gray-100 rounded-xl shadow-sm p-6 flex flex-col justify-between transition-all duration-200 hover:shadow-lg hover:-translate-y-1"
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <Link
+                  to={`/jobs/${job.id}`}
+                  className="text-lg font-medium text-gray-900 hover:text-blue-600 transition-colors truncate"
+                  title={job.title}
+                >
+                  {job.title}
+                </Link>
+                <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(job.status)} flex items-center gap-1`}>
+                  {getStatusIcon(job.status)} {job.status.replace('_', ' ')}
+                </span>
+              </div>
+              <p className="text-gray-600 mb-1 truncate">{job.department} • {job.location}</p>
+              <p className="text-xs text-gray-500 mb-1">{t('jobDashboard.postedBy')} {(job as any).companyName || (job as any).company || (job as any).posterName || (job as any).poster || t('jobDashboard.you')}</p>
+              <p className="text-xs text-gray-500 mb-4">{t('jobDashboard.postedOn')} {formatDate(job.postedAt)}</p>
+              <div className="flex items-center gap-4 mb-4">
+                <div className="flex flex-col items-center">
+                  <span className="text-xs text-gray-500">{t('jobDashboard.applicants')}</span>
+                  <span className="text-xl font-light text-gray-900">{job.applicantCount}</span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <span className="text-xs text-gray-500">{t('jobDashboard.views')}</span>
+                  <span className="text-lg font-light text-gray-900">{job.views || 0}</span>
+                </div>
+              </div>
+              <div className="flex gap-2 mt-auto">
+                <Link
+                  to={`/jobs/${job.id}`}
+                  className="flex-1 px-3 py-2 text-sm bg-gray-900 text-white font-light rounded-lg hover:bg-gray-800 transition-colors text-center"
+                >
+                  {t('jobDashboard.view')}
+                </Link>
+                {job.applicantCount > 0 && (
+                  <Link
+                    to={`/jobs/${job.id}/applications`}
+                    className="flex-1 px-3 py-2 text-sm bg-blue-600 text-white font-light rounded-lg hover:bg-blue-700 transition-colors text-center"
+                  >
+                    {t('jobDashboard.apps')} ({job.applicantCount})
+                  </Link>
+                )}
+                <Link
+                  to={`/jobs/${job.id}/edit`}
+                  className="flex-1 px-3 py-2 text-sm bg-green-600 text-white font-light rounded-lg hover:bg-green-700 transition-colors text-center"
+                >
+                  {t('jobDashboard.edit')}
+                </Link>
+              </div>
+              {/* Future: Add Close, Analytics, and batch actions here */}
+              <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                <span className="inline-block px-2 py-1 text-xs bg-gray-200 rounded-full text-gray-700 shadow">ID: {job.id.slice(0, 6)}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  const renderApplications = () => {
+    // Get all applications from all jobs
+    const allApplications = postedJobs.flatMap(job => 
+      job.applications.map(app => ({ ...app, jobTitle: job.title, jobId: job.id }))
+    );
+
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="p-6 border-b border-gray-100">
+          <h3 className="text-xl font-light text-gray-900">{t('jobDashboard.allApplications')}</h3>
+        </div>
+        
+        {allApplications.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4 opacity-20">📝</div>
+            <h3 className="text-xl font-light text-gray-900 mb-2">{t('jobDashboard.noApplicationsYet')}</h3>
+            <p className="text-gray-600">{t('jobDashboard.applicationsWillAppear')}</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-100">
+            {allApplications.slice(0, 20).map((application) => (
+              <div key={application.id} className="p-6 hover:bg-gray-50 transition-colors duration-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <Link 
+                        to={`/applications/${application.id}`}
+                        className="text-lg font-medium text-gray-900 hover:text-blue-600 transition-colors"
+                      >
+                        {application.jobTitle}
+                      </Link>
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(application.status)}`}>
+                        {getStatusIcon(application.status)} {application.status.replace('_', ' ')}
+                      </span>
+                    </div>
+                    <p className="text-gray-600 mb-1">{t('jobDashboard.applicant')}: {application.applicantId.slice(0, 8)}...</p>
+                    <p className="text-sm text-gray-500">{t('jobDashboard.appliedOn')} {formatDate(application.appliedAt)}</p>
+                  </div>
+                  
+                  <div className="text-right">
+                    <div className="flex gap-2">
+                      <Link
+                        to={`/applications/${application.id}`}
+                        className="px-4 py-2 text-sm bg-gray-900 text-white font-light rounded-lg hover:bg-gray-800 transition-colors"
+                      >
+                        {t('jobDashboard.viewApplication')}
+                      </Link>
+                      <Link
+                        to={`/jobs/${application.jobId}`}
+                        className="px-4 py-2 text-sm bg-blue-600 text-white font-light rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        {t('jobDashboard.viewJob')}
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderAnalytics = () => (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h3 className="text-xl font-light text-gray-900 mb-6">{t('jobDashboard.jobPerformance')}</h3>
+        <div className="space-y-4">
+          {postedJobs.slice(0, 5).map((job) => (
+            <div key={job.id} className="flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-900 truncate">{job.title}</p>
+                <p className="text-xs text-gray-500">{job.department}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm font-medium text-gray-900">{job.applicantCount} {t('jobDashboard.apps').toLowerCase()}</p>
+                <p className="text-xs text-gray-500">{job.views || 0} {t('jobDashboard.views').toLowerCase()}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h3 className="text-xl font-light text-gray-900 mb-6">{t('jobDashboard.applicationStatus')}</h3>
+        <div className="space-y-4">
+          {postedJobs.map((job) => {
+            const pending = job.applications.filter(app => app.status === 'pending').length;
+            const reviewed = job.applications.filter(app => app.status === 'reviewed').length;
+            const shortlisted = job.applications.filter(app => app.status === 'shortlisted').length;
+            const hired = job.applications.filter(app => app.status === 'hired').length;
+            
+            return (
+              <div key={job.id} className="border-b border-gray-100 pb-4 last:border-b-0">
+                <p className="text-sm font-medium text-gray-900 mb-2">{job.title}</p>
+                <div className="flex gap-4 text-xs">
+                  <span className="text-yellow-600">⏳ {pending} {t('jobDashboard.pending')}</span>
+                  <span className="text-blue-600">👁️ {reviewed} {t('jobDashboard.reviewed')}</span>
+                  <span className="text-green-600">⭐ {shortlisted} {t('jobDashboard.shortlisted')}</span>
+                  <span className="text-purple-600">✅ {hired} {t('jobDashboard.hired')}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-8 py-16">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-light text-gray-900 mb-4 tracking-tight">
+            {t('jobDashboard.title')}
+          </h1>
+          <p className="text-xl font-light text-gray-600 max-w-2xl mx-auto leading-relaxed">
+            {t('jobDashboard.subtitle')}
+          </p>
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-2 mb-8">
+          <div className="flex space-x-2">
+            {[
+              { id: 'overview', label: t('jobDashboard.overview'), icon: '📊' },
+              { id: 'jobs', label: t('jobDashboard.postedJobs'), icon: '💼' },
+              { id: 'applications', label: t('jobDashboard.applications'), icon: '📝' },
+              { id: 'analytics', label: t('jobDashboard.analytics'), icon: '📈' }
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`flex-1 py-3 px-4 rounded-lg font-light transition-all duration-300 ${
+                  activeTab === tab.id
+                    ? 'bg-gray-900 text-white'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                <span className="mr-2">{tab.icon}</span>
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Content */}
+        {isLoading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
+            <p className="text-lg font-light text-gray-600">{t('jobDashboard.loading')}</p>
+          </div>
+        ) : (
+          <>
+            {activeTab === 'overview' && renderOverview()}
+            {activeTab === 'jobs' && renderPostedJobs()}
+            {activeTab === 'applications' && renderApplications()}
+            {activeTab === 'analytics' && renderAnalytics()}
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default JobPosterDashboard; 
