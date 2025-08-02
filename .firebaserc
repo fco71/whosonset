@@ -1,0 +1,18 @@
+{
+  "projects": {
+    "default": "my-film-jobs"
+  },
+  "targets": {
+    "my-film-jobs": {
+      "hosting": {
+        "production": [
+          "myfilmjobs-com"
+        ],
+        "development": [
+          "my-film-jobs"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

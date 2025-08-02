@@ -1,0 +1,4 @@
+This is a test file created by GitHub Copilot on July 14, 2025.
+If you see this file in your running app's directory or file explorer, you are editing the correct project directory.
+
+If you do NOT see this file, you are likely editing a different directory than the one being served by your dev server.
