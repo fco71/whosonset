@@ -8,9 +8,10 @@ import {
   updateProfile,
   GoogleAuthProvider,
   signInWithPopup,
-  OAuthProvider
+  OAuthProvider,
+  deleteUser
 } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, getDoc, writeBatch } from 'firebase/firestore';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -21,6 +22,7 @@ interface AuthContextType {
   loginWithGoogle: () => Promise<void>;
   loginWithApple: () => Promise<void>;
   logout: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -266,6 +268,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     await signOut(auth);
   };
 
+  const deleteAccount = async () => {
+    if (!currentUser) {
+      throw new Error('No user is currently signed in');
+    }
+
+    try {
+      // Delete user data from Firestore first
+      const batch = writeBatch(db);
+      
+      // Delete user profile
+      batch.delete(doc(db, 'users', currentUser.uid));
+      
+      // Delete crew profile
+      batch.delete(doc(db, 'crewProfiles', currentUser.uid));
+      
+      // Delete user collections
+      batch.delete(doc(db, 'UserCollections', currentUser.uid));
+      
+      // Delete email tracking
+      batch.delete(doc(db, 'emailTracking', currentUser.email || ''));
+      
+      // Execute the batch
+      await batch.commit();
+      
+      // Delete the Firebase Auth user
+      await deleteUser(currentUser);
+      
+      console.log('[AuthContext] Account deleted successfully');
+    } catch (error) {
+      console.error('[AuthContext] Error deleting account:', error);
+      throw error;
+    }
+  };
+
   useEffect(() => {
     try {
       console.log('[AuthProvider] Setting up auth state listener...');
@@ -311,7 +347,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     signup,
     loginWithGoogle,
     loginWithApple,
-    logout
+    logout,
+    deleteAccount
   };
 
   return (

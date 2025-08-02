@@ -12,19 +12,64 @@
 
 
 class EmailNotificationService {
-    // Check if user can receive email (weekly limit)
-    static async canSendEmail(userEmail, template) {
+    // Check if user can receive email based on preferences and frequency
+    static async canSendEmail(userIdentifier, template) {
         try {
-            const emailTrackingRef = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'emailTracking', userEmail);
+            // First check if user has email notifications enabled
+            // Try to get user by ID first, then by email
+            let userDoc = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__.getDoc)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'users', userIdentifier));
+            if (!userDoc.exists()) {
+                // Try to find user by email
+                const usersRef = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'users');
+                const q = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .query */ .P)(usersRef, (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .where */ ._M)('email', '==', userIdentifier));
+                const querySnapshot = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .getDocs */ .GG)(q);
+                if (!querySnapshot.empty) {
+                    userDoc = querySnapshot.docs[0];
+                }
+            }
+            if (userDoc.exists()) {
+                const userData = userDoc.data();
+                const notificationPreferences = userData.notificationPreferences;
+                if (notificationPreferences) {
+                    // Check if email notifications are enabled for this template
+                    const emailEnabled = notificationPreferences.emailNotifications?.[template];
+                    if (!emailEnabled) {
+                        console.log(`[EmailNotificationService] Email notifications disabled for ${userIdentifier} (${template})`);
+                        return false;
+                    }
+                    // Check frequency settings
+                    const frequency = notificationPreferences.emailFrequency?.[template] || 'weekly';
+                    const timeLimit = this.getTimeLimitForFrequency(frequency);
+                    if (timeLimit === 0) {
+                        // Immediate - always send
+                        return true;
+                    }
+                    // Check last sent time
+                    const emailTrackingRef = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'emailTracking', userIdentifier);
+                    const emailTrackingDoc = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__.getDoc)(emailTrackingRef);
+                    if (!emailTrackingDoc.exists()) {
+                        // First time sending email to this user
+                        return true;
+                    }
+                    const data = emailTrackingDoc.data();
+                    const lastSent = data[template]?.lastSent;
+                    if (!lastSent) {
+                        // First time sending this template to this user
+                        return true;
+                    }
+                    const timeSinceLastEmail = Date.now() - lastSent.toMillis();
+                    return timeSinceLastEmail >= timeLimit;
+                }
+            }
+            // Fallback to weekly limit if no preferences found
+            const emailTrackingRef = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'emailTracking', userIdentifier);
             const emailTrackingDoc = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__.getDoc)(emailTrackingRef);
             if (!emailTrackingDoc.exists()) {
-                // First time sending email to this user
                 return true;
             }
             const data = emailTrackingDoc.data();
             const lastSent = data[template]?.lastSent;
             if (!lastSent) {
-                // First time sending this template to this user
                 return true;
             }
             const timeSinceLastEmail = Date.now() - lastSent.toMillis();
@@ -34,6 +79,21 @@ class EmailNotificationService {
             console.error('Error checking email limit:', error);
             // If there's an error checking, allow the email to be sent
             return true;
+        }
+    }
+    // Get time limit in milliseconds for each frequency
+    static getTimeLimitForFrequency(frequency) {
+        switch (frequency) {
+            case 'immediate':
+                return 0; // No limit
+            case 'daily':
+                return 24 * 60 * 60 * 1000; // 24 hours
+            case 'weekly':
+                return 7 * 24 * 60 * 60 * 1000; // 7 days
+            case 'monthly':
+                return 30 * 24 * 60 * 60 * 1000; // 30 days
+            default:
+                return this.WEEKLY_LIMIT_MS; // Default to weekly
         }
     }
     // Update email tracking after sending
@@ -54,10 +114,11 @@ class EmailNotificationService {
     static async sendNotification(data) {
         try {
             console.log('[EmailNotificationService] Sending notification:', data);
-            // Check weekly limit
-            const canSend = await this.canSendEmail(data.to, data.template || 'general');
+            // Check frequency limit using userId if available, otherwise use email
+            const userIdentifier = data.userId || data.to;
+            const canSend = await this.canSendEmail(userIdentifier, data.template || 'general');
             if (!canSend) {
-                console.log(`[EmailNotificationService] Weekly limit reached for ${data.to} (${data.template})`);
+                console.log(`[EmailNotificationService] Frequency limit reached for ${data.to} (${data.template})`);
                 return false;
             }
             const response = await fetch(this.EMAIL_FUNCTION_URL, {
@@ -87,26 +148,17 @@ class EmailNotificationService {
         }
     }
     // Chat notification
-    static async sendChatNotification(recipientEmail, senderName, messagePreview, conversationUrl) {
+    static async sendChatNotification(recipientEmail, senderName, messagePreview, conversationUrl, userId) {
         const subject = `New message from ${senderName}`;
-        const message = `
-Hello,
-
-You have received a new message from ${senderName}.
-
-Message preview: "${messagePreview}"
-
-${conversationUrl ? `Click here to view the conversation: ${conversationUrl}` : 'Log in to your My Film Jobs dashboard to view this message.'}
-
-Best regards,
-The My Film Jobs Team
-    `;
+        // Just send the message preview - the Firebase function will handle the email template
+        const message = messagePreview;
         return this.sendNotification({
             to: recipientEmail,
             subject,
             message,
-            senderName: 'My Film Jobs',
-            template: 'chat'
+            senderName: senderName,
+            template: 'chat',
+            userId: userId
         });
     }
     // Project update notification
@@ -168,7 +220,7 @@ The My Film Jobs Team
         });
     }
 }
-EmailNotificationService.EMAIL_FUNCTION_URL = 'https://us-central1-my-film-jobs.cloudfunctions.net/simpleEmailTest';
+EmailNotificationService.EMAIL_FUNCTION_URL = 'https://us-central1-my-film-jobs.cloudfunctions.net/emailSend';
 EmailNotificationService.WEEKLY_LIMIT_MS = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (EmailNotificationService);
 
