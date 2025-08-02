@@ -1,0 +1,34 @@
+{
+    "cursor.general.enableShadowWorkspace": false,
+    "files.exclude": {
+        "**/.specstory": true,
+        "**/.specstory/**": true,
+        "**/specstory/**": true,
+        "**/history/**": true,
+        "**/*-refine-search-modal-functionality.md": true,
+        "**/*-app-assessment-and-improvement-recommendations.md": true,
+        "**/*-previous-chat-stuck-in-generating.md": true,
+        "**/*-recovering-from-app-crash-and-chat-loss.md": true
+    },
+    "files.watcherExclude": {
+        "**/.specstory/**": true,
+        "**/specstory/**": true,
+        "**/history/**": true,
+        "**/*-refine-search-modal-functionality.md": true,
+        "**/*-app-assessment-and-improvement-recommendations.md": true,
+        "**/*-previous-chat-stuck-in-generating.md": true,
+        "**/*-recovering-from-app-crash-and-chat-loss.md": true
+    },
+    "search.exclude": {
+        "**/.specstory": true,
+        "**/.specstory/**": true,
+        "**/specstory/**": true,
+        "**/history/**": true,
+        "**/*-refine-search-modal-functionality.md": true,
+        "**/*-app-assessment-and-improvement-recommendations.md": true,
+        "**/*-previous-chat-stuck-in-generating.md": true,
+        "**/*-recovering-from-app-crash-and-chat-loss.md": true
+    },
+    "typescript.preferences.includePackageJsonAutoImports": "off",
+    "typescript.suggest.autoImports": false
+}

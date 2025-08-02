@@ -1,0 +1,168 @@
+.performance-monitor {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 9999;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 12px;
+
+  .monitor-toggle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    background: #3b82f6;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+
+    &:hover {
+      transform: scale(1.1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+  }
+
+  .monitor-panel {
+    position: absolute;
+    bottom: 50px;
+    right: 0;
+    width: 300px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    border: 1px solid #e5e7eb;
+    overflow: hidden;
+  }
+
+  .monitor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+
+    h3 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 600;
+      color: #374151;
+    }
+
+    .close-button {
+      background: none;
+      border: none;
+      font-size: 18px;
+      color: #6b7280;
+      cursor: pointer;
+      padding: 0;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: #e5e7eb;
+  }
+
+  .metric {
+    background: white;
+    padding: 12px;
+    text-align: center;
+
+    .metric-label {
+      display: block;
+      font-size: 10px;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .metric-value {
+      display: block;
+      font-size: 16px;
+      font-weight: 600;
+      color: #111827;
+    }
+  }
+
+  .performance-logs {
+    border-top: 1px solid #e5e7eb;
+    padding: 12px 16px;
+
+    h4 {
+      margin: 0 0 8px 0;
+      font-size: 12px;
+      color: #374151;
+    }
+
+    .logs-container {
+      max-height: 120px;
+      overflow-y: auto;
+      background: #f9fafb;
+      border-radius: 4px;
+      padding: 8px;
+    }
+
+    .log-entry {
+      font-size: 10px;
+      color: #6b7280;
+      margin-bottom: 2px;
+      word-break: break-word;
+    }
+  }
+
+  .monitor-actions {
+    display: flex;
+    gap: 8px;
+    padding: 12px 16px;
+    border-top: 1px solid #e5e7eb;
+    background: #f9fafb;
+
+    .clear-button,
+    .export-button {
+      flex: 1;
+      padding: 6px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      background: white;
+      color: #374151;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: #f3f4f6;
+        border-color: #9ca3af;
+      }
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .performance-monitor {
+    bottom: 10px;
+    right: 10px;
+
+    .monitor-panel {
+      width: 280px;
+      bottom: 45px;
+    }
+
+    .monitor-toggle {
+      width: 35px;
+      height: 35px;
+      font-size: 14px;
+    }
+  }
+} 
