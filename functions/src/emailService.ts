@@ -23,23 +23,20 @@ export class EmailService {
   static initialize() {
     if (this.isInitialized) return;
 
-    // Get Firebase Functions config
-    const config = functions.config();
-    
-    // Initialize SendGrid
-    this.sendGridApiKey = config.sendgrid?.api_key || process.env.SENDGRID_API_KEY || '';
+    // Use environment variables for security
+    this.sendGridApiKey = process.env.SENDGRID_API_KEY || '';
     if (this.sendGridApiKey) {
       sgMail.setApiKey(this.sendGridApiKey);
     }
 
-    // Initialize Nodemailer with Firebase Functions config
+    // Initialize Nodemailer with environment variables
     const smtpConfig = {
-      host: config.smtp?.host || process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: parseInt(config.smtp?.port || process.env.SMTP_PORT || '587'),
+      host: process.env.SMTP_HOST || 'smtp.gmail.com',
+      port: parseInt(process.env.SMTP_PORT || '587'),
       secure: false,
       auth: {
-        user: config.smtp?.user || process.env.SMTP_USER || '',
-        pass: config.smtp?.pass || process.env.SMTP_PASS || ''
+        user: process.env.SMTP_USER || '',
+        pass: process.env.SMTP_PASS || ''
       }
     };
 
@@ -70,16 +67,15 @@ export class EmailService {
       const html = compiledHtml(data || {});
       const text = compiledText(data || {});
 
-      // Get from email from config
-      const config = functions.config();
-      const fromEmail = config.email?.from || process.env.FROM_EMAIL || 'noreply@myfilmjobs.com';
+      // Get from email from environment variables
+      const fromEmailValue = process.env.FROM_EMAIL || 'iam@myfilmjobs.com';
 
       // Try SendGrid first, fallback to Nodemailer
       if (this.sendGridApiKey) {
         console.log('[EmailService] Using SendGrid');
         await sgMail.send({
           to,
-          from: fromEmail,
+          from: fromEmailValue,
           subject,
           html,
           text
@@ -87,7 +83,7 @@ export class EmailService {
       } else {
         console.log('[EmailService] Using Nodemailer');
         await this.transporter.sendMail({
-          from: fromEmail,
+          from: fromEmailValue,
           to,
           subject,
           html,
