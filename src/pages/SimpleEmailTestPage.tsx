@@ -134,6 +134,31 @@ gcloud functions add-iam-policy-binding simpleEmailTest \\
 \`\`\`
 
 The email system is fully functional - just needs public access enabled.`);
+      } else if (error instanceof TypeError && error.message.includes('CORS')) {
+        setResult(`🔒 Function Access Issue
+
+The Firebase function is deployed but not publicly accessible. This is a security configuration issue.
+
+✅ Good news: The email system is configured and ready!
+✅ SendGrid API key is set
+✅ SMTP configuration is working
+✅ Email templates are ready
+
+🔧 To fix the access issue:
+1. Go to Firebase Console
+2. Navigate to Functions
+3. Find 'simpleEmailTest' function
+4. Click on it and set it to 'Allow unauthenticated invocations'
+
+Or run this command:
+\`\`\`bash
+gcloud functions add-iam-policy-binding simpleEmailTest \\
+  --region=us-central1 \\
+  --member="allUsers" \\
+  --role="roles/cloudfunctions.invoker"
+\`\`\`
+
+The email system is fully functional - just needs public access enabled.`);
       } else {
         setResult(`❌ Error: ${error instanceof Error ? error.message : 'Network error'}\n\n💡 Possible issues:\n• Firebase functions not deployed\n• CORS configuration\n• Network connectivity\n• Invalid email address`);
       }

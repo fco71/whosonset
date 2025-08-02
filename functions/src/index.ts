@@ -83,15 +83,17 @@ export const simpleEmailTest = onRequest({
   invoker: 'public',
   region: 'us-central1'
 }, async (req, res) => {
+  // Set CORS headers for all requests
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    setCorsHeaders(res);
     res.status(204).send('');
     return;
   }
 
-  setCorsHeaders(res);
-  
   try {
     const { to, subject, message, senderName } = req.body;
     
