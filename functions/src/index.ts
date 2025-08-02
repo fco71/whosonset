@@ -80,7 +80,8 @@ export const testEmail = onRequest(async (req, res) => {
 // Simple email test function with CORS - This now actually sends emails
 export const simpleEmailTest = onRequest({
   cors: true,
-  invoker: 'public'
+  invoker: 'public',
+  region: 'us-central1'
 }, async (req, res) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
