@@ -245,44 +245,6 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
           </div>
           <div className="flex items-center space-x-2">
             <button
-              onClick={() => navigate('/test-notifications')}
-              className="text-blue-600 hover:text-blue-800 text-sm font-medium mr-2"
-              title="Test Notifications"
-            >
-              Test
-            </button>
-            <button
-              onClick={async () => {
-                try {
-                  // Create a test notification
-                  await addDoc(collection(db, 'notifications'), {
-                    userId: currentUser?.uid,
-                    type: "test",
-                    message: "This is a test notification with a longer message to see if it displays properly",
-                    read: false,
-                    createdAt: serverTimestamp()
-                  });
-                  console.log('Test notification created');
-                } catch (error) {
-                  console.error('Error creating test notification:', error);
-                }
-              }}
-              className="text-green-600 hover:text-green-800 text-sm font-medium mr-2"
-              title="Create Test Notification"
-            >
-              Create Test
-            </button>
-            <button
-              onClick={() => {
-                console.log('Current notifications:', notifications);
-                console.log('Filtered notifications:', filteredNotifications);
-              }}
-              className="text-purple-600 hover:text-purple-800 text-sm font-medium"
-              title="Debug Notifications"
-            >
-              Debug
-            </button>
-            <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600 transition-colors"
             >
@@ -403,7 +365,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
                             notification.read ? 'text-gray-700' : 'text-gray-900'
                           }`}>
                             {notification.message || 'No message'}
-                            {/* Debug: {JSON.stringify({message: notification.message, type: notification.type})} */}
+            
                           </p>
                           <div className="flex items-center space-x-2 mt-1">
                             <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getNotificationColor(notification.type)}`}>

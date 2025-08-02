@@ -14,7 +14,7 @@ interface NavigationProps {
 }
 
 const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
-    console.log('[Navigation] Rendering with authUser:', authUser?.email);
+  
     
     const location = useLocation();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -38,7 +38,7 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
     }, []);
 
     const toggleMobileMenu = () => {
-        console.log('[Navigation] Toggle mobile menu clicked, current state:', isMobileMenuOpen);
+    
         setIsMobileMenuOpen(!isMobileMenuOpen);
         if (!isMobileMenuOpen) {
             setIsUserMenuOpen(false);
@@ -96,7 +96,7 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
       unreadCount = 0;
     }
     
-    console.log('[Navigation] Notifications loaded:', notifications.length, 'Unread:', unreadCount);
+
 
     const languages = [
         { code: 'en', label: 'EN' },
