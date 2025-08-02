@@ -245,12 +245,33 @@ const AuthProvider = ({ children }) => {
     const logout = async () => {
         await (0,firebase_auth__WEBPACK_IMPORTED_MODULE_3__/* .signOut */ .CI)(_firebase__WEBPACK_IMPORTED_MODULE_2__/* .auth */ .j2);
     };
-    const deleteAccount = async () => {
+    const deleteAccount = async (password) => {
         if (!currentUser) {
             throw new Error('No user is currently signed in');
         }
         try {
-            // Delete user data from Firestore first
+            // Check if re-authentication is required
+            try {
+                // Try to delete user directly first
+                await (0,firebase_auth__WEBPACK_IMPORTED_MODULE_3__/* .deleteUser */ .hG)(currentUser);
+            }
+            catch (error) {
+                if (error.code === 'auth/requires-recent-login') {
+                    // Re-authentication required
+                    if (!password) {
+                        throw new Error('Re-authentication required. Please provide your password.');
+                    }
+                    // Re-authenticate with email and password
+                    const credential = firebase_auth__WEBPACK_IMPORTED_MODULE_3__/* .EmailAuthProvider */ .IX.credential(currentUser.email, password);
+                    await (0,firebase_auth__WEBPACK_IMPORTED_MODULE_3__/* .reauthenticateWithCredential */ .kZ)(currentUser, credential);
+                    // Now try to delete user again
+                    await (0,firebase_auth__WEBPACK_IMPORTED_MODULE_3__/* .deleteUser */ .hG)(currentUser);
+                }
+                else {
+                    throw error;
+                }
+            }
+            // Delete user data from Firestore
             const batch = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .writeBatch */ .wP)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db);
             // Delete user profile
             batch.delete((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db, 'users', currentUser.uid));
@@ -262,8 +283,6 @@ const AuthProvider = ({ children }) => {
             batch.delete((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db, 'emailTracking', currentUser.email || ''));
             // Execute the batch
             await batch.commit();
-            // Delete the Firebase Auth user
-            await (0,firebase_auth__WEBPACK_IMPORTED_MODULE_3__/* .deleteUser */ .hG)(currentUser);
             console.log('[AuthContext] Account deleted successfully');
         }
         catch (error) {

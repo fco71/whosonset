@@ -7,6 +7,8 @@ const SettingsPage: React.FC = () => {
   const navigate = useNavigate();
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showPasswordInput, setShowPasswordInput] = useState(false);
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const handleDeleteAccount = async () => {
@@ -19,15 +21,37 @@ const SettingsPage: React.FC = () => {
     setError(null);
 
     try {
-      await deleteAccount();
+      await deleteAccount(password);
       // Redirect to home page after successful deletion
       navigate('/');
     } catch (error: any) {
       console.error('Error deleting account:', error);
-      setError(error.message || 'Failed to delete account. Please try again.');
+      
+      if (error.message.includes('Re-authentication required')) {
+        setShowPasswordInput(true);
+        setError('Please enter your password to confirm account deletion');
+      } else {
+        setError(error.message || 'Failed to delete account. Please try again.');
+      }
     } finally {
       setIsDeleting(false);
     }
+  };
+
+  const handlePasswordSubmit = async () => {
+    if (!password.trim()) {
+      setError('Password is required');
+      return;
+    }
+
+    await handleDeleteAccount();
+  };
+
+  const handleCancel = () => {
+    setShowDeleteConfirm(false);
+    setShowPasswordInput(false);
+    setPassword('');
+    setError(null);
   };
 
   return (
@@ -95,22 +119,56 @@ const SettingsPage: React.FC = () => {
                       This action cannot be undone. This will permanently delete your account and all of your data.
                     </p>
                     <div className="mt-4 flex space-x-3">
-                      <button
-                        type="button"
-                        onClick={handleDeleteAccount}
-                        disabled={isDeleting}
-                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {isDeleting ? 'Deleting...' : 'Yes, Delete My Account'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setShowDeleteConfirm(false)}
-                        disabled={isDeleting}
-                        className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Cancel
-                      </button>
+                      {showPasswordInput ? (
+                        <div className="flex flex-col">
+                          <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                            Password
+                          </label>
+                          <input
+                            type="password"
+                            name="password"
+                            id="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                          />
+                          <button
+                            type="button"
+                            onClick={handlePasswordSubmit}
+                            disabled={isDeleting}
+                            className="mt-2 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {isDeleting ? 'Deleting...' : 'Confirm Deletion'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleCancel}
+                            disabled={isDeleting}
+                            className="mt-2 inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            onClick={handleDeleteAccount}
+                            disabled={isDeleting}
+                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {isDeleting ? 'Deleting...' : 'Yes, Delete My Account'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setShowDeleteConfirm(false)}
+                            disabled={isDeleting}
+                            className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 )}

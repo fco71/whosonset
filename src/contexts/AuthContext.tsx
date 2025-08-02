@@ -9,7 +9,9 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   OAuthProvider,
-  deleteUser
+  deleteUser,
+  reauthenticateWithCredential,
+  EmailAuthProvider
 } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp, getDoc, writeBatch } from 'firebase/firestore';
 
@@ -22,7 +24,7 @@ interface AuthContextType {
   loginWithGoogle: () => Promise<void>;
   loginWithApple: () => Promise<void>;
   logout: () => Promise<void>;
-  deleteAccount: () => Promise<void>;
+  deleteAccount: (password?: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -268,13 +270,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     await signOut(auth);
   };
 
-  const deleteAccount = async () => {
+  const deleteAccount = async (password?: string) => {
     if (!currentUser) {
       throw new Error('No user is currently signed in');
     }
 
     try {
-      // Delete user data from Firestore first
+      // Check if re-authentication is required
+      try {
+        // Try to delete user directly first
+        await deleteUser(currentUser);
+      } catch (error: any) {
+        if (error.code === 'auth/requires-recent-login') {
+          // Re-authentication required
+          if (!password) {
+            throw new Error('Re-authentication required. Please provide your password.');
+          }
+          
+          // Re-authenticate with email and password
+          const credential = EmailAuthProvider.credential(currentUser.email!, password);
+          await reauthenticateWithCredential(currentUser, credential);
+          
+          // Now try to delete user again
+          await deleteUser(currentUser);
+        } else {
+          throw error;
+        }
+      }
+
+      // Delete user data from Firestore
       const batch = writeBatch(db);
       
       // Delete user profile
@@ -291,9 +315,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       // Execute the batch
       await batch.commit();
-      
-      // Delete the Firebase Auth user
-      await deleteUser(currentUser);
       
       console.log('[AuthContext] Account deleted successfully');
     } catch (error) {
