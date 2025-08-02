@@ -55,8 +55,8 @@ Once deployed:
 The deployment is successful when you see:
 ```
 ✔  functions[simpleEmailTest(us-central1)] Successful create operation.
-Function URL (simpleEmailTest(us-central1)): https://us-central1-whosonsetdepez.cloudfunctions.net/simpleEmailTest
+Function URL (simpleEmailTest(us-central1)): https://us-central1-my-film-jobs.cloudfunctions.net/simpleEmailTest
 ```
 
 ## Note
-The email test page at `/simple-email-test` will automatically detect when the function is deployed and update its status.
+The email test page at `/email-test` will automatically detect when the function is deployed and update its status.

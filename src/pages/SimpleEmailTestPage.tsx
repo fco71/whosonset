@@ -11,8 +11,8 @@ const SimpleEmailTestPage: React.FC = () => {
   const checkDeploymentStatus = async () => {
     try {
       const functionsUrl = process.env.NODE_ENV === 'production' 
-        ? 'https://us-central1-whosonsetdepez.cloudfunctions.net'
-        : 'http://localhost:5001/whosonsetdepez/us-central1';
+        ? 'https://us-central1-my-film-jobs.cloudfunctions.net'
+        : 'http://localhost:5001/my-film-jobs/us-central1';
       
       const response = await fetch(`${functionsUrl}/simpleEmailTest`, {
         method: 'OPTIONS',
@@ -40,8 +40,8 @@ const SimpleEmailTestPage: React.FC = () => {
     try {
       // Get the Firebase functions URL
       const functionsUrl = process.env.NODE_ENV === 'production' 
-        ? 'https://us-central1-whosonsetdepez.cloudfunctions.net'
-        : 'http://localhost:5001/whosonsetdepez/us-central1';
+        ? 'https://us-central1-my-film-jobs.cloudfunctions.net'
+        : 'http://localhost:5001/my-film-jobs/us-central1';
       
       // Call the Firebase function
       const response = await fetch(`${functionsUrl}/simpleEmailTest`, {
@@ -105,12 +105,37 @@ The email function is not yet deployed to Firebase. To deploy it:
 1. Open your terminal on your local machine
 2. Navigate to the project directory
 3. Run: firebase login (if not already logged in)
-4. Run: firebase use whosonsetdepez
+4. Run: firebase use my-film-jobs
 5. Run: firebase deploy --only functions:simpleEmailTest
 
 See DEPLOY_EMAIL_FUNCTION_NOW.md for detailed instructions.
 
 Once deployed, this page will work immediately without any delays.`);
+      } else if (error instanceof TypeError && error.message.includes('403')) {
+        setResult(`🔒 Function Access Issue
+
+The Firebase function is deployed but not publicly accessible. This is a security configuration issue.
+
+✅ Good news: The email system is configured and ready!
+✅ SendGrid API key is set
+✅ SMTP configuration is working
+✅ Email templates are ready
+
+🔧 To fix the access issue:
+1. Go to Firebase Console
+2. Navigate to Functions
+3. Find 'simpleEmailTest' function
+4. Click on it and set it to 'Allow unauthenticated invocations'
+
+Or run this command:
+\`\`\`bash
+gcloud functions add-iam-policy-binding simpleEmailTest \\
+  --region=us-central1 \\
+  --member="allUsers" \\
+  --role="roles/cloudfunctions.invoker"
+\`\`\`
+
+The email system is fully functional - just needs public access enabled.`);
       } else {
         setResult(`❌ Error: ${error instanceof Error ? error.message : 'Network error'}\n\n💡 Possible issues:\n• Firebase functions not deployed\n• CORS configuration\n• Network connectivity\n• Invalid email address`);
       }

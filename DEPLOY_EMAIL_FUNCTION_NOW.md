@@ -38,7 +38,7 @@ firebase login
 
 ## Step 6: Select the correct project
 ```bash
-firebase use whosonsetdepez
+firebase use my-film-jobs
 ```
 
 ## Step 7: Deploy the email function
@@ -73,13 +73,13 @@ firebase deploy --only functions:simpleEmailTest
 After successful deployment, you should see:
 ```
 ✔  functions[simpleEmailTest(us-central1)] Successful create operation.
-Function URL (simpleEmailTest(us-central1)): https://us-central1-whosonsetdepez.cloudfunctions.net/simpleEmailTest
+Function URL (simpleEmailTest(us-central1)): https://us-central1-my-film-jobs.cloudfunctions.net/simpleEmailTest
 
 ✔  Deploy complete!
 ```
 
 ## Test the Function
-Once deployed, the email test page at `/simple-email-test` will work immediately without any delays.
+Once deployed, the email test page at `/email-test` will work immediately without any delays.
 
 ## Troubleshooting
 
