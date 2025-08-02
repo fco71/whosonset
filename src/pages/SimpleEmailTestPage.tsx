@@ -14,47 +14,66 @@ const SimpleEmailTestPage: React.FC = () => {
     }
 
     setLoading(true);
-    setResult('Testing email system...\n\n');
+    setResult('Sending email...\n\n');
 
     try {
-      // For production, we'll use a more secure approach
-      // This simulates the email sending process
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Get the Firebase functions URL
+      const functionsUrl = process.env.NODE_ENV === 'production' 
+        ? 'https://us-central1-whosonsetdepez.cloudfunctions.net'
+        : 'http://localhost:5001/whosonsetdepez/us-central1';
+      
+      // Call the Firebase function
+      const response = await fetch(`${functionsUrl}/simpleEmailTest`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          to: email,
+          subject: `Test message from ${senderName}`,
+          message: messagePreview,
+          senderName: senderName
+        })
+      });
 
-      const successMessage = `
-✅ Email System Test Successful!
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        const successMessage = `
+✅ Email Sent Successfully!
 
 📧 Email Details:
 • To: ${email}
 • From: ${senderName}
 • Message: ${messagePreview}
-• Subject: New message from ${senderName}
+• Subject: Test message from ${senderName}
+• Timestamp: ${new Date(data.timestamp).toLocaleString()}
 
 🎉 What happened:
-1. Email system is working correctly
-2. SendGrid integration is ready
-3. Professional HTML templates configured
-4. Error handling implemented
+1. Email was sent successfully via ${data.usedSendGrid ? 'SendGrid' : 'SMTP'}
+2. The email should arrive in your inbox shortly
+3. Check your spam folder if you don't see it
 
-📋 Implementation Status:
-✅ Frontend: Working perfectly
-✅ In-app Notifications: Working
-✅ Email API: Ready for production
-✅ Message System: Working
-✅ UI/UX: Professional design
+📋 System Status:
+✅ Firebase Function: Working
+✅ Email Service: Operational
+✅ CORS: Configured correctly
+✅ API Integration: Successful
 
-🔧 Production Setup:
-• SendGrid API key configured
-• Professional email templates ready
+🔧 Production Ready:
+• Email system is fully functional
+• SendGrid/SMTP configuration working
 • Error handling implemented
 • Security measures in place
+        `.trim();
 
-🎯 System is 100% ready for production!
-      `.trim();
-
-      setResult(successMessage);
+        setResult(successMessage);
+      } else {
+        setResult(`❌ Error: ${data.error || 'Failed to send email'}\n\n💡 Please check:\n• Email service configuration\n• Firebase function logs\n• Network connectivity`);
+      }
     } catch (error) {
-      setResult(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}\n\n💡 The email system is working correctly in development mode.`);
+      console.error('Email send error:', error);
+      setResult(`❌ Error: ${error instanceof Error ? error.message : 'Network error'}\n\n💡 Possible issues:\n• Firebase functions not deployed\n• CORS configuration\n• Network connectivity\n• Invalid email address`);
     } finally {
       setLoading(false);
     }
