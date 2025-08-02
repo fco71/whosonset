@@ -3,9 +3,14 @@ import { onRequest } from "firebase-functions/v2/https";
 import * as functions from "firebase-functions";
 import * as sgMail from "@sendgrid/mail";
 
+// Load environment variables for local development
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config();
+}
+
 admin.initializeApp();
 
-// Initialize SendGrid with API key from Firebase config
+// Initialize SendGrid with API key from Firebase config or environment
 const config = functions.config();
 const sendGridApiKey = config.sendgrid?.api_key || process.env.SENDGRID_API_KEY;
 if (sendGridApiKey) {
