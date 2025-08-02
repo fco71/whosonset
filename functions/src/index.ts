@@ -57,18 +57,18 @@ export const sendEmail = onRequest(async (req, res) => {
     const msg = {
       to,
       from: {
-        email: 'noreply@whosonset.com', // Replace with your verified sender email
-        name: 'WhosOnSet'
+        email: 'iam@myfilmjobs.com',
+        name: 'My Film Jobs'
       },
       subject: subject,
       text: message,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #333;">New message from ${senderName || 'WhosOnSet user'}</h2>
+          <h2 style="color: #333;">New message from ${senderName || 'My Film Jobs user'}</h2>
           <p style="color: #666; line-height: 1.6;">${message}</p>
           <hr style="border: 1px solid #eee; margin: 20px 0;">
           <p style="color: #999; font-size: 12px;">
-            This email was sent from WhosOnSet. Please do not reply to this email.
+            This email was sent from My Film Jobs. Please do not reply to this email.
           </p>
         </div>
       `
