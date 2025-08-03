@@ -54,44 +54,44 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
   const calculateContentLimits = () => {
     const totalHeight = 297; // A4 height in mm
     const padding = 30; // 15mm top + 15mm bottom
-    const headerHeight = 25; // Estimated header height
-    const contactHeight = 15; // Contact section is critical, reserve space
-    const sectionSpacing = 5; // Space between sections
+    const headerHeight = 35; // Increased header height to allow more bio space
+    const contactHeight = 12; // Reduced contact section space
+    const sectionSpacing = 3; // Reduced spacing between sections
     
     let availableHeight = totalHeight - padding - headerHeight - contactHeight;
     let sections = [];
     
     // Languages (low priority, can be cut)
     if (profile.languages && profile.languages.length > 0) {
-      const langHeight = Math.min(10, availableHeight);
+      const langHeight = Math.min(8, availableHeight);
       sections.push({ type: 'languages', height: langHeight, priority: 1 });
       availableHeight -= langHeight + sectionSpacing;
     }
     
     // Job Titles (medium priority)
     if (profile.jobTitles && profile.jobTitles.filter(jt => jt.department && jt.title).length > 0) {
-      const jobHeight = Math.min(25, availableHeight);
+      const jobHeight = Math.min(20, availableHeight);
       sections.push({ type: 'jobTitles', height: jobHeight, priority: 2 });
       availableHeight -= jobHeight + sectionSpacing;
     }
     
     // Projects (medium priority)
     if (profile.projects && profile.projects.filter(p => p.projectName && p.role).length > 0) {
-      const projectHeight = Math.min(20, availableHeight);
+      const projectHeight = Math.min(15, availableHeight);
       sections.push({ type: 'projects', height: projectHeight, priority: 3 });
       availableHeight -= projectHeight + sectionSpacing;
     }
     
     // Education (medium priority)
     if (profile.education && profile.education.length > 0) {
-      const eduHeight = Math.min(15, availableHeight);
+      const eduHeight = Math.min(12, availableHeight);
       sections.push({ type: 'education', height: eduHeight, priority: 4 });
       availableHeight -= eduHeight + sectionSpacing;
     }
     
     // Other Info (lowest priority, can be cut)
-    if (profile.otherInfo && availableHeight > 10) {
-      const otherHeight = Math.min(10, availableHeight);
+    if (profile.otherInfo && availableHeight > 8) {
+      const otherHeight = Math.min(8, availableHeight);
       sections.push({ type: 'otherInfo', height: otherHeight, priority: 5 });
     }
     
@@ -130,9 +130,9 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
 
   const profileImageStyle: React.CSSProperties = {
     width: '35mm',
-    height: '35mm', // Changed to square aspect ratio to prevent distortion
+    height: '35mm', // Square aspect ratio to prevent distortion
     borderRadius: '3mm',
-    objectFit: 'contain' as const, // Changed from 'cover' to 'contain' to maintain aspect ratio
+    objectFit: 'cover' as const, // Changed back to 'cover' for better photo display
     border: '1pt solid #ccc',
     flexShrink: 0,
     backgroundColor: '#f5f5f5', // Light background for transparent images
@@ -150,13 +150,9 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
     color: '#666',
     margin: '2mm 0 0 0',
     fontStyle: 'italic',
-    // Flexible height with smart truncation
-    maxHeight: '12mm', // About 3 lines maximum
-    overflow: 'hidden',
-    display: '-webkit-box',
-    WebkitLineClamp: 3,
-    WebkitBoxOrient: 'vertical',
-    lineHeight: 1.2,
+    // Allow natural text flow without artificial truncation
+    lineHeight: 1.3,
+    // Remove maxHeight and WebkitLineClamp to prevent mid-sentence cuts
   };
 
   const sectionStyle: React.CSSProperties = {
