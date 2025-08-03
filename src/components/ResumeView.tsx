@@ -117,18 +117,15 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
   const containerStyle: React.CSSProperties = {
     width: '210mm',
     height: '297mm',
-    maxWidth: '8.5in',
-    maxHeight: '11in',
-    margin: '0 auto',
-    background: 'white',
-    color: 'black',
-    fontFamily: "'Times New Roman', serif",
+    padding: '10mm 15mm 15mm 15mm', // Back to reasonable padding
+    backgroundColor: 'white',
+    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
+    borderRadius: '8px',
+    fontFamily: 'Georgia, serif',
     fontSize: '11pt',
     lineHeight: 1.3,
-    padding: '10mm 15mm 15mm 15mm', // Reduced top padding from 15mm to 10mm
-    boxShadow: '0 0 10px rgba(0,0,0,0.1)',
-    overflow: 'hidden',
-    position: 'relative',
+    color: '#333',
+    // Remove overflow: 'hidden' to prevent name chopping
   };
 
   const headerStyle: React.CSSProperties = {
@@ -161,7 +158,7 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
     color: '#333',
     alignSelf: 'flex-start', // Ensure name aligns with top of photo
     lineHeight: 1, // Tight line height for better alignment
-    marginTop: '-2mm', // Slightly above the photo for better visual balance
+    marginTop: '0', // Remove negative margin to prevent chopping
   };
 
   const bioStyle: React.CSSProperties = {
@@ -271,7 +268,7 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
               width: 210mm !important;
               height: 297mm !important;
               margin: 0 !important;
-              padding: 10mm 15mm 15mm 15mm !important; /* Match our custom padding */
+              padding: 10mm 15mm 15mm 15mm !important; /* Match container padding */
               box-shadow: none !important;
               page-break-after: avoid;
               page-break-inside: avoid;
