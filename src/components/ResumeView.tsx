@@ -79,12 +79,13 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
 
 
   const profileImageStyle: React.CSSProperties = {
-    width: '30mm',
-    height: '40mm',
+    width: '35mm',
+    height: '35mm', // Changed to square aspect ratio to prevent distortion
     borderRadius: '3mm',
-    objectFit: 'cover' as const,
+    objectFit: 'contain' as const, // Changed from 'cover' to 'contain' to maintain aspect ratio
     border: '1pt solid #ccc',
     flexShrink: 0,
+    backgroundColor: '#f5f5f5', // Light background for transparent images
   };
 
   const nameStyle: React.CSSProperties = {
