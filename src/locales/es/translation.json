@@ -1100,6 +1100,7 @@
     },
     "sections": {
       "languages": "Idiomas",
+      "residences": "Residencias",
       "professionalExperience": "Experiencia Profesional",
       "selectedProjects": "Proyectos Seleccionados",
       "education": "Educación",
@@ -1113,7 +1114,9 @@
     },
     "types": {
       "positions": "puestos",
-      "projects": "proyectos"
+      "projects": "proyectos",
+      "languages": "idiomas",
+      "residences": "residencias"
     },
     "builder": {
       "title": "Constructor de Currículum",

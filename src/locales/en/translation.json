@@ -1135,6 +1135,7 @@
     },
     "sections": {
       "languages": "Languages",
+      "residences": "Residences",
       "professionalExperience": "Professional Experience",
       "selectedProjects": "Selected Projects",
       "education": "Education",
@@ -1148,7 +1149,9 @@
     },
     "types": {
       "positions": "positions",
-      "projects": "projects"
+      "projects": "projects",
+      "languages": "languages",
+      "residences": "residences"
     },
     "builder": {
       "title": "Resume Builder",

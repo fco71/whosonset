@@ -64,6 +64,7 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
     // Only apply limits if content would overflow
     const hasManySections = (
       (profile.languages && profile.languages.length > 2) ||
+      (profile.residences && profile.residences.length > 2) ||
       (profile.jobTitles && profile.jobTitles.filter(jt => jt.department && jt.title).length > 4) ||
       (profile.projects && profile.projects.filter(p => p.projectName && p.role).length > 3) ||
       (profile.education && profile.education.length > 2) ||
@@ -80,6 +81,13 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
       const langHeight = Math.min(10, availableHeight);
       sections.push({ type: 'languages', height: langHeight, priority: 1 });
       availableHeight -= langHeight + sectionSpacing;
+    }
+    
+    // Residences (low priority, can be cut)
+    if (profile.residences && profile.residences.length > 0) {
+      const resHeight = Math.min(10, availableHeight);
+      sections.push({ type: 'residences', height: resHeight, priority: 1 });
+      availableHeight -= resHeight + sectionSpacing;
     }
     
     // Job Titles (medium priority)
@@ -158,14 +166,15 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
     color: '#333',
     alignSelf: 'flex-start', // Ensure name aligns with top of photo
     lineHeight: 1, // Tight line height for better alignment
-    marginTop: '0', // Remove negative margin to prevent chopping
+    marginTop: '-2mm', // Move name up to align with photo top
   };
 
   const bioStyle: React.CSSProperties = {
-    fontSize: '11pt',
-    color: '#666',
+    fontSize: '10pt', // Match the Languages section text size exactly
+    color: '#333', // Match the Languages section color exactly
     margin: '2mm 0 0 0',
     fontStyle: 'italic',
+    fontWeight: 'normal', // Ensure same weight as Languages section
     // Align bio with bottom of profile photo (40mm photo height)
     maxHeight: '38mm', // 40mm photo height minus 2mm margin
     overflow: 'hidden',
@@ -275,6 +284,7 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
               break-inside: avoid;
               font-size: 11pt !important;
               line-height: 1.3 !important;
+              font-family: Georgia, serif !important; /* Match preview font */
             }
             
             .resume-container img {
@@ -285,19 +295,51 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
             
             .resume-container h1 {
               font-size: 22pt !important;
-              margin-top: -2mm !important; /* Match our name positioning */
+              font-weight: bold !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              color: #333 !important;
+              line-height: 1 !important;
+              align-self: flex-start !important; /* Match preview alignment */
+              margin-top: -2mm !important; /* Move name up to align with photo top */
             }
             
             .resume-container h2 {
               font-size: 13pt !important;
+              font-weight: bold !important;
               padding-bottom: 3mm !important;
               margin-bottom: 5mm !important;
               border-bottom: 1pt solid #333 !important;
+              text-transform: uppercase !important;
+              letter-spacing: 0.5pt !important;
             }
             
             .resume-container p, .resume-container li {
               font-size: 10pt !important;
               margin-bottom: 1mm !important;
+              color: #333 !important;
+            }
+            
+            /* Bio text specific styling to match preview exactly */
+            .resume-container p {
+              font-size: 10pt !important; /* Match Languages section exactly */
+              color: #333 !important; /* Match Languages section color */
+              font-style: italic !important;
+              line-height: 1.3 !important;
+              font-weight: normal !important; /* Ensure same weight as Languages */
+              margin: 2mm 0 0 0 !important; /* Match preview margin */
+            }
+            
+            /* Ensure header alignment matches preview */
+            .resume-container > div > div > div:first-child {
+              display: flex !important;
+              align-items: flex-start !important;
+              gap: 10mm !important;
+              margin-bottom: 6mm !important;
+              border-bottom: 2pt solid #333 !important;
+              padding-bottom: 3mm !important;
+              padding-top: 0 !important;
+              margin-top: 0 !important;
             }
             
             @page {
@@ -351,6 +393,26 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
                 {profile.languages.length > 2 && (
                   <p style={{ fontSize: '9pt', color: '#666', fontStyle: 'italic', margin: '1mm 0 0 0' }}>
                     ({t('resume.labels.showingTop', { count: 2, type: t('resume.types.languages') })})
+                  </p>
+                )}
+              </section>
+            )}
+
+            {/* Residences */}
+            {profile.residences && profile.residences.length > 0 && contentLimits.find(s => s.type === 'residences') && (
+              <section style={sectionStyle}>
+                <div style={sectionTitleStyle}>{t('resume.sections.residences')}</div>
+                <ul style={jobTitlesListStyle}>
+                  {profile.residences.slice(0, 2).map((residence, idx) => (
+                    <li key={idx} style={jobTitleItemStyle}>
+                      {residence.city && residence.country ? `${residence.city}, ${residence.country}` : 
+                       residence.city || residence.country || ''}
+                    </li>
+                  ))}
+                </ul>
+                {profile.residences.length > 2 && (
+                  <p style={{ fontSize: '9pt', color: '#666', fontStyle: 'italic', margin: '1mm 0 0 0' }}>
+                    ({t('resume.labels.showingTop', { count: 2, type: t('resume.types.residences') })})
                   </p>
                 )}
               </section>
