@@ -50,6 +50,56 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
   // Fallback: use photoURL if profileImageUrl is missing
   const managedProfileImageUrl = useManagedUrl(profile?.profileImageUrl || profile?.photoURL);
   
+  // Calculate available space and prioritize content
+  const calculateContentLimits = () => {
+    const totalHeight = 297; // A4 height in mm
+    const padding = 30; // 15mm top + 15mm bottom
+    const headerHeight = 25; // Estimated header height
+    const contactHeight = 15; // Contact section is critical, reserve space
+    const sectionSpacing = 5; // Space between sections
+    
+    let availableHeight = totalHeight - padding - headerHeight - contactHeight;
+    let sections = [];
+    
+    // Languages (low priority, can be cut)
+    if (profile.languages && profile.languages.length > 0) {
+      const langHeight = Math.min(10, availableHeight);
+      sections.push({ type: 'languages', height: langHeight, priority: 1 });
+      availableHeight -= langHeight + sectionSpacing;
+    }
+    
+    // Job Titles (medium priority)
+    if (profile.jobTitles && profile.jobTitles.filter(jt => jt.department && jt.title).length > 0) {
+      const jobHeight = Math.min(25, availableHeight);
+      sections.push({ type: 'jobTitles', height: jobHeight, priority: 2 });
+      availableHeight -= jobHeight + sectionSpacing;
+    }
+    
+    // Projects (medium priority)
+    if (profile.projects && profile.projects.filter(p => p.projectName && p.role).length > 0) {
+      const projectHeight = Math.min(20, availableHeight);
+      sections.push({ type: 'projects', height: projectHeight, priority: 3 });
+      availableHeight -= projectHeight + sectionSpacing;
+    }
+    
+    // Education (medium priority)
+    if (profile.education && profile.education.length > 0) {
+      const eduHeight = Math.min(15, availableHeight);
+      sections.push({ type: 'education', height: eduHeight, priority: 4 });
+      availableHeight -= eduHeight + sectionSpacing;
+    }
+    
+    // Other Info (lowest priority, can be cut)
+    if (profile.otherInfo && availableHeight > 10) {
+      const otherHeight = Math.min(10, availableHeight);
+      sections.push({ type: 'otherInfo', height: otherHeight, priority: 5 });
+    }
+    
+    return sections;
+  };
+  
+  const contentLimits = calculateContentLimits();
+  
   const containerStyle: React.CSSProperties = {
     width: '210mm',
     height: '297mm',
@@ -100,8 +150,13 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
     color: '#666',
     margin: '2mm 0 0 0',
     fontStyle: 'italic',
-    // Removed maxHeight, overflow, textOverflow, WebkitLineClamp restrictions
-    // to allow full bio text to display without truncation
+    // Flexible height with smart truncation
+    maxHeight: '12mm', // About 3 lines maximum
+    overflow: 'hidden',
+    display: '-webkit-box',
+    WebkitLineClamp: 3,
+    WebkitBoxOrient: 'vertical',
+    lineHeight: 1.2,
   };
 
   const sectionStyle: React.CSSProperties = {
@@ -268,45 +323,52 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
             </div>
 
             {/* Languages */}
-            {profile.languages && profile.languages.length > 0 && (
+            {profile.languages && profile.languages.length > 0 && contentLimits.find(s => s.type === 'languages') && (
               <section style={sectionStyle}>
                 <div style={sectionTitleStyle}>{t('resume.sections.languages')}</div>
                 <ul style={jobTitlesListStyle}>
-                  {profile.languages.slice(0, 3).map((lang, idx) => (
+                  {profile.languages.slice(0, 2).map((lang, idx) => (
                     <li key={idx} style={jobTitleItemStyle}>{lang}</li>
                   ))}
                 </ul>
+                {profile.languages.length > 2 && (
+                  <p style={{ fontSize: '9pt', color: '#666', fontStyle: 'italic', margin: '1mm 0 0 0' }}>
+                    ({t('resume.labels.showingTop', { count: 2, type: t('resume.types.languages') })})
+                  </p>
+                )}
               </section>
             )}
 
             {/* Job Titles */}
-            <div style={sectionStyle}>
-              <h2 style={sectionTitleStyle}>{t('resume.sections.professionalExperience')}</h2>
-              <ul style={jobTitlesListStyle}>
-                {profile.jobTitles
-                  .filter(jt => jt.department && jt.title)
-                  .slice(0, 4)
-                  .map((jt, i) => (
-                    <li key={i} style={jobTitleItemStyle}>
-                      <strong>{jt.title}</strong> — {jt.department}
-                    </li>
-                  ))}
-              </ul>
-              {profile.jobTitles.filter(jt => jt.department && jt.title).length > 4 && (
-                <p style={{ fontSize: '9pt', color: '#666', fontStyle: 'italic', margin: '1mm 0 0 0' }}>
-                  ({t('resume.labels.showingTop', { count: 4, type: t('resume.types.positions') })})
-                </p>
-              )}
-            </div>
+            {profile.jobTitles && profile.jobTitles.filter(jt => jt.department && jt.title).length > 0 && contentLimits.find(s => s.type === 'jobTitles') && (
+              <div style={sectionStyle}>
+                <h2 style={sectionTitleStyle}>{t('resume.sections.professionalExperience')}</h2>
+                <ul style={jobTitlesListStyle}>
+                  {profile.jobTitles
+                    .filter(jt => jt.department && jt.title)
+                    .slice(0, 3) // Reduced from 4 to 3
+                    .map((jt, i) => (
+                      <li key={i} style={jobTitleItemStyle}>
+                        <strong>{jt.title}</strong> — {jt.department}
+                      </li>
+                    ))}
+                </ul>
+                {profile.jobTitles.filter(jt => jt.department && jt.title).length > 3 && (
+                  <p style={{ fontSize: '9pt', color: '#666', fontStyle: 'italic', margin: '1mm 0 0 0' }}>
+                    ({t('resume.labels.showingTop', { count: 3, type: t('resume.types.positions') })})
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Projects */}
-            {profile.projects && profile.projects.filter(p => p.projectName && p.role).length > 0 && (
+            {profile.projects && profile.projects.filter(p => p.projectName && p.role).length > 0 && contentLimits.find(s => s.type === 'projects') && (
               <div style={sectionStyle}>
                 <h2 style={sectionTitleStyle}>{t('resume.sections.selectedProjects')}</h2>
                 <ul style={projectsListStyle}>
                   {profile.projects
                     .filter(p => p.projectName && p.role)
-                    .slice(0, 3)
+                    .slice(0, 2) // Reduced from 3 to 2
                     .map((p, i) => (
                       <li key={i} style={projectItemStyle}>
                         <span style={projectNameStyle}>{p.projectName}</span>
@@ -317,16 +379,16 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
                       </li>
                     ))}
                 </ul>
-                {profile.projects.filter(p => p.projectName && p.role).length > 3 && (
+                {profile.projects.filter(p => p.projectName && p.role).length > 2 && (
                   <p style={{ fontSize: '9pt', color: '#666', fontStyle: 'italic', margin: '1mm 0 0 0' }}>
-                    ({t('resume.labels.showingTop', { count: 3, type: t('resume.types.projects') })})
+                    ({t('resume.labels.showingTop', { count: 2, type: t('resume.types.projects') })})
                   </p>
                 )}
               </div>
             )}
 
             {/* Education */}
-            {profile.education && profile.education.length > 0 && (
+            {profile.education && profile.education.length > 0 && contentLimits.find(s => s.type === 'education') && (
               <div style={sectionStyle}>
                 <h2 style={sectionTitleStyle}>{t('resume.sections.education')}</h2>
                 <ul style={jobTitlesListStyle}>
@@ -337,7 +399,7 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
                       // Only show if there's at least one piece of information
                       return edu.institution || edu.degree || edu.fieldOfStudy || edu.endDate || edu.isCurrent;
                     })
-                    .slice(0, 2)
+                    .slice(0, 1) // Reduced from 2 to 1
                     .map((edu, i) => {
                       // Handle string format (legacy)
                       if (typeof edu === 'string') {
@@ -388,9 +450,9 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
                       );
                     })}
                 </ul>
-                {profile.education.length > 2 && (
+                {profile.education.length > 1 && (
                   <p style={{ fontSize: '9pt', color: '#666', fontStyle: 'italic', margin: '1mm 0 0 0' }}>
-                    ({t('resume.labels.showingMostRecent', { count: 2 })})
+                    ({t('resume.labels.showingMostRecent', { count: 1 })})
                   </p>
                 )}
               </div>
@@ -410,10 +472,17 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
             )}
 
             {/* Other Info */}
-            {profile.otherInfo && (
+            {profile.otherInfo && contentLimits.find(s => s.type === 'otherInfo') && (
               <div style={sectionStyle}>
                 <h2 style={sectionTitleStyle}>{t('resume.sections.additionalInformation')}</h2>
-                <p style={otherInfoStyle}>{profile.otherInfo}</p>
+                <p style={{
+                  ...otherInfoStyle,
+                  maxHeight: '8mm', // Limit height for other info
+                  overflow: 'hidden',
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                }}>{profile.otherInfo}</p>
               </div>
             )}
           </div>
