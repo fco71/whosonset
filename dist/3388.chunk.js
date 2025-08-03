@@ -354,12 +354,13 @@ const ResumeView = (props) => {
         paddingBottom: '3mm',
     };
     const profileImageStyle = {
-        width: '30mm',
-        height: '40mm',
+        width: '35mm',
+        height: '35mm', // Changed to square aspect ratio to prevent distortion
         borderRadius: '3mm',
-        objectFit: 'cover',
+        objectFit: 'contain', // Changed from 'cover' to 'contain' to maintain aspect ratio
         border: '1pt solid #ccc',
         flexShrink: 0,
+        backgroundColor: '#f5f5f5', // Light background for transparent images
     };
     const nameStyle = {
         fontSize: '22pt',
@@ -372,13 +373,8 @@ const ResumeView = (props) => {
         color: '#666',
         margin: '2mm 0 0 0',
         fontStyle: 'italic',
-        maxHeight: '40px', // About 2 lines at 11pt
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
-        display: '-webkit-box',
-        WebkitLineClamp: 2,
-        WebkitBoxOrient: 'vertical',
-        whiteSpace: 'normal',
+        // Removed maxHeight, overflow, textOverflow, WebkitLineClamp restrictions
+        // to allow full bio text to display without truncation
     };
     const sectionStyle = {
         marginBottom: '5mm',
