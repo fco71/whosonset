@@ -166,11 +166,11 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
     color: '#666',
     margin: '2mm 0 0 0',
     fontStyle: 'italic',
-    // More generous truncation - allow more text
-    maxHeight: '18mm', // Increased from 16mm to 18mm (about 4-5 lines)
+    // Align bio with bottom of profile photo (40mm photo height)
+    maxHeight: '38mm', // 40mm photo height minus 2mm margin
     overflow: 'hidden',
     display: '-webkit-box',
-    WebkitLineClamp: 5, // Increased from 4 to 5 lines
+    WebkitLineClamp: 8, // Allow more lines to fill the space
     WebkitBoxOrient: 'vertical',
     lineHeight: 1.3,
   };
