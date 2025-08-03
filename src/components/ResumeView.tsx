@@ -125,7 +125,7 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
     fontFamily: "'Times New Roman', serif",
     fontSize: '11pt',
     lineHeight: 1.3,
-    padding: '15mm',
+    padding: '10mm 15mm 15mm 15mm', // Reduced top padding from 15mm to 10mm
     boxShadow: '0 0 10px rgba(0,0,0,0.1)',
     overflow: 'hidden',
     position: 'relative',
@@ -167,10 +167,10 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
     margin: '2mm 0 0 0',
     fontStyle: 'italic',
     // More generous truncation - allow more text
-    maxHeight: '16mm', // Increased from 12mm to 16mm (about 4 lines)
+    maxHeight: '18mm', // Increased from 16mm to 18mm (about 4-5 lines)
     overflow: 'hidden',
     display: '-webkit-box',
-    WebkitLineClamp: 4, // Increased from 3 to 4 lines
+    WebkitLineClamp: 5, // Increased from 4 to 5 lines
     WebkitBoxOrient: 'vertical',
     lineHeight: 1.3,
   };
