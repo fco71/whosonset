@@ -99,13 +99,8 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
     color: '#666',
     margin: '2mm 0 0 0',
     fontStyle: 'italic',
-    maxHeight: '40px', // About 2 lines at 11pt
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    display: '-webkit-box',
-    WebkitLineClamp: 2,
-    WebkitBoxOrient: 'vertical',
-    whiteSpace: 'normal',
+    // Removed maxHeight, overflow, textOverflow, WebkitLineClamp restrictions
+    // to allow full bio text to display without truncation
   };
 
   const sectionStyle: React.CSSProperties = {
