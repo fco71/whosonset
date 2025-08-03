@@ -161,7 +161,7 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
     color: '#333',
     alignSelf: 'flex-start', // Ensure name aligns with top of photo
     lineHeight: 1, // Tight line height for better alignment
-    marginTop: '0', // Ensure name starts at the very top
+    marginTop: '-2mm', // Slightly above the photo for better visual balance
   };
 
   const bioStyle: React.CSSProperties = {
@@ -271,7 +271,7 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
               width: 210mm !important;
               height: 297mm !important;
               margin: 0 !important;
-              padding: 12mm !important;
+              padding: 10mm 15mm 15mm 15mm !important; /* Match our custom padding */
               box-shadow: none !important;
               page-break-after: avoid;
               page-break-inside: avoid;
@@ -288,6 +288,7 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
             
             .resume-container h1 {
               font-size: 22pt !important;
+              margin-top: -2mm !important; /* Match our name positioning */
             }
             
             .resume-container h2 {
