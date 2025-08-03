@@ -126,17 +126,18 @@ const EditCrewProfile: React.FC = () => {
         filename: `${form.name.replace(/\s+/g, '_')}_Resume.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { 
-          scale: 2,
+          scale: 3, // Increased scale for better text quality
           useCORS: true,
           allowTaint: true,
           logging: false,
           letterRendering: true,
+          imageTimeout: 0, // No timeout for images
         },
         jsPDF: { 
           unit: 'mm', // Use millimeters for more precise control
           format: 'a4', // Use A4 instead of letter
           orientation: 'portrait',
-          compress: true,
+          compress: false, // Disable compression for better quality
         },
         pagebreak: { mode: 'avoid-all' },
       })
