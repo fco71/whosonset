@@ -166,11 +166,11 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
     color: '#666',
     margin: '2mm 0 0 0',
     fontStyle: 'italic',
-    // Simple truncation with ellipsis
-    maxHeight: '12mm', // About 3 lines maximum
+    // More generous truncation - allow more text
+    maxHeight: '16mm', // Increased from 12mm to 16mm (about 4 lines)
     overflow: 'hidden',
     display: '-webkit-box',
-    WebkitLineClamp: 3,
+    WebkitLineClamp: 4, // Increased from 3 to 4 lines
     WebkitBoxOrient: 'vertical',
     lineHeight: 1.3,
   };
