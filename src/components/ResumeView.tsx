@@ -140,8 +140,6 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
     paddingBottom: '3mm',
   };
 
-
-
   const profileImageStyle: React.CSSProperties = {
     width: '30mm',
     height: '40mm', // Original elegant rectangular aspect ratio
@@ -156,6 +154,7 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
     fontWeight: 'bold',
     margin: 0,
     color: '#333',
+    alignSelf: 'flex-start', // Ensure name aligns with top of photo
   };
 
   const bioStyle: React.CSSProperties = {
@@ -163,7 +162,21 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
     color: '#666',
     margin: '2mm 0 0 0',
     fontStyle: 'italic',
-    // Original balanced bio styling - no artificial truncation
+    // Graceful truncation with fade effect
+    maxHeight: '8mm', // About 2 lines maximum
+    overflow: 'hidden',
+    position: 'relative',
+    lineHeight: 1.2,
+  };
+
+  const bioFadeStyle: React.CSSProperties = {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    background: 'linear-gradient(to right, transparent, white)',
+    width: '20px',
+    height: '100%',
+    pointerEvents: 'none',
   };
 
   const sectionStyle: React.CSSProperties = {
@@ -324,7 +337,10 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
               <div>
                 <h1 style={nameStyle}>{profile.name}</h1>
                 {profile.bio && (
-                  <p style={bioStyle}>{profile.bio}</p>
+                  <div style={bioStyle}>
+                    {profile.bio}
+                    <div style={bioFadeStyle}></div>
+                  </div>
                 )}
               </div>
             </div>
