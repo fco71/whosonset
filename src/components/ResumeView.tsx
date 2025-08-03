@@ -138,6 +138,7 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
     marginBottom: '6mm',
     borderBottom: '2pt solid #333',
     paddingBottom: '3mm',
+    paddingTop: '0', // Remove top padding to align name with photo
   };
 
   const profileImageStyle: React.CSSProperties = {
@@ -154,8 +155,10 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
     fontSize: '22pt',
     fontWeight: 'bold',
     margin: 0,
+    padding: 0, // Remove all padding
     color: '#333',
     alignSelf: 'flex-start', // Ensure name aligns with top of photo
+    lineHeight: 1, // Tight line height for better alignment
   };
 
   const bioStyle: React.CSSProperties = {
