@@ -171,7 +171,10 @@ const ProjectDetail: React.FC = () => {
         if (!url || !url.startsWith("https://firebasestorage.googleapis.com/")) return;
         try {
             const pathWithQuery = url.split("/o/")[1];
-            if (!pathWithQuery) { console.warn("Could not parse path from old image URL:", url); return; }
+            if (!pathWithQuery) { 
+                console.warn("Could not parse path from old image URL:", url); 
+                return; 
+            }
             const encodedPath = pathWithQuery.split("?")[0];
             const decodedPath = decodeURIComponent(encodedPath);
             const oldRef = ref(storage, decodedPath);
@@ -180,6 +183,8 @@ const ProjectDetail: React.FC = () => {
         } catch (e) {
             if (e && typeof e === 'object' && 'code' in e && e.code === 'storage/object-not-found') {
                 console.log("Old image not found:", url);
+            } else if (e && typeof e === 'object' && 'code' in e && e.code === 'storage/unauthorized') {
+                console.warn("Unauthorized to delete old image:", url);
             } else if (e instanceof Error) {
                 console.warn("Could not delete old image:", url, e.message);
             } else {
