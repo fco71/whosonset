@@ -48,7 +48,6 @@ export const DEFAULT_EDUCATION_ENTRY: Omit<EducationEntry, 'isCurrent'> = {
   institution: '',
   place: '',
   degree: '',
-  level: undefined,
   fieldOfStudy: '',
   startDate: '',
   endDate: '',

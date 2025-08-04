@@ -44,7 +44,6 @@ var version = "11.7.0";
 __webpack_require__.d(__webpack_exports__, {
   IX: () => (/* reexport */ EmailAuthProvider),
   HF: () => (/* reexport */ GoogleAuthProvider),
-  LD: () => (/* reexport */ OAuthProvider),
   eJ: () => (/* reexport */ createUserWithEmailAndPassword),
   hG: () => (/* reexport */ deleteUser),
   xI: () => (/* reexport */ getAuth),
@@ -56,7 +55,7 @@ __webpack_require__.d(__webpack_exports__, {
   r7: () => (/* reexport */ updateProfile)
 });
 
-// UNUSED EXPORTS: ActionCodeOperation, ActionCodeURL, AuthCredential, AuthErrorCodes, EmailAuthCredential, FacebookAuthProvider, FactorId, GithubAuthProvider, OAuthCredential, OperationType, PhoneAuthCredential, PhoneAuthProvider, PhoneMultiFactorGenerator, ProviderId, RecaptchaVerifier, SAMLAuthProvider, SignInMethod, TotpMultiFactorGenerator, TotpSecret, TwitterAuthProvider, applyActionCode, beforeAuthStateChanged, browserCookiePersistence, browserLocalPersistence, browserPopupRedirectResolver, browserSessionPersistence, checkActionCode, confirmPasswordReset, connectAuthEmulator, debugErrorMap, fetchSignInMethodsForEmail, getAdditionalUserInfo, getIdToken, getIdTokenResult, getMultiFactorResolver, getRedirectResult, inMemoryPersistence, indexedDBLocalPersistence, initializeAuth, initializeRecaptchaConfig, isSignInWithEmailLink, linkWithCredential, linkWithPhoneNumber, linkWithPopup, linkWithRedirect, multiFactor, onIdTokenChanged, parseActionCodeURL, prodErrorMap, reauthenticateWithPhoneNumber, reauthenticateWithPopup, reauthenticateWithRedirect, reload, revokeAccessToken, sendEmailVerification, sendPasswordResetEmail, sendSignInLinkToEmail, setPersistence, signInAnonymously, signInWithCredential, signInWithCustomToken, signInWithEmailLink, signInWithPhoneNumber, signInWithRedirect, unlink, updateCurrentUser, updateEmail, updatePassword, updatePhoneNumber, useDeviceLanguage, validatePassword, verifyBeforeUpdateEmail, verifyPasswordResetCode
+// UNUSED EXPORTS: ActionCodeOperation, ActionCodeURL, AuthCredential, AuthErrorCodes, EmailAuthCredential, FacebookAuthProvider, FactorId, GithubAuthProvider, OAuthCredential, OAuthProvider, OperationType, PhoneAuthCredential, PhoneAuthProvider, PhoneMultiFactorGenerator, ProviderId, RecaptchaVerifier, SAMLAuthProvider, SignInMethod, TotpMultiFactorGenerator, TotpSecret, TwitterAuthProvider, applyActionCode, beforeAuthStateChanged, browserCookiePersistence, browserLocalPersistence, browserPopupRedirectResolver, browserSessionPersistence, checkActionCode, confirmPasswordReset, connectAuthEmulator, debugErrorMap, fetchSignInMethodsForEmail, getAdditionalUserInfo, getIdToken, getIdTokenResult, getMultiFactorResolver, getRedirectResult, inMemoryPersistence, indexedDBLocalPersistence, initializeAuth, initializeRecaptchaConfig, isSignInWithEmailLink, linkWithCredential, linkWithPhoneNumber, linkWithPopup, linkWithRedirect, multiFactor, onIdTokenChanged, parseActionCodeURL, prodErrorMap, reauthenticateWithPhoneNumber, reauthenticateWithPopup, reauthenticateWithRedirect, reload, revokeAccessToken, sendEmailVerification, sendPasswordResetEmail, sendSignInLinkToEmail, setPersistence, signInAnonymously, signInWithCredential, signInWithCustomToken, signInWithEmailLink, signInWithPhoneNumber, signInWithRedirect, unlink, updateCurrentUser, updateEmail, updatePassword, updatePhoneNumber, useDeviceLanguage, validatePassword, verifyBeforeUpdateEmail, verifyPasswordResetCode
 
 // EXTERNAL MODULE: ./node_modules/@firebase/app/dist/esm/index.esm2017.js
 var index_esm2017 = __webpack_require__(8461);
@@ -4850,7 +4849,7 @@ class BaseOAuthProvider extends FederatedAuthProvider {
  * ```
  * @public
  */
-class OAuthProvider extends BaseOAuthProvider {
+class OAuthProvider extends (/* unused pure expression or super */ null && (BaseOAuthProvider)) {
     /**
      * Creates an {@link OAuthCredential} from a JSON string or a plain object.
      * @param json - A plain object or a JSON string

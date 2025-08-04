@@ -306,7 +306,6 @@ const EditCrewProfile: React.FC = () => {
     institution: '',
     place: '',
     degree: '',
-    level: undefined,
     fieldOfStudy: '',
     startDate: '',
     endDate: '',
@@ -508,7 +507,6 @@ const EditCrewProfile: React.FC = () => {
           institution: '',
           place: '',
           degree: '',
-          level: undefined,
           fieldOfStudy: '',
           startDate: '',
           endDate: '',
@@ -540,6 +538,26 @@ const EditCrewProfile: React.FC = () => {
 
   const removeLanguage = (i: number) => {
     setForm(f => ({ ...f, languages: (f.languages || []).filter((_: string, idx: number) => idx !== i) }));
+  };
+
+  // Helper function to remove undefined values from objects recursively
+  const removeUndefinedValues = (obj: any): any => {
+    if (obj === null || obj === undefined) {
+      return null;
+    }
+    if (Array.isArray(obj)) {
+      return obj.map(removeUndefinedValues).filter(item => item !== null);
+    }
+    if (typeof obj === 'object') {
+      const cleaned: any = {};
+      for (const [key, value] of Object.entries(obj)) {
+        if (value !== undefined) {
+          cleaned[key] = removeUndefinedValues(value);
+        }
+      }
+      return cleaned;
+    }
+    return obj;
   };
 
   const handleSave = async (e: React.MouseEvent) => {
@@ -580,7 +598,10 @@ const EditCrewProfile: React.FC = () => {
         updatedAt: new Date()
       };
 
-      await setDoc(docRef, dataToSave, { merge: true });
+      // Remove any undefined values before saving to Firestore
+      const cleanedData = removeUndefinedValues(dataToSave);
+
+      await setDoc(docRef, cleanedData, { merge: true });
       console.log("DEBUG: Save successful!");
       setMessage(t('resume.builder.savedMessage'));
     } catch(error) { // Added error logging
