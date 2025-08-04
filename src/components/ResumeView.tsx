@@ -458,11 +458,7 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
                       </li>
                     ))}
                 </ul>
-                {profile.projects.filter(p => p.projectName && p.role).length > 2 && (
-                  <p style={{ fontSize: '9pt', color: '#666', fontStyle: 'italic', margin: '1mm 0 0 0' }}>
-                    ({t('resume.labels.showingTop', { count: 2, type: t('resume.types.projects') })})
-                  </p>
-                )}
+                {/* Removed showingTop message */}
               </div>
             )}
 
@@ -529,11 +525,7 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
                       );
                     })}
                 </ul>
-                {profile.education.length > 1 && (
-                  <p style={{ fontSize: '9pt', color: '#666', fontStyle: 'italic', margin: '1mm 0 0 0' }}>
-                    ({t('resume.labels.showingMostRecent', { count: 1 })})
-                  </p>
-                )}
+                {/* Removed showingMostRecent message */}
               </div>
             )}
 

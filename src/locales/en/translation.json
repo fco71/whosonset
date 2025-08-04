@@ -1143,9 +1143,7 @@
       "additionalInformation": "Additional Information"
     },
     "labels": {
-      "present": "Present",
-      "showingTop": "Showing top {count} {type} - prioritize most relevant first",
-      "showingMostRecent": "Showing {count} most recent - prioritize most relevant first"
+      "present": "Present"
     },
     "types": {
       "positions": "positions",

@@ -152,29 +152,48 @@ const EditCrewProfile = () => {
     const handleDownloadPDF = () => {
         if (!resumeRef.current)
             return;
-        html2pdf()
-            .from(resumeRef.current)
-            .set({
-            margin: [0.2, 0.2, 0.2, 0.2], // Even smaller margins
+        // Get the element to be converted to PDF
+        const element = resumeRef.current;
+        // Set options for PDF generation
+        const opt = {
+            margin: [10, 10, 10, 10], // Reasonable margins
             filename: `${form.name.replace(/\s+/g, '_')}_Resume.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
+            image: {
+                type: 'jpeg',
+                quality: 0.98
+            },
             html2canvas: {
-                scale: 3, // Increased scale for better text quality
+                scale: 2, // Slightly reduced scale for better performance
                 useCORS: true,
                 allowTaint: true,
                 logging: false,
                 letterRendering: true,
-                imageTimeout: 0, // No timeout for images
+                imageTimeout: 0,
             },
             jsPDF: {
-                unit: 'mm', // Use millimeters for more precise control
-                format: 'a4', // Use A4 instead of letter
+                unit: 'mm',
+                format: 'a4',
                 orientation: 'portrait',
-                compress: false, // Disable compression for better quality
+                compress: true, // Enable compression for smaller file size
             },
-            pagebreak: { mode: 'avoid-all' },
-        })
-            .save();
+            // Remove pagebreak config to avoid issues
+        };
+        // Generate PDF
+        html2pdf()
+            .set(opt)
+            .from(element)
+            .toPdf()
+            .get('pdf')
+            .then((pdf) => {
+            // Get the number of pages
+            const totalPages = pdf.internal.getNumberOfPages();
+            // If there's a blank page at the end, remove it
+            if (totalPages > 1 && pdf.internal.getCurrentPageInfo().pageNumber === totalPages) {
+                pdf.deletePage(totalPages);
+            }
+            // Save the PDF
+            pdf.save(opt.filename);
+        });
     };
     // --- ADDED: Robust authentication check ---
     // This effect runs once to set up a listener that updates the 'user' state
