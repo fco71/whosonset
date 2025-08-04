@@ -30,10 +30,28 @@ const LoginPage = () => {
             setError('');
             setLoading(true);
             await login(email, password);
-            navigate('/');
+            // Check if email is verified
+            const { currentUser } = (0,_contexts_AuthContext__WEBPACK_IMPORTED_MODULE_4__/* .useAuth */ .A)();
+            if (currentUser && !currentUser.emailVerified) {
+                navigate('/verify-email');
+            }
+            else {
+                navigate('/');
+            }
         }
         catch (err) {
-            setError('Failed to log in');
+            if (err.code === 'auth/user-not-found') {
+                setError('No account found with this email address');
+            }
+            else if (err.code === 'auth/wrong-password') {
+                setError('Incorrect password. Please try again.');
+            }
+            else if (err.code === 'auth/too-many-requests') {
+                setError('Too many failed attempts. Please try again later.');
+            }
+            else {
+                setError('Failed to log in. Please try again.');
+            }
             console.error(err);
         }
         setLoading(false);
@@ -44,7 +62,9 @@ const LoginPage = () => {
         setLoading(true);
         setError('');
         try {
-            await loginWithGoogle();
+            const { isNewUser } = await loginWithGoogle();
+            // For login page, always go to home (existing users)
+            // New users would typically come from register page
             navigate('/');
         }
         catch (error) {

@@ -21,6 +21,8 @@ const PublicResumePage = React.lazy(() => import('./components/PublicResumePage'
 const ChatTestPage = React.lazy(() => import('./components/Chat/ChatTestPage'));
 const LoginPage = React.lazy(() => import('./pages/LoginPage'));
 const RegisterPage = React.lazy(() => import('./pages/RegisterPage'));
+const EmailVerificationPage = React.lazy(() => import('./pages/EmailVerificationPage'));
+const ForgotPasswordPage = React.lazy(() => import('./pages/ForgotPasswordPage'));
 const ApplicationDetailPage = React.lazy(() => import('./pages/ApplicationDetailPage'));
 const JobApplicationForm = React.lazy(() => import('./components/JobSearch/JobApplicationForm'));
 const JobApplicationDashboard = React.lazy(() => import('./components/JobSearch/JobApplicationDashboard'));
@@ -112,6 +114,22 @@ export function createAppRouter() {
           element: (
             <PublicRoute>
               <RegisterPage />
+            </PublicRoute>
+          ) 
+        },
+        { 
+          path: 'verify-email', 
+          element: (
+            <ProtectedRoute>
+              <EmailVerificationPage />
+            </ProtectedRoute>
+          ) 
+        },
+        { 
+          path: 'forgot-password', 
+          element: (
+            <PublicRoute>
+              <ForgotPasswordPage />
             </PublicRoute>
           ) 
         },

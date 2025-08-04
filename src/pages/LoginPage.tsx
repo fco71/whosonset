@@ -17,9 +17,24 @@ const LoginPage: React.FC = () => {
       setError('');
       setLoading(true);
       await login(email, password);
-      navigate('/');
-    } catch (err) {
-      setError('Failed to log in');
+      
+      // Check if email is verified
+      const { currentUser } = useAuth();
+      if (currentUser && !currentUser.emailVerified) {
+        navigate('/verify-email');
+      } else {
+        navigate('/');
+      }
+    } catch (err: any) {
+      if (err.code === 'auth/user-not-found') {
+        setError('No account found with this email address');
+      } else if (err.code === 'auth/wrong-password') {
+        setError('Incorrect password. Please try again.');
+      } else if (err.code === 'auth/too-many-requests') {
+        setError('Too many failed attempts. Please try again later.');
+      } else {
+        setError('Failed to log in. Please try again.');
+      }
       console.error(err);
     }
     setLoading(false);
@@ -31,7 +46,10 @@ const LoginPage: React.FC = () => {
     setError('');
 
     try {
-      await loginWithGoogle();
+      const { isNewUser } = await loginWithGoogle();
+      
+      // For login page, always go to home (existing users)
+      // New users would typically come from register page
       navigate('/');
     } catch (error: any) {
       console.error('Google sign-in error:', error);

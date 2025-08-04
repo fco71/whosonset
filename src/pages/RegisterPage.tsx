@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Eye, EyeOff, Mail, Lock, User, ArrowRight } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Check, X } from 'lucide-react';
+import { validatePassword, getPasswordStrengthColor, getPasswordStrengthText, PASSWORD_REQUIREMENTS } from '../utilities/passwordValidation';
 
 const RegisterPage: React.FC = () => {
   const [firstName, setFirstName] = useState('');
@@ -13,8 +14,25 @@ const RegisterPage: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [passwordValidation, setPasswordValidation] = useState(validatePassword(''));
+  const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
+  const [passwordsMatch, setPasswordsMatch] = useState(true);
   const { signup, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
+
+  // Update password validation when password changes
+  useEffect(() => {
+    setPasswordValidation(validatePassword(password));
+  }, [password]);
+
+  // Check if passwords match when confirm password changes
+  useEffect(() => {
+    if (confirmPassword) {
+      setPasswordsMatch(password === confirmPassword);
+    } else {
+      setPasswordsMatch(true);
+    }
+  }, [password, confirmPassword]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,21 +41,27 @@ const RegisterPage: React.FC = () => {
       return setError('First name and last name are required');
     }
 
-    if (password !== confirmPassword) {
+    if (!passwordsMatch) {
       return setError('Passwords do not match');
     }
 
-    if (password.length < 6) {
-      return setError('Password must be at least 6 characters');
+    if (!passwordValidation.isValid) {
+      return setError('Please meet all password requirements');
     }
 
     try {
       setError('');
       setLoading(true);
       await signup(email, password, firstName.trim(), lastName.trim());
-      navigate('/edit-profile');
-    } catch (err) {
-      setError('Failed to create an account');
+      navigate('/verify-email');
+    } catch (err: any) {
+      if (err.code === 'auth/email-already-in-use') {
+        setError('An account with this email already exists');
+      } else if (err.code === 'auth/weak-password') {
+        setError('Password is too weak. Please choose a stronger password');
+      } else {
+        setError('Failed to create an account. Please try again.');
+      }
       console.error(err);
     }
     setLoading(false);
@@ -49,8 +73,14 @@ const RegisterPage: React.FC = () => {
     setError('');
 
     try {
-      await loginWithGoogle();
-      navigate('/');
+      const { isNewUser } = await loginWithGoogle();
+      
+      // Redirect new users to profile builder, existing users to home
+      if (isNewUser) {
+        navigate('/edit-profile');
+      } else {
+        navigate('/');
+      }
     } catch (error: any) {
       console.error('Google sign-in error:', error);
       setError(
@@ -83,7 +113,7 @@ const RegisterPage: React.FC = () => {
               to="/" 
               className="inline-block text-2xl font-bold bg-gradient-to-r from-gray-900 via-gray-700 to-gray-900 bg-clip-text text-transparent tracking-tight"
             >
-              WHOSONSET
+              My Film Jobs
             </Link>
           </div>
           <h2 className="text-3xl font-bold text-gray-900 mb-2">
@@ -219,6 +249,8 @@ const RegisterPage: React.FC = () => {
                   placeholder="Create a secure password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  onFocus={() => setShowPasswordRequirements(true)}
+                  onBlur={() => setShowPasswordRequirements(false)}
                 />
                 <button
                   type="button"
@@ -232,6 +264,53 @@ const RegisterPage: React.FC = () => {
                   )}
                 </button>
               </div>
+              
+              {/* Password Strength Indicator */}
+              {password && (
+                <div className="mt-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Password strength:</span>
+                    <span className={`font-medium ${getPasswordStrengthColor(passwordValidation.strength)}`}>
+                      {getPasswordStrengthText(passwordValidation.strength)}
+                    </span>
+                  </div>
+                  <div className="mt-1 w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className={`h-2 rounded-full transition-all duration-300 ${
+                        passwordValidation.strength === 'weak' ? 'bg-red-500' :
+                        passwordValidation.strength === 'medium' ? 'bg-yellow-500' :
+                        passwordValidation.strength === 'strong' ? 'bg-blue-500' :
+                        'bg-green-500'
+                      }`}
+                      style={{ width: `${passwordValidation.score}%` }}
+                    ></div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Password Requirements */}
+              {showPasswordRequirements && password && (
+                <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Password Requirements:</h4>
+                  <div className="space-y-1">
+                    {PASSWORD_REQUIREMENTS.map((requirement) => {
+                      const isMet = requirement.test(password);
+                      return (
+                        <div key={requirement.name} className="flex items-center text-sm">
+                          {isMet ? (
+                            <Check className="h-4 w-4 text-green-500 mr-2" />
+                          ) : (
+                            <X className="h-4 w-4 text-red-500 mr-2" />
+                          )}
+                          <span className={isMet ? 'text-green-700' : 'text-red-700'}>
+                            {requirement.message}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Confirm Password Field */}
@@ -249,7 +328,11 @@ const RegisterPage: React.FC = () => {
                   type={showConfirmPassword ? "text" : "password"}
                   autoComplete="new-password"
                   required
-                  className="block w-full pl-10 pr-10 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm"
+                  className={`block w-full pl-10 pr-10 py-3 border rounded-lg focus:ring-2 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm ${
+                    confirmPassword && !passwordsMatch 
+                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                      : 'border-gray-200 focus:ring-blue-500'
+                  }`}
                   placeholder="Confirm your password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
@@ -266,13 +349,29 @@ const RegisterPage: React.FC = () => {
                   )}
                 </button>
               </div>
+              
+              {/* Password Match Warning */}
+              {confirmPassword && !passwordsMatch && (
+                <div className="mt-2 flex items-center text-sm text-red-600">
+                  <X className="h-4 w-4 mr-1 flex-shrink-0" />
+                  <span>Passwords do not match</span>
+                </div>
+              )}
+              
+              {/* Password Match Success */}
+              {confirmPassword && passwordsMatch && password && (
+                <div className="mt-2 flex items-center text-sm text-green-600">
+                  <Check className="h-4 w-4 mr-1 flex-shrink-0" />
+                  <span>Passwords match</span>
+                </div>
+              )}
             </div>
 
             {/* Submit Button */}
             <div>
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || !passwordsMatch || !passwordValidation.isValid}
                 className="group relative w-full flex justify-center items-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
               >
                 {loading ? (
@@ -280,6 +379,10 @@ const RegisterPage: React.FC = () => {
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                     Creating your account...
                   </div>
+                ) : !passwordsMatch ? (
+                  <span>Passwords do not match</span>
+                ) : !passwordValidation.isValid ? (
+                  <span>Please meet password requirements</span>
                 ) : (
                   <>
                     <User className="h-4 w-4 mr-2" />

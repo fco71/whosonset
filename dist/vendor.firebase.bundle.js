@@ -49,13 +49,15 @@ __webpack_require__.d(__webpack_exports__, {
   xI: () => (/* reexport */ getAuth),
   hg: () => (/* reexport */ onAuthStateChanged),
   kZ: () => (/* reexport */ reauthenticateWithCredential),
+  gA: () => (/* reexport */ sendEmailVerification),
+  J1: () => (/* reexport */ sendPasswordResetEmail),
   x9: () => (/* reexport */ signInWithEmailAndPassword),
   df: () => (/* reexport */ signInWithPopup),
   CI: () => (/* reexport */ signOut),
   r7: () => (/* reexport */ updateProfile)
 });
 
-// UNUSED EXPORTS: ActionCodeOperation, ActionCodeURL, AuthCredential, AuthErrorCodes, EmailAuthCredential, FacebookAuthProvider, FactorId, GithubAuthProvider, OAuthCredential, OAuthProvider, OperationType, PhoneAuthCredential, PhoneAuthProvider, PhoneMultiFactorGenerator, ProviderId, RecaptchaVerifier, SAMLAuthProvider, SignInMethod, TotpMultiFactorGenerator, TotpSecret, TwitterAuthProvider, applyActionCode, beforeAuthStateChanged, browserCookiePersistence, browserLocalPersistence, browserPopupRedirectResolver, browserSessionPersistence, checkActionCode, confirmPasswordReset, connectAuthEmulator, debugErrorMap, fetchSignInMethodsForEmail, getAdditionalUserInfo, getIdToken, getIdTokenResult, getMultiFactorResolver, getRedirectResult, inMemoryPersistence, indexedDBLocalPersistence, initializeAuth, initializeRecaptchaConfig, isSignInWithEmailLink, linkWithCredential, linkWithPhoneNumber, linkWithPopup, linkWithRedirect, multiFactor, onIdTokenChanged, parseActionCodeURL, prodErrorMap, reauthenticateWithPhoneNumber, reauthenticateWithPopup, reauthenticateWithRedirect, reload, revokeAccessToken, sendEmailVerification, sendPasswordResetEmail, sendSignInLinkToEmail, setPersistence, signInAnonymously, signInWithCredential, signInWithCustomToken, signInWithEmailLink, signInWithPhoneNumber, signInWithRedirect, unlink, updateCurrentUser, updateEmail, updatePassword, updatePhoneNumber, useDeviceLanguage, validatePassword, verifyBeforeUpdateEmail, verifyPasswordResetCode
+// UNUSED EXPORTS: ActionCodeOperation, ActionCodeURL, AuthCredential, AuthErrorCodes, EmailAuthCredential, FacebookAuthProvider, FactorId, GithubAuthProvider, OAuthCredential, OAuthProvider, OperationType, PhoneAuthCredential, PhoneAuthProvider, PhoneMultiFactorGenerator, ProviderId, RecaptchaVerifier, SAMLAuthProvider, SignInMethod, TotpMultiFactorGenerator, TotpSecret, TwitterAuthProvider, applyActionCode, beforeAuthStateChanged, browserCookiePersistence, browserLocalPersistence, browserPopupRedirectResolver, browserSessionPersistence, checkActionCode, confirmPasswordReset, connectAuthEmulator, debugErrorMap, fetchSignInMethodsForEmail, getAdditionalUserInfo, getIdToken, getIdTokenResult, getMultiFactorResolver, getRedirectResult, inMemoryPersistence, indexedDBLocalPersistence, initializeAuth, initializeRecaptchaConfig, isSignInWithEmailLink, linkWithCredential, linkWithPhoneNumber, linkWithPopup, linkWithRedirect, multiFactor, onIdTokenChanged, parseActionCodeURL, prodErrorMap, reauthenticateWithPhoneNumber, reauthenticateWithPopup, reauthenticateWithRedirect, reload, revokeAccessToken, sendSignInLinkToEmail, setPersistence, signInAnonymously, signInWithCredential, signInWithCustomToken, signInWithEmailLink, signInWithPhoneNumber, signInWithRedirect, unlink, updateCurrentUser, updateEmail, updatePassword, updatePhoneNumber, useDeviceLanguage, validatePassword, verifyBeforeUpdateEmail, verifyPasswordResetCode
 
 // EXTERNAL MODULE: ./node_modules/@firebase/app/dist/esm/index.esm2017.js
 var index_esm2017 = __webpack_require__(8461);
@@ -6592,7 +6594,7 @@ async function fetchSignInMethodsForEmail(auth, email) {
  * @public
  */
 async function sendEmailVerification(user, actionCodeSettings) {
-    const userInternal = getModularInstance(user);
+    const userInternal = (0,dist_index_esm2017/* getModularInstance */.Ku)(user);
     const idToken = await user.getIdToken();
     const request = {
         requestType: "VERIFY_EMAIL" /* ActionCodeOperation.VERIFY_EMAIL */,

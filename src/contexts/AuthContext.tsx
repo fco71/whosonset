@@ -11,7 +11,9 @@ import {
   OAuthProvider,
   deleteUser,
   reauthenticateWithCredential,
-  EmailAuthProvider
+  EmailAuthProvider,
+  sendEmailVerification,
+  sendPasswordResetEmail
 } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp, getDoc, writeBatch } from 'firebase/firestore';
 
@@ -21,9 +23,12 @@ interface AuthContextType {
   userProfile: any | null;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, firstName?: string, lastName?: string) => Promise<void>;
-  loginWithGoogle: () => Promise<void>;
+  loginWithGoogle: () => Promise<{ isNewUser: boolean }>;
   logout: () => Promise<void>;
   deleteAccount: (password?: string) => Promise<void>;
+  sendEmailVerification: () => Promise<void>;
+  sendPasswordReset: (email: string) => Promise<void>;
+  resendVerificationEmail: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -58,7 +63,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     await signInWithEmailAndPassword(auth, email, password);
   };
 
-  const loginWithGoogle = async () => {
+  const loginWithGoogle = async (): Promise<{ isNewUser: boolean }> => {
     try {
       console.log('[AuthContext] Starting Google sign-in process');
       
@@ -80,7 +85,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('[AuthContext] Google sign-in successful for:', user.email);
       
       // Check if user profile exists, if not create it
-      await createUserProfileIfNeeded(user);
+      const isNewUser = await createUserProfileIfNeeded(user);
+      
+      return { isNewUser };
       
     } catch (error: any) {
       console.error('[AuthContext] Google sign-in error:', error);
@@ -94,7 +101,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const createUserProfileIfNeeded = async (user: User) => {
+  const createUserProfileIfNeeded = async (user: User): Promise<boolean> => {
     try {
       // Check if crew profile already exists
       const crewProfileDoc = await getDoc(doc(db, 'crewProfiles', user.uid));
@@ -144,12 +151,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         await setDoc(doc(db, 'UserCollections', user.uid), userCollectionsData);
         console.log('[AuthContext] UserCollections document created for OAuth user');
+        
+        return true; // New user
       } else {
         console.log('[AuthContext] Crew profile already exists for OAuth user');
+        return false; // Existing user
       }
     } catch (error) {
       console.error('[AuthContext] Error creating user profile for OAuth:', error);
       // Don't throw error here as the user is already signed in
+      return false; // Assume existing user on error
     }
   };
 
@@ -161,6 +172,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const user = userCredential.user;
       
       console.log('[AuthContext] Firebase Auth user created with UID:', user.uid);
+      
+      // Send email verification
+      await sendEmailVerification(user);
+      console.log('[AuthContext] Email verification sent');
       
       // Create display name from first/last name or email fallback
       const displayName = (firstName && lastName) 
@@ -239,6 +254,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error('[AuthContext] Error during signup:', error);
       throw error;
     }
+  };
+
+  const sendEmailVerificationToUser = async () => {
+    if (!currentUser) {
+      throw new Error('No user is currently signed in');
+    }
+    
+    if (currentUser.emailVerified) {
+      throw new Error('Email is already verified');
+    }
+    
+    await sendEmailVerification(currentUser);
+    console.log('[AuthContext] Email verification sent');
+  };
+
+  const sendPasswordReset = async (email: string) => {
+    await sendPasswordResetEmail(auth, email);
+    console.log('[AuthContext] Password reset email sent');
+  };
+
+  const resendVerificationEmail = async () => {
+    if (!currentUser) {
+      throw new Error('No user is currently signed in');
+    }
+    
+    await sendEmailVerification(currentUser);
+    console.log('[AuthContext] Verification email resent');
   };
 
   const logout = async () => {
@@ -343,7 +385,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     signup,
     loginWithGoogle,
     logout,
-    deleteAccount
+    deleteAccount,
+    sendEmailVerification: sendEmailVerificationToUser,
+    sendPasswordReset,
+    resendVerificationEmail
   };
 
   return (
