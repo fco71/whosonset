@@ -148,20 +148,7 @@ const MyProjectsPage: React.FC = () => {
                           endDate={project.endDate}
                           showDetails={true}
                         />
-                        <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={() => handleEdit(project.id)}
-                            className="btn-secondary px-3 py-1 text-xs"
-                          >
-                            {t('projects.edit')}
-                          </button>
-                          <button
-                            onClick={() => handleDelete(project.id)}
-                            className="btn-danger px-3 py-1 text-xs"
-                          >
-                            {t('projects.delete')}
-                          </button>
-                        </div>
+
                       </div>
                     ))}
                   </div>

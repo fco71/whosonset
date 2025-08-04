@@ -357,30 +357,7 @@ const ProjectsPage: React.FC = () => {
                     onBookmark={handleBookmark}
                     isBookmarked={project.isFavorite}
                   />
-                  {tab === 'mine' && user && (
-                    <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {project.projectType === 'owned' ? (
-                        <>
-                          <button
-                            onClick={() => handleEdit(project.id)}
-                            className="btn-secondary px-3 py-1 text-xs"
-                          >
-                            {t('projects.edit')}
-                          </button>
-                          <button
-                            onClick={() => handleDelete(project.id)}
-                            className="btn-danger px-3 py-1 text-xs"
-                          >
-                            {t('projects.delete')}
-                          </button>
-                        </>
-                      ) : (
-                        <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-1 rounded-full">
-                          Crew Member
-                        </span>
-                      )}
-                    </div>
-                  )}
+
                   {tab === 'favorites' && user && (
                     <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
