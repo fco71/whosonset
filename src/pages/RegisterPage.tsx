@@ -426,6 +426,21 @@ const RegisterPage: React.FC = () => {
             </div>
           </div>
         </div>
+        
+        {/* Legal Links */}
+        <div className="mt-8 text-center">
+          <div className="flex justify-center space-x-6 text-xs text-gray-500">
+            <Link to="/privacy-policy" className="hover:text-gray-700 transition-colors">
+              Privacy Policy
+            </Link>
+            <Link to="/terms-of-service" className="hover:text-gray-700 transition-colors">
+              Terms of Service
+            </Link>
+            <Link to="/contact" className="hover:text-gray-700 transition-colors">
+              Contact Us
+            </Link>
+          </div>
+        </div>
       </div>
     </div>
   );

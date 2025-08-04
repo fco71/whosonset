@@ -11,6 +11,7 @@ import './App.module.scss';
 
 // Import components
 import Navigation from './components/Navigation';
+import Footer from './components/Footer';
 
 function App() {
   const { currentUser, logout } = useAuth();
@@ -65,7 +66,7 @@ function App() {
                         </Suspense>
           </main>
           
-          {/* Footer would go here */}
+          <Footer />
         </div>
         
         <Toaster 

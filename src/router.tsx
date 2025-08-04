@@ -42,6 +42,9 @@ const ProjectDashboard = React.lazy(() => import('./pages/ProjectManagement/Proj
 const AddProject = React.lazy(() => import('./components/AddProject'));
 const SimpleEmailTestPage = React.lazy(() => import('./pages/SimpleEmailTestPage'));
 const EmailIntegrationTestPage = React.lazy(() => import('./pages/EmailIntegrationTestPage'));
+const PrivacyPolicyPage = React.lazy(() => import('./pages/PrivacyPolicyPage'));
+const TermsOfServicePage = React.lazy(() => import('./pages/TermsOfServicePage'));
+const ContactPage = React.lazy(() => import('./pages/ContactPage'));
 
 // Import the main App component that will handle the layout
 import App from './App';
@@ -325,6 +328,18 @@ export function createAppRouter() {
               <JobPosterAnalytics />
             </ProtectedRoute>
           ) 
+        },
+        { 
+          path: 'privacy-policy', 
+          element: <PrivacyPolicyPage />
+        },
+        { 
+          path: 'terms-of-service', 
+          element: <TermsOfServicePage />
+        },
+        { 
+          path: 'contact', 
+          element: <ContactPage />
         },
         ...(process.env.NODE_ENV === 'development' ? [{ path: 'debug-jobs', element: <DebugJobsPage /> }] : []),
       ],
