@@ -15,7 +15,7 @@ import {
   sendEmailVerification,
   sendPasswordResetEmail
 } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp, getDoc, writeBatch } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, getDoc, writeBatch, collection, query, where, getDocs } from 'firebase/firestore';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -300,7 +300,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
 
     try {
-      // Check if re-authentication is required
+      console.log('[AuthContext] Starting account deletion for user:', currentUser.uid);
+      
+      // First, handle re-authentication if needed
+      let userToDelete = currentUser;
+      
       try {
         // Try to delete user directly first
         await deleteUser(currentUser);
@@ -311,39 +315,363 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             throw new Error('Re-authentication required. Please provide your password.');
           }
           
+          console.log('[AuthContext] Re-authenticating user before deletion');
           // Re-authenticate with email and password
           const credential = EmailAuthProvider.credential(currentUser.email!, password);
           await reauthenticateWithCredential(currentUser, credential);
           
-          // Now try to delete user again
-          await deleteUser(currentUser);
+          // Get the updated user object after re-authentication
+          userToDelete = auth.currentUser;
+          if (!userToDelete) {
+            throw new Error('Failed to get current user after re-authentication');
+          }
+          
+          console.log('[AuthContext] Re-authentication successful, proceeding with deletion');
         } else {
           throw error;
         }
       }
-
-      // Delete user data from Firestore
-      const batch = writeBatch(db);
       
-      // Delete user profile
-      batch.delete(doc(db, 'users', currentUser.uid));
+      // Now clean up all Firestore data
+      await cleanupUserData(userToDelete.uid, userToDelete.email || '');
       
-      // Delete crew profile
-      batch.delete(doc(db, 'crewProfiles', currentUser.uid));
+      // Check if user is still authenticated before final deletion
+      if (!auth.currentUser) {
+        console.log('[AuthContext] User already signed out, deletion complete');
+        return;
+      }
       
-      // Delete user collections
-      batch.delete(doc(db, 'UserCollections', currentUser.uid));
-      
-      // Delete email tracking
-      batch.delete(doc(db, 'emailTracking', currentUser.email || ''));
-      
-      // Execute the batch
-      await batch.commit();
+      // Finally delete the auth account
+      await deleteUser(userToDelete);
       
       console.log('[AuthContext] Account deleted successfully');
-    } catch (error) {
+    } catch (error: any) {
       console.error('[AuthContext] Error deleting account:', error);
+      
+      // If the error is about the user not being found or already deleted, that's actually success
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/user-disabled') {
+        console.log('[AuthContext] User already deleted or not found, considering deletion successful');
+        return;
+      }
+      
       throw error;
+    }
+  };
+
+  // Helper function to clean up all user data from Firestore
+  const cleanupUserData = async (userId: string, userEmail: string) => {
+    console.log('[AuthContext] Cleaning up user data for:', userId);
+    
+    try {
+      const batch = writeBatch(db);
+      
+      // 1. Delete main user documents
+      batch.delete(doc(db, 'users', userId));
+      batch.delete(doc(db, 'crewProfiles', userId));
+      batch.delete(doc(db, 'UserCollections', userId));
+      
+      // 2. Delete email tracking
+      if (userEmail) {
+        batch.delete(doc(db, 'emailTracking', userEmail));
+      }
+      
+      // 3. Delete user preferences
+      batch.delete(doc(db, 'userPreferences', userId));
+      
+      // Execute the first batch
+      await batch.commit();
+      console.log('[AuthContext] Main user documents deleted');
+      
+      // 4. Clean up subcollections (these need to be deleted individually)
+      await cleanupSubcollections(userId);
+      
+      // 5. Clean up references in other collections
+      await cleanupUserReferences(userId);
+      
+      console.log('[AuthContext] All user data cleaned up successfully');
+    } catch (error) {
+      console.error('[AuthContext] Error cleaning up user data:', error);
+      throw error;
+    }
+  };
+
+  // Helper function to clean up subcollections
+  const cleanupSubcollections = async (userId: string) => {
+    console.log('[AuthContext] Cleaning up subcollections for user:', userId);
+    
+    try {
+      // Delete notifications subcollection
+      const notificationsQuery = query(collection(db, 'users', userId, 'notifications'));
+      const notificationsSnapshot = await getDocs(notificationsQuery);
+      const notificationsBatch = writeBatch(db);
+      notificationsSnapshot.docs.forEach(doc => {
+        notificationsBatch.delete(doc.ref);
+      });
+      await notificationsBatch.commit();
+      console.log('[AuthContext] Deleted', notificationsSnapshot.size, 'notifications');
+      
+      // Delete saved jobs subcollection
+      const savedJobsQuery = query(collection(db, 'users', userId, 'savedJobs'));
+      const savedJobsSnapshot = await getDocs(savedJobsQuery);
+      const savedJobsBatch = writeBatch(db);
+      savedJobsSnapshot.docs.forEach(doc => {
+        savedJobsBatch.delete(doc.ref);
+      });
+      await savedJobsBatch.commit();
+      console.log('[AuthContext] Deleted', savedJobsSnapshot.size, 'saved jobs');
+      
+      // Delete favorite applicants subcollection
+      const favoriteApplicantsQuery = query(collection(db, 'users', userId, 'favoriteApplicants'));
+      const favoriteApplicantsSnapshot = await getDocs(favoriteApplicantsQuery);
+      const favoriteApplicantsBatch = writeBatch(db);
+      favoriteApplicantsSnapshot.docs.forEach(doc => {
+        favoriteApplicantsBatch.delete(doc.ref);
+      });
+      await favoriteApplicantsBatch.commit();
+      console.log('[AuthContext] Deleted', favoriteApplicantsSnapshot.size, 'favorite applicants');
+      
+      // Delete crew profile notifications subcollection
+      const crewNotificationsQuery = query(collection(db, 'crewProfiles', userId, 'notifications'));
+      const crewNotificationsSnapshot = await getDocs(crewNotificationsQuery);
+      const crewNotificationsBatch = writeBatch(db);
+      crewNotificationsSnapshot.docs.forEach(doc => {
+        crewNotificationsBatch.delete(doc.ref);
+      });
+      await crewNotificationsBatch.commit();
+      console.log('[AuthContext] Deleted', crewNotificationsSnapshot.size, 'crew notifications');
+      
+    } catch (error) {
+      console.error('[AuthContext] Error cleaning up subcollections:', error);
+      // Don't throw error here as some subcollections might not exist
+    }
+  };
+
+  // Helper function to clean up user references in other collections
+  const cleanupUserReferences = async (userId: string) => {
+    console.log('[AuthContext] Cleaning up user references for:', userId);
+    
+    try {
+      // 1. Delete notifications from main notifications collection
+      const notificationsQuery = query(
+        collection(db, 'notifications'),
+        where('userId', '==', userId)
+      );
+      const notificationsSnapshot = await getDocs(notificationsQuery);
+      const notificationsBatch = writeBatch(db);
+      notificationsSnapshot.docs.forEach(doc => {
+        notificationsBatch.delete(doc.ref);
+      });
+      await notificationsBatch.commit();
+      console.log('[AuthContext] Deleted', notificationsSnapshot.size, 'main notifications');
+      
+      // 2. Delete follow requests where user is the requester or recipient
+      const followRequestsQuery = query(
+        collection(db, 'followRequests'),
+        where('fromUserId', '==', userId)
+      );
+      const followRequestsSnapshot = await getDocs(followRequestsQuery);
+      const followRequestsBatch = writeBatch(db);
+      followRequestsSnapshot.docs.forEach(doc => {
+        followRequestsBatch.delete(doc.ref);
+      });
+      await followRequestsBatch.commit();
+      console.log('[AuthContext] Deleted', followRequestsSnapshot.size, 'outgoing follow requests');
+      
+      const followRequestsToQuery = query(
+        collection(db, 'followRequests'),
+        where('toUserId', '==', userId)
+      );
+      const followRequestsToSnapshot = await getDocs(followRequestsToQuery);
+      const followRequestsToBatch = writeBatch(db);
+      followRequestsToSnapshot.docs.forEach(doc => {
+        followRequestsToBatch.delete(doc.ref);
+      });
+      await followRequestsToBatch.commit();
+      console.log('[AuthContext] Deleted', followRequestsToSnapshot.size, 'incoming follow requests');
+      
+      // 3. Delete follows where user is the follower or following
+      const followsQuery = query(
+        collection(db, 'follows'),
+        where('followerId', '==', userId)
+      );
+      const followsSnapshot = await getDocs(followsQuery);
+      const followsBatch = writeBatch(db);
+      followsSnapshot.docs.forEach(doc => {
+        followsBatch.delete(doc.ref);
+      });
+      await followsBatch.commit();
+      console.log('[AuthContext] Deleted', followsSnapshot.size, 'outgoing follows');
+      
+      const followsToQuery = query(
+        collection(db, 'follows'),
+        where('followingId', '==', userId)
+      );
+      const followsToSnapshot = await getDocs(followsToQuery);
+      const followsToBatch = writeBatch(db);
+      followsToSnapshot.docs.forEach(doc => {
+        followsToBatch.delete(doc.ref);
+      });
+      await followsToBatch.commit();
+      console.log('[AuthContext] Deleted', followsToSnapshot.size, 'incoming follows');
+      
+      // 4. Delete activity feed items by this user
+      const activityFeedQuery = query(
+        collection(db, 'activityFeed'),
+        where('userId', '==', userId)
+      );
+      const activityFeedSnapshot = await getDocs(activityFeedQuery);
+      const activityFeedBatch = writeBatch(db);
+      activityFeedSnapshot.docs.forEach(doc => {
+        activityFeedBatch.delete(doc.ref);
+      });
+      await activityFeedBatch.commit();
+      console.log('[AuthContext] Deleted', activityFeedSnapshot.size, 'activity feed items');
+      
+      // 5. Delete likes by this user
+      const likesQuery = query(
+        collection(db, 'likes'),
+        where('userId', '==', userId)
+      );
+      const likesSnapshot = await getDocs(likesQuery);
+      const likesBatch = writeBatch(db);
+      likesSnapshot.docs.forEach(doc => {
+        likesBatch.delete(doc.ref);
+      });
+      await likesBatch.commit();
+      console.log('[AuthContext] Deleted', likesSnapshot.size, 'likes');
+      
+      // 6. Delete comments by this user
+      const commentsQuery = query(
+        collection(db, 'comments'),
+        where('userId', '==', userId)
+      );
+      const commentsSnapshot = await getDocs(commentsQuery);
+      const commentsBatch = writeBatch(db);
+      commentsSnapshot.docs.forEach(doc => {
+        commentsBatch.delete(doc.ref);
+      });
+      await commentsBatch.commit();
+      console.log('[AuthContext] Deleted', commentsSnapshot.size, 'comments');
+      
+      // 7. Delete job postings by this user
+      const jobPostingsQuery = query(
+        collection(db, 'jobPostings'),
+        where('postedById', '==', userId)
+      );
+      const jobPostingsSnapshot = await getDocs(jobPostingsQuery);
+      const jobPostingsBatch = writeBatch(db);
+      jobPostingsSnapshot.docs.forEach(doc => {
+        jobPostingsBatch.delete(doc.ref);
+      });
+      await jobPostingsBatch.commit();
+      console.log('[AuthContext] Deleted', jobPostingsSnapshot.size, 'job postings');
+      
+      // 8. Delete job applications by this user
+      const jobApplicationsQuery = query(
+        collection(db, 'jobApplications'),
+        where('applicantId', '==', userId)
+      );
+      const jobApplicationsSnapshot = await getDocs(jobApplicationsQuery);
+      const jobApplicationsBatch = writeBatch(db);
+      jobApplicationsSnapshot.docs.forEach(doc => {
+        jobApplicationsBatch.delete(doc.ref);
+      });
+      await jobApplicationsBatch.commit();
+      console.log('[AuthContext] Deleted', jobApplicationsSnapshot.size, 'job applications');
+      
+      // 9. Delete job applications where user is the poster
+      const jobApplicationsPosterQuery = query(
+        collection(db, 'jobApplications'),
+        where('posterId', '==', userId)
+      );
+      const jobApplicationsPosterSnapshot = await getDocs(jobApplicationsPosterQuery);
+      const jobApplicationsPosterBatch = writeBatch(db);
+      jobApplicationsPosterSnapshot.docs.forEach(doc => {
+        jobApplicationsPosterBatch.delete(doc.ref);
+      });
+      await jobApplicationsPosterBatch.commit();
+      console.log('[AuthContext] Deleted', jobApplicationsPosterSnapshot.size, 'job applications as poster');
+      
+      // 10. Delete projects owned by this user
+      const projectsQuery = query(
+        collection(db, 'Projects'),
+        where('owner_uid', '==', userId)
+      );
+      const projectsSnapshot = await getDocs(projectsQuery);
+      const projectsBatch = writeBatch(db);
+      projectsSnapshot.docs.forEach(doc => {
+        projectsBatch.delete(doc.ref);
+      });
+      await projectsBatch.commit();
+      console.log('[AuthContext] Deleted', projectsSnapshot.size, 'projects');
+      
+      // 11. Delete favorites by this user
+      const favoritesQuery = query(
+        collection(db, 'favorites'),
+        where('userId', '==', userId)
+      );
+      const favoritesSnapshot = await getDocs(favoritesQuery);
+      const favoritesBatch = writeBatch(db);
+      favoritesSnapshot.docs.forEach(doc => {
+        favoritesBatch.delete(doc.ref);
+      });
+      await favoritesBatch.commit();
+      console.log('[AuthContext] Deleted', favoritesSnapshot.size, 'favorites');
+      
+      // 12. Delete crew favorites by this user
+      const crewFavoritesQuery = query(
+        collection(db, 'crewFavorites'),
+        where('userId', '==', userId)
+      );
+      const crewFavoritesSnapshot = await getDocs(crewFavoritesQuery);
+      const crewFavoritesBatch = writeBatch(db);
+      crewFavoritesSnapshot.docs.forEach(doc => {
+        crewFavoritesBatch.delete(doc.ref);
+      });
+      await crewFavoritesBatch.commit();
+      console.log('[AuthContext] Deleted', crewFavoritesSnapshot.size, 'crew favorites');
+      
+      // 13. Delete direct messages by this user
+      const directMessagesQuery = query(
+        collection(db, 'directMessages'),
+        where('senderId', '==', userId)
+      );
+      const directMessagesSnapshot = await getDocs(directMessagesQuery);
+      const directMessagesBatch = writeBatch(db);
+      directMessagesSnapshot.docs.forEach(doc => {
+        directMessagesBatch.delete(doc.ref);
+      });
+      await directMessagesBatch.commit();
+      console.log('[AuthContext] Deleted', directMessagesSnapshot.size, 'outgoing direct messages');
+      
+      const directMessagesToQuery = query(
+        collection(db, 'directMessages'),
+        where('receiverId', '==', userId)
+      );
+      const directMessagesToSnapshot = await getDocs(directMessagesToQuery);
+      const directMessagesToBatch = writeBatch(db);
+      directMessagesToSnapshot.docs.forEach(doc => {
+        directMessagesToBatch.delete(doc.ref);
+      });
+      await directMessagesToBatch.commit();
+      console.log('[AuthContext] Deleted', directMessagesToSnapshot.size, 'incoming direct messages');
+      
+      // 14. Delete conversations where user is a participant
+      const conversationsQuery = query(
+        collection(db, 'conversations'),
+        where('participants', 'array-contains', userId)
+      );
+      const conversationsSnapshot = await getDocs(conversationsQuery);
+      const conversationsBatch = writeBatch(db);
+      conversationsSnapshot.docs.forEach(doc => {
+        conversationsBatch.delete(doc.ref);
+      });
+      await conversationsBatch.commit();
+      console.log('[AuthContext] Deleted', conversationsSnapshot.size, 'conversations');
+      
+    } catch (error) {
+      console.error('[AuthContext] Error cleaning up user references:', error);
+      // Don't throw error here as some collections might not exist
     }
   };
 

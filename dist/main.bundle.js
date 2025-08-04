@@ -267,7 +267,9 @@ const AuthProvider = ({ children }) => {
             throw new Error('No user is currently signed in');
         }
         try {
-            // Check if re-authentication is required
+            console.log('[AuthContext] Starting account deletion for user:', currentUser.uid);
+            // First, handle re-authentication if needed
+            let userToDelete = currentUser;
             try {
                 // Try to delete user directly first
                 await (0,firebase_auth__WEBPACK_IMPORTED_MODULE_3__/* .deleteUser */ .hG)(currentUser);
@@ -278,33 +280,275 @@ const AuthProvider = ({ children }) => {
                     if (!password) {
                         throw new Error('Re-authentication required. Please provide your password.');
                     }
+                    console.log('[AuthContext] Re-authenticating user before deletion');
                     // Re-authenticate with email and password
                     const credential = firebase_auth__WEBPACK_IMPORTED_MODULE_3__/* .EmailAuthProvider */ .IX.credential(currentUser.email, password);
                     await (0,firebase_auth__WEBPACK_IMPORTED_MODULE_3__/* .reauthenticateWithCredential */ .kZ)(currentUser, credential);
-                    // Now try to delete user again
-                    await (0,firebase_auth__WEBPACK_IMPORTED_MODULE_3__/* .deleteUser */ .hG)(currentUser);
+                    // Get the updated user object after re-authentication
+                    userToDelete = _firebase__WEBPACK_IMPORTED_MODULE_2__/* .auth */ .j2.currentUser;
+                    if (!userToDelete) {
+                        throw new Error('Failed to get current user after re-authentication');
+                    }
+                    console.log('[AuthContext] Re-authentication successful, proceeding with deletion');
                 }
                 else {
                     throw error;
                 }
             }
-            // Delete user data from Firestore
-            const batch = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .writeBatch */ .wP)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db);
-            // Delete user profile
-            batch.delete((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db, 'users', currentUser.uid));
-            // Delete crew profile
-            batch.delete((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db, 'crewProfiles', currentUser.uid));
-            // Delete user collections
-            batch.delete((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db, 'UserCollections', currentUser.uid));
-            // Delete email tracking
-            batch.delete((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db, 'emailTracking', currentUser.email || ''));
-            // Execute the batch
-            await batch.commit();
+            // Now clean up all Firestore data
+            await cleanupUserData(userToDelete.uid, userToDelete.email || '');
+            // Check if user is still authenticated before final deletion
+            if (!_firebase__WEBPACK_IMPORTED_MODULE_2__/* .auth */ .j2.currentUser) {
+                console.log('[AuthContext] User already signed out, deletion complete');
+                return;
+            }
+            // Finally delete the auth account
+            await (0,firebase_auth__WEBPACK_IMPORTED_MODULE_3__/* .deleteUser */ .hG)(userToDelete);
             console.log('[AuthContext] Account deleted successfully');
         }
         catch (error) {
             console.error('[AuthContext] Error deleting account:', error);
+            // If the error is about the user not being found or already deleted, that's actually success
+            if (error.code === 'auth/user-not-found' || error.code === 'auth/user-disabled') {
+                console.log('[AuthContext] User already deleted or not found, considering deletion successful');
+                return;
+            }
             throw error;
+        }
+    };
+    // Helper function to clean up all user data from Firestore
+    const cleanupUserData = async (userId, userEmail) => {
+        console.log('[AuthContext] Cleaning up user data for:', userId);
+        try {
+            const batch = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .writeBatch */ .wP)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db);
+            // 1. Delete main user documents
+            batch.delete((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db, 'users', userId));
+            batch.delete((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db, 'crewProfiles', userId));
+            batch.delete((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db, 'UserCollections', userId));
+            // 2. Delete email tracking
+            if (userEmail) {
+                batch.delete((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db, 'emailTracking', userEmail));
+            }
+            // 3. Delete user preferences
+            batch.delete((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db, 'userPreferences', userId));
+            // Execute the first batch
+            await batch.commit();
+            console.log('[AuthContext] Main user documents deleted');
+            // 4. Clean up subcollections (these need to be deleted individually)
+            await cleanupSubcollections(userId);
+            // 5. Clean up references in other collections
+            await cleanupUserReferences(userId);
+            console.log('[AuthContext] All user data cleaned up successfully');
+        }
+        catch (error) {
+            console.error('[AuthContext] Error cleaning up user data:', error);
+            throw error;
+        }
+    };
+    // Helper function to clean up subcollections
+    const cleanupSubcollections = async (userId) => {
+        console.log('[AuthContext] Cleaning up subcollections for user:', userId);
+        try {
+            // Delete notifications subcollection
+            const notificationsQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db, 'users', userId, 'notifications'));
+            const notificationsSnapshot = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .getDocs */ .GG)(notificationsQuery);
+            const notificationsBatch = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .writeBatch */ .wP)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db);
+            notificationsSnapshot.docs.forEach(doc => {
+                notificationsBatch.delete(doc.ref);
+            });
+            await notificationsBatch.commit();
+            console.log('[AuthContext] Deleted', notificationsSnapshot.size, 'notifications');
+            // Delete saved jobs subcollection
+            const savedJobsQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db, 'users', userId, 'savedJobs'));
+            const savedJobsSnapshot = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .getDocs */ .GG)(savedJobsQuery);
+            const savedJobsBatch = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .writeBatch */ .wP)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db);
+            savedJobsSnapshot.docs.forEach(doc => {
+                savedJobsBatch.delete(doc.ref);
+            });
+            await savedJobsBatch.commit();
+            console.log('[AuthContext] Deleted', savedJobsSnapshot.size, 'saved jobs');
+            // Delete favorite applicants subcollection
+            const favoriteApplicantsQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db, 'users', userId, 'favoriteApplicants'));
+            const favoriteApplicantsSnapshot = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .getDocs */ .GG)(favoriteApplicantsQuery);
+            const favoriteApplicantsBatch = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .writeBatch */ .wP)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db);
+            favoriteApplicantsSnapshot.docs.forEach(doc => {
+                favoriteApplicantsBatch.delete(doc.ref);
+            });
+            await favoriteApplicantsBatch.commit();
+            console.log('[AuthContext] Deleted', favoriteApplicantsSnapshot.size, 'favorite applicants');
+            // Delete crew profile notifications subcollection
+            const crewNotificationsQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db, 'crewProfiles', userId, 'notifications'));
+            const crewNotificationsSnapshot = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .getDocs */ .GG)(crewNotificationsQuery);
+            const crewNotificationsBatch = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .writeBatch */ .wP)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db);
+            crewNotificationsSnapshot.docs.forEach(doc => {
+                crewNotificationsBatch.delete(doc.ref);
+            });
+            await crewNotificationsBatch.commit();
+            console.log('[AuthContext] Deleted', crewNotificationsSnapshot.size, 'crew notifications');
+        }
+        catch (error) {
+            console.error('[AuthContext] Error cleaning up subcollections:', error);
+            // Don't throw error here as some subcollections might not exist
+        }
+    };
+    // Helper function to clean up user references in other collections
+    const cleanupUserReferences = async (userId) => {
+        console.log('[AuthContext] Cleaning up user references for:', userId);
+        try {
+            // 1. Delete notifications from main notifications collection
+            const notificationsQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db, 'notifications'), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .where */ ._M)('userId', '==', userId));
+            const notificationsSnapshot = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .getDocs */ .GG)(notificationsQuery);
+            const notificationsBatch = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .writeBatch */ .wP)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db);
+            notificationsSnapshot.docs.forEach(doc => {
+                notificationsBatch.delete(doc.ref);
+            });
+            await notificationsBatch.commit();
+            console.log('[AuthContext] Deleted', notificationsSnapshot.size, 'main notifications');
+            // 2. Delete follow requests where user is the requester or recipient
+            const followRequestsQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db, 'followRequests'), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .where */ ._M)('fromUserId', '==', userId));
+            const followRequestsSnapshot = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .getDocs */ .GG)(followRequestsQuery);
+            const followRequestsBatch = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .writeBatch */ .wP)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db);
+            followRequestsSnapshot.docs.forEach(doc => {
+                followRequestsBatch.delete(doc.ref);
+            });
+            await followRequestsBatch.commit();
+            console.log('[AuthContext] Deleted', followRequestsSnapshot.size, 'outgoing follow requests');
+            const followRequestsToQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db, 'followRequests'), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .where */ ._M)('toUserId', '==', userId));
+            const followRequestsToSnapshot = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .getDocs */ .GG)(followRequestsToQuery);
+            const followRequestsToBatch = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .writeBatch */ .wP)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db);
+            followRequestsToSnapshot.docs.forEach(doc => {
+                followRequestsToBatch.delete(doc.ref);
+            });
+            await followRequestsToBatch.commit();
+            console.log('[AuthContext] Deleted', followRequestsToSnapshot.size, 'incoming follow requests');
+            // 3. Delete follows where user is the follower or following
+            const followsQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db, 'follows'), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .where */ ._M)('followerId', '==', userId));
+            const followsSnapshot = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .getDocs */ .GG)(followsQuery);
+            const followsBatch = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .writeBatch */ .wP)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db);
+            followsSnapshot.docs.forEach(doc => {
+                followsBatch.delete(doc.ref);
+            });
+            await followsBatch.commit();
+            console.log('[AuthContext] Deleted', followsSnapshot.size, 'outgoing follows');
+            const followsToQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db, 'follows'), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .where */ ._M)('followingId', '==', userId));
+            const followsToSnapshot = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .getDocs */ .GG)(followsToQuery);
+            const followsToBatch = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .writeBatch */ .wP)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db);
+            followsToSnapshot.docs.forEach(doc => {
+                followsToBatch.delete(doc.ref);
+            });
+            await followsToBatch.commit();
+            console.log('[AuthContext] Deleted', followsToSnapshot.size, 'incoming follows');
+            // 4. Delete activity feed items by this user
+            const activityFeedQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db, 'activityFeed'), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .where */ ._M)('userId', '==', userId));
+            const activityFeedSnapshot = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .getDocs */ .GG)(activityFeedQuery);
+            const activityFeedBatch = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .writeBatch */ .wP)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db);
+            activityFeedSnapshot.docs.forEach(doc => {
+                activityFeedBatch.delete(doc.ref);
+            });
+            await activityFeedBatch.commit();
+            console.log('[AuthContext] Deleted', activityFeedSnapshot.size, 'activity feed items');
+            // 5. Delete likes by this user
+            const likesQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db, 'likes'), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .where */ ._M)('userId', '==', userId));
+            const likesSnapshot = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .getDocs */ .GG)(likesQuery);
+            const likesBatch = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .writeBatch */ .wP)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db);
+            likesSnapshot.docs.forEach(doc => {
+                likesBatch.delete(doc.ref);
+            });
+            await likesBatch.commit();
+            console.log('[AuthContext] Deleted', likesSnapshot.size, 'likes');
+            // 6. Delete comments by this user
+            const commentsQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db, 'comments'), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .where */ ._M)('userId', '==', userId));
+            const commentsSnapshot = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .getDocs */ .GG)(commentsQuery);
+            const commentsBatch = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .writeBatch */ .wP)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db);
+            commentsSnapshot.docs.forEach(doc => {
+                commentsBatch.delete(doc.ref);
+            });
+            await commentsBatch.commit();
+            console.log('[AuthContext] Deleted', commentsSnapshot.size, 'comments');
+            // 7. Delete job postings by this user
+            const jobPostingsQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db, 'jobPostings'), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .where */ ._M)('postedById', '==', userId));
+            const jobPostingsSnapshot = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .getDocs */ .GG)(jobPostingsQuery);
+            const jobPostingsBatch = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .writeBatch */ .wP)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db);
+            jobPostingsSnapshot.docs.forEach(doc => {
+                jobPostingsBatch.delete(doc.ref);
+            });
+            await jobPostingsBatch.commit();
+            console.log('[AuthContext] Deleted', jobPostingsSnapshot.size, 'job postings');
+            // 8. Delete job applications by this user
+            const jobApplicationsQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db, 'jobApplications'), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .where */ ._M)('applicantId', '==', userId));
+            const jobApplicationsSnapshot = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .getDocs */ .GG)(jobApplicationsQuery);
+            const jobApplicationsBatch = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .writeBatch */ .wP)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db);
+            jobApplicationsSnapshot.docs.forEach(doc => {
+                jobApplicationsBatch.delete(doc.ref);
+            });
+            await jobApplicationsBatch.commit();
+            console.log('[AuthContext] Deleted', jobApplicationsSnapshot.size, 'job applications');
+            // 9. Delete job applications where user is the poster
+            const jobApplicationsPosterQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db, 'jobApplications'), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .where */ ._M)('posterId', '==', userId));
+            const jobApplicationsPosterSnapshot = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .getDocs */ .GG)(jobApplicationsPosterQuery);
+            const jobApplicationsPosterBatch = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .writeBatch */ .wP)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db);
+            jobApplicationsPosterSnapshot.docs.forEach(doc => {
+                jobApplicationsPosterBatch.delete(doc.ref);
+            });
+            await jobApplicationsPosterBatch.commit();
+            console.log('[AuthContext] Deleted', jobApplicationsPosterSnapshot.size, 'job applications as poster');
+            // 10. Delete projects owned by this user
+            const projectsQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db, 'Projects'), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .where */ ._M)('owner_uid', '==', userId));
+            const projectsSnapshot = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .getDocs */ .GG)(projectsQuery);
+            const projectsBatch = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .writeBatch */ .wP)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db);
+            projectsSnapshot.docs.forEach(doc => {
+                projectsBatch.delete(doc.ref);
+            });
+            await projectsBatch.commit();
+            console.log('[AuthContext] Deleted', projectsSnapshot.size, 'projects');
+            // 11. Delete favorites by this user
+            const favoritesQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db, 'favorites'), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .where */ ._M)('userId', '==', userId));
+            const favoritesSnapshot = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .getDocs */ .GG)(favoritesQuery);
+            const favoritesBatch = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .writeBatch */ .wP)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db);
+            favoritesSnapshot.docs.forEach(doc => {
+                favoritesBatch.delete(doc.ref);
+            });
+            await favoritesBatch.commit();
+            console.log('[AuthContext] Deleted', favoritesSnapshot.size, 'favorites');
+            // 12. Delete crew favorites by this user
+            const crewFavoritesQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db, 'crewFavorites'), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .where */ ._M)('userId', '==', userId));
+            const crewFavoritesSnapshot = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .getDocs */ .GG)(crewFavoritesQuery);
+            const crewFavoritesBatch = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .writeBatch */ .wP)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db);
+            crewFavoritesSnapshot.docs.forEach(doc => {
+                crewFavoritesBatch.delete(doc.ref);
+            });
+            await crewFavoritesBatch.commit();
+            console.log('[AuthContext] Deleted', crewFavoritesSnapshot.size, 'crew favorites');
+            // 13. Delete direct messages by this user
+            const directMessagesQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db, 'directMessages'), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .where */ ._M)('senderId', '==', userId));
+            const directMessagesSnapshot = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .getDocs */ .GG)(directMessagesQuery);
+            const directMessagesBatch = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .writeBatch */ .wP)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db);
+            directMessagesSnapshot.docs.forEach(doc => {
+                directMessagesBatch.delete(doc.ref);
+            });
+            await directMessagesBatch.commit();
+            console.log('[AuthContext] Deleted', directMessagesSnapshot.size, 'outgoing direct messages');
+            const directMessagesToQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db, 'directMessages'), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .where */ ._M)('receiverId', '==', userId));
+            const directMessagesToSnapshot = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .getDocs */ .GG)(directMessagesToQuery);
+            const directMessagesToBatch = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .writeBatch */ .wP)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db);
+            directMessagesToSnapshot.docs.forEach(doc => {
+                directMessagesToBatch.delete(doc.ref);
+            });
+            await directMessagesToBatch.commit();
+            console.log('[AuthContext] Deleted', directMessagesToSnapshot.size, 'incoming direct messages');
+            // 14. Delete conversations where user is a participant
+            const conversationsQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db, 'conversations'), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .where */ ._M)('participants', 'array-contains', userId));
+            const conversationsSnapshot = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .getDocs */ .GG)(conversationsQuery);
+            const conversationsBatch = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_4__/* .writeBatch */ .wP)(_firebase__WEBPACK_IMPORTED_MODULE_2__.db);
+            conversationsSnapshot.docs.forEach(doc => {
+                conversationsBatch.delete(doc.ref);
+            });
+            await conversationsBatch.commit();
+            console.log('[AuthContext] Deleted', conversationsSnapshot.size, 'conversations');
+        }
+        catch (error) {
+            console.error('[AuthContext] Error cleaning up user references:', error);
+            // Don't throw error here as some collections might not exist
         }
     };
     (0,react__WEBPACK_IMPORTED_MODULE_1__.useEffect)(() => {
