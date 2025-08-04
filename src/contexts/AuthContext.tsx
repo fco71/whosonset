@@ -69,6 +69,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       
       const provider = new GoogleAuthProvider();
+      
+      // Set custom parameters to show "My Film Jobs" instead of Firebase project name
+      provider.setCustomParameters({
+        app_name: 'My Film Jobs',
+        prompt: 'select_account'
+      });
+      
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
       
