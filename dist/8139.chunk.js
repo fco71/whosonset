@@ -40,6 +40,7 @@ const LoginPage = () => {
             }
         }
         catch (err) {
+            console.error('Login error details:', err);
             if (err.code === 'auth/user-not-found') {
                 setError('No account found with this email address');
             }
@@ -49,10 +50,18 @@ const LoginPage = () => {
             else if (err.code === 'auth/too-many-requests') {
                 setError('Too many failed attempts. Please try again later.');
             }
-            else {
-                setError('Failed to log in. Please try again.');
+            else if (err.code === 'auth/invalid-email') {
+                setError('Invalid email address format.');
             }
-            console.error(err);
+            else if (err.code === 'auth/user-disabled') {
+                setError('This account has been disabled. Please contact support.');
+            }
+            else if (err.code === 'auth/invalid-credential') {
+                setError('Invalid email or password. Please check your credentials and try again.');
+            }
+            else {
+                setError(`Login failed: ${err.message || 'Please try again.'}`);
+            }
         }
         setLoading(false);
     };

@@ -152,7 +152,7 @@ const PublicResumePage: React.FC<PublicResumePageProps> = () => {
     <>
       <div className="max-w-3xl mx-auto px-4 pt-8">
         <CrewProfileHeader profile={profile} />
-        <ResumeView profile={profile as any} />
+        <ResumeView profile={profile as any} isOwnResume={false} />
       </div>
       {/* Debug info - only shown in development */}
       {process.env.NODE_ENV === 'development' && (

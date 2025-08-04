@@ -622,7 +622,7 @@ const EditCrewProfile = () => {
                                                         role: project.role,
                                                         description: project.description || '' // Ensure description is always a string
                                                     }))
-                                                } }) }), (0,jsx_runtime.jsx)("button", { onClick: handleDownloadPDF, className: "mt-6 bg-gray-900 hover:bg-gray-800 text-white py-3 px-6 rounded-lg font-light tracking-wide transition-all duration-300 hover:scale-105", children: t('resume.builder.downloadPDF') })] }) }) })] }) })] }));
+                                                }, isOwnResume: true }) }), (0,jsx_runtime.jsx)("button", { onClick: handleDownloadPDF, className: "mt-6 bg-gray-900 hover:bg-gray-800 text-white py-3 px-6 rounded-lg font-light tracking-wide transition-all duration-300 hover:scale-105", children: t('resume.builder.downloadPDF') })] }) }) })] }) })] }));
 };
 /* harmony default export */ const components_EditCrewProfile = (EditCrewProfile);
 

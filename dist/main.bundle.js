@@ -66,7 +66,15 @@ const AuthProvider = ({ children }) => {
     // Add debugging
     console.log('[AuthProvider] Initializing...');
     const login = async (email, password) => {
-        await (0,firebase_auth__WEBPACK_IMPORTED_MODULE_3__/* .signInWithEmailAndPassword */ .x9)(_firebase__WEBPACK_IMPORTED_MODULE_2__/* .auth */ .j2, email, password);
+        try {
+            console.log('[AuthContext] Attempting login for:', email);
+            await (0,firebase_auth__WEBPACK_IMPORTED_MODULE_3__/* .signInWithEmailAndPassword */ .x9)(_firebase__WEBPACK_IMPORTED_MODULE_2__/* .auth */ .j2, email, password);
+            console.log('[AuthContext] Login successful for:', email);
+        }
+        catch (error) {
+            console.error('[AuthContext] Login error:', error);
+            throw error;
+        }
     };
     const loginWithGoogle = async () => {
         try {

@@ -42,10 +42,11 @@ interface CrewProfileData {
 interface ResumeViewProps {
   profile: CrewProfileData;
   editable?: boolean; // for future use
+  isOwnResume?: boolean; // indicates if this is the user's own resume
 }
 
 const ResumeView: React.FC<ResumeViewProps> = (props) => {
-  const { profile } = props;
+  const { profile, isOwnResume = false } = props;
   const { t } = useTranslation();
   // Fallback: use photoURL if profileImageUrl is missing
   const managedProfileImageUrl = useManagedUrl(profile?.profileImageUrl || profile?.photoURL);
@@ -534,8 +535,10 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
               <div style={sectionStyle}>
                 <h2 style={sectionTitleStyle}>{t('resume.sections.contactInformation')}</h2>
                 <ul style={contactListStyle}>
-                  {profile.contactInfo.email && <li style={contactItemStyle}>📧 {profile.contactInfo.email}</li>}
-                  {profile.contactInfo.phone && <li style={contactItemStyle}>📞 {profile.contactInfo.phone}</li>}
+                  {/* Only show email and phone for own resume */}
+                  {isOwnResume && profile.contactInfo.email && <li style={contactItemStyle}>📧 {profile.contactInfo.email}</li>}
+                  {isOwnResume && profile.contactInfo.phone && <li style={contactItemStyle}>📞 {profile.contactInfo.phone}</li>}
+                  {/* Always show website and social media */}
                   {profile.contactInfo.website && <li style={contactItemStyle}>🌐 {profile.contactInfo.website}</li>}
                   {profile.contactInfo.instagram && <li style={contactItemStyle}>📷 @{profile.contactInfo.instagram}</li>}
                 </ul>

@@ -26,16 +26,22 @@ const LoginPage: React.FC = () => {
         navigate('/');
       }
     } catch (err: any) {
+      console.error('Login error details:', err);
       if (err.code === 'auth/user-not-found') {
         setError('No account found with this email address');
       } else if (err.code === 'auth/wrong-password') {
         setError('Incorrect password. Please try again.');
       } else if (err.code === 'auth/too-many-requests') {
         setError('Too many failed attempts. Please try again later.');
+      } else if (err.code === 'auth/invalid-email') {
+        setError('Invalid email address format.');
+      } else if (err.code === 'auth/user-disabled') {
+        setError('This account has been disabled. Please contact support.');
+      } else if (err.code === 'auth/invalid-credential') {
+        setError('Invalid email or password. Please check your credentials and try again.');
       } else {
-        setError('Failed to log in. Please try again.');
+        setError(`Login failed: ${err.message || 'Please try again.'}`);
       }
-      console.error(err);
     }
     setLoading(false);
   };

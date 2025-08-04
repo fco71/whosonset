@@ -1338,14 +1338,17 @@ const EditCrewProfile: React.FC = () => {
                 <hr className="my-8 border-gray-200" />
                 <h3 className="text-xl font-light text-gray-900 mb-6 tracking-wide">{t('resume.builder.resumePreview')}</h3>
                 <div ref={resumeRef} className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-                  <ResumeView profile={{
-                    ...form,
-                    projects: form.projects?.map(project => ({
-                      projectName: project.projectName,
-                      role: project.role,
-                      description: project.description || '' // Ensure description is always a string
-                    }))
-                  }} />
+                  <ResumeView 
+                    profile={{
+                      ...form,
+                      projects: form.projects?.map(project => ({
+                        projectName: project.projectName,
+                        role: project.role,
+                        description: project.description || '' // Ensure description is always a string
+                      }))
+                    }}
+                    isOwnResume={true}
+                  />
                 </div>
                 <button
                   onClick={handleDownloadPDF}

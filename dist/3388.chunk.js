@@ -201,7 +201,7 @@ const PublicResumePage = () => {
     if (!profile) {
         return null; // Should be handled by error state, but TypeScript needs this check
     }
-    return ((0,jsx_runtime.jsxs)(jsx_runtime.Fragment, { children: [(0,jsx_runtime.jsxs)("div", { className: "max-w-3xl mx-auto px-4 pt-8", children: [(0,jsx_runtime.jsx)(components_CrewProfileHeader, { profile: profile }), (0,jsx_runtime.jsx)(ResumeView/* default */.A, { profile: profile })] }),  false && (0)] }));
+    return ((0,jsx_runtime.jsxs)(jsx_runtime.Fragment, { children: [(0,jsx_runtime.jsxs)("div", { className: "max-w-3xl mx-auto px-4 pt-8", children: [(0,jsx_runtime.jsx)(components_CrewProfileHeader, { profile: profile }), (0,jsx_runtime.jsx)(ResumeView/* default */.A, { profile: profile, isOwnResume: false })] }),  false && (0)] }));
 };
 /* harmony default export */ const components_PublicResumePage = (PublicResumePage);
 

@@ -60,7 +60,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   console.log('[AuthProvider] Initializing...');
 
   const login = async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password);
+    try {
+      console.log('[AuthContext] Attempting login for:', email);
+      await signInWithEmailAndPassword(auth, email, password);
+      console.log('[AuthContext] Login successful for:', email);
+    } catch (error: any) {
+      console.error('[AuthContext] Login error:', error);
+      throw error;
+    }
   };
 
   const loginWithGoogle = async (): Promise<{ isNewUser: boolean }> => {
