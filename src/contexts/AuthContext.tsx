@@ -22,7 +22,6 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, firstName?: string, lastName?: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
-  loginWithApple: () => Promise<void>;
   logout: () => Promise<void>;
   deleteAccount: (password?: string) => Promise<void>;
 }
@@ -70,9 +69,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       const provider = new GoogleAuthProvider();
       
-      // Set custom parameters to show "My Film Jobs" instead of Firebase project name
+      // Set custom parameters for better UX
       provider.setCustomParameters({
-        app_name: 'My Film Jobs',
         prompt: 'select_account'
       });
       
@@ -90,36 +88,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Check if the error is due to provider not being enabled
       if (error.code === 'auth/operation-not-allowed') {
         throw new Error('Google sign-in is not enabled. Please enable it in your Firebase console.');
-      }
-      
-      throw error;
-    }
-  };
-
-  const loginWithApple = async () => {
-    try {
-      console.log('[AuthContext] Starting Apple sign-in process');
-      
-      // Check if OAuth provider is available
-      if (typeof OAuthProvider === 'undefined') {
-        throw new Error('Apple authentication is not available. Please enable it in Firebase console.');
-      }
-      
-      const provider = new OAuthProvider('apple.com');
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      
-      console.log('[AuthContext] Apple sign-in successful for:', user.email);
-      
-      // Check if user profile exists, if not create it
-      await createUserProfileIfNeeded(user);
-      
-    } catch (error: any) {
-      console.error('[AuthContext] Apple sign-in error:', error);
-      
-      // Check if the error is due to provider not being enabled
-      if (error.code === 'auth/operation-not-allowed') {
-        throw new Error('Apple sign-in is not enabled. Please enable it in your Firebase console.');
       }
       
       throw error;
@@ -374,7 +342,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     signup,
     loginWithGoogle,
-    loginWithApple,
     logout,
     deleteAccount
   };
