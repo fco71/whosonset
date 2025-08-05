@@ -1206,7 +1206,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       toast.success(`${user.name} added as collaborator!`);
       // Create notification for the new collaborator
       if (user.id) {
-        await addDoc(collection(db, 'crewProfiles', user.id, 'notifications'), {
+        await addDoc(collection(db, 'notifications'), {
           type: 'collaborator_added',
           message: `You have been added as a collaborator to the screenplay: ${screenplay.id}`,
           timestamp: serverTimestamp(),
