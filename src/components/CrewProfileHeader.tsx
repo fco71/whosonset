@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import FollowButton from './Social/FollowButton';
 import { CrewFavoritesService } from '../utilities/crewFavoritesService';
 import { useAuth } from '../contexts/AuthContext';
-import EmailButton from './MessageButton';
 import { imageErrorFallback } from '../utilities/imageErrorFallback';
 import { useTranslation } from 'react-i18next';
 
@@ -70,7 +69,7 @@ const CrewProfileHeader: React.FC<CrewProfileHeaderProps> = ({ profile }) => {
   const imageUrl = profile.profileImageUrl || profile.photoURL || '/default-avatar.svg';
   const availability = profile.availability || '';
 
-  const canMessage = !!profile.contactInfo?.email && currentUser && currentUser.uid !== profile.uid;
+
 
   return (
     <div className="flex flex-col md:flex-row items-center gap-6 bg-white rounded-2xl shadow-lg px-8 py-6 mb-8 border border-gray-100 animate-fade-in">
@@ -107,9 +106,6 @@ const CrewProfileHeader: React.FC<CrewProfileHeaderProps> = ({ profile }) => {
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16l-7-3.5L5 21V5z"/></svg>
               )}
             </button>
-            {canMessage && (
-              <EmailButton email={profile.contactInfo.email} />
-            )}
           </div>
         )}
       </div>

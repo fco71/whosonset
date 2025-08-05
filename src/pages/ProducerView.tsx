@@ -10,6 +10,8 @@ import { useTranslation } from 'react-i18next';
 import { CrewFavoritesService } from '../utilities/crewFavoritesService';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { Bookmark, BookmarkCheck } from 'lucide-react';
+import CrewViewSwitcher, { CrewViewMode } from '../components/CrewViewSwitcher';
+import CrewBannerCard from '../components/CrewBannerCard';
 
 interface JobDepartment {
   name: string;
@@ -54,6 +56,10 @@ const ProducerView: React.FC = () => {
 
   const [isSearching, setIsSearching] = useState(false);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [viewMode, setViewMode] = useState<CrewViewMode>(() => {
+    const saved = localStorage.getItem('crewViewMode');
+    return (saved === 'banners' || saved === 'cards') ? saved : 'cards';
+  });
 
   // Load favorite crew IDs
   useEffect(() => {
@@ -107,6 +113,12 @@ const ProducerView: React.FC = () => {
     } catch (error) {
       console.error('Error toggling crew bookmark:', error);
     }
+  };
+
+  // Handle view mode changes with persistence
+  const handleViewModeChange = (mode: CrewViewMode) => {
+    setViewMode(mode);
+    localStorage.setItem('crewViewMode', mode);
   };
 
   // Fetch departments and countries
@@ -435,7 +447,34 @@ const ProducerView: React.FC = () => {
             </div>
 
             {/* Action Buttons - Compact */}
-            <div className="flex items-center gap-1 ml-auto">
+            <div className="flex items-center gap-2 ml-auto">
+              {/* View Switcher - Desktop */}
+              <CrewViewSwitcher
+                viewMode={viewMode}
+                onViewModeChange={handleViewModeChange}
+                className="hidden sm:flex"
+              />
+              
+              {/* Mobile View Switcher */}
+              <div className="sm:hidden">
+                <button
+                  type="button"
+                  onClick={() => handleViewModeChange(viewMode === 'cards' ? 'banners' : 'cards')}
+                  className="p-2 text-gray-500 hover:text-gray-700 transition-colors duration-200 flex items-center justify-center border border-gray-200 rounded-md hover:bg-gray-50"
+                  title={viewMode === 'cards' ? 'Switch to banners' : 'Switch to cards'}
+                >
+                  {viewMode === 'cards' ? (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                    </svg>
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+              
               {/* Favorites Toggle */}
               {user && (
                 <button
@@ -533,27 +572,57 @@ const ProducerView: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 transition-all duration-300 ${isFiltering ? 'opacity-50' : 'opacity-100'}`}>
-              {filteredProfiles.map((profile, index) => (
-                <div 
-                  key={profile.uid}
-                  className={`transform transition-all duration-300 ${isFiltering ? 'scale-95' : 'scale-100 hover:scale-[1.02]'}`}
-                  style={{
-                    transitionDelay: isFiltering ? '0ms' : `${Math.min(index * 30, 300)}ms`,
-                    opacity: isFiltering ? 0.7 : 1
-                  }}
-                >
-                  <CrewProfileCard 
-                    profile={profile}
-                    index={index}
-                    isFiltering={isFiltering}
-                    currentUserId={currentUserId}
-                    isBookmarked={favoriteCrewIds.includes(profile.uid)}
-                    onBookmarkToggle={handleCrewBookmark}
-                  />
+            <>
+              {/* Cards View */}
+              {viewMode === 'cards' && (
+                <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 transition-all duration-300 ${isFiltering ? 'opacity-50' : 'opacity-100'}`}>
+                  {filteredProfiles.map((profile, index) => (
+                    <div 
+                      key={profile.uid}
+                      className={`transform transition-all duration-300 ${isFiltering ? 'scale-95' : 'scale-100 hover:scale-[1.02]'}`}
+                      style={{
+                        transitionDelay: isFiltering ? '0ms' : `${Math.min(index * 30, 300)}ms`,
+                        opacity: isFiltering ? 0.7 : 1
+                      }}
+                    >
+                      <CrewProfileCard 
+                        profile={profile}
+                        index={index}
+                        isFiltering={isFiltering}
+                        currentUserId={currentUserId}
+                        isBookmarked={favoriteCrewIds.includes(profile.uid)}
+                        onBookmarkToggle={handleCrewBookmark}
+                      />
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              )}
+
+              {/* Banners View */}
+              {viewMode === 'banners' && (
+                <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 transition-all duration-300 ${isFiltering ? 'opacity-50' : 'opacity-100'}`}>
+                  {filteredProfiles.map((profile, index) => (
+                    <div 
+                      key={profile.uid}
+                      className={`transform transition-all duration-300 ${isFiltering ? 'scale-95' : 'scale-100 hover:scale-[1.02]'}`}
+                      style={{
+                        transitionDelay: isFiltering ? '0ms' : `${Math.min(index * 20, 200)}ms`,
+                        opacity: isFiltering ? 0.7 : 1
+                      }}
+                    >
+                      <CrewBannerCard 
+                        profile={profile}
+                        index={index}
+                        isFiltering={isFiltering}
+                        currentUserId={currentUserId}
+                        isBookmarked={favoriteCrewIds.includes(profile.uid)}
+                        onBookmark={handleCrewBookmark}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
           )}
           
           {filteredProfiles.length > 0 && (
