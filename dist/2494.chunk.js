@@ -1,7 +1,7 @@
 "use strict";
-(self["webpackChunkwhosonset"] = self["webpackChunkwhosonset"] || []).push([[3388],{
+(self["webpackChunkwhosonset"] = self["webpackChunkwhosonset"] || []).push([[2494],{
 
-/***/ 3388:
+/***/ 2494:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 // ESM COMPAT FLAG
@@ -32,19 +32,9 @@ var FollowButton = __webpack_require__(6024);
 var crewFavoritesService = __webpack_require__(6838);
 // EXTERNAL MODULE: ./src/contexts/AuthContext.tsx
 var AuthContext = __webpack_require__(2584);
-;// ./src/components/MessageButton.tsx
-
-const EmailButton = ({ email, disabled }) => {
-    if (!email)
-        return null;
-    return ((0,jsx_runtime.jsxs)("a", { href: `mailto:${email}`, className: `inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium shadow hover:bg-blue-700 transition-all duration-200 ${disabled ? 'opacity-50 pointer-events-none' : ''}`, style: { minWidth: 110, justifyContent: 'center' }, target: "_blank", rel: "noopener noreferrer", tabIndex: disabled ? -1 : 0, "aria-disabled": disabled, children: [(0,jsx_runtime.jsxs)("svg", { className: "w-4 h-4 mr-2", fill: "none", stroke: "currentColor", strokeWidth: "2", viewBox: "0 0 24 24", children: [(0,jsx_runtime.jsx)("path", { d: "M4 4h16v16H4z", stroke: "none" }), (0,jsx_runtime.jsx)("path", { d: "M22 6l-10 7L2 6" })] }), "Email"] }));
-};
-/* harmony default export */ const MessageButton = (EmailButton);
-
 // EXTERNAL MODULE: ./src/utilities/imageErrorFallback.ts
 var imageErrorFallback = __webpack_require__(676);
 ;// ./src/components/CrewProfileHeader.tsx
-
 
 
 
@@ -111,8 +101,7 @@ const CrewProfileHeader = ({ profile }) => {
     // Fallback: use photoURL if profileImageUrl is missing
     const imageUrl = profile.profileImageUrl || profile.photoURL || '/default-avatar.svg';
     const availability = profile.availability || '';
-    const canMessage = !!profile.contactInfo?.email && currentUser && currentUser.uid !== profile.uid;
-    return ((0,jsx_runtime.jsxs)("div", { className: "flex flex-col md:flex-row items-center gap-6 bg-white rounded-2xl shadow-lg px-8 py-6 mb-8 border border-gray-100 animate-fade-in", children: [(0,jsx_runtime.jsx)("img", { src: imageUrl, alt: profile.name, className: "w-24 h-24 rounded-full object-cover border-2 border-gray-200", onError: imageErrorFallback/* imageErrorFallback */.i, style: { flexShrink: 0 } }), (0,jsx_runtime.jsxs)("div", { className: "flex-1 min-w-0 text-center md:text-left", children: [(0,jsx_runtime.jsx)("div", { className: "font-bold text-2xl text-gray-900 mb-1", children: profile.name }), (0,jsx_runtime.jsxs)("div", { className: "text-sm text-gray-500 mb-1", children: [mainTitle, mainLocation ? ' · ' + mainLocation : ''] }), availability && ((0,jsx_runtime.jsx)("span", { className: `inline-block px-2 py-1 rounded-full text-xs font-medium ${availability.toLowerCase() === 'available' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`, children: getAvailabilityText(availability) }))] }), (0,jsx_runtime.jsx)("div", { className: "flex flex-col gap-2 items-center md:items-end", children: currentUser && currentUser.uid !== profile.uid && ((0,jsx_runtime.jsxs)("div", { className: "flex gap-2 items-center", children: [(0,jsx_runtime.jsx)(FollowButton/* default */.A, { currentUserId: currentUser.uid, targetUserId: profile.uid, size: "sm" }), (0,jsx_runtime.jsx)("button", { onClick: handleBookmark, disabled: bookmarking, className: `p-2 rounded-full border border-gray-200 bg-white hover:bg-yellow-50 transition-all duration-200 ${isBookmarked ? 'text-yellow-500' : 'text-gray-400'} ${bookmarking ? 'opacity-50' : ''}`, title: isBookmarked ? t('crew.removeFromBookmarks') : t('crew.addToBookmarks'), style: { lineHeight: 0 }, children: isBookmarked ? ((0,jsx_runtime.jsx)("svg", { xmlns: "http://www.w3.org/2000/svg", fill: "currentColor", viewBox: "0 0 24 24", className: "w-6 h-6", children: (0,jsx_runtime.jsx)("path", { d: "M5 5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16l-7-3.5L5 21V5z" }) })) : ((0,jsx_runtime.jsx)("svg", { xmlns: "http://www.w3.org/2000/svg", fill: "none", stroke: "currentColor", strokeWidth: "2", viewBox: "0 0 24 24", className: "w-6 h-6", children: (0,jsx_runtime.jsx)("path", { strokeLinecap: "round", strokeLinejoin: "round", d: "M5 5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16l-7-3.5L5 21V5z" }) })) }), canMessage && ((0,jsx_runtime.jsx)(MessageButton, { email: profile.contactInfo.email }))] })) })] }));
+    return ((0,jsx_runtime.jsxs)("div", { className: "flex flex-col md:flex-row items-center gap-6 bg-white rounded-2xl shadow-lg px-8 py-6 mb-8 border border-gray-100 animate-fade-in", children: [(0,jsx_runtime.jsx)("img", { src: imageUrl, alt: profile.name, className: "w-24 h-24 rounded-full object-cover border-2 border-gray-200", onError: imageErrorFallback/* imageErrorFallback */.i, style: { flexShrink: 0 } }), (0,jsx_runtime.jsxs)("div", { className: "flex-1 min-w-0 text-center md:text-left", children: [(0,jsx_runtime.jsx)("div", { className: "font-bold text-2xl text-gray-900 mb-1", children: profile.name }), (0,jsx_runtime.jsxs)("div", { className: "text-sm text-gray-500 mb-1", children: [mainTitle, mainLocation ? ' · ' + mainLocation : ''] }), availability && ((0,jsx_runtime.jsx)("span", { className: `inline-block px-2 py-1 rounded-full text-xs font-medium ${availability.toLowerCase() === 'available' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`, children: getAvailabilityText(availability) }))] }), (0,jsx_runtime.jsx)("div", { className: "flex flex-col gap-2 items-center md:items-end", children: currentUser && currentUser.uid !== profile.uid && ((0,jsx_runtime.jsxs)("div", { className: "flex gap-2 items-center", children: [(0,jsx_runtime.jsx)(FollowButton/* default */.A, { currentUserId: currentUser.uid, targetUserId: profile.uid, size: "sm" }), (0,jsx_runtime.jsx)("button", { onClick: handleBookmark, disabled: bookmarking, className: `p-2 rounded-full border border-gray-200 bg-white hover:bg-yellow-50 transition-all duration-200 ${isBookmarked ? 'text-yellow-500' : 'text-gray-400'} ${bookmarking ? 'opacity-50' : ''}`, title: isBookmarked ? t('crew.removeFromBookmarks') : t('crew.addToBookmarks'), style: { lineHeight: 0 }, children: isBookmarked ? ((0,jsx_runtime.jsx)("svg", { xmlns: "http://www.w3.org/2000/svg", fill: "currentColor", viewBox: "0 0 24 24", className: "w-6 h-6", children: (0,jsx_runtime.jsx)("path", { d: "M5 5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16l-7-3.5L5 21V5z" }) })) : ((0,jsx_runtime.jsx)("svg", { xmlns: "http://www.w3.org/2000/svg", fill: "none", stroke: "currentColor", strokeWidth: "2", viewBox: "0 0 24 24", className: "w-6 h-6", children: (0,jsx_runtime.jsx)("path", { strokeLinecap: "round", strokeLinejoin: "round", d: "M5 5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16l-7-3.5L5 21V5z" }) })) })] })) })] }));
 };
 /* harmony default export */ const components_CrewProfileHeader = (CrewProfileHeader);
 
@@ -405,4 +394,4 @@ CrewFavoritesService.COLLECTION_NAME = 'crewFavorites';
 /***/ })
 
 }]);
-//# sourceMappingURL=3388.chunk.js.map
+//# sourceMappingURL=2494.chunk.js.map
