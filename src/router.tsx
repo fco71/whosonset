@@ -45,6 +45,8 @@ const EmailIntegrationTestPage = React.lazy(() => import('./pages/EmailIntegrati
 const PrivacyPolicyPage = React.lazy(() => import('./pages/PrivacyPolicyPage'));
 const TermsOfServicePage = React.lazy(() => import('./pages/TermsOfServicePage'));
 const ContactPage = React.lazy(() => import('./pages/ContactPage'));
+const AboutPage = React.lazy(() => import('./pages/AboutPage'));
+const PublicCrewPage = React.lazy(() => import('./pages/PublicCrewPage'));
 
 // Import the main App component that will handle the layout
 import App from './App';
@@ -57,12 +59,20 @@ export function createAppRouter() {
       children: [
         { index: true, element: <HomePage /> },
         { 
+          path: 'about', 
+          element: <AboutPage />
+        },
+        { 
           path: 'crew', 
           element: (
             <ProtectedRoute>
               <ProducerView />
             </ProtectedRoute>
           ) 
+        },
+        { 
+          path: 'crew-public', 
+          element: <PublicCrewPage />
         },
         { 
           path: 'projects', 

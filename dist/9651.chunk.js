@@ -1921,7 +1921,7 @@ const ScreenplayViewer_ScreenplayViewer = ({ screenplay, projectId, onClose, onG
             react_toastify_dist/* toast */.oR.success(`${user.name} added as collaborator!`);
             // Create notification for the new collaborator
             if (user.id) {
-                await (0,esm_index_esm/* addDoc */.gS)((0,esm_index_esm/* collection */.rJ)(firebase.db, 'crewProfiles', user.id, 'notifications'), {
+                await (0,esm_index_esm/* addDoc */.gS)((0,esm_index_esm/* collection */.rJ)(firebase.db, 'notifications'), {
                     type: 'collaborator_added',
                     message: `You have been added as a collaborator to the screenplay: ${screenplay.id}`,
                     timestamp: (0,esm_index_esm/* serverTimestamp */.O5)(),

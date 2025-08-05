@@ -479,7 +479,7 @@ const JobApplicantsPage = ({ jobId: propJobId }) => {
             const applicationDoc = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__.getDoc)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__.doc)(_firebase__WEBPACK_IMPORTED_MODULE_4__.db, 'jobApplications', applicationId));
             const applicationData = applicationDoc.data();
             if (applicationData && applicationData.applicantId) {
-                await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__/* .addDoc */ .gS)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_4__.db, 'users', applicationData.applicantId, 'notifications'), {
+                await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__/* .addDoc */ .gS)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_4__.db, 'notifications'), {
                     type: 'application_status_update',
                     message: `Your application status has been updated to: ${newStatus}`,
                     timestamp: (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__/* .serverTimestamp */ .O5)(),

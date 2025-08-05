@@ -459,7 +459,7 @@ const ApplicationMessaging = ({ applicationId, onClose, isModal = false }) => {
             // Determine recipient: if sender is applicant, recipient is job poster; else recipient is applicant
             const recipientId = currentUser.uid === application.applicantId ? jobPosting?.postedById : application.applicantId;
             if (recipientId) {
-                await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__/* .addDoc */ .gS)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_4__.db, 'users', recipientId, 'notifications'), {
+                await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__/* .addDoc */ .gS)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_4__.db, 'notifications'), {
                     type: 'application_message',
                     message: `New message from ${currentUser.displayName || currentUser.email} regarding job application`,
                     timestamp: (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_3__/* .serverTimestamp */ .O5)(),
