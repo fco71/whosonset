@@ -45,6 +45,10 @@ const EmailIntegrationTestPage = React.lazy(() => import('./pages/EmailIntegrati
 const PrivacyPolicyPage = React.lazy(() => import('./pages/PrivacyPolicyPage'));
 const TermsOfServicePage = React.lazy(() => import('./pages/TermsOfServicePage'));
 const ContactPage = React.lazy(() => import('./pages/ContactPage'));
+const AdMonetizationPage = React.lazy(() => import('./pages/AdMonetizationPage'));
+const AdPlacementDemoPage = React.lazy(() => import('./pages/AdPlacementDemoPage'));
+const AdTestPage = React.lazy(() => import('./pages/AdTestPage'));
+const AdPopupTestPage = React.lazy(() => import('./pages/AdPopupTestPage'));
 
 // Import the main App component that will handle the layout
 import App from './App';
@@ -340,6 +344,34 @@ export function createAppRouter() {
         { 
           path: 'contact', 
           element: <ContactPage />
+        },
+        { 
+          path: 'ads', 
+          element: (
+            <ProtectedRoute>
+              <AdMonetizationPage />
+            </ProtectedRoute>
+          ) 
+        },
+        { 
+          path: 'ads/demo', 
+          element: (
+            <ProtectedRoute>
+              <AdPlacementDemoPage />
+            </ProtectedRoute>
+          ) 
+        },
+        { 
+          path: 'ads/test', 
+          element: (
+            <ProtectedRoute>
+              <AdTestPage />
+            </ProtectedRoute>
+          ) 
+        },
+        { 
+          path: 'ads/popup-test', 
+          element: <AdPopupTestPage />
         },
         ...(process.env.NODE_ENV === 'development' ? [{ path: 'debug-jobs', element: <DebugJobsPage /> }] : []),
       ],

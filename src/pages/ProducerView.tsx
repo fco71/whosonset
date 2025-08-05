@@ -12,6 +12,7 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { Bookmark, BookmarkCheck } from 'lucide-react';
 import CrewViewSwitcher, { CrewViewMode } from '../components/CrewViewSwitcher';
 import CrewBannerCard from '../components/CrewBannerCard';
+import StrategicAdBanner from '../components/Ads/StrategicAdBanner';
 
 interface JobDepartment {
   name: string;
@@ -550,6 +551,14 @@ const ProducerView: React.FC = () => {
             </div>
           )}
 
+          {/* Strategic Ad Banner */}
+          <StrategicAdBanner
+            position="inline"
+            style="subtle"
+            title="Find Your Perfect Crew"
+            subtitle="Connect with talented professionals"
+          />
+
           {filteredProfiles.length === 0 ? (
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
               <div className="text-center py-16 px-4 sm:px-6 lg:px-8">
@@ -836,14 +845,16 @@ const CrewProfileCard: React.FC<{
         <div className="text-sm font-light text-gray-500 tracking-wide transition-colors duration-300 group-hover:text-gray-600">
           {profile.projects?.length || 0} projects
         </div>
-        <a
-          href={`/resume/${profile.uid}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-sm font-medium text-gray-900 hover:text-black transition-all duration-300 tracking-wide group-hover:underline group-hover:scale-105"
-        >
-          View Profile →
-        </a>
+        <div className="flex items-center gap-2">
+          <a
+            href={`/resume/${profile.uid}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm font-medium text-gray-900 hover:text-black transition-all duration-300 tracking-wide group-hover:underline group-hover:scale-105"
+          >
+            View Profile →
+          </a>
+        </div>
       </div>
     </div>
   );

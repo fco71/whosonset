@@ -1,6 +1,135 @@
 "use strict";
 (self["webpackChunkwhosonset"] = self["webpackChunkwhosonset"] || []).push([[8792],{
 
+/***/ 592:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+
+// EXPORTS
+__webpack_require__.d(__webpack_exports__, {
+  A: () => (/* binding */ components_Ads_AdComponent)
+});
+
+// EXTERNAL MODULE: ./node_modules/react/jsx-runtime.js
+var jsx_runtime = __webpack_require__(4848);
+// EXTERNAL MODULE: ./node_modules/react/index.js
+var react = __webpack_require__(6540);
+// EXTERNAL MODULE: ./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js
+var injectStylesIntoStyleTag = __webpack_require__(5072);
+var injectStylesIntoStyleTag_default = /*#__PURE__*/__webpack_require__.n(injectStylesIntoStyleTag);
+// EXTERNAL MODULE: ./node_modules/style-loader/dist/runtime/styleDomAPI.js
+var styleDomAPI = __webpack_require__(7825);
+var styleDomAPI_default = /*#__PURE__*/__webpack_require__.n(styleDomAPI);
+// EXTERNAL MODULE: ./node_modules/style-loader/dist/runtime/insertBySelector.js
+var insertBySelector = __webpack_require__(7659);
+var insertBySelector_default = /*#__PURE__*/__webpack_require__.n(insertBySelector);
+// EXTERNAL MODULE: ./node_modules/style-loader/dist/runtime/setAttributesWithoutAttributes.js
+var setAttributesWithoutAttributes = __webpack_require__(5056);
+var setAttributesWithoutAttributes_default = /*#__PURE__*/__webpack_require__.n(setAttributesWithoutAttributes);
+// EXTERNAL MODULE: ./node_modules/style-loader/dist/runtime/insertStyleElement.js
+var insertStyleElement = __webpack_require__(540);
+var insertStyleElement_default = /*#__PURE__*/__webpack_require__.n(insertStyleElement);
+// EXTERNAL MODULE: ./node_modules/style-loader/dist/runtime/styleTagTransform.js
+var styleTagTransform = __webpack_require__(1113);
+var styleTagTransform_default = /*#__PURE__*/__webpack_require__.n(styleTagTransform);
+// EXTERNAL MODULE: ./node_modules/css-loader/dist/cjs.js!./node_modules/postcss-loader/dist/cjs.js!./node_modules/sass-loader/dist/cjs.js!./src/components/Ads/AdComponent.scss
+var AdComponent = __webpack_require__(8577);
+;// ./src/components/Ads/AdComponent.scss
+
+      
+      
+      
+      
+      
+      
+      
+      
+      
+
+var options = {};
+
+options.styleTagTransform = (styleTagTransform_default());
+options.setAttributes = (setAttributesWithoutAttributes_default());
+options.insert = insertBySelector_default().bind(null, "head");
+options.domAPI = (styleDomAPI_default());
+options.insertStyleElement = (insertStyleElement_default());
+
+var update = injectStylesIntoStyleTag_default()(AdComponent/* default */.A, options);
+
+
+
+
+       /* harmony default export */ const Ads_AdComponent = (AdComponent/* default */.A && AdComponent/* default */.A.locals ? AdComponent/* default */.A.locals : undefined);
+
+;// ./src/components/Ads/AdComponent.tsx
+
+
+
+const AdComponent_AdComponent = ({ config, className = '', style = {}, onAdLoad, onAdError }) => {
+    const adRef = (0,react.useRef)(null);
+    (0,react.useEffect)(() => {
+        if (config.type === 'adsense' && window.adsbygoogle) {
+            try {
+                (window.adsbygoogle = window.adsbygoogle || []).push({});
+                onAdLoad?.();
+            }
+            catch (error) {
+                console.error('AdSense error:', error);
+                onAdError?.(error);
+            }
+        }
+    }, [config, onAdLoad, onAdError]);
+    const getAdSize = () => {
+        switch (config.size) {
+            case 'banner':
+                return { width: 728, height: 90 };
+            case 'medium-rectangle':
+                return { width: 300, height: 250 };
+            case 'large-rectangle':
+                return { width: 336, height: 280 };
+            case 'leaderboard':
+                return { width: 728, height: 90 };
+            case 'skyscraper':
+                return { width: 160, height: 600 };
+            case 'responsive':
+                return { width: 'auto', height: 'auto' };
+            default:
+                return { width: 300, height: 250 };
+        }
+    };
+    const renderAdSense = () => {
+        const { width, height } = getAdSize();
+        return ((0,jsx_runtime.jsx)("ins", { className: "adsbygoogle", style: {
+                display: 'block',
+                width: typeof width === 'number' ? `${width}px` : width,
+                height: typeof height === 'number' ? `${height}px` : height,
+            }, "data-ad-client": config.client, "data-ad-slot": config.slot, "data-ad-format": "auto", "data-full-width-responsive": config.responsive ? "true" : "false" }));
+    };
+    const renderDisplayAd = () => {
+        return ((0,jsx_runtime.jsxs)("div", { className: "ad-display", children: [(0,jsx_runtime.jsx)("div", { className: "ad-label", children: "Advertisement" }), (0,jsx_runtime.jsx)("div", { className: "ad-content", children: (0,jsx_runtime.jsx)("div", { className: "ad-placeholder", children: (0,jsx_runtime.jsx)("div", { className: "ad-placeholder-text", children: "Ad Space" }) }) })] }));
+    };
+    const renderSponsoredContent = () => {
+        return ((0,jsx_runtime.jsxs)("div", { className: "ad-sponsored", children: [(0,jsx_runtime.jsx)("div", { className: "sponsored-label", children: "Sponsored" }), (0,jsx_runtime.jsx)("div", { className: "sponsored-content", children: (0,jsx_runtime.jsx)("div", { className: "sponsored-placeholder", children: (0,jsx_runtime.jsx)("div", { className: "sponsored-placeholder-text", children: "Sponsored Content" }) }) })] }));
+    };
+    const renderAd = () => {
+        switch (config.type) {
+            case 'adsense':
+                return renderAdSense();
+            case 'display':
+                return renderDisplayAd();
+            case 'sponsored':
+                return renderSponsoredContent();
+            default:
+                return renderDisplayAd();
+        }
+    };
+    return ((0,jsx_runtime.jsx)("div", { ref: adRef, className: `ad-component ad-${config.position} ${className}`, style: style, "data-ad-id": config.id, children: renderAd() }));
+};
+/* harmony default export */ const components_Ads_AdComponent = (AdComponent_AdComponent);
+
+
+/***/ }),
+
 /***/ 2096:
 /***/ ((module, __webpack_exports__, __webpack_require__) => {
 
@@ -22,6 +151,28 @@ ___CSS_LOADER_EXPORT___.push([module.id, `.d6WLOcTu8Dn56sG4Ft2_{font-family:Aria
 var app = (/* unused pure expression or super */ null && (`d6WLOcTu8Dn56sG4Ft2_`));
 var appHeader = (/* unused pure expression or super */ null && (`GvY0i97YLza1Rs735ams`));
 var appLink = (/* unused pure expression or super */ null && (`guSK97Mqlyv2aKS13j3b`));
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ }),
+
+/***/ 2233:
+/***/ ((module, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   A: () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(1354);
+/* harmony import */ var _node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(6314);
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1__);
+// Imports
+
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default()((_node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default()));
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, `.ad-manager{width:100%}.ad-manager .ad-placements-header{position:sticky;top:0;z-index:100;background:#fff;border-bottom:1px solid #e9ecef;padding:.5rem 0}.ad-manager .ad-placements-header .ad-placement{margin:0}.ad-manager .ad-placements-content{margin:2rem 0}.ad-manager .ad-placements-content .ad-placement{margin:1.5rem 0}.ad-manager .ad-placements-sidebar .ad-placement{margin:1rem 0}.ad-manager .ad-placements-sidebar .ad-placement:first-child{margin-top:0}.ad-manager .ad-placements-inline .ad-placement{margin:1rem 0;display:inline-block;width:100%}.ad-manager .ad-placements-footer{margin-top:2rem;padding-top:1rem;border-top:1px solid #e9ecef}.ad-manager .ad-placements-footer .ad-placement{margin:1rem 0}.ad-manager .ad-placements-footer .ad-placement:last-child{margin-bottom:0}@media(max-width: 768px){.ad-manager .ad-placements-header{padding:.25rem 0}.ad-manager .ad-placements-content{margin:1rem 0}.ad-manager .ad-placements-content .ad-placement{margin:1rem 0}.ad-manager .ad-placements-sidebar .ad-placement{margin:.5rem 0}.ad-manager .ad-placements-inline .ad-placement{margin:.5rem 0}.ad-manager .ad-placements-footer{margin-top:1rem;padding-top:.5rem}.ad-manager .ad-placements-footer .ad-placement{margin:.5rem 0}}@media(prefers-color-scheme: dark){.ad-manager .ad-placements-header{background:#1a1a1a;border-bottom-color:#4a5568}.ad-manager .ad-placements-footer{border-top-color:#4a5568}}`, "",{"version":3,"sources":["webpack://./src/components/Ads/AdManager.scss"],"names":[],"mappings":"AAAA,YACE,UAAA,CAGA,kCACE,eAAA,CACA,KAAA,CACA,WAAA,CACA,eAAA,CACA,+BAAA,CACA,eAAA,CAEA,gDACE,QAAA,CAKJ,mCACE,aAAA,CAEA,iDACE,eAAA,CAMF,iDACE,aAAA,CAEA,6DACE,YAAA,CAOJ,gDACE,aAAA,CACA,oBAAA,CACA,UAAA,CAKJ,kCACE,eAAA,CACA,gBAAA,CACA,4BAAA,CAEA,gDACE,aAAA,CAEA,2DACE,eAAA,CAMN,yBACE,kCACE,gBAAA,CAGF,mCACE,aAAA,CAEA,iDACE,aAAA,CAKF,iDACE,cAAA,CAKF,gDACE,cAAA,CAIJ,kCACE,eAAA,CACA,iBAAA,CAEA,gDACE,cAAA,CAAA,CAMN,mCACE,kCACE,kBAAA,CACA,2BAAA,CAGF,kCACE,wBAAA,CAAA","sourcesContent":[".ad-manager {\n  width: 100%;\n  \n  // Header placements\n  .ad-placements-header {\n    position: sticky;\n    top: 0;\n    z-index: 100;\n    background: #ffffff;\n    border-bottom: 1px solid #e9ecef;\n    padding: 0.5rem 0;\n    \n    .ad-placement {\n      margin: 0;\n    }\n  }\n\n  // Content placements\n  .ad-placements-content {\n    margin: 2rem 0;\n    \n    .ad-placement {\n      margin: 1.5rem 0;\n    }\n  }\n\n  // Sidebar placements\n  .ad-placements-sidebar {\n    .ad-placement {\n      margin: 1rem 0;\n      \n      &:first-child {\n        margin-top: 0;\n      }\n    }\n  }\n\n  // Inline placements\n  .ad-placements-inline {\n    .ad-placement {\n      margin: 1rem 0;\n      display: inline-block;\n      width: 100%;\n    }\n  }\n\n  // Footer placements\n  .ad-placements-footer {\n    margin-top: 2rem;\n    padding-top: 1rem;\n    border-top: 1px solid #e9ecef;\n    \n    .ad-placement {\n      margin: 1rem 0;\n      \n      &:last-child {\n        margin-bottom: 0;\n      }\n    }\n  }\n\n  // Responsive design\n  @media (max-width: 768px) {\n    .ad-placements-header {\n      padding: 0.25rem 0;\n    }\n\n    .ad-placements-content {\n      margin: 1rem 0;\n      \n      .ad-placement {\n        margin: 1rem 0;\n      }\n    }\n\n    .ad-placements-sidebar {\n      .ad-placement {\n        margin: 0.5rem 0;\n      }\n    }\n\n    .ad-placements-inline {\n      .ad-placement {\n        margin: 0.5rem 0;\n      }\n    }\n\n    .ad-placements-footer {\n      margin-top: 1rem;\n      padding-top: 0.5rem;\n      \n      .ad-placement {\n        margin: 0.5rem 0;\n      }\n    }\n  }\n\n  // Dark mode support\n  @media (prefers-color-scheme: dark) {\n    .ad-placements-header {\n      background: #1a1a1a;\n      border-bottom-color: #4a5568;\n    }\n\n    .ad-placements-footer {\n      border-top-color: #4a5568;\n    }\n  }\n} "],"sourceRoot":""}]);
+// Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
 
@@ -881,6 +1032,470 @@ const ThemeProvider = ({ children, }) => {
     return ((0,jsx_runtime.jsx)(ThemeContext.Provider, { value: { theme: theme }, children: children }));
 };
 /* harmony default export */ const theme_ThemeProvider = ((/* unused pure expression or super */ null && (ThemeProvider)));
+
+
+/***/ }),
+
+/***/ 6634:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+
+// EXPORTS
+__webpack_require__.d(__webpack_exports__, {
+  PX: () => (/* binding */ AdProvider),
+  gA: () => (/* binding */ useAds)
+});
+
+// UNUSED EXPORTS: default
+
+// EXTERNAL MODULE: ./node_modules/react/jsx-runtime.js
+var jsx_runtime = __webpack_require__(4848);
+// EXTERNAL MODULE: ./node_modules/react/index.js
+var react = __webpack_require__(6540);
+// EXTERNAL MODULE: ./node_modules/react-router/dist/index.js
+var dist = __webpack_require__(7767);
+;// ./src/services/ads/adConfig.ts
+// Google AdSense Configuration
+const ADSENSE_CONFIG = {
+    client: "MISSING_ENV_VAR".REACT_APP_ADSENSE_CLIENT_ID || 'ca-pub-XXXXXXXXXXXXXXXX', // Replace with your AdSense client ID
+    enabled: "MISSING_ENV_VAR".REACT_APP_ADSENSE_ENABLED === 'true',
+    testMode: "production" === 'development',
+};
+// Default ad configurations
+const DEFAULT_AD_CONFIGS = {
+    headerBanner: {
+        id: 'header-banner',
+        type: 'adsense',
+        position: 'header',
+        size: 'banner',
+        client: ADSENSE_CONFIG.client,
+        slot: '1234567890', // Replace with your ad slot ID
+        responsive: true,
+    },
+    sidebarRectangle: {
+        id: 'sidebar-rectangle',
+        type: 'adsense',
+        position: 'sidebar',
+        size: 'medium-rectangle',
+        client: ADSENSE_CONFIG.client,
+        slot: '1234567891', // Replace with your ad slot ID
+        responsive: true,
+    },
+    contentInline: {
+        id: 'content-inline',
+        type: 'adsense',
+        position: 'inline',
+        size: 'responsive',
+        client: ADSENSE_CONFIG.client,
+        slot: '1234567892', // Replace with your ad slot ID
+        responsive: true,
+    },
+    footerBanner: {
+        id: 'footer-banner',
+        type: 'adsense',
+        position: 'footer',
+        size: 'banner',
+        client: ADSENSE_CONFIG.client,
+        slot: '1234567893', // Replace with your ad slot ID
+        responsive: true,
+    },
+    // Display ads (fallback when AdSense is not available)
+    displayHeader: {
+        id: 'display-header',
+        type: 'display',
+        position: 'header',
+        size: 'banner',
+    },
+    displaySidebar: {
+        id: 'display-sidebar',
+        type: 'display',
+        position: 'sidebar',
+        size: 'medium-rectangle',
+    },
+    // Sponsored content
+    sponsoredContent: {
+        id: 'sponsored-content',
+        type: 'sponsored',
+        position: 'content',
+        size: 'responsive',
+    },
+    // Resume download popup ad
+    resumeDownloadPopup: {
+        id: 'resume-download-popup',
+        type: 'adsense',
+        position: 'content',
+        size: 'large-rectangle',
+        client: ADSENSE_CONFIG.client,
+        slot: 'resume-download-slot', // Replace with your ad slot ID
+        responsive: true,
+    },
+};
+// Ad placement strategies
+const AD_PLACEMENTS = [
+    // Header banner - highest priority
+    {
+        id: 'header-banner',
+        position: 'header',
+        config: DEFAULT_AD_CONFIGS.headerBanner,
+        enabled: ADSENSE_CONFIG.enabled,
+        priority: 100,
+    },
+    // Sidebar rectangle
+    {
+        id: 'sidebar-rectangle',
+        position: 'sidebar',
+        config: DEFAULT_AD_CONFIGS.sidebarRectangle,
+        enabled: ADSENSE_CONFIG.enabled,
+        priority: 80,
+    },
+    // Content inline ads
+    {
+        id: 'content-inline-1',
+        position: 'inline',
+        config: DEFAULT_AD_CONFIGS.contentInline,
+        enabled: ADSENSE_CONFIG.enabled,
+        priority: 60,
+    },
+    {
+        id: 'content-inline-2',
+        position: 'inline',
+        config: DEFAULT_AD_CONFIGS.contentInline,
+        enabled: ADSENSE_CONFIG.enabled,
+        priority: 40,
+    },
+    // Footer banner
+    {
+        id: 'footer-banner',
+        position: 'footer',
+        config: DEFAULT_AD_CONFIGS.footerBanner,
+        enabled: ADSENSE_CONFIG.enabled,
+        priority: 20,
+    },
+    // Fallback display ads
+    {
+        id: 'display-header-fallback',
+        position: 'header',
+        config: DEFAULT_AD_CONFIGS.displayHeader,
+        enabled: !ADSENSE_CONFIG.enabled,
+        priority: 90,
+    },
+    {
+        id: 'display-sidebar-fallback',
+        position: 'sidebar',
+        config: DEFAULT_AD_CONFIGS.displaySidebar,
+        enabled: !ADSENSE_CONFIG.enabled,
+        priority: 70,
+    },
+    // Sponsored content
+    {
+        id: 'sponsored-content-1',
+        position: 'content',
+        config: DEFAULT_AD_CONFIGS.sponsoredContent,
+        enabled: true, // Always enabled as fallback
+        priority: 30,
+    },
+    // Resume download popup ad
+    {
+        id: 'resume-download-popup',
+        position: 'content',
+        config: DEFAULT_AD_CONFIGS.resumeDownloadPopup,
+        enabled: ADSENSE_CONFIG.enabled,
+        priority: 50,
+    },
+];
+// Page-specific ad configurations
+const PAGE_AD_CONFIGS = {
+    home: [
+        {
+            id: 'home-hero-banner',
+            position: 'header',
+            config: DEFAULT_AD_CONFIGS.headerBanner,
+            enabled: ADSENSE_CONFIG.enabled,
+            priority: 100,
+        },
+        {
+            id: 'home-sidebar',
+            position: 'sidebar',
+            config: DEFAULT_AD_CONFIGS.sidebarRectangle,
+            enabled: ADSENSE_CONFIG.enabled,
+            priority: 80,
+        },
+    ],
+    projects: [
+        {
+            id: 'projects-header',
+            position: 'header',
+            config: DEFAULT_AD_CONFIGS.headerBanner,
+            enabled: ADSENSE_CONFIG.enabled,
+            priority: 100,
+        },
+        {
+            id: 'projects-sidebar',
+            position: 'sidebar',
+            config: DEFAULT_AD_CONFIGS.sidebarRectangle,
+            enabled: ADSENSE_CONFIG.enabled,
+            priority: 80,
+        },
+        {
+            id: 'projects-content-1',
+            position: 'inline',
+            config: DEFAULT_AD_CONFIGS.contentInline,
+            enabled: ADSENSE_CONFIG.enabled,
+            priority: 60,
+        },
+    ],
+    crew: [
+        {
+            id: 'crew-header',
+            position: 'header',
+            config: DEFAULT_AD_CONFIGS.headerBanner,
+            enabled: ADSENSE_CONFIG.enabled,
+            priority: 100,
+        },
+        {
+            id: 'crew-sidebar',
+            position: 'sidebar',
+            config: DEFAULT_AD_CONFIGS.sidebarRectangle,
+            enabled: ADSENSE_CONFIG.enabled,
+            priority: 80,
+        },
+    ],
+    social: [
+        {
+            id: 'social-header',
+            position: 'header',
+            config: DEFAULT_AD_CONFIGS.headerBanner,
+            enabled: ADSENSE_CONFIG.enabled,
+            priority: 100,
+        },
+        {
+            id: 'social-content-1',
+            position: 'inline',
+            config: DEFAULT_AD_CONFIGS.contentInline,
+            enabled: ADSENSE_CONFIG.enabled,
+            priority: 70,
+        },
+        {
+            id: 'social-content-2',
+            position: 'inline',
+            config: DEFAULT_AD_CONFIGS.contentInline,
+            enabled: ADSENSE_CONFIG.enabled,
+            priority: 50,
+        },
+    ],
+};
+// Ad loading and error handling
+const AD_LOADING_CONFIG = {
+    timeout: 5000, // 5 seconds timeout
+    retryAttempts: 3,
+    retryDelay: 1000, // 1 second between retries
+    enableAnalytics: true,
+    trackPerformance: true,
+};
+
+// EXTERNAL MODULE: ./src/services/ads/adAnalytics.ts
+var adAnalytics = __webpack_require__(8847);
+;// ./src/components/Ads/AdProvider.tsx
+
+
+
+
+
+const AdContext = (0,react.createContext)(undefined);
+const AdProvider = ({ children }) => {
+    const [placements, setPlacements] = (0,react.useState)(AD_PLACEMENTS);
+    const [isAdEnabled, setIsAdEnabled] = (0,react.useState)(ADSENSE_CONFIG.enabled);
+    const location = (0,dist/* useLocation */.zy)();
+    (0,react.useEffect)(() => {
+        // Load ad preferences from localStorage
+        const savedAdEnabled = localStorage.getItem('ads_enabled');
+        if (savedAdEnabled !== null) {
+            setIsAdEnabled(savedAdEnabled === 'true');
+        }
+        // Track page view for analytics
+        adAnalytics/* adAnalytics */.A.trackEvent({
+            type: 'view',
+            placementId: 'page-view',
+            timestamp: new Date(),
+            metadata: {
+                path: location.pathname,
+                page: getCurrentPageName(),
+            },
+        });
+    }, [location]);
+    const toggleAds = (enabled) => {
+        setIsAdEnabled(enabled);
+        localStorage.setItem('ads_enabled', enabled.toString());
+        // Update placements based on ad enabled state
+        const updatedPlacements = AD_PLACEMENTS.map(placement => ({
+            ...placement,
+            enabled: placement.config.type === 'adsense' ? enabled : placement.enabled,
+        }));
+        setPlacements(updatedPlacements);
+    };
+    const getCurrentPageName = () => {
+        const path = location.pathname;
+        if (path === '/')
+            return 'home';
+        if (path.startsWith('/projects'))
+            return 'projects';
+        if (path.startsWith('/crew'))
+            return 'crew';
+        if (path.startsWith('/social'))
+            return 'social';
+        if (path.startsWith('/analytics'))
+            return 'analytics';
+        return 'other';
+    };
+    const getPlacementsForPage = (pageName) => {
+        const pageConfig = PAGE_AD_CONFIGS[pageName];
+        if (pageConfig) {
+            return pageConfig.filter(placement => placement.enabled && (placement.config.type !== 'adsense' || isAdEnabled));
+        }
+        // Return default placements if no page-specific config
+        return placements.filter(placement => placement.enabled && (placement.config.type !== 'adsense' || isAdEnabled));
+    };
+    const trackAdEvent = (placementId, eventType) => {
+        adAnalytics/* adAnalytics */.A.trackEvent({
+            type: eventType,
+            placementId,
+            timestamp: new Date(),
+            metadata: {
+                page: getCurrentPageName(),
+                path: location.pathname,
+            },
+        });
+    };
+    const value = {
+        placements,
+        isAdEnabled,
+        toggleAds,
+        getPlacementsForPage,
+        trackAdEvent,
+    };
+    return ((0,jsx_runtime.jsx)(AdContext.Provider, { value: value, children: children }));
+};
+const useAds = () => {
+    const context = (0,react.useContext)(AdContext);
+    if (context === undefined) {
+        throw new Error('useAds must be used within an AdProvider');
+    }
+    return context;
+};
+/* harmony default export */ const Ads_AdProvider = ((/* unused pure expression or super */ null && (AdProvider)));
+
+
+/***/ }),
+
+/***/ 7286:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+
+// EXPORTS
+__webpack_require__.d(__webpack_exports__, {
+  A: () => (/* binding */ components_Ads_AdManager)
+});
+
+// EXTERNAL MODULE: ./node_modules/react/jsx-runtime.js
+var jsx_runtime = __webpack_require__(4848);
+// EXTERNAL MODULE: ./node_modules/react/index.js
+var react = __webpack_require__(6540);
+// EXTERNAL MODULE: ./src/components/Ads/AdComponent.tsx + 1 modules
+var AdComponent = __webpack_require__(592);
+// EXTERNAL MODULE: ./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js
+var injectStylesIntoStyleTag = __webpack_require__(5072);
+var injectStylesIntoStyleTag_default = /*#__PURE__*/__webpack_require__.n(injectStylesIntoStyleTag);
+// EXTERNAL MODULE: ./node_modules/style-loader/dist/runtime/styleDomAPI.js
+var styleDomAPI = __webpack_require__(7825);
+var styleDomAPI_default = /*#__PURE__*/__webpack_require__.n(styleDomAPI);
+// EXTERNAL MODULE: ./node_modules/style-loader/dist/runtime/insertBySelector.js
+var insertBySelector = __webpack_require__(7659);
+var insertBySelector_default = /*#__PURE__*/__webpack_require__.n(insertBySelector);
+// EXTERNAL MODULE: ./node_modules/style-loader/dist/runtime/setAttributesWithoutAttributes.js
+var setAttributesWithoutAttributes = __webpack_require__(5056);
+var setAttributesWithoutAttributes_default = /*#__PURE__*/__webpack_require__.n(setAttributesWithoutAttributes);
+// EXTERNAL MODULE: ./node_modules/style-loader/dist/runtime/insertStyleElement.js
+var insertStyleElement = __webpack_require__(540);
+var insertStyleElement_default = /*#__PURE__*/__webpack_require__.n(insertStyleElement);
+// EXTERNAL MODULE: ./node_modules/style-loader/dist/runtime/styleTagTransform.js
+var styleTagTransform = __webpack_require__(1113);
+var styleTagTransform_default = /*#__PURE__*/__webpack_require__.n(styleTagTransform);
+// EXTERNAL MODULE: ./node_modules/css-loader/dist/cjs.js!./node_modules/postcss-loader/dist/cjs.js!./node_modules/sass-loader/dist/cjs.js!./src/components/Ads/AdManager.scss
+var AdManager = __webpack_require__(2233);
+;// ./src/components/Ads/AdManager.scss
+
+      
+      
+      
+      
+      
+      
+      
+      
+      
+
+var options = {};
+
+options.styleTagTransform = (styleTagTransform_default());
+options.setAttributes = (setAttributesWithoutAttributes_default());
+options.insert = insertBySelector_default().bind(null, "head");
+options.domAPI = (styleDomAPI_default());
+options.insertStyleElement = (insertStyleElement_default());
+
+var update = injectStylesIntoStyleTag_default()(AdManager/* default */.A, options);
+
+
+
+
+       /* harmony default export */ const Ads_AdManager = (AdManager/* default */.A && AdManager/* default */.A.locals ? AdManager/* default */.A.locals : undefined);
+
+;// ./src/components/Ads/AdManager.tsx
+
+
+
+
+const AdManager_AdManager = ({ placements, className = '', onAdLoad, onAdError }) => {
+    const [activePlacements, setActivePlacements] = (0,react.useState)([]);
+    const [adStats, setAdStats] = (0,react.useState)({});
+    (0,react.useEffect)(() => {
+        // Filter enabled placements and sort by priority
+        const enabled = placements
+            .filter(placement => placement.enabled)
+            .sort((a, b) => b.priority - a.priority);
+        setActivePlacements(enabled);
+    }, [placements]);
+    const handleAdLoad = (placementId) => {
+        setAdStats(prev => ({
+            ...prev,
+            [placementId]: {
+                ...prev[placementId],
+                loads: (prev[placementId]?.loads || 0) + 1
+            }
+        }));
+        onAdLoad?.(placementId);
+    };
+    const handleAdError = (placementId, error) => {
+        setAdStats(prev => ({
+            ...prev,
+            [placementId]: {
+                ...prev[placementId],
+                errors: (prev[placementId]?.errors || 0) + 1
+            }
+        }));
+        onAdError?.(placementId, error);
+    };
+    const renderPlacement = (placement) => {
+        return ((0,jsx_runtime.jsx)("div", { className: "ad-placement", children: (0,jsx_runtime.jsx)(AdComponent/* default */.A, { config: placement.config, onAdLoad: () => handleAdLoad(placement.id), onAdError: (error) => handleAdError(placement.id, error) }) }, placement.id));
+    };
+    const renderPlacementsByPosition = (position) => {
+        const positionPlacements = activePlacements.filter(placement => placement.position === position);
+        if (positionPlacements.length === 0)
+            return null;
+        return ((0,jsx_runtime.jsx)("div", { className: `ad-placements-${position}`, children: positionPlacements.map(renderPlacement) }));
+    };
+    return ((0,jsx_runtime.jsxs)("div", { className: `ad-manager ${className}`, children: [renderPlacementsByPosition('header'), renderPlacementsByPosition('content'), renderPlacementsByPosition('sidebar'), renderPlacementsByPosition('inline'), renderPlacementsByPosition('footer')] }));
+};
+/* harmony default export */ const components_Ads_AdManager = (AdManager_AdManager);
 
 
 /***/ }),
@@ -5818,6 +6433,254 @@ select::-webkit-scrollbar-thumb:hover {
 
 /***/ }),
 
+/***/ 8577:
+/***/ ((module, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   A: () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(1354);
+/* harmony import */ var _node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(6314);
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1__);
+// Imports
+
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default()((_node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default()));
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, `.ad-component{position:relative;margin:1rem 0;border-radius:8px;overflow:hidden;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.1);transition:all .2s ease}.ad-component:hover{box-shadow:0 4px 12px rgba(0,0,0,.15)}.ad-component.ad-header{margin:0;border-radius:0;box-shadow:0 2px 4px rgba(0,0,0,.1)}.ad-component.ad-sidebar{margin:.5rem 0;border-radius:6px}.ad-component.ad-footer{margin:2rem 0 0 0;border-radius:8px 8px 0 0}.ad-component.ad-content{margin:1.5rem 0;border-radius:8px}.ad-component.ad-inline{margin:.5rem 0;border-radius:6px}.ad-component .adsbygoogle{display:block;text-align:center;background:#f8f9fa;border-radius:6px;min-height:90px}.ad-component .adsbygoogle[data-ad-format=auto]{width:100%;height:auto}.ad-component .ad-display{padding:1rem;background:linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);border:1px solid #e9ecef;border-radius:8px}.ad-component .ad-display .ad-label{font-size:.75rem;font-weight:500;color:#6c757d;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.5rem;text-align:center}.ad-component .ad-display .ad-content{display:flex;align-items:center;justify-content:center;min-height:100px}.ad-component .ad-display .ad-placeholder{display:flex;align-items:center;justify-content:center;width:100%;height:100px;background:#fff;border:2px dashed #dee2e6;border-radius:6px;transition:all .2s ease}.ad-component .ad-display .ad-placeholder:hover{border-color:#adb5bd;background:#f8f9fa}.ad-component .ad-display .ad-placeholder .ad-placeholder-text{color:#6c757d;font-size:.875rem;font-weight:500}.ad-component .ad-sponsored{padding:1rem;background:linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);border:1px solid #fed7d7;border-radius:8px}.ad-component .ad-sponsored .sponsored-label{font-size:.75rem;font-weight:600;color:#e53e3e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.5rem;text-align:center}.ad-component .ad-sponsored .sponsored-content{display:flex;align-items:center;justify-content:center;min-height:100px}.ad-component .ad-sponsored .sponsored-placeholder{display:flex;align-items:center;justify-content:center;width:100%;height:100px;background:#fff;border:2px dashed #fed7d7;border-radius:6px;transition:all .2s ease}.ad-component .ad-sponsored .sponsored-placeholder:hover{border-color:#fc8181;background:#fff5f5}.ad-component .ad-sponsored .sponsored-placeholder .sponsored-placeholder-text{color:#e53e3e;font-size:.875rem;font-weight:500}@media(max-width: 768px){.ad-component{margin:.5rem 0;border-radius:6px}.ad-component .adsbygoogle{min-height:60px}.ad-component .ad-display,.ad-component .ad-sponsored{padding:.75rem}.ad-component .ad-display .ad-content,.ad-component .ad-display .sponsored-content,.ad-component .ad-sponsored .ad-content,.ad-component .ad-sponsored .sponsored-content{min-height:80px}.ad-component .ad-display .ad-placeholder,.ad-component .ad-display .sponsored-placeholder,.ad-component .ad-sponsored .ad-placeholder,.ad-component .ad-sponsored .sponsored-placeholder{height:80px}}@media(prefers-color-scheme: dark){.ad-component{background:#1a1a1a;box-shadow:0 1px 3px rgba(0,0,0,.3)}.ad-component .ad-display{background:linear-gradient(135deg, #2d3748 0%, #4a5568 100%);border-color:#4a5568}.ad-component .ad-display .ad-placeholder{background:#2d3748;border-color:#4a5568}.ad-component .ad-display .ad-placeholder:hover{border-color:#718096;background:#4a5568}.ad-component .ad-display .ad-placeholder .ad-placeholder-text{color:#a0aec0}.ad-component .ad-sponsored{background:linear-gradient(135deg, #2d1b1b 0%, #4a2c2c 100%);border-color:#4a2c2c}.ad-component .ad-sponsored .sponsored-placeholder{background:#2d1b1b;border-color:#4a2c2c}.ad-component .ad-sponsored .sponsored-placeholder:hover{border-color:#fc8181;background:#4a2c2c}}.ad-component.loading .ad-display .ad-placeholder,.ad-component.loading .ad-display .sponsored-placeholder,.ad-component.loading .ad-sponsored .ad-placeholder,.ad-component.loading .ad-sponsored .sponsored-placeholder{animation:pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}`, "",{"version":3,"sources":["webpack://./src/components/Ads/AdComponent.scss"],"names":[],"mappings":"AAAA,cACE,iBAAA,CACA,aAAA,CACA,iBAAA,CACA,eAAA,CACA,eAAA,CACA,mCAAA,CACA,uBAAA,CAEA,oBACE,qCAAA,CAIF,wBACE,QAAA,CACA,eAAA,CACA,mCAAA,CAGF,yBACE,cAAA,CACA,iBAAA,CAGF,wBACE,iBAAA,CACA,yBAAA,CAGF,yBACE,eAAA,CACA,iBAAA,CAGF,wBACE,cAAA,CACA,iBAAA,CAIF,2BACE,aAAA,CACA,iBAAA,CACA,kBAAA,CACA,iBAAA,CACA,eAAA,CAEA,gDACE,UAAA,CACA,WAAA,CAKJ,0BACE,YAAA,CACA,4DAAA,CACA,wBAAA,CACA,iBAAA,CAEA,oCACE,gBAAA,CACA,eAAA,CACA,aAAA,CACA,wBAAA,CACA,mBAAA,CACA,mBAAA,CACA,iBAAA,CAGF,sCACE,YAAA,CACA,kBAAA,CACA,sBAAA,CACA,gBAAA,CAGF,0CACE,YAAA,CACA,kBAAA,CACA,sBAAA,CACA,UAAA,CACA,YAAA,CACA,eAAA,CACA,yBAAA,CACA,iBAAA,CACA,uBAAA,CAEA,gDACE,oBAAA,CACA,kBAAA,CAGF,+DACE,aAAA,CACA,iBAAA,CACA,eAAA,CAMN,4BACE,YAAA,CACA,4DAAA,CACA,wBAAA,CACA,iBAAA,CAEA,6CACE,gBAAA,CACA,eAAA,CACA,aAAA,CACA,wBAAA,CACA,mBAAA,CACA,mBAAA,CACA,iBAAA,CAGF,+CACE,YAAA,CACA,kBAAA,CACA,sBAAA,CACA,gBAAA,CAGF,mDACE,YAAA,CACA,kBAAA,CACA,sBAAA,CACA,UAAA,CACA,YAAA,CACA,eAAA,CACA,yBAAA,CACA,iBAAA,CACA,uBAAA,CAEA,yDACE,oBAAA,CACA,kBAAA,CAGF,+EACE,aAAA,CACA,iBAAA,CACA,eAAA,CAMN,yBAvJF,cAwJI,cAAA,CACA,iBAAA,CAEA,2BACE,eAAA,CAGF,sDAEE,cAAA,CAEA,0KAEE,eAAA,CAGF,0LAEE,WAAA,CAAA,CAMN,mCAhLF,cAiLI,kBAAA,CACA,mCAAA,CAEA,0BACE,4DAAA,CACA,oBAAA,CAEA,0CACE,kBAAA,CACA,oBAAA,CAEA,gDACE,oBAAA,CACA,kBAAA,CAGF,+DACE,aAAA,CAKN,4BACE,4DAAA,CACA,oBAAA,CAEA,mDACE,kBAAA,CACA,oBAAA,CAEA,yDACE,oBAAA,CACA,kBAAA,CAAA,CAWN,0NAEE,wDAAA,CAKN,iBACE,QACE,SAAA,CAEF,IACE,UAAA,CAAA","sourcesContent":[".ad-component {\n  position: relative;\n  margin: 1rem 0;\n  border-radius: 8px;\n  overflow: hidden;\n  background: #ffffff;\n  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);\n  transition: all 0.2s ease;\n\n  &:hover {\n    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);\n  }\n\n  // Position-specific styles\n  &.ad-header {\n    margin: 0;\n    border-radius: 0;\n    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);\n  }\n\n  &.ad-sidebar {\n    margin: 0.5rem 0;\n    border-radius: 6px;\n  }\n\n  &.ad-footer {\n    margin: 2rem 0 0 0;\n    border-radius: 8px 8px 0 0;\n  }\n\n  &.ad-content {\n    margin: 1.5rem 0;\n    border-radius: 8px;\n  }\n\n  &.ad-inline {\n    margin: 0.5rem 0;\n    border-radius: 6px;\n  }\n\n  // AdSense styles\n  .adsbygoogle {\n    display: block;\n    text-align: center;\n    background: #f8f9fa;\n    border-radius: 6px;\n    min-height: 90px;\n    \n    &[data-ad-format=\"auto\"] {\n      width: 100%;\n      height: auto;\n    }\n  }\n\n  // Display ad styles\n  .ad-display {\n    padding: 1rem;\n    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);\n    border: 1px solid #e9ecef;\n    border-radius: 8px;\n\n    .ad-label {\n      font-size: 0.75rem;\n      font-weight: 500;\n      color: #6c757d;\n      text-transform: uppercase;\n      letter-spacing: 0.5px;\n      margin-bottom: 0.5rem;\n      text-align: center;\n    }\n\n    .ad-content {\n      display: flex;\n      align-items: center;\n      justify-content: center;\n      min-height: 100px;\n    }\n\n    .ad-placeholder {\n      display: flex;\n      align-items: center;\n      justify-content: center;\n      width: 100%;\n      height: 100px;\n      background: #ffffff;\n      border: 2px dashed #dee2e6;\n      border-radius: 6px;\n      transition: all 0.2s ease;\n\n      &:hover {\n        border-color: #adb5bd;\n        background: #f8f9fa;\n      }\n\n      .ad-placeholder-text {\n        color: #6c757d;\n        font-size: 0.875rem;\n        font-weight: 500;\n      }\n    }\n  }\n\n  // Sponsored content styles\n  .ad-sponsored {\n    padding: 1rem;\n    background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);\n    border: 1px solid #fed7d7;\n    border-radius: 8px;\n\n    .sponsored-label {\n      font-size: 0.75rem;\n      font-weight: 600;\n      color: #e53e3e;\n      text-transform: uppercase;\n      letter-spacing: 0.5px;\n      margin-bottom: 0.5rem;\n      text-align: center;\n    }\n\n    .sponsored-content {\n      display: flex;\n      align-items: center;\n      justify-content: center;\n      min-height: 100px;\n    }\n\n    .sponsored-placeholder {\n      display: flex;\n      align-items: center;\n      justify-content: center;\n      width: 100%;\n      height: 100px;\n      background: #ffffff;\n      border: 2px dashed #fed7d7;\n      border-radius: 6px;\n      transition: all 0.2s ease;\n\n      &:hover {\n        border-color: #fc8181;\n        background: #fff5f5;\n      }\n\n      .sponsored-placeholder-text {\n        color: #e53e3e;\n        font-size: 0.875rem;\n        font-weight: 500;\n      }\n    }\n  }\n\n  // Responsive design\n  @media (max-width: 768px) {\n    margin: 0.5rem 0;\n    border-radius: 6px;\n\n    .adsbygoogle {\n      min-height: 60px;\n    }\n\n    .ad-display,\n    .ad-sponsored {\n      padding: 0.75rem;\n\n      .ad-content,\n      .sponsored-content {\n        min-height: 80px;\n      }\n\n      .ad-placeholder,\n      .sponsored-placeholder {\n        height: 80px;\n      }\n    }\n  }\n\n  // Dark mode support\n  @media (prefers-color-scheme: dark) {\n    background: #1a1a1a;\n    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);\n\n    .ad-display {\n      background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);\n      border-color: #4a5568;\n\n      .ad-placeholder {\n        background: #2d3748;\n        border-color: #4a5568;\n\n        &:hover {\n          border-color: #718096;\n          background: #4a5568;\n        }\n\n        .ad-placeholder-text {\n          color: #a0aec0;\n        }\n      }\n    }\n\n    .ad-sponsored {\n      background: linear-gradient(135deg, #2d1b1b 0%, #4a2c2c 100%);\n      border-color: #4a2c2c;\n\n      .sponsored-placeholder {\n        background: #2d1b1b;\n        border-color: #4a2c2c;\n\n        &:hover {\n          border-color: #fc8181;\n          background: #4a2c2c;\n        }\n      }\n    }\n  }\n}\n\n// Ad loading states\n.ad-component.loading {\n  .ad-display,\n  .ad-sponsored {\n    .ad-placeholder,\n    .sponsored-placeholder {\n      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;\n    }\n  }\n}\n\n@keyframes pulse {\n  0%, 100% {\n    opacity: 1;\n  }\n  50% {\n    opacity: 0.5;\n  }\n} "],"sourceRoot":""}]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ }),
+
+/***/ 8847:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   A: () => (/* binding */ adAnalytics)
+/* harmony export */ });
+class AdAnalytics {
+    constructor() {
+        this.events = [];
+        this.performanceMetrics = new Map();
+        this.revenueData = [];
+    }
+    // Track ad events
+    trackEvent(event) {
+        this.events.push(event);
+        // Send to analytics service if configured
+        if ("MISSING_ENV_VAR".REACT_APP_ANALYTICS_ENABLED === 'true') {
+            this.sendToAnalytics(event);
+        }
+        // Store locally for reporting
+        this.storeEvent(event);
+    }
+    // Track ad impression
+    trackImpression(placementId, metadata) {
+        this.trackEvent({
+            type: 'impression',
+            placementId,
+            timestamp: new Date(),
+            metadata,
+        });
+    }
+    // Track ad click
+    trackClick(placementId, metadata) {
+        this.trackEvent({
+            type: 'click',
+            placementId,
+            timestamp: new Date(),
+            metadata,
+        });
+    }
+    // Track ad view (viewability)
+    trackView(placementId, viewability, metadata) {
+        this.trackEvent({
+            type: 'view',
+            placementId,
+            timestamp: new Date(),
+            metadata: { viewability, ...metadata },
+        });
+    }
+    // Track ad load
+    trackLoad(placementId, loadTime, metadata) {
+        this.trackEvent({
+            type: 'load',
+            placementId,
+            timestamp: new Date(),
+            metadata: { loadTime, ...metadata },
+        });
+    }
+    // Track ad error
+    trackError(placementId, error, metadata) {
+        this.trackEvent({
+            type: 'error',
+            placementId,
+            timestamp: new Date(),
+            metadata: { error: error?.message || error, ...metadata },
+        });
+    }
+    // Update performance metrics
+    updatePerformanceMetrics(placementId, metrics) {
+        const existing = this.performanceMetrics.get(placementId) || {
+            placementId,
+            loadTime: 0,
+            viewability: 0,
+            clicks: 0,
+            impressions: 0,
+            revenue: 0,
+            timestamp: new Date(),
+        };
+        this.performanceMetrics.set(placementId, {
+            ...existing,
+            ...metrics,
+            timestamp: new Date(),
+        });
+    }
+    // Add revenue data
+    addRevenueData(data) {
+        this.revenueData.push(data);
+    }
+    // Get performance metrics for a placement
+    getPerformanceMetrics(placementId) {
+        return this.performanceMetrics.get(placementId);
+    }
+    // Get all performance metrics
+    getAllPerformanceMetrics() {
+        return Array.from(this.performanceMetrics.values());
+    }
+    // Get revenue report
+    getRevenueReport(period = 'daily') {
+        const now = new Date();
+        const filteredData = this.revenueData.filter(data => {
+            const dataDate = new Date(data.date);
+            switch (period) {
+                case 'daily':
+                    return dataDate.toDateString() === now.toDateString();
+                case 'weekly':
+                    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    return dataDate >= weekAgo;
+                case 'monthly':
+                    const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                    return dataDate >= monthAgo;
+                default:
+                    return true;
+            }
+        });
+        const totalRevenue = filteredData.reduce((sum, data) => sum + data.revenue, 0);
+        const totalImpressions = filteredData.reduce((sum, data) => sum + data.impressions, 0);
+        const totalClicks = filteredData.reduce((sum, data) => sum + data.clicks, 0);
+        const averageCTR = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;
+        const averageCPM = totalImpressions > 0 ? (totalRevenue / totalImpressions) * 1000 : 0;
+        return {
+            totalRevenue,
+            currency: filteredData[0]?.currency || 'USD',
+            period,
+            placements: filteredData,
+            summary: {
+                totalImpressions,
+                totalClicks,
+                averageCTR,
+                averageCPM,
+            },
+        };
+    }
+    // Get events for a specific placement
+    getEventsForPlacement(placementId) {
+        return this.events.filter(event => event.placementId === placementId);
+    }
+    // Get events by type
+    getEventsByType(type) {
+        return this.events.filter(event => event.type === type);
+    }
+    // Get recent events
+    getRecentEvents(limit = 100) {
+        return this.events
+            .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+            .slice(0, limit);
+    }
+    // Clear old events (keep last 1000 events)
+    clearOldEvents() {
+        if (this.events.length > 1000) {
+            this.events = this.events
+                .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+                .slice(0, 1000);
+        }
+    }
+    // Export analytics data
+    exportAnalyticsData() {
+        return {
+            events: this.events,
+            performanceMetrics: Array.from(this.performanceMetrics.values()),
+            revenueData: this.revenueData,
+            exportDate: new Date(),
+        };
+    }
+    // Send event to external analytics service
+    sendToAnalytics(event) {
+        // Implementation for sending to Google Analytics, Firebase Analytics, etc.
+        if (window.gtag) {
+            window.gtag('event', 'ad_' + event.type, {
+                placement_id: event.placementId,
+                event_timestamp: event.timestamp.toISOString(),
+                ...event.metadata,
+            });
+        }
+        // Send to Firebase Analytics if available
+        if (window.firebase?.analytics) {
+            window.firebase.analytics().logEvent('ad_' + event.type, {
+                placement_id: event.placementId,
+                ...event.metadata,
+            });
+        }
+    }
+    // Store event locally
+    storeEvent(event) {
+        // Store in localStorage for persistence
+        try {
+            const storedEvents = JSON.parse(localStorage.getItem('ad_analytics_events') || '[]');
+            storedEvents.push({
+                ...event,
+                timestamp: event.timestamp.toISOString(),
+            });
+            // Keep only last 1000 events
+            if (storedEvents.length > 1000) {
+                storedEvents.splice(0, storedEvents.length - 1000);
+            }
+            localStorage.setItem('ad_analytics_events', JSON.stringify(storedEvents));
+        }
+        catch (error) {
+            console.error('Failed to store ad analytics event:', error);
+        }
+    }
+    // Load stored events
+    loadStoredEvents() {
+        try {
+            const storedEvents = JSON.parse(localStorage.getItem('ad_analytics_events') || '[]');
+            this.events = storedEvents.map((event) => ({
+                ...event,
+                timestamp: new Date(event.timestamp),
+            }));
+        }
+        catch (error) {
+            console.error('Failed to load stored ad analytics events:', error);
+        }
+    }
+}
+// Create singleton instance
+const adAnalytics = new AdAnalytics();
+// Load stored events on initialization
+adAnalytics.loadStoredEvents();
+// Clean up old events periodically
+setInterval(() => {
+    adAnalytics.clearOldEvents();
+}, 60000); // Every minute 
+
+
+/***/ }),
+
 /***/ 9487:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
@@ -6003,6 +6866,10 @@ const PublicRoute = ({ children, redirectTo = '/' }) => {
 var react_hot_toast_dist = __webpack_require__(888);
 // EXTERNAL MODULE: ./src/theme/ThemeProvider.tsx + 1 modules
 var ThemeProvider = __webpack_require__(3049);
+// EXTERNAL MODULE: ./src/components/Ads/AdProvider.tsx + 1 modules
+var AdProvider = __webpack_require__(6634);
+// EXTERNAL MODULE: ./src/components/Ads/AdManager.tsx + 1 modules
+var AdManager = __webpack_require__(7286);
 // EXTERNAL MODULE: ./node_modules/@fontsource/inter/400.css
 var _400 = __webpack_require__(6019);
 // EXTERNAL MODULE: ./node_modules/@fontsource/inter/500.css
@@ -6763,11 +7630,14 @@ const Footer = () => {
 
 
 
+
+
 // Import components
 
 
-function App() {
+function AppContent() {
     const { currentUser, logout } = (0,AuthContext/* useAuth */.A)();
+    const { getPlacementsForPage, trackAdEvent } = (0,AdProvider/* useAds */.gA)();
     console.log('[App] Rendering with currentUser:', currentUser?.email);
     // Global error handler for unhandled promise rejections
     (0,react.useEffect)(() => {
@@ -6794,7 +7664,23 @@ function App() {
             console.error('Error signing out:', error);
         }
     };
-    return ((0,jsx_runtime.jsx)(ThemeProvider/* ThemeProvider */.NP, { children: (0,jsx_runtime.jsxs)("div", { className: "min-h-screen bg-background text-foreground", style: { fontFamily: 'Inter, sans-serif' }, children: [(0,jsx_runtime.jsxs)("div", { className: "min-h-screen bg-gray-50 text-gray-900", children: [(0,jsx_runtime.jsx)(components_Navigation, { authUser: currentUser, userSignOut: handleSignOut }), (0,jsx_runtime.jsx)("main", { className: "container mx-auto px-4 py-8 pt-24", children: (0,jsx_runtime.jsx)(react.Suspense, { fallback: (0,jsx_runtime.jsx)("div", { className: "flex items-center justify-center min-h-[400px]", children: (0,jsx_runtime.jsx)("div", { className: "animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" }) }), children: (0,jsx_runtime.jsx)(react_router_dist/* Outlet */.sv, {}) }) }), (0,jsx_runtime.jsx)(components_Footer, {})] }), (0,jsx_runtime.jsx)(react_hot_toast_dist/* Toaster */.l$, { position: "top-right", toastOptions: {
+    // Get current page name for ad placement
+    const getCurrentPageName = () => {
+        const path = window.location.pathname;
+        if (path === '/')
+            return 'home';
+        if (path.startsWith('/projects'))
+            return 'projects';
+        if (path.startsWith('/crew'))
+            return 'crew';
+        if (path.startsWith('/social'))
+            return 'social';
+        if (path.startsWith('/analytics'))
+            return 'analytics';
+        return 'other';
+    };
+    const currentPagePlacements = getPlacementsForPage(getCurrentPageName());
+    return ((0,jsx_runtime.jsx)(ThemeProvider/* ThemeProvider */.NP, { children: (0,jsx_runtime.jsxs)("div", { className: "min-h-screen bg-background text-foreground", style: { fontFamily: 'Inter, sans-serif' }, children: [(0,jsx_runtime.jsxs)("div", { className: "min-h-screen bg-gray-50 text-gray-900", children: [(0,jsx_runtime.jsx)(AdManager/* default */.A, { placements: currentPagePlacements.filter(p => p.position === 'header'), onAdLoad: (placementId) => trackAdEvent(placementId, 'load'), onAdError: (placementId, error) => trackAdEvent(placementId, 'error') }), (0,jsx_runtime.jsx)(components_Navigation, { authUser: currentUser, userSignOut: handleSignOut }), (0,jsx_runtime.jsx)("main", { className: "container mx-auto px-4 py-8 pt-24", children: (0,jsx_runtime.jsx)(react.Suspense, { fallback: (0,jsx_runtime.jsx)("div", { className: "flex items-center justify-center min-h-[400px]", children: (0,jsx_runtime.jsx)("div", { className: "animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" }) }), children: (0,jsx_runtime.jsx)(react_router_dist/* Outlet */.sv, {}) }) }), (0,jsx_runtime.jsx)(AdManager/* default */.A, { placements: currentPagePlacements.filter(p => p.position === 'footer'), onAdLoad: (placementId) => trackAdEvent(placementId, 'load'), onAdError: (placementId, error) => trackAdEvent(placementId, 'error') }), (0,jsx_runtime.jsx)(components_Footer, {})] }), (0,jsx_runtime.jsx)(react_hot_toast_dist/* Toaster */.l$, { position: "top-right", toastOptions: {
                         duration: 4000,
                         className: '!bg-white dark:!bg-gray-800 !text-gray-900 dark:!text-gray-100',
                         success: {
@@ -6810,6 +7696,9 @@ function App() {
                             },
                         },
                     } })] }) }));
+}
+function App() {
+    return ((0,jsx_runtime.jsx)(AdProvider/* AdProvider */.PX, { children: (0,jsx_runtime.jsx)(AppContent, {}) }));
 }
 /* harmony default export */ const src_App = (App);
 
@@ -6861,6 +7750,8 @@ const EmailIntegrationTestPage = react.lazy(() => __webpack_require__.e(/* impor
 const PrivacyPolicyPage = react.lazy(() => __webpack_require__.e(/* import() */ 2790).then(__webpack_require__.bind(__webpack_require__, 2790)));
 const TermsOfServicePage = react.lazy(() => __webpack_require__.e(/* import() */ 4387).then(__webpack_require__.bind(__webpack_require__, 4387)));
 const ContactPage = react.lazy(() => __webpack_require__.e(/* import() */ 2684).then(__webpack_require__.bind(__webpack_require__, 2684)));
+const AdMonetizationPage = react.lazy(() => __webpack_require__.e(/* import() */ 4922).then(__webpack_require__.bind(__webpack_require__, 4922)));
+const AdPlacementDemoPage = react.lazy(() => __webpack_require__.e(/* import() */ 4206).then(__webpack_require__.bind(__webpack_require__, 4206)));
 // Import the main App component that will handle the layout
 
 function createAppRouter() {
@@ -7022,6 +7913,14 @@ function createAppRouter() {
                 {
                     path: 'contact',
                     element: (0,jsx_runtime.jsx)(ContactPage, {})
+                },
+                {
+                    path: 'ads',
+                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(AdMonetizationPage, {}) }))
+                },
+                {
+                    path: 'ads/demo',
+                    element: ((0,jsx_runtime.jsx)(ProtectedRoute, { children: (0,jsx_runtime.jsx)(AdPlacementDemoPage, {}) }))
                 },
                 ...( false ? 0 : []),
             ],

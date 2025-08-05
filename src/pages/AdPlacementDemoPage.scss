@@ -1,0 +1,472 @@
+.ad-placement-demo-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+
+  .demo-header {
+    text-align: center;
+    margin-bottom: 3rem;
+
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: #111827;
+      margin: 0 0 1rem 0;
+    }
+
+    p {
+      font-size: 1.125rem;
+      color: #6b7280;
+      margin: 0;
+    }
+  }
+
+  .demo-content {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+    margin-bottom: 3rem;
+
+    .content-section {
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+
+      h2 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #111827;
+        margin: 0 0 1rem 0;
+      }
+
+      p {
+        font-size: 1rem;
+        color: #374151;
+        line-height: 1.6;
+        margin: 0 0 1rem 0;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+      }
+
+      .resume-download-demo {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin: 1.5rem 0;
+
+        h3 {
+          font-size: 1.25rem;
+          font-weight: 600;
+          color: #111827;
+          margin: 0 0 0.5rem 0;
+        }
+
+        p {
+          color: #6b7280;
+          margin-bottom: 1rem;
+        }
+      }
+    }
+  }
+
+  .demo-sidebar {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.5rem;
+    height: fit-content;
+
+    h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #111827;
+      margin: 0 0 1rem 0;
+    }
+
+    .sidebar-content {
+      margin-top: 1.5rem;
+
+      h4 {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #111827;
+        margin: 0 0 0.75rem 0;
+      }
+
+      ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+
+        li {
+          font-size: 0.875rem;
+          color: #6b7280;
+          padding: 0.25rem 0;
+          position: relative;
+          padding-left: 1rem;
+
+          &:before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: #3b82f6;
+          }
+        }
+      }
+    }
+  }
+
+  .style-selector {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 3rem;
+
+    h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #111827;
+      margin: 0 0 0.5rem 0;
+    }
+
+    p {
+      font-size: 1rem;
+      color: #6b7280;
+      margin: 0 0 1.5rem 0;
+    }
+
+    .style-buttons {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+
+      button {
+        padding: 0.75rem 1.5rem;
+        border: 1px solid #d1d5db;
+        background: #f9fafb;
+        color: #374151;
+        border-radius: 8px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background: #f3f4f6;
+          border-color: #9ca3af;
+        }
+
+        &.active {
+          background: #3b82f6;
+          color: #ffffff;
+          border-color: #3b82f6;
+        }
+      }
+    }
+  }
+
+  .implementation-guide {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 2rem;
+
+    h3 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #111827;
+      margin: 0 0 1.5rem 0;
+    }
+
+    .guide-content {
+      display: grid;
+      gap: 2rem;
+
+      .guide-section {
+        h4 {
+          font-size: 1.125rem;
+          font-weight: 600;
+          color: #111827;
+          margin: 0 0 0.75rem 0;
+        }
+
+        p {
+          font-size: 1rem;
+          color: #374151;
+          line-height: 1.6;
+          margin: 0 0 1rem 0;
+        }
+
+        ul {
+          list-style: none;
+          padding: 0;
+          margin: 0;
+
+          li {
+            font-size: 0.875rem;
+            color: #6b7280;
+            padding: 0.25rem 0;
+            position: relative;
+            padding-left: 1rem;
+
+            &:before {
+              content: "•";
+              position: absolute;
+              left: 0;
+              color: #3b82f6;
+            }
+
+            code {
+              background: #f3f4f6;
+              color: #1f2937;
+              padding: 0.125rem 0.25rem;
+              border-radius: 4px;
+              font-size: 0.75rem;
+              font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            }
+          }
+        }
+
+        pre {
+          background: #1f2937;
+          color: #f9fafb;
+          padding: 1rem;
+          border-radius: 8px;
+          font-size: 0.875rem;
+          font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+          overflow-x: auto;
+          margin: 1rem 0;
+        }
+      }
+    }
+  }
+
+  // Responsive design
+  @media (max-width: 1024px) {
+    .demo-content {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    .demo-sidebar {
+      order: -1;
+    }
+  }
+
+  @media (max-width: 768px) {
+    padding: 1rem;
+
+    .demo-header {
+      h1 {
+        font-size: 2rem;
+      }
+
+      p {
+        font-size: 1rem;
+      }
+    }
+
+    .demo-content {
+      .content-section {
+        padding: 1.5rem;
+
+        h2 {
+          font-size: 1.25rem;
+        }
+
+        .resume-download-demo {
+          padding: 1rem;
+
+          h3 {
+            font-size: 1.125rem;
+          }
+        }
+      }
+    }
+
+    .demo-sidebar {
+      padding: 1rem;
+
+      h3 {
+        font-size: 1.125rem;
+      }
+    }
+
+    .style-selector {
+      padding: 1.5rem;
+
+      h3 {
+        font-size: 1.125rem;
+      }
+
+      .style-buttons {
+        flex-direction: column;
+
+        button {
+          width: 100%;
+        }
+      }
+    }
+
+    .implementation-guide {
+      padding: 1.5rem;
+
+      h3 {
+        font-size: 1.25rem;
+      }
+
+      .guide-content {
+        gap: 1.5rem;
+
+        .guide-section {
+          h4 {
+            font-size: 1rem;
+          }
+        }
+      }
+    }
+  }
+
+  // Dark mode support
+  @media (prefers-color-scheme: dark) {
+    .demo-header {
+      h1 {
+        color: #f9fafb;
+      }
+
+      p {
+        color: #9ca3af;
+      }
+    }
+
+    .demo-content {
+      .content-section {
+        background: #1f2937;
+        border-color: #4b5563;
+
+        h2 {
+          color: #f9fafb;
+        }
+
+        p {
+          color: #d1d5db;
+        }
+
+        .resume-download-demo {
+          background: #374151;
+          border-color: #4b5563;
+
+          h3 {
+            color: #f9fafb;
+          }
+
+          p {
+            color: #9ca3af;
+          }
+        }
+      }
+    }
+
+    .demo-sidebar {
+      background: #1f2937;
+      border-color: #4b5563;
+
+      h3 {
+        color: #f9fafb;
+      }
+
+      .sidebar-content {
+        h4 {
+          color: #f9fafb;
+        }
+
+        ul {
+          li {
+            color: #9ca3af;
+
+            &:before {
+              color: #60a5fa;
+            }
+          }
+        }
+      }
+    }
+
+    .style-selector {
+      background: #1f2937;
+      border-color: #4b5563;
+
+      h3 {
+        color: #f9fafb;
+      }
+
+      p {
+        color: #9ca3af;
+      }
+
+      .style-buttons {
+        button {
+          background: #374151;
+          color: #f9fafb;
+          border-color: #4b5563;
+
+          &:hover {
+            background: #4b5563;
+          }
+
+          &.active {
+            background: #3b82f6;
+            color: #ffffff;
+          }
+        }
+      }
+    }
+
+    .implementation-guide {
+      background: #1f2937;
+      border-color: #4b5563;
+
+      h3 {
+        color: #f9fafb;
+      }
+
+      .guide-content {
+        .guide-section {
+          h4 {
+            color: #f9fafb;
+          }
+
+          p {
+            color: #d1d5db;
+          }
+
+          ul {
+            li {
+              color: #9ca3af;
+
+              &:before {
+                color: #60a5fa;
+              }
+
+              code {
+                background: #374151;
+                color: #f9fafb;
+              }
+            }
+          }
+
+          pre {
+            background: #111827;
+            color: #f9fafb;
+          }
+        }
+      }
+    }
+  }
+} 

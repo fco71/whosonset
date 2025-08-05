@@ -19,6 +19,7 @@ import {
 import { db } from '../firebase';
 import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 import { useTranslation } from 'react-i18next';
+import StrategicAdBanner from '../components/Ads/StrategicAdBanner';
 
 const HomePage: React.FC = () => {
   const { t } = useTranslation();
@@ -192,6 +193,14 @@ const HomePage: React.FC = () => {
         </div>
       </section>
 
+      {/* Strategic Ad Banner */}
+      <StrategicAdBanner
+        position="inline"
+        style="prominent"
+        title="Featured Opportunity"
+        subtitle="Discover amazing film industry opportunities"
+      />
+
       {/* Features Section */}
       <section className="py-24 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -271,6 +280,14 @@ const HomePage: React.FC = () => {
         </div>
       </section>
 
+      {/* Strategic Ad Banner */}
+      <StrategicAdBanner
+        position="inline"
+        style="featured"
+        title="Industry Insights"
+        subtitle="Stay updated with the latest trends"
+      />
+
       {/* CTA Section */}
       <section className="py-24 bg-gradient-to-r from-blue-600 to-purple-600">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -300,6 +317,14 @@ const HomePage: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* Bottom Strategic Ad Banner */}
+      <StrategicAdBanner
+        position="bottom"
+        style="minimal"
+        title="Stay Connected"
+        subtitle="Join our community for more opportunities"
+      />
     </div>
   );
 };

@@ -3,6 +3,8 @@ import { Outlet } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from './theme/ThemeProvider';
 import { useAuth } from './contexts/AuthContext';
+import { AdProvider, useAds } from './components/Ads/AdProvider';
+import AdManager from './components/Ads/AdManager';
 import '@fontsource/inter/400.css';
 import '@fontsource/inter/500.css';
 import '@fontsource/inter/600.css';
@@ -13,8 +15,9 @@ import './App.module.scss';
 import Navigation from './components/Navigation';
 import Footer from './components/Footer';
 
-function App() {
+function AppContent() {
   const { currentUser, logout } = useAuth();
+  const { getPlacementsForPage, trackAdEvent } = useAds();
   
   console.log('[App] Rendering with currentUser:', currentUser?.email);
   
@@ -48,23 +51,53 @@ function App() {
     }
   };
 
+  // Get current page name for ad placement
+  const getCurrentPageName = () => {
+    const path = window.location.pathname;
+    if (path === '/') return 'home';
+    if (path.startsWith('/projects')) return 'projects';
+    if (path.startsWith('/crew')) return 'crew';
+    if (path.startsWith('/social')) return 'social';
+    if (path.startsWith('/analytics')) return 'analytics';
+    return 'other';
+  };
+
+  const currentPagePlacements = getPlacementsForPage(getCurrentPageName());
+
   return (
     <ThemeProvider>
       <div className="min-h-screen bg-background text-foreground" style={{ fontFamily: 'Inter, sans-serif' }}>
         <div className="min-h-screen bg-gray-50 text-gray-900">
-                                  <Navigation 
-                          authUser={currentUser} 
-                          userSignOut={handleSignOut} 
-                        />
-          <main className="container mx-auto px-4 py-8 pt-24">
-                                    <Suspense fallback={
-                          <div className="flex items-center justify-center min-h-[400px]">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                          </div>
-                        }>
-                          <Outlet />
-                        </Suspense>
+          <Navigation 
+            authUser={currentUser} 
+            userSignOut={handleSignOut} 
+          />
+          
+          {/* Header Ads - positioned below navigation */}
+          <div className="pt-16"> {/* Add padding to account for fixed navigation */}
+            <AdManager 
+              placements={currentPagePlacements.filter(p => p.position === 'header')}
+              onAdLoad={(placementId) => trackAdEvent(placementId, 'load')}
+              onAdError={(placementId, error) => trackAdEvent(placementId, 'error')}
+            />
+          </div>
+          
+          <main className="container mx-auto px-4 py-8">
+            <Suspense fallback={
+              <div className="flex items-center justify-center min-h-[400px]">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              </div>
+            }>
+              <Outlet />
+            </Suspense>
           </main>
+          
+          {/* Footer Ads */}
+          <AdManager 
+            placements={currentPagePlacements.filter(p => p.position === 'footer')}
+            onAdLoad={(placementId) => trackAdEvent(placementId, 'load')}
+            onAdError={(placementId, error) => trackAdEvent(placementId, 'error')}
+          />
           
           <Footer />
         </div>
@@ -90,6 +123,14 @@ function App() {
         />
       </div>
     </ThemeProvider>
+  );
+}
+
+function App() {
+  return (
+    <AdProvider>
+      <AppContent />
+    </AdProvider>
   );
 }
 

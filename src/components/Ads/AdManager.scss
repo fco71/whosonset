@@ -1,0 +1,108 @@
+.ad-manager {
+  width: 100%;
+  
+  // Header placements
+  .ad-placements-header {
+    position: relative;
+    z-index: 10;
+    background: transparent;
+    border-bottom: none;
+    padding: 1rem 0;
+    
+    .ad-placement {
+      margin: 0;
+    }
+  }
+
+  // Content placements
+  .ad-placements-content {
+    margin: 2rem 0;
+    
+    .ad-placement {
+      margin: 1.5rem 0;
+    }
+  }
+
+  // Sidebar placements
+  .ad-placements-sidebar {
+    .ad-placement {
+      margin: 1rem 0;
+      
+      &:first-child {
+        margin-top: 0;
+      }
+    }
+  }
+
+  // Inline placements
+  .ad-placements-inline {
+    .ad-placement {
+      margin: 1rem 0;
+      display: inline-block;
+      width: 100%;
+    }
+  }
+
+  // Footer placements
+  .ad-placements-footer {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e9ecef;
+    
+    .ad-placement {
+      margin: 1rem 0;
+      
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+  }
+
+  // Responsive design
+  @media (max-width: 768px) {
+    .ad-placements-header {
+      padding: 0.25rem 0;
+    }
+
+    .ad-placements-content {
+      margin: 1rem 0;
+      
+      .ad-placement {
+        margin: 1rem 0;
+      }
+    }
+
+    .ad-placements-sidebar {
+      .ad-placement {
+        margin: 0.5rem 0;
+      }
+    }
+
+    .ad-placements-inline {
+      .ad-placement {
+        margin: 0.5rem 0;
+      }
+    }
+
+    .ad-placements-footer {
+      margin-top: 1rem;
+      padding-top: 0.5rem;
+      
+      .ad-placement {
+        margin: 0.5rem 0;
+      }
+    }
+  }
+
+  // Dark mode support
+  @media (prefers-color-scheme: dark) {
+    .ad-placements-header {
+      background: #1a1a1a;
+      border-bottom-color: #4a5568;
+    }
+
+    .ad-placements-footer {
+      border-top-color: #4a5568;
+    }
+  }
+} 

@@ -27,6 +27,7 @@ const getDefaultEducationEntry = (): EducationEntry => ({
 import { JOB_SUBCATEGORIES } from '../types/JobSubcategories';
 import ResumeView from './ResumeView';
 import LocationSelector from './LocationSelector';
+import ResumeDownloadButton from './ResumeDownloadButton';
 
 // Import html2pdf using require to bypass TypeScript issues
 const html2pdf = require('html2pdf.js');
@@ -1350,12 +1351,14 @@ const EditCrewProfile: React.FC = () => {
                     isOwnResume={true}
                   />
                 </div>
-                <button
-                  onClick={handleDownloadPDF}
-                  className="mt-6 bg-gray-900 hover:bg-gray-800 text-white py-3 px-6 rounded-lg font-light tracking-wide transition-all duration-300 hover:scale-105"
-                >
-                  {t('resume.builder.downloadPDF')}
-                </button>
+                <ResumeDownloadButton
+                  resumeUrl={`/api/resume/${user?.uid}`}
+                  fileName={`${form.name || 'resume'}.pdf`}
+                  variant="primary"
+                  size="large"
+                  showAdPopup={true}
+                  className="mt-6"
+                />
               </div>
             </div>
           </div>

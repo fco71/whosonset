@@ -228,7 +228,7 @@ const ApplicationMessaging: React.FC<ApplicationMessagingProps> = ({
       // Determine recipient: if sender is applicant, recipient is job poster; else recipient is applicant
       const recipientId = currentUser.uid === application.applicantId ? jobPosting?.postedById : application.applicantId;
       if (recipientId) {
-        await addDoc(collection(db, 'users', recipientId, 'notifications'), {
+        await addDoc(collection(db, 'notifications'), {
           type: 'application_message',
           message: `New message from ${currentUser.displayName || currentUser.email} regarding job application`,
           timestamp: serverTimestamp(),

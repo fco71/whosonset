@@ -1,0 +1,246 @@
+.ad-component {
+  position: relative;
+  margin: 1rem 0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  // Position-specific styles
+  &.ad-header {
+    margin: 0 auto;
+    border-radius: 0;
+    box-shadow: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    max-width: 1200px;
+    padding: 0 1rem;
+    background: transparent;
+  }
+
+  &.ad-sidebar {
+    margin: 0.5rem 0;
+    border-radius: 6px;
+  }
+
+  &.ad-footer {
+    margin: 2rem 0 0 0;
+    border-radius: 8px 8px 0 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+  }
+
+  &.ad-content {
+    margin: 1.5rem 0;
+    border-radius: 8px;
+  }
+
+  &.ad-inline {
+    margin: 0.5rem 0;
+    border-radius: 6px;
+  }
+
+  // AdSense styles
+  .adsbygoogle {
+    display: block;
+    text-align: center;
+    background: #f8f9fa;
+    border-radius: 6px;
+    min-height: 90px;
+    
+    &[data-ad-format="auto"] {
+      width: 100%;
+      height: auto;
+    }
+  }
+
+  // Display ad styles
+  .ad-display {
+    padding: 1rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+
+    .ad-label {
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: #6c757d;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.5rem;
+      text-align: center;
+    }
+
+    .ad-content {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100px;
+    }
+
+    .ad-placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100px;
+      background: #ffffff;
+      border: 2px dashed #dee2e6;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+
+      &:hover {
+        border-color: #adb5bd;
+        background: #f8f9fa;
+      }
+
+      .ad-placeholder-text {
+        color: #6c757d;
+        font-size: 0.875rem;
+        font-weight: 500;
+      }
+    }
+  }
+
+  // Sponsored content styles
+  .ad-sponsored {
+    padding: 1rem;
+    background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
+    border: 1px solid #fed7d7;
+    border-radius: 8px;
+
+    .sponsored-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #e53e3e;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.5rem;
+      text-align: center;
+    }
+
+    .sponsored-content {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100px;
+    }
+
+    .sponsored-placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100px;
+      background: #ffffff;
+      border: 2px dashed #fed7d7;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+
+      &:hover {
+        border-color: #fc8181;
+        background: #fff5f5;
+      }
+
+      .sponsored-placeholder-text {
+        color: #e53e3e;
+        font-size: 0.875rem;
+        font-weight: 500;
+      }
+    }
+  }
+
+  // Responsive design
+  @media (max-width: 768px) {
+    margin: 0.5rem 0;
+    border-radius: 6px;
+
+    .adsbygoogle {
+      min-height: 60px;
+    }
+
+    .ad-display,
+    .ad-sponsored {
+      padding: 0.75rem;
+
+      .ad-content,
+      .sponsored-content {
+        min-height: 80px;
+      }
+
+      .ad-placeholder,
+      .sponsored-placeholder {
+        height: 80px;
+      }
+    }
+  }
+
+  // Dark mode support
+  @media (prefers-color-scheme: dark) {
+    background: #1a1a1a;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+
+    .ad-display {
+      background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+      border-color: #4a5568;
+
+      .ad-placeholder {
+        background: #2d3748;
+        border-color: #4a5568;
+
+        &:hover {
+          border-color: #718096;
+          background: #4a5568;
+        }
+
+        .ad-placeholder-text {
+          color: #a0aec0;
+        }
+      }
+    }
+
+    .ad-sponsored {
+      background: linear-gradient(135deg, #2d1b1b 0%, #4a2c2c 100%);
+      border-color: #4a2c2c;
+
+      .sponsored-placeholder {
+        background: #2d1b1b;
+        border-color: #4a2c2c;
+
+        &:hover {
+          border-color: #fc8181;
+          background: #4a2c2c;
+        }
+      }
+    }
+  }
+}
+
+// Ad loading states
+.ad-component.loading {
+  .ad-display,
+  .ad-sponsored {
+    .ad-placeholder,
+    .sponsored-placeholder {
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+} 

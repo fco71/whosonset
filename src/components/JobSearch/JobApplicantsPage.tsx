@@ -186,7 +186,7 @@ const JobApplicantsPage: React.FC<JobApplicantsPageProps> = ({ jobId: propJobId 
       const applicationDoc = await getDoc(doc(db, 'jobApplications', applicationId));
       const applicationData = applicationDoc.data();
       if (applicationData && applicationData.applicantId) {
-        await addDoc(collection(db, 'users', applicationData.applicantId, 'notifications'), {
+        await addDoc(collection(db, 'notifications'), {
           type: 'application_status_update',
           message: `Your application status has been updated to: ${newStatus}`,
           timestamp: serverTimestamp(),
