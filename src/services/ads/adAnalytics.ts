@@ -200,7 +200,7 @@ class AdAnalytics {
   // Send event to external analytics service
   private sendToAnalytics(event: AdAnalyticsEvent) {
     // Implementation for sending to Google Analytics, Firebase Analytics, etc.
-    if (window.gtag) {
+    if (typeof window !== 'undefined' && window.gtag) {
       window.gtag('event', 'ad_' + event.type, {
         placement_id: event.placementId,
         event_timestamp: event.timestamp.toISOString(),
@@ -209,7 +209,7 @@ class AdAnalytics {
     }
 
     // Send to Firebase Analytics if available
-    if (window.firebase?.analytics) {
+    if (typeof window !== 'undefined' && window.firebase?.analytics) {
       window.firebase.analytics().logEvent('ad_' + event.type, {
         placement_id: event.placementId,
         ...event.metadata,

@@ -3,7 +3,7 @@ import { AdConfig } from '../../components/Ads/AdComponent';
 
 // Google AdSense Configuration
 export const ADSENSE_CONFIG = {
-  client: process.env.REACT_APP_ADSENSE_CLIENT_ID || 'ca-pub-XXXXXXXXXXXXXXXX', // Replace with your AdSense client ID
+  client: process.env.REACT_APP_ADSENSE_CLIENT_ID || 'ca-pub-9402509441119301', // Your real AdSense client ID
   enabled: process.env.REACT_APP_ADSENSE_ENABLED === 'true' || process.env.NODE_ENV === 'development',
   testMode: process.env.NODE_ENV === 'development',
 };

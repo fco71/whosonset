@@ -10,6 +10,7 @@ import { Button } from '../ui/Button';
 import Card from '../ui/Card';
 import { Avatar, AvatarImage, AvatarFallback } from '../ui/Avatar';
 import ApplicationMessaging from './ApplicationMessaging';
+import ResumeDownloadButton from '../ResumeDownloadButton';
 import { 
   Users, 
   MessageSquare, 
@@ -721,13 +722,14 @@ const JobApplicantsPage: React.FC<JobApplicantsPageProps> = ({ jobId: propJobId 
                                     >
                                       <Eye className="w-4 h-4" />
                                     </button>
-                                    <button
-                                      onClick={() => handleDownloadFile(resumeAttachment.url, resumeAttachment.name)}
+                                    <ResumeDownloadButton
+                                      resumeUrl={resumeAttachment.url}
+                                      fileName={resumeAttachment.name}
+                                      showAdPopup={true}
                                       className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-100 rounded-lg transition-colors"
-                                      title="Download Resume"
-                                    >
-                                      <Download className="w-4 h-4" />
-                                    </button>
+                                      variant="outline"
+                                      size="small"
+                                    />
                                   </>
                                 ) : null;
                               })()}

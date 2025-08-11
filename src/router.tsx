@@ -47,6 +47,8 @@ const TermsOfServicePage = React.lazy(() => import('./pages/TermsOfServicePage')
 const ContactPage = React.lazy(() => import('./pages/ContactPage'));
 const AboutPage = React.lazy(() => import('./pages/AboutPage'));
 const PublicCrewPage = React.lazy(() => import('./pages/PublicCrewPage'));
+// const AdMonetizationPage = React.lazy(() => import('./pages/AdMonetizationPage'));
+// const AdTestPage = React.lazy(() => import('./pages/AdTestPage'));
 
 // Import the main App component that will handle the layout
 import App from './App';
@@ -351,6 +353,22 @@ export function createAppRouter() {
           path: 'contact', 
           element: <ContactPage />
         },
+        // { 
+        //   path: 'ads', 
+        //   element: (
+        //     <ProtectedRoute>
+        //       <AdMonetizationPage />
+        //     </ProtectedRoute>
+        //   ) 
+        // },
+        // { 
+        //   path: 'ads/test', 
+        //   element: (
+        //     <ProtectedRoute>
+        //       <AdTestPage />
+        //     </ProtectedRoute>
+        //   ) 
+        // },
         ...(process.env.NODE_ENV === 'development' ? [{ path: 'debug-jobs', element: <DebugJobsPage /> }] : []),
       ],
     },

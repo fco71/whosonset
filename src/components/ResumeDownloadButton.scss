@@ -150,23 +150,29 @@
 
 .download-disclaimer {
   margin-top: 0.75rem;
-  padding: 0.75rem;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%) !important;
+  border: 1px solid #bae6fd !important;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 
   p {
     margin: 0;
     font-size: 0.75rem;
-    color: #6b7280;
+    color: #0369a1 !important;
     line-height: 1.4;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 
     small {
       font-size: inherit;
+      color: #0369a1 !important;
     }
 
     strong {
-      color: #374151;
+      color: #0c4a6e !important;
+      font-weight: 600;
     }
   }
 }
@@ -230,14 +236,14 @@
   }
 
   .download-disclaimer {
-    background: #374151;
-    border-color: #4b5563;
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%) !important;
+    border-color: #bae6fd !important;
 
     p {
-      color: #9ca3af;
+      color: #0369a1 !important;
 
       strong {
-        color: #d1d5db;
+        color: #0c4a6e !important;
       }
     }
   }

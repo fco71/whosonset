@@ -10,6 +10,7 @@ interface ResumeDownloadButtonProps {
   size?: 'small' | 'medium' | 'large';
   showAdPopup?: boolean;
   adConfig?: any;
+  onCustomDownload?: () => void;
 }
 
 const ResumeDownloadButton: React.FC<ResumeDownloadButtonProps> = ({
@@ -19,7 +20,8 @@ const ResumeDownloadButton: React.FC<ResumeDownloadButtonProps> = ({
   variant = 'primary',
   size = 'medium',
   showAdPopup = true,
-  adConfig
+  adConfig,
+  onCustomDownload
 }) => {
   const [showPopup, setShowPopup] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -35,16 +37,21 @@ const ResumeDownloadButton: React.FC<ResumeDownloadButtonProps> = ({
   const downloadResume = () => {
     setIsDownloading(true);
     
-    // Create a temporary link element
-    const link = document.createElement('a');
-    link.href = resumeUrl;
-    link.download = fileName;
-    link.target = '_blank';
-    
-    // Trigger download
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    if (onCustomDownload) {
+      // Use custom download function if provided
+      onCustomDownload();
+    } else {
+      // Default download behavior
+      const link = document.createElement('a');
+      link.href = resumeUrl;
+      link.download = fileName;
+      link.target = '_blank';
+      
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
     
     // Reset state after a short delay
     setTimeout(() => {

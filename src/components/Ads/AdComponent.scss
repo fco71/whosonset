@@ -3,8 +3,8 @@
   margin: 1rem 0;
   border-radius: 8px;
   overflow: hidden;
-  background: #ffffff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: transparent;
+  box-shadow: none;
   transition: all 0.2s ease;
 
   &:hover {
@@ -23,6 +23,23 @@
     max-width: 1200px;
     padding: 0 1rem;
     background: transparent;
+    
+    // Override default styles for header ads
+    .ad-placeholder {
+      background: #f8f9fa !important;
+      border: 2px dashed #dee2e6 !important;
+      box-shadow: none !important;
+      border-radius: 8px !important;
+    }
+    
+    .adsbygoogle {
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+    
+    // Remove any background or shadow from the ad component itself
+    background: transparent !important;
+    box-shadow: none !important;
   }
 
   &.ad-sidebar {
@@ -32,11 +49,29 @@
 
   &.ad-footer {
     margin: 2rem 0 0 0;
-    border-radius: 8px 8px 0 0;
+    border-radius: 8px;
     display: flex;
     justify-content: center;
     align-items: center;
     width: 100%;
+    background: transparent;
+    
+    // Override default styles for footer ads
+    .ad-placeholder {
+      background: #f8f9fa !important;
+      border: 2px dashed #dee2e6 !important;
+      box-shadow: none !important;
+      border-radius: 8px !important;
+    }
+    
+    .adsbygoogle {
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+    
+    // Remove any background or shadow from the ad component itself
+    background: transparent !important;
+    box-shadow: none !important;
   }
 
   &.ad-content {

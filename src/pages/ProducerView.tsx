@@ -12,6 +12,7 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { Bookmark, BookmarkCheck } from 'lucide-react';
 import CrewViewSwitcher, { CrewViewMode } from '../components/CrewViewSwitcher';
 import CrewBannerCard from '../components/CrewBannerCard';
+import AdManager from '../components/Ads/AdManager';
 
 interface JobDepartment {
   name: string;
@@ -595,6 +596,15 @@ const ProducerView: React.FC = () => {
                       />
                     </div>
                   ))}
+                  
+                  {/* Inline Ad placeholder - will be added when AdSense is fully configured */}
+                  {/* {filteredProfiles.length > 6 && (
+                    <div className="col-span-full my-6">
+                      <div className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                        <p className="text-gray-500">Ad Space</p>
+                      </div>
+                    </div>
+                  )} */}
                 </div>
               )}
 

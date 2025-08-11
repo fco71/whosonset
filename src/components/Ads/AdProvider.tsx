@@ -6,6 +6,7 @@ import { adAnalytics } from '../../services/ads/adAnalytics';
 
 interface AdContextType {
   placements: AdPlacement[];
+  currentPagePlacements: AdPlacement[];
   isAdEnabled: boolean;
   toggleAds: (enabled: boolean) => void;
   getPlacementsForPage: (pageName: string) => AdPlacement[];
@@ -92,8 +93,11 @@ export const AdProvider: React.FC<AdProviderProps> = ({ children }) => {
     });
   };
 
+  const currentPagePlacements = getPlacementsForPage(getCurrentPageName());
+
   const value: AdContextType = {
     placements,
+    currentPagePlacements,
     isAdEnabled,
     toggleAds,
     getPlacementsForPage,

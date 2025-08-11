@@ -10,6 +10,7 @@ import Card, { CardHeader, CardBody, CardTitle } from '../ui/Card';
 import { MessageSquare, Send, Clock, CheckCircle, XCircle, AlertCircle, Star, Calendar, Download, Eye, FileText, Paperclip } from 'lucide-react';
 import ApplicationMessaging from './ApplicationMessaging';
 import { FileUploadService } from '../../utilities/fileUploadService';
+import ResumeDownloadButton from '../ResumeDownloadButton';
 
 interface ApplicationStatusTrackerProps {
   applicationId: string;
@@ -344,13 +345,14 @@ const ApplicationStatusTracker: React.FC<ApplicationStatusTrackerProps> = ({ app
                                 >
                                   <Eye className="w-4 h-4" />
                                 </button>
-                                <button
-                                  onClick={() => handleDownloadFile(resumeAttachment.url, resumeAttachment.name)}
+                                <ResumeDownloadButton
+                                  resumeUrl={resumeAttachment.url}
+                                  fileName={resumeAttachment.name}
+                                  showAdPopup={true}
                                   className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-100 rounded-lg transition-colors"
-                                  title="Download Resume"
-                                >
-                                  <Download className="w-4 h-4" />
-                                </button>
+                                  variant="outline"
+                                  size="small"
+                                />
                               </>
                             ) : null;
                           })()}

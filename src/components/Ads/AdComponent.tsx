@@ -32,7 +32,7 @@ const AdComponent: React.FC<AdComponentProps> = ({
   const [hasLoaded, setHasLoaded] = useState(false);
 
   useEffect(() => {
-    if (config.type === 'adsense' && window.adsbygoogle && adRef.current && !hasLoaded) {
+    if (config.type === 'adsense' && typeof window !== 'undefined' && window.adsbygoogle && adRef.current && !hasLoaded) {
       // Check if this ad element already has ads loaded
       const adElement = adRef.current.querySelector('ins.adsbygoogle');
       if (adElement && !adElement.hasAttribute('data-ad-status')) {
@@ -148,7 +148,7 @@ const AdComponent: React.FC<AdComponentProps> = ({
     switch (config.type) {
       case 'adsense':
         // Show placeholder if AdSense is not available or in development
-        if (!window.adsbygoogle || process.env.NODE_ENV === 'development') {
+        if (typeof window === 'undefined' || !window.adsbygoogle || process.env.NODE_ENV === 'development') {
           return renderPlaceholderAd();
         }
         return renderAdSense();
