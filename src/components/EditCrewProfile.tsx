@@ -1354,7 +1354,7 @@ const EditCrewProfile: React.FC = () => {
                 <ResumeDownloadButton
                   resumeUrl="#"
                   fileName={`${form.name.replace(/\s+/g, '_')}_Resume.pdf`}
-                  showAdPopup={true}
+                  showAdPopup={false}
                   className="mt-6 bg-gray-900 hover:bg-gray-800 text-white py-3 px-6 rounded-lg font-light tracking-wide transition-all duration-300 hover:scale-105"
                   variant="primary"
                   size="large"

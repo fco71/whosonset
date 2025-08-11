@@ -45,7 +45,7 @@ const LoaderCircle = (0,createLucideIcon/* default */.A)("loader-circle", __icon
 
 
 // Lazy load the EditCrewProfile component to improve initial load performance
-const EditCrewProfile = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(3833), __webpack_require__.e(5720), __webpack_require__.e(3542), __webpack_require__.e(7360)]).then(__webpack_require__.bind(__webpack_require__, 7360)));
+const EditCrewProfile = react.lazy(() => Promise.all(/* import() */[__webpack_require__.e(3833), __webpack_require__.e(4368), __webpack_require__.e(3542), __webpack_require__.e(7360)]).then(__webpack_require__.bind(__webpack_require__, 7360)));
 const EditProfilePage = () => {
     const { currentUser } = (0,AuthContext/* useAuth */.A)();
     const { t } = (0,es/* useTranslation */.Bd)();

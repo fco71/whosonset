@@ -333,7 +333,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _ui_Card__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(4948);
 /* harmony import */ var _ui_Avatar__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(633);
 /* harmony import */ var _ApplicationMessaging__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(3797);
-/* harmony import */ var _ResumeDownloadButton__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(5720);
+/* harmony import */ var _ResumeDownloadButton__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(4368);
 /* harmony import */ var lucide_react__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(4471);
 /* harmony import */ var lucide_react__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(180);
 /* harmony import */ var lucide_react__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(2201);

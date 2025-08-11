@@ -59,14 +59,14 @@ function AppContent() {
               userSignOut={handleSignOut} 
             />
             
-            {/* Header Ad Banner */}
-            <div className="pt-16">
+            {/* Header Ad Banner - Temporarily disabled for professional launch */}
+            {/* <div className="pt-16">
               <AdManager 
                 placements={currentPagePlacements.filter(p => p.position === 'header')}
                 onAdLoad={(placementId) => trackAdEvent(placementId, 'load')}
                 onAdError={(placementId, error) => trackAdEvent(placementId, 'error')}
               />
-            </div>
+            </div> */}
             
             <main className="container mx-auto px-4 py-8 pt-24">
               <Suspense fallback={
@@ -78,12 +78,12 @@ function AppContent() {
               </Suspense>
             </main>
             
-            {/* Footer Ad Banner */}
-            <AdManager 
+            {/* Footer Ad Banner - Temporarily disabled for professional launch */}
+            {/* <AdManager 
               placements={currentPagePlacements.filter(p => p.position === 'footer')}
               onAdLoad={(placementId) => trackAdEvent(placementId, 'load')}
               onAdError={(placementId, error) => trackAdEvent(placementId, 'error')}
-            />
+            /> */}
             
             <Footer />
           </div>

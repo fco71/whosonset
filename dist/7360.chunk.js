@@ -58,8 +58,8 @@ const LocationSelector = ({ selectedCountry, selectedCity, onCountryChange, onCi
 };
 /* harmony default export */ const components_LocationSelector = (LocationSelector);
 
-// EXTERNAL MODULE: ./src/components/ResumeDownloadButton.tsx + 3 modules
-var ResumeDownloadButton = __webpack_require__(5720);
+// EXTERNAL MODULE: ./src/components/ResumeDownloadButton.tsx + 5 modules
+var ResumeDownloadButton = __webpack_require__(4368);
 ;// ./src/components/EditCrewProfile.tsx
 
 
@@ -625,7 +625,7 @@ const EditCrewProfile = () => {
                                                         role: project.role,
                                                         description: project.description || '' // Ensure description is always a string
                                                     }))
-                                                }, isOwnResume: true }) }), (0,jsx_runtime.jsx)(ResumeDownloadButton/* default */.A, { resumeUrl: "#", fileName: `${form.name.replace(/\s+/g, '_')}_Resume.pdf`, showAdPopup: true, className: "mt-6 bg-gray-900 hover:bg-gray-800 text-white py-3 px-6 rounded-lg font-light tracking-wide transition-all duration-300 hover:scale-105", variant: "primary", size: "large", onCustomDownload: handleDownloadPDF })] }) }) })] }) })] }));
+                                                }, isOwnResume: true }) }), (0,jsx_runtime.jsx)(ResumeDownloadButton/* default */.A, { resumeUrl: "#", fileName: `${form.name.replace(/\s+/g, '_')}_Resume.pdf`, showAdPopup: false, className: "mt-6 bg-gray-900 hover:bg-gray-800 text-white py-3 px-6 rounded-lg font-light tracking-wide transition-all duration-300 hover:scale-105", variant: "primary", size: "large", onCustomDownload: handleDownloadPDF })] }) }) })] }) })] }));
 };
 /* harmony default export */ const components_EditCrewProfile = (EditCrewProfile);
 

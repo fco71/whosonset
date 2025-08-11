@@ -1,5 +1,5 @@
 "use strict";
-(self["webpackChunkwhosonset"] = self["webpackChunkwhosonset"] || []).push([[5720],{
+(self["webpackChunkwhosonset"] = self["webpackChunkwhosonset"] || []).push([[4368],{
 
 /***/ 335:
 /***/ ((module, __webpack_exports__, __webpack_require__) => {
@@ -45,7 +45,7 @@ ___CSS_LOADER_EXPORT___.push([module.id, `.ad-popup-overlay{position:fixed;top:0
 
 /***/ }),
 
-/***/ 5720:
+/***/ 4368:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 
@@ -60,8 +60,6 @@ var jsx_runtime = __webpack_require__(4848);
 var react = __webpack_require__(6540);
 // EXTERNAL MODULE: ./src/components/Ads/AdProvider.tsx + 2 modules
 var AdProvider = __webpack_require__(3224);
-// EXTERNAL MODULE: ./src/components/Ads/AdComponent.tsx + 1 modules
-var AdComponent = __webpack_require__(592);
 // EXTERNAL MODULE: ./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js
 var injectStylesIntoStyleTag = __webpack_require__(5072);
 var injectStylesIntoStyleTag_default = /*#__PURE__*/__webpack_require__.n(injectStylesIntoStyleTag);
@@ -80,9 +78,9 @@ var insertStyleElement_default = /*#__PURE__*/__webpack_require__.n(insertStyleE
 // EXTERNAL MODULE: ./node_modules/style-loader/dist/runtime/styleTagTransform.js
 var styleTagTransform = __webpack_require__(1113);
 var styleTagTransform_default = /*#__PURE__*/__webpack_require__.n(styleTagTransform);
-// EXTERNAL MODULE: ./node_modules/css-loader/dist/cjs.js!./node_modules/postcss-loader/dist/cjs.js!./node_modules/sass-loader/dist/cjs.js!./src/components/Ads/AdPopup.scss
-var AdPopup = __webpack_require__(3636);
-;// ./src/components/Ads/AdPopup.scss
+// EXTERNAL MODULE: ./node_modules/css-loader/dist/cjs.js!./node_modules/postcss-loader/dist/cjs.js!./node_modules/sass-loader/dist/cjs.js!./src/components/Ads/AdComponent.scss
+var AdComponent = __webpack_require__(8577);
+;// ./src/components/Ads/AdComponent.scss
 
       
       
@@ -102,7 +100,130 @@ options.insert = insertBySelector_default().bind(null, "head");
 options.domAPI = (styleDomAPI_default());
 options.insertStyleElement = (insertStyleElement_default());
 
-var update = injectStylesIntoStyleTag_default()(AdPopup/* default */.A, options);
+var update = injectStylesIntoStyleTag_default()(AdComponent/* default */.A, options);
+
+
+
+
+       /* harmony default export */ const Ads_AdComponent = (AdComponent/* default */.A && AdComponent/* default */.A.locals ? AdComponent/* default */.A.locals : undefined);
+
+;// ./src/components/Ads/AdComponent.tsx
+
+
+
+const AdComponent_AdComponent = ({ config, className = '', style = {}, onAdLoad, onAdError }) => {
+    const adRef = (0,react.useRef)(null);
+    const [hasLoaded, setHasLoaded] = (0,react.useState)(false);
+    (0,react.useEffect)(() => {
+        if (config.type === 'adsense' && typeof window !== 'undefined' && window.adsbygoogle && adRef.current && !hasLoaded) {
+            // Check if this ad element already has ads loaded
+            const adElement = adRef.current.querySelector('ins.adsbygoogle');
+            if (adElement && !adElement.hasAttribute('data-ad-status')) {
+                try {
+                    (window.adsbygoogle = window.adsbygoogle || []).push({});
+                    setHasLoaded(true);
+                    onAdLoad?.();
+                }
+                catch (error) {
+                    console.error('AdSense error:', error);
+                    onAdError?.(error);
+                }
+            }
+        }
+    }, [config.id, onAdLoad, onAdError, hasLoaded]);
+    const getAdSize = () => {
+        switch (config.size) {
+            case 'banner':
+                return { width: 728, height: 90 };
+            case 'medium-rectangle':
+                return { width: 300, height: 250 };
+            case 'large-rectangle':
+                return { width: 336, height: 280 };
+            case 'leaderboard':
+                return { width: 728, height: 90 };
+            case 'skyscraper':
+                return { width: 160, height: 600 };
+            case 'wide-skyscraper':
+                return { width: 160, height: 600 }; // Same as skyscraper but with different name
+            case 'responsive':
+                return { width: 'auto', height: 'auto' };
+            default:
+                return { width: 300, height: 250 };
+        }
+    };
+    const renderAdSense = () => {
+        const { width, height } = getAdSize();
+        return ((0,jsx_runtime.jsx)("ins", { className: "adsbygoogle", style: {
+                display: 'block',
+                width: typeof width === 'number' ? `${width}px` : width,
+                height: typeof height === 'number' ? `${height}px` : height,
+            }, "data-ad-client": config.client, "data-ad-slot": config.slot, "data-ad-format": "auto", "data-full-width-responsive": config.responsive ? "true" : "false" }));
+    };
+    const renderPlaceholderAd = () => {
+        const { width, height } = getAdSize();
+        return ((0,jsx_runtime.jsx)("div", { className: "ad-placeholder", style: {
+                width: typeof width === 'number' ? `${width}px` : width,
+                height: typeof height === 'number' ? `${height}px` : height,
+                backgroundColor: '#f0f0f0',
+                border: '2px dashed #ccc',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#666',
+                fontSize: '14px',
+                textAlign: 'center',
+                padding: '10px'
+            }, children: (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("div", { style: { fontWeight: 'bold', marginBottom: '5px' }, children: "Ad Space" }), (0,jsx_runtime.jsx)("div", { style: { fontSize: '12px' }, children: config.id }), (0,jsx_runtime.jsxs)("div", { style: { fontSize: '10px', marginTop: '5px' }, children: [typeof width === 'number' ? width : 'auto', " \u00D7 ", typeof height === 'number' ? height : 'auto'] })] }) }));
+    };
+    const renderDisplayAd = () => {
+        return ((0,jsx_runtime.jsxs)("div", { className: "ad-display", children: [(0,jsx_runtime.jsx)("div", { className: "ad-label", children: "Advertisement" }), (0,jsx_runtime.jsx)("div", { className: "ad-content", children: (0,jsx_runtime.jsx)("div", { className: "ad-placeholder", children: (0,jsx_runtime.jsx)("div", { className: "ad-placeholder-text", children: "Ad Space" }) }) })] }));
+    };
+    const renderSponsoredContent = () => {
+        return ((0,jsx_runtime.jsxs)("div", { className: "ad-sponsored", children: [(0,jsx_runtime.jsx)("div", { className: "sponsored-label", children: "Sponsored" }), (0,jsx_runtime.jsx)("div", { className: "sponsored-content", children: (0,jsx_runtime.jsx)("div", { className: "sponsored-placeholder", children: (0,jsx_runtime.jsx)("div", { className: "sponsored-placeholder-text", children: "Sponsored Content" }) }) })] }));
+    };
+    const renderAd = () => {
+        switch (config.type) {
+            case 'adsense':
+                // Show placeholder if AdSense is not available or in development
+                if (typeof window === 'undefined' || !window.adsbygoogle || "production" === 'development') {
+                    return renderPlaceholderAd();
+                }
+                return renderAdSense();
+            case 'display':
+                return renderDisplayAd();
+            case 'sponsored':
+                return renderSponsoredContent();
+            default:
+                return renderDisplayAd();
+        }
+    };
+    return ((0,jsx_runtime.jsx)("div", { ref: adRef, className: `ad-component ad-${config.position} ${className}`, style: style, "data-ad-id": config.id, children: renderAd() }, `ad-${config.id}-${config.type}`));
+};
+/* harmony default export */ const components_Ads_AdComponent = (AdComponent_AdComponent);
+
+// EXTERNAL MODULE: ./node_modules/css-loader/dist/cjs.js!./node_modules/postcss-loader/dist/cjs.js!./node_modules/sass-loader/dist/cjs.js!./src/components/Ads/AdPopup.scss
+var AdPopup = __webpack_require__(3636);
+;// ./src/components/Ads/AdPopup.scss
+
+      
+      
+      
+      
+      
+      
+      
+      
+      
+
+var AdPopup_options = {};
+
+AdPopup_options.styleTagTransform = (styleTagTransform_default());
+AdPopup_options.setAttributes = (setAttributesWithoutAttributes_default());
+AdPopup_options.insert = insertBySelector_default().bind(null, "head");
+AdPopup_options.domAPI = (styleDomAPI_default());
+AdPopup_options.insertStyleElement = (insertStyleElement_default());
+
+var AdPopup_update = injectStylesIntoStyleTag_default()(AdPopup/* default */.A, AdPopup_options);
 
 
 
@@ -155,7 +276,7 @@ const AdPopup_AdPopup = ({ isOpen, onClose, onContinue, title = "Download Resume
     };
     if (!isOpen)
         return null;
-    return ((0,jsx_runtime.jsx)("div", { className: "ad-popup-overlay", children: (0,jsx_runtime.jsxs)("div", { className: "ad-popup-container", children: [(0,jsx_runtime.jsxs)("div", { className: "ad-popup-header", children: [(0,jsx_runtime.jsx)("h2", { children: title }), (0,jsx_runtime.jsx)("button", { className: "close-button", onClick: handleClose, "aria-label": "Close popup", children: "\u00D7" })] }), (0,jsx_runtime.jsxs)("div", { className: "ad-popup-content", children: [(0,jsx_runtime.jsx)("div", { className: "ad-popup-message", children: (0,jsx_runtime.jsx)("p", { children: message }) }), (0,jsx_runtime.jsx)("div", { className: "ad-popup-ad", children: (0,jsx_runtime.jsx)(AdComponent/* default */.A, { config: adConfig || defaultAdConfig, onAdLoad: () => trackAdEvent('resume-download-ad', 'load'), onAdError: (error) => trackAdEvent('resume-download-ad', 'error') }) }), showCountdown && ((0,jsx_runtime.jsxs)("div", { className: "ad-popup-countdown", children: [(0,jsx_runtime.jsx)("p", { children: canContinue
+    return ((0,jsx_runtime.jsx)("div", { className: "ad-popup-overlay", children: (0,jsx_runtime.jsxs)("div", { className: "ad-popup-container", children: [(0,jsx_runtime.jsxs)("div", { className: "ad-popup-header", children: [(0,jsx_runtime.jsx)("h2", { children: title }), (0,jsx_runtime.jsx)("button", { className: "close-button", onClick: handleClose, "aria-label": "Close popup", children: "\u00D7" })] }), (0,jsx_runtime.jsxs)("div", { className: "ad-popup-content", children: [(0,jsx_runtime.jsx)("div", { className: "ad-popup-message", children: (0,jsx_runtime.jsx)("p", { children: message }) }), (0,jsx_runtime.jsx)("div", { className: "ad-popup-ad", children: (0,jsx_runtime.jsx)(components_Ads_AdComponent, { config: adConfig || defaultAdConfig, onAdLoad: () => trackAdEvent('resume-download-ad', 'load'), onAdError: (error) => trackAdEvent('resume-download-ad', 'error') }) }), showCountdown && ((0,jsx_runtime.jsxs)("div", { className: "ad-popup-countdown", children: [(0,jsx_runtime.jsx)("p", { children: canContinue
                                         ? "You can now continue with your download."
                                         : `Please wait ${countdown} seconds before continuing...` }), !canContinue && ((0,jsx_runtime.jsx)("div", { className: "countdown-bar", children: (0,jsx_runtime.jsx)("div", { className: "countdown-progress", style: {
                                             width: `${((countdownSeconds - countdown) / countdownSeconds) * 100}%`
@@ -246,7 +367,29 @@ const ResumeDownloadButton_ResumeDownloadButton = ({ resumeUrl, fileName = 'resu
 /* harmony default export */ const src_components_ResumeDownloadButton = (ResumeDownloadButton_ResumeDownloadButton);
 
 
+/***/ }),
+
+/***/ 8577:
+/***/ ((module, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   A: () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(1354);
+/* harmony import */ var _node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(6314);
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1__);
+// Imports
+
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default()((_node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default()));
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, `.ad-component{position:relative;margin:1rem 0;border-radius:8px;overflow:hidden;background:rgba(0,0,0,0);box-shadow:none;transition:all .2s ease}.ad-component:hover{box-shadow:0 4px 12px rgba(0,0,0,.15)}.ad-component.ad-header{margin:0 auto;border-radius:0;display:flex;justify-content:center;align-items:center;width:100%;max-width:1200px;padding:0 1rem;background:rgba(0,0,0,0) !important;box-shadow:none !important}.ad-component.ad-header .ad-placeholder{background:#f8f9fa !important;border:2px dashed #dee2e6 !important;box-shadow:none !important;border-radius:8px !important}.ad-component.ad-header .adsbygoogle{background:rgba(0,0,0,0) !important;box-shadow:none !important}.ad-component.ad-sidebar{margin:.5rem 0;border-radius:6px}.ad-component.ad-footer{margin:2rem 0 0 0;border-radius:8px;display:flex;justify-content:center;align-items:center;width:100%;background:rgba(0,0,0,0) !important;box-shadow:none !important}.ad-component.ad-footer .ad-placeholder{background:#f8f9fa !important;border:2px dashed #dee2e6 !important;box-shadow:none !important;border-radius:8px !important}.ad-component.ad-footer .adsbygoogle{background:rgba(0,0,0,0) !important;box-shadow:none !important}.ad-component.ad-content{margin:1.5rem 0;border-radius:8px}.ad-component.ad-inline{margin:.5rem 0;border-radius:6px}.ad-component .adsbygoogle{display:block;text-align:center;background:#f8f9fa;border-radius:6px;min-height:90px}.ad-component .adsbygoogle[data-ad-format=auto]{width:100%;height:auto}.ad-component .ad-display{padding:1rem;background:linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);border:1px solid #e9ecef;border-radius:8px}.ad-component .ad-display .ad-label{font-size:.75rem;font-weight:500;color:#6c757d;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.5rem;text-align:center}.ad-component .ad-display .ad-content{display:flex;align-items:center;justify-content:center;min-height:100px}.ad-component .ad-display .ad-placeholder{display:flex;align-items:center;justify-content:center;width:100%;height:100px;background:#fff;border:2px dashed #dee2e6;border-radius:6px;transition:all .2s ease}.ad-component .ad-display .ad-placeholder:hover{border-color:#adb5bd;background:#f8f9fa}.ad-component .ad-display .ad-placeholder .ad-placeholder-text{color:#6c757d;font-size:.875rem;font-weight:500}.ad-component .ad-sponsored{padding:1rem;background:linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);border:1px solid #fed7d7;border-radius:8px}.ad-component .ad-sponsored .sponsored-label{font-size:.75rem;font-weight:600;color:#e53e3e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.5rem;text-align:center}.ad-component .ad-sponsored .sponsored-content{display:flex;align-items:center;justify-content:center;min-height:100px}.ad-component .ad-sponsored .sponsored-placeholder{display:flex;align-items:center;justify-content:center;width:100%;height:100px;background:#fff;border:2px dashed #fed7d7;border-radius:6px;transition:all .2s ease}.ad-component .ad-sponsored .sponsored-placeholder:hover{border-color:#fc8181;background:#fff5f5}.ad-component .ad-sponsored .sponsored-placeholder .sponsored-placeholder-text{color:#e53e3e;font-size:.875rem;font-weight:500}@media(max-width: 768px){.ad-component{margin:.5rem 0;border-radius:6px}.ad-component .adsbygoogle{min-height:60px}.ad-component .ad-display,.ad-component .ad-sponsored{padding:.75rem}.ad-component .ad-display .ad-content,.ad-component .ad-display .sponsored-content,.ad-component .ad-sponsored .ad-content,.ad-component .ad-sponsored .sponsored-content{min-height:80px}.ad-component .ad-display .ad-placeholder,.ad-component .ad-display .sponsored-placeholder,.ad-component .ad-sponsored .ad-placeholder,.ad-component .ad-sponsored .sponsored-placeholder{height:80px}}@media(prefers-color-scheme: dark){.ad-component{background:#1a1a1a;box-shadow:0 1px 3px rgba(0,0,0,.3)}.ad-component .ad-display{background:linear-gradient(135deg, #2d3748 0%, #4a5568 100%);border-color:#4a5568}.ad-component .ad-display .ad-placeholder{background:#2d3748;border-color:#4a5568}.ad-component .ad-display .ad-placeholder:hover{border-color:#718096;background:#4a5568}.ad-component .ad-display .ad-placeholder .ad-placeholder-text{color:#a0aec0}.ad-component .ad-sponsored{background:linear-gradient(135deg, #2d1b1b 0%, #4a2c2c 100%);border-color:#4a2c2c}.ad-component .ad-sponsored .sponsored-placeholder{background:#2d1b1b;border-color:#4a2c2c}.ad-component .ad-sponsored .sponsored-placeholder:hover{border-color:#fc8181;background:#4a2c2c}}.ad-component.loading .ad-display .ad-placeholder,.ad-component.loading .ad-display .sponsored-placeholder,.ad-component.loading .ad-sponsored .ad-placeholder,.ad-component.loading .ad-sponsored .sponsored-placeholder{animation:pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}`, "",{"version":3,"sources":["webpack://./src/components/Ads/AdComponent.scss"],"names":[],"mappings":"AAAA,cACE,iBAAA,CACA,aAAA,CACA,iBAAA,CACA,eAAA,CACA,wBAAA,CACA,eAAA,CACA,uBAAA,CAEA,oBACE,qCAAA,CAIF,wBACE,aAAA,CACA,eAAA,CAEA,YAAA,CACA,sBAAA,CACA,kBAAA,CACA,UAAA,CACA,gBAAA,CACA,cAAA,CAiBA,mCAAA,CACA,0BAAA,CAdA,wCACE,6BAAA,CACA,oCAAA,CACA,0BAAA,CACA,4BAAA,CAGF,qCACE,mCAAA,CACA,0BAAA,CAQJ,yBACE,cAAA,CACA,iBAAA,CAGF,wBACE,iBAAA,CACA,iBAAA,CACA,YAAA,CACA,sBAAA,CACA,kBAAA,CACA,UAAA,CAiBA,mCAAA,CACA,0BAAA,CAdA,wCACE,6BAAA,CACA,oCAAA,CACA,0BAAA,CACA,4BAAA,CAGF,qCACE,mCAAA,CACA,0BAAA,CAQJ,yBACE,eAAA,CACA,iBAAA,CAGF,wBACE,cAAA,CACA,iBAAA,CAIF,2BACE,aAAA,CACA,iBAAA,CACA,kBAAA,CACA,iBAAA,CACA,eAAA,CAEA,gDACE,UAAA,CACA,WAAA,CAKJ,0BACE,YAAA,CACA,4DAAA,CACA,wBAAA,CACA,iBAAA,CAEA,oCACE,gBAAA,CACA,eAAA,CACA,aAAA,CACA,wBAAA,CACA,mBAAA,CACA,mBAAA,CACA,iBAAA,CAGF,sCACE,YAAA,CACA,kBAAA,CACA,sBAAA,CACA,gBAAA,CAGF,0CACE,YAAA,CACA,kBAAA,CACA,sBAAA,CACA,UAAA,CACA,YAAA,CACA,eAAA,CACA,yBAAA,CACA,iBAAA,CACA,uBAAA,CAEA,gDACE,oBAAA,CACA,kBAAA,CAGF,+DACE,aAAA,CACA,iBAAA,CACA,eAAA,CAMN,4BACE,YAAA,CACA,4DAAA,CACA,wBAAA,CACA,iBAAA,CAEA,6CACE,gBAAA,CACA,eAAA,CACA,aAAA,CACA,wBAAA,CACA,mBAAA,CACA,mBAAA,CACA,iBAAA,CAGF,+CACE,YAAA,CACA,kBAAA,CACA,sBAAA,CACA,gBAAA,CAGF,mDACE,YAAA,CACA,kBAAA,CACA,sBAAA,CACA,UAAA,CACA,YAAA,CACA,eAAA,CACA,yBAAA,CACA,iBAAA,CACA,uBAAA,CAEA,yDACE,oBAAA,CACA,kBAAA,CAGF,+EACE,aAAA,CACA,iBAAA,CACA,eAAA,CAMN,yBArMF,cAsMI,cAAA,CACA,iBAAA,CAEA,2BACE,eAAA,CAGF,sDAEE,cAAA,CAEA,0KAEE,eAAA,CAGF,0LAEE,WAAA,CAAA,CAMN,mCA9NF,cA+NI,kBAAA,CACA,mCAAA,CAEA,0BACE,4DAAA,CACA,oBAAA,CAEA,0CACE,kBAAA,CACA,oBAAA,CAEA,gDACE,oBAAA,CACA,kBAAA,CAGF,+DACE,aAAA,CAKN,4BACE,4DAAA,CACA,oBAAA,CAEA,mDACE,kBAAA,CACA,oBAAA,CAEA,yDACE,oBAAA,CACA,kBAAA,CAAA,CAWN,0NAEE,wDAAA,CAKN,iBACE,QACE,SAAA,CAEF,IACE,UAAA,CAAA","sourcesContent":[".ad-component {\n  position: relative;\n  margin: 1rem 0;\n  border-radius: 8px;\n  overflow: hidden;\n  background: transparent;\n  box-shadow: none;\n  transition: all 0.2s ease;\n\n  &:hover {\n    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);\n  }\n\n  // Position-specific styles\n  &.ad-header {\n    margin: 0 auto;\n    border-radius: 0;\n    box-shadow: none;\n    display: flex;\n    justify-content: center;\n    align-items: center;\n    width: 100%;\n    max-width: 1200px;\n    padding: 0 1rem;\n    background: transparent;\n    \n    // Override default styles for header ads\n    .ad-placeholder {\n      background: #f8f9fa !important;\n      border: 2px dashed #dee2e6 !important;\n      box-shadow: none !important;\n      border-radius: 8px !important;\n    }\n    \n    .adsbygoogle {\n      background: transparent !important;\n      box-shadow: none !important;\n    }\n    \n    // Remove any background or shadow from the ad component itself\n    background: transparent !important;\n    box-shadow: none !important;\n  }\n\n  &.ad-sidebar {\n    margin: 0.5rem 0;\n    border-radius: 6px;\n  }\n\n  &.ad-footer {\n    margin: 2rem 0 0 0;\n    border-radius: 8px;\n    display: flex;\n    justify-content: center;\n    align-items: center;\n    width: 100%;\n    background: transparent;\n    \n    // Override default styles for footer ads\n    .ad-placeholder {\n      background: #f8f9fa !important;\n      border: 2px dashed #dee2e6 !important;\n      box-shadow: none !important;\n      border-radius: 8px !important;\n    }\n    \n    .adsbygoogle {\n      background: transparent !important;\n      box-shadow: none !important;\n    }\n    \n    // Remove any background or shadow from the ad component itself\n    background: transparent !important;\n    box-shadow: none !important;\n  }\n\n  &.ad-content {\n    margin: 1.5rem 0;\n    border-radius: 8px;\n  }\n\n  &.ad-inline {\n    margin: 0.5rem 0;\n    border-radius: 6px;\n  }\n\n  // AdSense styles\n  .adsbygoogle {\n    display: block;\n    text-align: center;\n    background: #f8f9fa;\n    border-radius: 6px;\n    min-height: 90px;\n    \n    &[data-ad-format=\"auto\"] {\n      width: 100%;\n      height: auto;\n    }\n  }\n\n  // Display ad styles\n  .ad-display {\n    padding: 1rem;\n    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);\n    border: 1px solid #e9ecef;\n    border-radius: 8px;\n\n    .ad-label {\n      font-size: 0.75rem;\n      font-weight: 500;\n      color: #6c757d;\n      text-transform: uppercase;\n      letter-spacing: 0.5px;\n      margin-bottom: 0.5rem;\n      text-align: center;\n    }\n\n    .ad-content {\n      display: flex;\n      align-items: center;\n      justify-content: center;\n      min-height: 100px;\n    }\n\n    .ad-placeholder {\n      display: flex;\n      align-items: center;\n      justify-content: center;\n      width: 100%;\n      height: 100px;\n      background: #ffffff;\n      border: 2px dashed #dee2e6;\n      border-radius: 6px;\n      transition: all 0.2s ease;\n\n      &:hover {\n        border-color: #adb5bd;\n        background: #f8f9fa;\n      }\n\n      .ad-placeholder-text {\n        color: #6c757d;\n        font-size: 0.875rem;\n        font-weight: 500;\n      }\n    }\n  }\n\n  // Sponsored content styles\n  .ad-sponsored {\n    padding: 1rem;\n    background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);\n    border: 1px solid #fed7d7;\n    border-radius: 8px;\n\n    .sponsored-label {\n      font-size: 0.75rem;\n      font-weight: 600;\n      color: #e53e3e;\n      text-transform: uppercase;\n      letter-spacing: 0.5px;\n      margin-bottom: 0.5rem;\n      text-align: center;\n    }\n\n    .sponsored-content {\n      display: flex;\n      align-items: center;\n      justify-content: center;\n      min-height: 100px;\n    }\n\n    .sponsored-placeholder {\n      display: flex;\n      align-items: center;\n      justify-content: center;\n      width: 100%;\n      height: 100px;\n      background: #ffffff;\n      border: 2px dashed #fed7d7;\n      border-radius: 6px;\n      transition: all 0.2s ease;\n\n      &:hover {\n        border-color: #fc8181;\n        background: #fff5f5;\n      }\n\n      .sponsored-placeholder-text {\n        color: #e53e3e;\n        font-size: 0.875rem;\n        font-weight: 500;\n      }\n    }\n  }\n\n  // Responsive design\n  @media (max-width: 768px) {\n    margin: 0.5rem 0;\n    border-radius: 6px;\n\n    .adsbygoogle {\n      min-height: 60px;\n    }\n\n    .ad-display,\n    .ad-sponsored {\n      padding: 0.75rem;\n\n      .ad-content,\n      .sponsored-content {\n        min-height: 80px;\n      }\n\n      .ad-placeholder,\n      .sponsored-placeholder {\n        height: 80px;\n      }\n    }\n  }\n\n  // Dark mode support\n  @media (prefers-color-scheme: dark) {\n    background: #1a1a1a;\n    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);\n\n    .ad-display {\n      background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);\n      border-color: #4a5568;\n\n      .ad-placeholder {\n        background: #2d3748;\n        border-color: #4a5568;\n\n        &:hover {\n          border-color: #718096;\n          background: #4a5568;\n        }\n\n        .ad-placeholder-text {\n          color: #a0aec0;\n        }\n      }\n    }\n\n    .ad-sponsored {\n      background: linear-gradient(135deg, #2d1b1b 0%, #4a2c2c 100%);\n      border-color: #4a2c2c;\n\n      .sponsored-placeholder {\n        background: #2d1b1b;\n        border-color: #4a2c2c;\n\n        &:hover {\n          border-color: #fc8181;\n          background: #4a2c2c;\n        }\n      }\n    }\n  }\n}\n\n// Ad loading states\n.ad-component.loading {\n  .ad-display,\n  .ad-sponsored {\n    .ad-placeholder,\n    .sponsored-placeholder {\n      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;\n    }\n  }\n}\n\n@keyframes pulse {\n  0%, 100% {\n    opacity: 1;\n  }\n  50% {\n    opacity: 0.5;\n  }\n} "],"sourceRoot":""}]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
 /***/ })
 
 }]);
-//# sourceMappingURL=5720.chunk.js.map
+//# sourceMappingURL=4368.chunk.js.map
