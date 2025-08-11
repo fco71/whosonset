@@ -1,0 +1,80 @@
+.ad-test-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  
+  .container {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+  }
+  
+  h1 {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .bg-white {
+    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.95);
+  }
+  
+  pre {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    line-height: 1.4;
+  }
+  
+  .space-y-4 > * + * {
+    margin-top: 1rem;
+  }
+  
+  .space-y-6 > * + * {
+    margin-top: 1.5rem;
+  }
+  
+  .space-y-8 > * + * {
+    margin-top: 2rem;
+  }
+  
+  // Responsive adjustments
+  @media (max-width: 768px) {
+    .container {
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+    
+    h1 {
+      font-size: 2rem;
+    }
+    
+    .text-xl {
+      font-size: 1.125rem;
+    }
+  }
+  
+  // Dark mode support
+  @media (prefers-color-scheme: dark) {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    
+    .bg-white {
+      background: rgba(30, 30, 30, 0.95);
+      border-color: #374151;
+    }
+    
+    .text-gray-900 {
+      color: #f9fafb;
+    }
+    
+    .text-gray-600 {
+      color: #d1d5db;
+    }
+    
+    .bg-gray-50 {
+      background-color: #374151;
+    }
+    
+    .bg-gray-800 {
+      background-color: #1f2937;
+    }
+  }
+} 
