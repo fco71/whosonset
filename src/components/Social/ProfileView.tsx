@@ -27,7 +27,7 @@ const ProfileView: React.FC = () => {
         userId: userId || 'user1',
         displayName: 'Sarah Chen',
         bio: 'Award-winning cinematographer with over 15 years of experience in feature films, documentaries, and commercials. Passionate about visual storytelling and pushing creative boundaries.',
-        avatar: '/default-avatar.svg',
+        avatar: '/bust-avatar.svg',
         coverImage: '/movie-production-avatar.svg',
         location: 'Los Angeles, CA',
         department: 'Camera',

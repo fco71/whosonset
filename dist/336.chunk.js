@@ -906,8 +906,8 @@ class SocialService {
                 // Always provide a valid name and image if possible
                 const name = data.name || data.displayName || 'Unnamed Crew';
                 const displayName = data.displayName || data.name || 'Unnamed Crew';
-                const photoURL = data.photoURL || data.profileImageUrl || data.avatarUrl || '/default-avatar.png';
-                const profileImageUrl = data.profileImageUrl || data.photoURL || data.avatarUrl || '/default-avatar.png';
+                const photoURL = data.photoURL || data.profileImageUrl || data.avatarUrl || '/bust-avatar.svg';
+                const profileImageUrl = data.profileImageUrl || data.photoURL || data.avatarUrl || '/bust-avatar.svg';
                 if (!data.name || !data.profileImageUrl) {
                     console.warn('[SocialService] crewProfiles doc missing name or profileImageUrl for', userId, data);
                 }
@@ -934,8 +934,8 @@ class SocialService {
                 name: 'Unknown Crew',
                 displayName: 'Unknown Crew',
                 username: '',
-                photoURL: '/default-avatar.png',
-                profileImageUrl: '/default-avatar.png',
+                photoURL: '/bust-avatar.svg',
+                profileImageUrl: '/bust-avatar.svg',
                 bio: '',
                 jobTitles: [],
                 isFollowing: false,
@@ -1157,7 +1157,7 @@ function imageErrorFallback(e, fallback = '/bust-avatar.svg') {
 /* harmony export */   ed: () => (/* binding */ getPhotoUrl),
 /* harmony export */   pu: () => (/* binding */ isCrewProfile)
 /* harmony export */ });
-/* unused harmony export isUserProfile */
+/* unused harmony exports isUserProfile, getInitials, getInitialsAvatarUrl */
 // Type guard to check if a profile is a CrewProfile
 function isCrewProfile(profile) {
     return 'jobTitles' in profile && 'residences' in profile;
@@ -1180,6 +1180,24 @@ function getDisplayName(profile) {
         profile.username ||
         (typeof profile.email === 'string' ? profile.email.split('@')[0] : undefined) ||
         'Unknown User');
+}
+// Helper function to get initials from a name
+function getInitials(name) {
+    if (!name || typeof name !== 'string')
+        return 'U';
+    const words = name.trim().split(/\s+/);
+    if (words.length === 1) {
+        return words[0].charAt(0).toUpperCase();
+    }
+    return words
+        .slice(0, 2)
+        .map(word => word.charAt(0).toUpperCase())
+        .join('');
+}
+// Helper function to generate initials-based avatar URL
+function getInitialsAvatarUrl(name) {
+    const initials = getInitials(name);
+    return `/api/avatar/${encodeURIComponent(initials)}`;
 }
 // Helper function to get a photo URL from any profile type
 function getPhotoUrl(profile) {

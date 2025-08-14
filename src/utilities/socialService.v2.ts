@@ -348,8 +348,8 @@ export class SocialService {
         // Always provide a valid name and image if possible
         const name = data.name || data.displayName || 'Unnamed Crew';
         const displayName = data.displayName || data.name || 'Unnamed Crew';
-        const photoURL = data.photoURL || data.profileImageUrl || data.avatarUrl || '/default-avatar.png';
-        const profileImageUrl = data.profileImageUrl || data.photoURL || data.avatarUrl || '/default-avatar.png';
+        const photoURL = data.photoURL || data.profileImageUrl || data.avatarUrl || '/bust-avatar.svg';
+        const profileImageUrl = data.profileImageUrl || data.photoURL || data.avatarUrl || '/bust-avatar.svg';
         if (!data.name || !data.profileImageUrl) {
           console.warn('[SocialService] crewProfiles doc missing name or profileImageUrl for', userId, data);
         }
@@ -376,8 +376,8 @@ export class SocialService {
         name: 'Unknown Crew',
         displayName: 'Unknown Crew',
         username: '',
-        photoURL: '/default-avatar.png',
-        profileImageUrl: '/default-avatar.png',
+        photoURL: '/bust-avatar.svg',
+        profileImageUrl: '/bust-avatar.svg',
         bio: '',
         jobTitles: [],
         isFollowing: false,
