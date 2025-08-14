@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
 interface NotificationPreferences {
@@ -107,18 +107,45 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ isOpen = fa
   };
 
   const handleSave = async () => {
-    if (!currentUser) return;
+    if (!currentUser) {
+      console.error('[NotificationSettings] No current user found');
+      return;
+    }
     
     try {
+      console.log('[NotificationSettings] Starting save operation for user:', currentUser.uid);
+      console.log('[NotificationSettings] Preferences to save:', preferences);
+      
       setSaving(true);
-      await updateDoc(doc(db, 'users', currentUser.uid), {
+      setMessage(''); // Clear any previous messages
+      
+      await setDoc(doc(db, 'users', currentUser.uid), {
         notificationPreferences: preferences,
-      });
+      }, { merge: true });
+      
+      console.log('[NotificationSettings] Save operation completed successfully');
       setMessage('Notification preferences saved successfully!');
-      setTimeout(() => setMessage(''), 3000);
+      
+      // Auto-close modal after successful save
+      setTimeout(() => {
+        setMessage('');
+        if (onClose) {
+          console.log('[NotificationSettings] Auto-closing modal after successful save');
+          onClose();
+        }
+      }, 2000);
+      
+      // Fallback: force close after 5 seconds if auto-close doesn't work
+      setTimeout(() => {
+        if (onClose) {
+          console.log('[NotificationSettings] Force closing modal (fallback)');
+          onClose();
+        }
+      }, 5000);
+      
     } catch (error) {
-      console.error('Error saving notification preferences:', error);
-      setMessage('Failed to save preferences. Please try again.');
+      console.error('[NotificationSettings] Error saving notification preferences:', error);
+      setMessage(`Failed to save preferences: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setSaving(false);
     }
@@ -205,12 +232,33 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ isOpen = fa
             </div>
             
             {message && (
-              <div className={`mb-4 p-3 rounded-md ${
+              <div className={`mb-4 p-4 rounded-md border ${
                 message.includes('successfully') 
-                  ? 'bg-green-100 text-green-700 border border-green-200' 
-                  : 'bg-red-100 text-red-700 border border-red-200'
+                  ? 'bg-green-50 text-green-800 border-green-200' 
+                  : 'bg-red-50 text-red-800 border-red-200'
               }`}>
-                {message}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    {message.includes('successfully') ? (
+                      <svg className="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5 text-red-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                    <span className="font-medium">{message}</span>
+                  </div>
+                  <button
+                    onClick={() => setMessage('')}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
               </div>
             )}
 
@@ -476,19 +524,36 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ isOpen = fa
             </div>
 
             <div className="mt-8 flex justify-end space-x-3">
-              <button
-                onClick={onClose}
-                className="px-6 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {saving ? 'Saving...' : 'Save Preferences'}
-              </button>
+              {message && message.includes('successfully') ? (
+                <button
+                  onClick={onClose}
+                  className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                >
+                  Close
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={onClose}
+                    className="px-6 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                  >
+                    {saving && (
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    )}
+                    {saving ? 'Saving...' : 'Save Preferences'}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

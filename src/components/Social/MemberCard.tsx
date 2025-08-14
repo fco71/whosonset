@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { db, auth } from '../../firebase';
-import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { doc, setDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { cn } from '../../lib/utils';
 import { Button } from '../ui/Button';
@@ -41,15 +41,15 @@ const MemberCard: React.FC<MemberCardProps> = ({
       const profileId = 'uid' in profile ? profile.uid : profile.id;
       
       if (isBookmarked) {
-        await updateDoc(userRef, {
+        await setDoc(userRef, {
           bookmarkedUsers: arrayRemove(profileId)
-        });
+        }, { merge: true });
         setIsBookmarked(false);
         toast.success('Crew member removed from favorites');
       } else {
-        await updateDoc(userRef, {
+        await setDoc(userRef, {
           bookmarkedUsers: arrayUnion(profileId)
-        });
+        }, { merge: true });
         setIsBookmarked(true);
         toast.success('Crew member added to favorites!');
       }
