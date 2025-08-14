@@ -6947,6 +6947,14 @@ const NotificationCenter = ({ isOpen, onClose }) => {
                         navigate('/social'); // Fallback to social page
                     }
                     break;
+                case 'follow_request':
+                    // Navigate to social page with requests tab
+                    navigate('/social?tab=requests');
+                    break;
+                case 'follow_accepted':
+                    // Navigate to social page with connections tab
+                    navigate('/social?tab=connections');
+                    break;
                 case 'job_application':
                     // Navigate to job applications page
                     if (notification.relatedId) {
@@ -6991,6 +6999,15 @@ const NotificationCenter = ({ isOpen, onClose }) => {
                     else {
                         navigate('/projects');
                     }
+                    break;
+                case 'mention':
+                    // Navigate to social page for mentions
+                    navigate('/social?tab=notifications');
+                    break;
+                case 'like':
+                case 'comment':
+                    // Navigate to social page for likes/comments
+                    navigate('/social?tab=notifications');
                     break;
                 default:
                     // Default navigation based on type

@@ -565,7 +565,7 @@ const SocialPage = () => {
         <div className="flex items-start justify-between">
           <div className="flex items-start space-x-3">
             <Avatar className="h-12 w-12">
-              <AvatarImage src={getPhotoUrl(profile) || '/bust-avatar.svg'} alt={getDisplayName(profile)} />
+                                      <AvatarImage src={getPhotoUrl(profile)} alt={getDisplayName(profile)} />
               <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-medium">
                 {getDisplayName(profile)
                   .split(' ')

@@ -407,7 +407,7 @@ const Home: React.FC = () => {
                                 .map((profile, index) => {
                                     const mainTitle = profile.jobTitles && profile.jobTitles.length > 0 ? profile.jobTitles[0].title : '';
                                     const mainLocation = profile.residences && profile.residences.length > 0 ? `${profile.residences[0].city ? profile.residences[0].city + ', ' : ''}${profile.residences[0].country || ''}` : '';
-                                    const imageUrl = profile.profileImageUrl || '/default-avatar.svg';
+                                                                                const imageUrl = profile.profileImageUrl || '/bust-avatar.svg';
                                     const availability = profile.availability || '';
                                     const isBookmarked = favoriteCrewIds.includes(profile.uid);
                                     return (
@@ -426,7 +426,7 @@ const Home: React.FC = () => {
                                                 </button>
                                             )}
                                             <a href={`/resume/${profile.uid}`} target="_blank" rel="noopener noreferrer" className="flex items-center flex-1 min-w-0 gap-4" style={{textDecoration: 'none'}}>
-                                                <img src={imageUrl} alt={profile.name} className="w-14 h-14 rounded-full object-cover border-2 border-gray-200" style={{flexShrink: 0}} onError={e => { (e.target as HTMLImageElement).src = '/default-avatar.svg'; }} />
+                                                <img src={imageUrl} alt={profile.name} className="w-14 h-14 rounded-full object-cover border-2 border-gray-200" style={{flexShrink: 0}} onError={e => { (e.target as HTMLImageElement).src = '/bust-avatar.svg'; }} />
                                                 <div className="flex-1 min-w-0">
                                                     <div className="font-semibold text-gray-900 truncate group-hover:text-blue-700" style={{fontSize: 17, letterSpacing: '-0.01em'}}>{profile.name}</div>
                                                     <div className="text-xs text-gray-500 truncate" style={{fontWeight: 500}}>{mainTitle}{mainLocation ? ' · ' + mainLocation : ''}</div>

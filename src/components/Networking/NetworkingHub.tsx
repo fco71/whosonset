@@ -278,7 +278,7 @@ const NetworkingHub: React.FC<NetworkingHubProps> = ({ currentUserId, currentUse
               <div key={profile.uid} className="crew-card">
                 <div className="crew-header">
                   <div className="crew-avatar">
-                    <img src={profile.profileImageUrl || '/default-avatar.svg'} alt="" />
+                    <img src={profile.profileImageUrl || '/bust-avatar.svg'} alt="" />
                     <div className="online-indicator"></div>
                   </div>
                   <div className="crew-info">

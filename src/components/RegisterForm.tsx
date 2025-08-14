@@ -138,7 +138,7 @@ const RegisterForm: React.FC = () => {
 
       // Always ensure name and image are set
       const safeName = form.name && form.name.trim() !== '' ? form.name : 'Unknown Crew';
-      const safeProfileImageUrl = uploadedImageUrl && uploadedImageUrl.trim() !== '' ? uploadedImageUrl : '/default-avatar.svg';
+              const safeProfileImageUrl = uploadedImageUrl && uploadedImageUrl.trim() !== '' ? uploadedImageUrl : '/bust-avatar.svg';
 
       // 3. Update the crewProfiles document with additional details
       // Note: We need to get the user ID from the current user context

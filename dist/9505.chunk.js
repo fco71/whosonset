@@ -960,6 +960,27 @@ class SocialService {
             return () => { };
         }
     }
+    // Cancel/Delete sent follow request
+    static async cancelFollowRequest(fromUserId, toUserId) {
+        try {
+            console.log('[SocialService] Canceling follow request:', { fromUserId, toUserId });
+            // Find the follow request document
+            const requestsQuery = (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .query */ .P)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .collection */ .rJ)(_firebase__WEBPACK_IMPORTED_MODULE_1__.db, 'followRequests'), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .where */ ._M)('fromUserId', '==', fromUserId), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .where */ ._M)('toUserId', '==', toUserId), (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .where */ ._M)('status', '==', 'pending'));
+            const snapshot = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .getDocs */ .GG)(requestsQuery);
+            if (snapshot.empty) {
+                console.log('[SocialService] No pending follow request found to cancel');
+                throw new Error('No pending follow request found');
+            }
+            // Delete the follow request document
+            const requestDoc = snapshot.docs[0];
+            await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_0__/* .deleteDoc */ .kd)(requestDoc.ref);
+            console.log('[SocialService] Follow request canceled successfully');
+        }
+        catch (error) {
+            console.error('[SocialService] Error canceling follow request:', error);
+            throw error;
+        }
+    }
 }
 // Cache for activity feed
 SocialService.activityFeedCache = new Map();

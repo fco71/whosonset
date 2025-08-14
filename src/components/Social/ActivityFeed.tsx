@@ -281,7 +281,7 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
   const ActivityItem = useMemo(() => React.memo(({ activity }: { activity: ActivityFeedItem }) => {
     const profile = userProfiles.get(activity.userId);
     const displayName = profile?.displayName || '';
-    const avatarUrl = profile?.avatarUrl || '/default-avatar.svg';
+    const avatarUrl = profile?.avatarUrl || '/bust-avatar.svg';
     const liked = likedActivities[activity.id] || false;
 
     // Use the member card style for all activities
@@ -292,7 +292,7 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
           alt={displayName || `User ${activity.userId.slice(-4)}`}
           className="member-avatar crew-avatar"
           style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', border: '2px solid #e5e7eb' }}
-          onError={e => (e.currentTarget.src = '/default-avatar.svg')}
+          onError={e => (e.currentTarget.src = '/bust-avatar.svg')}
         />
         <div className="member-info crew-info" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
           <span className="member-name crew-name" style={{ fontSize: 16, fontWeight: 600, color: '#374151' }}>{displayName || `User ${activity.userId.slice(-4)}`}</span>

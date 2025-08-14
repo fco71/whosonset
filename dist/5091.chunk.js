@@ -198,6 +198,8 @@ var dist = __webpack_require__(7767);
 var user_x = __webpack_require__(6079);
 // EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/user-check.js
 var user_check = __webpack_require__(7623);
+// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/x.js
+var x = __webpack_require__(8697);
 // EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/createLucideIcon.js + 3 modules
 var createLucideIcon = __webpack_require__(9407);
 ;// ./node_modules/lucide-react/dist/esm/icons/user-plus.js
@@ -243,8 +245,6 @@ const MessageCircle = (0,createLucideIcon/* default */.A)("message-circle", mess
 
 // EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/plus.js
 var plus = __webpack_require__(697);
-// EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/x.js
-var x = __webpack_require__(8697);
 // EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/search.js
 var search = __webpack_require__(8445);
 // EXTERNAL MODULE: ./node_modules/lucide-react/dist/esm/icons/send.js
@@ -316,6 +316,7 @@ const SocialPage = () => {
     const auth = (0,AuthContext/* useAuth */.A)();
     const user = auth?.currentUser; // Access currentUser instead of user
     const navigate = (0,dist/* useNavigate */.Zp)();
+    const location = (0,dist/* useLocation */.zy)();
     const [activeTab, setActiveTab] = (0,react.useState)('connections');
     const [searchQuery, setSearchQuery] = (0,react.useState)('');
     // Define the profile state with proper typing
@@ -432,32 +433,19 @@ const SocialPage = () => {
                         };
                     }
                 };
-                // Load real follow requests (incoming) - use subscription once
-                const followRequestsPromise = new Promise((resolve) => {
+                // Load incoming requests (incoming) - use subscription once
+                const incomingRequestsPromise = new Promise((resolve) => {
                     const unsubscribe = socialService/* SocialService */.l.subscribeToFollowRequests(currentUser.uid, (requests) => {
                         unsubscribe();
                         resolve(requests);
                     });
                 });
-                const realFollowRequests = await followRequestsPromise;
-                const mappedRequests = await Promise.all(realFollowRequests.map(async (req) => {
+                const realIncomingRequests = await incomingRequestsPromise;
+                const mappedIncomingRequests = await Promise.all(realIncomingRequests.map(async (req) => {
                     const userProfile = await fetchUserProfile(req.fromUserId);
-                    return { ...userProfile, requestId: req.id }; // Attach Firestore request ID
-                }));
-                setConnectionRequests(mappedRequests);
-                // Load real connections (people I'm following) - use subscription once
-                const followingPromise = new Promise((resolve) => {
-                    const unsubscribe = socialService/* SocialService */.l.subscribeToFollowing(currentUser.uid, (follows) => {
-                        unsubscribe();
-                        resolve(follows);
-                    });
-                });
-                const realConnections = await followingPromise;
-                const mappedConnections = await Promise.all(realConnections.map(async (conn) => {
-                    const userProfile = await fetchUserProfile(conn.followingId);
                     return userProfile;
                 }));
-                setConnections(mappedConnections);
+                setConnectionRequests(mappedIncomingRequests);
                 // Load real sent requests (outgoing) - use subscription once
                 const outgoingRequestsPromise = new Promise((resolve) => {
                     const unsubscribe = socialService/* SocialService */.l.subscribeToOutgoingFollowRequests(currentUser.uid, (requests) => {
@@ -508,6 +496,97 @@ const SocialPage = () => {
         clearCache();
         loadData();
     }, [activeTab, user?.uid]);
+    // Handle URL parameters for tab navigation
+    (0,react.useEffect)(() => {
+        const searchParams = new URLSearchParams(location.search);
+        const tabParam = searchParams.get('tab');
+        if (tabParam && ['connections', 'requests', 'discover', 'notifications'].includes(tabParam)) {
+            setActiveTab(tabParam);
+        }
+    }, [location.search]);
+    // Set up ongoing subscriptions for real-time updates
+    (0,react.useEffect)(() => {
+        const currentUser = auth?.currentUser;
+        if (!currentUser?.uid)
+            return;
+        // Helper function to fetch user profile data
+        const fetchUserProfile = async (userId) => {
+            try {
+                const { getDoc, doc } = await Promise.resolve(/* import() */).then(__webpack_require__.bind(__webpack_require__, 7594));
+                const { db } = await Promise.resolve(/* import() */).then(__webpack_require__.bind(__webpack_require__, 9487));
+                const crewDoc = await getDoc(doc(db, 'crewProfiles', userId));
+                if (crewDoc.exists()) {
+                    const crewData = crewDoc.data();
+                    const id = crewData.id || userId;
+                    const displayName = crewData.displayName || crewData.name || 'Unknown User';
+                    const photoURL = crewData.photoURL || crewData.profileImageUrl || '';
+                    const bio = crewData.bio || '';
+                    return {
+                        id,
+                        type: 'crew',
+                        uid: userId,
+                        displayName,
+                        photoURL,
+                        bio,
+                        name: crewData.name || displayName,
+                        username: crewData.username || (crewData.email ? String(crewData.email).split('@')[0] : ''),
+                        jobTitles: Array.isArray(crewData.jobTitles) ? [...crewData.jobTitles] : [],
+                        residences: Array.isArray(crewData.residences) ? [...crewData.residences] : [],
+                        isPublished: crewData.isPublished !== undefined ? Boolean(crewData.isPublished) : true,
+                    };
+                }
+                return {
+                    id: userId,
+                    type: 'user',
+                    displayName: `User ${userId.slice(0, 6)}`,
+                    photoURL: '',
+                    bio: '',
+                    email: ''
+                };
+            }
+            catch (error) {
+                console.error('Error fetching user profile:', error);
+                return {
+                    id: userId,
+                    type: 'user',
+                    displayName: `User ${userId.slice(0, 6)}`,
+                    photoURL: '',
+                    bio: '',
+                    email: ''
+                };
+            }
+        };
+        // Set up subscription for incoming requests
+        const incomingUnsubscribe = socialService/* SocialService */.l.subscribeToFollowRequests(currentUser.uid, async (requests) => {
+            const mappedRequests = await Promise.all(requests.map(async (req) => {
+                const userProfile = await fetchUserProfile(req.fromUserId);
+                return { ...userProfile, requestId: req.id };
+            }));
+            setConnectionRequests(mappedRequests);
+        });
+        // Set up subscription for sent requests
+        const outgoingUnsubscribe = socialService/* SocialService */.l.subscribeToOutgoingFollowRequests(currentUser.uid, async (requests) => {
+            const mappedRequests = await Promise.all(requests.map(async (req) => {
+                const userProfile = await fetchUserProfile(req.toUserId);
+                return userProfile;
+            }));
+            setSentRequests(mappedRequests);
+        });
+        // Set up subscription for connections (people I'm following)
+        const connectionsUnsubscribe = socialService/* SocialService */.l.subscribeToFollowing(currentUser.uid, async (follows) => {
+            const mappedConnections = await Promise.all(follows.map(async (conn) => {
+                const userProfile = await fetchUserProfile(conn.followingId);
+                return userProfile;
+            }));
+            setConnections(mappedConnections);
+        });
+        // Cleanup subscriptions on unmount or when user changes
+        return () => {
+            incomingUnsubscribe();
+            outgoingUnsubscribe();
+            connectionsUnsubscribe();
+        };
+    }, [auth?.currentUser?.uid]);
     // Filter profiles based on search query and active tab
     const filteredItems = (0,react.useMemo)(() => {
         const items = {
@@ -532,6 +611,10 @@ const SocialPage = () => {
     const handleTabChange = (value) => {
         setActiveTab(value);
         setSearchQuery('');
+        // Update URL with tab parameter
+        const searchParams = new URLSearchParams(location.search);
+        searchParams.set('tab', value);
+        navigate(`${location.pathname}?${searchParams.toString()}`, { replace: true });
     };
     // Handle follow/unfollow action
     const handleFollowChange = async (profileId, follow) => {
@@ -574,6 +657,20 @@ const SocialPage = () => {
         catch (error) {
             console.error(`Error ${action}ing follow request:`, error);
             react_hot_toast_dist/* toast */.oR.error(`Failed to ${action} follow request. Please try again.`);
+        }
+    };
+    // Handle canceling sent follow requests
+    const handleCancelSentRequest = async (userId) => {
+        if (!user?.uid)
+            return;
+        try {
+            await socialService/* SocialService */.l.cancelFollowRequest(user.uid, userId);
+            react_hot_toast_dist/* toast */.oR.success('Follow request canceled successfully');
+            // The sentRequests will be updated automatically by the subscription
+        }
+        catch (error) {
+            console.error('Error canceling follow request:', error);
+            react_hot_toast_dist/* toast */.oR.error('Failed to cancel follow request. Please try again.');
         }
     };
     // Messaging functions
@@ -644,7 +741,7 @@ const SocialPage = () => {
             case 'connections':
                 return ((0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h2", { className: "text-xl font-semibold mb-4", children: "Your Connections" }), connections.length > 0 ? ((0,jsx_runtime.jsx)("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4", children: connections.map((profile) => ((0,jsx_runtime.jsx)(UserCard, { profile: profile, action: (0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "outline", size: "sm", className: "whitespace-nowrap text-xs px-3 py-1.5", onClick: () => handleFollowChange((0,Profile/* getProfileId */.Lx)(profile), false), children: [(0,jsx_runtime.jsx)(user_x/* default */.A, { className: "h-3.5 w-3.5 mr-1.5" }), t('social.actions.unfollow')] }) }, (0,Profile/* getProfileId */.Lx)(profile)))) })) : ((0,jsx_runtime.jsx)("p", { className: "text-gray-500", children: "You don't have any connections yet." }))] }));
             case 'requests':
-                return ((0,jsx_runtime.jsxs)("div", { className: "space-y-4", children: [connectionRequests.length > 0 && ((0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h3", { className: "text-lg font-medium mb-2", children: t('social.headers.connectionRequests') }), (0,jsx_runtime.jsx)("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6", children: connectionRequests.map((profile) => ((0,jsx_runtime.jsx)(UserCard, { profile: profile, action: (0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "default", size: "sm", className: "whitespace-nowrap", onClick: () => handleFollowRequest((0,Profile/* getProfileId */.Lx)(profile), 'accept'), children: [(0,jsx_runtime.jsx)(user_check/* default */.A, { className: "h-4 w-4 mr-2" }), t('social.actions.accept')] }) }, (0,Profile/* getProfileId */.Lx)(profile)))) })] })), sentRequests.length > 0 && ((0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h3", { className: "text-lg font-medium mb-2", children: t('social.headers.sentRequests') }), (0,jsx_runtime.jsx)("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4", children: sentRequests.map((profile) => ((0,jsx_runtime.jsx)(UserCard, { profile: profile, action: (0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "outline", size: "sm", className: "whitespace-nowrap", onClick: () => handleFollowRequest((0,Profile/* getProfileId */.Lx)(profile), 'reject'), children: [(0,jsx_runtime.jsx)(user_x/* default */.A, { className: "h-4 w-4 mr-2" }), "Cancel"] }) }, (0,Profile/* getProfileId */.Lx)(profile)))) })] })), connectionRequests.length === 0 && sentRequests.length === 0 && ((0,jsx_runtime.jsx)("p", { className: "text-gray-500", children: t('social.empty.noRequests') }))] }));
+                return ((0,jsx_runtime.jsxs)("div", { className: "space-y-4", children: [connectionRequests.length > 0 && ((0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h3", { className: "text-lg font-medium mb-2", children: t('social.headers.connectionRequests') }), (0,jsx_runtime.jsx)("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6", children: connectionRequests.map((profile) => ((0,jsx_runtime.jsx)(UserCard, { profile: profile, action: (0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "default", size: "sm", className: "whitespace-nowrap", onClick: () => handleFollowRequest((0,Profile/* getProfileId */.Lx)(profile), 'accept'), children: [(0,jsx_runtime.jsx)(user_check/* default */.A, { className: "h-4 w-4 mr-2" }), t('social.actions.accept')] }) }, (0,Profile/* getProfileId */.Lx)(profile)))) })] })), sentRequests.length > 0 && ((0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h3", { className: "text-lg font-medium mb-2", children: t('social.headers.sentRequests') }), (0,jsx_runtime.jsx)("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4", children: sentRequests.map((profile) => ((0,jsx_runtime.jsx)(UserCard, { profile: profile, action: (0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "outline", size: "sm", className: "whitespace-nowrap", onClick: () => handleCancelSentRequest((0,Profile/* getProfileId */.Lx)(profile)), children: [(0,jsx_runtime.jsx)(x/* default */.A, { className: "h-4 w-4 mr-2" }), "Cancel"] }) }, (0,Profile/* getProfileId */.Lx)(profile)))) })] })), connectionRequests.length === 0 && sentRequests.length === 0 && ((0,jsx_runtime.jsx)("p", { className: "text-gray-500", children: t('social.empty.noRequests') }))] }));
             case 'discover':
                 return ((0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h2", { className: "text-xl font-semibold mb-4", children: t('social.headers.discoverPeople') }), filteredProfiles.length > 0 ? ((0,jsx_runtime.jsx)("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4", children: filteredProfiles.map((profile) => ((0,jsx_runtime.jsx)(UserCard, { profile: profile, action: (0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "default", size: "sm", className: "whitespace-nowrap", onClick: () => handleFollowChange((0,Profile/* getProfileId */.Lx)(profile), true), children: [(0,jsx_runtime.jsx)(UserPlus, { className: "h-4 w-4 mr-2" }), t('social.actions.follow')] }) }, (0,Profile/* getProfileId */.Lx)(profile)))) })) : ((0,jsx_runtime.jsx)("p", { className: "text-gray-500", children: "No suggestions found." }))] }));
             case 'notifications':
@@ -731,7 +828,7 @@ const SocialPage = () => {
     return ((0,jsx_runtime.jsxs)("div", { className: "container mx-auto px-4 py-6 max-w-7xl", children: [(0,jsx_runtime.jsxs)("div", { className: "flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8", children: [(0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("h1", { className: "text-2xl font-bold text-gray-900", children: t('social.title') }), (0,jsx_runtime.jsx)("p", { className: "text-gray-500", children: t('social.subtitle') })] }), (0,jsx_runtime.jsxs)("div", { className: "flex items-center space-x-3", children: [(0,jsx_runtime.jsxs)(Button/* Button */.$, { variant: "outline", size: "sm", onClick: () => {
                                     // Navigate to full messaging environment
                                     navigate('/chat');
-                                }, className: "flex items-center space-x-2", children: [(0,jsx_runtime.jsx)(MessageCircle, { className: "h-4 w-4" }), (0,jsx_runtime.jsx)("span", { children: t('social.messages') })] }), (0,jsx_runtime.jsx)("div", { className: "w-full md:w-96", children: (0,jsx_runtime.jsxs)("div", { className: "relative", children: [(0,jsx_runtime.jsx)(search/* default */.A, { className: "absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" }), (0,jsx_runtime.jsx)(Input/* Input */.p, { type: "text", placeholder: t('social.searchPeople'), className: "pl-10 w-full", value: searchQuery, onChange: handleSearchChange })] }) })] })] }), (0,jsx_runtime.jsxs)("div", { className: "flex space-x-4 mb-6 overflow-x-auto pb-2", children: [(0,jsx_runtime.jsx)(TabButton, { active: activeTab === 'connections', onClick: () => setActiveTab('connections'), icon: user_check/* default */.A, children: t('social.tabs.connections') }), (0,jsx_runtime.jsx)(TabButton, { active: activeTab === 'requests', onClick: () => setActiveTab('requests'), count: connectionRequests.length, icon: user_x/* default */.A, children: t('social.tabs.requests') }), (0,jsx_runtime.jsx)(TabButton, { active: activeTab === 'discover', onClick: () => setActiveTab('discover'), icon: UserPlus, children: t('social.tabs.discover') }), (0,jsx_runtime.jsx)(TabButton, { active: activeTab === 'notifications', onClick: () => setActiveTab('notifications'), icon: bell/* default */.A, children: t('social.tabs.notifications') })] }), (0,jsx_runtime.jsx)("div", { className: "space-y-6", children: renderTabContent() }), (0,jsx_runtime.jsx)(MessagePane, {}), (0,jsx_runtime.jsx)(StartConversationModal, {})] }));
+                                }, className: "flex items-center space-x-2", children: [(0,jsx_runtime.jsx)(MessageCircle, { className: "h-4 w-4" }), (0,jsx_runtime.jsx)("span", { children: t('social.messages') })] }), (0,jsx_runtime.jsx)("div", { className: "w-full md:w-96", children: (0,jsx_runtime.jsxs)("div", { className: "relative", children: [(0,jsx_runtime.jsx)(search/* default */.A, { className: "absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" }), (0,jsx_runtime.jsx)(Input/* Input */.p, { type: "text", placeholder: t('social.searchPeople'), className: "pl-10 w-full", value: searchQuery, onChange: handleSearchChange })] }) })] })] }), (0,jsx_runtime.jsxs)("div", { className: "flex space-x-4 mb-6 overflow-x-auto pb-2", children: [(0,jsx_runtime.jsx)(TabButton, { active: activeTab === 'connections', onClick: () => handleTabChange('connections'), icon: user_check/* default */.A, children: t('social.tabs.connections') }), (0,jsx_runtime.jsx)(TabButton, { active: activeTab === 'requests', onClick: () => handleTabChange('requests'), count: connectionRequests.length, icon: user_x/* default */.A, children: t('social.tabs.requests') }), (0,jsx_runtime.jsx)(TabButton, { active: activeTab === 'discover', onClick: () => handleTabChange('discover'), icon: UserPlus, children: t('social.tabs.discover') }), (0,jsx_runtime.jsx)(TabButton, { active: activeTab === 'notifications', onClick: () => handleTabChange('notifications'), icon: bell/* default */.A, children: t('social.tabs.notifications') })] }), (0,jsx_runtime.jsx)("div", { className: "space-y-6", children: renderTabContent() }), (0,jsx_runtime.jsx)(MessagePane, {}), (0,jsx_runtime.jsx)(StartConversationModal, {})] }));
 };
 /* harmony default export */ const pages_SocialPage = (SocialPage);
 
