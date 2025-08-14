@@ -7722,10 +7722,10 @@ document.addEventListener('error', function (e) {
     const target = e.target;
     if (target.tagName === 'IMG' &&
         target.src.startsWith('blob:') &&
-        !target.src.endsWith('/default-avatar.svg')) {
+        !target.src.endsWith('/bust-avatar.svg')) {
         // Prevent the error from being logged to console
         e.preventDefault();
-        target.src = '/default-avatar.svg';
+        target.src = '/bust-avatar.svg';
     }
 }, true);
 // Global handler for unhandled promise rejections

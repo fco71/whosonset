@@ -8,7 +8,7 @@
 /* harmony export */   i: () => (/* binding */ imageErrorFallback)
 /* harmony export */ });
 // Utility for robust <img> error fallback
-function imageErrorFallback(e, fallback = '/default-avatar.svg') {
+function imageErrorFallback(e, fallback = '/bust-avatar.svg') {
     const target = e.target;
     if (!target.src.endsWith(fallback)) {
         target.src = fallback;

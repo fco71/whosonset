@@ -162,7 +162,7 @@ function getPhotoUrl(profile) {
         url = profile.avatarUrl || profile.photoURL || profile.profileImageUrl;
     }
     if (!url || typeof url !== 'string' || url.trim() === '') {
-        return '/default-avatar.svg';
+        return '/bust-avatar.svg';
     }
     return url;
 }
@@ -721,12 +721,12 @@ const SocialPage = () => {
     }, [user?.uid, showMessagePane, loadConversations]);
     // Helper function to render user cards
     const renderUserCard = (profile, action) => {
-        const avatarUrl = profile.photoURL || profile.profileImageUrl || '/default-avatar.svg';
+        const avatarUrl = profile.photoURL || profile.profileImageUrl || '/bust-avatar.svg';
         const displayName = profile.displayName || profile.name || 'User';
         const jobTitle = profile.type === 'crew' ? profile.jobTitles?.[0]?.title : undefined;
         return ((0,jsx_runtime.jsxs)("div", { className: "flex items-center justify-between p-4 border rounded-lg", children: [(0,jsx_runtime.jsxs)("div", { className: "flex items-center space-x-4", children: [(0,jsx_runtime.jsx)("img", { src: avatarUrl, alt: displayName, className: "h-12 w-12 rounded-full object-cover object-center flex-shrink-0", onError: (e) => {
                                 const target = e.target;
-                                target.src = '/default-avatar.svg';
+                                target.src = '/bust-avatar.svg';
                             } }), (0,jsx_runtime.jsxs)("div", { children: [(0,jsx_runtime.jsx)("p", { className: "font-medium text-gray-900", children: displayName }), jobTitle && (0,jsx_runtime.jsx)("p", { className: "text-sm text-gray-600 font-medium", children: jobTitle }), profile.bio && (0,jsx_runtime.jsx)("p", { className: "text-sm text-gray-500 line-clamp-1", children: profile.bio })] })] }), action] }, (0,Profile/* getProfileId */.Lx)(profile)));
     };
     // Render content based on active tab
@@ -752,12 +752,12 @@ const SocialPage = () => {
     // User card component
     const UserCard = ({ profile, action, showBio = true }) => {
         // Get the proper avatar and display name like crew cards do
-        const avatarUrl = profile.photoURL || profile.profileImageUrl || '/default-avatar.svg';
+        const avatarUrl = profile.photoURL || profile.profileImageUrl || '/bust-avatar.svg';
         const displayName = profile.displayName || profile.name || 'User';
         const jobTitle = profile.type === 'crew' ? profile.jobTitles?.[0]?.title : undefined;
         return ((0,jsx_runtime.jsx)("div", { className: "bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow", children: (0,jsx_runtime.jsx)("div", { className: "p-4", children: (0,jsx_runtime.jsxs)("div", { className: "flex items-start justify-between", children: [(0,jsx_runtime.jsxs)("div", { className: "flex items-start space-x-3", children: [(0,jsx_runtime.jsx)("img", { src: avatarUrl, alt: displayName, className: "h-12 w-12 rounded-full object-cover object-center flex-shrink-0", onError: (e) => {
                                         const target = e.target;
-                                        target.src = '/default-avatar.svg';
+                                        target.src = '/bust-avatar.svg';
                                     } }), (0,jsx_runtime.jsxs)("div", { className: "flex-1 min-w-0", children: [(0,jsx_runtime.jsx)("h3", { className: "font-medium text-gray-900", children: displayName }), jobTitle && ((0,jsx_runtime.jsx)("p", { className: "text-sm text-gray-600 font-medium", children: jobTitle })), showBio && profile.bio && ((0,jsx_runtime.jsx)("p", { className: "text-sm text-gray-500 line-clamp-2 mt-1", children: profile.bio }))] })] }), (0,jsx_runtime.jsxs)("div", { className: "flex-shrink-0 ml-2 flex items-center space-x-2", children: [action, activeTab === 'connections' && ((0,jsx_runtime.jsx)(Button/* Button */.$, { variant: "ghost", size: "sm", className: "h-9 w-9 p-0 text-blue-600 hover:bg-blue-50 hover:text-blue-700", onClick: () => handleStartConversation((0,Profile/* getProfileId */.Lx)(profile)), children: (0,jsx_runtime.jsx)(MessageCircle, { className: "h-5 w-5" }) }))] })] }) }) }));
     };
     // Loading skeleton

@@ -8,7 +8,7 @@
 /* harmony export */   i: () => (/* binding */ imageErrorFallback)
 /* harmony export */ });
 // Utility for robust <img> error fallback
-function imageErrorFallback(e, fallback = '/default-avatar.svg') {
+function imageErrorFallback(e, fallback = '/bust-avatar.svg') {
     const target = e.target;
     if (!target.src.endsWith(fallback)) {
         target.src = fallback;
@@ -178,7 +178,7 @@ const CrewBannerCard = ({ profile, index = 0, isFiltering = false, currentUserId
     const mainTitle = profile.jobTitles?.[0]?.title || t('crew.crewMember');
     const mainLocation = profile.residences?.[0] ?
         `${profile.residences[0].city ? profile.residences[0].city + ', ' : ''}${profile.residences[0].country || ''}` : '';
-    const imageUrl = profile.profileImageUrl || '/default-avatar.svg';
+    const imageUrl = profile.profileImageUrl || '/bust-avatar.svg';
     const availability = profile.availability || '';
     return ((0,jsx_runtime.jsxs)("div", { className: `
         relative group flex items-center bg-white rounded-2xl border border-gray-100 

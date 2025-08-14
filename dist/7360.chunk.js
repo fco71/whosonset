@@ -558,11 +558,11 @@ const EditCrewProfile = () => {
             console.log("DEBUG: Saving to document:", docRef.path);
             // Always ensure name and profileImageUrl are set
             const safeName = form.name && form.name.trim() !== '' ? form.name : 'Unknown Crew';
-            let safeProfileImageUrl = form.profileImageUrl && form.profileImageUrl.trim() !== '' ? form.profileImageUrl : '/default-avatar.svg';
+            let safeProfileImageUrl = form.profileImageUrl && form.profileImageUrl.trim() !== '' ? form.profileImageUrl : '/bust-avatar.svg';
             // Prevent saving blob: URLs
             if (safeProfileImageUrl.startsWith('blob:')) {
                 // If the current image is a blob, fallback to previous or default
-                safeProfileImageUrl = '/default-avatar.svg';
+                safeProfileImageUrl = '/bust-avatar.svg';
             }
             // Ensure email is included in the saved data
             const dataToSave = {
