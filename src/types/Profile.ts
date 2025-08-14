@@ -47,6 +47,27 @@ export function getDisplayName(profile: Profile): string {
   );
 }
 
+// Helper function to get initials from a name
+export function getInitials(name: string): string {
+  if (!name || typeof name !== 'string') return 'U';
+  
+  const words = name.trim().split(/\s+/);
+  if (words.length === 1) {
+    return words[0].charAt(0).toUpperCase();
+  }
+  
+  return words
+    .slice(0, 2)
+    .map(word => word.charAt(0).toUpperCase())
+    .join('');
+}
+
+// Helper function to generate initials-based avatar URL
+export function getInitialsAvatarUrl(name: string): string {
+  const initials = getInitials(name);
+  return `/api/avatar/${encodeURIComponent(initials)}`;
+}
+
 // Helper function to get a photo URL from any profile type
 export function getPhotoUrl(profile: Profile): string | undefined {
   // Use only the correct field names to avoid legacy field issues
