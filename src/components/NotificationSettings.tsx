@@ -45,10 +45,10 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ isOpen = fa
       general: true,
     },
     emailFrequency: {
-      chat: 'weekly',
-      projects: 'weekly',
-      jobs: 'weekly',
-      general: 'weekly',
+      chat: 'daily',
+      projects: 'daily',
+      jobs: 'daily',
+      general: 'daily',
     },
   });
   const [loading, setLoading] = useState(true);
