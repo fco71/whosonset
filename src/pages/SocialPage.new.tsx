@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Search, UserCheck, Users, UserPlus, UserX, Bell, Check, X, MoreHorizontal, MessageCircle, Send, Plus } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { SocialService } from '../utilities/socialService';
@@ -39,6 +39,7 @@ import { Input } from '../components/ui/Input';
 import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/Avatar';
 import { Badge } from '../components/ui/Badge';
 import { Skeleton } from '../components/ui/Skeleton';
+import { toast } from 'react-hot-toast';
 
 type TabValue = 'following' | 'followers' | 'discover' | 'requests' | 'notifications';
 
@@ -78,6 +79,8 @@ const SocialPage = () => {
   const { t } = useTranslation();
   const auth = useAuth();
   const user = auth?.currentUser; // Access currentUser instead of user
+  const navigate = useNavigate();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState<'connections' | 'requests' | 'discover' | 'notifications'>('connections');
   const [searchQuery, setSearchQuery] = useState('');
   // Define the profile state with proper typing
@@ -157,6 +160,16 @@ const SocialPage = () => {
     loadData();
   }, [activeTab, user?.uid]);
 
+  // Handle URL parameters for tab navigation
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const tabParam = searchParams.get('tab');
+    
+    if (tabParam && ['connections', 'requests', 'discover', 'notifications'].includes(tabParam)) {
+      setActiveTab(tabParam as 'connections' | 'requests' | 'discover' | 'notifications');
+    }
+  }, [location.search]);
+
   // Real-time notifications listener
   useEffect(() => {
     if (!user?.uid) return;
@@ -167,6 +180,102 @@ const SocialPage = () => {
       if (unsubNotifications) unsubNotifications();
     };
   }, [user?.uid]);
+
+  // Set up ongoing subscriptions for real-time updates
+  useEffect(() => {
+    const currentUser = auth?.currentUser;
+    if (!currentUser?.uid) return;
+
+    // Helper function to fetch user profile data
+    const fetchUserProfile = async (userId: string): Promise<AppProfile> => {
+      try {
+        const { getDoc, doc } = await import('firebase/firestore');
+        const { db } = await import('../firebase');
+        
+        const crewDoc = await getDoc(doc(db, 'crewProfiles', userId));
+        if (crewDoc.exists()) {
+          const crewData = crewDoc.data();
+          const id = crewData.id || userId;
+          const displayName = crewData.displayName || crewData.name || 'Unknown User';
+          const photoURL = crewData.photoURL || crewData.profileImageUrl || '';
+          const bio = crewData.bio || '';
+          
+          return {
+            id,
+            type: 'crew' as const,
+            uid: userId,
+            displayName,
+            photoURL,
+            bio,
+            name: crewData.name || displayName,
+            username: crewData.username || (crewData.email ? String(crewData.email).split('@')[0] : ''),
+            jobTitles: Array.isArray(crewData.jobTitles) ? [...crewData.jobTitles] : [],
+            residences: Array.isArray(crewData.residences) ? [...crewData.residences] : [],
+            isPublished: crewData.isPublished !== undefined ? Boolean(crewData.isPublished) : true,
+          };
+        }
+        
+        return {
+          id: userId,
+          type: 'user' as const,
+          displayName: `User ${userId.slice(0, 6)}`,
+          photoURL: '',
+          bio: '',
+          email: ''
+        };
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+        return {
+          id: userId,
+          type: 'user' as const,
+          displayName: `User ${userId.slice(0, 6)}`,
+          photoURL: '',
+          bio: '',
+          email: ''
+        };
+      }
+    };
+
+    // Set up subscription for incoming requests
+    const incomingUnsubscribe = SocialService.subscribeToFollowRequests(currentUser.uid, async (requests) => {
+      const mappedRequests = await Promise.all(
+        requests.map(async (req: any) => {
+          const userProfile = await fetchUserProfile(req.fromUserId);
+          return { ...userProfile, requestId: req.id };
+        })
+      );
+      setConnectionRequests(mappedRequests);
+    });
+
+    // Set up subscription for sent requests
+    const outgoingUnsubscribe = SocialService.subscribeToOutgoingFollowRequests(currentUser.uid, async (requests) => {
+      const mappedRequests = await Promise.all(
+        requests.map(async (req: any) => {
+          const userProfile = await fetchUserProfile(req.toUserId);
+          return userProfile;
+        })
+      );
+      setSentRequests(mappedRequests);
+    });
+
+    // Set up subscription for connections (people I'm following)
+    const connectionsUnsubscribe = SocialService.subscribeToFollowing(currentUser.uid, async (follows) => {
+      const mappedConnections = await Promise.all(
+        follows.map(async (conn: any) => {
+          const userProfile = await fetchUserProfile(conn.followingId);
+          return userProfile;
+        })
+      );
+      setConnections(mappedConnections);
+    });
+
+    // Cleanup subscriptions on unmount or when user changes
+    return () => {
+      incomingUnsubscribe();
+      outgoingUnsubscribe();
+      connectionsUnsubscribe();
+    };
+  }, [auth?.currentUser?.uid]);
 
   // Filter profiles based on search query and active tab
   const filteredItems = useMemo(() => {
@@ -195,6 +304,11 @@ const SocialPage = () => {
   const handleTabChange = (value: 'connections' | 'requests' | 'discover' | 'notifications') => {
     setActiveTab(value);
     setSearchQuery('');
+    
+    // Update URL with tab parameter
+    const searchParams = new URLSearchParams(location.search);
+    searchParams.set('tab', value);
+    navigate(`${location.pathname}?${searchParams.toString()}`, { replace: true });
   };
 
   // Handle follow/unfollow action
@@ -219,15 +333,32 @@ const SocialPage = () => {
     const request = connectionRequests.find(p => getProfileId(p) === userId);
     if (!request) return;
     try {
-      await SocialService.respondToFollowRequest(request.id, action === 'accept' ? 'accepted' : 'rejected');
+      await SocialService.respondToFollowRequest((request as any).requestId, action === 'accept' ? 'accepted' : 'rejected');
       // Update local state after backend call
       if (action === 'accept') {
         setConnections(prev => [...prev, request]);
+        toast.success('Follow request accepted!');
+      } else {
+        toast.success('Follow request rejected.');
       }
       setConnectionRequests(prev => prev.filter(p => getProfileId(p) !== userId));
     } catch (error) {
       console.error(`Error ${action}ing follow request:`, error);
-      // Optionally show error to user
+      toast.error(`Failed to ${action} follow request. Please try again.`);
+    }
+  };
+
+  // Handle canceling sent follow requests
+  const handleCancelSentRequest = async (userId: string) => {
+    if (!user?.uid) return;
+    
+    try {
+      await SocialService.cancelFollowRequest(user.uid, userId);
+      toast.success('Follow request canceled successfully');
+      // The sentRequests will be updated automatically by the subscription
+    } catch (error) {
+      console.error('Error canceling follow request:', error);
+      toast.error('Failed to cancel follow request. Please try again.');
     }
   };
 
@@ -339,9 +470,9 @@ const SocialPage = () => {
                           variant="outline"
                           size="sm"
                           className="whitespace-nowrap"
-                          onClick={() => handleFollowRequest(getProfileId(profile), 'reject')}
+                          onClick={() => handleCancelSentRequest(getProfileId(profile))}
                         >
-                          <UserX className="h-4 w-4 mr-2" />
+                          <X className="h-4 w-4 mr-2" />
                           Cancel
                         </Button>
                       }

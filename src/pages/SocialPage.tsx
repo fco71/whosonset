@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Search, UserCheck, Users, UserPlus, UserX, Bell, Check, X, MoreHorizontal, MessageCircle, Send, Plus } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { SocialService } from '../utilities/socialService';
@@ -79,6 +79,7 @@ const SocialPage = () => {
   const auth = useAuth();
   const user = auth?.currentUser; // Access currentUser instead of user
   const navigate = useNavigate();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState<'connections' | 'requests' | 'discover' | 'notifications'>('connections');
   const [searchQuery, setSearchQuery] = useState('');
   // Define the profile state with proper typing
@@ -202,40 +203,23 @@ const SocialPage = () => {
             };
           }
         };
-        
-        // Load real follow requests (incoming) - use subscription once
-        const followRequestsPromise = new Promise<any[]>((resolve) => {
+
+        // Load incoming requests (incoming) - use subscription once
+        const incomingRequestsPromise = new Promise<any[]>((resolve) => {
           const unsubscribe = SocialService.subscribeToFollowRequests(currentUser.uid, (requests) => {
             unsubscribe();
             resolve(requests);
           });
         });
         
-        const realFollowRequests = await followRequestsPromise;
-        const mappedRequests = await Promise.all(
-          realFollowRequests.map(async (req: any) => {
+        const realIncomingRequests = await incomingRequestsPromise;
+        const mappedIncomingRequests = await Promise.all(
+          realIncomingRequests.map(async (req: any) => {
             const userProfile = await fetchUserProfile(req.fromUserId);
-            return { ...userProfile, requestId: req.id }; // Attach Firestore request ID
-          })
-        );
-        setConnectionRequests(mappedRequests);
-        
-        // Load real connections (people I'm following) - use subscription once
-        const followingPromise = new Promise<any[]>((resolve) => {
-          const unsubscribe = SocialService.subscribeToFollowing(currentUser.uid, (follows) => {
-            unsubscribe();
-            resolve(follows);
-          });
-        });
-        
-        const realConnections = await followingPromise;
-        const mappedConnections = await Promise.all(
-          realConnections.map(async (conn: any) => {
-            const userProfile = await fetchUserProfile(conn.followingId);
             return userProfile;
           })
         );
-        setConnections(mappedConnections);
+        setConnectionRequests(mappedIncomingRequests);
         
         // Load real sent requests (outgoing) - use subscription once
         const outgoingRequestsPromise = new Promise<any[]>((resolve) => {
@@ -291,6 +275,112 @@ const SocialPage = () => {
     loadData();
   }, [activeTab, user?.uid]);
 
+  // Handle URL parameters for tab navigation
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const tabParam = searchParams.get('tab');
+    
+    if (tabParam && ['connections', 'requests', 'discover', 'notifications'].includes(tabParam)) {
+      setActiveTab(tabParam as 'connections' | 'requests' | 'discover' | 'notifications');
+    }
+  }, [location.search]);
+
+  // Set up ongoing subscriptions for real-time updates
+  useEffect(() => {
+    const currentUser = auth?.currentUser;
+    if (!currentUser?.uid) return;
+
+    // Helper function to fetch user profile data
+    const fetchUserProfile = async (userId: string): Promise<AppProfile> => {
+      try {
+        const { getDoc, doc } = await import('firebase/firestore');
+        const { db } = await import('../firebase');
+        
+        const crewDoc = await getDoc(doc(db, 'crewProfiles', userId));
+        if (crewDoc.exists()) {
+          const crewData = crewDoc.data();
+          const id = crewData.id || userId;
+          const displayName = crewData.displayName || crewData.name || 'Unknown User';
+          const photoURL = crewData.photoURL || crewData.profileImageUrl || '';
+          const bio = crewData.bio || '';
+          
+          return {
+            id,
+            type: 'crew' as const,
+            uid: userId,
+            displayName,
+            photoURL,
+            bio,
+            name: crewData.name || displayName,
+            username: crewData.username || (crewData.email ? String(crewData.email).split('@')[0] : ''),
+            jobTitles: Array.isArray(crewData.jobTitles) ? [...crewData.jobTitles] : [],
+            residences: Array.isArray(crewData.residences) ? [...crewData.residences] : [],
+            isPublished: crewData.isPublished !== undefined ? Boolean(crewData.isPublished) : true,
+          };
+        }
+        
+        return {
+          id: userId,
+          type: 'user' as const,
+          displayName: `User ${userId.slice(0, 6)}`,
+          photoURL: '',
+          bio: '',
+          email: ''
+        };
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+        return {
+          id: userId,
+          type: 'user' as const,
+          displayName: `User ${userId.slice(0, 6)}`,
+          photoURL: '',
+          bio: '',
+          email: ''
+        };
+      }
+    };
+
+    // Set up subscription for incoming requests
+    const incomingUnsubscribe = SocialService.subscribeToFollowRequests(currentUser.uid, async (requests) => {
+      const mappedRequests = await Promise.all(
+        requests.map(async (req: any) => {
+          const userProfile = await fetchUserProfile(req.fromUserId);
+          return { ...userProfile, requestId: req.id };
+        })
+      );
+      setConnectionRequests(mappedRequests);
+    });
+
+    // Set up subscription for sent requests
+    const outgoingUnsubscribe = SocialService.subscribeToOutgoingFollowRequests(currentUser.uid, async (requests) => {
+      const mappedRequests = await Promise.all(
+        requests.map(async (req: any) => {
+          const userProfile = await fetchUserProfile(req.toUserId);
+          return userProfile;
+        })
+      );
+      setSentRequests(mappedRequests);
+    });
+
+    // Set up subscription for connections (people I'm following)
+    const connectionsUnsubscribe = SocialService.subscribeToFollowing(currentUser.uid, async (follows) => {
+      const mappedConnections = await Promise.all(
+        follows.map(async (conn: any) => {
+          const userProfile = await fetchUserProfile(conn.followingId);
+          return userProfile;
+        })
+      );
+      setConnections(mappedConnections);
+    });
+
+    // Cleanup subscriptions on unmount or when user changes
+    return () => {
+      incomingUnsubscribe();
+      outgoingUnsubscribe();
+      connectionsUnsubscribe();
+    };
+  }, [auth?.currentUser?.uid]);
+
   // Filter profiles based on search query and active tab
   const filteredItems = useMemo(() => {
     const items = {
@@ -318,6 +408,11 @@ const SocialPage = () => {
   const handleTabChange = (value: 'connections' | 'requests' | 'discover' | 'notifications') => {
     setActiveTab(value);
     setSearchQuery('');
+    
+    // Update URL with tab parameter
+    const searchParams = new URLSearchParams(location.search);
+    searchParams.set('tab', value);
+    navigate(`${location.pathname}?${searchParams.toString()}`, { replace: true });
   };
 
   // Handle follow/unfollow action
@@ -357,6 +452,20 @@ const SocialPage = () => {
     } catch (error) {
       console.error(`Error ${action}ing follow request:`, error);
       toast.error(`Failed to ${action} follow request. Please try again.`);
+    }
+  };
+
+  // Handle canceling sent follow requests
+  const handleCancelSentRequest = async (userId: string) => {
+    if (!user?.uid) return;
+    
+    try {
+      await SocialService.cancelFollowRequest(user.uid, userId);
+      toast.success('Follow request canceled successfully');
+      // The sentRequests will be updated automatically by the subscription
+    } catch (error) {
+      console.error('Error canceling follow request:', error);
+      toast.error('Failed to cancel follow request. Please try again.');
     }
   };
 
@@ -529,9 +638,9 @@ const SocialPage = () => {
                           variant="outline"
                           size="sm"
                           className="whitespace-nowrap"
-                          onClick={() => handleFollowRequest(getProfileId(profile), 'reject')}
+                          onClick={() => handleCancelSentRequest(getProfileId(profile))}
                         >
-                          <UserX className="h-4 w-4 mr-2" />
+                          <X className="h-4 w-4 mr-2" />
                           Cancel
                         </Button>
                       }
@@ -982,14 +1091,14 @@ const SocialPage = () => {
       <div className="flex space-x-4 mb-6 overflow-x-auto pb-2">
         <TabButton 
           active={activeTab === 'connections'}
-          onClick={() => setActiveTab('connections')}
+          onClick={() => handleTabChange('connections')}
           icon={UserCheck}
         >
           {t('social.tabs.connections')}
         </TabButton>
         <TabButton 
           active={activeTab === 'requests'}
-          onClick={() => setActiveTab('requests')}
+          onClick={() => handleTabChange('requests')}
           count={connectionRequests.length}
           icon={UserX}
         >
@@ -997,14 +1106,14 @@ const SocialPage = () => {
         </TabButton>
         <TabButton 
           active={activeTab === 'discover'}
-          onClick={() => setActiveTab('discover')}
+          onClick={() => handleTabChange('discover')}
           icon={UserPlus}
         >
           {t('social.tabs.discover')}
         </TabButton>
         <TabButton 
           active={activeTab === 'notifications'}
-          onClick={() => setActiveTab('notifications')}
+          onClick={() => handleTabChange('notifications')}
           icon={Bell}
         >
           {t('social.tabs.notifications')}

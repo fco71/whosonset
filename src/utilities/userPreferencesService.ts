@@ -237,11 +237,11 @@ export class UserPreferencesService {
       messageNotifications: true,
       projectUpdateNotifications: true,
       applicationStatusNotifications: true,
-      notificationFrequency: 'immediate',
+      notificationFrequency: 'daily', // Changed from 'immediate' to 'daily' to reduce email spam
       
       // Daily digest settings
       dailyDigestEnabled: false, // Default to false, user can enable
-      messageNotificationFrequency: 'immediate', // Default to immediate for messages
+      messageNotificationFrequency: 'daily', // Changed from 'immediate' to 'daily' to reduce email spam
       digestTime: '09:00', // Default to 9 AM
       
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { SocialService } from '../../utilities/socialService';
-import { SocialNotification } from '../../types/Social';
 import { UserUtils, UserProfile } from '../../utilities/userUtils';
+import { SocialNotification } from '../../types/Social';
 
 interface NotificationBellProps {
   currentUserId: string;
@@ -13,6 +14,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ currentUserId, clas
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [userProfiles, setUserProfiles] = useState<Map<string, UserProfile>>(new Map());
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!currentUserId) return;
@@ -148,43 +150,45 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ currentUserId, clas
       // Navigate based on notification type
       switch (notification.type) {
         case 'follow_request':
-          // Navigate to social page to see follow requests
-          window.location.href = '/social';
+          // Navigate to social page with requests tab
+          navigate('/social?tab=requests');
           break;
         case 'follow_accepted':
-          // Navigate to the user's profile who accepted
-          if (notification.relatedUserId) {
-            window.location.href = `/resume/${notification.relatedUserId}`;
-          }
+          // Navigate to social page with connections tab
+          navigate('/social?tab=connections');
           break;
         case 'project_invite':
           // Navigate to project management
           if (notification.relatedProjectId) {
-            window.location.href = `/projects/${notification.relatedProjectId}/manage`;
+            navigate(`/projects/${notification.relatedProjectId}/manage`);
+          } else {
+            navigate('/projects');
           }
           break;
         case 'message':
           // Navigate to messaging
-          window.location.href = '/social';
+          navigate('/social?tab=messages');
           break;
         case 'mention':
           // Navigate to social page for mentions
-          window.location.href = '/social';
+          navigate('/social?tab=notifications');
           break;
         case 'like':
         case 'comment':
           // Navigate to social page for likes/comments
-          window.location.href = '/social';
+          navigate('/social?tab=notifications');
           break;
         case 'project_update':
           // Navigate to project
           if (notification.relatedProjectId) {
-            window.location.href = `/projects/${notification.relatedProjectId}`;
+            navigate(`/projects/${notification.relatedProjectId}`);
+          } else {
+            navigate('/projects');
           }
           break;
         default:
           // Default to social page
-          window.location.href = '/social';
+          navigate('/social');
       }
     } catch (error) {
       console.error('Error handling notification click:', error);
@@ -282,7 +286,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ currentUserId, clas
                 onClick={() => {
                   setIsOpen(false);
                   // Navigate to full notifications page
-                  window.location.href = '/social';
+                  navigate('/social');
                 }}
                 className="w-full text-center text-sm text-blue-600 hover:text-blue-800"
               >

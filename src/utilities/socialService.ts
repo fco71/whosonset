@@ -916,4 +916,36 @@ export class SocialService {
       return () => {};
     }
   }
+
+  // Cancel/Delete sent follow request
+  static async cancelFollowRequest(fromUserId: string, toUserId: string): Promise<void> {
+    try {
+      console.log('[SocialService] Canceling follow request:', { fromUserId, toUserId });
+      
+      // Find the follow request document
+      const requestsQuery = query(
+        collection(db, 'followRequests'),
+        where('fromUserId', '==', fromUserId),
+        where('toUserId', '==', toUserId),
+        where('status', '==', 'pending')
+      );
+      
+      const snapshot = await getDocs(requestsQuery);
+      
+      if (snapshot.empty) {
+        console.log('[SocialService] No pending follow request found to cancel');
+        throw new Error('No pending follow request found');
+      }
+      
+      // Delete the follow request document
+      const requestDoc = snapshot.docs[0];
+      await deleteDoc(requestDoc.ref);
+      
+      console.log('[SocialService] Follow request canceled successfully');
+      
+    } catch (error) {
+      console.error('[SocialService] Error canceling follow request:', error);
+      throw error;
+    }
+  }
 } 
