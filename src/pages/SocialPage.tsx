@@ -216,7 +216,7 @@ const SocialPage = () => {
         const mappedIncomingRequests = await Promise.all(
           realIncomingRequests.map(async (req: any) => {
             const userProfile = await fetchUserProfile(req.fromUserId);
-            return userProfile;
+            return { ...userProfile, requestId: req.id };
           })
         );
         setConnectionRequests(mappedIncomingRequests);
@@ -342,12 +342,16 @@ const SocialPage = () => {
 
     // Set up subscription for incoming requests
     const incomingUnsubscribe = SocialService.subscribeToFollowRequests(currentUser.uid, async (requests) => {
+      console.log('[SocialPage] Incoming follow requests updated:', requests.length);
       const mappedRequests = await Promise.all(
         requests.map(async (req: any) => {
           const userProfile = await fetchUserProfile(req.fromUserId);
-          return { ...userProfile, requestId: req.id };
+          const result = { ...userProfile, requestId: req.id };
+          console.log('[SocialPage] Mapped request:', { userId: req.fromUserId, requestId: req.id, profileId: getProfileId(result) });
+          return result;
         })
       );
+      console.log('[SocialPage] Setting connectionRequests:', mappedRequests.length);
       setConnectionRequests(mappedRequests);
     });
 
@@ -438,9 +442,21 @@ const SocialPage = () => {
   const handleFollowRequest = async (userId: string, action: 'accept' | 'reject') => {
     // Find the follow request for this user
     const request = connectionRequests.find(p => getProfileId(p) === userId);
-    if (!request) return;
+    if (!request) {
+      console.error('[handleFollowRequest] Request not found for userId:', userId);
+      console.log('[handleFollowRequest] Available requests:', connectionRequests.map(p => ({ id: getProfileId(p), requestId: (p as any).requestId })));
+      return;
+    }
+    
+    const requestId = (request as any).requestId;
+    if (!requestId) {
+      console.error('[handleFollowRequest] Request ID not found for request:', request);
+      return;
+    }
+    
     try {
-      await SocialService.respondToFollowRequest((request as any).requestId, action === 'accept' ? 'accepted' : 'rejected');
+      console.log('[handleFollowRequest] Processing request:', { userId, action, requestId });
+      await SocialService.respondToFollowRequest(requestId, action === 'accept' ? 'accepted' : 'rejected');
       // Update local state after backend call
       if (action === 'accept') {
         setConnections(prev => [...prev, request]);

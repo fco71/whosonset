@@ -113,16 +113,10 @@ export class SocialService {
 
   static async respondToFollowRequest(requestId: string, status: 'accepted' | 'rejected'): Promise<void> {
     try {
-      const batch = writeBatch(db);
+      console.log('[SocialService] Responding to follow request:', { requestId, status });
+      
+      // Get the request data first
       const requestRef = doc(db, 'followRequests', requestId);
-
-      // Update request status instead of deleting
-      batch.update(requestRef, {
-        status,
-        updatedAt: serverTimestamp()
-      });
-
-      // Get the request data
       const requestDoc = await getDoc(requestRef);
       if (!requestDoc.exists()) {
         throw new Error('Follow request not found');
@@ -130,6 +124,17 @@ export class SocialService {
 
       const requestData = requestDoc.data();
       const { fromUserId, toUserId } = requestData;
+      
+      console.log('[SocialService] Request data:', { fromUserId, toUserId });
+
+      // Start batch write
+      const batch = writeBatch(db);
+
+      // Update request status
+      batch.update(requestRef, {
+        status,
+        updatedAt: serverTimestamp()
+      });
 
       if (status === 'accepted') {
         // Create follow relationship
@@ -141,34 +146,46 @@ export class SocialService {
         };
         const followRef = doc(collection(db, 'follows'));
         batch.set(followRef, followData);
-
-        // Create notification for the requester
-        await this.createNotification({
-          userId: fromUserId,
-          type: 'follow_accepted',
-          title: 'Follow Request Accepted',
-          message: 'Your follow request was accepted',
-          relatedUserId: toUserId,
-          isRead: false,
-          createdAt: new Date(),
-          actionUrl: `/social/profile/${toUserId}`
-        });
-
-        // Create activity feed item
-        await this.createActivityFeedItem({
-          userId: fromUserId,
-          type: 'follow_made',
-          title: 'New Follower',
-          description: 'You gained a new follower',
-          relatedUserId: toUserId,
-          likes: 0,
-          comments: 0,
-          createdAt: new Date(),
-          isPublic: true
-        });
       }
 
+      // Commit the batch first
       await batch.commit();
+      console.log('[SocialService] Batch committed successfully');
+
+      // Then create notifications and activity feed items (these are separate operations)
+      if (status === 'accepted') {
+        try {
+          // Create notification for the requester
+          await this.createNotification({
+            userId: fromUserId,
+            type: 'follow_accepted',
+            title: 'Follow Request Accepted',
+            message: 'Your follow request was accepted',
+            relatedUserId: toUserId,
+            isRead: false,
+            createdAt: new Date(),
+            actionUrl: `/social/profile/${toUserId}`
+          });
+
+          // Create activity feed item
+          await this.createActivityFeedItem({
+            userId: fromUserId,
+            type: 'follow_made',
+            title: 'New Follower',
+            description: 'You gained a new follower',
+            relatedUserId: toUserId,
+            likes: 0,
+            comments: 0,
+            createdAt: new Date(),
+            isPublic: true
+          });
+          
+          console.log('[SocialService] Notification and activity feed created successfully');
+        } catch (notificationError) {
+          console.error('[SocialService] Error creating notification/activity feed:', notificationError);
+          // Don't throw here as the main operation (follow acceptance) was successful
+        }
+      }
 
     } catch (error) {
       console.error('Error responding to follow request:', error);
