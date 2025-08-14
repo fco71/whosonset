@@ -153,13 +153,15 @@ function getDisplayName(profile) {
 }
 // Helper function to get a photo URL from any profile type
 function getPhotoUrl(profile) {
-    // Try all possible image fields for maximum compatibility, fallback to default
+    // Use only the correct field names to avoid legacy field issues
     let url = undefined;
     if (isCrewProfile(profile)) {
-        url = profile.profileImageUrl || profile.photoURL || profile.avatarUrl;
+        // For crew profiles, use only profileImageUrl (the correct field)
+        url = profile.profileImageUrl;
     }
     else {
-        url = profile.avatarUrl || profile.photoURL || profile.profileImageUrl;
+        // For user profiles, use only avatarUrl (the correct field)
+        url = profile.avatarUrl;
     }
     if (!url || typeof url !== 'string' || url.trim() === '') {
         return '/bust-avatar.svg';
@@ -721,7 +723,7 @@ const SocialPage = () => {
     }, [user?.uid, showMessagePane, loadConversations]);
     // Helper function to render user cards
     const renderUserCard = (profile, action) => {
-        const avatarUrl = profile.photoURL || profile.profileImageUrl || '/bust-avatar.svg';
+        const avatarUrl = profile.profileImageUrl || '/bust-avatar.svg';
         const displayName = profile.displayName || profile.name || 'User';
         const jobTitle = profile.type === 'crew' ? profile.jobTitles?.[0]?.title : undefined;
         return ((0,jsx_runtime.jsxs)("div", { className: "flex items-center justify-between p-4 border rounded-lg", children: [(0,jsx_runtime.jsxs)("div", { className: "flex items-center space-x-4", children: [(0,jsx_runtime.jsx)("img", { src: avatarUrl, alt: displayName, className: "h-12 w-12 rounded-full object-cover object-center flex-shrink-0", onError: (e) => {
@@ -752,7 +754,7 @@ const SocialPage = () => {
     // User card component
     const UserCard = ({ profile, action, showBio = true }) => {
         // Get the proper avatar and display name like crew cards do
-        const avatarUrl = profile.photoURL || profile.profileImageUrl || '/bust-avatar.svg';
+        const avatarUrl = profile.profileImageUrl || '/bust-avatar.svg';
         const displayName = profile.displayName || profile.name || 'User';
         const jobTitle = profile.type === 'crew' ? profile.jobTitles?.[0]?.title : undefined;
         return ((0,jsx_runtime.jsx)("div", { className: "bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow", children: (0,jsx_runtime.jsx)("div", { className: "p-4", children: (0,jsx_runtime.jsxs)("div", { className: "flex items-start justify-between", children: [(0,jsx_runtime.jsxs)("div", { className: "flex items-start space-x-3", children: [(0,jsx_runtime.jsx)("img", { src: avatarUrl, alt: displayName, className: "h-12 w-12 rounded-full object-cover object-center flex-shrink-0", onError: (e) => {

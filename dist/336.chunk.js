@@ -994,16 +994,14 @@ class SocialService {
     static mapProfileData(doc) {
         const data = doc.data();
         const id = doc.id;
-        // Prefer photoURL, fallback to profileImageUrl, then avatarUrl
-        const photoURL = data.photoURL || data.profileImageUrl || data.avatarUrl || undefined;
-        const profileImageUrl = data.profileImageUrl || data.photoURL || data.avatarUrl || undefined;
+        // Use only the correct field names
+        const profileImageUrl = data.profileImageUrl || undefined;
         const user = {
             id,
             name: data.name || data.displayName,
             displayName: data.displayName || data.name || 'User',
             username: data.username,
-            photoURL,
-            profileImageUrl, // always set for compatibility
+            profileImageUrl, // Use only the correct field
             bio: data.bio,
             jobTitle: data.jobTitles?.[0]?.title,
             location: data.location,
@@ -1180,13 +1178,15 @@ function getDisplayName(profile) {
 }
 // Helper function to get a photo URL from any profile type
 function getPhotoUrl(profile) {
-    // Try all possible image fields for maximum compatibility, fallback to default
+    // Use only the correct field names to avoid legacy field issues
     let url = undefined;
     if (isCrewProfile(profile)) {
-        url = profile.profileImageUrl || profile.photoURL || profile.avatarUrl;
+        // For crew profiles, use only profileImageUrl (the correct field)
+        url = profile.profileImageUrl;
     }
     else {
-        url = profile.avatarUrl || profile.photoURL || profile.profileImageUrl;
+        // For user profiles, use only avatarUrl (the correct field)
+        url = profile.avatarUrl;
     }
     if (!url || typeof url !== 'string' || url.trim() === '') {
         return '/bust-avatar.svg';
