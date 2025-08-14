@@ -10,6 +10,30 @@
 // COLOR PALETTE
 // ============================================================================
 
+// ============================================================================
+// AVATAR FALLBACK RULES
+// ============================================================================
+
+/* Ensure bust avatar is always visible at correct size */
+img[src*="bust-avatar.svg"] {
+  min-width: 32px !important;
+  min-height: 32px !important;
+  width: auto !important;
+  height: auto !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+}
+
+/* Force proper sizing for avatar images */
+.crew-avatar img,
+.member-avatar img,
+.follower-avatar img,
+.card-image,
+.avatar img {
+  min-width: 32px !important;
+  min-height: 32px !important;
+}
+
 :root {
   /* Primary Colors */
   --primary-50: #eff6ff;
@@ -98,6 +122,13 @@
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
+
+  /* Avatar Sizes */
+  --avatar-xs: 24px;
+  --avatar-sm: 32px;
+  --avatar-md: 48px;
+  --avatar-lg: 64px;
+  --avatar-xl: 80px;
   --space-4: 1rem;
   --space-5: 1.25rem;
   --space-6: 1.5rem;

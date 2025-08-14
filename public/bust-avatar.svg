@@ -1,38 +1,31 @@
 <svg width="150" height="150" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 150">
-  <!-- Background -->
+  <!-- Background circle -->
+  <circle cx="75" cy="75" r="75" fill="url(#gradient)"/>
+  
+  <!-- Gradient definition -->
   <defs>
-    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
       <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
     </linearGradient>
   </defs>
   
-  <!-- Main circle -->
-  <circle cx="75" cy="75" r="75" fill="url(#bgGradient)"/>
+  <!-- Simple person icon - very clear and visible -->
+  <!-- Head -->
+  <circle cx="75" cy="60" r="20" fill="white"/>
   
-  <!-- Person bust - much larger and more prominent -->
-  <g transform="translate(75, 75)" stroke="white" stroke-width="6" fill="none" stroke-linecap="round">
-    <!-- Head (much larger circle for prominent bust) -->
-    <circle cx="0" cy="-5" r="40"/>
-    
-    <!-- Neck (connecting head to shoulders) -->
-    <rect x="-8" y="35" width="16" height="12" fill="white"/>
-    
-    <!-- Shoulders (wider, more natural curve) -->
-    <path d="M-45 47 Q0 55 45 47" stroke="white" stroke-width="6" fill="none"/>
-    
-    <!-- Simple facial features for more human-like appearance -->
-    <!-- Eyes -->
-    <circle cx="-12" cy="-15" r="3" fill="white"/>
-    <circle cx="12" cy="-15" r="3" fill="white"/>
-    
-    <!-- Simple nose -->
-    <line x1="0" y1="-8" x2="0" y2="-2" stroke="white" stroke-width="2"/>
-    
-    <!-- Simple mouth -->
-    <path d="M-8 -2 Q0 2 8 -2" stroke="white" stroke-width="2" fill="none"/>
-  </g>
+  <!-- Body -->
+  <rect x="65" y="80" width="20" height="25" fill="white" rx="10"/>
   
-  <!-- Subtle border -->
-  <circle cx="75" cy="75" r="75" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
+  <!-- Arms -->
+  <rect x="45" y="85" width="20" height="8" fill="white" rx="4"/>
+  <rect x="85" y="85" width="20" height="8" fill="white" rx="4"/>
+  
+  <!-- Simple face -->
+  <!-- Eyes -->
+  <circle cx="70" cy="55" r="2" fill="#667eea"/>
+  <circle cx="80" cy="55" r="2" fill="#667eea"/>
+  
+  <!-- Mouth -->
+  <path d="M 70 65 Q 75 68 80 65" stroke="#667eea" stroke-width="1.5" fill="none"/>
 </svg> 
