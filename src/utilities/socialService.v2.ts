@@ -444,17 +444,15 @@ export class SocialService {
     const data = doc.data() as Record<string, any>;
     const id = doc.id;
 
-    // Prefer photoURL, fallback to profileImageUrl, then avatarUrl
-    const photoURL = data.photoURL || data.profileImageUrl || data.avatarUrl || undefined;
-    const profileImageUrl = data.profileImageUrl || data.photoURL || data.avatarUrl || undefined;
+    // Use only the correct field names
+    const profileImageUrl = data.profileImageUrl || undefined;
 
     const user: SocialUser = {
       id,
       name: data.name || data.displayName,
       displayName: data.displayName || data.name || 'User',
       username: data.username,
-      photoURL,
-      profileImageUrl, // always set for compatibility
+      profileImageUrl, // Use only the correct field
       bio: data.bio,
       jobTitle: data.jobTitles?.[0]?.title,
       location: data.location,

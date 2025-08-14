@@ -66,7 +66,7 @@ const CrewProfileHeader: React.FC<CrewProfileHeaderProps> = ({ profile }) => {
     ? `${profile.residences[0].city ? profile.residences[0].city + ', ' : ''}${profile.residences[0].country || ''}`
     : '';
   // Fallback: use photoURL if profileImageUrl is missing
-      const imageUrl = profile.profileImageUrl || profile.photoURL || '/bust-avatar.svg';
+      const imageUrl = profile.profileImageUrl || '/bust-avatar.svg';
   const availability = profile.availability || '';
 
 

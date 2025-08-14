@@ -18,7 +18,7 @@ const getDisplayName = (profile: SocialUser): string => {
 
 // Helper function to get photo URL from profile
 const getPhotoUrl = (profile: SocialUser): string | undefined => {
-  return profile.photoURL || profile.profileImageUrl;
+  return profile.profileImageUrl;
 };
 
 // Memoized UserCard component for better performance

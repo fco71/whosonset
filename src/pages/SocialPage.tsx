@@ -521,7 +521,7 @@ const SocialPage = () => {
 
   // Helper function to render user cards
   const renderUserCard = (profile: AppProfile, action?: React.ReactNode) => {
-    const avatarUrl = profile.photoURL || (profile as any).profileImageUrl || '/bust-avatar.svg';
+    const avatarUrl = (profile as any).profileImageUrl || '/bust-avatar.svg';
     const displayName = profile.displayName || (profile as any).name || 'User';
     const jobTitle = profile.type === 'crew' ? (profile as any).jobTitles?.[0]?.title : undefined;
     
@@ -705,7 +705,7 @@ const SocialPage = () => {
     showBio?: boolean;
   }) => {
     // Get the proper avatar and display name like crew cards do
-    const avatarUrl = profile.photoURL || (profile as any).profileImageUrl || '/bust-avatar.svg';
+    const avatarUrl = (profile as any).profileImageUrl || '/bust-avatar.svg';
     const displayName = profile.displayName || (profile as any).name || 'User';
     const jobTitle = profile.type === 'crew' ? (profile as any).jobTitles?.[0]?.title : undefined;
     

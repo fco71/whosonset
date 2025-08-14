@@ -34,7 +34,7 @@ export class UserUtils {
           firstName: crewData.firstName,
           lastName: crewData.lastName,
           email: crewData.email,
-          avatarUrl: crewData.profileImageUrl || crewData.avatarUrl, // Use profileImageUrl from crewProfiles
+          avatarUrl: crewData.profileImageUrl, // Use only profileImageUrl from crewProfiles
           bio: crewData.bio,
           location: crewData.residences?.[0]?.city || crewData.location,
           jobTitle: crewData.jobTitles?.[0]?.title || crewData.jobTitle,
@@ -111,7 +111,7 @@ export class UserUtils {
                 firstName: crewData.firstName,
                 lastName: crewData.lastName,
                 email: crewData.email,
-                avatarUrl: crewData.profileImageUrl || crewData.avatarUrl, // Use profileImageUrl from crewProfiles
+                avatarUrl: crewData.profileImageUrl, // Use only profileImageUrl from crewProfiles
                 bio: crewData.bio,
                 location: crewData.residences?.[0]?.city || crewData.location,
                 jobTitle: crewData.jobTitles?.[0]?.title || crewData.jobTitle,

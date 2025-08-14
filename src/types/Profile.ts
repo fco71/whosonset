@@ -49,12 +49,14 @@ export function getDisplayName(profile: Profile): string {
 
 // Helper function to get a photo URL from any profile type
 export function getPhotoUrl(profile: Profile): string | undefined {
-  // Try all possible image fields for maximum compatibility, fallback to default
+  // Use only the correct field names to avoid legacy field issues
   let url = undefined;
   if (isCrewProfile(profile)) {
-    url = (profile as any).profileImageUrl || (profile as any).photoURL || (profile as any).avatarUrl;
+    // For crew profiles, use only profileImageUrl (the correct field)
+    url = (profile as any).profileImageUrl;
   } else {
-    url = (profile as any).avatarUrl || (profile as any).photoURL || (profile as any).profileImageUrl;
+    // For user profiles, use only avatarUrl (the correct field)
+    url = (profile as any).avatarUrl;
   }
   if (!url || typeof url !== 'string' || url.trim() === '') {
     return '/bust-avatar.svg';
