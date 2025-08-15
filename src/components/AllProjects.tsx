@@ -15,6 +15,7 @@ import { Link } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
 import ProjectCard from './ProjectCard';
 import { FavoritesService } from '../utilities/favoritesService';
+import { useTranslation } from 'react-i18next';
 
 interface Project {
   id: string;
@@ -53,6 +54,7 @@ const formatStatus = (status: string) =>
     .join(' ');
 
 const AllProjects: React.FC = () => {
+  const { t } = useTranslation();
   const [projects, setProjects] = useState<Project[]>([]);
   const [lastVisible, setLastVisible] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
   const [firstVisible, setFirstVisible] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
@@ -266,6 +268,7 @@ const AllProjects: React.FC = () => {
                   <option value="cancelled">Cancelled</option>
                 </select>
               </div>
+              
               <div className="flex-1">
                 <select
                   value={sortBy}

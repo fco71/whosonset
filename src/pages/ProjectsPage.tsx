@@ -35,6 +35,8 @@ const ProjectsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<'all' | 'mine' | 'favorites'>('all');
+  const [sortBy, setSortBy] = useState<'relevance' | 'name' | 'newest'>('relevance');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const navigate = useNavigate();
   const user = auth.currentUser;
 
@@ -249,14 +251,16 @@ const ProjectsPage: React.FC = () => {
   };
 
   const filteredProjects = (() => {
+    let projectsList: Project[];
+    
     if (tab === 'mine' && user) {
       // Combine owned and crew projects, marking them appropriately
       const ownedWithType = ownedProjects.map(p => ({ ...p, projectType: 'owned' as const }));
       const crewWithType = crewProjects.map(p => ({ ...p, projectType: 'crew' as const }));
-      return [...ownedWithType, ...crewWithType];
+      projectsList = [...ownedWithType, ...crewWithType];
     } else if (tab === 'favorites' && user) {
       // Convert favorites to project format for display
-      return favorites.map(fav => ({
+      projectsList = favorites.map(fav => ({
         id: fav.projectId,
         projectName: fav.projectData?.projectName || 'Unknown Project',
         productionCompany: fav.projectData?.productionCompany || '',
@@ -273,8 +277,67 @@ const ProjectsPage: React.FC = () => {
         projectType: 'favorite' as const
       })) as Project[];
     } else {
-      return projects.map(p => ({ ...p, projectType: 'all' as const }));
+      projectsList = projects.map(p => ({ ...p, projectType: 'all' as const }));
     }
+
+    // Sort the projects
+    return projectsList.sort((a, b) => {
+      if (sortBy === 'relevance') {
+        // Calculate relevance score based on multiple factors
+        const getRelevanceScore = (project: Project) => {
+          let score = 0;
+          
+          // Status bonus (active projects get higher priority)
+          if (project.status === 'production') score += 50;
+          else if (project.status === 'pre-production') score += 40;
+          else if (project.status === 'development') score += 30;
+          else if (project.status === 'post-production') score += 25;
+          else if (project.status === 'completed') score += 20;
+          
+          // Production company bonus (major companies get higher priority)
+          const majorCompanies = ['Warner Bros.', 'Disney', 'Netflix', 'Amazon', 'Paramount', 'Universal', 'Sony', '20th Century Fox'];
+          if (project.productionCompany && majorCompanies.some(company => 
+            project.productionCompany.toLowerCase().includes(company.toLowerCase())
+          )) {
+            score += 30;
+          }
+          
+          // Genre diversity bonus
+          if (project.genres && project.genres.length > 1) score += 10;
+          
+          // Location diversity bonus
+          if (project.productionLocations && project.productionLocations.length > 1) score += 10;
+          
+          // Recent activity bonus (if createdAt exists)
+          const createdAt = (project as any).createdAt?.toDate?.();
+          if (createdAt) {
+            const daysSinceCreation = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
+            if (daysSinceCreation < 30) score += 20; // New projects get bonus
+            else if (daysSinceCreation < 90) score += 15;
+          }
+          
+          // Favorite status bonus
+          if (project.isFavorite) score += 15;
+          
+          return score;
+        };
+
+        const aScore = getRelevanceScore(a);
+        const bScore = getRelevanceScore(b);
+        return bScore - aScore; // Higher scores first
+      } else if (sortBy === 'name') {
+        const comparison = a.projectName.localeCompare(b.projectName);
+        return sortOrder === 'asc' ? comparison : -comparison;
+      } else if (sortBy === 'newest') {
+        // Sort by creation date
+        const aDate = (a as any).createdAt?.toDate?.() || new Date(0);
+        const bDate = (b as any).createdAt?.toDate?.() || new Date(0);
+        const comparison = bDate.getTime() - aDate.getTime();
+        return sortOrder === 'asc' ? -comparison : comparison;
+      }
+      
+      return 0;
+    });
   })();
 
   return (
@@ -315,6 +378,66 @@ const ProjectsPage: React.FC = () => {
               >
                 {t('projects.createNewProject')}
               </button>
+            </div>
+            
+            {/* Sorting Controls */}
+            <div className="mt-6 flex justify-center items-center gap-2">
+              {/* Sort By Toggle */}
+              <div className="flex items-center bg-white border border-gray-300 rounded-lg overflow-hidden shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => setSortBy('relevance')}
+                  className={`px-3 py-2 text-sm font-medium transition-colors duration-200 ${
+                    sortBy === 'relevance' 
+                      ? 'bg-blue-600 text-white border-r border-gray-300' 
+                      : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                  }`}
+                >
+                  {t('projects.mostPopular')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSortBy('name')}
+                  className={`px-3 py-2 text-sm font-medium transition-colors duration-200 ${
+                    sortBy === 'name' 
+                      ? 'bg-blue-600 text-white border-r border-gray-300' 
+                      : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                  }`}
+                >
+                  {t('projects.alphabetical')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSortBy('newest')}
+                  className={`px-3 py-2 text-sm font-medium transition-colors duration-200 ${
+                    sortBy === 'newest' 
+                      ? 'bg-blue-600 text-white' 
+                      : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                  }`}
+                >
+                  {t('projects.newestFirst')}
+                </button>
+              </div>
+              
+              {/* Sort Order Toggle - Hidden for relevance sorting */}
+              {sortBy !== 'relevance' && (
+                <button
+                  type="button"
+                  onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                  className="p-2 text-gray-400 hover:text-gray-600 transition-colors duration-200 border border-gray-300 rounded-lg hover:bg-gray-50 shadow-sm"
+                  title={sortOrder === 'asc' ? t('projects.sortDescending') : t('projects.sortAscending')}
+                >
+                  {sortOrder === 'asc' ? (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                    </svg>
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  )}
+                </button>
+              )}
             </div>
           </div>
         </div>

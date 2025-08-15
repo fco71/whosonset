@@ -62,6 +62,10 @@ const ProducerView: React.FC = () => {
     return (saved === 'banners' || saved === 'cards') ? saved : 'cards';
   });
 
+  // Sorting state
+  const [sortBy, setSortBy] = useState<'relevance' | 'name' | 'dateAdded'>('relevance');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
   // Load favorite crew IDs
   useEffect(() => {
     const loadFavoriteCrewIds = async () => {
@@ -78,17 +82,81 @@ const ProducerView: React.FC = () => {
     loadFavoriteCrewIds();
   }, [user]);
 
-  // Filter profiles by favorites when toggle is enabled
+  // Filter and sort profiles
   useEffect(() => {
+    let filtered = crewProfiles;
+    
+    // Filter by favorites if enabled
     if (showFavoritesOnly) {
-      const favoriteProfiles = crewProfiles.filter(profile => 
+      filtered = filtered.filter(profile => 
         favoriteCrewIds.includes(profile.uid)
       );
-      setFilteredProfiles(favoriteProfiles);
-    } else {
-      setFilteredProfiles(crewProfiles);
     }
-  }, [showFavoritesOnly, crewProfiles, favoriteCrewIds]);
+
+    // Sort the filtered results
+    filtered.sort((a, b) => {
+      let comparison = 0;
+
+      if (sortBy === 'relevance') {
+        // Calculate relevance score based on multiple factors
+        const getRelevanceScore = (profile: CrewProfile) => {
+          let score = 0;
+          
+          // Availability bonus (highest priority)
+          if (profile.availability === 'available') score += 50;
+          else if (profile.availability === 'soon') score += 25;
+          
+          // Project count bonus (experience)
+          score += (profile.projects?.length || 0) * 10;
+          
+          // Job titles count bonus (versatility)
+          score += (profile.jobTitles?.length || 0) * 5;
+          
+          // Bio length bonus (completeness)
+          if (profile.bio && profile.bio.length > 50) score += 10;
+          
+          // Profile image bonus (completeness)
+          if (profile.profileImageUrl) score += 5;
+          
+          // Recent activity bonus (if createdAt exists)
+          const createdAt = (profile as any).createdAt?.toDate?.();
+          if (createdAt) {
+            const daysSinceCreation = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
+            if (daysSinceCreation < 30) score += 15; // New profiles get bonus
+            else if (daysSinceCreation < 90) score += 10;
+          }
+          
+          // Follower count bonus (if available)
+          const followersCount = (profile as any).followersCount || 0;
+          score += followersCount * 2;
+          
+          return score;
+        };
+
+        const aScore = getRelevanceScore(a);
+        const bScore = getRelevanceScore(b);
+        comparison = bScore - aScore; // Higher scores first
+      } else if (sortBy === 'name') {
+        const aName = a.name || '';
+        const bName = b.name || '';
+        comparison = aName.localeCompare(bName);
+      } else { // dateAdded
+        // Check if createdAt exists in the data (it might be in the Firestore document)
+        const aDate = (a as any).createdAt?.toDate?.() || new Date(0);
+        const bDate = (b as any).createdAt?.toDate?.() || new Date(0);
+        comparison = aDate.getTime() - bDate.getTime();
+      }
+
+      // For relevance sorting, always use descending (highest scores first)
+      if (sortBy === 'relevance') {
+        return comparison; // Already calculated as bScore - aScore (descending)
+      }
+      
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+
+    setFilteredProfiles(filtered);
+  }, [showFavoritesOnly, crewProfiles, favoriteCrewIds, sortBy, sortOrder]);
 
   // Handle crew bookmarking
   const handleCrewBookmark = async (crewId: string, isBookmarked: boolean) => {
@@ -535,21 +603,79 @@ const ProducerView: React.FC = () => {
       {/* Results Section - Enhanced */}
       <div className="bg-gray-50 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Only show results count after a search */}
-          {Object.values(appliedFilters).some(f => f) && (
-            <div className="mb-6">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                  <h2 className="text-sm font-medium text-gray-600">
-                    {filteredProfiles.length} {filteredProfiles.length === 1 ? 'talent found' : 'talents found'}
-                  </h2>
-                  <p className="mt-1 text-xs text-gray-500">
-                    {t('crew.showingResults', 'Showing results matching your filters')}
-                  </p>
+          {/* Results count and sorting controls */}
+          <div className="mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h2 className="text-sm font-medium text-gray-600">
+                  {filteredProfiles.length} {filteredProfiles.length === 1 ? 'talent found' : 'talents found'}
+                </h2>
+                <p className="mt-1 text-xs text-gray-500">
+                  {t('crew.showingResults', 'Showing results matching your filters')}
+                </p>
+              </div>
+              
+              {/* Sorting Controls - Discreet */}
+              <div className="flex items-center gap-2">
+                {/* Sort By Toggle */}
+                <div className="flex items-center bg-white border border-gray-200 rounded-md overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setSortBy('relevance')}
+                    className={`px-2 py-1 text-xs font-medium transition-colors duration-200 ${
+                      sortBy === 'relevance' 
+                        ? 'bg-indigo-50 text-indigo-600 border-r border-gray-200' 
+                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                    }`}
+                  >
+                    {t('crew.popular')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSortBy('name')}
+                    className={`px-2 py-1 text-xs font-medium transition-colors duration-200 ${
+                      sortBy === 'name' 
+                        ? 'bg-indigo-50 text-indigo-600 border-r border-gray-200' 
+                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                    }`}
+                  >
+                    {t('crew.name')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSortBy('dateAdded')}
+                    className={`px-2 py-1 text-xs font-medium transition-colors duration-200 ${
+                      sortBy === 'dateAdded' 
+                        ? 'bg-indigo-50 text-indigo-600' 
+                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                    }`}
+                  >
+                    {t('crew.date')}
+                  </button>
                 </div>
+                
+                {/* Sort Order Toggle - Hidden for relevance sorting */}
+                {sortBy !== 'relevance' && (
+                  <button
+                    type="button"
+                    onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                    className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors duration-200 border border-gray-200 rounded-md hover:bg-gray-50"
+                    title={sortOrder === 'asc' ? t('crew.sortDescending') : t('crew.sortAscending')}
+                  >
+                    {sortOrder === 'asc' ? (
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                      </svg>
+                    ) : (
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    )}
+                  </button>
+                )}
               </div>
             </div>
-          )}
+          </div>
 
           {filteredProfiles.length === 0 ? (
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">

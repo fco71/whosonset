@@ -310,7 +310,11 @@
     "showingResults": "Showing results matching your filters",
     "loadMore": "Load More",
     "sortBy": "Sort by",
+    "popular": "Popular",
     "name": "Name",
+    "date": "Date",
+    "sortAscending": "Sort ascending",
+    "sortDescending": "Sort descending",
     "experience": "Experience", 
     "rating": "Rating",
     "recentlyAdded": "Recently Added",
@@ -549,7 +553,15 @@
     "editProject": "Edit Project",
     "suggestUpdate": "Suggest Update",
     "projectNotFound": "Project not found or not available.",
-    "mustBeLoggedIn": "You must be logged in to view your projects."
+    "mustBeLoggedIn": "You must be logged in to view your projects.",
+    "sortBy": "Sort by",
+    "mostPopular": "Most Popular",
+    "newestFirst": "Newest First",
+    "oldestFirst": "Oldest First",
+    "alphabetical": "A-Z",
+    "reverseAlphabetical": "Z-A",
+    "sortAscending": "Sort ascending",
+    "sortDescending": "Sort descending"
   },
   "projectForm": {
     "generalInfo": "General Information",
