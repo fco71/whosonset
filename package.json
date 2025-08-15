@@ -16,7 +16,8 @@
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "prepare": "husky"
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.6",
@@ -102,6 +103,7 @@
     "css-minimizer-webpack-plugin": "^7.0.2",
     "dotenv-webpack": "^8.1.0",
     "firebase-tools": "^14.9.0",
+    "husky": "^9.1.7",
     "identity-obj-proxy": "^3.0.0",
     "jest": "^30.0.4",
     "jsdom": "^26.1.0",
