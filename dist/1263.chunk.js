@@ -191,6 +191,8 @@ const ProjectsPage = () => {
     const [loading, setLoading] = (0,react.useState)(true);
     const [error, setError] = (0,react.useState)(null);
     const [tab, setTab] = (0,react.useState)('all');
+    const [sortBy, setSortBy] = (0,react.useState)('relevance');
+    const [sortOrder, setSortOrder] = (0,react.useState)('desc');
     const navigate = (0,dist/* useNavigate */.Zp)();
     const user = firebase/* auth */.j2.currentUser;
     console.log('[ProjectsPage] Component rendered, user:', user?.uid, 'authenticated:', !!user);
@@ -383,15 +385,16 @@ const ProjectsPage = () => {
         }
     };
     const filteredProjects = (() => {
+        let projectsList;
         if (tab === 'mine' && user) {
             // Combine owned and crew projects, marking them appropriately
             const ownedWithType = ownedProjects.map(p => ({ ...p, projectType: 'owned' }));
             const crewWithType = crewProjects.map(p => ({ ...p, projectType: 'crew' }));
-            return [...ownedWithType, ...crewWithType];
+            projectsList = [...ownedWithType, ...crewWithType];
         }
         else if (tab === 'favorites' && user) {
             // Convert favorites to project format for display
-            return favorites.map(fav => ({
+            projectsList = favorites.map(fav => ({
                 id: fav.projectId,
                 projectName: fav.projectData?.projectName || 'Unknown Project',
                 productionCompany: fav.projectData?.productionCompany || '',
@@ -409,10 +412,75 @@ const ProjectsPage = () => {
             }));
         }
         else {
-            return projects.map(p => ({ ...p, projectType: 'all' }));
+            projectsList = projects.map(p => ({ ...p, projectType: 'all' }));
         }
+        // Sort the projects
+        return projectsList.sort((a, b) => {
+            if (sortBy === 'relevance') {
+                // Calculate relevance score based on multiple factors
+                const getRelevanceScore = (project) => {
+                    let score = 0;
+                    // Status bonus (active projects get higher priority)
+                    if (project.status === 'production')
+                        score += 50;
+                    else if (project.status === 'pre-production')
+                        score += 40;
+                    else if (project.status === 'development')
+                        score += 30;
+                    else if (project.status === 'post-production')
+                        score += 25;
+                    else if (project.status === 'completed')
+                        score += 20;
+                    // Production company bonus (major companies get higher priority)
+                    const majorCompanies = ['Warner Bros.', 'Disney', 'Netflix', 'Amazon', 'Paramount', 'Universal', 'Sony', '20th Century Fox'];
+                    if (project.productionCompany && majorCompanies.some(company => project.productionCompany.toLowerCase().includes(company.toLowerCase()))) {
+                        score += 30;
+                    }
+                    // Genre diversity bonus
+                    if (project.genres && project.genres.length > 1)
+                        score += 10;
+                    // Location diversity bonus
+                    if (project.productionLocations && project.productionLocations.length > 1)
+                        score += 10;
+                    // Recent activity bonus (if createdAt exists)
+                    const createdAt = project.createdAt?.toDate?.();
+                    if (createdAt) {
+                        const daysSinceCreation = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
+                        if (daysSinceCreation < 30)
+                            score += 20; // New projects get bonus
+                        else if (daysSinceCreation < 90)
+                            score += 15;
+                    }
+                    // Favorite status bonus
+                    if (project.isFavorite)
+                        score += 15;
+                    return score;
+                };
+                const aScore = getRelevanceScore(a);
+                const bScore = getRelevanceScore(b);
+                return bScore - aScore; // Higher scores first
+            }
+            else if (sortBy === 'name') {
+                const comparison = a.projectName.localeCompare(b.projectName);
+                return sortOrder === 'asc' ? comparison : -comparison;
+            }
+            else if (sortBy === 'newest') {
+                // Sort by creation date
+                const aDate = a.createdAt?.toDate?.() || new Date(0);
+                const bDate = b.createdAt?.toDate?.() || new Date(0);
+                const comparison = bDate.getTime() - aDate.getTime();
+                return sortOrder === 'asc' ? -comparison : comparison;
+            }
+            return 0;
+        });
     })();
-    return ((0,jsx_runtime.jsxs)("div", { className: "min-h-screen bg-white", children: [(0,jsx_runtime.jsx)("div", { className: "section-gradient border-b border-gray-100", children: (0,jsx_runtime.jsx)("div", { className: "container-base section-padding-large", children: (0,jsx_runtime.jsxs)("div", { className: "text-center mb-8 animate-fade", children: [(0,jsx_runtime.jsx)("h1", { className: "heading-primary mb-2 animate-slide", children: t('projects.title') }), (0,jsx_runtime.jsx)("p", { className: "body-large max-w-2xl mx-auto animate-slide", children: user ? t('projects.subtitle') : t('projects.subtitleLoggedOut') }), (0,jsx_runtime.jsxs)("div", { className: "mt-8 flex justify-center gap-4", children: [(0,jsx_runtime.jsx)("button", { className: `px-6 py-2 rounded-lg font-medium transition-colors ${tab === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-50'}`, onClick: () => setTab('all'), children: t('projects.allProjects') }), user && ((0,jsx_runtime.jsx)("button", { className: `px-6 py-2 rounded-lg font-medium transition-colors ${tab === 'mine' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-50'}`, onClick: () => setTab('mine'), children: t('projects.myProjects') })), user && ((0,jsx_runtime.jsxs)("button", { className: `px-6 py-2 rounded-lg font-medium transition-colors ${tab === 'favorites' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-50'}`, onClick: () => setTab('favorites'), children: ["\u2764\uFE0F ", t('nav.favorites')] })), (0,jsx_runtime.jsx)("button", { onClick: () => navigate('/projects/create'), className: "btn-primary ml-4", children: t('projects.createNewProject') })] })] }) }) }), (0,jsx_runtime.jsx)("div", { className: "section-gray", children: (0,jsx_runtime.jsx)("div", { className: "container-base section-padding", children: loading ? ((0,jsx_runtime.jsx)("div", { className: "text-center py-24 animate-fade", children: t('projects.loading') })) : error ? ((0,jsx_runtime.jsx)("div", { className: "text-center py-24 text-red-600 animate-fade", children: error })) : filteredProjects.length === 0 ? ((0,jsx_runtime.jsxs)("div", { className: "text-center py-24 animate-fade", children: [(0,jsx_runtime.jsx)("div", { className: "text-8xl mb-8 opacity-20 animate-bounce-slow", children: "\uD83C\uDFAC" }), (0,jsx_runtime.jsx)("h3", { className: "heading-card mb-4", children: t('projects.noProjectsFound') }), (0,jsx_runtime.jsx)("p", { className: "body-medium max-w-md mx-auto", children: tab === 'mine' ? t('projects.noProjectsYet') :
+    return ((0,jsx_runtime.jsxs)("div", { className: "min-h-screen bg-white", children: [(0,jsx_runtime.jsx)("div", { className: "section-gradient border-b border-gray-100", children: (0,jsx_runtime.jsx)("div", { className: "container-base section-padding-large", children: (0,jsx_runtime.jsxs)("div", { className: "text-center mb-8 animate-fade", children: [(0,jsx_runtime.jsx)("h1", { className: "heading-primary mb-2 animate-slide", children: t('projects.title') }), (0,jsx_runtime.jsx)("p", { className: "body-large max-w-2xl mx-auto animate-slide", children: user ? t('projects.subtitle') : t('projects.subtitleLoggedOut') }), (0,jsx_runtime.jsxs)("div", { className: "mt-8 flex justify-center gap-4", children: [(0,jsx_runtime.jsx)("button", { className: `px-6 py-2 rounded-lg font-medium transition-colors ${tab === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-50'}`, onClick: () => setTab('all'), children: t('projects.allProjects') }), user && ((0,jsx_runtime.jsx)("button", { className: `px-6 py-2 rounded-lg font-medium transition-colors ${tab === 'mine' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-50'}`, onClick: () => setTab('mine'), children: t('projects.myProjects') })), user && ((0,jsx_runtime.jsxs)("button", { className: `px-6 py-2 rounded-lg font-medium transition-colors ${tab === 'favorites' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-50'}`, onClick: () => setTab('favorites'), children: ["\u2764\uFE0F ", t('nav.favorites')] })), (0,jsx_runtime.jsx)("button", { onClick: () => navigate('/projects/create'), className: "btn-primary ml-4", children: t('projects.createNewProject') })] }), (0,jsx_runtime.jsxs)("div", { className: "mt-6 flex justify-center items-center gap-2", children: [(0,jsx_runtime.jsxs)("div", { className: "flex items-center bg-white border border-gray-300 rounded-lg overflow-hidden shadow-sm", children: [(0,jsx_runtime.jsx)("button", { type: "button", onClick: () => setSortBy('relevance'), className: `px-3 py-2 text-sm font-medium transition-colors duration-200 ${sortBy === 'relevance'
+                                                    ? 'bg-blue-600 text-white border-r border-gray-300'
+                                                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'}`, children: t('projects.mostPopular') }), (0,jsx_runtime.jsx)("button", { type: "button", onClick: () => setSortBy('name'), className: `px-3 py-2 text-sm font-medium transition-colors duration-200 ${sortBy === 'name'
+                                                    ? 'bg-blue-600 text-white border-r border-gray-300'
+                                                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'}`, children: t('projects.alphabetical') }), (0,jsx_runtime.jsx)("button", { type: "button", onClick: () => setSortBy('newest'), className: `px-3 py-2 text-sm font-medium transition-colors duration-200 ${sortBy === 'newest'
+                                                    ? 'bg-blue-600 text-white'
+                                                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'}`, children: t('projects.newestFirst') })] }), sortBy !== 'relevance' && ((0,jsx_runtime.jsx)("button", { type: "button", onClick: () => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc'), className: "p-2 text-gray-400 hover:text-gray-600 transition-colors duration-200 border border-gray-300 rounded-lg hover:bg-gray-50 shadow-sm", title: sortOrder === 'asc' ? t('projects.sortDescending') : t('projects.sortAscending'), children: sortOrder === 'asc' ? ((0,jsx_runtime.jsx)("svg", { className: "w-4 h-4", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24", children: (0,jsx_runtime.jsx)("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M5 15l7-7 7 7" }) })) : ((0,jsx_runtime.jsx)("svg", { className: "w-4 h-4", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24", children: (0,jsx_runtime.jsx)("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M19 9l-7 7-7-7" }) })) }))] })] }) }) }), (0,jsx_runtime.jsx)("div", { className: "section-gray", children: (0,jsx_runtime.jsx)("div", { className: "container-base section-padding", children: loading ? ((0,jsx_runtime.jsx)("div", { className: "text-center py-24 animate-fade", children: t('projects.loading') })) : error ? ((0,jsx_runtime.jsx)("div", { className: "text-center py-24 text-red-600 animate-fade", children: error })) : filteredProjects.length === 0 ? ((0,jsx_runtime.jsxs)("div", { className: "text-center py-24 animate-fade", children: [(0,jsx_runtime.jsx)("div", { className: "text-8xl mb-8 opacity-20 animate-bounce-slow", children: "\uD83C\uDFAC" }), (0,jsx_runtime.jsx)("h3", { className: "heading-card mb-4", children: t('projects.noProjectsFound') }), (0,jsx_runtime.jsx)("p", { className: "body-medium max-w-md mx-auto", children: tab === 'mine' ? t('projects.noProjectsYet') :
                                     tab === 'favorites' ? 'No favorite projects yet. Start exploring projects and add them to your favorites!' :
                                         t('projects.noProjectsAvailable') })] })) : ((0,jsx_runtime.jsx)("div", { className: "grid-cards", children: filteredProjects.map((project, index) => ((0,jsx_runtime.jsxs)("div", { style: { animationDelay: `${index * 0.1}s` }, className: "relative group", children: [(0,jsx_runtime.jsx)(ProjectCard/* default */.A, { id: project.id, projectName: project.projectName, productionCompany: project.productionCompany, country: project.country, productionLocations: project.productionLocations, status: project.status, summary: project.synopsis, director: project.director, producer: project.producer, coverImageUrl: project.coverImageUrl, genres: project.genres, startDate: project.startDate, endDate: project.endDate, showDetails: true, onBookmark: handleBookmark, isBookmarked: project.isFavorite }), tab === 'favorites' && user && ((0,jsx_runtime.jsx)("div", { className: "absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity", children: (0,jsx_runtime.jsx)("button", { onClick: () => handleRemoveFromFavorites(project.id), className: "btn-danger px-3 py-1 text-xs", children: "\u2764\uFE0F Remove" }) }))] }, project.id))) })) }) })] }));
 };
