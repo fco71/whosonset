@@ -5,6 +5,7 @@ import { JobTitleEntry } from '../types/JobTitleEntry';
 import { Residence, ContactInfo } from '../types/CrewProfile';
 import { useManagedUrl } from '../hooks/useBlobUrl';
 import { imageErrorFallback } from '../utilities/imageErrorFallback';
+import { formatInstagramHandle } from '../lib/utils';
 
 // Import html2pdf using require to bypass TypeScript issues
 const html2pdf = require('html2pdf.js');
@@ -540,7 +541,7 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
                   {isOwnResume && profile.contactInfo.phone && <li style={contactItemStyle}>📞 {profile.contactInfo.phone}</li>}
                   {/* Always show website and social media */}
                   {profile.contactInfo.website && <li style={contactItemStyle}>🌐 {profile.contactInfo.website}</li>}
-                  {profile.contactInfo.instagram && <li style={contactItemStyle}>📷 @{profile.contactInfo.instagram}</li>}
+                  {profile.contactInfo.instagram && <li style={contactItemStyle}>📷 {formatInstagramHandle(profile.contactInfo.instagram)}</li>}
                 </ul>
               </div>
             )}

@@ -86,3 +86,31 @@ export function isValidEmail(email: string): boolean {
   const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return re.test(email);
 }
+
+/**
+ * Formats an Instagram handle to ensure it always displays with exactly one @ symbol
+ * This function handles both new submissions and existing data that may already contain @ symbols
+ * @param handle - The Instagram handle (with or without @)
+ * @returns Properly formatted Instagram handle with exactly one @ symbol
+ */
+export function formatInstagramHandle(handle: string): string {
+  if (!handle) return '';
+  
+  // Remove any existing @ symbols and trim whitespace
+  const cleanHandle = handle.replace(/@/g, '').trim();
+  
+  // Return with single @ symbol
+  return cleanHandle ? `@${cleanHandle}` : '';
+}
+
+/**
+ * Gets the clean Instagram handle without @ symbol for storage
+ * @param handle - The Instagram handle (with or without @)
+ * @returns Clean handle without @ symbol
+ */
+export function getCleanInstagramHandle(handle: string): string {
+  if (!handle) return '';
+  
+  // Remove any existing @ symbols and trim whitespace
+  return handle.replace(/@/g, '').trim();
+}

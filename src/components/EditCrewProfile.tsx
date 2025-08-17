@@ -28,6 +28,7 @@ import { JOB_SUBCATEGORIES } from '../types/JobSubcategories';
 import ResumeView from './ResumeView';
 import LocationSelector from './LocationSelector';
 import ResumeDownloadButton from './ResumeDownloadButton';
+import { getCleanInstagramHandle } from '../lib/utils';
 
 // Import html2pdf using require to bypass TypeScript issues
 const html2pdf = require('html2pdf.js');
@@ -593,6 +594,7 @@ const EditCrewProfile: React.FC = () => {
         contactInfo: {
           ...form.contactInfo,
           email: user.email || form.contactInfo?.email || '', // Ensure email is in contact info
+          instagram: getCleanInstagramHandle(form.contactInfo?.instagram || ''), // Clean Instagram handle before saving
         },
         languages: form.languages || [],
         isPublished, // Save publish state
@@ -1194,7 +1196,7 @@ const EditCrewProfile: React.FC = () => {
                       </label>
                       <input
                         type="text"
-                        placeholder="@yourusername"
+                        placeholder="yourusername (without @)"
                         value={form.contactInfo?.instagram || ''}
                         onChange={e =>
                           setForm(f => ({ ...f, contactInfo: { ...f.contactInfo, instagram: e.target.value } }))
