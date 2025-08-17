@@ -1,6 +1,6 @@
 // src/pages/SavedCrewProfilesPage.tsx
 import React, { useEffect, useState } from 'react';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query, where, getDoc, doc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import CrewProfileCard from '../components/CrewProfileCard';
@@ -38,10 +38,10 @@ const SavedCrewProfilesPage: React.FC = () => {
 
         for (const crewId of favoriteIds) {
           try {
-            const crewQuery = query(crewProfilesRef, where('uid', '==', crewId));
-            const crewSnapshot = await getDocs(crewQuery);
-            if (!crewSnapshot.empty) {
-              const crewData = crewSnapshot.docs[0].data() as CrewProfile;
+            // Use document ID directly instead of querying by uid field
+            const crewDoc = await getDoc(doc(crewProfilesRef, crewId));
+            if (crewDoc.exists()) {
+              const crewData = crewDoc.data() as CrewProfile;
               profiles.push({
                 uid: crewId,
                 ...crewData

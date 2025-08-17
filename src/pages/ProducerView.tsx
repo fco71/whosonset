@@ -155,6 +155,15 @@ const ProducerView: React.FC = () => {
       return sortOrder === 'asc' ? comparison : -comparison;
     });
 
+    console.log('🔍 [ProducerView] Filtering and sorting profiles:', {
+      totalProfiles: crewProfiles.length,
+      showFavoritesOnly,
+      favoriteCrewIdsCount: favoriteCrewIds.length,
+      sortBy,
+      sortOrder,
+      filteredCount: filtered.length
+    });
+    
     setFilteredProfiles(filtered);
   }, [showFavoritesOnly, crewProfiles, favoriteCrewIds, sortBy, sortOrder]);
 
@@ -249,6 +258,13 @@ const ProducerView: React.FC = () => {
           uid: doc.id,
           ...doc.data()
         })) as CrewProfile[];
+
+        // Ensure uniqueness by UID (keep the first occurrence)
+        const uniqueResults = results.filter((profile, index, self) => 
+          index === self.findIndex(p => p.uid === profile.uid)
+        );
+        
+        results = uniqueResults;
 
         // Client-side filtering for complex fields
         // Filter by search query

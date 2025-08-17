@@ -1056,9 +1056,9 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       if (!currentUser) return;
       try {
         // Get user's followers and following from social data using crewProfiles
-        const crewSnap = await getDocs(query(collection(db, 'crewProfiles'), where('uid', '==', currentUser.uid)));
-        if (!crewSnap.empty) {
-          const data = crewSnap.docs[0].data();
+        const crewDoc = await getDoc(doc(db, 'crewProfiles', currentUser.uid));
+        if (crewDoc.exists()) {
+          const data = crewDoc.data();
           const followers = Array.isArray(data.followers) ? data.followers : [];
           const following = Array.isArray(data.following) ? data.following : [];
           setUserFollows(Array.from(new Set([...followers, ...following])));
@@ -1115,9 +1115,12 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
           approvedChunks.push(approvedContacts.slice(i, i + 10));
         }
         for (const chunk of approvedChunks) {
-          const q = query(crewRef, where('uid', 'in', chunk));
-          const snap = await getDocs(q);
-          allResults = allResults.concat(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+          // Get crew profiles by document ID (which should be the UID)
+          const crewDocs = await Promise.all(
+            chunk.map(uid => getDoc(doc(crewRef, uid)))
+          );
+          const validDocs = crewDocs.filter(doc => doc.exists());
+          allResults = allResults.concat(validDocs.map(doc => ({ id: doc.id, ...doc.data() })));
         }
       } else {
         // Fallback: search all crew profiles

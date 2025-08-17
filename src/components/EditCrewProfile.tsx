@@ -588,7 +588,7 @@ const EditCrewProfile: React.FC = () => {
         ...form,
         name: safeName,
         profileImageUrl: safeProfileImageUrl,
-        uid: user.uid,
+        // Note: uid field is intentionally omitted since document ID should be the UID
         email: user.email || form.contactInfo?.email || '', // Use auth email as primary, fallback to contact info
         contactInfo: {
           ...form.contactInfo,

@@ -121,7 +121,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         // Create crew profile
         const crewProfileData = {
-          uid: user.uid,
+          // Note: uid field is intentionally omitted since document ID should be the UID
           name: displayName,
           email: user.email,
           bio: '',
@@ -200,7 +200,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       // Create ONLY the crew profile (this is the single source of truth)
       const crewProfileData = {
-        uid: user.uid,
+        // Note: uid field is intentionally omitted since document ID should be the UID
         name: displayName, // This will autopopulate the resume name
         email: user.email,
         bio: '',
