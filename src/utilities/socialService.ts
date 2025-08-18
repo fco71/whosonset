@@ -899,6 +899,9 @@ export class SocialService {
         createdAt: serverTimestamp(),
         actionUrl: `/screenplays/${screenplayId}/collab-request`
       });
+
+      // Send email notification
+      await EmailNotificationService.sendCollaborationRequestEmail(inviteeId, inviterName, screenplayName, screenplayId);
     } catch (error) {
       console.error('Error sending collaboration request:', error);
       throw error;

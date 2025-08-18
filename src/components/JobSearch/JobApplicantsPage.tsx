@@ -38,6 +38,7 @@ import {
   FileText,
   Paperclip
 } from 'lucide-react';
+import EmailNotificationService from '../../utilities/emailNotificationService';
 
 interface ApplicantProfile {
   uid: string;
@@ -196,6 +197,9 @@ const JobApplicantsPage: React.FC<JobApplicantsPageProps> = ({ jobId: propJobId 
           applicationId: applicationId,
           status: newStatus
         });
+
+        // Send email notification
+        await EmailNotificationService.sendApplicationStatusUpdateEmail(applicationData.applicantId, newStatus, applicationId);
       }
       toast.success(`Application ${newStatus.replace('_', ' ')}`);
     } catch (error) {

@@ -1,5 +1,13 @@
 import { getAuth } from 'firebase/auth';
-import { getFirestore, doc, addDoc, collection, serverTimestamp, writeBatch } from 'firebase/firestore';
+import { 
+  collection, 
+  addDoc, 
+  serverTimestamp, 
+  writeBatch, 
+  doc 
+} from 'firebase/firestore';
+import { db } from '../firebase';
+import EmailNotificationService from './emailNotificationService';
 
 // Initialize Firebase with error handling
 let db: any;
@@ -122,6 +130,10 @@ export class NotificationTriggers {
         read: false,
         createdAt: serverTimestamp()
       });
+
+      // Send email notification
+      await EmailNotificationService.sendTaskAssignmentEmail(assignedUserId, taskId);
+      
       console.log('Task assignment notification created');
     } catch (error) {
       console.error('Error creating task assignment notification:', error);

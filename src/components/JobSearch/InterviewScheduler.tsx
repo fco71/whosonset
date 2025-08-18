@@ -3,6 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc, updateDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { JobApplication, JobPosting } from '../../types/JobApplication';
+import { Button } from '../../components/ui/Button';
+import { toast } from 'react-hot-toast';
+import EmailNotificationService from '../../utilities/emailNotificationService';
 
 interface InterviewSchedulerProps {
   applicationId: string;
@@ -170,6 +173,14 @@ const InterviewScheduler: React.FC<InterviewSchedulerProps> = ({
         actionUrl: `/applications/${applicationId}`,
         interviewId: interviewRef.id
       });
+
+      // Send email notification
+      await EmailNotificationService.sendInterviewScheduledEmail(
+        application.applicantId, 
+        job?.title || 'Unknown Job', 
+        interviewDateTime.toLocaleDateString(), 
+        interviewDateTime.toLocaleTimeString()
+      );
       
       console.log('Interview scheduled successfully:', interviewRef.id);
       

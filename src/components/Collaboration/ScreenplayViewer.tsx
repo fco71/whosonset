@@ -6,6 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-toastify';
 import './ScreenplayViewer.scss';
 import { useTranslation } from 'react-i18next';
+import EmailNotificationService from '../../utilities/emailNotificationService';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
@@ -1218,6 +1219,9 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
           screenplayId: screenplay.id,
           addedBy: currentUser?.uid || '',
         });
+
+        // Send email notification
+        await EmailNotificationService.sendCollaboratorAddedEmail(user.id, screenplay.name || screenplay.id, currentUser?.displayName || 'Unknown User');
       }
       // Close modal and reset search
       setShowAddCollaboratorModal(false);

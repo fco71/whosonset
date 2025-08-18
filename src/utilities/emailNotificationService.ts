@@ -6,7 +6,7 @@ interface EmailNotificationData {
   subject: string;
   message: string;
   senderName: string;
-  template?: 'chat' | 'project' | 'job' | 'general' | 'follow_request' | 'message' | 'application_message';
+  template?: 'chat' | 'project' | 'job' | 'general' | 'follow_request' | 'message' | 'application_message' | 'collaboration_request' | 'collaborator_added' | 'application_status_update' | 'interview_scheduled' | 'task_assignment';
   userId?: string; // Add userId for preference checking
 }
 
@@ -182,6 +182,208 @@ class EmailNotificationService {
       return false;
     } catch (error) {
       console.error('Error sending email notification:', error);
+      return false;
+    }
+  }
+
+  // Task assignment notification
+  static async sendTaskAssignmentEmail(
+    recipientUserId: string,
+    taskId: string
+  ): Promise<boolean> {
+    try {
+      // Get recipient's email
+      const recipientEmail = await this.getUserEmail(recipientUserId);
+      if (!recipientEmail) {
+        console.log('[EmailNotificationService] No email found for user:', recipientUserId);
+        return false;
+      }
+
+      const subject = `New Task Assignment`;
+      const message = `
+Hello,
+
+You have been assigned a new task on My Film Jobs.
+
+Log in to your My Film Jobs dashboard to view and work on this task.
+
+Best regards,
+The My Film Jobs Team
+      `;
+
+      return this.sendNotification({
+        to: recipientEmail,
+        subject,
+        message,
+        senderName: 'My Film Jobs',
+        template: 'task_assignment',
+        userId: recipientUserId
+      });
+    } catch (error) {
+      console.error('[EmailNotificationService] Error sending task assignment email:', error);
+      return false;
+    }
+  }
+
+  // Interview scheduled notification
+  static async sendInterviewScheduledEmail(
+    recipientUserId: string,
+    jobTitle: string,
+    interviewDate: string,
+    interviewTime: string
+  ): Promise<boolean> {
+    try {
+      // Get recipient's email
+      const recipientEmail = await this.getUserEmail(recipientUserId);
+      if (!recipientEmail) {
+        console.log('[EmailNotificationService] No email found for user:', recipientUserId);
+        return false;
+      }
+
+      const subject = `Interview Scheduled: ${jobTitle}`;
+      const message = `
+Hello,
+
+Your interview for ${jobTitle} has been scheduled for ${interviewDate} at ${interviewTime}.
+
+Please log in to your My Film Jobs dashboard to view the interview details and prepare accordingly.
+
+Best regards,
+The My Film Jobs Team
+      `;
+
+      return this.sendNotification({
+        to: recipientEmail,
+        subject,
+        message,
+        senderName: 'My Film Jobs',
+        template: 'interview_scheduled',
+        userId: recipientUserId
+      });
+    } catch (error) {
+      console.error('[EmailNotificationService] Error sending interview scheduled email:', error);
+      return false;
+    }
+  }
+
+  // Application status update notification
+  static async sendApplicationStatusUpdateEmail(
+    recipientUserId: string,
+    newStatus: string,
+    applicationId: string
+  ): Promise<boolean> {
+    try {
+      // Get recipient's email
+      const recipientEmail = await this.getUserEmail(recipientUserId);
+      if (!recipientEmail) {
+        console.log('[EmailNotificationService] No email found for user:', recipientUserId);
+        return false;
+      }
+
+      const statusDisplay = newStatus.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+      const subject = `Application Status Update: ${statusDisplay}`;
+      const message = `
+Hello,
+
+Your job application status has been updated to: ${statusDisplay}
+
+Log in to your My Film Jobs dashboard to view the details of this application.
+
+Best regards,
+The My Film Jobs Team
+      `;
+
+      return this.sendNotification({
+        to: recipientEmail,
+        subject,
+        message,
+        senderName: 'My Film Jobs',
+        template: 'application_status_update',
+        userId: recipientUserId
+      });
+    } catch (error) {
+      console.error('[EmailNotificationService] Error sending application status update email:', error);
+      return false;
+    }
+  }
+
+  // Collaborator added notification
+  static async sendCollaboratorAddedEmail(
+    recipientUserId: string,
+    screenplayName: string,
+    addedBy: string
+  ): Promise<boolean> {
+    try {
+      // Get recipient's email
+      const recipientEmail = await this.getUserEmail(recipientUserId);
+      if (!recipientEmail) {
+        console.log('[EmailNotificationService] No email found for user:', recipientUserId);
+        return false;
+      }
+
+      const subject = `You've been added as a collaborator`;
+      const message = `
+Hello,
+
+${addedBy} has added you as a collaborator to the screenplay "${screenplayName}" on My Film Jobs.
+
+Log in to your My Film Jobs dashboard to access and collaborate on this screenplay.
+
+Best regards,
+The My Film Jobs Team
+      `;
+
+      return this.sendNotification({
+        to: recipientEmail,
+        subject,
+        message,
+        senderName: 'My Film Jobs',
+        template: 'collaborator_added',
+        userId: recipientUserId
+      });
+    } catch (error) {
+      console.error('[EmailNotificationService] Error sending collaborator added email:', error);
+      return false;
+    }
+  }
+
+  // Collaboration request notification
+  static async sendCollaborationRequestEmail(
+    recipientUserId: string,
+    inviterName: string,
+    screenplayName: string,
+    screenplayId: string
+  ): Promise<boolean> {
+    try {
+      // Get recipient's email
+      const recipientEmail = await this.getUserEmail(recipientUserId);
+      if (!recipientEmail) {
+        console.log('[EmailNotificationService] No email found for user:', recipientUserId);
+        return false;
+      }
+
+      const subject = `Collaboration Request: ${screenplayName}`;
+      const message = `
+Hello,
+
+${inviterName} has invited you to collaborate on the screenplay "${screenplayName}" on My Film Jobs.
+
+Log in to your My Film Jobs dashboard to accept or decline this collaboration request.
+
+Best regards,
+The My Film Jobs Team
+      `;
+
+      return this.sendNotification({
+        to: recipientEmail,
+        subject,
+        message,
+        senderName: 'My Film Jobs',
+        template: 'collaboration_request',
+        userId: recipientUserId
+      });
+    } catch (error) {
+      console.error('[EmailNotificationService] Error sending collaboration request email:', error);
       return false;
     }
   }

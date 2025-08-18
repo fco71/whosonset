@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, where, getDocs, addDoc, updateDoc, doc, deleteDoc, orderBy, onSnapshot } from 'firebase/firestore';
-import { db, auth } from '../../firebase';
+import { collection, query, where, onSnapshot, addDoc, updateDoc, doc, getDocs, serverTimestamp, deleteDoc } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
+import { db } from '../../firebase';
 import { CollaborativeTask, TaskSubtask, TaskTeamMember, TaskReminder, TaskComment } from '../../types/ProjectManagement';
 import TaskForm from './TaskForm';
 import './CollaborativeTasksHub.scss';
 import { toast } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import EmailNotificationService from '../../utilities/emailNotificationService';
 
 interface CollaborativeTasksHubProps {
   projectId: string;
@@ -15,6 +17,7 @@ type ViewMode = 'list' | 'calendar' | 'kanban' | 'analytics';
 
 const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId }) => {
   const { t } = useTranslation();
+  const auth = getAuth();
   const [tasks, setTasks] = useState<CollaborativeTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>('list');
@@ -397,6 +400,17 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
           });
         }
       }
+
+      // Send email notifications
+      const emailPromises = assignedMembers
+        .filter(memberId => users[memberId]?.email) // Only send email if user has an email
+        .map(memberId => EmailNotificationService.sendTaskAssignmentEmail(
+          memberId,
+          taskId
+        ));
+
+      await Promise.all(emailPromises);
+
     } catch (error) {
       console.error('Error sending task assignment notifications:', error);
     }
