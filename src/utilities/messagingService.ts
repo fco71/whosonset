@@ -26,6 +26,7 @@ import { DirectMessage, ChatRoom, ChatSettings, MessageReaction, ChatPresence } 
 import { SocialService } from './socialService';
 import { storage } from '../firebase';
 import { ref, uploadBytes, getDownloadURL, ref as storageRef, deleteObject } from 'firebase/storage';
+import EmailNotificationService from './emailNotificationService';
 
 export interface ConversationSummary {
   userId: string;
@@ -709,6 +710,9 @@ export class MessagingService {
         read: false,
         createdAt: serverTimestamp()
       });
+
+      // Send email notification
+      await EmailNotificationService.sendMessageNotificationEmail(receiverId, senderName, messagePreview);
       
       console.log('[MessagingService] Message notification created successfully');
     } catch (error) {

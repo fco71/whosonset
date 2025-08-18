@@ -9,12 +9,15 @@ import {
   doc, 
   onSnapshot, 
   serverTimestamp,
-  deleteDoc,
   writeBatch,
   getDoc,
-  increment as firestoreIncrement,
+  deleteDoc,
   limit,
-  startAfter
+  Timestamp,
+  DocumentData,
+  QueryDocumentSnapshot,
+  setDoc,
+  increment as firestoreIncrement
 } from 'firebase/firestore';
 import { firebaseConnectionManager } from './firebaseConnectionManager';
 import { db } from '../firebase';
@@ -29,6 +32,7 @@ import {
   ApplicationMessage,
   ApplicationNotification
 } from '../types/JobApplication';
+import EmailNotificationService from './emailNotificationService';
 
 export class JobApplicationService {
   // Job Search Operations
@@ -443,6 +447,9 @@ export class JobApplicationService {
       };
 
       await addDoc(collection(db, 'notifications'), notificationData);
+
+      // Send email notification
+      await EmailNotificationService.sendApplicationMessageEmail(userId, senderName, applicationId);
     } catch (error) {
       console.error('Error creating message notification:', error);
     }

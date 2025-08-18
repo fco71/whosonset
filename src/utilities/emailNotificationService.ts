@@ -6,7 +6,7 @@ interface EmailNotificationData {
   subject: string;
   message: string;
   senderName: string;
-  template?: 'chat' | 'project' | 'job' | 'general' | 'follow_request';
+  template?: 'chat' | 'project' | 'job' | 'general' | 'follow_request' | 'message' | 'application_message';
   userId?: string; // Add userId for preference checking
 }
 
@@ -182,6 +182,89 @@ class EmailNotificationService {
       return false;
     } catch (error) {
       console.error('Error sending email notification:', error);
+      return false;
+    }
+  }
+
+  // Application message notification
+  static async sendApplicationMessageEmail(
+    recipientUserId: string,
+    senderName: string,
+    applicationId: string
+  ): Promise<boolean> {
+    try {
+      // Get recipient's email
+      const recipientEmail = await this.getUserEmail(recipientUserId);
+      if (!recipientEmail) {
+        console.log('[EmailNotificationService] No email found for user:', recipientUserId);
+        return false;
+      }
+
+      const subject = `New message about your job application`;
+      const message = `
+Hello,
+
+You have received a new message from ${senderName} regarding your job application on My Film Jobs.
+
+Log in to your My Film Jobs dashboard to view and respond to this message.
+
+Best regards,
+The My Film Jobs Team
+      `;
+
+      return this.sendNotification({
+        to: recipientEmail,
+        subject,
+        message,
+        senderName: 'My Film Jobs',
+        template: 'application_message',
+        userId: recipientUserId
+      });
+    } catch (error) {
+      console.error('[EmailNotificationService] Error sending application message email:', error);
+      return false;
+    }
+  }
+
+  // Message notification
+  static async sendMessageNotificationEmail(
+    recipientUserId: string,
+    senderName: string,
+    messagePreview: string
+  ): Promise<boolean> {
+    try {
+      // Get recipient's email
+      const recipientEmail = await this.getUserEmail(recipientUserId);
+      if (!recipientEmail) {
+        console.log('[EmailNotificationService] No email found for user:', recipientUserId);
+        return false;
+      }
+
+      const subject = `New message from ${senderName}`;
+      const message = `
+Hello,
+
+You have received a new message from ${senderName} on My Film Jobs.
+
+Message Preview:
+"${messagePreview}"
+
+Log in to your My Film Jobs dashboard to view and respond to this message.
+
+Best regards,
+The My Film Jobs Team
+      `;
+
+      return this.sendNotification({
+        to: recipientEmail,
+        subject,
+        message,
+        senderName: 'My Film Jobs',
+        template: 'message',
+        userId: recipientUserId
+      });
+    } catch (error) {
+      console.error('[EmailNotificationService] Error sending message notification email:', error);
       return false;
     }
   }
