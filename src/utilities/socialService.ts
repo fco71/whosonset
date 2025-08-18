@@ -1,24 +1,28 @@
 import { 
   collection, 
+  doc, 
+  addDoc, 
+  getDocs, 
+  getDoc, 
+  updateDoc, 
+  deleteDoc, 
   query, 
   where, 
   orderBy, 
-  getDocs, 
-  addDoc, 
-  updateDoc, 
-  doc, 
-  onSnapshot, 
+  limit, 
+  startAfter, 
+  writeBatch, 
   serverTimestamp,
-  deleteDoc,
-  writeBatch,
-  getDoc,
-  increment,
-  limit
+  onSnapshot,
+  DocumentData,
+  QueryDocumentSnapshot,
+  increment
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { FollowRequest, Follow, SocialNotification, ActivityFeedItem, SocialLike, SocialComment } from '../types/Social';
 import { CrewProfile } from '../types/CrewProfile';
 import { UserUtils } from './userUtils';
+import EmailNotificationService from './emailNotificationService';
 
 export class SocialService {
   // Cache for activity feed
@@ -78,6 +82,10 @@ export class SocialService {
         actionUrl: `/social/requests`
       });
       console.log('[SocialService] Notification created successfully');
+
+      // Send email notification
+      await EmailNotificationService.sendFollowRequestEmail(toUserId, fromUserName);
+      console.log('[SocialService] Email notification sent successfully');
 
     } catch (error) {
       console.error('Error sending follow request:', error);

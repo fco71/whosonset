@@ -1,6 +1,14 @@
 import * as admin from "firebase-admin";
 import { onRequest } from "firebase-functions/v2/https";
+import { onDocumentCreated } from "firebase-functions/v2/firestore";
+import { defineSecret } from "firebase-functions/params";
 import { EmailService } from "./emailService";
+
+// Define secrets for environment variables
+const sendgridApiKey = defineSecret('SENDGRID_API_KEY');
+const smtpUser = defineSecret('SMTP_USER');
+const smtpPass = defineSecret('SMTP_PASS');
+const emailFrom = defineSecret('EMAIL_FROM');
 
 admin.initializeApp();
 
@@ -8,7 +16,8 @@ admin.initializeApp();
 export const emailSend = onRequest({
   cors: true,
   invoker: 'public',
-  region: 'us-central1'
+  region: 'us-central1',
+  secrets: [sendgridApiKey, smtpUser, smtpPass, emailFrom]
 }, async (req, res) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -25,6 +34,12 @@ export const emailSend = onRequest({
       });
       return;
     }
+
+    // Set environment variables from secrets
+    process.env.SENDGRID_API_KEY = sendgridApiKey.value();
+    process.env.SMTP_USER = smtpUser.value();
+    process.env.SMTP_PASS = smtpPass.value();
+    process.env.EMAIL_FROM = emailFrom.value();
 
     // Create email template
     const emailTemplate = {
@@ -88,5 +103,121 @@ The My Film Jobs Team
       success: false,
       error: error instanceof Error ? error.message : 'Internal server error' 
     });
+  }
+});
+
+// Trigger function for follow request notifications
+export const notifyFollowRequest = onDocumentCreated({
+  document: 'followRequests/{requestId}',
+  region: 'us-central1',
+  secrets: [sendgridApiKey, smtpUser, smtpPass, emailFrom]
+}, async (event) => {
+  try {
+    // Set environment variables from secrets
+    process.env.SENDGRID_API_KEY = sendgridApiKey.value();
+    process.env.SMTP_USER = smtpUser.value();
+    process.env.SMTP_PASS = smtpPass.value();
+    process.env.EMAIL_FROM = emailFrom.value();
+
+    const requestData = event.data?.data();
+    if (!requestData) {
+      console.log('[notifyFollowRequest] No request data found');
+      return;
+    }
+
+    const { toUserId, fromUserName } = requestData;
+    
+    // Get recipient's email
+    const recipientDoc = await admin.firestore().collection('users').doc(toUserId).get();
+    if (!recipientDoc.exists) {
+      console.log('[notifyFollowRequest] Recipient not found:', toUserId);
+      return;
+    }
+
+    const recipientEmail = recipientDoc.data()?.email;
+    if (!recipientEmail) {
+      console.log('[notifyFollowRequest] No email found for recipient:', toUserId);
+      return;
+    }
+
+    // Send email notification
+    const emailTemplate = EmailService.getFollowRequestTemplate(fromUserName);
+    const success = await EmailService.sendEmail({
+      to: recipientEmail,
+      template: emailTemplate,
+      data: {
+        requesterName: fromUserName,
+        recipientEmail
+      }
+    });
+
+    if (success) {
+      console.log('[notifyFollowRequest] Email sent successfully to:', recipientEmail);
+    } else {
+      console.error('[notifyFollowRequest] Failed to send email to:', recipientEmail);
+    }
+  } catch (error) {
+    console.error('[notifyFollowRequest] Error:', error);
+  }
+});
+
+// Trigger function for message notifications
+export const notifyNewMessage = onDocumentCreated({
+  document: 'conversations/{conversationId}/messages/{messageId}',
+  region: 'us-central1',
+  secrets: [sendgridApiKey, smtpUser, smtpPass, emailFrom]
+}, async (event) => {
+  try {
+    // Set environment variables from secrets
+    process.env.SENDGRID_API_KEY = sendgridApiKey.value();
+    process.env.SMTP_USER = smtpUser.value();
+    process.env.SMTP_PASS = smtpPass.value();
+    process.env.EMAIL_FROM = emailFrom.value();
+
+    const messageData = event.data?.data();
+    if (!messageData) {
+      console.log('[notifyNewMessage] No message data found');
+      return;
+    }
+
+    const { senderId, receiverId, content } = messageData;
+    
+    // Get recipient's email
+    const recipientDoc = await admin.firestore().collection('users').doc(receiverId).get();
+    if (!recipientDoc.exists) {
+      console.log('[notifyNewMessage] Recipient not found:', receiverId);
+      return;
+    }
+
+    const recipientEmail = recipientDoc.data()?.email;
+    if (!recipientEmail) {
+      console.log('[notifyNewMessage] No email found for recipient:', receiverId);
+      return;
+    }
+
+    // Get sender's name
+    const senderDoc = await admin.firestore().collection('users').doc(senderId).get();
+    const senderName = senderDoc.exists ? senderDoc.data()?.displayName || 'Unknown User' : 'Unknown User';
+
+    // Send email notification
+    const messagePreview = content.length > 50 ? content.substring(0, 50) + '...' : content;
+    const emailTemplate = EmailService.getMessageNotificationTemplate(senderName, messagePreview);
+    const success = await EmailService.sendEmail({
+      to: recipientEmail,
+      template: emailTemplate,
+      data: {
+        senderName,
+        messagePreview,
+        recipientEmail
+      }
+    });
+
+    if (success) {
+      console.log('[notifyNewMessage] Email sent successfully to:', recipientEmail);
+    } else {
+      console.error('[notifyNewMessage] Failed to send email to:', recipientEmail);
+    }
+  } catch (error) {
+    console.error('[notifyNewMessage] Error:', error);
   }
 });

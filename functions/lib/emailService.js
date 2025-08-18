@@ -37,15 +37,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.EmailService = void 0;
-const mail_1 = __importDefault(require("@sendgrid/mail"));
 const nodemailer = __importStar(require("nodemailer"));
+const mail_1 = __importDefault(require("@sendgrid/mail"));
 const handlebars = __importStar(require("handlebars"));
 class EmailService {
     static initialize() {
         if (this.isInitialized)
             return;
-        // Use environment variables - credentials should be set via Firebase config
+        // Use environment variables for Firebase Functions v2
         this.sendGridApiKey = process.env.SENDGRID_API_KEY || '';
+        console.log('[EmailService] SendGrid API key:', this.sendGridApiKey ? 'present' : 'missing');
         if (this.sendGridApiKey) {
             mail_1.default.setApiKey(this.sendGridApiKey);
         }
@@ -63,12 +64,13 @@ class EmailService {
             host: smtpConfig.host,
             port: smtpConfig.port,
             user: smtpConfig.auth.user,
-            // Don't log password for security
+            pass: smtpConfig.auth.pass ? 'present' : 'missing'
         });
         this.transporter = nodemailer.createTransport(smtpConfig);
         this.isInitialized = true;
     }
     static async sendEmail(emailData) {
+        var _a, _b, _c;
         try {
             this.initialize();
             const { to, template, data } = emailData;
@@ -81,16 +83,28 @@ class EmailService {
             const text = compiledText(data || {});
             // Get from email from environment variables
             const fromEmailValue = process.env.EMAIL_FROM || 'iam@myfilmjobs.com';
+            console.log('[EmailService] From email value:', fromEmailValue);
             // Try SendGrid first, fallback to Nodemailer
             if (this.sendGridApiKey) {
                 console.log('[EmailService] Using SendGrid');
-                await mail_1.default.send({
-                    to,
-                    from: fromEmailValue,
-                    subject,
-                    html,
-                    text
-                });
+                try {
+                    await mail_1.default.send({
+                        to,
+                        from: fromEmailValue,
+                        subject,
+                        html,
+                        text
+                    });
+                }
+                catch (sendGridError) {
+                    console.error('[EmailService] SendGrid error details:', {
+                        code: sendGridError.code,
+                        message: sendGridError.message,
+                        response: (_a = sendGridError.response) === null || _a === void 0 ? void 0 : _a.body,
+                        errors: (_c = (_b = sendGridError.response) === null || _b === void 0 ? void 0 : _b.body) === null || _c === void 0 ? void 0 : _c.errors
+                    });
+                    throw sendGridError;
+                }
             }
             else {
                 console.log('[EmailService] Using Nodemailer');
@@ -274,6 +288,43 @@ Message Preview:
 "{{messagePreview}}"
 
 Click the link below to view and respond to this message: {{messageUrl}}
+
+Best regards,
+The My Film Jobs Team
+      `
+        };
+    }
+    static getFollowRequestTemplate(requesterName) {
+        return {
+            subject: 'New Follow Request from {{requesterName}}',
+            html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2563eb;">New Follow Request</h2>
+          <p>Hello,</p>
+          <p><strong>{{requesterName}}</strong> has sent you a follow request on My Film Jobs.</p>
+          <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3>What this means:</h3>
+            <p>When you accept this request, {{requesterName}} will be able to see your updates and you'll be able to see theirs.</p>
+          </div>
+          <p>Click the button below to manage this request:</p>
+          <a href="{{followRequestsUrl}}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">View Follow Requests</a>
+          <p style="margin-top: 30px; font-size: 14px; color: #6b7280;">
+            Best regards,<br>
+            The My Film Jobs Team
+          </p>
+        </div>
+      `,
+            text: `
+New Follow Request
+
+Hello,
+
+{{requesterName}} has sent you a follow request on My Film Jobs.
+
+What this means:
+When you accept this request, {{requesterName}} will be able to see your updates and you'll be able to see theirs.
+
+Click the link below to manage this request: {{followRequestsUrl}}
 
 Best regards,
 The My Film Jobs Team

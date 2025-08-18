@@ -6,13 +6,28 @@ interface EmailNotificationData {
   subject: string;
   message: string;
   senderName: string;
-  template?: 'chat' | 'project' | 'job' | 'general';
+  template?: 'chat' | 'project' | 'job' | 'general' | 'follow_request';
   userId?: string; // Add userId for preference checking
 }
 
 class EmailNotificationService {
   private static readonly EMAIL_FUNCTION_URL = 'https://us-central1-my-film-jobs.cloudfunctions.net/emailSend';
   private static readonly WEEKLY_LIMIT_MS = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+
+  // Get user email by user ID
+  private static async getUserEmail(userId: string): Promise<string | null> {
+    try {
+      const userDoc = await getDoc(doc(db, 'users', userId));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        return userData.email || null;
+      }
+      return null;
+    } catch (error) {
+      console.error('[EmailNotificationService] Error getting user email:', error);
+      return null;
+    }
+  }
 
   // Check if user can receive email based on preferences and frequency
   private static async canSendEmail(userIdentifier: string, template: string): Promise<boolean> {
@@ -167,6 +182,45 @@ class EmailNotificationService {
       return false;
     } catch (error) {
       console.error('Error sending email notification:', error);
+      return false;
+    }
+  }
+
+  // Follow request notification
+  static async sendFollowRequestEmail(
+    recipientUserId: string,
+    requesterName: string
+  ): Promise<boolean> {
+    try {
+      // Get recipient's email
+      const recipientEmail = await this.getUserEmail(recipientUserId);
+      if (!recipientEmail) {
+        console.log('[EmailNotificationService] No email found for user:', recipientUserId);
+        return false;
+      }
+
+      const subject = `New follow request from ${requesterName}`;
+      const message = `
+Hello,
+
+${requesterName} has sent you a follow request on My Film Jobs.
+
+Log in to your My Film Jobs dashboard to accept or decline this request.
+
+Best regards,
+The My Film Jobs Team
+      `;
+
+      return this.sendNotification({
+        to: recipientEmail,
+        subject,
+        message,
+        senderName: 'My Film Jobs',
+        template: 'follow_request',
+        userId: recipientUserId
+      });
+    } catch (error) {
+      console.error('[EmailNotificationService] Error sending follow request email:', error);
       return false;
     }
   }

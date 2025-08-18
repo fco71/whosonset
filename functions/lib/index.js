@@ -33,16 +33,24 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.emailSend = void 0;
+exports.notifyNewMessage = exports.notifyFollowRequest = exports.emailSend = void 0;
 const admin = __importStar(require("firebase-admin"));
 const https_1 = require("firebase-functions/v2/https");
+const firestore_1 = require("firebase-functions/v2/firestore");
+const params_1 = require("firebase-functions/params");
 const emailService_1 = require("./emailService");
+// Define secrets for environment variables
+const sendgridApiKey = (0, params_1.defineSecret)('SENDGRID_API_KEY');
+const smtpUser = (0, params_1.defineSecret)('SMTP_USER');
+const smtpPass = (0, params_1.defineSecret)('SMTP_PASS');
+const emailFrom = (0, params_1.defineSecret)('EMAIL_FROM');
 admin.initializeApp();
 // Main email sending function - Production ready
 exports.emailSend = (0, https_1.onRequest)({
     cors: true,
     invoker: 'public',
-    region: 'us-central1'
+    region: 'us-central1',
+    secrets: [sendgridApiKey, smtpUser, smtpPass, emailFrom]
 }, async (req, res) => {
     // Handle CORS preflight
     if (req.method === 'OPTIONS') {
@@ -57,6 +65,11 @@ exports.emailSend = (0, https_1.onRequest)({
             });
             return;
         }
+        // Set environment variables from secrets
+        process.env.SENDGRID_API_KEY = sendgridApiKey.value();
+        process.env.SMTP_USER = smtpUser.value();
+        process.env.SMTP_PASS = smtpPass.value();
+        process.env.EMAIL_FROM = emailFrom.value();
         // Create email template
         const emailTemplate = {
             subject: subject || `New message from ${senderName || 'My Film Jobs'}`,
@@ -119,6 +132,113 @@ The My Film Jobs Team
             success: false,
             error: error instanceof Error ? error.message : 'Internal server error'
         });
+    }
+});
+// Trigger function for follow request notifications
+exports.notifyFollowRequest = (0, firestore_1.onDocumentCreated)({
+    document: 'followRequests/{requestId}',
+    region: 'us-central1',
+    secrets: [sendgridApiKey, smtpUser, smtpPass, emailFrom]
+}, async (event) => {
+    var _a, _b;
+    try {
+        // Set environment variables from secrets
+        process.env.SENDGRID_API_KEY = sendgridApiKey.value();
+        process.env.SMTP_USER = smtpUser.value();
+        process.env.SMTP_PASS = smtpPass.value();
+        process.env.EMAIL_FROM = emailFrom.value();
+        const requestData = (_a = event.data) === null || _a === void 0 ? void 0 : _a.data();
+        if (!requestData) {
+            console.log('[notifyFollowRequest] No request data found');
+            return;
+        }
+        const { toUserId, fromUserName } = requestData;
+        // Get recipient's email
+        const recipientDoc = await admin.firestore().collection('users').doc(toUserId).get();
+        if (!recipientDoc.exists) {
+            console.log('[notifyFollowRequest] Recipient not found:', toUserId);
+            return;
+        }
+        const recipientEmail = (_b = recipientDoc.data()) === null || _b === void 0 ? void 0 : _b.email;
+        if (!recipientEmail) {
+            console.log('[notifyFollowRequest] No email found for recipient:', toUserId);
+            return;
+        }
+        // Send email notification
+        const emailTemplate = emailService_1.EmailService.getFollowRequestTemplate(fromUserName);
+        const success = await emailService_1.EmailService.sendEmail({
+            to: recipientEmail,
+            template: emailTemplate,
+            data: {
+                requesterName: fromUserName,
+                recipientEmail
+            }
+        });
+        if (success) {
+            console.log('[notifyFollowRequest] Email sent successfully to:', recipientEmail);
+        }
+        else {
+            console.error('[notifyFollowRequest] Failed to send email to:', recipientEmail);
+        }
+    }
+    catch (error) {
+        console.error('[notifyFollowRequest] Error:', error);
+    }
+});
+// Trigger function for message notifications
+exports.notifyNewMessage = (0, firestore_1.onDocumentCreated)({
+    document: 'conversations/{conversationId}/messages/{messageId}',
+    region: 'us-central1',
+    secrets: [sendgridApiKey, smtpUser, smtpPass, emailFrom]
+}, async (event) => {
+    var _a, _b, _c;
+    try {
+        // Set environment variables from secrets
+        process.env.SENDGRID_API_KEY = sendgridApiKey.value();
+        process.env.SMTP_USER = smtpUser.value();
+        process.env.SMTP_PASS = smtpPass.value();
+        process.env.EMAIL_FROM = emailFrom.value();
+        const messageData = (_a = event.data) === null || _a === void 0 ? void 0 : _a.data();
+        if (!messageData) {
+            console.log('[notifyNewMessage] No message data found');
+            return;
+        }
+        const { senderId, receiverId, content } = messageData;
+        // Get recipient's email
+        const recipientDoc = await admin.firestore().collection('users').doc(receiverId).get();
+        if (!recipientDoc.exists) {
+            console.log('[notifyNewMessage] Recipient not found:', receiverId);
+            return;
+        }
+        const recipientEmail = (_b = recipientDoc.data()) === null || _b === void 0 ? void 0 : _b.email;
+        if (!recipientEmail) {
+            console.log('[notifyNewMessage] No email found for recipient:', receiverId);
+            return;
+        }
+        // Get sender's name
+        const senderDoc = await admin.firestore().collection('users').doc(senderId).get();
+        const senderName = senderDoc.exists ? ((_c = senderDoc.data()) === null || _c === void 0 ? void 0 : _c.displayName) || 'Unknown User' : 'Unknown User';
+        // Send email notification
+        const messagePreview = content.length > 50 ? content.substring(0, 50) + '...' : content;
+        const emailTemplate = emailService_1.EmailService.getMessageNotificationTemplate(senderName, messagePreview);
+        const success = await emailService_1.EmailService.sendEmail({
+            to: recipientEmail,
+            template: emailTemplate,
+            data: {
+                senderName,
+                messagePreview,
+                recipientEmail
+            }
+        });
+        if (success) {
+            console.log('[notifyNewMessage] Email sent successfully to:', recipientEmail);
+        }
+        else {
+            console.error('[notifyNewMessage] Failed to send email to:', recipientEmail);
+        }
+    }
+    catch (error) {
+        console.error('[notifyNewMessage] Error:', error);
     }
 });
 //# sourceMappingURL=index.js.map
