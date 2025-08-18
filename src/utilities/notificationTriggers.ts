@@ -10,16 +10,13 @@ import { db } from '../firebase';
 import EmailNotificationService from './emailNotificationService';
 
 // Initialize Firebase with error handling
-let db: any;
 let auth: any;
 
 try {
-  db = getFirestore();
   auth = getAuth();
 } catch (error) {
   console.error('Error initializing Firebase in notificationTriggers:', error);
   // Provide fallback objects
-  db = null;
   auth = null;
 }
 
