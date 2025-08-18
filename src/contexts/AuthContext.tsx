@@ -119,21 +119,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Create display name from user info or email fallback
         const displayName = user.displayName || user.email?.split('@')[0] || 'User';
         
-        // Check for existing profiles with the same name
-        const existingProfilesQuery = query(
-          collection(db, 'crewProfiles'),
-          where('name', '==', displayName)
-        );
-        const existingProfilesSnapshot = await getDocs(existingProfilesQuery);
-        
-        if (!existingProfilesSnapshot.empty) {
-          console.warn(`[AuthContext] ⚠️ Found existing profile(s) with name "${displayName}":`);
-          existingProfilesSnapshot.docs.forEach(doc => {
-            console.warn(`  - ID: ${doc.id}, Email: ${doc.data().email}`);
-          });
-          console.warn(`[AuthContext] Creating new profile for ${user.email} with name "${displayName}"`);
-        }
-        
         // Create crew profile
         const crewProfileData = {
           // Note: uid field is intentionally omitted since document ID should be the UID
@@ -205,21 +190,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         : user.email?.split('@')[0] || 'User';
       
       console.log('[AuthContext] Display name set to:', displayName);
-      
-      // Check for existing profiles with the same name
-      const existingProfilesQuery = query(
-        collection(db, 'crewProfiles'),
-        where('name', '==', displayName)
-      );
-      const existingProfilesSnapshot = await getDocs(existingProfilesQuery);
-      
-      if (!existingProfilesSnapshot.empty) {
-        console.warn(`[AuthContext] ⚠️ Found existing profile(s) with name "${displayName}":`);
-        existingProfilesSnapshot.docs.forEach(doc => {
-          console.warn(`  - ID: ${doc.id}, Email: ${doc.data().email}`);
-        });
-        console.warn(`[AuthContext] Creating new profile for ${user.email} with name "${displayName}"`);
-      }
       
       // Update Firebase Auth profile
       await updateProfile(user, {

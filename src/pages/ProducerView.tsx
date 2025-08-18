@@ -264,24 +264,7 @@ const ProducerView: React.FC = () => {
           index === self.findIndex(p => p.uid === profile.uid)
         );
         
-        // Additional check: if there are multiple profiles with the same name, keep only the first one
-        const uniqueByNameResults = uniqueResults.filter((profile, index, self) => 
-          index === self.findIndex(p => p.name === profile.name)
-        );
-        
-        // Log if duplicates were found
-        if (uniqueByNameResults.length < uniqueResults.length) {
-          const duplicates = uniqueResults.filter((profile, index, self) => 
-            self.findIndex(p => p.name === profile.name) !== index
-          );
-          console.warn('⚠️ Found duplicate profiles by name:', duplicates.map(p => ({ 
-            name: p.name, 
-            uid: p.uid, 
-            email: (p as any).email || 'No email' 
-          })));
-        }
-        
-        results = uniqueByNameResults;
+        results = uniqueResults;
 
         // Client-side filtering for complex fields
         // Filter by search query
