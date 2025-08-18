@@ -84,13 +84,16 @@ class EmailService {
             // Get from email from environment variables
             const fromEmailValue = process.env.EMAIL_FROM || 'iam@myfilmjobs.com';
             console.log('[EmailService] From email value:', fromEmailValue);
+            // Create a professional display name for the from field
+            const fromDisplayName = 'My Film Jobs';
+            const fromWithDisplayName = `${fromDisplayName} <${fromEmailValue}>`;
             // Try SendGrid first, fallback to Nodemailer
             if (this.sendGridApiKey) {
                 console.log('[EmailService] Using SendGrid');
                 try {
                     await mail_1.default.send({
                         to,
-                        from: fromEmailValue,
+                        from: fromWithDisplayName,
                         subject,
                         html,
                         text
@@ -109,7 +112,7 @@ class EmailService {
             else {
                 console.log('[EmailService] Using Nodemailer');
                 await this.transporter.sendMail({
-                    from: fromEmailValue,
+                    from: fromWithDisplayName,
                     to,
                     subject,
                     html,
