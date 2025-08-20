@@ -108,9 +108,9 @@ const CollectionsPage: React.FC = () => {
                       alt={profile.name}
                       className="w-12 h-12 rounded-full object-cover"
                     />
-                    <div className="flex-1">
-                      <h3 className="font-medium text-gray-900">{profile.name}</h3>
-                      <p className="text-sm text-gray-600">{profile.role}</p>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-gray-900 truncate" title={profile.name}>{profile.name}</h3>
+                      <p className="text-sm text-gray-600 truncate" title={profile.role}>{profile.role}</p>
                     </div>
                   </div>
                 ))}

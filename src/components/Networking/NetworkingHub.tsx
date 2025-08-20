@@ -282,11 +282,44 @@ const NetworkingHub: React.FC<NetworkingHubProps> = ({ currentUserId, currentUse
                     <div className="online-indicator"></div>
                   </div>
                   <div className="crew-info">
-                    <h3 style={{ color: '#fff', fontWeight: 600 }}>{profile.name}</h3>
-                    <p className="primary-role" style={{ color: 'rgba(255,255,255,0.85)', fontWeight: 500 }}>
+                    <h3 
+                      style={{ 
+                        color: '#fff', 
+                        fontWeight: 600,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        maxWidth: '100%'
+                      }}
+                      title={profile.name}
+                    >
+                      {profile.name}
+                    </h3>
+                    <p 
+                      className="primary-role" 
+                      style={{ 
+                        color: 'rgba(255,255,255,0.85)', 
+                        fontWeight: 500,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        maxWidth: '100%'
+                      }}
+                      title={profile.jobTitles?.[0]?.title || 'Film Professional'}
+                    >
                       {profile.jobTitles?.[0]?.title || 'Film Professional'}
                     </p>
-                    <p className="location" style={{ color: 'rgba(255,255,255,0.7)' }}>
+                    <p 
+                      className="location" 
+                      style={{ 
+                        color: 'rgba(255,255,255,0.7)',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        maxWidth: '100%'
+                      }}
+                      title={`📍 ${profile.residences?.[0]?.city}, ${profile.residences?.[0]?.country}`}
+                    >
                       📍 {profile.residences?.[0]?.city}, {profile.residences?.[0]?.country}
                     </p>
                   </div>
@@ -352,8 +385,28 @@ const NetworkingHub: React.FC<NetworkingHubProps> = ({ currentUserId, currentUse
                     <img src={connectedProfile.profileImageUrl || '/bust-avatar.svg'} alt="" />
                   </div>
                   <div className="connection-info">
-                    <h4>{connectedProfile.name}</h4>
-                    <p>{connectedProfile.jobTitles?.[0]?.title}</p>
+                    <h4 
+                      style={{
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        maxWidth: '100%'
+                      }}
+                      title={connectedProfile.name}
+                    >
+                      {connectedProfile.name}
+                    </h4>
+                    <p 
+                      style={{
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        maxWidth: '100%'
+                      }}
+                      title={connectedProfile.jobTitles?.[0]?.title}
+                    >
+                      {connectedProfile.jobTitles?.[0]?.title}
+                    </p>
                     <span className={`status ${connection.status}`}>
                       {connection.status}
                     </span>

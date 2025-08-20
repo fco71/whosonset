@@ -740,12 +740,12 @@ const SocialPage = () => {
                 }}
               />
               <div className="flex-1 min-w-0">
-                <h3 className="font-medium text-gray-900">{displayName}</h3>
+                <h3 className="font-medium text-gray-900 truncate" title={displayName}>{displayName}</h3>
                 {jobTitle && (
-                  <p className="text-sm text-gray-600 font-medium">{jobTitle}</p>
+                  <p className="text-sm text-gray-600 font-medium truncate" title={jobTitle}>{jobTitle}</p>
                 )}
                 {showBio && profile.bio && (
-                  <p className="text-sm text-gray-500 line-clamp-2 mt-1">{profile.bio}</p>
+                  <p className="text-sm text-gray-500 line-clamp-2 mt-1" title={profile.bio}>{profile.bio}</p>
                 )}
               </div>
             </div>

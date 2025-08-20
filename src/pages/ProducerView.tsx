@@ -933,17 +933,29 @@ const CrewProfileCard: React.FC<{
           </div>
         )}
         
-        <div className="flex-1">
-          <h3 className="text-xl font-light text-gray-900 mb-2 tracking-wide group-hover:text-black transition-all duration-300 group-hover:scale-105">
+        <div className="flex-1 min-w-0">
+          <h3 
+            className={`font-light text-gray-900 mb-2 tracking-wide group-hover:text-black transition-all duration-300 group-hover:scale-105 leading-tight ${
+              profile.name.length > 25 ? 'text-base' : 
+              profile.name.length > 18 ? 'text-lg' : 'text-xl'
+            }`}
+            title={profile.name}
+          >
             {profile.name}
           </h3>
           {primaryJob && (
-            <p className="text-sm font-medium text-gray-600 mb-1 tracking-wide transition-colors duration-300 group-hover:text-gray-800">
+            <p 
+              className="text-sm font-medium text-gray-600 mb-1 tracking-wide transition-colors duration-300 group-hover:text-gray-800 leading-tight"
+              title={primaryJob.title}
+            >
               {primaryJob.title}
             </p>
           )}
           {primaryResidence && (
-            <p className="text-sm font-light text-gray-500 tracking-wide transition-colors duration-300 group-hover:text-gray-600">
+            <p 
+              className="text-sm font-light text-gray-500 tracking-wide transition-colors duration-300 group-hover:text-gray-600 leading-tight"
+              title={`📍 ${primaryResidence.city}, ${primaryResidence.country}`}
+            >
               📍 {primaryResidence.city}, {primaryResidence.country}
             </p>
           )}

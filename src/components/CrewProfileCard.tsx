@@ -120,9 +120,49 @@ const CrewProfileCard: React.FC<CrewProfileCardProps> = ({
         )}
       </div>
       <div style={{ width: '100%', textAlign: 'center', marginBottom: 12 }}>
-        <h3 style={{ fontWeight: 600, color: '#1f2937', fontSize: 20, margin: 0 }}>{profile.name}</h3>
-        <div style={{ color: '#6b7280', fontWeight: 500, fontSize: 15, marginBottom: 4 }}>{primaryJobTitle}</div>
-        <div style={{ color: '#9ca3af', fontSize: 14 }}>{primaryLocation}</div>
+        <h3 
+          style={{ 
+            fontWeight: 600, 
+            color: '#1f2937', 
+            fontSize: 20, 
+            margin: 0,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            maxWidth: '100%'
+          }}
+          title={profile.name}
+        >
+          {profile.name}
+        </h3>
+        <div 
+          style={{ 
+            color: '#6b7280', 
+            fontWeight: 500, 
+            fontSize: 15, 
+            marginBottom: 4,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            maxWidth: '100%'
+          }}
+          title={primaryJobTitle}
+        >
+          {primaryJobTitle}
+        </div>
+        <div 
+          style={{ 
+            color: '#9ca3af', 
+            fontSize: 14,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            maxWidth: '100%'
+          }}
+          title={primaryLocation}
+        >
+          {primaryLocation}
+        </div>
       </div>
       <div style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: 12, marginTop: 'auto' }}>
         {user && user.uid !== profile.uid && (

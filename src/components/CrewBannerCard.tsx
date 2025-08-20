@@ -122,10 +122,12 @@ const CrewBannerCard: React.FC<CrewBannerCardProps> = ({
         {/* Profile Info */}
         <div className="flex-1 min-w-0">
           <div className="font-semibold text-gray-900 truncate group-hover:text-blue-700 transition-colors duration-200" 
-               style={{ fontSize: 17, letterSpacing: '-0.01em' }}>
+               style={{ fontSize: 17, letterSpacing: '-0.01em' }}
+               title={profile.name}>
             {profile.name}
           </div>
-          <div className="text-xs text-gray-500 truncate" style={{ fontWeight: 500 }}>
+          <div className="text-xs text-gray-500 truncate" style={{ fontWeight: 500 }}
+               title={`${mainTitle}${mainLocation ? ' · ' + mainLocation : ''}`}>
             {mainTitle}{mainLocation ? ' · ' + mainLocation : ''}
           </div>
         </div>
