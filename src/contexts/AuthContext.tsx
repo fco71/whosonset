@@ -305,9 +305,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // First, handle re-authentication if needed
       let userToDelete = currentUser;
       
+      // Check if re-authentication is needed by trying to get fresh user data
       try {
-        // Try to delete user directly first
-        await deleteUser(currentUser);
+        await currentUser.reload();
       } catch (error: any) {
         if (error.code === 'auth/requires-recent-login') {
           // Re-authentication required
@@ -332,16 +332,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
       }
       
-      // Now clean up all Firestore data
+      // IMPORTANT: Clean up all Firestore data BEFORE deleting the auth account
+      console.log('[AuthContext] Cleaning up Firestore data before auth deletion');
       await cleanupUserData(userToDelete.uid, userToDelete.email || '');
       
-      // Check if user is still authenticated before final deletion
-      if (!auth.currentUser) {
-        console.log('[AuthContext] User already signed out, deletion complete');
-        return;
-      }
-      
-      // Finally delete the auth account
+      // Now delete the Firebase Auth account
+      console.log('[AuthContext] Deleting Firebase Auth account');
       await deleteUser(userToDelete);
       
       console.log('[AuthContext] Account deleted successfully');
@@ -359,6 +355,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // Helper function to clean up all user data from Firestore
+  // This function ensures complete removal of all user-related data from the database
+  // Collections cleaned up:
+  // 1. Main user documents: users, crewProfiles, UserCollections, userPreferences, emailTracking
+  // 2. Subcollections: notifications, savedJobs, favoriteApplicants (under users and crewProfiles)
+  // 3. Social data: notifications, followRequests, follows, activityFeed, likes, comments
+  // 4. Job data: jobPostings, jobApplications (including subcollections: messages, interviews)
+  // 5. Project data: Projects, projectCrew, projectBudgets, projectTimelines, projectDocuments, projectMilestones, projectBudget
+  // 6. Collaboration data: collaborativeTasks, connections, collaborations, workspaces
+  // 7. Other data: favorites, crewFavorites, directMessages, conversations, crewAvailability, breakdownElements, tasks
+  // 8. Saved data: savedProjects, savedCrew subcollections
+  // Total: 31 collections and subcollections
   const cleanupUserData = async (userId: string, userEmail: string) => {
     console.log('[AuthContext] Cleaning up user data for:', userId);
     
@@ -669,9 +676,322 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await conversationsBatch.commit();
       console.log('[AuthContext] Deleted', conversationsSnapshot.size, 'conversations');
       
+      // 15. Delete project crew memberships
+      const projectCrewQuery = query(
+        collection(db, 'projectCrew'),
+        where('userId', '==', userId)
+      );
+      const projectCrewSnapshot = await getDocs(projectCrewQuery);
+      const projectCrewBatch = writeBatch(db);
+      projectCrewSnapshot.docs.forEach(doc => {
+        projectCrewBatch.delete(doc.ref);
+      });
+      await projectCrewBatch.commit();
+      console.log('[AuthContext] Deleted', projectCrewSnapshot.size, 'project crew memberships');
+      
+      // 16. Delete project budgets created by this user
+      const projectBudgetsQuery = query(
+        collection(db, 'projectBudgets'),
+        where('createdBy', '==', userId)
+      );
+      const projectBudgetsSnapshot = await getDocs(projectBudgetsQuery);
+      const projectBudgetsBatch = writeBatch(db);
+      projectBudgetsSnapshot.docs.forEach(doc => {
+        projectBudgetsBatch.delete(doc.ref);
+      });
+      await projectBudgetsBatch.commit();
+      console.log('[AuthContext] Deleted', projectBudgetsSnapshot.size, 'project budgets');
+      
+      // 17. Delete project timelines created by this user
+      const projectTimelinesQuery = query(
+        collection(db, 'projectTimelines'),
+        where('createdBy', '==', userId)
+      );
+      const projectTimelinesSnapshot = await getDocs(projectTimelinesQuery);
+      const projectTimelinesBatch = writeBatch(db);
+      projectTimelinesSnapshot.docs.forEach(doc => {
+        projectTimelinesBatch.delete(doc.ref);
+      });
+      await projectTimelinesBatch.commit();
+      console.log('[AuthContext] Deleted', projectTimelinesSnapshot.size, 'project timelines');
+      
+      // 18. Delete project documents created by this user
+      const projectDocumentsQuery = query(
+        collection(db, 'projectDocuments'),
+        where('createdBy', '==', userId)
+      );
+      const projectDocumentsSnapshot = await getDocs(projectDocumentsQuery);
+      const projectDocumentsBatch = writeBatch(db);
+      projectDocumentsSnapshot.docs.forEach(doc => {
+        projectDocumentsBatch.delete(doc.ref);
+      });
+      await projectDocumentsBatch.commit();
+      console.log('[AuthContext] Deleted', projectDocumentsSnapshot.size, 'project documents');
+      
+      // 19. Delete project milestones created by this user
+      const projectMilestonesQuery = query(
+        collection(db, 'projectMilestones'),
+        where('createdBy', '==', userId)
+      );
+      const projectMilestonesSnapshot = await getDocs(projectMilestonesQuery);
+      const projectMilestonesBatch = writeBatch(db);
+      projectMilestonesSnapshot.docs.forEach(doc => {
+        projectMilestonesBatch.delete(doc.ref);
+      });
+      await projectMilestonesBatch.commit();
+      console.log('[AuthContext] Deleted', projectMilestonesSnapshot.size, 'project milestones');
+      
+      // 20. Delete project budget entries created by this user
+      const projectBudgetQuery = query(
+        collection(db, 'projectBudget'),
+        where('createdBy', '==', userId)
+      );
+      const projectBudgetSnapshot = await getDocs(projectBudgetQuery);
+      const projectBudgetBatch = writeBatch(db);
+      projectBudgetSnapshot.docs.forEach(doc => {
+        projectBudgetBatch.delete(doc.ref);
+      });
+      await projectBudgetBatch.commit();
+      console.log('[AuthContext] Deleted', projectBudgetSnapshot.size, 'project budget entries');
+      
+      // 21. Delete crew availability data for this user
+      const crewAvailabilityQuery = query(
+        collection(db, 'crewAvailability'),
+        where('userId', '==', userId)
+      );
+      const crewAvailabilitySnapshot = await getDocs(crewAvailabilityQuery);
+      const crewAvailabilityBatch = writeBatch(db);
+      crewAvailabilitySnapshot.docs.forEach(doc => {
+        crewAvailabilityBatch.delete(doc.ref);
+      });
+      await crewAvailabilityBatch.commit();
+      console.log('[AuthContext] Deleted', crewAvailabilitySnapshot.size, 'crew availability entries');
+      
+      // 22. Delete collaborative tasks created by this user
+      const collaborativeTasksQuery = query(
+        collection(db, 'collaborativeTasks'),
+        where('createdBy', '==', userId)
+      );
+      const collaborativeTasksSnapshot = await getDocs(collaborativeTasksQuery);
+      const collaborativeTasksBatch = writeBatch(db);
+      collaborativeTasksSnapshot.docs.forEach(doc => {
+        collaborativeTasksBatch.delete(doc.ref);
+      });
+      await collaborativeTasksBatch.commit();
+      console.log('[AuthContext] Deleted', collaborativeTasksSnapshot.size, 'collaborative tasks');
+      
+      // 23. Delete collaborative tasks assigned to this user
+      const collaborativeTasksAssignedQuery = query(
+        collection(db, 'collaborativeTasks'),
+        where('assignedTo', '==', userId)
+      );
+      const collaborativeTasksAssignedSnapshot = await getDocs(collaborativeTasksAssignedQuery);
+      const collaborativeTasksAssignedBatch = writeBatch(db);
+      collaborativeTasksAssignedSnapshot.docs.forEach(doc => {
+        collaborativeTasksAssignedBatch.delete(doc.ref);
+      });
+      await collaborativeTasksAssignedBatch.commit();
+      console.log('[AuthContext] Deleted', collaborativeTasksAssignedSnapshot.size, 'assigned collaborative tasks');
+      
+      // 24. Delete breakdown elements created by this user
+      const breakdownElementsQuery = query(
+        collection(db, 'breakdownElements'),
+        where('createdBy', '==', userId)
+      );
+      const breakdownElementsSnapshot = await getDocs(breakdownElementsQuery);
+      const breakdownElementsBatch = writeBatch(db);
+      breakdownElementsSnapshot.docs.forEach(doc => {
+        breakdownElementsBatch.delete(doc.ref);
+      });
+      await breakdownElementsBatch.commit();
+      console.log('[AuthContext] Deleted', breakdownElementsSnapshot.size, 'breakdown elements');
+      
+      // 25. Clean up job application subcollections
+      await cleanupJobApplicationSubcollections(userId);
+      
+      // 26. Clean up saved projects subcollection
+      await cleanupSavedProjectsSubcollection(userId);
+      
+      // 27. Delete connections where user is the initiator or recipient
+      const connectionsQuery = query(
+        collection(db, 'connections'),
+        where('userId', '==', userId)
+      );
+      const connectionsSnapshot = await getDocs(connectionsQuery);
+      const connectionsBatch = writeBatch(db);
+      connectionsSnapshot.docs.forEach(doc => {
+        connectionsBatch.delete(doc.ref);
+      });
+      await connectionsBatch.commit();
+      console.log('[AuthContext] Deleted', connectionsSnapshot.size, 'outgoing connections');
+      
+      const connectionsToQuery = query(
+        collection(db, 'connections'),
+        where('connectedUserId', '==', userId)
+      );
+      const connectionsToSnapshot = await getDocs(connectionsToQuery);
+      const connectionsToBatch = writeBatch(db);
+      connectionsToSnapshot.docs.forEach(doc => {
+        connectionsToBatch.delete(doc.ref);
+      });
+      await connectionsToBatch.commit();
+      console.log('[AuthContext] Deleted', connectionsToSnapshot.size, 'incoming connections');
+      
+      // 28. Delete collaborations where user is the initiator or participant
+      const collaborationsQuery = query(
+        collection(db, 'collaborations'),
+        where('userId', '==', userId)
+      );
+      const collaborationsSnapshot = await getDocs(collaborationsQuery);
+      const collaborationsBatch = writeBatch(db);
+      collaborationsSnapshot.docs.forEach(doc => {
+        collaborationsBatch.delete(doc.ref);
+      });
+      await collaborationsBatch.commit();
+      console.log('[AuthContext] Deleted', collaborationsSnapshot.size, 'collaborations');
+      
+      // 29. Delete workspaces created by this user
+      const workspacesQuery = query(
+        collection(db, 'workspaces'),
+        where('createdBy', '==', userId)
+      );
+      const workspacesSnapshot = await getDocs(workspacesQuery);
+      const workspacesBatch = writeBatch(db);
+      workspacesSnapshot.docs.forEach(doc => {
+        workspacesBatch.delete(doc.ref);
+      });
+      await workspacesBatch.commit();
+      console.log('[AuthContext] Deleted', workspacesSnapshot.size, 'workspaces');
+      
+      // 30. Delete tasks created by or assigned to this user
+      const tasksQuery = query(
+        collection(db, 'tasks'),
+        where('createdBy', '==', userId)
+      );
+      const tasksSnapshot = await getDocs(tasksQuery);
+      const tasksBatch = writeBatch(db);
+      tasksSnapshot.docs.forEach(doc => {
+        tasksBatch.delete(doc.ref);
+      });
+      await tasksBatch.commit();
+      console.log('[AuthContext] Deleted', tasksSnapshot.size, 'tasks created by user');
+      
+      const tasksAssignedQuery = query(
+        collection(db, 'tasks'),
+        where('assignedTo', '==', userId)
+      );
+      const tasksAssignedSnapshot = await getDocs(tasksAssignedQuery);
+      const tasksAssignedBatch = writeBatch(db);
+      tasksAssignedSnapshot.docs.forEach(doc => {
+        tasksAssignedBatch.delete(doc.ref);
+      });
+      await tasksAssignedBatch.commit();
+      console.log('[AuthContext] Deleted', tasksAssignedSnapshot.size, 'tasks assigned to user');
+      
     } catch (error) {
       console.error('[AuthContext] Error cleaning up user references:', error);
       // Don't throw error here as some collections might not exist
+    }
+  };
+
+  // Helper function to clean up job application subcollections
+  const cleanupJobApplicationSubcollections = async (userId: string) => {
+    console.log('[AuthContext] Cleaning up job application subcollections for user:', userId);
+    
+    try {
+      // Get all job applications by this user
+      const jobApplicationsQuery = query(
+        collection(db, 'jobApplications'),
+        where('applicantId', '==', userId)
+      );
+      const jobApplicationsSnapshot = await getDocs(jobApplicationsQuery);
+      
+      for (const applicationDoc of jobApplicationsSnapshot.docs) {
+        const applicationId = applicationDoc.id;
+        
+        // Delete messages subcollection
+        const messagesQuery = query(collection(db, 'jobApplications', applicationId, 'messages'));
+        const messagesSnapshot = await getDocs(messagesQuery);
+        const messagesBatch = writeBatch(db);
+        messagesSnapshot.docs.forEach(doc => {
+          messagesBatch.delete(doc.ref);
+        });
+        await messagesBatch.commit();
+        console.log('[AuthContext] Deleted', messagesSnapshot.size, 'messages from application', applicationId);
+        
+        // Delete interviews subcollection
+        const interviewsQuery = query(collection(db, 'jobApplications', applicationId, 'interviews'));
+        const interviewsSnapshot = await getDocs(interviewsQuery);
+        const interviewsBatch = writeBatch(db);
+        interviewsSnapshot.docs.forEach(doc => {
+          interviewsBatch.delete(doc.ref);
+        });
+        await interviewsBatch.commit();
+        console.log('[AuthContext] Deleted', interviewsSnapshot.size, 'interviews from application', applicationId);
+      }
+      
+      // Get all job applications where user is the poster
+      const jobApplicationsPosterQuery = query(
+        collection(db, 'jobApplications'),
+        where('posterId', '==', userId)
+      );
+      const jobApplicationsPosterSnapshot = await getDocs(jobApplicationsPosterQuery);
+      
+      for (const applicationDoc of jobApplicationsPosterSnapshot.docs) {
+        const applicationId = applicationDoc.id;
+        
+        // Delete messages subcollection
+        const messagesQuery = query(collection(db, 'jobApplications', applicationId, 'messages'));
+        const messagesSnapshot = await getDocs(messagesQuery);
+        const messagesBatch = writeBatch(db);
+        messagesSnapshot.docs.forEach(doc => {
+          messagesBatch.delete(doc.ref);
+        });
+        await messagesBatch.commit();
+        console.log('[AuthContext] Deleted', messagesSnapshot.size, 'messages from application', applicationId);
+        
+        // Delete interviews subcollection
+        const interviewsQuery = query(collection(db, 'jobApplications', applicationId, 'interviews'));
+        const interviewsSnapshot = await getDocs(interviewsQuery);
+        const interviewsBatch = writeBatch(db);
+        interviewsSnapshot.docs.forEach(doc => {
+          interviewsBatch.delete(doc.ref);
+        });
+        await interviewsBatch.commit();
+        console.log('[AuthContext] Deleted', interviewsSnapshot.size, 'interviews from application', applicationId);
+      }
+      
+    } catch (error) {
+      console.error('[AuthContext] Error cleaning up job application subcollections:', error);
+    }
+  };
+
+  // Helper function to clean up saved projects subcollection
+  const cleanupSavedProjectsSubcollection = async (userId: string) => {
+    console.log('[AuthContext] Cleaning up saved projects subcollection for user:', userId);
+    
+    try {
+      const savedProjectsQuery = query(collection(db, 'collections', userId, 'savedProjects'));
+      const savedProjectsSnapshot = await getDocs(savedProjectsQuery);
+      const savedProjectsBatch = writeBatch(db);
+      savedProjectsSnapshot.docs.forEach(doc => {
+        savedProjectsBatch.delete(doc.ref);
+      });
+      await savedProjectsBatch.commit();
+      console.log('[AuthContext] Deleted', savedProjectsSnapshot.size, 'saved projects');
+      
+      // Also clean up saved crew subcollection
+      const savedCrewQuery = query(collection(db, 'collections', userId, 'savedCrew'));
+      const savedCrewSnapshot = await getDocs(savedCrewQuery);
+      const savedCrewBatch = writeBatch(db);
+      savedCrewSnapshot.docs.forEach(doc => {
+        savedCrewBatch.delete(doc.ref);
+      });
+      await savedCrewBatch.commit();
+      console.log('[AuthContext] Deleted', savedCrewSnapshot.size, 'saved crew profiles');
+      
+    } catch (error) {
+      console.error('[AuthContext] Error cleaning up saved collections subcollections:', error);
     }
   };
 
