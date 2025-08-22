@@ -1,5 +1,6 @@
 rules_version = '2';
 
+// Regular security rules for client access
 service cloud.firestore {
   match /databases/{database}/documents {
     // User collections - users can only access their own collections

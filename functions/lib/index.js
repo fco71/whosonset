@@ -33,18 +33,94 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.notifyNewMessage = exports.notifyFollowRequest = exports.emailSend = void 0;
+exports.notifyNewMessage = exports.notifyFollowRequest = exports.emailSend = exports.testUserData = void 0;
 const admin = __importStar(require("firebase-admin"));
 const https_1 = require("firebase-functions/v2/https");
 const firestore_1 = require("firebase-functions/v2/firestore");
 const params_1 = require("firebase-functions/params");
 const emailService_1 = require("./emailService");
+// Helper function to get user data from either users or crewProfiles
+async function getUserData(userId) {
+    var _a, _b;
+    try {
+        // Try users collection first
+        const userDoc = await admin.firestore().collection('users').doc(userId).get();
+        if (userDoc.exists) {
+            return Object.assign(Object.assign({}, userDoc.data()), { email: ((_a = userDoc.data()) === null || _a === void 0 ? void 0 : _a.email) || null, collection: 'users' });
+        }
+        // If not found, try crewProfiles
+        const crewDoc = await admin.firestore().collection('crewProfiles').doc(userId).get();
+        if (crewDoc.exists) {
+            return Object.assign(Object.assign({}, crewDoc.data()), { email: ((_b = crewDoc.data()) === null || _b === void 0 ? void 0 : _b.email) || null, collection: 'crewProfiles' });
+        }
+        return null;
+    }
+    catch (error) {
+        console.error(`[getUserData] Error fetching user ${userId}:`, error);
+        return null;
+    }
+}
 // Define secrets for environment variables
 const sendgridApiKey = (0, params_1.defineSecret)('SENDGRID_API_KEY');
 const smtpUser = (0, params_1.defineSecret)('SMTP_USER');
 const smtpPass = (0, params_1.defineSecret)('SMTP_PASS');
 const emailFrom = (0, params_1.defineSecret)('EMAIL_FROM');
-admin.initializeApp();
+// Initialize Firebase Admin SDK with explicit configuration
+admin.initializeApp({
+    credential: admin.credential.applicationDefault(),
+    databaseURL: `https://${process.env.GCLOUD_PROJECT}.firebaseio.com`,
+    storageBucket: `${process.env.GCLOUD_PROJECT}.appspot.com`
+});
+// Set the database rules to allow Admin SDK to bypass security rules
+const db = admin.firestore();
+db.settings({
+    ignoreUndefinedProperties: true
+});
+// Test function to check user data
+exports.testUserData = (0, https_1.onRequest)(async (req, res) => {
+    try {
+        const emails = ['iam@myfilmjobs.com', 'franciscovaldez@yahoo.com'];
+        // Check users collection
+        const usersSnapshot = await db.collection('users')
+            .where('email', 'in', emails)
+            .get();
+        // Check crewProfiles collection
+        const crewSnapshot = await db.collection('crewProfiles')
+            .where('email', 'in', emails)
+            .get();
+        const users = [];
+        // Process users from users collection
+        usersSnapshot.forEach((doc) => {
+            users.push(Object.assign({ id: doc.id, collection: 'users' }, doc.data()));
+        });
+        // Process users from crewProfiles collection
+        crewSnapshot.forEach((doc) => {
+            // Only add if not already in the users array
+            if (!users.some(u => u.email === doc.data().email)) {
+                users.push(Object.assign({ id: doc.id, collection: 'crewProfiles' }, doc.data()));
+            }
+        });
+        if (users.length === 0) {
+            res.status(404).json({
+                error: 'No users found with the specified emails in either users or crewProfiles collections',
+                checkedCollections: ['users', 'crewProfiles'],
+                searchedEmails: emails
+            });
+            return;
+        }
+        res.json({
+            users,
+            message: `Found ${users.length} user(s) across all collections`
+        });
+    }
+    catch (error) {
+        console.error('Error fetching user data:', error);
+        res.status(500).json({
+            error: 'Failed to fetch user data',
+            details: error instanceof Error ? error.message : String(error)
+        });
+    }
+});
 // Main email sending function - Production ready
 exports.emailSend = (0, https_1.onRequest)({
     cors: true,
@@ -58,6 +134,22 @@ exports.emailSend = (0, https_1.onRequest)({
         return;
     }
     try {
+        // Verify authentication
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            res.status(401).json({ error: 'Unauthorized: Missing or invalid token' });
+            return;
+        }
+        // Verify the token
+        const idToken = authHeader.split('Bearer ')[1];
+        try {
+            await admin.auth().verifyIdToken(idToken);
+        }
+        catch (error) {
+            console.error('Authentication error:', error);
+            res.status(401).json({ error: 'Unauthorized: Invalid token' });
+            return;
+        }
         const { to, subject, message, senderName } = req.body;
         if (!to || !subject || !message) {
             res.status(400).json({
@@ -112,17 +204,25 @@ The My Film Jobs Team
             }
         });
         if (success) {
+            console.log(`[emailSend] Email sent successfully to ${to}`);
             res.json({
                 success: true,
                 message: 'Email sent successfully!',
-                data: { to, subject, message, senderName },
+                data: {
+                    to,
+                    subject,
+                    message: message ? 'Message content redacted for security' : undefined,
+                    senderName
+                },
                 timestamp: new Date().toISOString()
             });
         }
         else {
+            const errorMsg = 'Failed to send email. Please check the logs for details.';
+            console.error(`[emailSend] ${errorMsg}`, { to, subject });
             res.status(500).json({
                 success: false,
-                error: 'Failed to send email. Please check the logs for details.'
+                error: errorMsg
             });
         }
     }
@@ -140,7 +240,7 @@ exports.notifyFollowRequest = (0, firestore_1.onDocumentCreated)({
     region: 'us-central1',
     secrets: [sendgridApiKey, smtpUser, smtpPass, emailFrom]
 }, async (event) => {
-    var _a, _b;
+    var _a;
     try {
         // Set environment variables from secrets
         process.env.SENDGRID_API_KEY = sendgridApiKey.value();
@@ -153,17 +253,13 @@ exports.notifyFollowRequest = (0, firestore_1.onDocumentCreated)({
             return;
         }
         const { toUserId, fromUserName } = requestData;
-        // Get recipient's email
-        const recipientDoc = await admin.firestore().collection('users').doc(toUserId).get();
-        if (!recipientDoc.exists) {
-            console.log('[notifyFollowRequest] Recipient not found:', toUserId);
+        // Get recipient's data using helper function
+        const recipientData = await getUserData(toUserId);
+        if (!recipientData || !recipientData.email) {
+            console.log(`[notifyFollowRequest] No email found for recipient: ${toUserId}`);
             return;
         }
-        const recipientEmail = (_b = recipientDoc.data()) === null || _b === void 0 ? void 0 : _b.email;
-        if (!recipientEmail) {
-            console.log('[notifyFollowRequest] No email found for recipient:', toUserId);
-            return;
-        }
+        const recipientEmail = recipientData.email;
         // Send email notification
         const emailTemplate = emailService_1.EmailService.getFollowRequestTemplate(fromUserName);
         const success = await emailService_1.EmailService.sendEmail({
@@ -191,7 +287,7 @@ exports.notifyNewMessage = (0, firestore_1.onDocumentCreated)({
     region: 'us-central1',
     secrets: [sendgridApiKey, smtpUser, smtpPass, emailFrom]
 }, async (event) => {
-    var _a, _b, _c;
+    var _a;
     try {
         // Set environment variables from secrets
         process.env.SENDGRID_API_KEY = sendgridApiKey.value();
@@ -204,20 +300,16 @@ exports.notifyNewMessage = (0, firestore_1.onDocumentCreated)({
             return;
         }
         const { senderId, receiverId, content } = messageData;
-        // Get recipient's email
-        const recipientDoc = await admin.firestore().collection('users').doc(receiverId).get();
-        if (!recipientDoc.exists) {
-            console.log('[notifyNewMessage] Recipient not found:', receiverId);
+        // Get recipient's data using helper function
+        const recipientData = await getUserData(receiverId);
+        if (!recipientData || !recipientData.email) {
+            console.log(`[notifyNewMessage] No email found for recipient: ${receiverId}`);
             return;
         }
-        const recipientEmail = (_b = recipientDoc.data()) === null || _b === void 0 ? void 0 : _b.email;
-        if (!recipientEmail) {
-            console.log('[notifyNewMessage] No email found for recipient:', receiverId);
-            return;
-        }
-        // Get sender's name
-        const senderDoc = await admin.firestore().collection('users').doc(senderId).get();
-        const senderName = senderDoc.exists ? ((_c = senderDoc.data()) === null || _c === void 0 ? void 0 : _c.displayName) || 'Unknown User' : 'Unknown User';
+        const recipientEmail = recipientData.email;
+        // Get sender's data using helper function
+        const senderData = await getUserData(senderId);
+        const senderName = (senderData === null || senderData === void 0 ? void 0 : senderData.name) || (senderData === null || senderData === void 0 ? void 0 : senderData.displayName) || 'Unknown User';
         // Send email notification
         const messagePreview = content.length > 50 ? content.substring(0, 50) + '...' : content;
         const emailTemplate = emailService_1.EmailService.getMessageNotificationTemplate(senderName, messagePreview);
