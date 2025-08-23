@@ -145,7 +145,7 @@ export class SocialService {
       });
 
       if (status === 'accepted') {
-        // Create follow relationship
+        // Create follow relationship (original follow)
         const followData = {
           followerId: fromUserId,
           followingId: toUserId,
@@ -154,6 +154,21 @@ export class SocialService {
         };
         const followRef = doc(collection(db, 'follows'));
         batch.set(followRef, followData);
+
+        // Check if the reverse follow already exists
+        const reverseFollow = await this.getFollow(toUserId, fromUserId);
+        if (!reverseFollow) {
+          // Create auto-follow relationship (reciprocal follow)
+          const autoFollowData = {
+            followerId: toUserId,
+            followingId: fromUserId,
+            status: 'active' as const,
+            createdAt: serverTimestamp(),
+            isAutoFollow: true  // Mark as auto-follow for tracking
+          };
+          const autoFollowRef = doc(collection(db, 'follows'));
+          batch.set(autoFollowRef, autoFollowData);
+        }
       }
 
       // Commit the batch first
