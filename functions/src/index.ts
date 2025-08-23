@@ -4,29 +4,101 @@ import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import { defineSecret } from "firebase-functions/params";
 import { EmailService } from "./emailService";
 
-// Helper function to get user data from either users or crewProfiles
+// Helper function to get user data from crewProfiles first, then users
 async function getUserData(userId: string) {
   try {
-    // Try users collection first
+    console.log(`[getUserData] Looking up user with ID: ${userId}`);
+    
+    // Try crewProfiles first since it's more likely to have the email
+    const crewDoc = await admin.firestore().collection('crewProfiles').doc(userId).get();
+    if (crewDoc.exists) {
+      const crewData = crewDoc.data();
+      console.log(`[getUserData] Found user in 'crewProfiles' collection`);
+      
+      // Check multiple possible locations for email
+      const email = crewData?.email || 
+                  crewData?.contactInfo?.email || 
+                  crewData?.notificationPreferences?.email ||
+                  null;
+                  
+      console.log(`[getUserData] Extracted email from crewProfiles: ${email}`);
+      
+      // Always update the users collection with the email from crewProfiles if found
+      if (email) {
+        console.log(`[getUserData] Updating users collection with email from crewProfiles`);
+        try {
+          await admin.firestore().collection('users').doc(userId).set(
+            { 
+              email, 
+              contactInfo: { email },
+              notificationPreferences: {
+                emailNotifications: {
+                  general: true,
+                  projects: true,
+                  chat: true,
+                  jobs: true
+                },
+                inAppNotifications: {
+                  general: true,
+                  projects: true,
+                  chat: true,
+                  jobs: true
+                },
+                emailFrequency: {
+                  jobs: 'daily',
+                  general: 'daily',
+                  projects: 'daily',
+                  chat: 'daily'
+                }
+              }
+            },
+            { merge: true }
+          );
+          console.log(`[getUserData] Successfully updated users collection with email`);
+        } catch (updateError) {
+          console.error('[getUserData] Error updating users collection:', updateError);
+        }
+      }
+      
+      return { 
+        ...crewData,
+        email,
+        collection: 'crewProfiles'
+      };
+    }
+    
+    // If not found in crewProfiles, try users collection
     const userDoc = await admin.firestore().collection('users').doc(userId).get();
     if (userDoc.exists) {
+      const userData = userDoc.data();
+      console.log(`[getUserData] Found user in 'users' collection`);
+      
+      // Check multiple possible locations for email
+      const email = userData?.email || 
+                   userData?.contactInfo?.email || 
+                   userData?.notificationPreferences?.email ||
+                   null;
+                   
+      console.log(`[getUserData] Extracted email from users collection: ${email}`);
+      
+      // If email notifications are explicitly disabled, return null for email
+      if (userData?.notificationPreferences?.emailNotifications?.general === false) {
+        console.log(`[getUserData] Email notifications are disabled for user: ${userId}`);
+        return {
+          ...userData,
+          email: null,
+          collection: 'users'
+        };
+      }
+      
       return { 
-        ...userDoc.data(),
-        email: userDoc.data()?.email || null,
+        ...userData,
+        email,
         collection: 'users'
       };
     }
 
-    // If not found, try crewProfiles
-    const crewDoc = await admin.firestore().collection('crewProfiles').doc(userId).get();
-    if (crewDoc.exists) {
-      return { 
-        ...crewDoc.data(),
-        email: crewDoc.data()?.email || null,
-        collection: 'crewProfiles'
-      };
-    }
-
+    console.log(`[getUserData] No user found with ID: ${userId} in either collection`);
     return null;
   } catch (error) {
     console.error(`[getUserData] Error fetching user ${userId}:`, error);
@@ -55,6 +127,43 @@ db.settings({
 });
 
 // Test function to check user data
+// Test endpoint to manually trigger a follow request notification
+export const testFollowRequestNotification = onRequest(async (req, res) => {
+  try {
+    // This is a test function, so we'll use a mock document
+    const followRequestData = {
+      toUserId: 'ozfTOauw44ZAI9FvCBkcpvAr5sy2', // Replace with actual user ID for testing
+      fromUserId: 'MrLprkr8VVhkDU1h87sE6EUdxfr1',
+      fromUserName: 'Test User',
+      status: 'pending'
+    };
+
+    // Instead of calling notifyFollowRequest directly, we'll create a document in Firestore
+    const db = admin.firestore();
+    const followRequestRef = db.collection('followRequests').doc('test-request-' + Date.now());
+    
+    await followRequestRef.set({
+      toUserId: followRequestData.toUserId,
+      fromUserId: followRequestData.fromUserId,
+      fromUserName: followRequestData.fromUserName,
+      status: 'pending',
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    res.status(200).json({ 
+      success: true, 
+      message: 'Follow request created successfully. Notification should be sent shortly.'
+    });
+  } catch (error: unknown) {
+    console.error('Error in testFollowRequestNotification:', error);
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    res.status(500).json({ 
+      success: false, 
+      error: errorMessage
+    });
+  }
+});
+
 export const testUserData = onRequest(async (req, res) => {
   try {
     const emails = ['iam@myfilmjobs.com', 'franciscovaldez@yahoo.com'];
@@ -269,7 +378,8 @@ export const notifyFollowRequest = onDocumentCreated({
       template: emailTemplate,
       data: {
         requesterName: fromUserName,
-        recipientEmail
+        recipientEmail,
+        followRequestsUrl: 'https://myfilmjobs.com/social?tab=requests'
       }
     });
 

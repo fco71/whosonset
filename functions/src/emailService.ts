@@ -289,26 +289,23 @@ The My Film Jobs Team
     };
   }
 
-  static getFollowRequestTemplate(requesterName: string): EmailTemplate {
-    return {
-      subject: 'New Follow Request from {{requesterName}}',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #2563eb;">New Follow Request</h2>
-          <p>Hello,</p>
-          <p><strong>{{requesterName}}</strong> has sent you a follow request on My Film Jobs.</p>
-          <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3>What this means:</h3>
-            <p>When you accept this request, {{requesterName}} will be able to see your updates and you'll be able to see theirs.</p>
-          </div>
-          <p>Click the button below to manage this request:</p>
-          <a href="{{followRequestsUrl}}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">View Follow Requests</a>
-          <p style="margin-top: 30px; font-size: 14px; color: #6b7280;">
-            Best regards,<br>
-            The My Film Jobs Team
-          </p>
+static getFollowRequestTemplate(requesterName: string): EmailTemplate {
+  return {
+    subject: 'New Follow Request from {{requesterName}}',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #2563eb;">New Follow Request</h2>
+        <p>Hello,</p>
+        <p><strong>{{requesterName}}</strong> has sent you a follow request on My Film Jobs.</p>
+        <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3>What this means:</h3>
+          <p>Accepting this request will allow you to message each other and collaborate on projects.</p>
         </div>
-      `,
+        <p>Click the button below to manage this request:</p>
+        <a href="{{followRequestsUrl}}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; margin: 20px 0;">Manage Follow Request</a>
+        <p>Or copy and paste this link into your browser:<br>
+        <a href="{{followRequestsUrl}}" style="color: #2563eb; word-break: break-all;">{{followRequestsUrl}}</a></p>
+      </div>`,
       text: `
 New Follow Request
 
@@ -317,7 +314,7 @@ Hello,
 {{requesterName}} has sent you a follow request on My Film Jobs.
 
 What this means:
-When you accept this request, {{requesterName}} will be able to see your updates and you'll be able to see theirs.
+Accepting this request will allow you to message each other and collaborate on projects.
 
 Click the link below to manage this request: {{followRequestsUrl}}
 

@@ -33,26 +33,83 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.notifyNewMessage = exports.notifyFollowRequest = exports.emailSend = exports.testUserData = void 0;
+exports.notifyNewMessage = exports.notifyFollowRequest = exports.emailSend = exports.testUserData = exports.testFollowRequestNotification = void 0;
 const admin = __importStar(require("firebase-admin"));
 const https_1 = require("firebase-functions/v2/https");
 const firestore_1 = require("firebase-functions/v2/firestore");
 const params_1 = require("firebase-functions/params");
 const emailService_1 = require("./emailService");
-// Helper function to get user data from either users or crewProfiles
+// Helper function to get user data from crewProfiles first, then users
 async function getUserData(userId) {
-    var _a, _b;
+    var _a, _b, _c, _d, _e, _f;
     try {
-        // Try users collection first
-        const userDoc = await admin.firestore().collection('users').doc(userId).get();
-        if (userDoc.exists) {
-            return Object.assign(Object.assign({}, userDoc.data()), { email: ((_a = userDoc.data()) === null || _a === void 0 ? void 0 : _a.email) || null, collection: 'users' });
-        }
-        // If not found, try crewProfiles
+        console.log(`[getUserData] Looking up user with ID: ${userId}`);
+        // Try crewProfiles first since it's more likely to have the email
         const crewDoc = await admin.firestore().collection('crewProfiles').doc(userId).get();
         if (crewDoc.exists) {
-            return Object.assign(Object.assign({}, crewDoc.data()), { email: ((_b = crewDoc.data()) === null || _b === void 0 ? void 0 : _b.email) || null, collection: 'crewProfiles' });
+            const crewData = crewDoc.data();
+            console.log(`[getUserData] Found user in 'crewProfiles' collection`);
+            // Check multiple possible locations for email
+            const email = (crewData === null || crewData === void 0 ? void 0 : crewData.email) ||
+                ((_a = crewData === null || crewData === void 0 ? void 0 : crewData.contactInfo) === null || _a === void 0 ? void 0 : _a.email) ||
+                ((_b = crewData === null || crewData === void 0 ? void 0 : crewData.notificationPreferences) === null || _b === void 0 ? void 0 : _b.email) ||
+                null;
+            console.log(`[getUserData] Extracted email from crewProfiles: ${email}`);
+            // Always update the users collection with the email from crewProfiles if found
+            if (email) {
+                console.log(`[getUserData] Updating users collection with email from crewProfiles`);
+                try {
+                    await admin.firestore().collection('users').doc(userId).set({
+                        email,
+                        contactInfo: { email },
+                        notificationPreferences: {
+                            emailNotifications: {
+                                general: true,
+                                projects: true,
+                                chat: true,
+                                jobs: true
+                            },
+                            inAppNotifications: {
+                                general: true,
+                                projects: true,
+                                chat: true,
+                                jobs: true
+                            },
+                            emailFrequency: {
+                                jobs: 'daily',
+                                general: 'daily',
+                                projects: 'daily',
+                                chat: 'daily'
+                            }
+                        }
+                    }, { merge: true });
+                    console.log(`[getUserData] Successfully updated users collection with email`);
+                }
+                catch (updateError) {
+                    console.error('[getUserData] Error updating users collection:', updateError);
+                }
+            }
+            return Object.assign(Object.assign({}, crewData), { email, collection: 'crewProfiles' });
         }
+        // If not found in crewProfiles, try users collection
+        const userDoc = await admin.firestore().collection('users').doc(userId).get();
+        if (userDoc.exists) {
+            const userData = userDoc.data();
+            console.log(`[getUserData] Found user in 'users' collection`);
+            // Check multiple possible locations for email
+            const email = (userData === null || userData === void 0 ? void 0 : userData.email) ||
+                ((_c = userData === null || userData === void 0 ? void 0 : userData.contactInfo) === null || _c === void 0 ? void 0 : _c.email) ||
+                ((_d = userData === null || userData === void 0 ? void 0 : userData.notificationPreferences) === null || _d === void 0 ? void 0 : _d.email) ||
+                null;
+            console.log(`[getUserData] Extracted email from users collection: ${email}`);
+            // If email notifications are explicitly disabled, return null for email
+            if (((_f = (_e = userData === null || userData === void 0 ? void 0 : userData.notificationPreferences) === null || _e === void 0 ? void 0 : _e.emailNotifications) === null || _f === void 0 ? void 0 : _f.general) === false) {
+                console.log(`[getUserData] Email notifications are disabled for user: ${userId}`);
+                return Object.assign(Object.assign({}, userData), { email: null, collection: 'users' });
+            }
+            return Object.assign(Object.assign({}, userData), { email, collection: 'users' });
+        }
+        console.log(`[getUserData] No user found with ID: ${userId} in either collection`);
         return null;
     }
     catch (error) {
@@ -77,6 +134,40 @@ db.settings({
     ignoreUndefinedProperties: true
 });
 // Test function to check user data
+// Test endpoint to manually trigger a follow request notification
+exports.testFollowRequestNotification = (0, https_1.onRequest)(async (req, res) => {
+    try {
+        // This is a test function, so we'll use a mock document
+        const followRequestData = {
+            toUserId: 'ozfTOauw44ZAI9FvCBkcpvAr5sy2', // Replace with actual user ID for testing
+            fromUserId: 'MrLprkr8VVhkDU1h87sE6EUdxfr1',
+            fromUserName: 'Test User',
+            status: 'pending'
+        };
+        // Instead of calling notifyFollowRequest directly, we'll create a document in Firestore
+        const db = admin.firestore();
+        const followRequestRef = db.collection('followRequests').doc('test-request-' + Date.now());
+        await followRequestRef.set({
+            toUserId: followRequestData.toUserId,
+            fromUserId: followRequestData.fromUserId,
+            fromUserName: followRequestData.fromUserName,
+            status: 'pending',
+            createdAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+        res.status(200).json({
+            success: true,
+            message: 'Follow request created successfully. Notification should be sent shortly.'
+        });
+    }
+    catch (error) {
+        console.error('Error in testFollowRequestNotification:', error);
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        res.status(500).json({
+            success: false,
+            error: errorMessage
+        });
+    }
+});
 exports.testUserData = (0, https_1.onRequest)(async (req, res) => {
     try {
         const emails = ['iam@myfilmjobs.com', 'franciscovaldez@yahoo.com'];
@@ -267,7 +358,8 @@ exports.notifyFollowRequest = (0, firestore_1.onDocumentCreated)({
             template: emailTemplate,
             data: {
                 requesterName: fromUserName,
-                recipientEmail
+                recipientEmail,
+                followRequestsUrl: 'https://myfilmjobs.com/social?tab=requests'
             }
         });
         if (success) {
