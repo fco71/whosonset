@@ -597,7 +597,7 @@ const SocialPage = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="whitespace-nowrap text-xs px-3 py-1.5"
+                        className="whitespace-nowrap text-xs px-2 py-1.5"
                         onClick={() => handleFollowChange(getProfileId(profile), false)}
                       >
                         <UserX className="h-3.5 w-3.5 mr-1.5" />
@@ -653,10 +653,10 @@ const SocialPage = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="whitespace-nowrap"
+                          className="whitespace-nowrap text-xs px-2 py-1.5"
                           onClick={() => handleCancelSentRequest(getProfileId(profile))}
                         >
-                          <X className="h-4 w-4 mr-2" />
+                          <X className="h-3.5 w-3.5 mr-1.5" />
                           Cancel
                         </Button>
                       }
@@ -728,40 +728,42 @@ const SocialPage = () => {
     return (
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
         <div className="p-4">
-          <div className="flex items-start justify-between">
-            <div className="flex items-start space-x-3">
-              <img 
-                src={avatarUrl} 
-                alt={displayName}
-                className="h-12 w-12 rounded-full object-cover object-center flex-shrink-0"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.src = '/bust-avatar.svg';
-                }}
-              />
-              <div className="flex-1 min-w-0">
-                <h3 className="font-medium text-gray-900 truncate" title={displayName}>{displayName}</h3>
-                {jobTitle && (
-                  <p className="text-sm text-gray-600 font-medium truncate" title={jobTitle}>{jobTitle}</p>
-                )}
-                {showBio && profile.bio && (
-                  <p className="text-sm text-gray-500 line-clamp-2 mt-1" title={profile.bio}>{profile.bio}</p>
-                )}
+          <div className="flex items-start space-x-3">
+            <img 
+              src={avatarUrl} 
+              alt={displayName}
+              className="h-12 w-12 rounded-full object-cover object-center flex-shrink-0"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = '/bust-avatar.svg';
+              }}
+            />
+            <div className="flex-1 min-w-0 overflow-hidden">
+              <div className="flex items-start justify-between">
+                <div className="flex-1 min-w-0 overflow-hidden">
+                  <h3 className="font-medium text-gray-900 truncate" title={displayName}>{displayName}</h3>
+                  {jobTitle && (
+                    <p className="text-sm text-gray-600 font-medium truncate" title={jobTitle}>{jobTitle}</p>
+                  )}
+                  {showBio && profile.bio && (
+                    <p className="text-sm text-gray-500 line-clamp-2 mt-1" title={profile.bio}>{profile.bio}</p>
+                  )}
+                </div>
+                <div className="flex-shrink-0 ml-2 flex items-center space-x-2">
+                  {action}
+                  {/* Add message button for connections */}
+                  {activeTab === 'connections' && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-9 w-9 p-0 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+                      onClick={() => handleStartConversation(getProfileId(profile))}
+                    >
+                      <MessageCircle className="h-5 w-5" />
+                    </Button>
+                  )}
+                </div>
               </div>
-            </div>
-            <div className="flex-shrink-0 ml-2 flex items-center space-x-2">
-              {action}
-              {/* Add message button for connections */}
-              {activeTab === 'connections' && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-9 w-9 p-0 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
-                  onClick={() => handleStartConversation(getProfileId(profile))}
-                >
-                  <MessageCircle className="h-5 w-5" />
-                </Button>
-              )}
             </div>
           </div>
         </div>
@@ -925,37 +927,116 @@ const SocialPage = () => {
 
     const [searchResults, setSearchResults] = useState<AppProfile[]>([]);
     const [isSearching, setIsSearching] = useState(false);
+    const [popularContacts, setPopularContacts] = useState<AppProfile[]>([]);
+
+    // Load popular contacts (connections first, then recent crew members)
+    useEffect(() => {
+      if (!user?.uid) return;
+
+      const loadPopularContacts = async () => {
+        try {
+          // Start with connections as they're most likely to be messaged
+          const connectionProfiles = connections.filter(profile => 
+            getProfileId(profile) !== user.uid
+          ).slice(0, 8);
+
+          // If we don't have enough connections, add some recent crew members
+          if (connectionProfiles.length < 8) {
+            const remainingSlots = 8 - connectionProfiles.length;
+            const recentCrew = filteredProfiles
+              .filter(profile => 
+                getProfileId(profile) !== user.uid &&
+                !connectionProfiles.some(conn => getProfileId(conn) === getProfileId(profile))
+              )
+              .slice(0, remainingSlots);
+            
+            setPopularContacts([...connectionProfiles, ...recentCrew]);
+          } else {
+            setPopularContacts(connectionProfiles);
+          }
+        } catch (error) {
+          console.error('Error loading popular contacts:', error);
+          setPopularContacts([]);
+        }
+      };
+
+      loadPopularContacts();
+    }, [connections, filteredProfiles, user?.uid]);
 
     const searchUsers = useCallback(async (query: string) => {
-      if (!query.trim() || !user?.uid) {
+      if (!user?.uid) {
         setSearchResults([]);
         return;
       }
 
       setIsSearching(true);
       try {
-        // Search through connections and discover profiles
+        // If no query, show popular contacts
+        if (!query.trim()) {
+          setSearchResults(popularContacts);
+          setIsSearching(false);
+          return;
+        }
+
+        // Search through all available profiles (connections, discover, and crew)
         const allUsers = [...connections, ...filteredProfiles];
-        const filtered = allUsers.filter(profile => 
+        
+        // Also search through crew profiles from Firestore for more comprehensive results
+        const { collection, query: firestoreQuery, where, getDocs, limit } = await import('firebase/firestore');
+        const { db } = await import('../firebase');
+        
+        const crewQuery = firestoreQuery(
+          collection(db, 'crewProfiles'),
+          where('isPublished', '==', true),
+          limit(50)
+        );
+        
+        const crewSnapshot = await getDocs(crewQuery);
+        const crewProfiles: AppProfile[] = crewSnapshot.docs.map(doc => {
+          const data = doc.data() as any;
+          return {
+            id: doc.id,
+            type: 'crew' as const,
+            uid: doc.id,
+            displayName: data.name || data.displayName || `Crew Member ${doc.id.slice(-4)}`,
+            photoURL: data.profileImageUrl || data.avatarUrl || '',
+            bio: data.bio || '',
+            name: data.name || data.displayName || `Crew Member ${doc.id.slice(-4)}`,
+            username: data.username || '',
+            jobTitles: Array.isArray(data.jobTitles) ? [...data.jobTitles] : [],
+            residences: Array.isArray(data.residences) ? [...data.residences] : [],
+            isPublished: data.isPublished !== undefined ? Boolean(data.isPublished) : true,
+          };
+        });
+
+        // Combine all sources and filter
+        const allAvailableUsers = [...allUsers, ...crewProfiles];
+        const uniqueUsers = allAvailableUsers.filter((profile, index, self) => 
+          index === self.findIndex(p => getProfileId(p) === getProfileId(profile))
+        );
+
+        const filtered = uniqueUsers.filter(profile => 
           getProfileId(profile) !== user.uid &&
           (profile.displayName?.toLowerCase().includes(query.toLowerCase()) ||
            (profile as any).name?.toLowerCase().includes(query.toLowerCase()) ||
-           (profile as any).email?.toLowerCase().includes(query.toLowerCase()))
+           (profile as any).email?.toLowerCase().includes(query.toLowerCase()) ||
+           (profile as any).jobTitles?.[0]?.title?.toLowerCase().includes(query.toLowerCase()) ||
+           (profile as any).username?.toLowerCase().includes(query.toLowerCase()))
         );
 
-        setSearchResults(filtered.slice(0, 10));
+        setSearchResults(filtered.slice(0, 15));
       } catch (error) {
         console.error('Error searching users:', error);
         setSearchResults([]);
       } finally {
         setIsSearching(false);
       }
-    }, [connections, filteredProfiles, user?.uid]);
+    }, [connections, filteredProfiles, user?.uid, popularContacts]);
 
     useEffect(() => {
       const timeoutId = setTimeout(() => {
         searchUsers(messageSearchQuery);
-      }, 300);
+      }, 200); // Reduced debounce time for better responsiveness
 
       return () => clearTimeout(timeoutId);
     }, [messageSearchQuery, searchUsers]);
@@ -982,12 +1063,18 @@ const SocialPage = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 type="text"
-                placeholder="Search people..."
+                placeholder="Search by name, role, or username..."
                 value={messageSearchQuery}
                 onChange={(e) => setMessageSearchQuery(e.target.value)}
                 className="pl-10"
+                autoFocus
               />
             </div>
+            {!messageSearchQuery && (
+              <p className="text-xs text-gray-500 mt-2">
+                Start typing to search or browse popular contacts below
+              </p>
+            )}
           </div>
 
           {/* Search Results */}
@@ -1008,14 +1095,61 @@ const SocialPage = () => {
               <div className="p-8 text-center">
                 <Search className="h-12 w-12 mx-auto text-gray-300 mb-4" />
                 <h3 className="text-sm font-medium text-gray-900 mb-2">
-                  {messageSearchQuery ? 'No people found' : 'Search for people to message'}
+                  {messageSearchQuery ? 'No people found' : 'Popular Contacts'}
                 </h3>
                 <p className="text-xs text-gray-500">
                   {messageSearchQuery 
-                    ? 'Try a different search term'
-                    : 'Start typing to search for people in your network'
+                    ? 'Try a different search term or browse popular contacts'
+                    : 'Start typing to search or select from popular contacts below'
                   }
                 </p>
+                {!messageSearchQuery && popularContacts.length > 0 && (
+                  <div className="mt-4 p-2">
+                    <h4 className="text-xs font-medium text-gray-700 mb-2 text-left">Popular Contacts</h4>
+                    <div className="space-y-2">
+                      {popularContacts.map((profile) => (
+                        <div
+                          key={getProfileId(profile)}
+                          className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                          onClick={() => {
+                            handleStartConversation(getProfileId(profile));
+                            setShowStartConversation(false);
+                          }}
+                        >
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={profile.photoURL || (profile as any).profileImageUrl} alt={profile.displayName} />
+                            <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white text-xs">
+                              {profile.displayName
+                                .split(' ')
+                                .map(n => n[0])
+                                .join('')
+                                .toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-sm font-medium text-gray-900 truncate">
+                              {profile.displayName}
+                            </h4>
+                            {profile.type === 'crew' && (profile as any).jobTitles?.[0]?.title && (
+                              <p className="text-xs text-gray-500 truncate">
+                                {(profile as any).jobTitles[0].title}
+                              </p>
+                            )}
+                          </div>
+                          
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0"
+                          >
+                            <Send className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="p-2">
@@ -1040,12 +1174,24 @@ const SocialPage = () => {
                     </Avatar>
                     
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-medium text-gray-900 truncate">
-                        {profile.displayName}
-                      </h4>
+                      <div className="flex items-center space-x-2">
+                        <h4 className="text-sm font-medium text-gray-900 truncate">
+                          {profile.displayName}
+                        </h4>
+                        {connections.some(conn => getProfileId(conn) === getProfileId(profile)) && (
+                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                            Connected
+                          </span>
+                        )}
+                      </div>
                       {profile.type === 'crew' && (profile as any).jobTitles?.[0]?.title && (
                         <p className="text-xs text-gray-500 truncate">
                           {(profile as any).jobTitles[0].title}
+                        </p>
+                      )}
+                      {profile.bio && (
+                        <p className="text-xs text-gray-400 truncate mt-1">
+                          {profile.bio}
                         </p>
                       )}
                     </div>
@@ -1053,7 +1199,7 @@ const SocialPage = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 w-8 p-0"
+                      className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                     >
                       <Send className="h-4 w-4" />
                     </Button>
