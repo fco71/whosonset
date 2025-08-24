@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Search, UserCheck, Users, UserPlus, UserX, Bell, Check, X, MoreHorizontal, MessageCircle, Send, Plus } from 'lucide-react';
+import { Search, UserCheck, Users, UserPlus, UserX, Bell, Check, X, MoreHorizontal, MessageCircle, Send, Plus, MapPin } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { SocialService } from '../utilities/socialService';
 import { MessagingService, ConversationSummary } from '../utilities/messagingService';
@@ -587,9 +587,9 @@ const SocialPage = () => {
         return (
           <div>
             <h2 className="text-xl font-semibold mb-4">Your Connections</h2>
-            {connections.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {connections.map((profile: AppProfile) => (
+            {filteredItems.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredItems.map((profile: AppProfile) => (
                   <UserCard
                     key={getProfileId(profile)}
                     profile={profile}
@@ -597,7 +597,7 @@ const SocialPage = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="whitespace-nowrap text-xs px-3 py-1.5"
+                        className="whitespace-nowrap text-xs px-3 py-1.5 border-gray-300 text-gray-700 hover:bg-gray-50"
                         onClick={() => handleFollowChange(getProfileId(profile), false)}
                       >
                         <UserX className="h-3.5 w-3.5 mr-1.5" />
@@ -607,6 +607,8 @@ const SocialPage = () => {
                   />
                 ))}
               </div>
+            ) : searchQuery.trim() ? (
+              <p className="text-gray-500">No connections found matching "{searchQuery}"</p>
             ) : (
               <p className="text-gray-500">You don't have any connections yet.</p>
             )}
@@ -616,15 +618,14 @@ const SocialPage = () => {
       case 'requests':
         return (
           <div className="space-y-4">
-            {connectionRequests.length > 0 && (
-              <div>
-                <h3 className="text-lg font-medium mb-2">{t('social.headers.connectionRequests')}</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                  {connectionRequests.map((profile: AppProfile) => (
-                    <UserCard
-                      key={getProfileId(profile)}
-                      profile={profile}
-                      action={
+            {filteredItems.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredItems.map((profile: AppProfile) => (
+                  <UserCard
+                    key={getProfileId(profile)}
+                    profile={profile}
+                    action={
+                      (profile as any).requestId ? (
                         <Button
                           variant="default"
                           size="sm"
@@ -634,22 +635,7 @@ const SocialPage = () => {
                           <UserCheck className="h-4 w-4 mr-2" />
                           {t('social.actions.accept')}
                         </Button>
-                      }
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-            
-            {sentRequests.length > 0 && (
-              <div>
-                <h3 className="text-lg font-medium mb-2">{t('social.headers.sentRequests')}</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {sentRequests.map((profile: AppProfile) => (
-                    <UserCard
-                      key={getProfileId(profile)}
-                      profile={profile}
-                      action={
+                      ) : (
                         <Button
                           variant="outline"
                           size="sm"
@@ -659,15 +645,15 @@ const SocialPage = () => {
                           <X className="h-4 w-4 mr-2" />
                           Cancel
                         </Button>
-                      }
-                    />
-                  ))}
-                </div>
+                      )
+                    }
+                  />
+                ))}
               </div>
-            )}
-            
-            {connectionRequests.length === 0 && sentRequests.length === 0 && (
-                              <p className="text-gray-500">{t('social.empty.noRequests')}</p>
+            ) : searchQuery.trim() ? (
+              <p className="text-gray-500">No requests found matching "{searchQuery}"</p>
+            ) : (
+              <p className="text-gray-500">{t('social.empty.noRequests')}</p>
             )}
           </div>
         );
@@ -675,10 +661,10 @@ const SocialPage = () => {
       case 'discover':
         return (
           <div>
-                          <h2 className="text-xl font-semibold mb-4">{t('social.headers.discoverPeople')}</h2>
-            {filteredProfiles.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredProfiles.map((profile: AppProfile) => (
+            <h2 className="text-xl font-semibold mb-4">{t('social.headers.discoverPeople')}</h2>
+            {filteredItems.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredItems.map((profile: AppProfile) => (
                   <UserCard
                     key={getProfileId(profile)}
                     profile={profile}
@@ -696,6 +682,8 @@ const SocialPage = () => {
                   />
                 ))}
               </div>
+            ) : searchQuery.trim() ? (
+              <p className="text-gray-500">No people found matching "{searchQuery}"</p>
             ) : (
               <p className="text-gray-500">No suggestions found.</p>
             )}
@@ -714,7 +702,7 @@ const SocialPage = () => {
     }
   };
 
-  // User card component
+  // User card component - Exact copy of CrewBannerCard style
   const UserCard = ({ profile, action, showBio = true }: { 
     profile: AppProfile; 
     action?: React.ReactNode;
@@ -724,46 +712,70 @@ const SocialPage = () => {
     const avatarUrl = (profile as any).profileImageUrl || '/bust-avatar.svg';
     const displayName = profile.displayName || (profile as any).name || 'User';
     const jobTitle = profile.type === 'crew' ? (profile as any).jobTitles?.[0]?.title : undefined;
+    const location = (profile as any).residences?.[0]?.city || (profile as any).location;
     
     return (
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
-        <div className="p-4">
-          <div className="flex items-start justify-between">
-            <div className="flex items-start space-x-3">
-              <img 
-                src={avatarUrl} 
-                alt={displayName}
-                className="h-12 w-12 rounded-full object-cover object-center flex-shrink-0"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.src = '/bust-avatar.svg';
-                }}
-              />
-              <div className="flex-1 min-w-0">
-                <h3 className="font-medium text-gray-900 truncate" title={displayName}>{displayName}</h3>
-                {jobTitle && (
-                  <p className="text-sm text-gray-600 font-medium truncate" title={jobTitle}>{jobTitle}</p>
-                )}
-                {showBio && profile.bio && (
-                  <p className="text-sm text-gray-500 line-clamp-2 mt-1" title={profile.bio}>{profile.bio}</p>
-                )}
-              </div>
+      <div 
+        className={`
+          relative group flex items-center bg-white rounded-2xl border border-gray-100 
+          shadow-lg px-5 py-4 gap-4 hover:shadow-xl transition-all duration-300 cursor-pointer
+        `}
+        style={{ 
+          minHeight: 68, 
+          textDecoration: 'none',
+          animationDelay: `${0 * 0.05}s`
+        }}
+      >
+        {/* Main Content */}
+        <div className="flex items-center flex-1 min-w-0 gap-4">
+          {/* Avatar */}
+          <img 
+            src={avatarUrl} 
+            alt={displayName}
+            className="w-14 h-14 rounded-full object-cover border-2 border-gray-200 flex-shrink-0" 
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.src = '/bust-avatar.svg';
+            }}
+          />
+          
+          {/* Profile Info */}
+          <div className="flex-1 min-w-0">
+            <div className="font-semibold text-gray-900 truncate group-hover:text-blue-700 transition-colors duration-200" 
+                 style={{ fontSize: 17, letterSpacing: '-0.01em' }}
+                 title={displayName}>
+              {displayName}
             </div>
-            <div className="flex-shrink-0 ml-2 flex items-center space-x-2">
-              {action}
-              {/* Add message button for connections */}
-              {activeTab === 'connections' && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-9 w-9 p-0 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
-                  onClick={() => handleStartConversation(getProfileId(profile))}
-                >
-                  <MessageCircle className="h-5 w-5" />
-                </Button>
-              )}
+            <div className="text-xs text-gray-500 truncate" style={{ fontWeight: 500 }}
+                 title={`${jobTitle || ''}${location ? ' · ' + location : ''}`}>
+              {jobTitle}{location ? ' · ' + location : ''}
             </div>
           </div>
+        </div>
+
+        {/* Action Buttons - Right Side */}
+        <div className="flex items-center space-x-3 flex-shrink-0">
+          {/* Action Button (Unfollow) - Left */}
+          {action && (
+            <div className="flex items-center">
+              {action}
+            </div>
+          )}
+          
+          {/* Chat Button - Right, Red styling */}
+          {activeTab === 'connections' && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-red-500 text-red-600 hover:bg-red-50 hover:border-red-600 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors"
+              onClick={() => {
+                // Navigate to chat page with the user
+                navigate(`/chat?user=${getProfileId(profile)}`);
+              }}
+            >
+              Chat
+            </Button>
+          )}
         </div>
       </div>
     );
@@ -983,15 +995,14 @@ const SocialPage = () => {
         const { collection, query: firestoreQuery, where, getDocs, limit } = await import('firebase/firestore');
         const { db } = await import('../firebase');
         
-        // First try to get published profiles
-        let crewQuery = firestoreQuery(
+        // Get ALL crew profiles without filtering by isPublished first
+        const allCrewQuery = firestoreQuery(
           collection(db, 'crewProfiles'),
-          where('isPublished', '==', true),
-          limit(50)
+          limit(100)
         );
         
-        let crewSnapshot = await getDocs(crewQuery);
-        let crewProfiles: AppProfile[] = crewSnapshot.docs.map(doc => {
+        const allCrewSnapshot = await getDocs(allCrewQuery);
+        let crewProfiles: AppProfile[] = allCrewSnapshot.docs.map(doc => {
           const data = doc.data() as any;
           return {
             id: doc.id,
@@ -1008,66 +1019,6 @@ const SocialPage = () => {
           };
         });
 
-        // If we don't have enough results, also get unpublished profiles
-        if (crewProfiles.length < 10) {
-          const unpublishedQuery = firestoreQuery(
-            collection(db, 'crewProfiles'),
-            where('isPublished', '==', false),
-            limit(20)
-          );
-          
-          const unpublishedSnapshot = await getDocs(unpublishedQuery);
-          const unpublishedProfiles: AppProfile[] = unpublishedSnapshot.docs.map(doc => {
-            const data = doc.data() as any;
-            return {
-              id: doc.id,
-              type: 'crew' as const,
-              uid: doc.id,
-              displayName: data.name || data.displayName || `Crew Member ${doc.id.slice(-4)}`,
-              photoURL: data.profileImageUrl || data.avatarUrl || '',
-              bio: data.bio || '',
-              name: data.name || data.displayName || `Crew Member ${doc.id.slice(-4)}`,
-              username: data.username || '',
-              jobTitles: Array.isArray(data.jobTitles) ? [...data.jobTitles] : [],
-              residences: Array.isArray(data.residences) ? [...data.residences] : [],
-              isPublished: data.isPublished !== undefined ? Boolean(data.isPublished) : true,
-            };
-          });
-          
-          crewProfiles = [...crewProfiles, ...unpublishedProfiles];
-        }
-
-        // Also get profiles where isPublished is undefined
-        const undefinedQuery = firestoreQuery(
-          collection(db, 'crewProfiles'),
-          limit(20)
-        );
-        
-        const undefinedSnapshot = await getDocs(undefinedQuery);
-        const undefinedProfiles: AppProfile[] = undefinedSnapshot.docs
-          .filter(doc => {
-            const data = doc.data() as any;
-            return data.isPublished === undefined;
-          })
-          .map(doc => {
-            const data = doc.data() as any;
-            return {
-              id: doc.id,
-              type: 'crew' as const,
-              uid: doc.id,
-              displayName: data.name || data.displayName || `Crew Member ${doc.id.slice(-4)}`,
-              photoURL: data.profileImageUrl || data.avatarUrl || '',
-              bio: data.bio || '',
-              name: data.name || data.displayName || `Crew Member ${doc.id.slice(-4)}`,
-              username: data.username || '',
-              jobTitles: Array.isArray(data.jobTitles) ? [...data.jobTitles] : [],
-              residences: Array.isArray(data.residences) ? [...data.residences] : [],
-              isPublished: data.isPublished !== undefined ? Boolean(data.isPublished) : true,
-            };
-          });
-        
-        crewProfiles = [...crewProfiles, ...undefinedProfiles];
-
         // Combine all sources and filter
         const allAvailableUsers = [...allUsers, ...crewProfiles];
         const uniqueUsers = allAvailableUsers.filter((profile, index, self) => 
@@ -1082,7 +1033,8 @@ const SocialPage = () => {
           query,
           searchTerms,
           totalUsers: uniqueUsers.length,
-          userEmails: uniqueUsers.map(u => (u as any).email).filter(Boolean)
+          userEmails: uniqueUsers.map(u => (u as any).email).filter(Boolean),
+          userNames: uniqueUsers.map(u => (u as any).name || u.displayName).filter(Boolean)
         });
         
         const filtered = uniqueUsers.filter(profile => {
@@ -1101,7 +1053,7 @@ const SocialPage = () => {
           const matches = searchTerms.some(term => profileText.includes(term));
           
           // Debug logging for specific searches
-          if (query.toLowerCase().includes('myfilmjobs') || query.toLowerCase().includes('iam')) {
+          if (query.toLowerCase().includes('myfilmjobs') || query.toLowerCase().includes('iam') || query.toLowerCase().includes('francisco')) {
             console.log('🔍 Profile Check:', {
               name: (profile as any).name,
               email: (profile as any).email,
