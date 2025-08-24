@@ -597,10 +597,10 @@ const SocialPage = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="whitespace-nowrap text-xs px-3 py-1.5 border-gray-300 text-gray-700 hover:bg-gray-50"
+                        className="whitespace-nowrap text-xs px-2 py-1 border-red-300 text-red-700 hover:bg-red-50 hover:border-red-400"
                         onClick={() => handleFollowChange(getProfileId(profile), false)}
                       >
-                        <UserX className="h-3.5 w-3.5 mr-1.5" />
+                        <UserX className="h-3 w-3 mr-1" />
                         {t('social.actions.unfollow')}
                       </Button>
                     }
@@ -754,7 +754,7 @@ const SocialPage = () => {
         </div>
 
         {/* Action Buttons - Right Side */}
-        <div className="flex items-center space-x-3 flex-shrink-0">
+        <div className="flex items-center space-x-4 flex-shrink-0">
           {/* Action Button (Unfollow) - Left */}
           {action && (
             <div className="flex items-center">
@@ -762,12 +762,12 @@ const SocialPage = () => {
             </div>
           )}
           
-          {/* Chat Button - Right, Red styling */}
+          {/* Chat Button - Right, Blue styling */}
           {activeTab === 'connections' && (
             <Button
               variant="outline"
               size="sm"
-              className="border-red-500 text-red-600 hover:bg-red-50 hover:border-red-600 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors"
+              className="border-blue-500 text-blue-600 hover:bg-blue-50 hover:border-blue-600 px-2 py-1 text-sm font-medium rounded-lg transition-colors"
               onClick={() => {
                 // Navigate to chat page with the user
                 navigate(`/chat?user=${getProfileId(profile)}`);
