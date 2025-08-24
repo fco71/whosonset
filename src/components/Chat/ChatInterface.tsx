@@ -102,6 +102,24 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     };
   }, [currentUserId]);
 
+  // Handle initial selected user from URL parameter
+  useEffect(() => {
+    if (initialSelectedUser && currentUserId) {
+      // Ensure the conversation exists by trying to get/create the conversation ID
+      const ensureConversationExists = async () => {
+        try {
+          // This will create the conversation if it doesn't exist
+          await MessagingService.getConversationId(currentUserId, initialSelectedUser);
+          console.log('[ChatInterface] Conversation ensured for users:', currentUserId, initialSelectedUser);
+        } catch (error) {
+          console.error('[ChatInterface] Error ensuring conversation exists:', error);
+        }
+      };
+      
+      ensureConversationExists();
+    }
+  }, [initialSelectedUser, currentUserId]);
+
   // Mark conversation as read when selected user changes
   useEffect(() => {
     if (selectedUser && conversations.length > 0) {

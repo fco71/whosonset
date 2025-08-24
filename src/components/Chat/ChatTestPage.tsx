@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import ChatInterface from './ChatInterface';
 import { useAuth } from '../../contexts/AuthContext';
 import { SocialService } from '../../utilities/socialService.v2';
@@ -6,9 +7,13 @@ import { getDisplayName, getPhotoUrl } from '../../types/Profile';
 
 const ChatTestPage: React.FC = () => {
   const { currentUser } = useAuth();
+  const [searchParams] = useSearchParams();
   const [showChat, setShowChat] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [userProfile, setUserProfile] = useState<any>(null);
+  
+  // Get the user parameter from URL
+  const initialSelectedUser = searchParams.get('user');
 
   // Load real user profile when component mounts
   useEffect(() => {
@@ -121,6 +126,7 @@ const ChatTestPage: React.FC = () => {
       currentUserId={currentUser.uid}
       currentUserName={userProfile?.displayName || 'User'}
       currentUserAvatar={userProfile?.avatar}
+      initialSelectedUser={initialSelectedUser}
     />
   );
 };

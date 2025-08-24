@@ -58,7 +58,7 @@ export class MessagingService {
   // ===== CONVERSATION MANAGEMENT =====
   
   // Get or create conversation ID between two users
-  private static async getConversationId(userId1: string, userId2: string): Promise<string> {
+  static async getConversationId(userId1: string, userId2: string): Promise<string> {
     const participants = [userId1, userId2].sort(); // Sort for consistent ordering
     
     // Check if conversation already exists
