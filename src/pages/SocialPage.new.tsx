@@ -413,10 +413,10 @@ const SocialPage = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="whitespace-nowrap text-xs px-2 py-1.5"
+                        className="whitespace-nowrap"
                         onClick={() => handleFollowChange(getProfileId(profile), false)}
                       >
-                        <UserX className="h-3.5 w-3.5 mr-1.5" />
+                        <UserX className="h-4 w-4 mr-2" />
                         {t('social.actions.unfollow')}
                       </Button>
                     }
@@ -469,10 +469,10 @@ const SocialPage = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="whitespace-nowrap text-xs px-2 py-1.5"
+                          className="whitespace-nowrap"
                           onClick={() => handleCancelSentRequest(getProfileId(profile))}
                         >
-                          <X className="h-3.5 w-3.5 mr-1.5" />
+                          <X className="h-4 w-4 mr-2" />
                           Cancel
                         </Button>
                       }
@@ -562,33 +562,31 @@ const SocialPage = () => {
   }) => (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
       <div className="p-4">
-        <div className="flex items-start space-x-3">
-          <Avatar className="h-12 w-12">
+        <div className="flex items-start justify-between">
+          <div className="flex items-start space-x-3">
+            <Avatar className="h-12 w-12">
                                       <AvatarImage src={getPhotoUrl(profile)} alt={getDisplayName(profile)} />
-            <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-medium">
-              {getDisplayName(profile)
-                .split(' ')
-                .map(n => n[0])
-                .join('')
-                .toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1 min-w-0 overflow-hidden">
-            <div className="flex items-start justify-between">
-              <div className="flex-1 min-w-0 overflow-hidden">
-                <h3 className="font-medium text-gray-900">{getDisplayName(profile)}</h3>
-                {showBio && profile.bio && (
-                  <p className="text-sm text-gray-500 line-clamp-2">{profile.bio}</p>
-                )}
-                {isCrewProfile(profile) && profile.jobTitles?.[0]?.title && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    {profile.jobTitles[0].title}
-                  </p>
-                )}
-              </div>
-              {action && <div className="flex-shrink-0 ml-2">{action}</div>}
+              <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-medium">
+                {getDisplayName(profile)
+                  .split(' ')
+                  .map(n => n[0])
+                  .join('')
+                  .toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-medium text-gray-900">{getDisplayName(profile)}</h3>
+              {showBio && profile.bio && (
+                <p className="text-sm text-gray-500 line-clamp-2">{profile.bio}</p>
+              )}
+              {isCrewProfile(profile) && profile.jobTitles?.[0]?.title && (
+                <p className="text-xs text-gray-500 mt-1">
+                  {profile.jobTitles[0].title}
+                </p>
+              )}
             </div>
           </div>
+          {action && <div className="flex-shrink-0 ml-2">{action}</div>}
         </div>
       </div>
     </div>

@@ -366,51 +366,16 @@ const StartConversationModal: React.FC<{
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SocialUser[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [popularContacts, setPopularContacts] = useState<SocialUser[]>([]);
-
-  // Load popular contacts when modal opens
-  useEffect(() => {
-    if (!isOpen || !currentUser?.uid) return;
-
-    const loadPopularContacts = async () => {
-      try {
-        // Get following and followers for popular contacts
-        const [following, followers] = await Promise.all([
-          SocialService.getFollowing(currentUser.uid),
-          SocialService.getFollowers(currentUser.uid)
-        ]);
-
-        const allContacts = [...following, ...followers];
-        const uniqueContacts = allContacts.filter((user, index, self) => 
-          index === self.findIndex(u => u.id === user.id)
-        );
-
-        setPopularContacts(uniqueContacts.slice(0, 8));
-      } catch (error) {
-        console.error('Error loading popular contacts:', error);
-        setPopularContacts([]);
-      }
-    };
-
-    loadPopularContacts();
-  }, [isOpen, currentUser?.uid]);
 
   // Search for users to start conversation with
   const searchUsers = useCallback(async (query: string) => {
-    if (!currentUser?.uid) {
+    if (!query.trim() || !currentUser?.uid) {
       setSearchResults([]);
       return;
     }
 
     setIsSearching(true);
     try {
-      // If no query, show popular contacts
-      if (!query.trim()) {
-        setSearchResults(popularContacts);
-        setIsSearching(false);
-        return;
-      }
-
       // Get following and followers for better results
       const [following, followers] = await Promise.all([
         SocialService.getFollowing(currentUser.uid),
@@ -418,32 +383,26 @@ const StartConversationModal: React.FC<{
       ]);
 
       const allUsers = [...following, ...followers];
-      const uniqueUsers = allUsers.filter((user, index, self) => 
-        index === self.findIndex(u => u.id === user.id)
-      );
-
-      const filtered = uniqueUsers.filter(user => 
+      const filtered = allUsers.filter(user => 
         user.id !== currentUser.uid &&
         (user.name?.toLowerCase().includes(query.toLowerCase()) ||
          user.displayName?.toLowerCase().includes(query.toLowerCase()) ||
-         user.email?.toLowerCase().includes(query.toLowerCase()) ||
-         user.role?.toLowerCase().includes(query.toLowerCase()) ||
-         user.username?.toLowerCase().includes(query.toLowerCase()))
+         user.email?.toLowerCase().includes(query.toLowerCase()))
       );
 
-      setSearchResults(filtered.slice(0, 15));
+      setSearchResults(filtered.slice(0, 10));
     } catch (error) {
       console.error('Error searching users:', error);
       setSearchResults([]);
     } finally {
       setIsSearching(false);
     }
-  }, [currentUser?.uid, popularContacts]);
+  }, [currentUser?.uid]);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       searchUsers(searchQuery);
-    }, 200); // Reduced debounce time for better responsiveness
+    }, 300);
 
     return () => clearTimeout(timeoutId);
   }, [searchQuery, searchUsers]);
@@ -472,18 +431,12 @@ const StartConversationModal: React.FC<{
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
               type="text"
-              placeholder="Search by name, role, or username..."
+              placeholder="Search people..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
-              autoFocus
             />
           </div>
-          {!searchQuery && (
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-              Start typing to search or browse popular contacts below
-            </p>
-          )}
         </div>
 
         {/* Search Results */}
@@ -504,61 +457,14 @@ const StartConversationModal: React.FC<{
             <div className="p-8 text-center">
               <Search className="h-12 w-12 mx-auto text-gray-300 mb-4" />
               <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
-                {searchQuery ? 'No people found' : 'Popular Contacts'}
+                {searchQuery ? 'No people found' : 'Search for people to message'}
               </h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
+              <p className="text-xs text-gray-500">
                 {searchQuery 
-                  ? 'Try a different search term or browse popular contacts'
-                  : 'Start typing to search or select from popular contacts below'
+                  ? 'Try a different search term'
+                  : 'Start typing to search for people in your network'
                 }
               </p>
-              {!searchQuery && popularContacts.length > 0 && (
-                <div className="mt-4 p-2">
-                  <h4 className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 text-left">Popular Contacts</h4>
-                  <div className="space-y-2">
-                    {popularContacts.map((user) => (
-                      <div
-                        key={user.id}
-                        className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors"
-                        onClick={() => {
-                          onStartConversation(user.id);
-                          onClose();
-                        }}
-                      >
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={user.avatar} alt={user.name} />
-                          <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white text-xs">
-                            {user.name
-                              .split(' ')
-                              .map(n => n[0])
-                              .join('')
-                              .toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        
-                        <div className="flex-1 min-w-0">
-                          <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                            {user.name}
-                          </h4>
-                          {user.role && (
-                            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                              {user.role}
-                            </p>
-                          )}
-                        </div>
-                        
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 w-6 p-0"
-                        >
-                          <Send className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           ) : (
             <div className="p-2">
@@ -583,24 +489,12 @@ const StartConversationModal: React.FC<{
                   </Avatar>
                   
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center space-x-2">
-                      <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                        {getDisplayName(user)}
-                      </h4>
-                      {popularContacts.some(contact => contact.id === user.id) && (
-                        <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded-full">
-                          Connected
-                        </span>
-                      )}
-                    </div>
+                    <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                      {getDisplayName(user)}
+                    </h4>
                     {user.jobTitles?.[0]?.title && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                      <p className="text-xs text-gray-500 truncate">
                         {user.jobTitles[0].title}
-                      </p>
-                    )}
-                    {user.bio && (
-                      <p className="text-xs text-gray-400 dark:text-gray-500 truncate mt-1">
-                        {user.bio}
                       </p>
                     )}
                   </div>
@@ -608,7 +502,7 @@ const StartConversationModal: React.FC<{
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                    className="h-8 w-8 p-0"
                   >
                     <Send className="h-4 w-4" />
                   </Button>
