@@ -983,14 +983,15 @@ const SocialPage = () => {
         const { collection, query: firestoreQuery, where, getDocs, limit } = await import('firebase/firestore');
         const { db } = await import('../firebase');
         
-        const crewQuery = firestoreQuery(
+        // First try to get published profiles
+        let crewQuery = firestoreQuery(
           collection(db, 'crewProfiles'),
           where('isPublished', '==', true),
           limit(50)
         );
         
-        const crewSnapshot = await getDocs(crewQuery);
-        const crewProfiles: AppProfile[] = crewSnapshot.docs.map(doc => {
+        let crewSnapshot = await getDocs(crewQuery);
+        let crewProfiles: AppProfile[] = crewSnapshot.docs.map(doc => {
           const data = doc.data() as any;
           return {
             id: doc.id,
@@ -1007,6 +1008,66 @@ const SocialPage = () => {
           };
         });
 
+        // If we don't have enough results, also get unpublished profiles
+        if (crewProfiles.length < 10) {
+          const unpublishedQuery = firestoreQuery(
+            collection(db, 'crewProfiles'),
+            where('isPublished', '==', false),
+            limit(20)
+          );
+          
+          const unpublishedSnapshot = await getDocs(unpublishedQuery);
+          const unpublishedProfiles: AppProfile[] = unpublishedSnapshot.docs.map(doc => {
+            const data = doc.data() as any;
+            return {
+              id: doc.id,
+              type: 'crew' as const,
+              uid: doc.id,
+              displayName: data.name || data.displayName || `Crew Member ${doc.id.slice(-4)}`,
+              photoURL: data.profileImageUrl || data.avatarUrl || '',
+              bio: data.bio || '',
+              name: data.name || data.displayName || `Crew Member ${doc.id.slice(-4)}`,
+              username: data.username || '',
+              jobTitles: Array.isArray(data.jobTitles) ? [...data.jobTitles] : [],
+              residences: Array.isArray(data.residences) ? [...data.residences] : [],
+              isPublished: data.isPublished !== undefined ? Boolean(data.isPublished) : true,
+            };
+          });
+          
+          crewProfiles = [...crewProfiles, ...unpublishedProfiles];
+        }
+
+        // Also get profiles where isPublished is undefined
+        const undefinedQuery = firestoreQuery(
+          collection(db, 'crewProfiles'),
+          limit(20)
+        );
+        
+        const undefinedSnapshot = await getDocs(undefinedQuery);
+        const undefinedProfiles: AppProfile[] = undefinedSnapshot.docs
+          .filter(doc => {
+            const data = doc.data() as any;
+            return data.isPublished === undefined;
+          })
+          .map(doc => {
+            const data = doc.data() as any;
+            return {
+              id: doc.id,
+              type: 'crew' as const,
+              uid: doc.id,
+              displayName: data.name || data.displayName || `Crew Member ${doc.id.slice(-4)}`,
+              photoURL: data.profileImageUrl || data.avatarUrl || '',
+              bio: data.bio || '',
+              name: data.name || data.displayName || `Crew Member ${doc.id.slice(-4)}`,
+              username: data.username || '',
+              jobTitles: Array.isArray(data.jobTitles) ? [...data.jobTitles] : [],
+              residences: Array.isArray(data.residences) ? [...data.residences] : [],
+              isPublished: data.isPublished !== undefined ? Boolean(data.isPublished) : true,
+            };
+          });
+        
+        crewProfiles = [...crewProfiles, ...undefinedProfiles];
+
         // Combine all sources and filter
         const allAvailableUsers = [...allUsers, ...crewProfiles];
         const uniqueUsers = allAvailableUsers.filter((profile, index, self) => 
@@ -1015,6 +1076,14 @@ const SocialPage = () => {
 
         // Create search terms from query for more flexible matching
         const searchTerms = query.toLowerCase().split(' ').filter(term => term.length > 0);
+        
+        // Add debugging for search
+        console.log('🔍 Search Debug:', {
+          query,
+          searchTerms,
+          totalUsers: uniqueUsers.length,
+          userEmails: uniqueUsers.map(u => (u as any).email).filter(Boolean)
+        });
         
         const filtered = uniqueUsers.filter(profile => {
           if (getProfileId(profile) === user.uid) return false;
@@ -1029,7 +1098,20 @@ const SocialPage = () => {
           ].filter(Boolean).join(' ').toLowerCase();
           
           // Check if any search term matches any part of the profile
-          return searchTerms.some(term => profileText.includes(term));
+          const matches = searchTerms.some(term => profileText.includes(term));
+          
+          // Debug logging for specific searches
+          if (query.toLowerCase().includes('myfilmjobs') || query.toLowerCase().includes('iam')) {
+            console.log('🔍 Profile Check:', {
+              name: (profile as any).name,
+              email: (profile as any).email,
+              profileText,
+              searchTerms,
+              matches
+            });
+          }
+          
+          return matches;
         });
 
         setSearchResults(filtered.slice(0, 15));
