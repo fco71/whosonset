@@ -110,8 +110,19 @@ const SocialPage = () => {
       const mappedProfiles = profiles.map((profile: any) => {
         const id = profile.id || '';
         const displayName = profile.displayName || profile.name || 'Unknown User';
-        const photoURL = profile.photoURL || profile.profileImageUrl || '';
+        const photoURL = profile.photoURL || profile.profileImageUrl || profile.avatarUrl || '/bust-avatar.svg';
         const bio = profile.bio || '';
+        
+        // Debug logging for avatar fields (only for connections/requests, not discover)
+        if (activeTab === 'connections' || activeTab === 'requests') {
+          console.log('[SocialPage] Profile avatar debug:', {
+            name: displayName,
+            profileImageUrl: profile.profileImageUrl,
+            photoURL: profile.photoURL,
+            avatarUrl: profile.avatarUrl,
+            finalPhotoURL: photoURL
+          });
+        }
         
         if (isCrewProfile(profile as any)) {
           // Create a CrewProfile
@@ -164,7 +175,7 @@ const SocialPage = () => {
               // Use the same logic as discover section
               const id = crewData.id || userId;
               const displayName = crewData.displayName || crewData.name || 'Unknown User';
-              const photoURL = crewData.photoURL || crewData.profileImageUrl || '';
+              const photoURL = crewData.photoURL || crewData.profileImageUrl || crewData.avatarUrl || '/bust-avatar.svg';
               const bio = crewData.bio || '';
               
               return {
@@ -301,8 +312,18 @@ const SocialPage = () => {
           const crewData = crewDoc.data();
           const id = crewData.id || userId;
           const displayName = crewData.displayName || crewData.name || 'Unknown User';
-          const photoURL = crewData.photoURL || crewData.profileImageUrl || '';
+          const photoURL = crewData.photoURL || crewData.profileImageUrl || crewData.avatarUrl || '/bust-avatar.svg';
           const bio = crewData.bio || '';
+          
+          // Debug logging for crew profile data
+          console.log('[SocialPage] Crew profile data for connections/requests:', {
+            userId,
+            name: displayName,
+            profileImageUrl: crewData.profileImageUrl,
+            photoURL: crewData.photoURL,
+            avatarUrl: crewData.avatarUrl,
+            finalPhotoURL: photoURL
+          });
           
           return {
             id,
@@ -368,12 +389,22 @@ const SocialPage = () => {
 
     // Set up subscription for connections (people I'm following)
     const connectionsUnsubscribe = SocialService.subscribeToFollowing(currentUser.uid, async (follows) => {
+      console.log('[SocialPage] Connections follows data:', follows);
       const mappedConnections = await Promise.all(
         follows.map(async (conn: any) => {
+          console.log('[SocialPage] Fetching profile for connection:', conn.followingId);
           const userProfile = await fetchUserProfile(conn.followingId);
+          console.log('[SocialPage] Mapped connection profile:', { 
+            userId: conn.followingId, 
+            profileId: getProfileId(userProfile),
+            displayName: userProfile.displayName,
+            photoURL: userProfile.photoURL,
+            type: userProfile.type
+          });
           return userProfile;
         })
       );
+      console.log('[SocialPage] Setting connections:', mappedConnections.length);
       setConnections(mappedConnections);
     });
 
@@ -537,8 +568,8 @@ const SocialPage = () => {
 
   // Helper function to render user cards
   const renderUserCard = (profile: AppProfile, action?: React.ReactNode) => {
-    const avatarUrl = (profile as any).profileImageUrl || '/bust-avatar.svg';
-    const displayName = profile.displayName || (profile as any).name || 'User';
+    const avatarUrl = getPhotoUrl(profile);
+    const displayName = getDisplayName(profile);
     const jobTitle = profile.type === 'crew' ? (profile as any).jobTitles?.[0]?.title : undefined;
     
     return (
@@ -709,8 +740,8 @@ const SocialPage = () => {
     showBio?: boolean;
   }) => {
     // Get the proper avatar and display name like crew cards do
-    const avatarUrl = (profile as any).profileImageUrl || '/bust-avatar.svg';
-    const displayName = profile.displayName || (profile as any).name || 'User';
+    const avatarUrl = getPhotoUrl(profile);
+    const displayName = getDisplayName(profile);
     const jobTitle = profile.type === 'crew' ? (profile as any).jobTitles?.[0]?.title : undefined;
     const location = (profile as any).residences?.[0]?.city || (profile as any).location;
     

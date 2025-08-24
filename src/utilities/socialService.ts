@@ -856,10 +856,27 @@ export class SocialService {
       );
       
       const snapshot = await getDocs(profilesQuery);
-      const profiles = snapshot.docs.map(doc => ({
-        ...doc.data(),
-        uid: doc.id
-      })) as CrewProfile[];
+      const profiles = snapshot.docs.map(doc => {
+        const data = doc.data();
+        const profileImageUrl = data.profileImageUrl || data.photoURL || data.avatarUrl || '/bust-avatar.svg';
+        
+        // Debug logging for avatar fields (only when needed)
+        // console.log('[SocialService] Crew profile avatar debug:', {
+        //   uid: doc.id,
+        //   name: data.name,
+        //   profileImageUrl: data.profileImageUrl,
+        //   photoURL: data.photoURL,
+        //   avatarUrl: data.avatarUrl,
+        //   finalProfileImageUrl: profileImageUrl
+        // });
+        
+        return {
+          ...data,
+          uid: doc.id,
+          // Ensure profileImageUrl has proper fallback
+          profileImageUrl
+        };
+      }) as CrewProfile[];
       
       // Sort in memory instead of using orderBy to avoid index requirement
       profiles.sort((a, b) => (a.name || '').localeCompare(b.name || ''));

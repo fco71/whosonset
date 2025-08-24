@@ -69,20 +69,22 @@ export function getInitialsAvatarUrl(name: string): string {
 }
 
 // Helper function to get a photo URL from any profile type
-export function getPhotoUrl(profile: Profile): string | undefined {
-  // Use only the correct field names to avoid legacy field issues
-  let url = undefined;
+export function getPhotoUrl(profile: Profile): string {
+  // For crew profiles, check all possible image fields with fallback
   if (isCrewProfile(profile)) {
-    // For crew profiles, use only profileImageUrl (the correct field)
-    url = (profile as any).profileImageUrl;
+    const url = (profile as any).profileImageUrl || (profile as any).photoURL || (profile as any).avatarUrl;
+    if (url && typeof url === 'string' && url.trim() !== '') {
+      return url;
+    }
+    return '/bust-avatar.svg';
   } else {
-    // For user profiles, use only avatarUrl (the correct field)
-    url = (profile as any).avatarUrl;
-  }
-  if (!url || typeof url !== 'string' || url.trim() === '') {
+    // For user profiles, check all possible image fields with fallback
+    const url = (profile as any).avatarUrl || (profile as any).photoURL || (profile as any).profileImageUrl;
+    if (url && typeof url === 'string' && url.trim() !== '') {
+      return url;
+    }
     return '/bust-avatar.svg';
   }
-  return url;
 }
 
 // Helper to get the ID from any profile type
