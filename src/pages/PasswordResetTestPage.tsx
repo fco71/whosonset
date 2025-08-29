@@ -17,6 +17,12 @@ const PasswordResetTestPage: React.FC = () => {
       return setError('Please enter an email address');
     }
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      return setError('Please enter a valid email address');
+    }
+
     try {
       setError('');
       setLoading(true);
@@ -28,11 +34,14 @@ const PasswordResetTestPage: React.FC = () => {
       // Test the password reset
       await sendPasswordReset(email.trim());
       
+      // Note: Firebase doesn't throw an error for non-existent users
+      // It always returns "success" even if the user doesn't exist
       setSuccess(true);
       setTestResults({
         email: email.trim(),
         timestamp: new Date().toISOString(),
-        status: 'Email sent successfully'
+        status: 'Request processed',
+        note: 'Firebase processes all requests, even for non-existent users. Check if user actually exists in Firebase Auth.'
       });
       
       console.log(`✅ Password reset email sent to: ${email}`);
@@ -67,9 +76,19 @@ const PasswordResetTestPage: React.FC = () => {
       'mariadanielaguzman@gmail.com'
     ];
     
+    // Validate email format first
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const validEmails = testEmails.filter(email => emailRegex.test(email));
+    const invalidEmails = testEmails.filter(email => !emailRegex.test(email));
+    
+    if (invalidEmails.length > 0) {
+      setError(`Invalid email format: ${invalidEmails.join(', ')}`);
+      return;
+    }
+    
     const results = [];
     
-    for (const testEmail of testEmails) {
+    for (const testEmail of validEmails) {
       try {
         console.log(`🧪 Testing: ${testEmail}`);
         await sendPasswordReset(testEmail);
@@ -218,6 +237,9 @@ const PasswordResetTestPage: React.FC = () => {
           </h2>
           
           <div className="space-y-3 text-sm text-blue-800">
+            <div>
+              <strong>Important Note:</strong> Firebase always shows "success" even for non-existent users. This is normal behavior for security reasons.
+            </div>
             <div>
               <strong>If "No account found":</strong> The user needs to create an account first.
             </div>
