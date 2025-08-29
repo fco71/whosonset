@@ -43,6 +43,7 @@ const ProjectDashboard = React.lazy(() => import('./pages/ProjectManagement/Proj
 const AddProject = React.lazy(() => import('./components/AddProject'));
 const SimpleEmailTestPage = React.lazy(() => import('./pages/SimpleEmailTestPage'));
 const EmailIntegrationTestPage = React.lazy(() => import('./pages/EmailIntegrationTestPage'));
+const PasswordResetTestPage = React.lazy(() => import('./pages/PasswordResetTestPage'));
 const PrivacyPolicyPage = React.lazy(() => import('./pages/PrivacyPolicyPage'));
 const TermsOfServicePage = React.lazy(() => import('./pages/TermsOfServicePage'));
 const ContactPage = React.lazy(() => import('./pages/ContactPage'));
@@ -116,6 +117,10 @@ export function createAppRouter() {
         { 
           path: 'email-integration-test', 
           element: <EmailIntegrationTestPage />
+        },
+        { 
+          path: 'password-reset-test', 
+          element: <PasswordResetTestPage />
         },
         { 
           path: 'login', 
