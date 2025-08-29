@@ -13,7 +13,8 @@ import {
   reauthenticateWithCredential,
   EmailAuthProvider,
   sendEmailVerification,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  confirmPasswordReset
 } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp, getDoc, writeBatch, collection, query, where, getDocs } from 'firebase/firestore';
 
@@ -28,6 +29,7 @@ interface AuthContextType {
   deleteAccount: (password?: string) => Promise<void>;
   sendEmailVerification: () => Promise<void>;
   sendPasswordReset: (email: string) => Promise<void>;
+  confirmPasswordResetAction: (oobCode: string, newPassword: string) => Promise<void>;
   resendVerificationEmail: () => Promise<void>;
 }
 
@@ -277,8 +279,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const sendPasswordReset = async (email: string) => {
-    await sendPasswordResetEmail(auth, email);
+    const actionCodeSettings = {
+      url: `${window.location.origin}/reset-password`,
+      handleCodeInApp: true,
+    };
+    
+    await sendPasswordResetEmail(auth, email, actionCodeSettings);
     console.log('[AuthContext] Password reset email sent');
+  };
+
+  const confirmPasswordResetAction = async (oobCode: string, newPassword: string) => {
+    try {
+      await confirmPasswordReset(auth, oobCode, newPassword);
+      console.log('[AuthContext] Password reset confirmed');
+    } catch (error: any) {
+      console.error('[AuthContext] Error confirming password reset:', error);
+      throw error;
+    }
   };
 
   const resendVerificationEmail = async () => {
@@ -1041,9 +1058,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     loginWithGoogle,
     logout,
     deleteAccount,
-    sendEmailVerification: sendEmailVerificationToUser,
-    sendPasswordReset,
-    resendVerificationEmail
+          sendEmailVerification: sendEmailVerificationToUser,
+      sendPasswordReset,
+      confirmPasswordResetAction,
+      resendVerificationEmail
   };
 
   return (

@@ -23,6 +23,7 @@ const LoginPage = React.lazy(() => import('./pages/LoginPage'));
 const RegisterPage = React.lazy(() => import('./pages/RegisterPage'));
 const EmailVerificationPage = React.lazy(() => import('./pages/EmailVerificationPage'));
 const ForgotPasswordPage = React.lazy(() => import('./pages/ForgotPasswordPage'));
+const ResetPasswordPage = React.lazy(() => import('./pages/ResetPasswordPage'));
 const ApplicationDetailPage = React.lazy(() => import('./pages/ApplicationDetailPage'));
 const JobApplicationForm = React.lazy(() => import('./components/JobSearch/JobApplicationForm'));
 const JobApplicationDashboard = React.lazy(() => import('./components/JobSearch/JobApplicationDashboard'));
@@ -145,6 +146,14 @@ export function createAppRouter() {
           element: (
             <PublicRoute>
               <ForgotPasswordPage />
+            </PublicRoute>
+          ) 
+        },
+        { 
+          path: 'reset-password', 
+          element: (
+            <PublicRoute>
+              <ResetPasswordPage />
             </PublicRoute>
           ) 
         },
