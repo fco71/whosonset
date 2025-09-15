@@ -94,7 +94,7 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
     
     // Job Titles (medium priority)
     if (profile.jobTitles && profile.jobTitles.filter(jt => jt.department && jt.title).length > 0) {
-      const jobHeight = Math.min(25, availableHeight);
+      const jobHeight = Math.min(30, availableHeight);
       sections.push({ type: 'jobTitles', height: jobHeight, priority: 2 });
       availableHeight -= jobHeight + sectionSpacing;
     }
@@ -108,7 +108,7 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
     
     // Education (medium priority)
     if (profile.education && profile.education.length > 0) {
-      const eduHeight = Math.min(15, availableHeight);
+      const eduHeight = Math.min(20, availableHeight);
       sections.push({ type: 'education', height: eduHeight, priority: 4 });
       availableHeight -= eduHeight + sectionSpacing;
     }
@@ -427,16 +427,16 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
                 <ul style={jobTitlesListStyle}>
                   {profile.jobTitles
                     .filter(jt => jt.department && jt.title)
-                    .slice(0, 3) // Reduced from 4 to 3
+                    .slice(0, 4) // Increased from 3 to 4
                     .map((jt, i) => (
                       <li key={i} style={jobTitleItemStyle}>
                         <strong>{jt.title}</strong> — {jt.department}
                       </li>
                     ))}
                 </ul>
-                {profile.jobTitles.filter(jt => jt.department && jt.title).length > 3 && (
+                {profile.jobTitles.filter(jt => jt.department && jt.title).length > 4 && (
                   <p style={{ fontSize: '9pt', color: '#666', fontStyle: 'italic', margin: '1mm 0 0 0' }}>
-                    ({t('resume.labels.showingTop', { count: 3, type: t('resume.types.positions') })})
+                    ({t('resume.labels.showingTop', { count: 4, type: t('resume.types.positions') })})
                   </p>
                 )}
               </div>
@@ -476,7 +476,7 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
                       // Only show if there's at least one piece of information
                       return edu.institution || edu.degree || edu.fieldOfStudy || edu.endDate || edu.isCurrent;
                     })
-                    .slice(0, 1) // Reduced from 2 to 1
+                    .slice(0, 2) // Increased from 1 to 2
                     .map((edu, i) => {
                       // Handle string format (legacy)
                       if (typeof edu === 'string') {
