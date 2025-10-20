@@ -536,9 +536,14 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
               <div style={sectionStyle}>
                 <h2 style={sectionTitleStyle}>{t('resume.sections.contactInformation')}</h2>
                 <ul style={contactListStyle}>
-                  {/* Only show email and phone for own resume */}
-                  {isOwnResume && profile.contactInfo.email && <li style={contactItemStyle}>📧 {profile.contactInfo.email}</li>}
-                  {isOwnResume && profile.contactInfo.phone && <li style={contactItemStyle}>📞 {profile.contactInfo.phone}</li>}
+                  {/* Show email if: it's own resume OR email is not private */}
+                  {profile.contactInfo.email && (isOwnResume || !profile.contactInfo.emailPrivate) && (
+                    <li style={contactItemStyle}>📧 {profile.contactInfo.email}</li>
+                  )}
+                  {/* Show phone if: it's own resume OR phone is not private */}
+                  {profile.contactInfo.phone && (isOwnResume || !profile.contactInfo.phonePrivate) && (
+                    <li style={contactItemStyle}>📞 {profile.contactInfo.phone}</li>
+                  )}
                   {/* Always show website and social media */}
                   {profile.contactInfo.website && <li style={contactItemStyle}>🌐 {profile.contactInfo.website}</li>}
                   {profile.contactInfo.instagram && <li style={contactItemStyle}>📷 {formatInstagramHandle(profile.contactInfo.instagram)}</li>}

@@ -14,6 +14,7 @@ import {
   Residence, 
   ContactInfo 
 } from '../types/CrewProfile';
+import { Eye, EyeOff } from 'lucide-react';
 
 // Simplified default education entry
 const getDefaultEducationEntry = (): EducationEntry => ({
@@ -1148,34 +1149,104 @@ const EditCrewProfile: React.FC = () => {
                 <div className="mb-8">
                   <h3 className="text-lg font-light text-gray-900 mb-4 tracking-wide">Contact Information (Optional)</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
+                    {/* Email with Privacy Toggle */}
+                    <div className="space-y-2">
                       <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
                         Email
                       </label>
-                      <input
-                        type="email"
-                        placeholder="your.email@example.com"
-                        value={form.contactInfo?.email || ''}
-                        onChange={e =>
-                          setForm(f => ({ ...f, contactInfo: { ...f.contactInfo, email: e.target.value } }))
-                        }
-                        className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
-                      />
+                      <div className="flex items-start gap-2">
+                        <input
+                          type="email"
+                          placeholder="your.email@example.com"
+                          value={form.contactInfo?.email || ''}
+                          onChange={e =>
+                            setForm(f => ({ ...f, contactInfo: { ...(f.contactInfo || {}), email: e.target.value } }))
+                          }
+                          className="flex-1 p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setForm(f => ({
+                            ...f,
+                            contactInfo: {
+                              ...(f.contactInfo || {}),
+                              emailPrivate: !(f.contactInfo?.emailPrivate)
+                            }
+                          }))}
+                          className="mt-[14px] p-3 rounded-md border border-gray-200 hover:bg-gray-50 transition-colors"
+                          title={form.contactInfo?.emailPrivate ? 'Email is private (hidden on website)' : 'Email is public (visible on website)'}
+                        >
+                          {form.contactInfo?.emailPrivate ? (
+                            <EyeOff className="w-5 h-5 text-gray-600" />
+                          ) : (
+                            <Eye className="w-5 h-5 text-gray-600" />
+                          )}
+                        </button>
+                      </div>
+                      <p className="text-xs text-gray-500 flex items-center gap-1">
+                        {form.contactInfo?.emailPrivate ? (
+                          <>
+                            <EyeOff className="w-3 h-3" />
+                            <span>Private - Hidden on website, visible in PDF download</span>
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="w-3 h-3" />
+                            <span>Public - Visible on website and PDF download</span>
+                          </>
+                        )}
+                      </p>
                     </div>
-                    <div>
+
+                    {/* Phone with Privacy Toggle */}
+                    <div className="space-y-2">
                       <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
                         Phone
                       </label>
-                      <input
-                        type="tel"
-                        placeholder="+1 (555) 123-4567"
-                        value={form.contactInfo?.phone || ''}
-                        onChange={e =>
-                          setForm(f => ({ ...f, contactInfo: { ...f.contactInfo, phone: e.target.value } }))
-                        }
-                        className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
-                      />
+                      <div className="flex items-start gap-2">
+                        <input
+                          type="tel"
+                          placeholder="+1 (555) 123-4567"
+                          value={form.contactInfo?.phone || ''}
+                          onChange={e =>
+                            setForm(f => ({ ...f, contactInfo: { ...(f.contactInfo || {}), phone: e.target.value } }))
+                          }
+                          className="flex-1 p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setForm(f => ({
+                            ...f,
+                            contactInfo: {
+                              ...(f.contactInfo || {}),
+                              phonePrivate: !(f.contactInfo?.phonePrivate)
+                            }
+                          }))}
+                          className="mt-[14px] p-3 rounded-md border border-gray-200 hover:bg-gray-50 transition-colors"
+                          title={form.contactInfo?.phonePrivate ? 'Phone is private (hidden on website)' : 'Phone is public (visible on website)'}
+                        >
+                          {form.contactInfo?.phonePrivate ? (
+                            <EyeOff className="w-5 h-5 text-gray-600" />
+                          ) : (
+                            <Eye className="w-5 h-5 text-gray-600" />
+                          )}
+                        </button>
+                      </div>
+                      <p className="text-xs text-gray-500 flex items-center gap-1">
+                        {form.contactInfo?.phonePrivate ? (
+                          <>
+                            <EyeOff className="w-3 h-3" />
+                            <span>Private - Hidden on website, visible in PDF download</span>
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="w-3 h-3" />
+                            <span>Public - Visible on website and PDF download</span>
+                          </>
+                        )}
+                      </p>
                     </div>
+
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
                         Website

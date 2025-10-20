@@ -83,6 +83,8 @@ export interface ContactInfo {
   phone?: string;
   website?: string;
   instagram?: string;
+  emailPrivate?: boolean; // true = hidden on website, false/undefined = visible
+  phonePrivate?: boolean; // true = hidden on website, false/undefined = visible
 }
 
 // Legacy interface for backward compatibility (used in some saved collections)
