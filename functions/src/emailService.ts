@@ -1,5 +1,4 @@
 import * as nodemailer from 'nodemailer';
-import sgMail from '@sendgrid/mail';
 import * as handlebars from 'handlebars';
 
 export interface EmailTemplate {
@@ -16,25 +15,16 @@ export interface EmailData {
 
 export class EmailService {
   private static transporter: nodemailer.Transporter;
-  private static sendGridApiKey: string;
   private static isInitialized = false;
 
   static initialize() {
     if (this.isInitialized) return;
 
-    // Use environment variables for Firebase Functions v2
-    this.sendGridApiKey = process.env.SENDGRID_API_KEY || '';
-    console.log('[EmailService] SendGrid API key:', this.sendGridApiKey ? 'present' : 'missing');
-    
-    if (this.sendGridApiKey) {
-      sgMail.setApiKey(this.sendGridApiKey);
-    }
-
-    // Initialize Nodemailer with environment variables
+    // Initialize Nodemailer with Gmail SMTP
     const smtpConfig = {
       host: process.env.SMTP_HOST || 'smtp.gmail.com',
       port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: false,
+      secure: false, // true for 465, false for other ports
       auth: {
         user: process.env.SMTP_USER || '',
         pass: process.env.SMTP_PASS || ''
@@ -76,36 +66,15 @@ export class EmailService {
       const fromDisplayName = 'My Film Jobs';
       const fromWithDisplayName = `${fromDisplayName} <${fromEmailValue}>`;
 
-      // Try SendGrid first, fallback to Nodemailer
-      if (this.sendGridApiKey) {
-        console.log('[EmailService] Using SendGrid');
-        try {
-          await sgMail.send({
-            to,
-            from: fromWithDisplayName,
-            subject,
-            html,
-            text
-          });
-        } catch (sendGridError: any) {
-          console.error('[EmailService] SendGrid error details:', {
-            code: sendGridError.code,
-            message: sendGridError.message,
-            response: sendGridError.response?.body,
-            errors: sendGridError.response?.body?.errors
-          });
-          throw sendGridError;
-        }
-      } else {
-        console.log('[EmailService] Using Nodemailer');
-        await this.transporter.sendMail({
-          from: fromWithDisplayName,
-          to,
-          subject,
-          html,
-          text
-        });
-      }
+      // Send email using Nodemailer (Gmail SMTP)
+      console.log('[EmailService] Using Nodemailer with Gmail SMTP');
+      await this.transporter.sendMail({
+        from: fromWithDisplayName,
+        to,
+        subject,
+        html,
+        text
+      });
 
       console.log(`[EmailService] Email sent successfully to ${to}`);
       return true;

@@ -32,29 +32,19 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.EmailService = void 0;
 const nodemailer = __importStar(require("nodemailer"));
-const mail_1 = __importDefault(require("@sendgrid/mail"));
 const handlebars = __importStar(require("handlebars"));
 class EmailService {
     static initialize() {
         if (this.isInitialized)
             return;
-        // Use environment variables for Firebase Functions v2
-        this.sendGridApiKey = process.env.SENDGRID_API_KEY || '';
-        console.log('[EmailService] SendGrid API key:', this.sendGridApiKey ? 'present' : 'missing');
-        if (this.sendGridApiKey) {
-            mail_1.default.setApiKey(this.sendGridApiKey);
-        }
-        // Initialize Nodemailer with environment variables
+        // Initialize Nodemailer with Gmail SMTP
         const smtpConfig = {
             host: process.env.SMTP_HOST || 'smtp.gmail.com',
             port: parseInt(process.env.SMTP_PORT || '587'),
-            secure: false,
+            secure: false, // true for 465, false for other ports
             auth: {
                 user: process.env.SMTP_USER || '',
                 pass: process.env.SMTP_PASS || ''
@@ -70,7 +60,6 @@ class EmailService {
         this.isInitialized = true;
     }
     static async sendEmail(emailData) {
-        var _a, _b, _c;
         try {
             this.initialize();
             const { to, template, data } = emailData;
@@ -87,38 +76,15 @@ class EmailService {
             // Create a professional display name for the from field
             const fromDisplayName = 'My Film Jobs';
             const fromWithDisplayName = `${fromDisplayName} <${fromEmailValue}>`;
-            // Try SendGrid first, fallback to Nodemailer
-            if (this.sendGridApiKey) {
-                console.log('[EmailService] Using SendGrid');
-                try {
-                    await mail_1.default.send({
-                        to,
-                        from: fromWithDisplayName,
-                        subject,
-                        html,
-                        text
-                    });
-                }
-                catch (sendGridError) {
-                    console.error('[EmailService] SendGrid error details:', {
-                        code: sendGridError.code,
-                        message: sendGridError.message,
-                        response: (_a = sendGridError.response) === null || _a === void 0 ? void 0 : _a.body,
-                        errors: (_c = (_b = sendGridError.response) === null || _b === void 0 ? void 0 : _b.body) === null || _c === void 0 ? void 0 : _c.errors
-                    });
-                    throw sendGridError;
-                }
-            }
-            else {
-                console.log('[EmailService] Using Nodemailer');
-                await this.transporter.sendMail({
-                    from: fromWithDisplayName,
-                    to,
-                    subject,
-                    html,
-                    text
-                });
-            }
+            // Send email using Nodemailer (Gmail SMTP)
+            console.log('[EmailService] Using Nodemailer with Gmail SMTP');
+            await this.transporter.sendMail({
+                from: fromWithDisplayName,
+                to,
+                subject,
+                html,
+                text
+            });
             console.log(`[EmailService] Email sent successfully to ${to}`);
             return true;
         }

@@ -118,7 +118,6 @@ async function getUserData(userId) {
     }
 }
 // Define secrets for environment variables
-const sendgridApiKey = (0, params_1.defineSecret)('SENDGRID_API_KEY');
 const smtpUser = (0, params_1.defineSecret)('SMTP_USER');
 const smtpPass = (0, params_1.defineSecret)('SMTP_PASS');
 const emailFrom = (0, params_1.defineSecret)('EMAIL_FROM');
@@ -217,7 +216,7 @@ exports.emailSend = (0, https_1.onRequest)({
     cors: true,
     invoker: 'public',
     region: 'us-central1',
-    secrets: [sendgridApiKey, smtpUser, smtpPass, emailFrom]
+    secrets: [smtpUser, smtpPass, emailFrom]
 }, async (req, res) => {
     // Handle CORS preflight
     if (req.method === 'OPTIONS') {
@@ -249,7 +248,6 @@ exports.emailSend = (0, https_1.onRequest)({
             return;
         }
         // Set environment variables from secrets
-        process.env.SENDGRID_API_KEY = sendgridApiKey.value();
         process.env.SMTP_USER = smtpUser.value();
         process.env.SMTP_PASS = smtpPass.value();
         process.env.EMAIL_FROM = emailFrom.value();
@@ -329,12 +327,11 @@ The My Film Jobs Team
 exports.notifyFollowRequest = (0, firestore_1.onDocumentCreated)({
     document: 'followRequests/{requestId}',
     region: 'us-central1',
-    secrets: [sendgridApiKey, smtpUser, smtpPass, emailFrom]
+    secrets: [smtpUser, smtpPass, emailFrom]
 }, async (event) => {
     var _a;
     try {
         // Set environment variables from secrets
-        process.env.SENDGRID_API_KEY = sendgridApiKey.value();
         process.env.SMTP_USER = smtpUser.value();
         process.env.SMTP_PASS = smtpPass.value();
         process.env.EMAIL_FROM = emailFrom.value();
@@ -377,12 +374,11 @@ exports.notifyFollowRequest = (0, firestore_1.onDocumentCreated)({
 exports.notifyNewMessage = (0, firestore_1.onDocumentCreated)({
     document: 'conversations/{conversationId}/messages/{messageId}',
     region: 'us-central1',
-    secrets: [sendgridApiKey, smtpUser, smtpPass, emailFrom]
+    secrets: [smtpUser, smtpPass, emailFrom]
 }, async (event) => {
     var _a;
     try {
         // Set environment variables from secrets
-        process.env.SENDGRID_API_KEY = sendgridApiKey.value();
         process.env.SMTP_USER = smtpUser.value();
         process.env.SMTP_PASS = smtpPass.value();
         process.env.EMAIL_FROM = emailFrom.value();

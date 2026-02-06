@@ -108,7 +108,6 @@ async function getUserData(userId: string) {
 import { QueryDocumentSnapshot } from "firebase-admin/firestore";
 
 // Define secrets for environment variables
-const sendgridApiKey = defineSecret('SENDGRID_API_KEY');
 const smtpUser = defineSecret('SMTP_USER');
 const smtpPass = defineSecret('SMTP_PASS');
 const emailFrom = defineSecret('EMAIL_FROM');
@@ -228,7 +227,7 @@ export const emailSend = onRequest({
   cors: true,
   invoker: 'public',
   region: 'us-central1',
-  secrets: [sendgridApiKey, smtpUser, smtpPass, emailFrom]
+  secrets: [smtpUser, smtpPass, emailFrom]
 }, async (req, res) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -264,7 +263,6 @@ export const emailSend = onRequest({
     }
 
     // Set environment variables from secrets
-    process.env.SENDGRID_API_KEY = sendgridApiKey.value();
     process.env.SMTP_USER = smtpUser.value();
     process.env.SMTP_PASS = smtpPass.value();
     process.env.EMAIL_FROM = emailFrom.value();
@@ -346,11 +344,10 @@ The My Film Jobs Team
 export const notifyFollowRequest = onDocumentCreated({
   document: 'followRequests/{requestId}',
   region: 'us-central1',
-  secrets: [sendgridApiKey, smtpUser, smtpPass, emailFrom]
+  secrets: [smtpUser, smtpPass, emailFrom]
 }, async (event) => {
   try {
     // Set environment variables from secrets
-    process.env.SENDGRID_API_KEY = sendgridApiKey.value();
     process.env.SMTP_USER = smtpUser.value();
     process.env.SMTP_PASS = smtpPass.value();
     process.env.EMAIL_FROM = emailFrom.value();
@@ -397,11 +394,10 @@ export const notifyFollowRequest = onDocumentCreated({
 export const notifyNewMessage = onDocumentCreated({
   document: 'conversations/{conversationId}/messages/{messageId}',
   region: 'us-central1',
-  secrets: [sendgridApiKey, smtpUser, smtpPass, emailFrom]
+  secrets: [smtpUser, smtpPass, emailFrom]
 }, async (event) => {
   try {
     // Set environment variables from secrets
-    process.env.SENDGRID_API_KEY = sendgridApiKey.value();
     process.env.SMTP_USER = smtpUser.value();
     process.env.SMTP_PASS = smtpPass.value();
     process.env.EMAIL_FROM = emailFrom.value();
