@@ -409,7 +409,10 @@ export const notifyNewMessage = onDocumentCreated({
     }
 
     const { senderId, receiverId, content } = messageData;
-    
+
+    // Get conversation ID from event params
+    const conversationId = event.params.conversationId;
+
     // Get recipient's data using helper function
     const recipientData = await getUserData(receiverId);
     if (!recipientData || !recipientData.email) {
@@ -431,7 +434,8 @@ export const notifyNewMessage = onDocumentCreated({
       data: {
         senderName,
         messagePreview,
-        recipientEmail
+        recipientEmail,
+        messageUrl: `https://myfilmjobs.com/messages?conversation=${conversationId}`
       }
     });
 
