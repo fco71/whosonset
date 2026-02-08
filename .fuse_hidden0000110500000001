@@ -1,0 +1,26 @@
+[debug] [2026-02-07T22:24:06.868Z] ----------------------------------------------------------------------
+[debug] [2026-02-07T22:24:06.870Z] Command:       /usr/bin/node /sessions/clever-eager-fermi/mnt/whosonset/node_modules/.bin/firebase functions:log --only testEmailDirect
+[debug] [2026-02-07T22:24:06.870Z] CLI Version:   14.11.1
+[debug] [2026-02-07T22:24:06.870Z] Platform:      linux
+[debug] [2026-02-07T22:24:06.870Z] Node Version:  v22.22.0
+[debug] [2026-02-07T22:24:06.870Z] Time:          Sat Feb 07 2026 22:24:06 GMT+0000 (Coordinated Universal Time)
+[debug] [2026-02-07T22:24:06.870Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-02-07T22:24:06.872Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[debug] [2026-02-07T22:24:07.036Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-02-07T22:24:07.065Z] <<< [apiv2][status] GET https://firebase-public.firebaseio.com/cli.json 403
+[debug] [2026-02-07T22:24:07.065Z] <<< [apiv2][body] GET https://firebase-public.firebaseio.com/cli.json "Connection blocked by network allowlist"
+[warn] ⚠  Unable to fetch the CLI MOTD and remote config. This is not a fatal error, but may indicate an issue with your network connection. 
+[debug] [2026-02-07T22:24:07.065Z] Failed to fetch MOTD FirebaseError: Unable to parse JSON: SyntaxError: Unexpected token 'C', "Connection"... is not valid JSON
+[debug] [2026-02-07T22:24:07.067Z] Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/sessions/clever-eager-fermi/mnt/whosonset/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async GoogleAuth._GoogleAuth_determineClient (/sessions/clever-eager-fermi/mnt/whosonset/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/sessions/clever-eager-fermi/mnt/whosonset/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GoogleAuth.getAccessToken (/sessions/clever-eager-fermi/mnt/whosonset/node_modules/google-auth-library/build/src/auth/googleauth.js:722:24)
+    at async autoAuth (/sessions/clever-eager-fermi/mnt/whosonset/node_modules/firebase-tools/lib/requireAuth.js:28:19)
+    at async requireAuth (/sessions/clever-eager-fermi/mnt/whosonset/node_modules/firebase-tools/lib/requireAuth.js:87:20)
+    at async Object.requirePermissions [as fn] (/sessions/clever-eager-fermi/mnt/whosonset/node_modules/firebase-tools/lib/requirePermissions.js:17:5)
+    at async /sessions/clever-eager-fermi/mnt/whosonset/node_modules/firebase-tools/lib/command.js:242:17
+[error] 
+[error] Error: Failed to authenticate, have you run firebase login?
