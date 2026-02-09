@@ -63,11 +63,11 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
 
     const navigationLinks = [
         { to: '/', label: t('nav.home') },
-        { to: '/blog', label: 'Blog' },
         { to: '/crew', label: t('nav.crew') },
         { to: '/jobs', label: t('nav.jobs') },
         { to: '/projects', label: t('nav.projects') },
         { to: '/collaboration', label: t('nav.collaboration') },
+        { to: '/blog', label: 'Blog' },
     ];
 
     const authenticatedLinks = [

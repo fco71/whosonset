@@ -39,8 +39,8 @@ const SEO_ROUTES: { pattern: RegExp; title: string; description: string }[] = [
   },
   {
     pattern: /^\/blog$/,
-    title: 'Film Industry Blog | Daily Curated News',
-    description: 'Daily curated film industry updates with links to original sources and member discussion.',
+    title: 'Film Industry Blog | News and Insights',
+    description: 'Curated film industry news and insights with links to original sources and member discussion.',
   },
   {
     pattern: /^\/about$/,
