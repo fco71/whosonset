@@ -1,5 +1,7 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { BlogPost } from '../../types/blog';
+import { getBlogPostPath, sanitizeBlogSummary } from '../../utilities/blogSeo';
 
 interface BlogPostCardProps {
   post: BlogPost;
@@ -14,14 +16,9 @@ const categoryStyles: Record<string, string> = {
   careers: 'bg-amber-100 text-amber-800',
 };
 
-function sanitizeSummary(summary: string): string {
-  return summary
-    .replace(/\s*links to the original publisher for full context\.?$/i, '')
-    .trim();
-}
-
 const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, expanded, onToggleComments }) => {
-  const summary = sanitizeSummary(post.summary || '');
+  const summary = sanitizeBlogSummary(post.summary || '');
+  const postPath = getBlogPostPath(post.id);
 
   return (
     <article className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
@@ -34,26 +31,24 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, expanded, onToggleCom
 
       <div className="mt-4 flex items-start gap-4">
         {post.imageUrl ? (
-          <a href={post.originalUrl} target="_blank" rel="noopener noreferrer" className="block shrink-0">
+          <Link to={postPath} className="block shrink-0">
             <img
               src={post.imageUrl}
               alt={post.title}
               className="h-20 w-32 rounded-lg object-cover"
               loading="lazy"
             />
-          </a>
+          </Link>
         ) : null}
 
         <div className="min-w-0 flex-1">
           <h3 className="text-xl font-semibold text-gray-900">
-            <a
-              href={post.originalUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              to={postPath}
               className="hover:text-blue-700 hover:underline"
             >
               {post.title}
-            </a>
+            </Link>
           </h3>
           <p className="mt-3 text-sm leading-6 text-gray-700">{summary}</p>
         </div>
@@ -72,6 +67,12 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, expanded, onToggleCom
       </div>
 
       <div className="mt-5 flex flex-wrap items-center gap-3">
+        <Link
+          to={postPath}
+          className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+        >
+          View Details
+        </Link>
         <a
           href={post.originalUrl}
           target="_blank"

@@ -36,7 +36,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.notifyNewMessage = exports.notifyFollowRequest = exports.emailSend = exports.testUserData = exports.testFollowRequestNotification = exports.jobsSitemap = exports.onBlogCommentDeleted = exports.onBlogCommentCreated = exports.runBlogCurationNow = exports.blogFeedSources = exports.curateDailyBlogPosts = void 0;
+exports.notifyNewMessage = exports.notifyFollowRequest = exports.emailSend = exports.testUserData = exports.testFollowRequestNotification = exports.jobsSitemap = exports.blogSitemap = exports.onBlogCommentDeleted = exports.onBlogCommentCreated = exports.runBlogCurationNow = exports.blogFeedSources = exports.curateDailyBlogPosts = void 0;
 const admin = __importStar(require("firebase-admin"));
 const https_1 = require("firebase-functions/v2/https");
 const firestore_1 = require("firebase-functions/v2/firestore");
@@ -721,6 +721,59 @@ exports.onBlogCommentDeleted = (0, firestore_1.onDocumentDeleted)({
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         }, { merge: true });
     });
+});
+exports.blogSitemap = (0, https_1.onRequest)({
+    region: "us-central1",
+    invoker: "public",
+}, async (req, res) => {
+    if (req.method !== "GET" && req.method !== "HEAD") {
+        res.status(405).set("Allow", "GET, HEAD").send("Method Not Allowed");
+        return;
+    }
+    try {
+        const snapshot = await db.collection("blogPosts")
+            .where("isPublic", "==", true)
+            .get();
+        const entries = snapshot.docs
+            .map((postDoc) => {
+            const data = postDoc.data();
+            const publishedAt = toDate(data.publishedAt) || toDate(data.createdAt) || new Date();
+            const updatedAt = toDate(data.updatedAt) || publishedAt;
+            const encodedId = encodeURIComponent(postDoc.id);
+            return {
+                loc: `https://myfilmjobs.com/blog/${encodedId}`,
+                lastmod: updatedAt,
+            };
+        })
+            .sort((a, b) => b.lastmod.getTime() - a.lastmod.getTime());
+        const urls = entries
+            .map((entry) => [
+            "  <url>",
+            `    <loc>${escapeXml(entry.loc)}</loc>`,
+            `    <lastmod>${entry.lastmod.toISOString()}</lastmod>`,
+            "    <changefreq>daily</changefreq>",
+            "    <priority>0.8</priority>",
+            "  </url>",
+        ].join("\n"))
+            .join("\n");
+        const xml = [
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+            "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">",
+            urls,
+            "</urlset>",
+        ].join("\n");
+        res.set("Content-Type", "application/xml; charset=utf-8");
+        res.set("Cache-Control", "public, max-age=900, s-maxage=900");
+        if (req.method === "HEAD") {
+            res.status(200).send();
+            return;
+        }
+        res.status(200).send(xml);
+    }
+    catch (error) {
+        console.error("[blogSitemap] Failed to generate sitemap:", error);
+        res.status(500).send("Failed to generate sitemap");
+    }
 });
 exports.jobsSitemap = (0, https_1.onRequest)({
     region: "us-central1",

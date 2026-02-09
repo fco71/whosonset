@@ -1,11 +1,13 @@
 import {
   db,
   collection,
+  doc,
   query,
   where,
   orderBy,
   limit,
   getDocs,
+  getDoc,
   addDoc,
   serverTimestamp,
 } from '../firebase';
@@ -25,30 +27,33 @@ function toDate(value: any): Date | undefined {
   return parsed;
 }
 
+function mapBlogPostData(postId: string, data: Record<string, any>): BlogPost {
+  return {
+    id: postId,
+    title: data.title || 'Untitled update',
+    summary: data.summary || '',
+    sourceName: data.sourceName || 'Source',
+    sourceUrl: data.sourceUrl || '',
+    sourceFeedUrl: data.sourceFeedUrl || '',
+    originalUrl: data.originalUrl || '',
+    imageUrl: data.imageUrl || '',
+    category: data.category || 'industry',
+    tags: Array.isArray(data.tags) ? data.tags : [],
+    publishedAt: toDate(data.publishedAt) || new Date(0),
+    createdAt: toDate(data.createdAt),
+    updatedAt: toDate(data.updatedAt),
+    curatedDate: data.curatedDate || '',
+    commentsCount: typeof data.commentsCount === 'number' ? data.commentsCount : 0,
+    isPublic: data.isPublic === true,
+    contentPolicy: data.contentPolicy === 'metadata_only' ? 'metadata_only' : 'metadata_only',
+  } as BlogPost;
+}
+
 function mapBlogPostsFromSnapshot(snapshot: any, maxPosts: number): BlogPost[] {
   return snapshot.docs
     .map((docSnap: any) => {
-      const data = docSnap.data();
-
-      return {
-        id: docSnap.id,
-        title: data.title || 'Untitled update',
-        summary: data.summary || '',
-        sourceName: data.sourceName || 'Source',
-        sourceUrl: data.sourceUrl || '',
-        sourceFeedUrl: data.sourceFeedUrl || '',
-        originalUrl: data.originalUrl || '',
-        imageUrl: data.imageUrl || '',
-        category: data.category || 'industry',
-        tags: Array.isArray(data.tags) ? data.tags : [],
-        publishedAt: toDate(data.publishedAt) || new Date(0),
-        createdAt: toDate(data.createdAt),
-        updatedAt: toDate(data.updatedAt),
-        curatedDate: data.curatedDate || '',
-        commentsCount: typeof data.commentsCount === 'number' ? data.commentsCount : 0,
-        isPublic: data.isPublic === true,
-        contentPolicy: data.contentPolicy === 'metadata_only' ? 'metadata_only' : 'metadata_only',
-      } as BlogPost;
+      const data = docSnap.data() as Record<string, any>;
+      return mapBlogPostData(docSnap.id, data);
     })
     .filter((post: BlogPost) => post.isPublic)
     .sort((a: BlogPost, b: BlogPost) => b.publishedAt.getTime() - a.publishedAt.getTime())
@@ -86,6 +91,24 @@ export async function fetchBlogPosts(maxPosts = 30): Promise<BlogPost[]> {
     const fallbackSnapshot = await getDocs(fallbackQuery);
     return mapBlogPostsFromSnapshot(fallbackSnapshot, maxPosts);
   }
+}
+
+export async function fetchBlogPostById(postId: string): Promise<BlogPost | null> {
+  if (!postId?.trim()) {
+    return null;
+  }
+
+  const postSnapshot = await getDoc(doc(db, BLOG_POSTS_COLLECTION, postId));
+  if (!postSnapshot.exists()) {
+    return null;
+  }
+
+  const post = mapBlogPostData(postSnapshot.id, postSnapshot.data() as Record<string, any>);
+  if (!post.isPublic) {
+    return null;
+  }
+
+  return post;
 }
 
 export async function fetchBlogComments(postId: string): Promise<BlogComment[]> {

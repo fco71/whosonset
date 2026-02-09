@@ -37,6 +37,13 @@
           }
         },
         {
+          "source": "sitemap-blog.xml",
+          "function": {
+            "functionId": "blogSitemap",
+            "region": "us-central1"
+          }
+        },
+        {
           "source": "**",
           "destination": "/index.html"
         }
@@ -55,6 +62,13 @@
           "source": "sitemap-jobs.xml",
           "function": {
             "functionId": "jobsSitemap",
+            "region": "us-central1"
+          }
+        },
+        {
+          "source": "sitemap-blog.xml",
+          "function": {
+            "functionId": "blogSitemap",
             "region": "us-central1"
           }
         },

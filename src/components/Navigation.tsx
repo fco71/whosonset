@@ -58,7 +58,10 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
     };
 
     const isActive = (path: string) => {
-        return activePath === path;
+        if (path === '/') {
+            return activePath === '/';
+        }
+        return activePath === path || activePath.startsWith(`${path}/`);
     };
 
     const navigationLinks = [
@@ -71,6 +74,7 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
     ];
     const blogLink = navigationLinks.find((link) => link.to === '/blog');
     const primaryNavigationLinks = navigationLinks.filter((link) => link.to !== '/blog');
+    const mobileTopLinks = authUser ? primaryNavigationLinks : navigationLinks;
 
     const authenticatedLinks = [
         { to: '/social', label: t('nav.social') },
@@ -433,7 +437,7 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                         
                         {/* Navigation Links */}
                         <div className="space-y-2">
-                            {navigationLinks.map((link) => (
+                            {mobileTopLinks.map((link) => (
                                 <Link
                                     key={link.to}
                                     to={link.to}
@@ -492,6 +496,19 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                                         >
                                             💼 {t('nav.postedJobs')}
                                         </Link>
+                                        {blogLink && (
+                                            <Link
+                                                to={blogLink.to}
+                                                className={`block px-4 py-3 rounded-lg font-medium transition-colors ${
+                                                    isActive(blogLink.to)
+                                                        ? 'text-blue-600 bg-blue-50'
+                                                        : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                                                }`}
+                                                onClick={closeAllMenus}
+                                            >
+                                                {blogLink.label}
+                                            </Link>
+                                        )}
                                     </div>
                                 </div>
                             </>

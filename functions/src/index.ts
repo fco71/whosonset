@@ -848,6 +848,67 @@ export const onBlogCommentDeleted = onDocumentDeleted({
   });
 });
 
+export const blogSitemap = onRequest({
+  region: "us-central1",
+  invoker: "public",
+}, async (req, res) => {
+  if (req.method !== "GET" && req.method !== "HEAD") {
+    res.status(405).set("Allow", "GET, HEAD").send("Method Not Allowed");
+    return;
+  }
+
+  try {
+    const snapshot = await db.collection("blogPosts")
+      .where("isPublic", "==", true)
+      .get();
+
+    const entries = snapshot.docs
+      .map((postDoc) => {
+        const data = postDoc.data();
+        const publishedAt = toDate(data.publishedAt) || toDate(data.createdAt) || new Date();
+        const updatedAt = toDate(data.updatedAt) || publishedAt;
+        const encodedId = encodeURIComponent(postDoc.id);
+
+        return {
+          loc: `https://myfilmjobs.com/blog/${encodedId}`,
+          lastmod: updatedAt,
+        };
+      })
+      .sort((a, b) => b.lastmod.getTime() - a.lastmod.getTime());
+
+    const urls = entries
+      .map((entry) => [
+        "  <url>",
+        `    <loc>${escapeXml(entry.loc)}</loc>`,
+        `    <lastmod>${entry.lastmod.toISOString()}</lastmod>`,
+        "    <changefreq>daily</changefreq>",
+        "    <priority>0.8</priority>",
+        "  </url>",
+      ].join("\n"))
+      .join("\n");
+
+    const xml = [
+      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+      "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">",
+      urls,
+      "</urlset>",
+    ].join("\n");
+
+    res.set("Content-Type", "application/xml; charset=utf-8");
+    res.set("Cache-Control", "public, max-age=900, s-maxage=900");
+
+    if (req.method === "HEAD") {
+      res.status(200).send();
+      return;
+    }
+
+    res.status(200).send(xml);
+  } catch (error) {
+    console.error("[blogSitemap] Failed to generate sitemap:", error);
+    res.status(500).send("Failed to generate sitemap");
+  }
+});
+
 export const jobsSitemap = onRequest({
   region: "us-central1",
   invoker: "public",
