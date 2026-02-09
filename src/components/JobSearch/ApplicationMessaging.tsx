@@ -219,30 +219,10 @@ const ApplicationMessaging: React.FC<ApplicationMessagingProps> = ({
     };
 
     try {
+      setIsSendingMessage(true);
       console.log('Attempting to send message:', messageData);
       await addDoc(collection(db, 'jobApplications', applicationId, 'messages'), messageData);
-      // Create notification for the recipient
-      const jobPostingRef = doc(db, 'jobPostings', application.jobId);
-      const jobPostingSnap = await getDoc(jobPostingRef);
-      const jobPosting = jobPostingSnap.data();
-      // Determine recipient: if sender is applicant, recipient is job poster; else recipient is applicant
-      const recipientId = currentUser.uid === application.applicantId ? jobPosting?.postedById : application.applicantId;
-      if (recipientId) {
-        await addDoc(collection(db, 'notifications'), {
-          type: 'application_message',
-          message: `New message from ${currentUser.displayName || currentUser.email} regarding job application`,
-          timestamp: serverTimestamp(),
-          read: false,
-          userId: recipientId,
-          relatedId: applicationId,
-          applicationId: applicationId,
-          senderId: currentUser.uid,
-          extra: {
-            applicationId: applicationId,
-            senderName: currentUser.displayName || currentUser.email
-          }
-        });
-      }
+      // Cloud Function handles application message notifications.
       setNewMessage('');
       toast.success('Message sent successfully!');
     } catch (error) {

@@ -100,6 +100,7 @@ const BlogPostPage: React.FC = () => {
         description: 'The requested blog post is not available.',
         canonicalUrl: fallbackCanonical,
         robots: 'noindex, nofollow',
+        ogImage: 'https://myfilmjobs.com/my-icon.png',
       });
       removeStructuredData(BLOG_POST_SCHEMA_ID);
       return;
@@ -109,6 +110,8 @@ const BlogPostPage: React.FC = () => {
       title: `${post.title} | Film Industry Blog | My Film Jobs`,
       description: buildBlogMetaDescription(post),
       canonicalUrl: getBlogPostCanonicalUrl(post.id),
+      ogType: 'article',
+      ogImage: post.imageUrl || 'https://myfilmjobs.com/my-icon.png',
     });
     setStructuredData(BLOG_POST_SCHEMA_ID, buildBlogPostStructuredData(post));
 
@@ -201,12 +204,14 @@ const BlogPostPage: React.FC = () => {
           >
             Browse Film Jobs
           </Link>
-          <Link
-            to="/register"
-            className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-800 transition hover:bg-gray-100"
-          >
-            Join Free
-          </Link>
+          {!currentUser && (
+            <Link
+              to="/register"
+              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-800 transition hover:bg-gray-100"
+            >
+              Join Free
+            </Link>
+          )}
         </div>
 
         <section className="mt-8 rounded-xl border border-blue-100 bg-blue-50 p-5">

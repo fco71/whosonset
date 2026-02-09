@@ -701,12 +701,17 @@ export class MessagingService {
       
       // Create notification with message preview
       const messagePreview = content.length > 50 ? content.substring(0, 50) + '...' : content;
+      const body = `New message from ${senderName}: ${messagePreview}`;
       await addDoc(collection(db, 'notifications'), {
         userId: receiverId,
         type: "message",
-        message: `New message from ${senderName}: ${messagePreview}`,
+        title: 'New Message',
+        body,
+        message: body,
+        link: `/chat?user=${encodeURIComponent(senderId)}`,
         senderId: senderId,
         messageId: messageId,
+        isRead: false,
         read: false,
         createdAt: serverTimestamp()
       });

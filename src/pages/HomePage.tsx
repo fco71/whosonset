@@ -19,9 +19,11 @@ import {
 import { db } from '../firebase';
 import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../contexts/AuthContext';
 
 const HomePage: React.FC = () => {
   const { t } = useTranslation();
+  const { currentUser } = useAuth();
   const [stats, setStats] = useState([
     { number: t('home.loading'), label: t('home.stats.activeProfessionals'), icon: <Users className="w-5 h-5" /> },
     { number: t('home.loading'), label: t('home.stats.projectsCompleted'), icon: <Film className="w-5 h-5" /> },
@@ -154,10 +156,10 @@ const HomePage: React.FC = () => {
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
               <Link
-                to="/register"
+                to={currentUser ? '/jobs' : '/register'}
                 className="group px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center text-lg"
               >
-                {t('home.hero.ctaPrimary')}
+                {currentUser ? t('home.hero.ctaSecondary') : t('home.hero.ctaPrimary')}
                 <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
               <Link
@@ -283,11 +285,11 @@ const HomePage: React.FC = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
-                to="/register"
+                to={currentUser ? '/projects' : '/register'}
                 className="group px-8 py-4 bg-white text-blue-600 font-semibold rounded-lg hover:bg-gray-50 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center text-lg"
               >
                 <Heart className="mr-2 w-5 h-5 group-hover:scale-110 transition-transform" />
-                {t('home.cta.ctaPrimary')}
+                {currentUser ? t('home.cta.ctaSecondary') : t('home.cta.ctaPrimary')}
               </Link>
               <Link
                 to="/crew"

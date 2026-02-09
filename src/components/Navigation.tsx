@@ -87,21 +87,7 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
         { to: '/post-job', label: t('nav.postNewJob') },
     ];
 
-    let notifications: any[] = [];
-    let loading = false;
-    let unreadCount = 0;
-    
-    try {
-      const notificationsData = useNotifications();
-      notifications = notificationsData.notifications || [];
-      loading = notificationsData.loading || false;
-      unreadCount = notificationsData.unreadCount || 0;
-    } catch (error) {
-      console.error('[Navigation] Error loading notifications:', error);
-      notifications = [];
-      loading = false;
-      unreadCount = 0;
-    }
+    const { unreadCount } = useNotifications();
     
 
 
@@ -265,18 +251,19 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                                     )}
                                 </Link>
                             )}
-                            {/* Notification Bell */}
-                            <button
-                                onClick={() => setShowNotificationCenter(true)}
-                                className="relative ml-2 p-2 rounded-full hover:bg-gray-100 transition"
-                            >
-                                <Bell className="w-6 h-6 text-gray-700" />
-                                {unreadCount > 0 && (
-                                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 shadow-lg">
-                                        {unreadCount}
-                                    </span>
-                                )}
-                            </button>
+                            {authUser && (
+                                <button
+                                    onClick={() => setShowNotificationCenter(true)}
+                                    className="relative ml-2 p-2 rounded-full hover:bg-gray-100 transition"
+                                >
+                                    <Bell className="w-6 h-6 text-gray-700" />
+                                    {unreadCount > 0 && (
+                                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 shadow-lg">
+                                            {unreadCount}
+                                        </span>
+                                    )}
+                                </button>
+                            )}
                         </div>
 
                         {/* Right side actions */}

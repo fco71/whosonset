@@ -1,6 +1,6 @@
 import * as admin from "firebase-admin";
 import { onRequest } from "firebase-functions/v2/https";
-import { onDocumentCreated, onDocumentDeleted } from "firebase-functions/v2/firestore";
+import { onDocumentCreated, onDocumentDeleted, onDocumentUpdated } from "firebase-functions/v2/firestore";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { defineSecret } from "firebase-functions/params";
 import { QueryDocumentSnapshot } from "firebase-admin/firestore";
@@ -389,6 +389,123 @@ function secureEquals(left: string, right: string): boolean {
     return false;
   }
   return timingSafeEqual(leftBuffer, rightBuffer);
+}
+
+interface InAppNotificationInput {
+  userId: string;
+  type: string;
+  title: string;
+  body: string;
+  link?: string;
+  relatedId?: string;
+  applicationId?: string;
+  senderId?: string;
+  status?: string;
+  metadata?: Record<string, unknown>;
+}
+
+function asString(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function toStatusLabel(status: string): string {
+  if (!status) {
+    return "updated";
+  }
+
+  return status
+    .split("_")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+async function createInAppNotification(input: InAppNotificationInput): Promise<void> {
+  const userId = asString(input.userId);
+  if (!userId) {
+    return;
+  }
+
+  const body = asString(input.body) || asString(input.title) || "You have a new notification.";
+  const now = admin.firestore.FieldValue.serverTimestamp();
+  const payload: Record<string, unknown> = {
+    userId,
+    type: asString(input.type) || "system",
+    title: asString(input.title) || "Notification",
+    body,
+    message: body,
+    isRead: false,
+    read: false,
+    createdAt: now,
+    timestamp: now,
+  };
+
+  const link = asString(input.link);
+  if (link) {
+    payload.link = link;
+    payload.actionUrl = link;
+  }
+
+  const relatedId = asString(input.relatedId);
+  if (relatedId) {
+    payload.relatedId = relatedId;
+  }
+
+  const applicationId = asString(input.applicationId);
+  if (applicationId) {
+    payload.applicationId = applicationId;
+    payload.relatedApplicationId = applicationId;
+  }
+
+  const senderId = asString(input.senderId);
+  if (senderId) {
+    payload.senderId = senderId;
+  }
+
+  const status = asString(input.status);
+  if (status) {
+    payload.status = status;
+  }
+
+  if (input.metadata && typeof input.metadata === "object") {
+    payload.metadata = input.metadata;
+  }
+
+  await db.collection("notifications").add(payload);
+}
+
+async function getJobInfo(jobId: string): Promise<{ posterId: string; title: string }> {
+  if (!jobId) {
+    return {
+      posterId: "",
+      title: "",
+    };
+  }
+
+  try {
+    const jobSnapshot = await db.collection("jobPostings").doc(jobId).get();
+    if (!jobSnapshot.exists) {
+      return {
+        posterId: "",
+        title: "",
+      };
+    }
+
+    const data = jobSnapshot.data() || {};
+    const posterId = asString(data.postedById) || asString(data.createdBy);
+    const title = asString(data.title) || asString(data.jobTitle);
+
+    return {
+      posterId,
+      title,
+    };
+  } catch (error) {
+    console.error("[notifications] Failed to resolve job info:", error);
+    return {
+      posterId: "",
+      title: "",
+    };
+  }
 }
 
 function detectCategory(text: string, fallback: BlogCategory): BlogCategory {
@@ -845,6 +962,143 @@ export const onBlogCommentDeleted = onDocumentDeleted({
       commentsCount: Math.max(0, currentCount - 1),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     }, { merge: true });
+  });
+});
+
+export const notifyJobApplicationCreated = onDocumentCreated({
+  document: "jobApplications/{applicationId}",
+  region: "us-central1",
+}, async (event) => {
+  const data = event.data?.data();
+  if (!data) {
+    return;
+  }
+
+  const applicationId = asString(event.params.applicationId);
+  const applicantId = asString(data.applicantId);
+  const jobId = asString(data.jobId);
+  if (!applicationId || !jobId) {
+    return;
+  }
+
+  const jobInfo = await getJobInfo(jobId);
+  if (!jobInfo.posterId || jobInfo.posterId === applicantId) {
+    return;
+  }
+
+  const applicantName = asString(data.applicantName) || "A new applicant";
+  const jobTitle = jobInfo.title || "your job posting";
+
+  await createInAppNotification({
+    userId: jobInfo.posterId,
+    type: "job_application",
+    title: "New Job Application",
+    body: `${applicantName} applied to ${jobTitle}.`,
+    link: `/jobs/${encodeURIComponent(jobId)}/applications`,
+    relatedId: jobId,
+    applicationId,
+    metadata: {
+      applicantId,
+      jobId,
+    },
+  });
+});
+
+export const notifyJobApplicationStatusChange = onDocumentUpdated({
+  document: "jobApplications/{applicationId}",
+  region: "us-central1",
+}, async (event) => {
+  const beforeData = event.data?.before.data();
+  const afterData = event.data?.after.data();
+  if (!beforeData || !afterData) {
+    return;
+  }
+
+  const beforeStatus = asString(beforeData.status);
+  const afterStatus = asString(afterData.status);
+  if (!afterStatus || beforeStatus === afterStatus) {
+    return;
+  }
+
+  const applicantId = asString(afterData.applicantId);
+  const applicationId = asString(event.params.applicationId);
+  const jobId = asString(afterData.jobId);
+  if (!applicantId || !applicationId) {
+    return;
+  }
+
+  const jobInfo = await getJobInfo(jobId);
+  const jobTitle = jobInfo.title || "your application";
+  const statusLabel = toStatusLabel(afterStatus);
+
+  await createInAppNotification({
+    userId: applicantId,
+    type: "application_status_update",
+    title: "Application Status Updated",
+    body: `${jobTitle} is now ${statusLabel}.`,
+    link: `/applications/${encodeURIComponent(applicationId)}`,
+    applicationId,
+    relatedId: jobId || undefined,
+    status: afterStatus,
+    metadata: {
+      jobId,
+      status: afterStatus,
+    },
+  });
+});
+
+export const notifyJobApplicationMessageCreated = onDocumentCreated({
+  document: "jobApplications/{applicationId}/messages/{messageId}",
+  region: "us-central1",
+}, async (event) => {
+  const messageData = event.data?.data();
+  if (!messageData) {
+    return;
+  }
+
+  const applicationId = asString(event.params.applicationId);
+  if (!applicationId) {
+    return;
+  }
+
+  const senderId = asString(messageData.senderId);
+  const senderName = asString(messageData.senderName) || "A member";
+
+  const applicationSnapshot = await db.collection("jobApplications").doc(applicationId).get();
+  if (!applicationSnapshot.exists) {
+    return;
+  }
+
+  const applicationData = applicationSnapshot.data() || {};
+  const applicantId = asString(applicationData.applicantId);
+  const jobId = asString(applicationData.jobId);
+  if (!applicantId || !jobId) {
+    return;
+  }
+
+  const jobInfo = await getJobInfo(jobId);
+  const posterId = jobInfo.posterId;
+  const recipientId = senderId && senderId === applicantId ? posterId : applicantId;
+
+  if (!recipientId || recipientId === senderId) {
+    return;
+  }
+
+  const jobTitle = jobInfo.title || "the application";
+
+  await createInAppNotification({
+    userId: recipientId,
+    type: "application_message",
+    title: "New Application Message",
+    body: `${senderName} sent a message about ${jobTitle}.`,
+    link: `/applications/${encodeURIComponent(applicationId)}`,
+    applicationId,
+    relatedId: jobId,
+    senderId,
+    metadata: {
+      jobId,
+      messageId: asString(event.params.messageId),
+    },
   });
 });
 

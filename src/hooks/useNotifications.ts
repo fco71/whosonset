@@ -1,187 +1,175 @@
-import { useEffect, useState } from "react";
-import { collection, onSnapshot, query, orderBy, updateDoc, doc, writeBatch, deleteDoc, where } from "firebase/firestore";
-import { useAuth } from "../contexts/AuthContext";
-import { db } from "../firebase";
-
-export interface Notification {
-  id: string;
-  type: string;
-  message: string;
-  timestamp: any;
-  createdAt?: any; // Add createdAt for compatibility
-  read: boolean;
-  userId: string;
-  relatedId?: string;
-  applicationId?: string;
-  applicantId?: string;
-  extra?: any;
-}
+import { useEffect, useMemo, useState } from 'react';
+import {
+  collection,
+  deleteDoc,
+  doc,
+  onSnapshot,
+  query,
+  updateDoc,
+  where,
+  writeBatch,
+} from 'firebase/firestore';
+import { useAuth } from '../contexts/AuthContext';
+import { db } from '../firebase';
+import { AppNotification } from '../types/notifications';
+import {
+  getNotificationDateValue,
+  normalizeNotificationDocument,
+} from '../utilities/notificationHelpers';
 
 export function useNotifications() {
   const { currentUser } = useAuth();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('[useNotifications] Effect triggered with currentUser:', currentUser?.uid);
-    
     if (!currentUser) {
-      console.log('[useNotifications] No current user, clearing notifications');
       setNotifications([]);
       setLoading(false);
       return;
     }
-    
-    try {
-      console.log('[useNotifications] Setting up Firestore listener for user:', currentUser.uid);
-      
-      // Query notifications from the main notifications collection for the current user
-      const q = query(
-        collection(db, "notifications"),
-        where("userId", "==", currentUser.uid),
-        orderBy("createdAt", "desc")
-      );
-      
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        console.log('[useNotifications] Received snapshot with', snapshot.docs.length, 'notifications');
-        const notifs: Notification[] = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as Notification[];
-        setNotifications(notifs);
+
+    setLoading(true);
+
+    const notificationsQuery = query(
+      collection(db, 'notifications'),
+      where('userId', '==', currentUser.uid)
+    );
+
+    const unsubscribe = onSnapshot(
+      notificationsQuery,
+      (snapshot) => {
+        const normalized = snapshot.docs.map(normalizeNotificationDocument);
+        normalized.sort((left, right) => {
+          const leftDate = getNotificationDateValue(left.createdAt) || getNotificationDateValue(left.timestamp);
+          const rightDate = getNotificationDateValue(right.createdAt) || getNotificationDateValue(right.timestamp);
+
+          const leftTime = leftDate ? leftDate.getTime() : 0;
+          const rightTime = rightDate ? rightDate.getTime() : 0;
+          return rightTime - leftTime;
+        });
+        setNotifications(normalized);
         setLoading(false);
-      }, (error) => {
-        console.error('[useNotifications] Error fetching notifications:', error);
-        setLoading(false);
-        // Set empty notifications on error
+      },
+      (error) => {
+        console.error('[useNotifications] Failed to load notifications:', error);
         setNotifications([]);
-      });
-      
-      return () => {
-        console.log('[useNotifications] Cleaning up listener');
-        unsubscribe();
-      };
-    } catch (error) {
-      console.error('[useNotifications] Error setting up listener:', error);
-      setLoading(false);
-      setNotifications([]);
-    }
+        setLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
   }, [currentUser]);
 
   const markAsRead = async (notificationId: string) => {
     if (!currentUser) return;
+
     try {
-      console.log('[useNotifications] Marking notification as read:', notificationId);
-      const notifRef = doc(db, "notifications", notificationId);
-      await updateDoc(notifRef, { read: true });
-      
-      // Update local state to mark as read (don't remove)
-      setNotifications(prev => prev.map(notif => 
-        notif.id === notificationId ? { ...notif, read: true } : notif
-      ));
-      console.log('[useNotifications] Notification marked as read successfully');
+      const notifRef = doc(db, 'notifications', notificationId);
+      await updateDoc(notifRef, {
+        isRead: true,
+        read: true,
+      });
+
+      setNotifications((prev) => prev.map((notification) => (
+        notification.id === notificationId
+          ? { ...notification, isRead: true, read: true }
+          : notification
+      )));
     } catch (error) {
-      console.error('[useNotifications] Error marking notification as read:', error);
-      // Don't throw - just log the error
+      console.error('[useNotifications] Failed to mark notification as read:', error);
     }
   };
 
   const markAllAsRead = async () => {
     if (!currentUser) return;
-    
+
     try {
-      // Mark all unread notifications as read in Firestore
+      const unread = notifications.filter((notification) => !notification.isRead);
+      if (unread.length === 0) {
+        return;
+      }
+
       const batch = writeBatch(db);
-      const unreadNotifications = notifications.filter(notification => !notification.read);
-      
-      unreadNotifications.forEach(notification => {
-        const notifRef = doc(db, "notifications", notification.id);
-        batch.update(notifRef, { read: true });
+      unread.forEach((notification) => {
+        batch.update(doc(db, 'notifications', notification.id), {
+          isRead: true,
+          read: true,
+        });
       });
       await batch.commit();
-      
-      // Update local state to mark as read
-      setNotifications(prev => prev.map(notification => ({ ...notification, read: true })));
+
+      setNotifications((prev) => prev.map((notification) => ({
+        ...notification,
+        isRead: true,
+        read: true,
+      })));
     } catch (error) {
-      console.error('Error marking all as read:', error);
-      // Don't throw - just log the error
+      console.error('[useNotifications] Failed to mark all as read:', error);
     }
   };
 
   const clearAll = async () => {
     if (!currentUser) return;
-    
+
     try {
-      // Delete all notifications from Firestore
       const batch = writeBatch(db);
-      notifications.forEach(notification => {
-        const notifRef = doc(db, "notifications", notification.id);
-        batch.delete(notifRef);
+      notifications.forEach((notification) => {
+        batch.delete(doc(db, 'notifications', notification.id));
       });
       await batch.commit();
-      
-      // Clear from local state immediately
       setNotifications([]);
     } catch (error) {
-      console.error('Error clearing notifications:', error);
-      // Don't throw - just log the error
+      console.error('[useNotifications] Failed to clear notifications:', error);
     }
   };
 
-  const deleteOldNotifications = async (daysOld: number = 30) => {
+  const deleteOldNotifications = async (daysOld = 30) => {
     if (!currentUser) return;
-    
+
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - daysOld);
+
+    const oldNotifications = notifications.filter((notification) => {
+      const date = getNotificationDateValue(notification.createdAt) || getNotificationDateValue(notification.timestamp);
+      return Boolean(date && date < cutoff);
+    });
+
+    if (oldNotifications.length === 0) {
+      return;
+    }
+
     try {
-      const cutoffDate = new Date();
-      cutoffDate.setDate(cutoffDate.getDate() - daysOld);
-      
-      const oldNotifications = notifications.filter(notification => {
-        const notificationDate = notification.createdAt?.toDate?.() || notification.timestamp?.toDate?.();
-        return notificationDate && notificationDate < cutoffDate;
-      });
-      
-      if (oldNotifications.length === 0) {
-        console.log('No old notifications to delete');
-        return;
-      }
-      
       const batch = writeBatch(db);
-      oldNotifications.forEach(notification => {
-        const notifRef = doc(db, "notifications", notification.id);
-        batch.delete(notifRef);
+      oldNotifications.forEach((notification) => {
+        batch.delete(doc(db, 'notifications', notification.id));
       });
       await batch.commit();
-      
-      // Remove from local state
-      setNotifications(prev => prev.filter(notification => {
-        const notificationDate = notification.createdAt?.toDate?.() || notification.timestamp?.toDate?.();
-        return !notificationDate || notificationDate >= cutoffDate;
+
+      setNotifications((prev) => prev.filter((notification) => {
+        const date = getNotificationDateValue(notification.createdAt) || getNotificationDateValue(notification.timestamp);
+        return !(date && date < cutoff);
       }));
-      
-      console.log(`Deleted ${oldNotifications.length} old notifications`);
     } catch (error) {
-      console.error('Error deleting old notifications:', error);
-      // Don't throw - just log the error
+      console.error('[useNotifications] Failed to delete old notifications:', error);
     }
   };
 
   const deleteNotification = async (notificationId: string) => {
     if (!currentUser) return;
-    
+
     try {
-      const notifRef = doc(db, "notifications", notificationId);
-      await deleteDoc(notifRef);
-      
-      // Remove from local state
-      setNotifications(prev => prev.filter(notif => notif.id !== notificationId));
+      await deleteDoc(doc(db, 'notifications', notificationId));
+      setNotifications((prev) => prev.filter((notification) => notification.id !== notificationId));
     } catch (error) {
-      console.error('Error deleting notification:', error);
-      // Don't throw - just log the error
+      console.error('[useNotifications] Failed to delete notification:', error);
     }
   };
 
-  // Calculate unread count
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = useMemo(
+    () => notifications.filter((notification) => !notification.isRead).length,
+    [notifications]
+  );
 
   return {
     notifications,
@@ -191,6 +179,6 @@ export function useNotifications() {
     markAllAsRead,
     clearAll,
     deleteOldNotifications,
-    deleteNotification
+    deleteNotification,
   };
-} 
+}

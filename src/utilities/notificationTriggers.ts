@@ -38,10 +38,14 @@ export class NotificationTriggers {
       await addDoc(collection(db, 'notifications'), {
         userId: postedById,
         type: "job_application",
-        message: `New application received for job posting`,
+        title: 'New Job Application',
+        body: 'New application received for your job posting.',
+        message: `New application received for your job posting.`,
+        link: `/jobs/${encodeURIComponent(jobId)}/applications`,
         relatedId: jobId,
         applicationId: applicationId,
         applicantId: applicantId,
+        isRead: false,
         read: false,
         createdAt: serverTimestamp()
       });
@@ -67,9 +71,13 @@ export class NotificationTriggers {
       await addDoc(collection(db, 'notifications'), {
         userId: receiverId,
         type: "message",
+        title: 'New Message',
+        body: `New message from ${senderName || 'User'}`,
         message: `New message from ${senderName || 'User'}`,
+        link: senderId ? `/chat?user=${encodeURIComponent(senderId)}` : '/chat',
         senderId: senderId,
         messageId: messageId,
+        isRead: false,
         read: false,
         createdAt: serverTimestamp()
       });
@@ -94,9 +102,13 @@ export class NotificationTriggers {
       await addDoc(collection(db, 'notifications'), {
         userId: invitedUserId,
         type: "project_invitation",
+        title: 'Project Invitation',
+        body: `You've been invited to join a project`,
         message: `You've been invited to join a project`,
+        link: `/projects/${encodeURIComponent(projectId)}`,
         relatedId: projectId,
         invitationId: invitationId,
+        isRead: false,
         read: false,
         createdAt: serverTimestamp()
       });
@@ -121,9 +133,13 @@ export class NotificationTriggers {
       await addDoc(collection(db, 'notifications'), {
         userId: assignedUserId,
         type: "task_assignment",
+        title: 'Task Assignment',
+        body: `You've been assigned a new task`,
         message: `You've been assigned a new task`,
+        link: `/projects/${encodeURIComponent(taskId)}/tasks`,
         relatedId: taskId,
         assignmentId: assignmentId,
+        isRead: false,
         read: false,
         createdAt: serverTimestamp()
       });
@@ -154,8 +170,12 @@ export class NotificationTriggers {
         batch.set(ref, {
           userId: userId,
           type: "project_update",
+          title: 'Project Update',
+          body: `Project has been updated`,
           message: `Project has been updated`,
+          link: `/projects/${encodeURIComponent(projectId)}`,
           relatedId: projectId,
+          isRead: false,
           read: false,
           createdAt: serverTimestamp()
         });
@@ -183,9 +203,13 @@ export class NotificationTriggers {
       await addDoc(collection(db, 'notifications'), {
         userId: applicantId,
         type: "application_status_update",
+        title: 'Application Status Updated',
+        body: `Your job application status has been updated to: ${status}`,
         message: `Your job application status has been updated to: ${status}`,
+        link: `/applications/${encodeURIComponent(applicationId)}`,
         applicationId: applicationId,
         jobId: jobId,
+        isRead: false,
         read: false,
         createdAt: serverTimestamp()
       });

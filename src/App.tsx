@@ -111,6 +111,7 @@ function AppContent() {
       title: routeSeo.title,
       description: routeSeo.description,
       canonicalUrl,
+      ogImage: 'https://myfilmjobs.com/my-icon.png',
     });
   }, [location.pathname]);
   

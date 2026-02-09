@@ -5,6 +5,9 @@ export interface SeoConfig {
   description: string;
   canonicalUrl: string;
   robots?: string;
+  ogType?: string;
+  ogImage?: string;
+  twitterCard?: 'summary' | 'summary_large_image';
 }
 
 function upsertMetaTag(
@@ -31,23 +34,43 @@ function upsertCanonicalLink(href: string): void {
   link.setAttribute('href', href);
 }
 
+function removeMetaTag(
+  key: string,
+  attribute: 'name' | 'property' = 'name'
+): void {
+  const tag = document.head.querySelector<HTMLMetaElement>(`meta[${attribute}="${key}"]`);
+  if (tag?.parentNode) {
+    tag.parentNode.removeChild(tag);
+  }
+}
+
 export function setPageSeo(config: SeoConfig): void {
   const {
     title,
     description,
     canonicalUrl,
     robots = DEFAULT_ROBOTS,
+    ogType = 'website',
+    ogImage,
+    twitterCard = 'summary_large_image',
   } = config;
 
   document.title = title;
   upsertMetaTag('description', description);
   upsertMetaTag('robots', robots);
-  upsertMetaTag('og:type', 'website', 'property');
+  upsertMetaTag('og:type', ogType, 'property');
   upsertMetaTag('og:site_name', 'My Film Jobs', 'property');
   upsertMetaTag('og:title', title, 'property');
   upsertMetaTag('og:description', description, 'property');
   upsertMetaTag('og:url', canonicalUrl, 'property');
-  upsertMetaTag('twitter:card', 'summary_large_image');
+  if (ogImage) {
+    upsertMetaTag('og:image', ogImage, 'property');
+    upsertMetaTag('twitter:image', ogImage);
+  } else {
+    removeMetaTag('og:image', 'property');
+    removeMetaTag('twitter:image');
+  }
+  upsertMetaTag('twitter:card', twitterCard);
   upsertMetaTag('twitter:title', title);
   upsertMetaTag('twitter:description', description);
   upsertCanonicalLink(canonicalUrl);

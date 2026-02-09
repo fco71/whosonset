@@ -35,17 +35,16 @@ const BlogPage: React.FC = () => {
     loadPosts();
   }, []);
 
+  const previewImage = posts.find((item) => Boolean(item.imageUrl))?.imageUrl || 'https://myfilmjobs.com/my-icon.png';
+
   useEffect(() => {
     setPageSeo({
       title: 'Film Industry News Blog | Jobs and Collaboration Insights',
       description: 'Read film industry news and turn insights into action with job opportunities and collaboration tools on My Film Jobs.',
       canonicalUrl: 'https://myfilmjobs.com/blog',
+      ogImage: previewImage,
     });
-
-    return () => {
-      removeStructuredData(BLOG_LIST_SCHEMA_ID);
-    };
-  }, []);
+  }, [previewImage]);
 
   useEffect(() => {
     if (loading || error || posts.length === 0) {
@@ -55,6 +54,12 @@ const BlogPage: React.FC = () => {
 
     setStructuredData(BLOG_LIST_SCHEMA_ID, buildBlogListStructuredData(posts));
   }, [loading, error, posts]);
+
+  useEffect(() => {
+    return () => {
+      removeStructuredData(BLOG_LIST_SCHEMA_ID);
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -71,12 +76,14 @@ const BlogPage: React.FC = () => {
             >
               Browse Film Jobs
             </Link>
-            <Link
-              to="/register"
-              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-800 transition hover:bg-gray-100"
-            >
-              Join Free
-            </Link>
+            {!currentUser && (
+              <Link
+                to="/register"
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-800 transition hover:bg-gray-100"
+              >
+                Join Free
+              </Link>
+            )}
             <Link
               to="/collaboration"
               className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"

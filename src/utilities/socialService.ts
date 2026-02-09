@@ -384,11 +384,16 @@ export class SocialService {
 
       return onSnapshot(notificationsQuery, (snapshot) => {
         try {
-          const notifications = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            createdAt: doc.data().createdAt?.toDate()
-          })) as SocialNotification[];
+          const notifications = snapshot.docs.map(doc => {
+            const data = doc.data() as any;
+            return {
+              id: doc.id,
+              ...data,
+              message: data.message || data.body || '',
+              isRead: data.isRead ?? data.read ?? false,
+              createdAt: data.createdAt?.toDate?.() || data.timestamp?.toDate?.() || new Date(),
+            };
+          }) as SocialNotification[];
           console.log('[SocialService] Notifications updated:', notifications.length);
           callback(notifications);
         } catch (error) {
@@ -409,8 +414,14 @@ export class SocialService {
   static async createNotification(notification: Omit<SocialNotification, 'id'>): Promise<void> {
     try {
       console.log('[SocialService] Creating notification:', notification);
+      const body = notification.message || notification.title || 'You have a new notification.';
       const docRef = await addDoc(collection(db, 'notifications'), {
         ...notification,
+        body,
+        message: body,
+        read: notification.isRead ?? false,
+        isRead: notification.isRead ?? false,
+        link: notification.actionUrl || '',
         createdAt: serverTimestamp()
       });
       console.log('[SocialService] Notification created with ID:', docRef.id);
@@ -423,7 +434,7 @@ export class SocialService {
   static async markNotificationAsRead(notificationId: string): Promise<void> {
     try {
       const notificationRef = doc(db, 'notifications', notificationId);
-      await updateDoc(notificationRef, { isRead: true });
+      await updateDoc(notificationRef, { isRead: true, read: true });
     } catch (error) {
       console.error('Error marking notification as read:', error);
     }

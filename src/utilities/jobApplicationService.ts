@@ -177,13 +177,7 @@ export class JobApplicationService {
         // Don't throw error - application was still created successfully
       }
 
-      // Create notification for the job poster (optional)
-      try {
-        await this.createApplicationNotification(application.jobId, docRef.id, application.applicantId);
-      } catch (notificationError) {
-        console.log('[JobApplicationService] Could not create notification (this is expected):', notificationError);
-        // Don't throw error - application was still created successfully
-      }
+      // Cloud Function handles job application notifications.
 
       console.log('[JobApplicationService] Application submitted successfully:', docRef.id);
       return docRef.id;
@@ -211,12 +205,7 @@ export class JobApplicationService {
       }
 
       await updateDoc(doc(db, 'jobApplications', applicationId), updateData);
-
-      // Create notification for the applicant
-      const application = await this.getApplication(applicationId);
-      if (application) {
-        await this.createStatusUpdateNotification(applicationId, application.applicantId, status);
-      }
+      // Cloud Function handles application status notifications.
 
       console.log('[JobApplicationService] Application status updated successfully');
     } catch (error) {
@@ -395,10 +384,13 @@ export class JobApplicationService {
         userId: applicantId,
         type: 'application_submitted',
         title: 'Application Submitted',
+        body: 'Your job application has been submitted successfully.',
         message: 'Your job application has been submitted successfully.',
         relatedJobId: jobId,
         relatedApplicationId: applicationId,
+        link: `/applications/${encodeURIComponent(applicationId)}`,
         isRead: false,
+        read: false,
         createdAt: serverTimestamp()
       };
 
@@ -420,11 +412,14 @@ export class JobApplicationService {
     try {
       const notificationData = {
         userId,
-        type: 'status_update',
+        type: 'application_status_update',
         title: 'Application Status Updated',
+        body: `Your application status has been updated to: ${status}`,
         message: `Your application status has been updated to: ${status}`,
         relatedApplicationId: applicationId,
+        link: `/applications/${encodeURIComponent(applicationId)}`,
         isRead: false,
+        read: false,
         createdAt: serverTimestamp()
       };
 
@@ -438,11 +433,14 @@ export class JobApplicationService {
     try {
       const notificationData = {
         userId,
-        type: 'message_received',
+        type: 'application_message',
         title: 'New Message',
+        body: `You received a message from ${senderName} regarding your application.`,
         message: `You received a message from ${senderName} regarding your application.`,
         relatedApplicationId: applicationId,
+        link: `/applications/${encodeURIComponent(applicationId)}`,
         isRead: false,
+        read: false,
         createdAt: serverTimestamp()
       };
 

@@ -11,6 +11,7 @@ import Card from '../ui/Card';
 import { Avatar, AvatarImage, AvatarFallback } from '../ui/Avatar';
 import ApplicationMessaging from './ApplicationMessaging';
 import ResumeDownloadButton from '../ResumeDownloadButton';
+import { DragDropContext, Draggable, Droppable, DropResult } from 'react-beautiful-dnd';
 import { 
   Users, 
   MessageSquare, 
@@ -61,6 +62,21 @@ interface JobApplicantsPageProps {
   jobId?: string;
 }
 
+type ApplicationStatus = 'pending' | 'reviewed' | 'shortlisted' | 'interviewed' | 'hired' | 'rejected' | 'withdrawn';
+
+const KANBAN_COLUMNS: Array<{
+  id: ApplicationStatus;
+  label: string;
+  badgeClass: string;
+}> = [
+  { id: 'pending', label: 'New', badgeClass: 'bg-yellow-100 text-yellow-800' },
+  { id: 'reviewed', label: 'Reviewing', badgeClass: 'bg-blue-100 text-blue-800' },
+  { id: 'shortlisted', label: 'Shortlisted', badgeClass: 'bg-purple-100 text-purple-800' },
+  { id: 'interviewed', label: 'Interviewing', badgeClass: 'bg-indigo-100 text-indigo-800' },
+  { id: 'hired', label: 'Offer / Hired', badgeClass: 'bg-green-100 text-green-800' },
+  { id: 'rejected', label: 'Rejected', badgeClass: 'bg-red-100 text-red-800' },
+];
+
 const JobApplicantsPage: React.FC<JobApplicantsPageProps> = ({ jobId: propJobId }) => {
   const navigate = useNavigate();
   const { jobId: urlJobId } = useParams<{ jobId: string }>();
@@ -76,6 +92,7 @@ const JobApplicantsPage: React.FC<JobApplicantsPageProps> = ({ jobId: propJobId 
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'date' | 'name' | 'status'>('date');
+  const [viewMode, setViewMode] = useState<'grid' | 'kanban'>('grid');
 
   const actualJobId = propJobId || urlJobId;
 
@@ -174,7 +191,7 @@ const JobApplicantsPage: React.FC<JobApplicantsPageProps> = ({ jobId: propJobId 
     }
   };
 
-  const handleStatusUpdate = async (applicationId: string, newStatus: "pending" | "reviewed" | "shortlisted" | "interviewed" | "hired" | "rejected" | "withdrawn") => {
+  const handleStatusUpdate = async (applicationId: string, newStatus: ApplicationStatus) => {
     try {
       await updateDoc(doc(db, 'jobApplications', applicationId), {
         status: newStatus,
@@ -188,17 +205,7 @@ const JobApplicantsPage: React.FC<JobApplicantsPageProps> = ({ jobId: propJobId 
       const applicationDoc = await getDoc(doc(db, 'jobApplications', applicationId));
       const applicationData = applicationDoc.data();
       if (applicationData && applicationData.applicantId) {
-        await addDoc(collection(db, 'notifications'), {
-          type: 'application_status_update',
-          message: `Your application status has been updated to: ${newStatus}`,
-          timestamp: serverTimestamp(),
-          read: false,
-          userId: applicationData.applicantId,
-          applicationId: applicationId,
-          status: newStatus
-        });
-
-        // Send email notification
+        // Cloud Function handles in-app status notifications. Keep email notification on client as backup.
         await EmailNotificationService.sendApplicationStatusUpdateEmail(applicationData.applicantId, newStatus, applicationId);
       }
       toast.success(`Application ${newStatus.replace('_', ' ')}`);
@@ -317,6 +324,49 @@ const JobApplicantsPage: React.FC<JobApplicantsPageProps> = ({ jobId: propJobId 
       }
     });
 
+  const kanbanApplications = applications
+    .filter((app) => {
+      if (!searchQuery.trim()) {
+        return true;
+      }
+
+      const profile = applicantProfiles[app.applicantId];
+      const normalizedSearch = searchQuery.toLowerCase();
+      return (
+        profile?.name?.toLowerCase().includes(normalizedSearch) ||
+        profile?.jobTitles?.some((title) => title.toLowerCase().includes(normalizedSearch)) ||
+        profile?.skills?.some((skill) => skill.toLowerCase().includes(normalizedSearch))
+      );
+    })
+    .sort((a, b) => {
+      return (b.appliedAt?.toDate?.() || new Date(b.appliedAt)).getTime() -
+        (a.appliedAt?.toDate?.() || new Date(a.appliedAt)).getTime();
+    });
+
+  const kanbanByStatus = KANBAN_COLUMNS.reduce((acc, column) => {
+    acc[column.id] = kanbanApplications.filter((application) => application.status === column.id);
+    return acc;
+  }, {} as Record<ApplicationStatus, JobApplication[]>);
+
+  const onKanbanDragEnd = async (result: DropResult) => {
+    const { destination, source, draggableId } = result;
+    if (!destination) {
+      return;
+    }
+
+    if (destination.droppableId === source.droppableId) {
+      return;
+    }
+
+    const destinationStatus = destination.droppableId as ApplicationStatus;
+    const currentApplication = applications.find((application) => application.id === draggableId);
+    if (!currentApplication || currentApplication.status === destinationStatus) {
+      return;
+    }
+
+    await handleStatusUpdate(draggableId, destinationStatus);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -414,158 +464,252 @@ const JobApplicantsPage: React.FC<JobApplicantsPageProps> = ({ jobId: propJobId 
                 <option value="name">Sort by Name</option>
                 <option value="status">Sort by Status</option>
               </select>
+
+              <div className="flex rounded-lg border border-gray-300 bg-white p-1">
+                <button
+                  type="button"
+                  onClick={() => setViewMode('grid')}
+                  className={`rounded-md px-3 py-1 text-sm font-medium transition ${
+                    viewMode === 'grid' ? 'bg-gray-900 text-white' : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  Grid
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('kanban')}
+                  className={`rounded-md px-3 py-1 text-sm font-medium transition ${
+                    viewMode === 'kanban' ? 'bg-gray-900 text-white' : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  Kanban
+                </button>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Applicants Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredAndSortedApplications.map((application) => {
-            const profile = applicantProfiles[application.applicantId];
-            
-            return (
-              <Card key={application.id} className="p-6 hover:shadow-lg transition-shadow">
-                {/* Applicant Header */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="w-12 h-12">
-                      <AvatarImage 
-                        src={profile?.profileImageUrl || '/bust-avatar.svg'} 
-                        alt={profile?.name || 'Applicant'} 
-                      />
-                      <AvatarFallback className="bg-blue-100 text-blue-600">
-                        <User className="w-6 h-6" />
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <h3 className="font-semibold text-gray-900">{profile?.name}</h3>
-                      <p className="text-sm text-gray-600">@{profile?.username}</p>
+        {viewMode === 'grid' ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredAndSortedApplications.map((application) => {
+              const profile = applicantProfiles[application.applicantId];
+              
+              return (
+                <Card key={application.id} className="p-6 hover:shadow-lg transition-shadow">
+                  {/* Applicant Header */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="w-12 h-12">
+                        <AvatarImage 
+                          src={profile?.profileImageUrl || '/bust-avatar.svg'} 
+                          alt={profile?.name || 'Applicant'} 
+                        />
+                        <AvatarFallback className="bg-blue-100 text-blue-600">
+                          <User className="w-6 h-6" />
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <h3 className="font-semibold text-gray-900">{profile?.name}</h3>
+                        <p className="text-sm text-gray-600">@{profile?.username}</p>
+                      </div>
+                    </div>
+                    
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(application.status)}`}>
+                      {getStatusIcon(application.status)}
+                      {application.status.replace('_', ' ')}
+                    </span>
+                  </div>
+
+                  {/* Applicant Info */}
+                  <div className="space-y-3 mb-4">
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Briefcase className="w-4 h-4" />
+                      <span>{profile?.jobTitles?.slice(0, 2).join(', ') || 'No titles specified'}</span>
+                    </div>
+                    
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <MapPin className="w-4 h-4" />
+                      <span>{profile?.location || 'Location not specified'}</span>
+                    </div>
+                    
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <DollarSign className="w-4 h-4" />
+                      <span>Expected: {formatSalary(application.expectedSalary)}</span>
+                    </div>
+                    
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Clock className="w-4 h-4" />
+                      <span>Applied {formatDate(application.appliedAt)}</span>
                     </div>
                   </div>
-                  
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(application.status)}`}>
-                    {getStatusIcon(application.status)}
-                    {application.status.replace('_', ' ')}
-                  </span>
-                </div>
 
-                {/* Applicant Info */}
-                <div className="space-y-3 mb-4">
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Briefcase className="w-4 h-4" />
-                    <span>{profile?.jobTitles?.slice(0, 2).join(', ') || 'No titles specified'}</span>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <MapPin className="w-4 h-4" />
-                    <span>{profile?.location || 'Location not specified'}</span>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <DollarSign className="w-4 h-4" />
-                    <span>Expected: {formatSalary(application.expectedSalary)}</span>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Clock className="w-4 h-4" />
-                    <span>Applied {formatDate(application.appliedAt)}</span>
-                  </div>
-                </div>
+                  {/* Skills */}
+                  {profile?.skills && profile.skills.length > 0 && (
+                    <div className="mb-4">
+                      <p className="text-xs font-medium text-gray-700 mb-2">Skills</p>
+                      <div className="flex flex-wrap gap-1">
+                        {profile.skills.slice(0, 3).map((skill, index) => (
+                          <span key={index} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
+                            {skill}
+                          </span>
+                        ))}
+                        {profile.skills.length > 3 && (
+                          <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
+                            +{profile.skills.length - 3} more
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
-                {/* Skills */}
-                {profile?.skills && profile.skills.length > 0 && (
-                  <div className="mb-4">
-                    <p className="text-xs font-medium text-gray-700 mb-2">Skills</p>
-                    <div className="flex flex-wrap gap-1">
-                      {profile.skills.slice(0, 3).map((skill, index) => (
-                        <span key={index} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
-                          {skill}
-                        </span>
-                      ))}
-                      {profile.skills.length > 3 && (
-                        <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
-                          +{profile.skills.length - 3} more
-                        </span>
+                  {/* Actions */}
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        setSelectedApplication(application);
+                        setShowApplicantModal(true);
+                      }}
+                    >
+                      <Eye className="w-4 h-4 mr-1" />
+                      View Details
+                    </Button>
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedApplication(application);
+                        setShowMessageModal(true);
+                      }}
+                    >
+                      <MessageSquare className="w-4 h-4 mr-1" />
+                      Message
+                    </Button>
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleFavorite(application.id)}
+                    >
+                      <Heart className="w-4 h-4 mr-1" />
+                      Favorite
+                    </Button>
+                  </div>
+
+                  {/* Quick Actions */}
+                  <div className="mt-3 pt-3 border-t border-gray-100">
+                    <div className="flex gap-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleStatusUpdate(application.id, 'shortlisted')}
+                        className="flex-1 text-xs"
+                      >
+                        <Star className="w-3 h-3 mr-1" />
+                        Shortlist
+                      </Button>
+                      
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleStatusUpdate(application.id, 'interviewed')}
+                        className="flex-1 text-xs"
+                      >
+                        <Calendar className="w-3 h-3 mr-1" />
+                        Interview
+                      </Button>
+                      
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleStatusUpdate(application.id, 'hired')}
+                        className="flex-1 text-xs"
+                      >
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                        Hire
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="overflow-x-auto pb-3">
+            <DragDropContext onDragEnd={onKanbanDragEnd}>
+              <div className="flex min-w-max gap-4">
+                {KANBAN_COLUMNS.map((column) => (
+                  <div key={column.id} className="w-72 rounded-xl border border-gray-200 bg-white">
+                    <div className={`flex items-center justify-between rounded-t-xl px-4 py-3 ${column.badgeClass}`}>
+                      <h3 className="text-sm font-semibold">{column.label}</h3>
+                      <span className="rounded-full bg-white/70 px-2 py-0.5 text-xs font-semibold">
+                        {kanbanByStatus[column.id]?.length || 0}
+                      </span>
+                    </div>
+                    <Droppable droppableId={column.id}>
+                      {(provided, snapshot) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.droppableProps}
+                          className={`min-h-[240px] space-y-3 p-3 transition ${snapshot.isDraggingOver ? 'bg-gray-50' : ''}`}
+                        >
+                          {(kanbanByStatus[column.id] || []).map((application, index) => {
+                            const profile = applicantProfiles[application.applicantId];
+                            return (
+                              <Draggable key={application.id} draggableId={application.id} index={index}>
+                                {(dragProvided) => (
+                                  <div
+                                    ref={dragProvided.innerRef}
+                                    {...dragProvided.draggableProps}
+                                    {...dragProvided.dragHandleProps}
+                                    className="rounded-lg border border-gray-200 bg-white p-3 shadow-sm"
+                                  >
+                                    <p className="font-semibold text-gray-900">{profile?.name || 'Unknown Applicant'}</p>
+                                    <p className="mt-1 text-xs text-gray-600">
+                                      {profile?.jobTitles?.slice(0, 1).join(', ') || 'No title listed'}
+                                    </p>
+                                    <p className="mt-1 text-xs text-gray-500">Applied {formatDate(application.appliedAt)}</p>
+                                    <div className="mt-3 flex gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setSelectedApplication(application);
+                                          setShowApplicantModal(true);
+                                        }}
+                                        className="rounded border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                                      >
+                                        Details
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setSelectedApplication(application);
+                                          setShowMessageModal(true);
+                                        }}
+                                        className="rounded border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                                      >
+                                        Message
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                              </Draggable>
+                            );
+                          })}
+                          {provided.placeholder}
+                        </div>
                       )}
-                    </div>
+                    </Droppable>
                   </div>
-                )}
+                ))}
+              </div>
+            </DragDropContext>
+          </div>
+        )}
 
-                {/* Actions */}
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      setSelectedApplication(application);
-                      setShowApplicantModal(true);
-                    }}
-                  >
-                    <Eye className="w-4 h-4 mr-1" />
-                    View Details
-                  </Button>
-                  
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setSelectedApplication(application);
-                      setShowMessageModal(true);
-                    }}
-                  >
-                    <MessageSquare className="w-4 h-4 mr-1" />
-                    Message
-                  </Button>
-                  
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleFavorite(application.id)}
-                  >
-                    <Heart className="w-4 h-4 mr-1" />
-                    Favorite
-                  </Button>
-                </div>
-
-                {/* Quick Actions */}
-                <div className="mt-3 pt-3 border-t border-gray-100">
-                  <div className="flex gap-1">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleStatusUpdate(application.id, 'shortlisted')}
-                      className="flex-1 text-xs"
-                    >
-                      <Star className="w-3 h-3 mr-1" />
-                      Shortlist
-                    </Button>
-                    
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleStatusUpdate(application.id, 'interviewed')}
-                      className="flex-1 text-xs"
-                    >
-                      <Calendar className="w-3 h-3 mr-1" />
-                      Interview
-                    </Button>
-                    
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleStatusUpdate(application.id, 'hired')}
-                      className="flex-1 text-xs"
-                    >
-                      <CheckCircle className="w-3 h-3 mr-1" />
-                      Hire
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
-
-        {filteredAndSortedApplications.length === 0 && (
+        {((viewMode === 'grid' && filteredAndSortedApplications.length === 0) ||
+          (viewMode === 'kanban' && kanbanApplications.length === 0)) && (
           <div className="text-center py-12">
             <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No applicants found</h3>
