@@ -144,7 +144,7 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                         </div>
 
                         {/* Desktop Navigation */}
-                        <div className="hidden md:flex items-center space-x-1">
+                        <div className="hidden xl:flex items-center space-x-1">
                             {navigationLinks.map((link) => {
                                 // Special handling for Jobs dropdown
                                 if (link.to === '/jobs') {
@@ -258,6 +258,17 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
 
                         {/* Right side actions */}
                         <div className="flex items-center space-x-3">
+                            <Link
+                                to="/blog"
+                                className={`hidden md:inline-flex xl:hidden px-3 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
+                                    isActive('/blog')
+                                        ? 'text-blue-600 bg-blue-50/80 shadow-sm'
+                                        : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50/80'
+                                }`}
+                                onClick={closeAllMenus}
+                            >
+                                Blog
+                            </Link>
                             {/* Language Switcher */}
                             <div className="relative">
                                 <button
@@ -382,7 +393,7 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                             )}
                             
                             {/* Mobile Menu Button */}
-                            <div className="md:hidden">
+                            <div className="xl:hidden">
                                 <button
                                     onClick={toggleMobileMenu}
                                     className="p-2 rounded-lg text-gray-700 hover:text-gray-900 hover:bg-gray-100/80 transition-colors"
@@ -398,7 +409,7 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
 
             {/* Mobile Menu */}
             {isMobileMenuOpen && (
-                <div className="md:hidden fixed top-16 left-0 right-0 bottom-0 bg-white z-50">
+                <div className="xl:hidden fixed top-16 left-0 right-0 bottom-0 bg-white z-50">
                     <div className="px-4 py-6 space-y-4 h-full overflow-y-auto">
                         
                         {/* Navigation Links */}
@@ -513,7 +524,7 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
             {/* Mobile Menu Backdrop */}
             {isMobileMenuOpen && (
                 <div 
-                    className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 md:hidden"
+                    className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 xl:hidden"
                     onClick={closeAllMenus}
                     style={{ top: '64px' }}
                 />
