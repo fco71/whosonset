@@ -89,7 +89,7 @@ const AboutPage: React.FC = () => {
           {/* CTA Section */}
           <div className="text-center bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-8 text-white">
             <h2 className="text-3xl font-semibold mb-4">
-              Ready to Get Started?
+              Ready to Join?
             </h2>
             <p className="text-xl mb-6 opacity-90">
               Join thousands of film professionals already using My Film Jobs

@@ -124,7 +124,7 @@ const LandingPage: React.FC = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Button size="lg" className="text-lg px-8 py-4">
-                Get Started
+                Join Free
                 <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
               <Button variant="ghost" size="lg" className="text-lg px-8 py-4">
