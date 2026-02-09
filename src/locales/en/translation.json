@@ -17,7 +17,7 @@
     "notificationSettings": "Notification Settings",
     "signOut": "Sign Out",
     "signIn": "Sign In",
-    "getStarted": "Join Free",
+    "getStarted": "Sign Up",
     "chat": "Chat",
     "profile": "Profile",
     "logout": "Logout"
@@ -49,7 +49,7 @@
       "title1": "Connect Film",
       "title2": "Professionals",
       "subtitle": "Join thousands of filmmakers, crew members, and industry professionals connecting, collaborating, and creating amazing projects together.",
-      "ctaPrimary": "Join Free",
+      "ctaPrimary": "Sign Up",
       "ctaSecondary": "Browse Jobs"
     },
     "features": {

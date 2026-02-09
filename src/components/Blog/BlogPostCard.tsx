@@ -1,7 +1,6 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import { BlogPost } from '../../types/blog';
-import { getBlogPostPath, sanitizeBlogSummary } from '../../utilities/blogSeo';
+import { sanitizeBlogSummary } from '../../utilities/blogSeo';
 
 interface BlogPostCardProps {
   post: BlogPost;
@@ -18,7 +17,6 @@ const categoryStyles: Record<string, string> = {
 
 const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, expanded, onToggleComments }) => {
   const summary = sanitizeBlogSummary(post.summary || '');
-  const postPath = getBlogPostPath(post.id);
 
   return (
     <article className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
@@ -31,24 +29,31 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, expanded, onToggleCom
 
       <div className="mt-4 flex items-start gap-4">
         {post.imageUrl ? (
-          <Link to={postPath} className="block shrink-0">
+          <a
+            href={post.originalUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block shrink-0"
+          >
             <img
               src={post.imageUrl}
               alt={post.title}
               className="h-20 w-32 rounded-lg object-cover"
               loading="lazy"
             />
-          </Link>
+          </a>
         ) : null}
 
         <div className="min-w-0 flex-1">
           <h3 className="text-xl font-semibold text-gray-900">
-            <Link
-              to={postPath}
+            <a
+              href={post.originalUrl}
+              target="_blank"
+              rel="noopener noreferrer"
               className="hover:text-blue-700 hover:underline"
             >
               {post.title}
-            </Link>
+            </a>
           </h3>
           <p className="mt-3 text-sm leading-6 text-gray-700">{summary}</p>
         </div>
@@ -67,12 +72,6 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, expanded, onToggleCom
       </div>
 
       <div className="mt-5 flex flex-wrap items-center gap-3">
-        <Link
-          to={postPath}
-          className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-        >
-          View Details
-        </Link>
         <a
           href={post.originalUrl}
           target="_blank"

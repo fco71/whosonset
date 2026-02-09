@@ -76,14 +76,6 @@ const BlogPage: React.FC = () => {
             >
               Browse Film Jobs
             </Link>
-            {!currentUser && (
-              <Link
-                to="/register"
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-800 transition hover:bg-gray-100"
-              >
-                Join Free
-              </Link>
-            )}
             <Link
               to="/collaboration"
               className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
@@ -149,14 +141,6 @@ const BlogPage: React.FC = () => {
             >
               Discover Crew
             </Link>
-            {!currentUser && (
-              <Link
-                to="/register"
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-800 transition hover:bg-gray-100"
-              >
-                Create Your Account
-              </Link>
-            )}
           </div>
         </div>
       </section>

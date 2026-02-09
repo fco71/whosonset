@@ -204,14 +204,6 @@ const BlogPostPage: React.FC = () => {
           >
             Browse Film Jobs
           </Link>
-          {!currentUser && (
-            <Link
-              to="/register"
-              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-800 transition hover:bg-gray-100"
-            >
-              Join Free
-            </Link>
-          )}
         </div>
 
         <section className="mt-8 rounded-xl border border-blue-100 bg-blue-50 p-5">
@@ -244,12 +236,14 @@ const BlogPostPage: React.FC = () => {
           <ul className="mt-4 space-y-3">
             {relatedPosts.map((relatedPost) => (
               <li key={relatedPost.id}>
-                <Link
-                  to={getBlogPostPath(relatedPost.id)}
+                <a
+                  href={relatedPost.originalUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="font-semibold text-blue-700 hover:underline"
                 >
                   {relatedPost.title}
-                </Link>
+                </a>
                 <p className="mt-1 text-sm text-gray-600">
                   {relatedPost.publishedAt.toLocaleDateString()}
                 </p>

@@ -17,7 +17,7 @@
     "notificationSettings": "Configuración de Notificaciones",
     "signOut": "Cerrar Sesión",
     "signIn": "Iniciar Sesión",
-    "getStarted": "Unirse gratis"
+    "getStarted": "Registrarse"
   },
   "notificationSettings": {
     "title": "Configuración de Notificaciones",
@@ -46,7 +46,7 @@
       "title1": "Conecta Profesionales",
       "title2": "del Cine",
       "subtitle": "Únete a miles de cineastas, miembros del equipo y profesionales de la industria que se conectan, colaboran y crean proyectos increíbles juntos.",
-      "ctaPrimary": "Unirse gratis",
+      "ctaPrimary": "Registrarse",
       "ctaSecondary": "Explorar Trabajos"
     },
     "features": {
