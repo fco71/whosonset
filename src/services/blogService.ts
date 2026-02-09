@@ -2,6 +2,7 @@ import {
   db,
   collection,
   query,
+  where,
   orderBy,
   limit,
   getDocs,
@@ -24,18 +25,9 @@ function toDate(value: any): Date | undefined {
   return parsed;
 }
 
-export async function fetchBlogPosts(maxPosts = 30): Promise<BlogPost[]> {
-  const queryLimit = Math.min(Math.max(maxPosts * 2, 20), MAX_POST_RESULTS);
-  const postsQuery = query(
-    collection(db, BLOG_POSTS_COLLECTION),
-    orderBy('publishedAt', 'desc'),
-    limit(queryLimit)
-  );
-
-  const snapshot = await getDocs(postsQuery);
-
-  const posts = snapshot.docs
-    .map((docSnap) => {
+function mapBlogPostsFromSnapshot(snapshot: any, maxPosts: number): BlogPost[] {
+  return snapshot.docs
+    .map((docSnap: any) => {
       const data = docSnap.data();
 
       return {
@@ -49,19 +41,51 @@ export async function fetchBlogPosts(maxPosts = 30): Promise<BlogPost[]> {
         imageUrl: data.imageUrl || '',
         category: data.category || 'industry',
         tags: Array.isArray(data.tags) ? data.tags : [],
-        publishedAt: toDate(data.publishedAt) || new Date(),
+        publishedAt: toDate(data.publishedAt) || new Date(0),
         createdAt: toDate(data.createdAt),
         updatedAt: toDate(data.updatedAt),
         curatedDate: data.curatedDate || '',
         commentsCount: typeof data.commentsCount === 'number' ? data.commentsCount : 0,
-        isPublic: data.isPublic !== false,
+        isPublic: data.isPublic === true,
         contentPolicy: data.contentPolicy === 'metadata_only' ? 'metadata_only' : 'metadata_only',
       } as BlogPost;
     })
-    .filter((post) => post.isPublic)
+    .filter((post: BlogPost) => post.isPublic)
+    .sort((a: BlogPost, b: BlogPost) => b.publishedAt.getTime() - a.publishedAt.getTime())
     .slice(0, maxPosts);
+}
 
-  return posts;
+export async function fetchBlogPosts(maxPosts = 30): Promise<BlogPost[]> {
+  const queryLimit = Math.min(Math.max(maxPosts * 2, 20), MAX_POST_RESULTS);
+  const postsRef = collection(db, BLOG_POSTS_COLLECTION);
+
+  try {
+    const postsQuery = query(
+      postsRef,
+      where('isPublic', '==', true),
+      orderBy('publishedAt', 'desc'),
+      limit(queryLimit)
+    );
+    const snapshot = await getDocs(postsQuery);
+    return mapBlogPostsFromSnapshot(snapshot, maxPosts);
+  } catch (error: any) {
+    const code = String(error?.code || '');
+    const message = String(error?.message || '');
+    const missingIndex = code === 'failed-precondition' || /index/i.test(message);
+
+    if (!missingIndex) {
+      throw error;
+    }
+
+    // Fallback keeps blog functional while composite index is being created.
+    const fallbackQuery = query(
+      postsRef,
+      where('isPublic', '==', true),
+      limit(MAX_POST_RESULTS)
+    );
+    const fallbackSnapshot = await getDocs(fallbackQuery);
+    return mapBlogPostsFromSnapshot(fallbackSnapshot, maxPosts);
+  }
 }
 
 export async function fetchBlogComments(postId: string): Promise<BlogComment[]> {
