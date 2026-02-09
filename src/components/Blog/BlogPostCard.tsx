@@ -14,7 +14,15 @@ const categoryStyles: Record<string, string> = {
   careers: 'bg-amber-100 text-amber-800',
 };
 
+function sanitizeSummary(summary: string): string {
+  return summary
+    .replace(/\s*links to the original publisher for full context\.?$/i, '')
+    .trim();
+}
+
 const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, expanded, onToggleComments }) => {
+  const summary = sanitizeSummary(post.summary || '');
+
   return (
     <article className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
       <div className="flex flex-wrap items-center gap-2">
@@ -24,9 +32,32 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, expanded, onToggleCom
         <span className="text-xs text-gray-500">{post.publishedAt.toLocaleDateString()}</span>
       </div>
 
-      <h3 className="mt-3 text-xl font-semibold text-gray-900">{post.title}</h3>
+      <div className="mt-4 flex items-start gap-4">
+        {post.imageUrl ? (
+          <a href={post.originalUrl} target="_blank" rel="noopener noreferrer" className="block shrink-0">
+            <img
+              src={post.imageUrl}
+              alt={post.title}
+              className="h-20 w-32 rounded-lg object-cover"
+              loading="lazy"
+            />
+          </a>
+        ) : null}
 
-      <p className="mt-3 text-sm leading-6 text-gray-700">{post.summary}</p>
+        <div className="min-w-0 flex-1">
+          <h3 className="text-xl font-semibold text-gray-900">
+            <a
+              href={post.originalUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-blue-700 hover:underline"
+            >
+              {post.title}
+            </a>
+          </h3>
+          <p className="mt-3 text-sm leading-6 text-gray-700">{summary}</p>
+        </div>
+      </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-gray-600">
         <span>Source:</span>
@@ -38,8 +69,6 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, expanded, onToggleCom
         >
           {post.sourceName}
         </a>
-        <span className="text-gray-400">|</span>
-        <span>Policy: metadata + link only</span>
       </div>
 
       <div className="mt-5 flex flex-wrap items-center gap-3">
@@ -49,7 +78,7 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, expanded, onToggleCom
           rel="noopener noreferrer"
           className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-black"
         >
-          Read Original Article
+          Read Article
         </a>
         <button
           type="button"

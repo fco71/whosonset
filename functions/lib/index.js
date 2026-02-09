@@ -36,7 +36,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.notifyNewMessage = exports.notifyFollowRequest = exports.emailSend = exports.testUserData = exports.testFollowRequestNotification = exports.jobsSitemap = exports.onBlogCommentDeleted = exports.onBlogCommentCreated = exports.curateDailyBlogPosts = void 0;
+exports.notifyNewMessage = exports.notifyFollowRequest = exports.emailSend = exports.testUserData = exports.testFollowRequestNotification = exports.jobsSitemap = exports.onBlogCommentDeleted = exports.onBlogCommentCreated = exports.runBlogCurationNow = exports.blogFeedSources = exports.curateDailyBlogPosts = void 0;
 const admin = __importStar(require("firebase-admin"));
 const https_1 = require("firebase-functions/v2/https");
 const firestore_1 = require("firebase-functions/v2/firestore");
@@ -127,6 +127,7 @@ async function getUserData(userId) {
 const smtpUser = (0, params_1.defineSecret)('SMTP_USER');
 const smtpPass = (0, params_1.defineSecret)('SMTP_PASS');
 const emailFrom = (0, params_1.defineSecret)('EMAIL_FROM');
+const blogManualRunKey = (0, params_1.defineSecret)("BLOG_MANUAL_RUN_KEY");
 // Initialize Firebase Admin SDK with explicit configuration
 admin.initializeApp({
     credential: admin.credential.applicationDefault(),
@@ -164,7 +165,10 @@ const BLOG_TIMEZONE = "America/Los_Angeles";
 const BLOG_MAX_POSTS_PER_DAY = 3;
 const BLOG_LOOKBACK_HOURS = 72;
 const BLOG_RECENT_DEDUP_DAYS = 7;
-const BLOG_FEEDS = [
+const BLOG_FEED_CONFIG_COLLECTION = "blogConfig";
+const BLOG_FEED_CONFIG_DOCUMENT = "feeds";
+const BLOG_MAX_FEED_SOURCES = 20;
+const BLOG_DEFAULT_FEEDS = [
     {
         name: "No Film School",
         feedUrl: "https://nofilmschool.com/feeds/content-types/article.rss",
@@ -209,6 +213,69 @@ const blogCategoryPriority = [
     "careers",
 ];
 const rssParser = new rss_parser_1.default();
+function isBlogCategory(value) {
+    return value === "technology" || value === "business" || value === "industry" || value === "careers";
+}
+async function resolveBlogFeeds() {
+    const fallback = {
+        feeds: BLOG_DEFAULT_FEEDS,
+        source: "defaults",
+        invalidEntries: 0,
+    };
+    try {
+        const configSnapshot = await db
+            .collection(BLOG_FEED_CONFIG_COLLECTION)
+            .doc(BLOG_FEED_CONFIG_DOCUMENT)
+            .get();
+        if (!configSnapshot.exists) {
+            return fallback;
+        }
+        const data = configSnapshot.data() || {};
+        const rawFeeds = Array.isArray(data.feeds)
+            ? data.feeds
+            : Array.isArray(data.sources)
+                ? data.sources
+                : [];
+        const parsedFeeds = [];
+        let invalidEntries = 0;
+        rawFeeds.forEach((entry) => {
+            if (!entry || typeof entry !== "object") {
+                invalidEntries += 1;
+                return;
+            }
+            const record = entry;
+            if (record.enabled === false) {
+                return;
+            }
+            const name = typeof record.name === "string" ? record.name.trim() : "";
+            const feedUrl = normalizeExternalUrl(typeof record.feedUrl === "string" ? record.feedUrl.trim() : "");
+            const sourceUrl = normalizeExternalUrl(typeof record.sourceUrl === "string" ? record.sourceUrl.trim() : "");
+            const defaultCategory = isBlogCategory(record.defaultCategory) ? record.defaultCategory : "industry";
+            if (!name || !feedUrl || !sourceUrl) {
+                invalidEntries += 1;
+                return;
+            }
+            parsedFeeds.push({
+                name,
+                feedUrl,
+                sourceUrl,
+                defaultCategory,
+            });
+        });
+        if (parsedFeeds.length === 0) {
+            return Object.assign(Object.assign({}, fallback), { invalidEntries });
+        }
+        return {
+            feeds: parsedFeeds.slice(0, BLOG_MAX_FEED_SOURCES),
+            source: "firestore",
+            invalidEntries,
+        };
+    }
+    catch (error) {
+        console.error("[curateDailyBlogPosts] Failed to read blog feed config, using defaults:", error);
+        return fallback;
+    }
+}
 function getPacificDateKey(date = new Date()) {
     return new Intl.DateTimeFormat("sv-SE", {
         timeZone: BLOG_TIMEZONE,
@@ -235,6 +302,24 @@ function normalizeTitle(title) {
 }
 function getUrlHash(value) {
     return (0, node_crypto_1.createHash)("sha1").update(value).digest("hex");
+}
+function toBooleanFlag(value) {
+    if (typeof value === "boolean") {
+        return value;
+    }
+    if (typeof value === "string") {
+        const normalized = value.trim().toLowerCase();
+        return normalized === "true" || normalized === "1" || normalized === "yes";
+    }
+    return false;
+}
+function secureEquals(left, right) {
+    const leftBuffer = Buffer.from(left);
+    const rightBuffer = Buffer.from(right);
+    if (leftBuffer.length !== rightBuffer.length) {
+        return false;
+    }
+    return (0, node_crypto_1.timingSafeEqual)(leftBuffer, rightBuffer);
 }
 function detectCategory(text, fallback) {
     const normalized = text.toLowerCase();
@@ -276,7 +361,7 @@ function buildSummary(title, sourceName, category) {
         industry: "film industry developments",
         careers: "career opportunities and professional growth",
     };
-    return `${sourceName} reports on ${categoryContext[category]}. "${title}" links to the original publisher for full context.`;
+    return `${sourceName} reports on ${categoryContext[category]}. "${title}".`;
 }
 function extractImageUrl(item) {
     var _a, _b;
@@ -388,29 +473,106 @@ function pickDailyArticles(candidates, maxArticles) {
     }
     return selected;
 }
-exports.curateDailyBlogPosts = (0, scheduler_1.onSchedule)({
-    schedule: "every 8 hours",
-    timeZone: BLOG_TIMEZONE,
-    region: "us-central1",
-}, async () => {
+async function runBlogCuration(options) {
+    const force = options.force === true;
+    const dryRun = options.dryRun === true;
+    const resolvedFeeds = await resolveBlogFeeds();
+    const activeFeeds = resolvedFeeds.feeds;
+    console.log(`[curateDailyBlogPosts] Using ${activeFeeds.length} feed source(s) from ${resolvedFeeds.source}. Invalid config entries: ${resolvedFeeds.invalidEntries}.`);
     const dateKey = getPacificDateKey();
+    if (activeFeeds.length === 0) {
+        console.log("[curateDailyBlogPosts] No active feed sources configured.");
+        return {
+            trigger: options.trigger,
+            status: "skipped",
+            reason: "no_active_feeds",
+            source: resolvedFeeds.source,
+            feedsUsed: activeFeeds.length,
+            invalidFeedEntries: resolvedFeeds.invalidEntries,
+            dateKey,
+            dailyQuota: BLOG_MAX_POSTS_PER_DAY,
+            existingToday: 0,
+            slotsRemaining: BLOG_MAX_POSTS_PER_DAY,
+            selectedCount: 0,
+            storedCount: 0,
+            candidateCount: 0,
+            uniqueCandidateCount: 0,
+            force,
+            dryRun,
+        };
+    }
     const todaysSnapshot = await db
         .collection("blogPosts")
         .where("curatedDate", "==", dateKey)
         .get();
     const slotsRemaining = BLOG_MAX_POSTS_PER_DAY - todaysSnapshot.size;
-    if (slotsRemaining <= 0) {
+    if (slotsRemaining <= 0 && !force) {
         console.log(`[curateDailyBlogPosts] Daily quota already reached for ${dateKey}.`);
-        return;
+        return {
+            trigger: options.trigger,
+            status: "skipped",
+            reason: "daily_quota_reached",
+            source: resolvedFeeds.source,
+            feedsUsed: activeFeeds.length,
+            invalidFeedEntries: resolvedFeeds.invalidEntries,
+            dateKey,
+            dailyQuota: BLOG_MAX_POSTS_PER_DAY,
+            existingToday: todaysSnapshot.size,
+            slotsRemaining: 0,
+            selectedCount: 0,
+            storedCount: 0,
+            candidateCount: 0,
+            uniqueCandidateCount: 0,
+            force,
+            dryRun,
+        };
     }
     const recentDedupeKeys = await getRecentDedupeKeys();
-    const feedResults = await Promise.all(BLOG_FEEDS.map((source) => fetchFeedArticles(source)));
+    const feedResults = await Promise.all(activeFeeds.map((source) => fetchFeedArticles(source)));
     const mergedArticles = feedResults.flat();
     const uniqueCandidates = mergedArticles.filter((article) => !recentDedupeKeys.has(article.dedupeKey));
-    const selected = pickDailyArticles(uniqueCandidates, slotsRemaining);
+    const maxSelectable = force ? BLOG_MAX_POSTS_PER_DAY : Math.max(0, slotsRemaining);
+    const selected = pickDailyArticles(uniqueCandidates, maxSelectable);
     if (selected.length === 0) {
         console.log("[curateDailyBlogPosts] No fresh candidates available this run.");
-        return;
+        return {
+            trigger: options.trigger,
+            status: "skipped",
+            reason: "no_fresh_candidates",
+            source: resolvedFeeds.source,
+            feedsUsed: activeFeeds.length,
+            invalidFeedEntries: resolvedFeeds.invalidEntries,
+            dateKey,
+            dailyQuota: BLOG_MAX_POSTS_PER_DAY,
+            existingToday: todaysSnapshot.size,
+            slotsRemaining: Math.max(0, slotsRemaining),
+            selectedCount: 0,
+            storedCount: 0,
+            candidateCount: mergedArticles.length,
+            uniqueCandidateCount: uniqueCandidates.length,
+            force,
+            dryRun,
+        };
+    }
+    if (dryRun) {
+        console.log(`[curateDailyBlogPosts] Dry run selected ${selected.length} candidate(s).`);
+        return {
+            trigger: options.trigger,
+            status: "ok",
+            source: resolvedFeeds.source,
+            feedsUsed: activeFeeds.length,
+            invalidFeedEntries: resolvedFeeds.invalidEntries,
+            dateKey,
+            dailyQuota: BLOG_MAX_POSTS_PER_DAY,
+            existingToday: todaysSnapshot.size,
+            slotsRemaining: Math.max(0, slotsRemaining),
+            selectedCount: selected.length,
+            storedCount: 0,
+            candidateCount: mergedArticles.length,
+            uniqueCandidateCount: uniqueCandidates.length,
+            force,
+            dryRun,
+        };
     }
     const batch = db.batch();
     selected.forEach((article) => {
@@ -438,6 +600,95 @@ exports.curateDailyBlogPosts = (0, scheduler_1.onSchedule)({
     });
     await batch.commit();
     console.log(`[curateDailyBlogPosts] Stored ${selected.length} curated posts for ${dateKey}.`);
+    return {
+        trigger: options.trigger,
+        status: "ok",
+        source: resolvedFeeds.source,
+        feedsUsed: activeFeeds.length,
+        invalidFeedEntries: resolvedFeeds.invalidEntries,
+        dateKey,
+        dailyQuota: BLOG_MAX_POSTS_PER_DAY,
+        existingToday: todaysSnapshot.size,
+        slotsRemaining: Math.max(0, slotsRemaining),
+        selectedCount: selected.length,
+        storedCount: selected.length,
+        candidateCount: mergedArticles.length,
+        uniqueCandidateCount: uniqueCandidates.length,
+        force,
+        dryRun,
+    };
+}
+exports.curateDailyBlogPosts = (0, scheduler_1.onSchedule)({
+    schedule: "every 8 hours",
+    timeZone: BLOG_TIMEZONE,
+    region: "us-central1",
+}, async () => {
+    await runBlogCuration({
+        trigger: "scheduled",
+        force: false,
+        dryRun: false,
+    });
+});
+exports.blogFeedSources = (0, https_1.onRequest)({
+    region: "us-central1",
+    invoker: "public",
+}, async (req, res) => {
+    if (req.method !== "GET" && req.method !== "HEAD") {
+        res.status(405).set("Allow", "GET, HEAD").send("Method Not Allowed");
+        return;
+    }
+    const resolvedFeeds = await resolveBlogFeeds();
+    res.set("Cache-Control", "public, max-age=300, s-maxage=300");
+    if (req.method === "HEAD") {
+        res.status(200).send();
+        return;
+    }
+    res.status(200).json({
+        source: resolvedFeeds.source,
+        count: resolvedFeeds.feeds.length,
+        invalidEntries: resolvedFeeds.invalidEntries,
+        feeds: resolvedFeeds.feeds,
+    });
+});
+exports.runBlogCurationNow = (0, https_1.onRequest)({
+    region: "us-central1",
+    invoker: "public",
+    secrets: [blogManualRunKey],
+}, async (req, res) => {
+    if (req.method !== "POST" && req.method !== "GET") {
+        res.status(405).set("Allow", "GET, POST").send("Method Not Allowed");
+        return;
+    }
+    const expectedKey = blogManualRunKey.value();
+    const providedKey = req.get("x-blog-run-key") || (typeof req.query.key === "string" ? req.query.key : "");
+    if (!expectedKey) {
+        res.status(500).json({
+            error: "BLOG_MANUAL_RUN_KEY is not configured.",
+        });
+        return;
+    }
+    if (!providedKey || !secureEquals(providedKey, expectedKey)) {
+        res.status(403).json({
+            error: "Forbidden",
+        });
+        return;
+    }
+    const force = toBooleanFlag(req.query.force);
+    const dryRun = toBooleanFlag(req.query.dryRun);
+    try {
+        const result = await runBlogCuration({
+            trigger: "manual",
+            force,
+            dryRun,
+        });
+        res.status(200).json(result);
+    }
+    catch (error) {
+        console.error("[runBlogCurationNow] Failed to run manual curation:", error);
+        res.status(500).json({
+            error: "Failed to run blog curation",
+        });
+    }
 });
 exports.onBlogCommentCreated = (0, firestore_1.onDocumentCreated)({
     document: "blogPosts/{postId}/comments/{commentId}",
