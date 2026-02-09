@@ -1,12 +1,108 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { doc, getDoc, updateDoc, increment, setDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { JobPosting } from '../../types/JobApplication';
 import { toast } from 'react-hot-toast';
 import FirebaseDiagnostic from './FirebaseDiagnostic';
 import { SavedJobsService } from '../../utilities/savedJobsService';
+import { removeStructuredData, setPageSeo, setStructuredData } from '../../utilities/seo';
+
+const JOB_POSTING_SCHEMA_ID = 'job-posting-structured-data';
+const EMPLOYMENT_TYPE_MAP: Record<string, string> = {
+  full_time: 'FULL_TIME',
+  part_time: 'PART_TIME',
+  contract: 'CONTRACTOR',
+  freelance: 'CONTRACTOR',
+  internship: 'INTERN',
+};
+
+function isPublicJobStatus(status?: string): boolean {
+  return status === 'published' || status === 'active';
+}
+
+function toIsoDate(value: unknown): string | undefined {
+  if (!value) return undefined;
+  const dateValue = value instanceof Date ? value : new Date(value as string);
+  if (Number.isNaN(dateValue.getTime())) return undefined;
+  return dateValue.toISOString();
+}
+
+function normalizeText(value: string): string {
+  return value.replace(/\s+/g, ' ').trim();
+}
+
+function buildJobMetaDescription(job: JobPosting): string {
+  const snippets = [
+    job.department ? `${job.department} role` : '',
+    job.location ? `in ${job.location}` : '',
+    job.isRemote ? 'remote friendly' : '',
+    job.description ? normalizeText(job.description).slice(0, 150) : '',
+  ].filter(Boolean);
+
+  const description = snippets.join(' - ');
+  return description || 'Explore this film industry job opportunity on My Film Jobs.';
+}
+
+function buildJobPostingSchema(job: JobPosting): Record<string, unknown> {
+  const datePosted = toIsoDate(job.postedAt) || toIsoDate(job.startDate) || new Date().toISOString();
+  const validThrough = toIsoDate(job.deadline) || toIsoDate(job.endDate);
+  const salaryMin = job.salary?.min && job.salary.min > 0 ? job.salary.min : undefined;
+  const salaryMax = job.salary?.max && job.salary.max > 0 ? job.salary.max : undefined;
+  const employmentType = EMPLOYMENT_TYPE_MAP[job.contractType] || 'CONTRACTOR';
+
+  const schema: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+    '@type': 'JobPosting',
+    title: job.title,
+    description: normalizeText(job.description || ''),
+    datePosted,
+    employmentType,
+    hiringOrganization: {
+      '@type': 'Organization',
+      name: job.projectName || 'My Film Jobs',
+      sameAs: 'https://myfilmjobs.com',
+      logo: 'https://myfilmjobs.com/my-icon.png',
+    },
+    identifier: {
+      '@type': 'PropertyValue',
+      name: 'My Film Jobs',
+      value: job.id,
+    },
+  };
+
+  if (validThrough) {
+    schema.validThrough = validThrough;
+  }
+
+  if (job.isRemote) {
+    schema.jobLocationType = 'TELECOMMUTE';
+  } else if (job.location) {
+    schema.jobLocation = {
+      '@type': 'Place',
+      address: {
+        '@type': 'PostalAddress',
+        addressLocality: job.location,
+      },
+    };
+  }
+
+  if (salaryMin || salaryMax) {
+    schema.baseSalary = {
+      '@type': 'MonetaryAmount',
+      currency: job.salary?.currency || 'USD',
+      value: {
+        '@type': 'QuantitativeValue',
+        minValue: salaryMin,
+        maxValue: salaryMax,
+        unitText: 'YEAR',
+      },
+    };
+  }
+
+  return schema;
+}
 
 const JobDetailPage: React.FC = () => {
   const auth = useAuth();
@@ -17,7 +113,6 @@ const JobDetailPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSaved, setIsSaved] = useState(false);
-  const [hasApplied, setHasApplied] = useState(false);
   const [isViewingStats, setIsViewingStats] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'connecting' | 'error'>('connected');
 
@@ -27,6 +122,49 @@ const JobDetailPage: React.FC = () => {
       // View tracking disabled to eliminate Firebase connection errors
     }
   }, [jobId]);
+
+  useEffect(() => {
+    if (!jobId || isLoading) {
+      return;
+    }
+
+    const safeJobId = encodeURIComponent(jobId);
+    const canonicalUrl = `https://myfilmjobs.com/jobs/${safeJobId}`;
+
+    if (error || !job) {
+      setPageSeo({
+        title: 'Job Not Found | My Film Jobs',
+        description: 'The job listing you are looking for is not available.',
+        canonicalUrl,
+        robots: 'noindex, nofollow',
+      });
+      removeStructuredData(JOB_POSTING_SCHEMA_ID);
+      return;
+    }
+
+    const deadlineTime = toIsoDate(job.deadline);
+    const isExpired = deadlineTime ? new Date(deadlineTime).getTime() < Date.now() : false;
+    const isIndexable = isPublicJobStatus(job.status) && !isExpired;
+    const title = `${job.title} | ${job.department} Film Job | My Film Jobs`;
+    const description = buildJobMetaDescription(job);
+
+    setPageSeo({
+      title,
+      description,
+      canonicalUrl,
+      robots: isIndexable ? undefined : 'noindex, nofollow',
+    });
+
+    if (isIndexable) {
+      setStructuredData(JOB_POSTING_SCHEMA_ID, buildJobPostingSchema(job));
+    } else {
+      removeStructuredData(JOB_POSTING_SCHEMA_ID);
+    }
+
+    return () => {
+      removeStructuredData(JOB_POSTING_SCHEMA_ID);
+    };
+  }, [jobId, isLoading, error, job]);
 
   const loadJobDetails = async (retryCount = 0) => {
     if (!jobId) {
@@ -119,18 +257,14 @@ const JobDetailPage: React.FC = () => {
         setError('You don\'t have permission to view this job.');
       } else if (error.code === 'not-found') {
         setError('Job not found. It may have been removed or is no longer available.');
+      } else if (error.message === 'Job not found') {
+        setError('Job not found. It may have been removed or is no longer available.');
       } else {
         setError('Failed to load job details. Please try again.');
       }
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const incrementJobViews = async () => {
-    // Completely disable view tracking to eliminate Firebase connection errors
-    // This functionality is not critical for the user experience
-    return;
   };
 
   // Check if user has already saved this job

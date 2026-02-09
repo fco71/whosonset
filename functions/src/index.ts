@@ -125,6 +125,100 @@ db.settings({
   ignoreUndefinedProperties: true
 });
 
+function escapeXml(input: string): string {
+  return input
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+function toDate(value: unknown): Date | null {
+  if (!value) {
+    return null;
+  }
+
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+
+  if (typeof value === "object" && value !== null && "toDate" in value) {
+    const dateValue = (value as { toDate: () => Date }).toDate();
+    return Number.isNaN(dateValue.getTime()) ? null : dateValue;
+  }
+
+  const parsed = new Date(String(value));
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+export const jobsSitemap = onRequest({
+  region: "us-central1",
+  invoker: "public",
+}, async (req, res) => {
+  if (req.method !== "GET" && req.method !== "HEAD") {
+    res.status(405).set("Allow", "GET, HEAD").send("Method Not Allowed");
+    return;
+  }
+
+  try {
+    const [publishedSnapshot, activeSnapshot] = await Promise.all([
+      db.collection("jobPostings").where("status", "==", "published").get(),
+      db.collection("jobPostings").where("status", "==", "active").get(),
+    ]);
+
+    const jobsById = new Map<string, QueryDocumentSnapshot>();
+    publishedSnapshot.docs.forEach((doc) => jobsById.set(doc.id, doc));
+    activeSnapshot.docs.forEach((doc) => jobsById.set(doc.id, doc));
+
+    const now = new Date();
+    const urls = Array.from(jobsById.values())
+      .map((jobDoc) => {
+        const data = jobDoc.data();
+        const deadline = toDate(data.deadline);
+
+        if (deadline && deadline.getTime() < now.getTime()) {
+          return "";
+        }
+
+        const updatedAt = toDate(data.updatedAt) || toDate(data.createdAt) || toDate(data.postedAt) || now;
+        const encodedId = encodeURIComponent(jobDoc.id);
+        const loc = `https://myfilmjobs.com/jobs/${encodedId}`;
+
+        return [
+          "  <url>",
+          `    <loc>${escapeXml(loc)}</loc>`,
+          `    <lastmod>${updatedAt.toISOString()}</lastmod>`,
+          "    <changefreq>daily</changefreq>",
+          "    <priority>0.7</priority>",
+          "  </url>",
+        ].join("\n");
+      })
+      .filter(Boolean)
+      .join("\n");
+
+    const xml = [
+      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+      "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">",
+      urls,
+      "</urlset>",
+    ].join("\n");
+
+    res.set("Content-Type", "application/xml; charset=utf-8");
+    res.set("Cache-Control", "public, max-age=900, s-maxage=900");
+
+    if (req.method === "HEAD") {
+      res.status(200).send();
+      return;
+    }
+
+    res.status(200).send(xml);
+  } catch (error) {
+    console.error("[jobsSitemap] Failed to generate sitemap:", error);
+    res.status(500).send("Failed to generate sitemap");
+  }
+});
+
 // Test function to check user data
 // Test endpoint to manually trigger a follow request notification
 export const testFollowRequestNotification = onRequest(async (req, res) => {

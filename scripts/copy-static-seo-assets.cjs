@@ -7,6 +7,7 @@ const distDir = path.join(rootDir, 'dist');
 const filesToCopy = [
   'robots.txt',
   'sitemap.xml',
+  'sitemap-static.xml',
   'ads.txt',
   'my-icon.png',
   'bust-avatar.svg',

@@ -30,6 +30,13 @@
       ],
       "rewrites": [
         {
+          "source": "sitemap-jobs.xml",
+          "function": {
+            "functionId": "jobsSitemap",
+            "region": "us-central1"
+          }
+        },
+        {
           "source": "**",
           "destination": "/index.html"
         }
@@ -44,6 +51,13 @@
         "**/node_modules/**"
       ],
       "rewrites": [
+        {
+          "source": "sitemap-jobs.xml",
+          "function": {
+            "functionId": "jobsSitemap",
+            "region": "us-central1"
+          }
+        },
         {
           "source": "**",
           "destination": "/index.html"

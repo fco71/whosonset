@@ -8,6 +8,7 @@ import '@fontsource/inter/500.css';
 import '@fontsource/inter/600.css';
 import '@fontsource/inter/700.css';
 import './App.module.scss';
+import { setPageSeo } from './utilities/seo';
 
 // Import components
 import Navigation from './components/Navigation';
@@ -25,6 +26,16 @@ const SEO_ROUTES: { pattern: RegExp; title: string; description: string }[] = [
     pattern: /^\/$/,
     title: 'My Film Jobs | Film Industry Jobs and Crew Networking',
     description: 'Find film industry jobs, connect with crew members, and grow your production network on My Film Jobs.',
+  },
+  {
+    pattern: /^\/jobs$/,
+    title: 'Film Jobs Board | Production, Crew, and Creative Roles',
+    description: 'Browse current film industry job opportunities across production, post-production, and creative departments.',
+  },
+  {
+    pattern: /^\/jobs\/[^/]+$/,
+    title: 'Film Job Opportunity | My Film Jobs',
+    description: 'Explore film industry job details, requirements, and application deadlines on My Film Jobs.',
   },
   {
     pattern: /^\/about$/,
@@ -52,26 +63,6 @@ const SEO_ROUTES: { pattern: RegExp; title: string; description: string }[] = [
     description: 'Review the My Film Jobs terms of service for platform usage and responsibilities.',
   },
 ];
-
-function upsertMetaTag(key: string, value: string, attribute: 'name' | 'property' = 'name') {
-  let tag = document.head.querySelector<HTMLMetaElement>(`meta[${attribute}="${key}"]`);
-  if (!tag) {
-    tag = document.createElement('meta');
-    tag.setAttribute(attribute, key);
-    document.head.appendChild(tag);
-  }
-  tag.setAttribute('content', value);
-}
-
-function upsertCanonicalLink(href: string) {
-  let link = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
-  if (!link) {
-    link = document.createElement('link');
-    link.setAttribute('rel', 'canonical');
-    document.head.appendChild(link);
-  }
-  link.setAttribute('href', href);
-}
 
 function AppContent() {
   const { currentUser, logout } = useAuth();
@@ -106,14 +97,11 @@ function AppContent() {
     const routeSeo = SEO_ROUTES.find(route => route.pattern.test(normalizedPath)) || DEFAULT_SEO;
     const canonicalUrl = `https://myfilmjobs.com${normalizedPath}`;
 
-    document.title = routeSeo.title;
-    upsertMetaTag('description', routeSeo.description);
-    upsertMetaTag('og:title', routeSeo.title, 'property');
-    upsertMetaTag('og:description', routeSeo.description, 'property');
-    upsertMetaTag('og:url', canonicalUrl, 'property');
-    upsertMetaTag('twitter:title', routeSeo.title);
-    upsertMetaTag('twitter:description', routeSeo.description);
-    upsertCanonicalLink(canonicalUrl);
+    setPageSeo({
+      title: routeSeo.title,
+      description: routeSeo.description,
+      canonicalUrl,
+    });
   }, [location.pathname]);
   
   const handleSignOut = async () => {

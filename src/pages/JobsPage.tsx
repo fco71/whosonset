@@ -302,7 +302,10 @@ export default function JobsPage() {
       
       const db = getFirestore();
       const jobsCollection = collection(db, 'jobPostings');
-      const jobsQuery = query(jobsCollection);
+      const jobsQuery = query(
+        jobsCollection,
+        where('status', 'in', ['published', 'active'])
+      );
       const querySnapshot = await getDocs(jobsQuery);
       
       const jobsData: JobPosting[] = [];
@@ -313,6 +316,12 @@ export default function JobsPage() {
           ...data,
           createdAt: data.createdAt?.toDate() || new Date(),
         } as JobPosting);
+      });
+
+      jobsData.sort((a, b) => {
+        const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return bDate - aDate;
       });
       
       setJobs(jobsData);

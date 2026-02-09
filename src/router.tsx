@@ -237,19 +237,11 @@ export function createAppRouter() {
         { path: 'resume/:uid', element: <PublicResumePage /> },
         { 
           path: 'jobs', 
-          element: (
-            <ProtectedRoute>
-              <JobsPage />
-            </ProtectedRoute>
-          ) 
+          element: <JobsPage />
         },
         { 
           path: 'jobs/:jobId', 
-          element: (
-            <ProtectedRoute>
-              <JobDetailPage />
-            </ProtectedRoute>
-          ) 
+          element: <JobDetailPage />
         },
         { 
           path: 'jobs/:jobId/apply', 
