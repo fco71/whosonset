@@ -69,6 +69,8 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
         { to: '/collaboration', label: t('nav.collaboration') },
         { to: '/blog', label: 'Blog' },
     ];
+    const blogLink = navigationLinks.find((link) => link.to === '/blog');
+    const primaryNavigationLinks = navigationLinks.filter((link) => link.to !== '/blog');
 
     const authenticatedLinks = [
         { to: '/social', label: t('nav.social') },
@@ -145,7 +147,7 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
 
                         {/* Desktop Navigation */}
                         <div className="hidden xl:flex items-center space-x-1">
-                            {navigationLinks.map((link) => {
+                            {primaryNavigationLinks.map((link) => {
                                 // Special handling for Jobs dropdown
                                 if (link.to === '/jobs') {
                                     return (
@@ -242,6 +244,23 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                                     )}
                                 </Link>
                             ))}
+                            {blogLink && (
+                                <Link
+                                    key={blogLink.to}
+                                    to={blogLink.to}
+                                    className={`relative px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
+                                        isActive(blogLink.to)
+                                            ? 'text-blue-600 bg-blue-50/80 shadow-sm'
+                                            : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50/80'
+                                    }`}
+                                    onClick={closeAllMenus}
+                                >
+                                    {blogLink.label}
+                                    {isActive(blogLink.to) && (
+                                        <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-blue-600 rounded-full"></div>
+                                    )}
+                                </Link>
+                            )}
                             {/* Notification Bell */}
                             <button
                                 onClick={() => setShowNotificationCenter(true)}
