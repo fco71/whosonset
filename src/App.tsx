@@ -1,5 +1,5 @@
 import React, { Suspense, useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from './theme/ThemeProvider';
 import { useAuth } from './contexts/AuthContext';
@@ -15,9 +15,68 @@ import Footer from './components/Footer';
 import { AdProvider, useAds } from './components/Ads/AdProvider';
 import AdManager from './components/Ads/AdManager';
 
+const DEFAULT_SEO = {
+  title: 'My Film Jobs | Film Industry Jobs and Crew Networking',
+  description: 'Find film industry jobs, connect with crew members, and grow your production network on My Film Jobs.',
+};
+
+const SEO_ROUTES: { pattern: RegExp; title: string; description: string }[] = [
+  {
+    pattern: /^\/$/,
+    title: 'My Film Jobs | Film Industry Jobs and Crew Networking',
+    description: 'Find film industry jobs, connect with crew members, and grow your production network on My Film Jobs.',
+  },
+  {
+    pattern: /^\/about$/,
+    title: 'About My Film Jobs | Built for Film Professionals',
+    description: 'Learn how My Film Jobs helps film professionals connect, collaborate, and find opportunities across productions.',
+  },
+  {
+    pattern: /^\/crew-public$/,
+    title: 'Film Crew Directory | Discover Crew Talent',
+    description: 'Browse public film crew profiles and discover talent for your next production on My Film Jobs.',
+  },
+  {
+    pattern: /^\/contact$/,
+    title: 'Contact My Film Jobs',
+    description: 'Contact the My Film Jobs team for support, partnerships, or platform inquiries.',
+  },
+  {
+    pattern: /^\/privacy-policy$/,
+    title: 'Privacy Policy | My Film Jobs',
+    description: 'Read the My Film Jobs privacy policy and how we handle user data.',
+  },
+  {
+    pattern: /^\/terms-of-service$/,
+    title: 'Terms of Service | My Film Jobs',
+    description: 'Review the My Film Jobs terms of service for platform usage and responsibilities.',
+  },
+];
+
+function upsertMetaTag(key: string, value: string, attribute: 'name' | 'property' = 'name') {
+  let tag = document.head.querySelector<HTMLMetaElement>(`meta[${attribute}="${key}"]`);
+  if (!tag) {
+    tag = document.createElement('meta');
+    tag.setAttribute(attribute, key);
+    document.head.appendChild(tag);
+  }
+  tag.setAttribute('content', value);
+}
+
+function upsertCanonicalLink(href: string) {
+  let link = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+  if (!link) {
+    link = document.createElement('link');
+    link.setAttribute('rel', 'canonical');
+    document.head.appendChild(link);
+  }
+  link.setAttribute('href', href);
+}
+
 function AppContent() {
   const { currentUser, logout } = useAuth();
   const { currentPagePlacements, trackAdEvent } = useAds();
+  const location = useLocation();
   
   console.log('[App] Rendering with currentUser:', currentUser?.email);
   
@@ -41,6 +100,21 @@ function AppContent() {
       window.removeEventListener('error', handleUnhandledError);
     };
   }, []);
+
+  useEffect(() => {
+    const normalizedPath = location.pathname !== '/' ? location.pathname.replace(/\/+$/, '') : '/';
+    const routeSeo = SEO_ROUTES.find(route => route.pattern.test(normalizedPath)) || DEFAULT_SEO;
+    const canonicalUrl = `https://myfilmjobs.com${normalizedPath}`;
+
+    document.title = routeSeo.title;
+    upsertMetaTag('description', routeSeo.description);
+    upsertMetaTag('og:title', routeSeo.title, 'property');
+    upsertMetaTag('og:description', routeSeo.description, 'property');
+    upsertMetaTag('og:url', canonicalUrl, 'property');
+    upsertMetaTag('twitter:title', routeSeo.title);
+    upsertMetaTag('twitter:description', routeSeo.description);
+    upsertCanonicalLink(canonicalUrl);
+  }, [location.pathname]);
   
   const handleSignOut = async () => {
     try {

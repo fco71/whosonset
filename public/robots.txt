@@ -1,28 +1,37 @@
 User-agent: *
 Allow: /
 
-# Allow Google AdSense crawlers
-User-agent: Mediapartners-Google
-Allow: /
+# Authentication and account pages
+Disallow: /login
+Disallow: /register
+Disallow: /verify-email
+Disallow: /forgot-password
+Disallow: /reset-password
 
-User-agent: AdsBot-Google
-Allow: /
+# Private in-app areas
+Disallow: /chat
+Disallow: /collaboration
+Disallow: /settings
+Disallow: /my-projects
+Disallow: /saved-crew
+Disallow: /saved-projects
+Disallow: /collections
 
-User-agent: Googlebot
-Allow: /
+# Private workflows and dashboards
+Disallow: /post-job
+Disallow: /projects/create
+Disallow: /projects/*/manage
+Disallow: /applications/
+Disallow: /jobs/applied
+Disallow: /jobs/saved
+Disallow: /jobs/posted
+Disallow: /jobs/analytics
+Disallow: /jobs/*/apply
+Disallow: /jobs/*/applications
 
-User-agent: Googlebot-Image
-Allow: /
+# Internal/test pages
+Disallow: /email-test
+Disallow: /email-integration-test
+Disallow: /password-reset-test
 
-User-agent: Googlebot-Mobile
-Allow: /
-
-# Allow other search engines
-User-agent: Bingbot
-Allow: /
-
-User-agent: Slurp
-Allow: /
-
-# Sitemap location
-Sitemap: https://myfilmjobs.com/sitemap.xml 
+Sitemap: https://myfilmjobs.com/sitemap.xml
