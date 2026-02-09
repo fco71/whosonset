@@ -38,6 +38,11 @@ const SEO_ROUTES: { pattern: RegExp; title: string; description: string }[] = [
     description: 'Explore film industry job details, requirements, and application deadlines on My Film Jobs.',
   },
   {
+    pattern: /^\/blog$/,
+    title: 'Film Industry Blog | Daily Curated News',
+    description: 'Daily curated film industry updates with links to original sources and member discussion.',
+  },
+  {
     pattern: /^\/about$/,
     title: 'About My Film Jobs | Built for Film Professionals',
     description: 'Learn how My Film Jobs helps film professionals connect, collaborate, and find opportunities across productions.',

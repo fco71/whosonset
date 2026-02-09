@@ -1,7 +1,11 @@
 import * as admin from "firebase-admin";
 import { onRequest } from "firebase-functions/v2/https";
-import { onDocumentCreated } from "firebase-functions/v2/firestore";
+import { onDocumentCreated, onDocumentDeleted } from "firebase-functions/v2/firestore";
+import { onSchedule } from "firebase-functions/v2/scheduler";
 import { defineSecret } from "firebase-functions/params";
+import { QueryDocumentSnapshot } from "firebase-admin/firestore";
+import Parser from "rss-parser";
+import { createHash } from "node:crypto";
 import { EmailService } from "./emailService";
 
 // Helper function to get user data from crewProfiles first, then users
@@ -105,8 +109,6 @@ async function getUserData(userId: string) {
     return null;
   }
 }
-import { QueryDocumentSnapshot } from "firebase-admin/firestore";
-
 // Define secrets for environment variables
 const smtpUser = defineSecret('SMTP_USER');
 const smtpPass = defineSecret('SMTP_PASS');
@@ -151,6 +153,388 @@ function toDate(value: unknown): Date | null {
   const parsed = new Date(String(value));
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
+
+type BlogCategory = "technology" | "business" | "industry" | "careers";
+
+interface BlogFeedSource {
+  name: string;
+  feedUrl: string;
+  sourceUrl: string;
+  defaultCategory: BlogCategory;
+}
+
+interface CuratedArticle {
+  title: string;
+  summary: string;
+  sourceName: string;
+  sourceUrl: string;
+  sourceFeedUrl: string;
+  originalUrl: string;
+  imageUrl: string;
+  category: BlogCategory;
+  tags: string[];
+  publishedAt: Date;
+  createdAt: Date;
+  dedupeKey: string;
+}
+
+const BLOG_TIMEZONE = "America/Los_Angeles";
+const BLOG_MAX_POSTS_PER_DAY = 3;
+const BLOG_LOOKBACK_HOURS = 72;
+const BLOG_RECENT_DEDUP_DAYS = 7;
+const BLOG_FEEDS: BlogFeedSource[] = [
+  {
+    name: "No Film School",
+    feedUrl: "https://nofilmschool.com/feeds/content-types/article.rss",
+    sourceUrl: "https://nofilmschool.com/",
+    defaultCategory: "industry",
+  },
+  {
+    name: "Y.M.Cinema Magazine",
+    feedUrl: "https://ymcinema.com/feed/",
+    sourceUrl: "https://ymcinema.com/",
+    defaultCategory: "technology",
+  },
+  {
+    name: "Frame.io Blog",
+    feedUrl: "https://blog.frame.io/feed/",
+    sourceUrl: "https://blog.frame.io/",
+    defaultCategory: "technology",
+  },
+  {
+    name: "PremiumBeat Blog",
+    feedUrl: "https://www.premiumbeat.com/blog/feed/",
+    sourceUrl: "https://www.premiumbeat.com/blog/",
+    defaultCategory: "careers",
+  },
+  {
+    name: "Film Independent",
+    feedUrl: "https://www.filmindependent.org/feed/",
+    sourceUrl: "https://www.filmindependent.org/",
+    defaultCategory: "industry",
+  },
+  {
+    name: "IndieWire",
+    feedUrl: "https://www.indiewire.com/feed/",
+    sourceUrl: "https://www.indiewire.com/",
+    defaultCategory: "business",
+  },
+];
+
+const blogCategoryPriority: BlogCategory[] = [
+  "industry",
+  "technology",
+  "business",
+  "careers",
+];
+
+const rssParser = new Parser();
+
+function getPacificDateKey(date = new Date()): string {
+  return new Intl.DateTimeFormat("sv-SE", {
+    timeZone: BLOG_TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
+function normalizeExternalUrl(rawUrl: string): string {
+  try {
+    const parsed = new URL(rawUrl);
+    parsed.hash = "";
+    if ((parsed.protocol !== "https:" && parsed.protocol !== "http:")) {
+      return "";
+    }
+    return parsed.toString();
+  } catch {
+    return "";
+  }
+}
+
+function normalizeTitle(title: string): string {
+  return title.toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+function getUrlHash(value: string): string {
+  return createHash("sha1").update(value).digest("hex");
+}
+
+function detectCategory(text: string, fallback: BlogCategory): BlogCategory {
+  const normalized = text.toLowerCase();
+
+  if (/camera|lens|ai|virtual production|vfx|render|codec|color grading|workflow/.test(normalized)) {
+    return "technology";
+  }
+
+  if (/box office|revenue|deal|acquisition|investment|merger|earnings|financing/.test(normalized)) {
+    return "business";
+  }
+
+  if (/hiring|career|job|crew|training|internship|union|resume/.test(normalized)) {
+    return "careers";
+  }
+
+  if (/festival|production|filmmaker|cinema|distribution|director|studio/.test(normalized)) {
+    return "industry";
+  }
+
+  return fallback;
+}
+
+function toTagList(text: string): string[] {
+  const normalized = text.toLowerCase();
+  const tags: string[] = [];
+
+  if (/camera|lens|cinematography/.test(normalized)) tags.push("camera");
+  if (/ai|machine learning|automation/.test(normalized)) tags.push("ai");
+  if (/box office|revenue|earnings/.test(normalized)) tags.push("box-office");
+  if (/career|hiring|job|crew/.test(normalized)) tags.push("careers");
+  if (/festival|award/.test(normalized)) tags.push("festivals");
+  if (/editing|post|color/.test(normalized)) tags.push("post-production");
+
+  return tags.slice(0, 4);
+}
+
+function buildSummary(title: string, sourceName: string, category: BlogCategory): string {
+  const categoryContext: Record<BlogCategory, string> = {
+    technology: "film technology and production tools",
+    business: "film business and market trends",
+    industry: "film industry developments",
+    careers: "career opportunities and professional growth",
+  };
+
+  return `${sourceName} reports on ${categoryContext[category]}. "${title}" links to the original publisher for full context.`;
+}
+
+function extractImageUrl(item: Parser.Item): string {
+  const enclosureUrl = typeof item.enclosure?.url === "string" ? item.enclosure.url : "";
+  if (enclosureUrl) {
+    return enclosureUrl;
+  }
+
+  const anyItem = item as Record<string, unknown>;
+  const mediaContent = anyItem["media:content"] as { $?: { url?: string } } | undefined;
+  if (mediaContent?.$?.url) {
+    return String(mediaContent.$.url);
+  }
+
+  const rawContent = typeof item.content === "string" ? item.content : "";
+  const imageMatch = rawContent.match(/<img[^>]+src=['"]([^'"]+)['"]/i);
+  return imageMatch?.[1] || "";
+}
+
+async function fetchFeedArticles(source: BlogFeedSource): Promise<CuratedArticle[]> {
+  try {
+    const parsedFeed = await rssParser.parseURL(source.feedUrl);
+    const now = new Date();
+    const oldestAllowed = now.getTime() - BLOG_LOOKBACK_HOURS * 60 * 60 * 1000;
+    const articles: CuratedArticle[] = [];
+
+    for (const item of parsedFeed.items.slice(0, 12)) {
+      const title = (item.title || "").trim();
+      const originalUrl = normalizeExternalUrl(item.link || "");
+      if (!title || !originalUrl) {
+        continue;
+      }
+
+      const publishedAt = toDate(item.isoDate || item.pubDate) || now;
+      if (publishedAt.getTime() < oldestAllowed) {
+        continue;
+      }
+
+      const category = detectCategory(`${title} ${item.contentSnippet || ""}`, source.defaultCategory);
+      const dedupeKey = getUrlHash(`${normalizeTitle(title)}::${originalUrl}`);
+
+      articles.push({
+        title,
+        summary: buildSummary(title, source.name, category),
+        sourceName: source.name,
+        sourceUrl: source.sourceUrl,
+        sourceFeedUrl: source.feedUrl,
+        originalUrl,
+        imageUrl: extractImageUrl(item),
+        category,
+        tags: toTagList(`${title} ${item.contentSnippet || ""}`),
+        publishedAt,
+        createdAt: now,
+        dedupeKey,
+      });
+    }
+
+    return articles;
+  } catch (error) {
+    console.error(`[curateDailyBlogPosts] Failed to parse feed ${source.feedUrl}:`, error);
+    return [];
+  }
+}
+
+async function getRecentDedupeKeys(): Promise<Set<string>> {
+  const dedupeKeys = new Set<string>();
+  const threshold = admin.firestore.Timestamp.fromDate(
+    new Date(Date.now() - BLOG_RECENT_DEDUP_DAYS * 24 * 60 * 60 * 1000)
+  );
+
+  const snapshot = await db
+    .collection("blogPosts")
+    .where("createdAt", ">=", threshold)
+    .get();
+
+  snapshot.docs.forEach((docSnapshot) => {
+    const data = docSnapshot.data();
+    const key = typeof data.dedupeKey === "string" ? data.dedupeKey : "";
+    if (key) {
+      dedupeKeys.add(key);
+      return;
+    }
+
+    const title = typeof data.title === "string" ? data.title : "";
+    const originalUrl = typeof data.originalUrl === "string" ? data.originalUrl : "";
+    if (title && originalUrl) {
+      dedupeKeys.add(getUrlHash(`${normalizeTitle(title)}::${normalizeExternalUrl(originalUrl)}`));
+    }
+  });
+
+  return dedupeKeys;
+}
+
+function pickDailyArticles(candidates: CuratedArticle[], maxArticles: number): CuratedArticle[] {
+  const sorted = candidates
+    .slice()
+    .sort((a, b) => b.publishedAt.getTime() - a.publishedAt.getTime());
+
+  const selected: CuratedArticle[] = [];
+  const usedSources = new Set<string>();
+  const usedKeys = new Set<string>();
+
+  for (const category of blogCategoryPriority) {
+    const match = sorted.find((article) =>
+      article.category === category &&
+      !usedSources.has(article.sourceName) &&
+      !usedKeys.has(article.dedupeKey)
+    );
+
+    if (!match) {
+      continue;
+    }
+
+    selected.push(match);
+    usedSources.add(match.sourceName);
+    usedKeys.add(match.dedupeKey);
+
+    if (selected.length >= maxArticles) {
+      return selected;
+    }
+  }
+
+  for (const article of sorted) {
+    if (selected.length >= maxArticles) {
+      break;
+    }
+    if (usedKeys.has(article.dedupeKey)) {
+      continue;
+    }
+
+    selected.push(article);
+    usedKeys.add(article.dedupeKey);
+  }
+
+  return selected;
+}
+
+export const curateDailyBlogPosts = onSchedule({
+  schedule: "every 8 hours",
+  timeZone: BLOG_TIMEZONE,
+  region: "us-central1",
+}, async () => {
+  const dateKey = getPacificDateKey();
+  const todaysSnapshot = await db
+    .collection("blogPosts")
+    .where("curatedDate", "==", dateKey)
+    .get();
+
+  const slotsRemaining = BLOG_MAX_POSTS_PER_DAY - todaysSnapshot.size;
+  if (slotsRemaining <= 0) {
+    console.log(`[curateDailyBlogPosts] Daily quota already reached for ${dateKey}.`);
+    return;
+  }
+
+  const recentDedupeKeys = await getRecentDedupeKeys();
+  const feedResults = await Promise.all(BLOG_FEEDS.map((source) => fetchFeedArticles(source)));
+  const mergedArticles = feedResults.flat();
+  const uniqueCandidates = mergedArticles.filter((article) => !recentDedupeKeys.has(article.dedupeKey));
+  const selected = pickDailyArticles(uniqueCandidates, slotsRemaining);
+
+  if (selected.length === 0) {
+    console.log("[curateDailyBlogPosts] No fresh candidates available this run.");
+    return;
+  }
+
+  const batch = db.batch();
+  selected.forEach((article) => {
+    const docId = `${dateKey}-${article.dedupeKey.slice(0, 12)}`;
+    const postRef = db.collection("blogPosts").doc(docId);
+
+    batch.set(postRef, {
+      title: article.title,
+      summary: article.summary,
+      sourceName: article.sourceName,
+      sourceUrl: article.sourceUrl,
+      sourceFeedUrl: article.sourceFeedUrl,
+      originalUrl: article.originalUrl,
+      imageUrl: article.imageUrl,
+      category: article.category,
+      tags: article.tags,
+      publishedAt: admin.firestore.Timestamp.fromDate(article.publishedAt),
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      curatedDate: dateKey,
+      commentsCount: 0,
+      isPublic: true,
+      contentPolicy: "metadata_only",
+      dedupeKey: article.dedupeKey,
+    }, { merge: true });
+  });
+
+  await batch.commit();
+  console.log(`[curateDailyBlogPosts] Stored ${selected.length} curated posts for ${dateKey}.`);
+});
+
+export const onBlogCommentCreated = onDocumentCreated({
+  document: "blogPosts/{postId}/comments/{commentId}",
+  region: "us-central1",
+}, async (event) => {
+  const postId = event.params.postId;
+  if (!postId) {
+    return;
+  }
+
+  await db.collection("blogPosts").doc(postId).set({
+    commentsCount: admin.firestore.FieldValue.increment(1),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  }, { merge: true });
+});
+
+export const onBlogCommentDeleted = onDocumentDeleted({
+  document: "blogPosts/{postId}/comments/{commentId}",
+  region: "us-central1",
+}, async (event) => {
+  const postId = event.params.postId;
+  if (!postId) {
+    return;
+  }
+
+  const postRef = db.collection("blogPosts").doc(postId);
+  await db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(postRef);
+    const data = snapshot.data();
+    const currentCount = typeof data?.commentsCount === "number" ? data.commentsCount : 0;
+    transaction.set(postRef, {
+      commentsCount: Math.max(0, currentCount - 1),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, { merge: true });
+  });
+});
 
 export const jobsSitemap = onRequest({
   region: "us-central1",

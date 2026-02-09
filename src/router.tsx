@@ -49,6 +49,7 @@ const TermsOfServicePage = React.lazy(() => import('./pages/TermsOfServicePage')
 const ContactPage = React.lazy(() => import('./pages/ContactPage'));
 const AboutPage = React.lazy(() => import('./pages/AboutPage'));
 const PublicCrewPage = React.lazy(() => import('./pages/PublicCrewPage'));
+const BlogPage = React.lazy(() => import('./pages/BlogPage'));
 // const AdMonetizationPage = React.lazy(() => import('./pages/AdMonetizationPage'));
 // const AdTestPage = React.lazy(() => import('./pages/AdTestPage'));
 
@@ -65,6 +66,10 @@ export function createAppRouter() {
         { 
           path: 'about', 
           element: <AboutPage />
+        },
+        {
+          path: 'blog',
+          element: <BlogPage />
         },
         { 
           path: 'crew', 
