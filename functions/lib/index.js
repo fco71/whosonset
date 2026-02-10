@@ -169,6 +169,8 @@ const BLOG_RECENT_DEDUP_DAYS = 7;
 const BLOG_FEED_CONFIG_COLLECTION = "blogConfig";
 const BLOG_FEED_CONFIG_DOCUMENT = "feeds";
 const BLOG_MAX_FEED_SOURCES = 20;
+const BLOG_MAX_SOURCE_COOLDOWN_HOURS = 720;
+const BLOG_SOURCE_COOLDOWN_LOOKBACK_DAYS = 30;
 const BLOG_DEFAULT_FEEDS = [
     {
         name: "No Film School",
@@ -205,6 +207,13 @@ const BLOG_DEFAULT_FEEDS = [
         feedUrl: "https://www.indiewire.com/feed/",
         sourceUrl: "https://www.indiewire.com/",
         defaultCategory: "business",
+    },
+    {
+        name: "LatAm Cinema",
+        feedUrl: "https://www.latamcinema.com/feed/",
+        sourceUrl: "https://www.latamcinema.com/",
+        defaultCategory: "industry",
+        minHoursBetweenSelections: 48,
     },
 ];
 const blogCategoryPriority = [
@@ -252,6 +261,7 @@ async function resolveBlogFeeds() {
             const feedUrl = normalizeExternalUrl(typeof record.feedUrl === "string" ? record.feedUrl.trim() : "");
             const sourceUrl = normalizeExternalUrl(typeof record.sourceUrl === "string" ? record.sourceUrl.trim() : "");
             const defaultCategory = isBlogCategory(record.defaultCategory) ? record.defaultCategory : "industry";
+            const minHoursBetweenSelections = normalizeCooldownHours(record.minHoursBetweenSelections);
             if (!name || !feedUrl || !sourceUrl) {
                 invalidEntries += 1;
                 return;
@@ -261,6 +271,7 @@ async function resolveBlogFeeds() {
                 feedUrl,
                 sourceUrl,
                 defaultCategory,
+                minHoursBetweenSelections,
             });
         });
         if (parsedFeeds.length === 0) {
@@ -298,11 +309,26 @@ function normalizeExternalUrl(rawUrl) {
         return "";
     }
 }
+function normalizeCooldownHours(value) {
+    if (typeof value === "number" && Number.isFinite(value)) {
+        return Math.max(0, Math.min(BLOG_MAX_SOURCE_COOLDOWN_HOURS, Math.floor(value)));
+    }
+    if (typeof value === "string") {
+        const parsed = Number.parseInt(value.trim(), 10);
+        if (!Number.isNaN(parsed)) {
+            return Math.max(0, Math.min(BLOG_MAX_SOURCE_COOLDOWN_HOURS, parsed));
+        }
+    }
+    return 0;
+}
 function normalizeTitle(title) {
     return title.toLowerCase().replace(/\s+/g, " ").trim();
 }
 function getUrlHash(value) {
     return (0, node_crypto_1.createHash)("sha1").update(value).digest("hex");
+}
+function getTitleKey(title) {
+    return getUrlHash(normalizeTitle(title));
 }
 function toBooleanFlag(value) {
     if (typeof value === "boolean") {
@@ -485,6 +511,7 @@ async function fetchFeedArticles(source) {
                 continue;
             }
             const category = detectCategory(`${title} ${item.contentSnippet || ""}`, source.defaultCategory);
+            const titleKey = getTitleKey(title);
             const dedupeKey = getUrlHash(`${normalizeTitle(title)}::${originalUrl}`);
             articles.push({
                 title,
@@ -498,6 +525,7 @@ async function fetchFeedArticles(source) {
                 tags: toTagList(`${title} ${item.contentSnippet || ""}`),
                 publishedAt,
                 createdAt: now,
+                titleKey,
                 dedupeKey,
             });
         }
@@ -508,8 +536,9 @@ async function fetchFeedArticles(source) {
         return [];
     }
 }
-async function getRecentDedupeKeys() {
+async function getRecentArticleKeys() {
     const dedupeKeys = new Set();
+    const titleKeys = new Set();
     const threshold = admin.firestore.Timestamp.fromDate(new Date(Date.now() - BLOG_RECENT_DEDUP_DAYS * 24 * 60 * 60 * 1000));
     const snapshot = await db
         .collection("blogPosts")
@@ -517,18 +546,48 @@ async function getRecentDedupeKeys() {
         .get();
     snapshot.docs.forEach((docSnapshot) => {
         const data = docSnapshot.data();
+        const title = typeof data.title === "string" ? data.title : "";
+        if (title) {
+            titleKeys.add(getTitleKey(title));
+        }
         const key = typeof data.dedupeKey === "string" ? data.dedupeKey : "";
         if (key) {
             dedupeKeys.add(key);
             return;
         }
-        const title = typeof data.title === "string" ? data.title : "";
         const originalUrl = typeof data.originalUrl === "string" ? data.originalUrl : "";
         if (title && originalUrl) {
             dedupeKeys.add(getUrlHash(`${normalizeTitle(title)}::${normalizeExternalUrl(originalUrl)}`));
         }
     });
-    return dedupeKeys;
+    return {
+        dedupeKeys,
+        titleKeys,
+    };
+}
+async function getRecentSourceLastPublishedAt() {
+    const lastPublishedAtBySource = new Map();
+    const threshold = admin.firestore.Timestamp.fromDate(new Date(Date.now() - BLOG_SOURCE_COOLDOWN_LOOKBACK_DAYS * 24 * 60 * 60 * 1000));
+    const snapshot = await db
+        .collection("blogPosts")
+        .where("createdAt", ">=", threshold)
+        .get();
+    snapshot.docs.forEach((docSnapshot) => {
+        const data = docSnapshot.data();
+        const sourceName = typeof data.sourceName === "string" ? data.sourceName.trim() : "";
+        if (!sourceName) {
+            return;
+        }
+        const publishedAt = toDate(data.publishedAt) || toDate(data.createdAt);
+        if (!publishedAt) {
+            return;
+        }
+        const current = lastPublishedAtBySource.get(sourceName);
+        if (!current || publishedAt.getTime() > current.getTime()) {
+            lastPublishedAtBySource.set(sourceName, publishedAt);
+        }
+    });
+    return lastPublishedAtBySource;
 }
 function pickDailyArticles(candidates, maxArticles) {
     const sorted = candidates
@@ -537,31 +596,60 @@ function pickDailyArticles(candidates, maxArticles) {
     const selected = [];
     const usedSources = new Set();
     const usedKeys = new Set();
+    const usedTitleKeys = new Set();
     for (const category of blogCategoryPriority) {
         const match = sorted.find((article) => article.category === category &&
             !usedSources.has(article.sourceName) &&
-            !usedKeys.has(article.dedupeKey));
+            !usedKeys.has(article.dedupeKey) &&
+            !usedTitleKeys.has(article.titleKey));
         if (!match) {
             continue;
         }
         selected.push(match);
         usedSources.add(match.sourceName);
         usedKeys.add(match.dedupeKey);
+        usedTitleKeys.add(match.titleKey);
         if (selected.length >= maxArticles) {
             return selected;
         }
     }
+    // Prefer not repeating sources when filling remaining slots.
     for (const article of sorted) {
         if (selected.length >= maxArticles) {
             break;
         }
-        if (usedKeys.has(article.dedupeKey)) {
+        if (usedKeys.has(article.dedupeKey) ||
+            usedTitleKeys.has(article.titleKey) ||
+            usedSources.has(article.sourceName)) {
+            continue;
+        }
+        selected.push(article);
+        usedSources.add(article.sourceName);
+        usedKeys.add(article.dedupeKey);
+        usedTitleKeys.add(article.titleKey);
+    }
+    // If diversity blocks completion, allow reused sources but keep dedupe protections.
+    for (const article of sorted) {
+        if (selected.length >= maxArticles) {
+            break;
+        }
+        if (usedKeys.has(article.dedupeKey) || usedTitleKeys.has(article.titleKey)) {
             continue;
         }
         selected.push(article);
         usedKeys.add(article.dedupeKey);
+        usedTitleKeys.add(article.titleKey);
     }
     return selected;
+}
+function buildSelectedPreview(articles) {
+    return articles.map((article) => ({
+        title: article.title,
+        sourceName: article.sourceName,
+        category: article.category,
+        originalUrl: article.originalUrl,
+        publishedAt: article.publishedAt.toISOString(),
+    }));
 }
 async function runBlogCuration(options) {
     const force = options.force === true;
@@ -589,6 +677,8 @@ async function runBlogCuration(options) {
             uniqueCandidateCount: 0,
             force,
             dryRun,
+            selectedPreview: [],
+            sourceStats: [],
         };
     }
     const todaysSnapshot = await db
@@ -615,14 +705,53 @@ async function runBlogCuration(options) {
             uniqueCandidateCount: 0,
             force,
             dryRun,
+            selectedPreview: [],
+            sourceStats: activeFeeds.map((feed) => ({
+                name: feed.name,
+                feedUrl: feed.feedUrl,
+                articleCount: 0,
+                minHoursBetweenSelections: feed.minHoursBetweenSelections || 0,
+                cooldownBlockedCount: 0,
+            })),
         };
     }
-    const recentDedupeKeys = await getRecentDedupeKeys();
+    const recentKeys = await getRecentArticleKeys();
+    const recentSourceLastPublishedAt = await getRecentSourceLastPublishedAt();
     const feedResults = await Promise.all(activeFeeds.map((source) => fetchFeedArticles(source)));
+    const feedBySourceName = new Map(activeFeeds.map((feed) => [feed.name, feed]));
     const mergedArticles = feedResults.flat();
-    const uniqueCandidates = mergedArticles.filter((article) => !recentDedupeKeys.has(article.dedupeKey));
+    const uniqueCandidates = mergedArticles.filter((article) => (!recentKeys.dedupeKeys.has(article.dedupeKey) &&
+        !recentKeys.titleKeys.has(article.titleKey)));
+    const cooldownBlockedCountBySource = new Map();
+    const cooldownEligibleCandidates = uniqueCandidates.filter((article) => {
+        const feed = feedBySourceName.get(article.sourceName);
+        const cooldownHours = (feed === null || feed === void 0 ? void 0 : feed.minHoursBetweenSelections) || 0;
+        if (cooldownHours <= 0) {
+            return true;
+        }
+        const lastPublishedAt = recentSourceLastPublishedAt.get(article.sourceName);
+        if (!lastPublishedAt) {
+            return true;
+        }
+        const elapsedHours = (Date.now() - lastPublishedAt.getTime()) / (60 * 60 * 1000);
+        if (elapsedHours >= cooldownHours) {
+            return true;
+        }
+        cooldownBlockedCountBySource.set(article.sourceName, (cooldownBlockedCountBySource.get(article.sourceName) || 0) + 1);
+        return false;
+    });
+    const sourceStats = activeFeeds.map((feed, index) => {
+        var _a;
+        return ({
+            name: feed.name,
+            feedUrl: feed.feedUrl,
+            articleCount: ((_a = feedResults[index]) === null || _a === void 0 ? void 0 : _a.length) || 0,
+            minHoursBetweenSelections: feed.minHoursBetweenSelections || 0,
+            cooldownBlockedCount: cooldownBlockedCountBySource.get(feed.name) || 0,
+        });
+    });
     const maxSelectable = force ? BLOG_MAX_POSTS_PER_DAY : Math.max(0, slotsRemaining);
-    const selected = pickDailyArticles(uniqueCandidates, maxSelectable);
+    const selected = pickDailyArticles(cooldownEligibleCandidates, maxSelectable);
     if (selected.length === 0) {
         console.log("[curateDailyBlogPosts] No fresh candidates available this run.");
         return {
@@ -639,9 +768,11 @@ async function runBlogCuration(options) {
             selectedCount: 0,
             storedCount: 0,
             candidateCount: mergedArticles.length,
-            uniqueCandidateCount: uniqueCandidates.length,
+            uniqueCandidateCount: cooldownEligibleCandidates.length,
             force,
             dryRun,
+            selectedPreview: [],
+            sourceStats,
         };
     }
     if (dryRun) {
@@ -659,9 +790,11 @@ async function runBlogCuration(options) {
             selectedCount: selected.length,
             storedCount: 0,
             candidateCount: mergedArticles.length,
-            uniqueCandidateCount: uniqueCandidates.length,
+            uniqueCandidateCount: cooldownEligibleCandidates.length,
             force,
             dryRun,
+            selectedPreview: buildSelectedPreview(selected),
+            sourceStats,
         };
     }
     const batch = db.batch();
@@ -703,9 +836,11 @@ async function runBlogCuration(options) {
         selectedCount: selected.length,
         storedCount: selected.length,
         candidateCount: mergedArticles.length,
-        uniqueCandidateCount: uniqueCandidates.length,
+        uniqueCandidateCount: cooldownEligibleCandidates.length,
         force,
         dryRun,
+        selectedPreview: buildSelectedPreview(selected),
+        sourceStats,
     };
 }
 exports.curateDailyBlogPosts = (0, scheduler_1.onSchedule)({
