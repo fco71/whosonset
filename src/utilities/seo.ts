@@ -1,4 +1,6 @@
 const DEFAULT_ROBOTS = 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
+const HREFLANG_CODES = ['en', 'es'] as const;
+const MANAGED_HREFLANG_SELECTOR = 'link[rel="alternate"][data-seo-managed="hreflang"]';
 
 export interface SeoConfig {
   title: string;
@@ -32,6 +34,51 @@ function upsertCanonicalLink(href: string): void {
     document.head.appendChild(link);
   }
   link.setAttribute('href', href);
+}
+
+function upsertAlternateLink(hrefLang: string, href: string): void {
+  let link = document.head.querySelector<HTMLLinkElement>(`link[rel="alternate"][hreflang="${hrefLang}"]`);
+  if (!link) {
+    link = document.createElement('link');
+    link.setAttribute('rel', 'alternate');
+    link.setAttribute('data-seo-managed', 'hreflang');
+    document.head.appendChild(link);
+  }
+
+  link.setAttribute('hreflang', hrefLang);
+  link.setAttribute('href', href);
+}
+
+function removeManagedAlternateLinks(): void {
+  document.head.querySelectorAll<HTMLLinkElement>(MANAGED_HREFLANG_SELECTOR).forEach((link) => {
+    if (link.parentNode) {
+      link.parentNode.removeChild(link);
+    }
+  });
+}
+
+function buildLocalizedUrl(baseUrl: string, lang: string): string {
+  const localized = new URL(baseUrl);
+  localized.searchParams.set('lang', lang);
+  return localized.toString();
+}
+
+function setDefaultHreflangLinks(canonicalUrl: string): void {
+  try {
+    const canonical = canonicalUrl.startsWith('http')
+      ? new URL(canonicalUrl)
+      : new URL(canonicalUrl, window.location.origin);
+    canonical.searchParams.delete('lang');
+    const baseCanonical = canonical.toString();
+
+    removeManagedAlternateLinks();
+    HREFLANG_CODES.forEach((code) => {
+      upsertAlternateLink(code, buildLocalizedUrl(baseCanonical, code));
+    });
+    upsertAlternateLink('x-default', baseCanonical);
+  } catch (error) {
+    console.error('[seo] Failed to set hreflang links:', error);
+  }
 }
 
 function removeMetaTag(
@@ -74,6 +121,7 @@ export function setPageSeo(config: SeoConfig): void {
   upsertMetaTag('twitter:title', title);
   upsertMetaTag('twitter:description', description);
   upsertCanonicalLink(canonicalUrl);
+  setDefaultHreflangLinks(canonicalUrl);
 }
 
 export function setStructuredData(scriptId: string, value: unknown): void {

@@ -1,9 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+import { useAuth } from '../contexts/AuthContext';
 
 const AboutPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { currentUser } = useAuth();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -89,23 +89,27 @@ const AboutPage: React.FC = () => {
           {/* CTA Section */}
           <div className="text-center bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-8 text-white">
             <h2 className="text-3xl font-semibold mb-4">
-              Ready to Join?
+              {currentUser ? 'Ready for your next move?' : 'Ready to Join?'}
             </h2>
             <p className="text-xl mb-6 opacity-90">
-              Join thousands of film professionals already using My Film Jobs
+              {currentUser
+                ? 'Use My Film Jobs to discover projects, roles, and collaborators faster.'
+                : 'Join thousands of film professionals already using My Film Jobs'}
             </p>
-            <div className="space-x-4">
+            <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
+              {!currentUser && (
+                <Link
+                  to="/register"
+                  className="inline-block bg-white px-8 py-3 font-semibold text-blue-600 transition-colors hover:bg-gray-100 rounded-lg"
+                >
+                  Get Started
+                </Link>
+              )}
               <Link
-                to="/register"
-                className="inline-block bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
+                to={currentUser ? '/jobs' : '/crew-public'}
+                className="inline-block rounded-lg border-2 border-white px-8 py-3 font-semibold text-white transition-colors hover:bg-white hover:text-blue-600"
               >
-                Sign Up Free
-              </Link>
-              <Link
-                to="/crew"
-                className="inline-block border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors"
-              >
-                Browse Crew
+                {currentUser ? 'Browse Film Jobs' : 'Browse Crew'}
               </Link>
             </div>
           </div>

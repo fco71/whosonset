@@ -1,6 +1,6 @@
 // src/components/Navigation.tsx
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, User, ChevronDown, Bell, Settings } from 'lucide-react';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from './ui/DropdownMenu';
 import { useNotifications } from '../hooks/useNotifications';
@@ -17,6 +17,7 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
   
     
     const location = useLocation();
+    const navigate = useNavigate();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
     const [activePath, setActivePath] = useState('/');
@@ -24,6 +25,24 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
     const [showNotificationCenter, setShowNotificationCenter] = useState(false);
     const [showNotificationSettings, setShowNotificationSettings] = useState(false);
     const { t, i18n } = useTranslation();
+    const activeLanguage = i18n.language.startsWith('es') ? 'es' : 'en';
+
+    const crewDestination = authUser ? '/crew' : '/crew-public';
+
+    const handleLanguageChange = (languageCode: string) => {
+        if (activeLanguage === languageCode) {
+            return;
+        }
+
+        i18n.changeLanguage(languageCode);
+        const params = new URLSearchParams(location.search);
+        params.set('lang', languageCode);
+        const search = params.toString();
+        navigate({
+            pathname: location.pathname,
+            search: search ? `?${search}` : '',
+        }, { replace: true });
+    };
 
     useEffect(() => {
         setActivePath(location.pathname);
@@ -66,7 +85,7 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
 
     const navigationLinks = [
         { to: '/', label: t('nav.home') },
-        { to: '/crew', label: t('nav.crew') },
+        { to: crewDestination, label: t('nav.crew') },
         { to: '/jobs', label: t('nav.jobs') },
         { to: '/projects', label: t('nav.projects') },
         { to: '/collaboration', label: t('nav.collaboration') },
@@ -255,6 +274,7 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                                 <button
                                     onClick={() => setShowNotificationCenter(true)}
                                     className="relative ml-2 p-2 rounded-full hover:bg-gray-100 transition"
+                                    aria-label="Open notifications"
                                 >
                                     <Bell className="w-6 h-6 text-gray-700" />
                                     {unreadCount > 0 && (
@@ -281,25 +301,30 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                             </Link>
                             {/* Language Switcher */}
                             <div className="relative">
-                                <button
-                                    className="flex items-center px-2 py-1 rounded-lg text-gray-600 hover:text-blue-700 hover:bg-blue-50/60 transition-colors text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-200"
-                                    aria-label="Change language"
-                                    tabIndex={0}
+                                <div
+                                    className="flex items-center rounded-lg border border-gray-200 bg-white px-1 py-1"
+                                    role="group"
+                                    aria-label="Select language"
                                 >
                                     {languages.map((lang, idx) => (
-                                        <span
-                                            key={lang.code}
-                                            onClick={e => {
-                                                e.stopPropagation();
-                                                i18n.changeLanguage(lang.code);
-                                            }}
-                                            className={`cursor-pointer ${i18n.language === lang.code ? 'text-blue-700 font-bold' : 'text-gray-500 hover:text-blue-600'}`}
-                                        >
-                                            {lang.label}
+                                        <React.Fragment key={lang.code}>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleLanguageChange(lang.code)}
+                                                className={`min-h-[2.25rem] min-w-[2.25rem] rounded-md px-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-blue-300 ${
+                                                    activeLanguage === lang.code
+                                                        ? 'bg-blue-600 text-white'
+                                                        : 'text-gray-700 hover:bg-gray-100'
+                                                }`}
+                                                aria-pressed={activeLanguage === lang.code}
+                                                aria-label={`Switch language to ${lang.label}`}
+                                            >
+                                                {lang.label}
+                                            </button>
                                             {idx < languages.length - 1 && <span className="mx-1 text-gray-300">/</span>}
-                                        </span>
+                                        </React.Fragment>
                                     ))}
-                                </button>
+                                </div>
                             </div>
                             {authUser ? (
                                 <>
@@ -308,6 +333,9 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                                         <button 
                                             onClick={toggleUserMenu}
                                             className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-gray-100/80 hover:bg-gray-200/80 transition-all duration-200 group"
+                                            aria-label="Toggle account menu"
+                                            aria-expanded={isUserMenuOpen}
+                                            aria-controls="user-menu-dropdown"
                                         >
                                             <div className="w-7 h-7 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white text-sm font-medium">
                                                 {authUser.email?.[0].toUpperCase() || 'U'}
@@ -319,7 +347,7 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                                         </button>
                                         
                                         {isUserMenuOpen && (
-                                            <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200/50 py-2 z-50 backdrop-blur-sm">
+                                            <div id="user-menu-dropdown" className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200/50 py-2 z-50 backdrop-blur-sm">
                                                 <div className="px-4 py-3 border-b border-gray-100">
                                                     <p className="text-sm font-medium text-gray-900">{authUser.email}</p>
                                                     <p className="text-xs text-gray-500 mt-1">Film Professional</p>
@@ -408,6 +436,8 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                                     onClick={toggleMobileMenu}
                                     className="p-2 rounded-lg text-gray-700 hover:text-gray-900 hover:bg-gray-100/80 transition-colors"
                                     aria-label="Toggle mobile menu"
+                                    aria-expanded={isMobileMenuOpen}
+                                    aria-controls="mobile-menu-panel"
                                 >
                                     {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
                                 </button>
@@ -419,7 +449,7 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
 
             {/* Mobile Menu */}
             {isMobileMenuOpen && (
-                <div className="xl:hidden fixed top-16 left-0 right-0 bottom-0 bg-white z-50">
+                <div id="mobile-menu-panel" className="xl:hidden fixed top-16 left-0 right-0 bottom-0 bg-white z-50">
                     <div className="px-4 py-6 space-y-4 h-full overflow-y-auto">
                         
                         {/* Navigation Links */}

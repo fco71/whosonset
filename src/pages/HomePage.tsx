@@ -292,7 +292,7 @@ const HomePage: React.FC = () => {
                 {currentUser ? t('home.cta.ctaSecondary') : t('home.cta.ctaPrimary')}
               </Link>
               <Link
-                to="/crew"
+                to={currentUser ? '/crew' : '/crew-public'}
                 className="group px-8 py-4 bg-transparent text-white font-semibold rounded-lg border-2 border-white hover:bg-white hover:text-blue-600 transition-all duration-300 flex items-center justify-center text-lg"
               >
                 <Clapperboard className="mr-2 w-5 h-5 group-hover:scale-110 transition-transform" />

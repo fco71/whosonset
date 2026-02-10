@@ -17,9 +17,10 @@ const categoryStyles: Record<string, string> = {
 
 const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, expanded, onToggleComments }) => {
   const summary = sanitizeBlogSummary(post.summary || '');
+  const commentsRegionId = `blog-comments-${post.id}`;
 
   return (
-    <article className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+    <article className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
       <div className="flex flex-wrap items-center gap-2">
         <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${categoryStyles[post.category] || categoryStyles.industry}`}>
           {post.category}
@@ -27,19 +28,20 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, expanded, onToggleCom
         <span className="text-xs text-gray-500">{post.publishedAt.toLocaleDateString()}</span>
       </div>
 
-      <div className="mt-4 flex items-start gap-4">
+      <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start">
         {post.imageUrl ? (
           <a
             href={post.originalUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="block shrink-0"
+            className="block shrink-0 overflow-hidden rounded-lg border border-gray-200"
           >
             <img
               src={post.imageUrl}
               alt={post.title}
-              className="h-20 w-32 rounded-lg object-cover"
+              className="h-44 w-full object-cover sm:h-24 sm:w-40"
               loading="lazy"
+              decoding="async"
             />
           </a>
         ) : null}
@@ -51,6 +53,7 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, expanded, onToggleCom
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-blue-700 hover:underline"
+              aria-label={`Open source article: ${post.title}`}
             >
               {post.title}
             </a>
@@ -71,19 +74,21 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, expanded, onToggleCom
         </a>
       </div>
 
-      <div className="mt-5 flex flex-wrap items-center gap-3">
+      <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
         <a
           href={post.originalUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-black"
+          className="w-full rounded-lg bg-gray-900 px-4 py-2 text-center text-sm font-medium text-white transition hover:bg-black sm:w-auto"
         >
           Read Article
         </a>
         <button
           type="button"
           onClick={onToggleComments}
-          className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+          className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 sm:w-auto"
+          aria-expanded={expanded}
+          aria-controls={commentsRegionId}
         >
           {expanded ? 'Hide Comments' : `Comments (${post.commentsCount || 0})`}
         </button>

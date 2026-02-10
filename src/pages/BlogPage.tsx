@@ -64,21 +64,21 @@ const BlogPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <section className="border-b border-gray-200 bg-white">
-        <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
-          <h1 className="text-4xl font-bold tracking-tight text-gray-900">Film Industry News and Insights</h1>
+        <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">Film Industry News and Insights</h1>
           <p className="mt-4 max-w-3xl text-base text-gray-600">
             Fresh film-industry updates with practical takeaways for your next job, project, or collaboration.
           </p>
-          <div className="mt-6 flex flex-wrap gap-3">
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <Link
               to="/jobs"
-              className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-black"
+              className="rounded-lg bg-gray-900 px-4 py-2 text-center text-sm font-semibold text-white transition hover:bg-black"
             >
               Browse Film Jobs
             </Link>
             <Link
               to="/collaboration"
-              className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
+              className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-center text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
             >
               Explore Collaboration
             </Link>
@@ -111,7 +111,10 @@ const BlogPage: React.FC = () => {
                     }}
                   />
                   {expanded && (
-                    <div className="rounded-b-xl border border-t-0 border-gray-200 bg-white px-6 pb-6">
+                    <div
+                      id={`blog-comments-${post.id}`}
+                      className="rounded-b-xl border border-t-0 border-gray-200 bg-white px-4 pb-6 sm:px-6"
+                    >
                       <BlogCommentSection postId={post.id} currentUser={currentUser} />
                     </div>
                   )}
@@ -122,22 +125,22 @@ const BlogPage: React.FC = () => {
         )}
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 pb-12 sm:px-6 lg:px-8">
+      <section className="mx-auto max-w-6xl px-4 pb-10 sm:px-6 sm:pb-12 lg:px-8">
         <div className="rounded-2xl border border-gray-200 bg-white p-6 sm:p-8">
           <h2 className="text-2xl font-semibold text-gray-900">Turn Insights Into Opportunities</h2>
           <p className="mt-3 text-sm leading-6 text-gray-600">
             Use the latest industry signals to find jobs faster, connect with collaborators, and build momentum for your next production.
           </p>
-          <div className="mt-5 flex flex-wrap gap-3">
+          <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <Link
               to="/jobs"
-              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+              className="rounded-lg bg-blue-600 px-4 py-2 text-center text-sm font-semibold text-white transition hover:bg-blue-700"
             >
               Find Open Roles
             </Link>
             <Link
-              to="/crew-public"
-              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-800 transition hover:bg-gray-100"
+              to={currentUser ? '/crew' : '/crew-public'}
+              className="rounded-lg border border-gray-300 px-4 py-2 text-center text-sm font-semibold text-gray-800 transition hover:bg-gray-100"
             >
               Discover Crew
             </Link>

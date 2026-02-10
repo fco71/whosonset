@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { fetchBlogPostById, fetchBlogPosts } from '../services/blogService';
 import { BlogPost } from '../types/blog';
 import {
+  buildBlogPostBreadcrumbStructuredData,
   buildBlogMetaDescription,
   buildBlogPostStructuredData,
   getBlogPostCanonicalUrl,
@@ -113,7 +114,16 @@ const BlogPostPage: React.FC = () => {
       ogType: 'article',
       ogImage: post.imageUrl || 'https://myfilmjobs.com/my-icon.png',
     });
-    setStructuredData(BLOG_POST_SCHEMA_ID, buildBlogPostStructuredData(post));
+    setStructuredData(BLOG_POST_SCHEMA_ID, {
+      '@context': 'https://schema.org',
+      '@graph': [
+        buildBlogPostStructuredData(post),
+        buildBlogPostBreadcrumbStructuredData({
+          id: post.id,
+          title: post.title,
+        }),
+      ],
+    });
 
     return () => {
       removeStructuredData(BLOG_POST_SCHEMA_ID);
@@ -236,14 +246,12 @@ const BlogPostPage: React.FC = () => {
           <ul className="mt-4 space-y-3">
             {relatedPosts.map((relatedPost) => (
               <li key={relatedPost.id}>
-                <a
-                  href={relatedPost.originalUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <Link
+                  to={getBlogPostPath(relatedPost.id)}
                   className="font-semibold text-blue-700 hover:underline"
                 >
                   {relatedPost.title}
-                </a>
+                </Link>
                 <p className="mt-1 text-sm text-gray-600">
                   {relatedPost.publishedAt.toLocaleDateString()}
                 </p>

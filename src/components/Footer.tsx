@@ -57,7 +57,7 @@ const Footer: React.FC = () => {
               </li>
               <li>
                 <Link 
-                  to="/crew" 
+                  to="/crew-public" 
                   className="text-gray-400 hover:text-white transition-colors"
                 >
                   Find Crew

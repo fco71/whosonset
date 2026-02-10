@@ -21,7 +21,8 @@ i18n
       escapeValue: false, // React already escapes
     },
     detection: {
-      order: ['localStorage', 'navigator', 'htmlTag', 'path', 'subdomain'],
+      order: ['querystring', 'localStorage', 'navigator', 'htmlTag', 'path', 'subdomain'],
+      lookupQuerystring: 'lang',
       caches: ['localStorage'],
     },
   });

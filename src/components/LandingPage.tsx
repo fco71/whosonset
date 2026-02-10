@@ -275,7 +275,7 @@ const LandingPage: React.FC = () => {
               <h4 className="font-semibold mb-4">Platform</h4>
               <ul className="space-y-2 text-gray-400">
                 <li><Link to="/projects" className="hover:text-white transition-colors">Projects</Link></li>
-                <li><Link to="/crew" className="hover:text-white transition-colors">Crew</Link></li>
+                <li><Link to="/crew-public" className="hover:text-white transition-colors">Crew</Link></li>
                 <li><Link to="/jobs" className="hover:text-white transition-colors">Jobs</Link></li>
                 <li><Link to="/social" className="hover:text-white transition-colors">Social</Link></li>
               </ul>
