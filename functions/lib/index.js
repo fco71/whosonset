@@ -177,6 +177,7 @@ const BLOG_DEFAULT_FEEDS = [
         feedUrl: "https://nofilmschool.com/feeds/content-types/article.rss",
         sourceUrl: "https://nofilmschool.com/",
         defaultCategory: "industry",
+        minHoursBetweenSelections: 24,
     },
     {
         name: "Y.M.Cinema Magazine",
