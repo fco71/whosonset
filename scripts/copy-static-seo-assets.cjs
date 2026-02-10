@@ -9,6 +9,7 @@ const filesToCopy = [
   'sitemap.xml',
   'sitemap-static.xml',
   'ads.txt',
+  'googlebc4b6f0f06687f39.html',
   'my-icon.png',
   'bust-avatar.svg',
   'default-avatar.svg',
