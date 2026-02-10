@@ -107,12 +107,45 @@ export function getNotificationDateValue(value: unknown): Date | null {
     return Number.isNaN(value.getTime()) ? null : value;
   }
 
-  if (typeof value === 'object' && value !== null && 'toDate' in value) {
-    const maybeDate = (value as { toDate?: () => Date }).toDate;
-    if (typeof maybeDate === 'function') {
-      const converted = maybeDate();
+  if (typeof value === 'object' && value !== null) {
+    const candidate = value as Record<string, unknown>;
+
+    // Firestore Timestamp objects expose toDate()/toMillis() and rely on method binding.
+    if (typeof candidate.toDate === 'function') {
+      try {
+        const converted = (candidate.toDate as () => Date).call(value);
+        if (converted instanceof Date && !Number.isNaN(converted.getTime())) {
+          return converted;
+        }
+      } catch {
+        // Fall through to alternate parsing paths.
+      }
+    }
+
+    if (typeof candidate.toMillis === 'function') {
+      try {
+        const millis = Number((candidate.toMillis as () => number).call(value));
+        if (Number.isFinite(millis)) {
+          const converted = new Date(millis);
+          return Number.isNaN(converted.getTime()) ? null : converted;
+        }
+      } catch {
+        // Fall through to alternate parsing paths.
+      }
+    }
+
+    const seconds = typeof candidate.seconds === 'number' ? candidate.seconds : null;
+    const nanoseconds = typeof candidate.nanoseconds === 'number' ? candidate.nanoseconds : 0;
+    if (seconds !== null) {
+      const millis = (seconds * 1000) + Math.floor(nanoseconds / 1_000_000);
+      const converted = new Date(millis);
       return Number.isNaN(converted.getTime()) ? null : converted;
     }
+  }
+
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    const converted = new Date(value);
+    return Number.isNaN(converted.getTime()) ? null : converted;
   }
 
   const converted = new Date(String(value));
