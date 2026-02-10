@@ -1,6 +1,7 @@
 import React from 'react';
 import { BlogPost } from '../../types/blog';
 import { sanitizeBlogSummary } from '../../utilities/blogSeo';
+import { trackConversion } from '../../utilities/conversionTracking';
 
 interface BlogPostCardProps {
   post: BlogPost;
@@ -19,6 +20,15 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, expanded, onToggleCom
   const summary = sanitizeBlogSummary(post.summary || '');
   const commentsRegionId = `blog-comments-${post.id}`;
 
+  const trackExternalClick = (placement: string) => {
+    trackConversion('blog_external_open', {
+      postId: post.id,
+      postTitle: post.title,
+      sourceName: post.sourceName,
+      placement,
+    });
+  };
+
   return (
     <article className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
       <div className="flex flex-wrap items-center gap-2">
@@ -35,6 +45,7 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, expanded, onToggleCom
             target="_blank"
             rel="noopener noreferrer"
             className="block shrink-0 overflow-hidden rounded-lg border border-gray-200"
+            onClick={() => trackExternalClick('image')}
           >
             <img
               src={post.imageUrl}
@@ -42,6 +53,7 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, expanded, onToggleCom
               className="h-44 w-full object-cover sm:h-24 sm:w-40"
               loading="lazy"
               decoding="async"
+              sizes="(max-width: 640px) 100vw, 160px"
             />
           </a>
         ) : null}
@@ -54,6 +66,7 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, expanded, onToggleCom
               rel="noopener noreferrer"
               className="hover:text-blue-700 hover:underline"
               aria-label={`Open source article: ${post.title}`}
+              onClick={() => trackExternalClick('title')}
             >
               {post.title}
             </a>
@@ -69,6 +82,7 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, expanded, onToggleCom
           target="_blank"
           rel="noopener noreferrer"
           className="font-medium text-blue-700 hover:text-blue-800 hover:underline"
+          onClick={() => trackExternalClick('source')}
         >
           {post.sourceName}
         </a>
@@ -79,14 +93,15 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, expanded, onToggleCom
           href={post.originalUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="w-full rounded-lg bg-gray-900 px-4 py-2 text-center text-sm font-medium text-white transition hover:bg-black sm:w-auto"
+          className="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-gray-900 px-4 py-2 text-center text-sm font-medium text-white transition hover:bg-black sm:w-auto"
+          onClick={() => trackExternalClick('read_button')}
         >
           Read Article
         </a>
         <button
           type="button"
           onClick={onToggleComments}
-          className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 sm:w-auto"
+          className="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 sm:w-auto"
           aria-expanded={expanded}
           aria-controls={commentsRegionId}
         >

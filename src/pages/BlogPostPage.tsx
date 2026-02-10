@@ -11,6 +11,7 @@ import {
   getBlogPostPath,
   sanitizeBlogSummary,
 } from '../utilities/blogSeo';
+import { trackConversion } from '../utilities/conversionTracking';
 import { removeStructuredData, setPageSeo, setStructuredData } from '../utilities/seo';
 
 const BLOG_POST_SCHEMA_ID = 'blog-post-structured-data';
@@ -153,6 +154,14 @@ const BlogPostPage: React.FC = () => {
   }
 
   const summary = sanitizeBlogSummary(post.summary || '');
+  const trackExternalRead = (placement: string) => {
+    trackConversion('blog_external_open', {
+      postId: post.id,
+      postTitle: post.title,
+      sourceName: post.sourceName,
+      placement,
+    });
+  };
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
@@ -189,6 +198,8 @@ const BlogPostPage: React.FC = () => {
               alt={post.title}
               className="h-auto w-full object-cover"
               loading="lazy"
+              decoding="async"
+              sizes="(max-width: 1024px) 100vw, 960px"
             />
           </div>
         )}
@@ -204,13 +215,15 @@ const BlogPostPage: React.FC = () => {
             href={post.originalUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-black"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-black"
+            onClick={() => trackExternalRead('post_read_button')}
           >
             Read Article
           </a>
           <Link
             to="/jobs"
-            className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-800 transition hover:bg-gray-100"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-800 transition hover:bg-gray-100"
+            onClick={() => trackConversion('blog_internal_cta_click', { placement: 'post_browse_jobs', postId: post.id })}
           >
             Browse Film Jobs
           </Link>
@@ -224,13 +237,15 @@ const BlogPostPage: React.FC = () => {
           <div className="mt-4 flex flex-wrap gap-3">
             <Link
               to="/jobs"
-              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+              onClick={() => trackConversion('blog_internal_cta_click', { placement: 'post_explore_jobs', postId: post.id })}
             >
               Explore Jobs
             </Link>
             <Link
               to="/collaboration"
-              className="rounded-lg border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
+              onClick={() => trackConversion('blog_internal_cta_click', { placement: 'post_collaboration', postId: post.id })}
             >
               Open Collaboration Tools
             </Link>
@@ -251,6 +266,10 @@ const BlogPostPage: React.FC = () => {
                 <Link
                   to={getBlogPostPath(relatedPost.id)}
                   className="font-semibold text-blue-700 hover:underline"
+                  onClick={() => trackConversion('blog_related_post_click', {
+                    fromPostId: post.id,
+                    toPostId: relatedPost.id,
+                  })}
                 >
                   {relatedPost.title}
                 </Link>

@@ -14,7 +14,7 @@ import {
 import { BlogComment, BlogPost } from '../types/blog';
 
 const BLOG_POSTS_COLLECTION = 'blogPosts';
-const MAX_POST_RESULTS = 60;
+const MAX_POST_RESULTS = 180;
 const MAX_COMMENT_RESULTS = 150;
 const MAX_COMMENT_LENGTH = 1000;
 
@@ -90,6 +90,50 @@ export async function fetchBlogPosts(maxPosts = 30): Promise<BlogPost[]> {
     );
     const fallbackSnapshot = await getDocs(fallbackQuery);
     return mapBlogPostsFromSnapshot(fallbackSnapshot, maxPosts);
+  }
+}
+
+export async function fetchBlogPostsPage(
+  pageNumber = 1,
+  pageSize = 18
+): Promise<{ posts: BlogPost[]; hasNextPage: boolean }> {
+  const safePageNumber = Math.max(1, Math.floor(pageNumber));
+  const safePageSize = Math.min(Math.max(Math.floor(pageSize), 1), 30);
+  const startIndex = (safePageNumber - 1) * safePageSize;
+  const endIndex = startIndex + safePageSize;
+  const queryLimit = Math.min(endIndex + 1, MAX_POST_RESULTS);
+  const postsRef = collection(db, BLOG_POSTS_COLLECTION);
+
+  const buildResult = (items: BlogPost[]) => ({
+    posts: items.slice(startIndex, endIndex),
+    hasNextPage: items.length > endIndex,
+  });
+
+  try {
+    const postsQuery = query(
+      postsRef,
+      where('isPublic', '==', true),
+      orderBy('publishedAt', 'desc'),
+      limit(queryLimit)
+    );
+    const snapshot = await getDocs(postsQuery);
+    return buildResult(mapBlogPostsFromSnapshot(snapshot, queryLimit));
+  } catch (error: any) {
+    const code = String(error?.code || '');
+    const message = String(error?.message || '');
+    const missingIndex = code === 'failed-precondition' || /index/i.test(message);
+
+    if (!missingIndex) {
+      throw error;
+    }
+
+    const fallbackQuery = query(
+      postsRef,
+      where('isPublic', '==', true),
+      limit(queryLimit)
+    );
+    const fallbackSnapshot = await getDocs(fallbackQuery);
+    return buildResult(mapBlogPostsFromSnapshot(fallbackSnapshot, queryLimit));
   }
 }
 

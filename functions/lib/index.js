@@ -163,6 +163,7 @@ function toDate(value) {
 }
 const BLOG_TIMEZONE = "America/Los_Angeles";
 const BLOG_MAX_POSTS_PER_DAY = 3;
+const BLOG_ARCHIVE_PAGE_SIZE = 18;
 const BLOG_LOOKBACK_HOURS = 72;
 const BLOG_RECENT_DEDUP_DAYS = 7;
 const BLOG_FEED_CONFIG_COLLECTION = "blogConfig";
@@ -936,6 +937,7 @@ exports.blogSitemap = (0, https_1.onRequest)({
     region: "us-central1",
     invoker: "public",
 }, async (req, res) => {
+    var _a;
     if (req.method !== "GET" && req.method !== "HEAD") {
         res.status(405).set("Allow", "GET, HEAD").send("Method Not Allowed");
         return;
@@ -944,7 +946,7 @@ exports.blogSitemap = (0, https_1.onRequest)({
         const snapshot = await db.collection("blogPosts")
             .where("isPublic", "==", true)
             .get();
-        const entries = snapshot.docs
+        const postEntries = snapshot.docs
             .map((postDoc) => {
             const data = postDoc.data();
             const publishedAt = toDate(data.publishedAt) || toDate(data.createdAt) || new Date();
@@ -956,15 +958,35 @@ exports.blogSitemap = (0, https_1.onRequest)({
             };
         })
             .sort((a, b) => b.lastmod.getTime() - a.lastmod.getTime());
-        const urls = entries
-            .map((entry) => [
-            "  <url>",
-            `    <loc>${escapeXml(entry.loc)}</loc>`,
-            `    <lastmod>${entry.lastmod.toISOString()}</lastmod>`,
-            "    <changefreq>daily</changefreq>",
-            "    <priority>0.8</priority>",
-            "  </url>",
-        ].join("\n"))
+        const archivePageCount = Math.max(1, Math.ceil(postEntries.length / BLOG_ARCHIVE_PAGE_SIZE));
+        const defaultLastmod = ((_a = postEntries[0]) === null || _a === void 0 ? void 0 : _a.lastmod) || new Date();
+        const archiveEntries = Array.from({ length: archivePageCount }, (_, index) => {
+            var _a;
+            const pageNumber = index + 1;
+            const loc = pageNumber === 1
+                ? "https://myfilmjobs.com/blog"
+                : `https://myfilmjobs.com/blog/page/${pageNumber}`;
+            const pageLastmod = ((_a = postEntries[index * BLOG_ARCHIVE_PAGE_SIZE]) === null || _a === void 0 ? void 0 : _a.lastmod) || defaultLastmod;
+            return {
+                loc,
+                lastmod: pageLastmod,
+                changefreq: "daily",
+                priority: pageNumber === 1 ? "0.9" : "0.6",
+            };
+        });
+        const urls = [...archiveEntries, ...postEntries]
+            .map((entry) => {
+            const changefreq = "changefreq" in entry ? entry.changefreq : "daily";
+            const priority = "priority" in entry ? entry.priority : "0.8";
+            return [
+                "  <url>",
+                `    <loc>${escapeXml(entry.loc)}</loc>`,
+                `    <lastmod>${entry.lastmod.toISOString()}</lastmod>`,
+                `    <changefreq>${changefreq}</changefreq>`,
+                `    <priority>${priority}</priority>`,
+                "  </url>",
+            ].join("\n");
+        })
             .join("\n");
         const xml = [
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",

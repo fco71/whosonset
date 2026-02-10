@@ -20,6 +20,7 @@ import { db } from '../firebase';
 import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
+import { trackConversion } from '../utilities/conversionTracking';
 
 const HomePage: React.FC = () => {
   const { t } = useTranslation();
@@ -157,6 +158,12 @@ const HomePage: React.FC = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
               <Link
                 to={currentUser ? '/jobs' : '/register'}
+                onClick={() => {
+                  trackConversion(currentUser ? 'home_cta_click' : 'signup_cta_click', {
+                    placement: 'home_hero_primary',
+                    destination: currentUser ? '/jobs' : '/register',
+                  });
+                }}
                 className="group px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center text-lg"
               >
                 {currentUser ? t('home.hero.ctaSecondary') : t('home.hero.ctaPrimary')}
@@ -164,6 +171,12 @@ const HomePage: React.FC = () => {
               </Link>
               <Link
                 to="/jobs"
+                onClick={() => {
+                  trackConversion('home_cta_click', {
+                    placement: 'home_hero_secondary',
+                    destination: '/jobs',
+                  });
+                }}
                 className="group px-8 py-4 bg-white text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-all duration-300 shadow-lg border border-gray-200 hover:border-gray-300 flex items-center text-lg"
               >
                 <Play className="mr-2 w-5 h-5 group-hover:scale-110 transition-transform" />
@@ -286,6 +299,12 @@ const HomePage: React.FC = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 to={currentUser ? '/projects' : '/register'}
+                onClick={() => {
+                  trackConversion(currentUser ? 'home_cta_click' : 'signup_cta_click', {
+                    placement: 'home_footer_primary',
+                    destination: currentUser ? '/projects' : '/register',
+                  });
+                }}
                 className="group px-8 py-4 bg-white text-blue-600 font-semibold rounded-lg hover:bg-gray-50 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center text-lg"
               >
                 <Heart className="mr-2 w-5 h-5 group-hover:scale-110 transition-transform" />
@@ -293,6 +312,12 @@ const HomePage: React.FC = () => {
               </Link>
               <Link
                 to={currentUser ? '/crew' : '/crew-public'}
+                onClick={() => {
+                  trackConversion('home_cta_click', {
+                    placement: 'home_footer_secondary',
+                    destination: currentUser ? '/crew' : '/crew-public',
+                  });
+                }}
                 className="group px-8 py-4 bg-transparent text-white font-semibold rounded-lg border-2 border-white hover:bg-white hover:text-blue-600 transition-all duration-300 flex items-center justify-center text-lg"
               >
                 <Clapperboard className="mr-2 w-5 h-5 group-hover:scale-110 transition-transform" />

@@ -73,6 +73,10 @@ export function createAppRouter() {
           element: <BlogPage />
         },
         {
+          path: 'blog/page/:pageNumber',
+          element: <BlogPage />
+        },
+        {
           path: 'blog/:postId',
           element: <BlogPostPage />
         },

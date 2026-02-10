@@ -45,7 +45,14 @@ function toIsoDate(value?: Date): string | undefined {
   return new Date(time).toISOString();
 }
 
-export function buildBlogListStructuredData(posts: BlogPost[]): Record<string, unknown> {
+export function buildBlogListStructuredData(
+  posts: BlogPost[],
+  options?: {
+    pageUrl?: string;
+    pageName?: string;
+    pageDescription?: string;
+  }
+): Record<string, unknown> {
   const listItems = posts.slice(0, 24).map((post, index) => ({
     '@type': 'ListItem',
     position: index + 1,
@@ -54,12 +61,16 @@ export function buildBlogListStructuredData(posts: BlogPost[]): Record<string, u
     datePublished: toIsoDate(post.publishedAt),
   }));
 
+  const pageUrl = options?.pageUrl || `${BLOG_BASE_URL}/blog`;
+  const pageName = options?.pageName || 'Film Industry News and Insights';
+  const pageDescription = options?.pageDescription || 'Film industry stories with practical takeaways for jobs and collaboration.';
+
   return {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
-    name: 'Film Industry News and Insights',
-    description: 'Film industry stories with practical takeaways for jobs and collaboration.',
-    url: `${BLOG_BASE_URL}/blog`,
+    name: pageName,
+    description: pageDescription,
+    url: pageUrl,
     publisher: {
       '@type': 'Organization',
       name: 'My Film Jobs',

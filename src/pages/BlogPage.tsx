@@ -1,32 +1,40 @@
 import React, { Suspense, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import BlogPostCard from '../components/Blog/BlogPostCard';
 import { useAuth } from '../contexts/AuthContext';
-import { fetchBlogPosts } from '../services/blogService';
+import { fetchBlogPostsPage } from '../services/blogService';
 import { BlogPost } from '../types/blog';
 import { buildBlogListStructuredData } from '../utilities/blogSeo';
+import { trackConversion } from '../utilities/conversionTracking';
 import { removeStructuredData, setPageSeo, setStructuredData } from '../utilities/seo';
 
 const BLOG_LIST_SCHEMA_ID = 'blog-list-structured-data';
-const INITIAL_VISIBLE_POSTS = 12;
-const LOAD_MORE_STEP = 12;
+const POSTS_PER_PAGE = 18;
 const BlogCommentSection = React.lazy(() => import('../components/Blog/BlogCommentSection'));
 
 const BlogPage: React.FC = () => {
   const { currentUser } = useAuth();
+  const { pageNumber } = useParams<{ pageNumber?: string }>();
+  const navigate = useNavigate();
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [expandedPostId, setExpandedPostId] = useState<string>('');
-  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_POSTS);
+  const [hasNextPage, setHasNextPage] = useState(false);
+
+  const parsedPageNumber = pageNumber ? Number.parseInt(pageNumber, 10) : 1;
+  const currentPage = Number.isFinite(parsedPageNumber) && parsedPageNumber > 0 ? parsedPageNumber : 1;
+  const canonicalPath = currentPage === 1 ? '/blog' : `/blog/page/${currentPage}`;
+  const canonicalUrl = `https://myfilmjobs.com${canonicalPath}`;
 
   const loadPosts = async () => {
     try {
       setLoading(true);
       setError('');
-      const loadedPosts = await fetchBlogPosts(45);
-      setPosts(loadedPosts);
-      setVisibleCount(INITIAL_VISIBLE_POSTS);
+      const result = await fetchBlogPostsPage(currentPage, POSTS_PER_PAGE);
+      setPosts(result.posts);
+      setHasNextPage(result.hasNextPage);
+      setExpandedPostId('');
     } catch (loadError) {
       console.error('[BlogPage] Failed to load blog posts:', loadError);
       setError('Could not load industry updates right now.');
@@ -36,19 +44,32 @@ const BlogPage: React.FC = () => {
   };
 
   useEffect(() => {
+    if (!pageNumber) {
+      return;
+    }
+    if (!Number.isFinite(parsedPageNumber) || parsedPageNumber < 1) {
+      navigate('/blog', { replace: true });
+    }
+  }, [navigate, pageNumber, parsedPageNumber]);
+
+  useEffect(() => {
     loadPosts();
-  }, []);
+  }, [currentPage]);
 
   const previewImage = posts.find((item) => Boolean(item.imageUrl))?.imageUrl || 'https://myfilmjobs.com/my-icon.png';
 
   useEffect(() => {
+    const pageTitle = currentPage === 1
+      ? 'Film Industry News Blog | Jobs and Collaboration Insights'
+      : `Film Industry News Blog | Page ${currentPage} | Jobs and Collaboration Insights`;
+
     setPageSeo({
-      title: 'Film Industry News Blog | Jobs and Collaboration Insights',
+      title: pageTitle,
       description: 'Read film industry news and turn insights into action with job opportunities and collaboration tools on My Film Jobs.',
-      canonicalUrl: 'https://myfilmjobs.com/blog',
+      canonicalUrl,
       ogImage: previewImage,
     });
-  }, [previewImage]);
+  }, [canonicalUrl, currentPage, previewImage]);
 
   useEffect(() => {
     if (loading || error || posts.length === 0) {
@@ -56,8 +77,13 @@ const BlogPage: React.FC = () => {
       return;
     }
 
-    setStructuredData(BLOG_LIST_SCHEMA_ID, buildBlogListStructuredData(posts));
-  }, [loading, error, posts]);
+    setStructuredData(BLOG_LIST_SCHEMA_ID, buildBlogListStructuredData(posts, {
+      pageUrl: canonicalUrl,
+      pageName: currentPage === 1
+        ? 'Film Industry News and Insights'
+        : `Film Industry News and Insights - Page ${currentPage}`,
+    }));
+  }, [canonicalUrl, currentPage, loading, error, posts]);
 
   useEffect(() => {
     return () => {
@@ -65,8 +91,13 @@ const BlogPage: React.FC = () => {
     };
   }, []);
 
-  const visiblePosts = posts.slice(0, visibleCount);
-  const hasMorePosts = visibleCount < posts.length;
+  const getBlogPagePath = (page: number) => (page <= 1 ? '/blog' : `/blog/page/${page}`);
+  const visiblePageNumbers = Array.from(new Set([
+    1,
+    ...(currentPage > 2 ? [currentPage - 1] : []),
+    ...(currentPage > 1 ? [currentPage] : []),
+    ...(hasNextPage ? [currentPage + 1] : []),
+  ])).sort((left, right) => left - right);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -79,13 +110,15 @@ const BlogPage: React.FC = () => {
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <Link
               to="/jobs"
-              className="rounded-lg bg-gray-900 px-4 py-2 text-center text-sm font-semibold text-white transition hover:bg-black"
+              onClick={() => trackConversion('blog_internal_cta_click', { placement: 'header_browse_jobs', page: currentPage })}
+              className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-gray-900 px-4 py-2 text-center text-sm font-semibold text-white transition hover:bg-black"
             >
               Browse Film Jobs
             </Link>
             <Link
               to="/collaboration"
-              className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-center text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
+              onClick={() => trackConversion('blog_internal_cta_click', { placement: 'header_collaboration', page: currentPage })}
+              className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-center text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
             >
               Explore Collaboration
             </Link>
@@ -106,7 +139,7 @@ const BlogPage: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-6">
-            {visiblePosts.map((post) => {
+            {posts.map((post) => {
               const expanded = expandedPostId === post.id;
               return (
                 <div key={post.id}>
@@ -130,15 +163,46 @@ const BlogPage: React.FC = () => {
                 </div>
               );
             })}
-            {hasMorePosts && (
-              <div className="flex justify-center">
-                <button
-                  type="button"
-                  onClick={() => setVisibleCount((count) => count + LOAD_MORE_STEP)}
-                  className="rounded-lg border border-gray-300 bg-white px-5 py-2 text-sm font-semibold text-gray-800 transition hover:bg-gray-100"
-                >
-                  Load More Stories
-                </button>
+            {(currentPage > 1 || hasNextPage) && (
+              <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
+                <nav aria-label="Blog pagination" className="flex flex-wrap items-center justify-center gap-2">
+                  {currentPage > 1 && (
+                    <Link
+                      to={getBlogPagePath(currentPage - 1)}
+                      className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+                      onClick={() => trackConversion('blog_pagination_click', { direction: 'previous', fromPage: currentPage, toPage: currentPage - 1 })}
+                      rel="prev"
+                    >
+                      Previous
+                    </Link>
+                  )}
+
+                  {visiblePageNumbers.map((page) => (
+                    <Link
+                      key={page}
+                      to={getBlogPagePath(page)}
+                      className={`inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                        page === currentPage
+                          ? 'bg-blue-600 text-white'
+                          : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                      }`}
+                      onClick={() => trackConversion('blog_pagination_click', { fromPage: currentPage, toPage: page })}
+                    >
+                      {page}
+                    </Link>
+                  ))}
+
+                  {hasNextPage && (
+                    <Link
+                      to={getBlogPagePath(currentPage + 1)}
+                      className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+                      onClick={() => trackConversion('blog_pagination_click', { direction: 'next', fromPage: currentPage, toPage: currentPage + 1 })}
+                      rel="next"
+                    >
+                      Next
+                    </Link>
+                  )}
+                </nav>
               </div>
             )}
           </div>
@@ -154,13 +218,15 @@ const BlogPage: React.FC = () => {
           <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <Link
               to="/jobs"
-              className="rounded-lg bg-blue-600 px-4 py-2 text-center text-sm font-semibold text-white transition hover:bg-blue-700"
+              onClick={() => trackConversion('blog_internal_cta_click', { placement: 'footer_find_open_roles', page: currentPage })}
+              className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-center text-sm font-semibold text-white transition hover:bg-blue-700"
             >
               Find Open Roles
             </Link>
             <Link
               to={currentUser ? '/crew' : '/crew-public'}
-              className="rounded-lg border border-gray-300 px-4 py-2 text-center text-sm font-semibold text-gray-800 transition hover:bg-gray-100"
+              onClick={() => trackConversion('blog_internal_cta_click', { placement: 'footer_discover_crew', page: currentPage })}
+              className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-gray-300 px-4 py-2 text-center text-sm font-semibold text-gray-800 transition hover:bg-gray-100"
             >
               Discover Crew
             </Link>

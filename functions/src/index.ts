@@ -206,6 +206,7 @@ interface CurateBlogResult {
 
 const BLOG_TIMEZONE = "America/Los_Angeles";
 const BLOG_MAX_POSTS_PER_DAY = 3;
+const BLOG_ARCHIVE_PAGE_SIZE = 18;
 const BLOG_LOOKBACK_HOURS = 72;
 const BLOG_RECENT_DEDUP_DAYS = 7;
 const BLOG_FEED_CONFIG_COLLECTION = "blogConfig";
@@ -1116,7 +1117,7 @@ export const blogSitemap = onRequest({
       .where("isPublic", "==", true)
       .get();
 
-    const entries = snapshot.docs
+    const postEntries = snapshot.docs
       .map((postDoc) => {
         const data = postDoc.data();
         const publishedAt = toDate(data.publishedAt) || toDate(data.createdAt) || new Date();
@@ -1130,15 +1131,37 @@ export const blogSitemap = onRequest({
       })
       .sort((a, b) => b.lastmod.getTime() - a.lastmod.getTime());
 
-    const urls = entries
-      .map((entry) => [
-        "  <url>",
-        `    <loc>${escapeXml(entry.loc)}</loc>`,
-        `    <lastmod>${entry.lastmod.toISOString()}</lastmod>`,
-        "    <changefreq>daily</changefreq>",
-        "    <priority>0.8</priority>",
-        "  </url>",
-      ].join("\n"))
+    const archivePageCount = Math.max(1, Math.ceil(postEntries.length / BLOG_ARCHIVE_PAGE_SIZE));
+    const defaultLastmod = postEntries[0]?.lastmod || new Date();
+    const archiveEntries = Array.from({length: archivePageCount}, (_, index) => {
+      const pageNumber = index + 1;
+      const loc = pageNumber === 1
+        ? "https://myfilmjobs.com/blog"
+        : `https://myfilmjobs.com/blog/page/${pageNumber}`;
+      const pageLastmod = postEntries[index * BLOG_ARCHIVE_PAGE_SIZE]?.lastmod || defaultLastmod;
+
+      return {
+        loc,
+        lastmod: pageLastmod,
+        changefreq: "daily",
+        priority: pageNumber === 1 ? "0.9" : "0.6",
+      };
+    });
+
+    const urls = [...archiveEntries, ...postEntries]
+      .map((entry) => {
+        const changefreq = "changefreq" in entry ? entry.changefreq : "daily";
+        const priority = "priority" in entry ? entry.priority : "0.8";
+
+        return [
+          "  <url>",
+          `    <loc>${escapeXml(entry.loc)}</loc>`,
+          `    <lastmod>${entry.lastmod.toISOString()}</lastmod>`,
+          `    <changefreq>${changefreq}</changefreq>`,
+          `    <priority>${priority}</priority>`,
+          "  </url>",
+        ].join("\n");
+      })
       .join("\n");
 
     const xml = [

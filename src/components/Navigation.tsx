@@ -7,6 +7,7 @@ import { useNotifications } from '../hooks/useNotifications';
 import NotificationCenter from './NotificationCenter';
 import NotificationSettings from './NotificationSettings';
 import { useTranslation } from 'react-i18next';
+import { trackConversion } from '../utilities/conversionTracking';
 
 interface NavigationProps {
     authUser: any;
@@ -93,7 +94,7 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
     ];
     const blogLink = navigationLinks.find((link) => link.to === '/blog');
     const primaryNavigationLinks = navigationLinks.filter((link) => link.to !== '/blog');
-    const mobileTopLinks = authUser ? primaryNavigationLinks : navigationLinks;
+    const mobileTopLinks = navigationLinks;
 
     const authenticatedLinks = [
         { to: '/social', label: t('nav.social') },
@@ -420,6 +421,10 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                                     </Link>
                                     <button 
                                         onClick={() => {
+                                            trackConversion('signup_cta_click', {
+                                                placement: 'nav_desktop',
+                                                destination: '/register',
+                                            });
                                             closeAllMenus();
                                             window.location.href = '/register';
                                         }}
@@ -513,19 +518,6 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                                         >
                                             💼 {t('nav.postedJobs')}
                                         </Link>
-                                        {blogLink && (
-                                            <Link
-                                                to={blogLink.to}
-                                                className={`block px-4 py-3 rounded-lg font-medium transition-colors ${
-                                                    isActive(blogLink.to)
-                                                        ? 'text-blue-600 bg-blue-50'
-                                                        : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
-                                                }`}
-                                                onClick={closeAllMenus}
-                                            >
-                                                {blogLink.label}
-                                            </Link>
-                                        )}
                                     </div>
                                 </div>
                             </>
@@ -544,6 +536,10 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                                     </Link>
                                     <button
                                         onClick={() => {
+                                            trackConversion('signup_cta_click', {
+                                                placement: 'nav_mobile',
+                                                destination: '/register',
+                                            });
                                             closeAllMenus();
                                             window.location.href = '/register';
                                         }}

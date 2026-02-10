@@ -44,6 +44,11 @@ const SEO_ROUTES: { pattern: RegExp; title: string; description: string }[] = [
     description: 'Curated film industry news and insights with links to original sources and member discussion.',
   },
   {
+    pattern: /^\/blog\/page\/\d+$/,
+    title: 'Film Industry Blog Archive | My Film Jobs',
+    description: 'Browse archived film industry news pages with opportunities and collaboration insights.',
+  },
+  {
     pattern: /^\/blog\/[^/]+$/,
     title: 'Film Industry Insight | My Film Jobs Blog',
     description: 'Read film industry insights and discover relevant jobs and collaboration opportunities on My Film Jobs.',
