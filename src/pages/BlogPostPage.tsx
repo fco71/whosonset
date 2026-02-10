@@ -1,6 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import BlogCommentSection from '../components/Blog/BlogCommentSection';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchBlogPostById, fetchBlogPosts } from '../services/blogService';
 import { BlogPost } from '../types/blog';
@@ -15,6 +14,7 @@ import {
 import { removeStructuredData, setPageSeo, setStructuredData } from '../utilities/seo';
 
 const BLOG_POST_SCHEMA_ID = 'blog-post-structured-data';
+const BlogCommentSection = React.lazy(() => import('../components/Blog/BlogCommentSection'));
 
 const BlogPostPage: React.FC = () => {
   const { postId } = useParams<{ postId: string }>();
@@ -237,7 +237,9 @@ const BlogPostPage: React.FC = () => {
           </div>
         </section>
 
-        <BlogCommentSection postId={post.id} currentUser={currentUser} />
+        <Suspense fallback={<p className="mt-6 text-sm text-gray-500">Loading comments...</p>}>
+          <BlogCommentSection postId={post.id} currentUser={currentUser} />
+        </Suspense>
       </article>
 
       {relatedPosts.length > 0 && (

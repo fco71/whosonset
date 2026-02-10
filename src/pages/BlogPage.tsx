@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import BlogPostCard from '../components/Blog/BlogPostCard';
-import BlogCommentSection from '../components/Blog/BlogCommentSection';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchBlogPosts } from '../services/blogService';
 import { BlogPost } from '../types/blog';
@@ -9,6 +8,9 @@ import { buildBlogListStructuredData } from '../utilities/blogSeo';
 import { removeStructuredData, setPageSeo, setStructuredData } from '../utilities/seo';
 
 const BLOG_LIST_SCHEMA_ID = 'blog-list-structured-data';
+const INITIAL_VISIBLE_POSTS = 12;
+const LOAD_MORE_STEP = 12;
+const BlogCommentSection = React.lazy(() => import('../components/Blog/BlogCommentSection'));
 
 const BlogPage: React.FC = () => {
   const { currentUser } = useAuth();
@@ -16,6 +18,7 @@ const BlogPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [expandedPostId, setExpandedPostId] = useState<string>('');
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_POSTS);
 
   const loadPosts = async () => {
     try {
@@ -23,6 +26,7 @@ const BlogPage: React.FC = () => {
       setError('');
       const loadedPosts = await fetchBlogPosts(45);
       setPosts(loadedPosts);
+      setVisibleCount(INITIAL_VISIBLE_POSTS);
     } catch (loadError) {
       console.error('[BlogPage] Failed to load blog posts:', loadError);
       setError('Could not load industry updates right now.');
@@ -60,6 +64,9 @@ const BlogPage: React.FC = () => {
       removeStructuredData(BLOG_LIST_SCHEMA_ID);
     };
   }, []);
+
+  const visiblePosts = posts.slice(0, visibleCount);
+  const hasMorePosts = visibleCount < posts.length;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -99,7 +106,7 @@ const BlogPage: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-6">
-            {posts.map((post) => {
+            {visiblePosts.map((post) => {
               const expanded = expandedPostId === post.id;
               return (
                 <div key={post.id}>
@@ -115,12 +122,25 @@ const BlogPage: React.FC = () => {
                       id={`blog-comments-${post.id}`}
                       className="rounded-b-xl border border-t-0 border-gray-200 bg-white px-4 pb-6 sm:px-6"
                     >
-                      <BlogCommentSection postId={post.id} currentUser={currentUser} />
+                      <Suspense fallback={<p className="text-sm text-gray-500">Loading comments...</p>}>
+                        <BlogCommentSection postId={post.id} currentUser={currentUser} />
+                      </Suspense>
                     </div>
                   )}
                 </div>
               );
             })}
+            {hasMorePosts && (
+              <div className="flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => setVisibleCount((count) => count + LOAD_MORE_STEP)}
+                  className="rounded-lg border border-gray-300 bg-white px-5 py-2 text-sm font-semibold text-gray-800 transition hover:bg-gray-100"
+                >
+                  Load More Stories
+                </button>
+              </div>
+            )}
           </div>
         )}
       </section>
