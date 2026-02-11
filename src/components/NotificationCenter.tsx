@@ -1,9 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import {
   Bell,
+  ChevronDown,
   Check,
   ExternalLink,
-  Filter,
   Search,
   Trash2,
   X,
@@ -216,16 +216,17 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
             </div>
 
             <div className="relative">
-              <Filter className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
               <select
                 value={filter}
                 onChange={(event) => setFilter(event.target.value as 'all' | 'unread' | 'read')}
-                className="rounded-lg border border-gray-300 py-2 pl-9 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="appearance-none rounded-lg border border-gray-300 bg-white py-2 pl-3 pr-9 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                aria-label="Filter notifications"
               >
                 <option value="all">{t('notifications.all', 'All')}</option>
                 <option value="unread">{t('notifications.unread', 'Unread')}</option>
                 <option value="read">{t('notifications.read', 'Read')}</option>
               </select>
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
             </div>
           </div>
         </div>
@@ -250,24 +251,34 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
                 return (
                   <div
                     key={notification.id}
-                    className={`cursor-pointer rounded-lg border p-4 transition-all hover:shadow-md ${
-                      notification.isRead ? 'bg-gray-50' : 'border-blue-200 bg-white'
+                    className={`relative cursor-pointer rounded-lg border p-4 transition-all hover:shadow-md ${
+                      notification.isRead
+                        ? 'border-gray-200 bg-gray-50'
+                        : 'border-blue-200 bg-blue-50/70 shadow-sm'
                     }`}
                     onClick={() => {
                       void handleNotificationClick(notification);
                     }}
                   >
+                    {!notification.isRead && (
+                      <span
+                        className="absolute inset-y-0 left-0 w-1 rounded-l-lg bg-blue-500"
+                        aria-hidden="true"
+                      />
+                    )}
                     <div className="flex items-start space-x-3">
                       <div className="flex-shrink-0 text-2xl">{getNotificationIcon(notification.type)}</div>
 
                       <div className="min-w-0 flex-1">
                         <div className="flex items-start justify-between gap-2">
                           <div>
-                            <p className={`text-sm font-semibold ${notification.isRead ? 'text-gray-800' : 'text-gray-900'}`}>
+                            <p className={`text-sm font-semibold ${notification.isRead ? 'text-gray-700' : 'text-gray-900'}`}>
                               {notification.title}
                             </p>
                             {notification.body && (
-                              <p className="mt-1 text-sm text-gray-700">{notification.body}</p>
+                              <p className={`mt-1 text-sm ${notification.isRead ? 'text-gray-600' : 'text-gray-800'}`}>
+                                {notification.body}
+                              </p>
                             )}
                           </div>
 
@@ -304,6 +315,11 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
                           <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${getNotificationColor(notification.type)}`}>
                             {notification.type.replace(/_/g, ' ')}
                           </span>
+                          {!notification.isRead && (
+                            <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-700">
+                              New
+                            </span>
+                          )}
                           <span className="text-xs text-gray-500">
                             {timestamp ? formatDistanceToNow(timestamp, { addSuffix: true }) : 'Unknown time'}
                           </span>

@@ -5,6 +5,20 @@ function asText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+function asOptionalBoolean(value: unknown): boolean | null {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true') return true;
+    if (normalized === 'false') return false;
+  }
+
+  return null;
+}
+
 function toLower(text: string): string {
   return text.trim().toLowerCase();
 }
@@ -160,7 +174,13 @@ export function normalizeNotificationData(
   const title = asText(input.title) || toTitleFromType(type);
   const body = asText(input.body) || asText(input.message);
   const message = body || title;
-  const isRead = Boolean(input.isRead ?? input.read ?? false);
+  const normalizedIsRead = asOptionalBoolean(input.isRead);
+  const normalizedRead = asOptionalBoolean(input.read);
+  const hasExplicitReadState = normalizedIsRead !== null || normalizedRead !== null;
+  // Legacy notifications without read flags should not flood current unread count.
+  const isRead = hasExplicitReadState
+    ? Boolean(normalizedIsRead ?? normalizedRead)
+    : true;
   const createdAt = input.createdAt ?? input.timestamp ?? null;
   const timestamp = input.timestamp ?? input.createdAt ?? null;
 
