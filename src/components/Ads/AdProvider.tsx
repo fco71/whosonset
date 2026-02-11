@@ -25,6 +25,30 @@ export const AdProvider: React.FC<AdProviderProps> = ({ children }) => {
   const location = useLocation();
 
   useEffect(() => {
+    if (typeof window === 'undefined' || !isAdEnabled) {
+      return;
+    }
+
+    const scriptUrl = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(ADSENSE_CONFIG.client)}`;
+    const existingScript = document.querySelector<HTMLScriptElement>('script[data-adsense-script="true"]');
+    if (existingScript) {
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.async = true;
+    script.src = scriptUrl;
+    script.crossOrigin = 'anonymous';
+    script.setAttribute('data-adsense-script', 'true');
+    script.onerror = () => {
+      // Ad blockers may block this request. Keep app runtime stable.
+      console.warn('[AdProvider] AdSense script failed to load (often caused by ad blockers).');
+    };
+
+    document.head.appendChild(script);
+  }, [isAdEnabled]);
+
+  useEffect(() => {
     // Load ad preferences from localStorage
     const savedAdEnabled = localStorage.getItem('ads_enabled');
     if (savedAdEnabled !== null) {

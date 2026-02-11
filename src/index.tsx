@@ -9,12 +9,24 @@ import ReactDOM from 'react-dom/client';
 import { RouterProvider } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { createAppRouter } from './router';
+import AppErrorBoundary from './components/AppErrorBoundary';
 
 // Global error handler to catch any runtime errors
 window.addEventListener('error', function(event) {
+  const filename = event.filename || '';
+  const message = event.message || '';
+
+  if (
+    filename.startsWith('chrome-extension://') ||
+    message.includes('ERR_BLOCKED_BY_ADBLOCKER') ||
+    message.includes('ERR_BLOCKED_BY_CLIENT')
+  ) {
+    return;
+  }
+
   console.error('Global error caught:', {
-    message: event.message,
-    filename: event.filename,
+    message,
+    filename,
     lineno: event.lineno,
     colno: event.colno,
     error: event.error,
@@ -42,6 +54,10 @@ document.addEventListener(
 
 // Global handler for unhandled promise rejections
 window.addEventListener('unhandledrejection', function (e) {
+  const reasonText = String((e.reason && e.reason.message) || e.reason || '');
+  if (reasonText.includes('ERR_BLOCKED_BY_ADBLOCKER') || reasonText.includes('ERR_BLOCKED_BY_CLIENT')) {
+    return;
+  }
   console.error('Unhandled promise rejection:', e.reason);
 });
 
@@ -49,9 +65,11 @@ window.addEventListener('unhandledrejection', function (e) {
 const router = createAppRouter();
 
 const RootWithProvider = () => (
-  <AuthProvider>
-    <RouterProvider router={router} />
-  </AuthProvider>
+  <AppErrorBoundary>
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
+  </AppErrorBoundary>
 );
 
 const rootElement = document.getElementById('root');
@@ -62,4 +80,3 @@ if (rootElement) {
     <RootWithProvider />
   );
 }
-
