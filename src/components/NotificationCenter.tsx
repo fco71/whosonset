@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import {
   Bell,
-  ChevronDown,
   Check,
   ExternalLink,
   Search,
@@ -219,14 +218,13 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
               <select
                 value={filter}
                 onChange={(event) => setFilter(event.target.value as 'all' | 'unread' | 'read')}
-                className="appearance-none rounded-lg border border-gray-300 bg-white py-2 pl-3 pr-9 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="rounded-lg border border-gray-300 bg-white py-2 pl-3 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 aria-label="Filter notifications"
               >
                 <option value="all">{t('notifications.all', 'All')}</option>
                 <option value="unread">{t('notifications.unread', 'Unread')}</option>
                 <option value="read">{t('notifications.read', 'Read')}</option>
               </select>
-              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
             </div>
           </div>
         </div>
@@ -253,8 +251,8 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
                     key={notification.id}
                     className={`relative cursor-pointer rounded-lg border p-4 transition-all hover:shadow-md ${
                       notification.isRead
-                        ? 'border-gray-200 bg-gray-50'
-                        : 'border-blue-200 bg-blue-50/70 shadow-sm'
+                        ? 'border-gray-200 bg-gray-100/90'
+                        : 'border-blue-500 bg-blue-50 ring-2 ring-blue-100 shadow-sm'
                     }`}
                     onClick={() => {
                       void handleNotificationClick(notification);
@@ -272,11 +270,14 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
                       <div className="min-w-0 flex-1">
                         <div className="flex items-start justify-between gap-2">
                           <div>
-                            <p className={`text-sm font-semibold ${notification.isRead ? 'text-gray-700' : 'text-gray-900'}`}>
+                            <p className={`flex items-center gap-2 text-sm font-semibold ${notification.isRead ? 'text-gray-700' : 'text-gray-900'}`}>
                               {notification.title}
+                              {!notification.isRead && (
+                                <span className="inline-flex h-2.5 w-2.5 rounded-full bg-blue-600" aria-hidden="true" />
+                              )}
                             </p>
                             {notification.body && (
-                              <p className={`mt-1 text-sm ${notification.isRead ? 'text-gray-600' : 'text-gray-800'}`}>
+                              <p className={`mt-1 text-sm ${notification.isRead ? 'text-gray-500' : 'text-gray-800'}`}>
                                 {notification.body}
                               </p>
                             )}
