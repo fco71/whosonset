@@ -1,23 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Film, 
   Users, 
   Briefcase, 
   Globe, 
-  Star, 
   ArrowRight, 
   Play,
-  CheckCircle,
-  TrendingUp,
   Award,
   Zap,
   Heart,
-  Camera,
   Clapperboard
 } from 'lucide-react';
-import { db } from '../firebase';
-import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { trackConversion } from '../utilities/conversionTracking';
@@ -25,12 +19,6 @@ import { trackConversion } from '../utilities/conversionTracking';
 const HomePage: React.FC = () => {
   const { t } = useTranslation();
   const { currentUser } = useAuth();
-  const [stats, setStats] = useState([
-    { number: t('home.loading'), label: t('home.stats.activeProfessionals'), icon: <Users className="w-5 h-5" /> },
-    { number: t('home.loading'), label: t('home.stats.projectsCompleted'), icon: <Film className="w-5 h-5" /> },
-    { number: t('home.loading'), label: t('home.stats.countries'), icon: <Globe className="w-5 h-5" /> }
-  ]);
-  const [loading, setLoading] = useState(true);
 
   const features = [
     {
@@ -64,62 +52,6 @@ const HomePage: React.FC = () => {
       description: t('home.features.realTimeCollab.desc')
     }
   ];
-
-  // Fetch real statistics from Firestore
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        // Get crew profiles count
-        const crewRef = collection(db, 'crewProfiles');
-        const crewQuery = query(crewRef, where('isPublished', '==', true));
-        const crewSnapshot = await getDocs(crewQuery);
-        const crewCount = crewSnapshot.size;
-
-        // Get projects count
-        const projectsRef = collection(db, 'Projects');
-        const projectsSnapshot = await getDocs(projectsRef);
-        const projectsCount = projectsSnapshot.size;
-
-        // Get unique countries from crew profiles
-        const countries = new Set<string>();
-        crewSnapshot.docs.forEach(doc => {
-          const data = doc.data();
-          if (data.residences && data.residences.length > 0) {
-            data.residences.forEach((residence: any) => {
-              if (residence.country) {
-                countries.add(residence.country);
-              }
-            });
-          }
-        });
-
-        // Calculate success rate based on completed projects
-        const completedProjects = projectsSnapshot.docs.filter(doc => {
-          const data = doc.data();
-          return data.status === 'Completed' || data.status === 'Released';
-        }).length;
-        const successRate = projectsCount > 0 ? Math.round((completedProjects / projectsCount) * 100) : 0;
-
-        setStats([
-          { number: `${crewCount}+`, label: t('home.stats.activeProfessionals'), icon: <Users className="w-5 h-5" /> },
-          { number: `${projectsCount}+`, label: t('home.stats.projectsCompleted'), icon: <Film className="w-5 h-5" /> },
-          { number: `${countries.size}+`, label: t('home.stats.countries'), icon: <Globe className="w-5 h-5" /> }
-        ]);
-      } catch (error) {
-        console.error('Error fetching stats:', error);
-        // Show empty state instead of fake data
-        setStats([
-          { number: '—', label: t('home.stats.activeProfessionals'), icon: <Users className="w-5 h-5" /> },
-          { number: '—', label: t('home.stats.projectsCompleted'), icon: <Film className="w-5 h-5" /> },
-          { number: '—', label: t('home.stats.countries'), icon: <Globe className="w-5 h-5" /> }
-        ]);
-      }
-    };
-
-    fetchStats();
-    setLoading(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [t]);
 
   return (
     <div className="min-h-screen bg-white">
@@ -155,7 +87,7 @@ const HomePage: React.FC = () => {
               {t('home.hero.subtitle')}
             </p>
             
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Link
                 to={currentUser ? '/jobs' : '/register'}
                 onClick={() => {
@@ -182,26 +114,6 @@ const HomePage: React.FC = () => {
                 <Play className="mr-2 w-5 h-5 group-hover:scale-110 transition-transform" />
                 {t('home.hero.ctaSecondary')}
               </Link>
-            </div>
-
-            {/* Stats Section */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 max-w-4xl mx-auto">
-              {stats.map((stat, index) => (
-                <div key={index} className="text-center p-6 bg-white/60 backdrop-blur-sm rounded-xl border border-gray-100 hover:bg-white/80 transition-all duration-300">
-                  <div className="flex justify-center mb-2 text-blue-600">
-                    {stat.icon}
-                  </div>
-                  <div className={`text-2xl lg:text-3xl font-bold mb-1 ${
-                    stat.number === t('home.loading') ? "text-gray-300 animate-pulse" : 
-                    stat.number === "—" ? "text-gray-400" : "text-gray-900"
-                  }`}>
-                    {stat.number}
-                  </div>
-                  <div className="text-sm text-gray-600 font-medium">
-                    {stat.label}
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
         </div>

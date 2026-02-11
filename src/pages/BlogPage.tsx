@@ -6,7 +6,13 @@ import { fetchBlogPostsPage } from '../services/blogService';
 import { BlogPost } from '../types/blog';
 import { buildBlogListStructuredData } from '../utilities/blogSeo';
 import { trackConversion } from '../utilities/conversionTracking';
-import { removeStructuredData, setPageSeo, setStructuredData } from '../utilities/seo';
+import {
+  clearPaginationLinks,
+  removeStructuredData,
+  setPageSeo,
+  setPaginationLinks,
+  setStructuredData,
+} from '../utilities/seo';
 
 const BLOG_LIST_SCHEMA_ID = 'blog-list-structured-data';
 const POSTS_PER_PAGE = 18;
@@ -72,6 +78,20 @@ const BlogPage: React.FC = () => {
   }, [canonicalUrl, currentPage, previewImage]);
 
   useEffect(() => {
+    const previousPath = currentPage > 1 ? getBlogPagePath(currentPage - 1) : undefined;
+    const nextPath = hasNextPage ? getBlogPagePath(currentPage + 1) : undefined;
+
+    setPaginationLinks({
+      prevUrl: previousPath ? `https://myfilmjobs.com${previousPath}` : undefined,
+      nextUrl: nextPath ? `https://myfilmjobs.com${nextPath}` : undefined,
+    });
+
+    return () => {
+      clearPaginationLinks();
+    };
+  }, [currentPage, hasNextPage]);
+
+  useEffect(() => {
     if (loading || error || posts.length === 0) {
       removeStructuredData(BLOG_LIST_SCHEMA_ID);
       return;
@@ -87,6 +107,7 @@ const BlogPage: React.FC = () => {
 
   useEffect(() => {
     return () => {
+      clearPaginationLinks();
       removeStructuredData(BLOG_LIST_SCHEMA_ID);
     };
   }, []);
@@ -128,13 +149,13 @@ const BlogPage: React.FC = () => {
 
       <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
         {loading ? (
-          <p className="text-sm text-gray-600">Loading posts...</p>
+          <p className="text-sm text-gray-600" role="status" aria-live="polite">Loading posts...</p>
         ) : error ? (
-          <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert">
             {error}
           </div>
         ) : posts.length === 0 ? (
-          <div className="rounded-lg border border-gray-200 bg-white p-6 text-sm text-gray-600">
+          <div className="rounded-lg border border-gray-200 bg-white p-6 text-sm text-gray-600" role="status" aria-live="polite">
             No posts available yet.
           </div>
         ) : (
@@ -187,6 +208,7 @@ const BlogPage: React.FC = () => {
                           : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
                       }`}
                       onClick={() => trackConversion('blog_pagination_click', { fromPage: currentPage, toPage: page })}
+                      aria-current={page === currentPage ? 'page' : undefined}
                     >
                       {page}
                     </Link>

@@ -1,6 +1,7 @@
 const DEFAULT_ROBOTS = 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
 const HREFLANG_CODES = ['en', 'es'] as const;
 const MANAGED_HREFLANG_SELECTOR = 'link[rel="alternate"][data-seo-managed="hreflang"]';
+const MANAGED_PAGINATION_SELECTOR = 'link[rel="prev"][data-seo-managed="pagination"], link[rel="next"][data-seo-managed="pagination"]';
 
 export interface SeoConfig {
   title: string;
@@ -55,6 +56,25 @@ function removeManagedAlternateLinks(): void {
       link.parentNode.removeChild(link);
     }
   });
+}
+
+function removeManagedPaginationLinks(): void {
+  document.head.querySelectorAll<HTMLLinkElement>(MANAGED_PAGINATION_SELECTOR).forEach((link) => {
+    if (link.parentNode) {
+      link.parentNode.removeChild(link);
+    }
+  });
+}
+
+function upsertPaginationLink(rel: 'prev' | 'next', href: string): void {
+  let link = document.head.querySelector<HTMLLinkElement>(`link[rel="${rel}"][data-seo-managed="pagination"]`);
+  if (!link) {
+    link = document.createElement('link');
+    link.setAttribute('rel', rel);
+    link.setAttribute('data-seo-managed', 'pagination');
+    document.head.appendChild(link);
+  }
+  link.setAttribute('href', href);
 }
 
 function buildLocalizedUrl(baseUrl: string, lang: string): string {
@@ -122,6 +142,20 @@ export function setPageSeo(config: SeoConfig): void {
   upsertMetaTag('twitter:description', description);
   upsertCanonicalLink(canonicalUrl);
   setDefaultHreflangLinks(canonicalUrl);
+}
+
+export function setPaginationLinks(config: { prevUrl?: string; nextUrl?: string }): void {
+  removeManagedPaginationLinks();
+  if (config.prevUrl) {
+    upsertPaginationLink('prev', config.prevUrl);
+  }
+  if (config.nextUrl) {
+    upsertPaginationLink('next', config.nextUrl);
+  }
+}
+
+export function clearPaginationLinks(): void {
+  removeManagedPaginationLinks();
 }
 
 export function setStructuredData(scriptId: string, value: unknown): void {

@@ -1,5 +1,5 @@
 // src/components/LandingPage.tsx
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from './ui/Button';
 import { 
@@ -7,26 +7,11 @@ import {
   Users, 
   Briefcase, 
   Globe, 
-  Star, 
   ArrowRight, 
-  Play,
-  CheckCircle,
-  MessageCircle,
-  Calendar,
-  Award
+  Play
 } from 'lucide-react';
-import { db } from '../firebase';
-import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 
 const LandingPage: React.FC = () => {
-  const [stats, setStats] = useState([
-    { number: "Loading...", label: "Active Members" },
-    { number: "Loading...", label: "Projects Posted" },
-    { number: "Loading...", label: "Countries" },
-    { number: "Loading...", label: "Success Rate" }
-  ]);
-  const [loading, setLoading] = useState(true);
-
   const features = [
     {
       icon: <Film className="w-8 h-8" />,
@@ -49,63 +34,6 @@ const LandingPage: React.FC = () => {
       description: "Access opportunities worldwide and connect with international productions."
     }
   ];
-
-  // Fetch real statistics from Firestore
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        // Get crew profiles count
-        const crewRef = collection(db, 'crewProfiles');
-        const crewQuery = query(crewRef, where('isPublished', '==', true));
-        const crewSnapshot = await getDocs(crewQuery);
-        const crewCount = crewSnapshot.size;
-
-        // Get projects count
-        const projectsRef = collection(db, 'Projects');
-        const projectsSnapshot = await getDocs(projectsRef);
-        const projectsCount = projectsSnapshot.size;
-
-        // Get unique countries from crew profiles
-        const countries = new Set<string>();
-        crewSnapshot.docs.forEach(doc => {
-          const data = doc.data();
-          if (data.residences && data.residences.length > 0) {
-            data.residences.forEach((residence: any) => {
-              if (residence.country) {
-                countries.add(residence.country);
-              }
-            });
-          }
-        });
-
-        // Calculate success rate based on completed projects
-        const completedProjects = projectsSnapshot.docs.filter(doc => {
-          const data = doc.data();
-          return data.status === 'Completed' || data.status === 'Released';
-        }).length;
-        const successRate = projectsCount > 0 ? Math.round((completedProjects / projectsCount) * 100) : 0;
-
-        setStats([
-          { number: `${crewCount}+`, label: "Active Members" },
-          { number: `${projectsCount}+`, label: "Projects Posted" },
-          { number: `${countries.size}+`, label: "Countries" },
-          { number: `${successRate}%`, label: "Success Rate" }
-        ]);
-      } catch (error) {
-        console.error('Error fetching stats:', error);
-        // Show empty state instead of fake data
-        setStats([
-          { number: "—", label: "Active Members" },
-          { number: "—", label: "Projects Posted" },
-          { number: "—", label: "Countries" },
-          { number: "—", label: "Success Rate" }
-        ]);
-      }
-    };
-
-    fetchStats();
-    setLoading(false);
-  }, []);
 
   return (
     <div className="min-h-screen bg-white">
@@ -132,27 +60,6 @@ const LandingPage: React.FC = () => {
                 Watch Demo
               </Button>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Stats Section */}
-      <section className="py-16 bg-white border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-            {stats.map((stat, index) => (
-              <div key={index} className="text-center">
-                <div className={`text-3xl lg:text-4xl font-bold mb-2 ${
-                  stat.number === "Loading..." ? "text-gray-300 animate-pulse" : 
-                  stat.number === "—" ? "text-gray-400" : "text-blue-600"
-                }`}>
-                  {stat.number}
-                </div>
-                <div className="text-gray-600 font-medium">
-                  {stat.label}
-                </div>
-              </div>
-            ))}
           </div>
         </div>
       </section>

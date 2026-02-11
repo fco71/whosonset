@@ -12,7 +12,7 @@ import {
   sanitizeBlogSummary,
 } from '../utilities/blogSeo';
 import { trackConversion } from '../utilities/conversionTracking';
-import { removeStructuredData, setPageSeo, setStructuredData } from '../utilities/seo';
+import { clearPaginationLinks, removeStructuredData, setPageSeo, setStructuredData } from '../utilities/seo';
 
 const BLOG_POST_SCHEMA_ID = 'blog-post-structured-data';
 const BlogCommentSection = React.lazy(() => import('../components/Blog/BlogCommentSection'));
@@ -91,6 +91,8 @@ const BlogPostPage: React.FC = () => {
   }, [postId]);
 
   useEffect(() => {
+    clearPaginationLinks();
+
     const fallbackCanonical = postId ? getBlogPostCanonicalUrl(postId) : 'https://myfilmjobs.com/blog';
     if (loading) {
       return;
@@ -127,6 +129,7 @@ const BlogPostPage: React.FC = () => {
     });
 
     return () => {
+      clearPaginationLinks();
       removeStructuredData(BLOG_POST_SCHEMA_ID);
     };
   }, [postId, loading, error, post]);
@@ -134,7 +137,7 @@ const BlogPostPage: React.FC = () => {
   if (loading) {
     return (
       <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
-        <p className="text-sm text-gray-600">Loading post...</p>
+        <p className="text-sm text-gray-600" role="status" aria-live="polite">Loading post...</p>
       </div>
     );
   }
@@ -186,8 +189,10 @@ const BlogPostPage: React.FC = () => {
             target="_blank"
             rel="noopener noreferrer"
             className="font-semibold text-blue-700 hover:underline"
+            aria-label={`Open source website ${post.sourceName} in a new tab`}
           >
             {post.sourceName}
+            <span className="sr-only"> (opens in a new tab)</span>
           </a>
         </div>
 
@@ -217,8 +222,10 @@ const BlogPostPage: React.FC = () => {
             rel="noopener noreferrer"
             className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-black"
             onClick={() => trackExternalRead('post_read_button')}
+            aria-label={`Read original article in a new tab: ${post.title}`}
           >
             Read Article
+            <span className="sr-only"> (opens in a new tab)</span>
           </a>
           <Link
             to="/jobs"
