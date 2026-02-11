@@ -1383,7 +1383,7 @@ export const jobsSitemap = onRequest({
     activeSnapshot.docs.forEach((doc) => jobsById.set(doc.id, doc));
 
     const now = new Date();
-    const urls = Array.from(jobsById.values())
+    const dynamicJobUrls = Array.from(jobsById.values())
       .map((jobDoc) => {
         const data = jobDoc.data();
         const deadline = toDate(data.deadline);
@@ -1405,8 +1405,22 @@ export const jobsSitemap = onRequest({
           "  </url>",
         ].join("\n");
       })
-      .filter(Boolean)
-      .join("\n");
+      .filter(Boolean);
+
+    // Keep sitemap non-empty to avoid Search Console warnings when no active jobs exist.
+    if (dynamicJobUrls.length === 0) {
+      const fallbackUpdatedAt = now.toISOString();
+      dynamicJobUrls.push([
+        "  <url>",
+        "    <loc>https://myfilmjobs.com/jobs</loc>",
+        `    <lastmod>${fallbackUpdatedAt}</lastmod>`,
+        "    <changefreq>daily</changefreq>",
+        "    <priority>0.6</priority>",
+        "  </url>",
+      ].join("\n"));
+    }
+
+    const urls = dynamicJobUrls.join("\n");
 
     const xml = [
       "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
