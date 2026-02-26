@@ -30,6 +30,7 @@ import ResumeView from './ResumeView';
 import LocationSelector from './LocationSelector';
 import ResumeDownloadButton from './ResumeDownloadButton';
 import { getCleanInstagramHandle } from '../lib/utils';
+import { PhotoConflictMonitor } from '../utilities/photoConflictMonitor';
 
 // Import html2pdf using require to bypass TypeScript issues
 const html2pdf = require('html2pdf.js');
@@ -55,6 +56,11 @@ const EditCrewProfile: React.FC = () => {
 
   // --- MODIFIED: Use state to track the user, which is more reliable on load ---
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState('');
+  const [showResume, setShowResume] = useState(false);
 
   // Initialize form with default values that match CrewProfileFormData interface
   const getInitialFormData = (): CrewProfileFormData => ({
@@ -78,6 +84,11 @@ const EditCrewProfile: React.FC = () => {
   });
 
   const [form, setForm] = useState<CrewProfileFormData>(getInitialFormData());
+  const [departments, setDepartments] = useState<JobDepartment[]>([]);
+  const [countryOptions, setCountryOptions] = useState<{ name: string; cities: string[] }[]>([]);
+  const [message, setMessage] = useState<string | null>(null);
+  const [isPublished, setIsPublished] = useState(true);
+  const [photoConflict, setPhotoConflict] = useState<{hasConflict: boolean, conflictUsers: string[]}>({hasConflict: false, conflictUsers: []});
 
   // Helper function to ensure education entries have consistent structure
   const ensureEducationFields = (eduArray: any[] = []): EducationEntry[] => {
@@ -98,12 +109,6 @@ const EditCrewProfile: React.FC = () => {
       isCurrent: Boolean(edu.isCurrent)
     }));
   };
-
-  const [departments, setDepartments] = useState<JobDepartment[]>([]);
-  const [countryOptions, setCountryOptions] = useState<{ name: string; cities: string[] }[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [isPublished, setIsPublished] = useState(true);
 
   // Clean up any blob URLs when component unmounts
   useEffect(() => {
@@ -406,6 +411,24 @@ const EditCrewProfile: React.FC = () => {
       // Get the persistent download URL
       const downloadUrl = await getDownloadURL(storageRef);
       console.log('[ProfileImage] Got download URL:', downloadUrl);
+      
+      // Check for photo URL conflicts before updating the form
+      const conflictCheck = await PhotoConflictMonitor.checkPhotoUrl(downloadUrl, user.uid);
+      const hasConflict = conflictCheck !== null;
+      const conflictUsers = hasConflict ? conflictCheck.users.map(u => u.displayName) : [];
+      
+      setPhotoConflict({
+        hasConflict,
+        conflictUsers
+      });
+      
+      if (hasConflict) {
+        console.warn('[ProfileImage] ⚠️ Photo URL conflict detected:', conflictUsers);
+        // Don't prevent the upload, but warn the user
+        setError(`⚠️ This photo is already being used by: ${conflictUsers.join(', ')}. Consider using a different photo.`);
+        // Clear the error after 5 seconds
+        setTimeout(() => setError(''), 5000);
+      }
       
       // Update the form with the persistent URL
       setForm(f => ({ ...f, profileImageUrl: downloadUrl }));
@@ -1131,13 +1154,25 @@ const EditCrewProfile: React.FC = () => {
                           <div className="text-xs text-red-500">Image preview only. Please click Save to update your profile image.</div>
                         )}
                         <button 
-                          onClick={() => setForm(f => ({ ...f, profileImageUrl: '' }))} 
+                          onClick={() => {
+                            setForm(f => ({ ...f, profileImageUrl: '' }));
+                            setPhotoConflict({hasConflict: false, conflictUsers: []});
+                          }} 
                           className="text-red-600 hover:text-red-700 text-sm font-medium transition-colors" 
                           type="button"
                         >
                           Remove
                         </button>
                       </div>
+                      
+                      {/* Photo Conflict Warning */}
+                      {photoConflict.hasConflict && (
+                        <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2 mt-2">
+                          <strong>⚠️ Photo Conflict:</strong> This photo is already being used by: {photoConflict.conflictUsers.join(', ')}. 
+                          Consider using a different photo to avoid confusion.
+                        </div>
+                      )}
+                      
                       <div className="text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded px-3 py-2 mt-2">
                         <strong>Reminder:</strong> After uploading your profile image, please scroll down and press <b>Save</b> to update your public profile.
                       </div>

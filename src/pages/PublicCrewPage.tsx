@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { db } from '../firebase';
 import { collection, getDocs, limit, query } from 'firebase/firestore';
+import { PhotoConflictMonitor } from '../utilities/photoConflictMonitor';
 
 interface PublicCrewProfile {
   uid: string;
@@ -47,6 +48,19 @@ const PublicCrewPage: React.FC = () => {
         });
         
         setCrewProfiles(profiles);
+        
+        // Enhanced Photo URL Conflict Detection using PhotoConflictMonitor
+        // This runs in development to help identify potential issues
+        if (process.env.NODE_ENV === 'development') {
+          PhotoConflictMonitor.scanForConflicts().then(report => {
+            if (report.totalConflicts > 0) {
+              console.warn('🚨 PHOTO CONFLICTS IN PUBLIC CREW PAGE:', report.totalConflicts, 'conflicts found');
+              report.conflicts.forEach(conflict => {
+                console.warn('Conflict:', conflict.photoUrl, 'used by:', conflict.users.map(u => u.displayName).join(', '));
+              });
+            }
+          });
+        }
       } catch (error) {
         console.error('Error loading crew profiles:', error);
       } finally {

@@ -127,7 +127,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           name: displayName,
           email: user.email,
           bio: '',
-          profileImageUrl: user.photoURL || '/bust-avatar.svg',
+          profileImageUrl: '',
           username: user.email?.split('@')[0] || '',
           jobTitles: [],
           residences: [],

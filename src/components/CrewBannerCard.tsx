@@ -72,7 +72,11 @@ const CrewBannerCard: React.FC<CrewBannerCardProps> = ({
   const mainTitle = profile.jobTitles?.[0]?.title || t('crew.crewMember');
   const mainLocation = profile.residences?.[0] ? 
     `${profile.residences[0].city ? profile.residences[0].city + ', ' : ''}${profile.residences[0].country || ''}` : '';
-          const imageUrl = profile.profileImageUrl || '/bust-avatar.svg';
+          const imageUrl =
+    profile.profileImageUrl &&
+    !profile.profileImageUrl.includes('lh3.googleusercontent.com/a')
+      ? profile.profileImageUrl
+      : '/bust-avatar.svg';
   const availability = profile.availability || '';
 
   return (

@@ -83,8 +83,13 @@ const CrewProfileCard: React.FC<CrewProfileCardProps> = ({
       style={{ animationDelay: `${index * 0.1}s`, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 24, height: 320, width: '100%' }}
     >
       <div className="h-48 card-image-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
-        <img 
-          src={profile.profileImageUrl || "/bust-avatar.svg"} 
+        <img
+          src={
+            profile.profileImageUrl &&
+            !profile.profileImageUrl.includes('lh3.googleusercontent.com/a')
+              ? profile.profileImageUrl
+              : "/bust-avatar.svg"
+          }
           alt={profile.name}
           className="card-image"
           style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', marginBottom: 8, border: '3px solid #e5e7eb' }}
