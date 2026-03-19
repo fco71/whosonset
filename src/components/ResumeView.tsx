@@ -166,9 +166,9 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
     fontSize: '22pt',
     fontWeight: 'bold',
     margin: 0,
-    padding: 0,
+    padding: '1mm 0 0 0', // Small top padding so ascenders aren't clipped
     color: '#333',
-    lineHeight: 1.1,
+    lineHeight: 1.2,
   };
 
   const bioStyle: React.CSSProperties = {
@@ -290,9 +290,9 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
               font-size: 22pt !important;
               font-weight: bold !important;
               margin: 0 !important;
-              padding: 0 !important;
+              padding: 1mm 0 0 0 !important;
               color: #333 !important;
-              line-height: 1.1 !important;
+              line-height: 1.2 !important;
             }
             
             .resume-container h2 {
