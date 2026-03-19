@@ -131,28 +131,31 @@ const EditCrewProfile: React.FC = () => {
     const element = resumeRef.current;
     
     // Set options for PDF generation
+    // Margins are 0 because ResumeView already has its own A4 padding built in.
+    // This ensures what you see in the preview is exactly what gets downloaded.
     const opt = {
-      margin: [10, 10, 10, 10], // Reasonable margins
+      margin: [0, 0, 0, 0],
       filename: `${form.name.replace(/\s+/g, '_')}_Resume.pdf`,
-      image: { 
-        type: 'jpeg', 
-        quality: 0.98 
+      image: {
+        type: 'jpeg',
+        quality: 0.98
       },
-      html2canvas: { 
-        scale: 2, // Slightly reduced scale for better performance
+      html2canvas: {
+        scale: 2,
         useCORS: true,
         allowTaint: true,
         logging: false,
         letterRendering: true,
         imageTimeout: 0,
+        width: 794,   // A4 width in px at 96dpi (210mm)
+        height: 1123,  // A4 height in px at 96dpi (297mm)
       },
-      jsPDF: { 
+      jsPDF: {
         unit: 'mm',
         format: 'a4',
         orientation: 'portrait',
-        compress: true, // Enable compression for smaller file size
+        compress: true,
       },
-      // Remove pagebreak config to avoid issues
     };
 
     // Generate PDF
@@ -1446,7 +1449,7 @@ const EditCrewProfile: React.FC = () => {
                 {/* Resume Preview */}
                 <hr className="my-8 border-gray-200" />
                 <h3 className="text-xl font-light text-gray-900 mb-6 tracking-wide">{t('resume.builder.resumePreview')}</h3>
-                <div ref={resumeRef} className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <div ref={resumeRef} className="resume-preview-wrapper">
                   <ResumeView 
                     profile={{
                       ...form,

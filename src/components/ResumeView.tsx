@@ -123,11 +123,14 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
   };
   
   const contentLimits = calculateContentLimits();
+  const hasLimits = contentLimits.length > 0;
+  // Helper: section is visible if there are no limits, or if limits include it
+  const sectionVisible = (type: string) => !hasLimits || !!contentLimits.find(s => s.type === type);
   
   const containerStyle: React.CSSProperties = {
     width: '210mm',
     height: '297mm',
-    padding: '10mm 15mm 15mm 15mm', // Back to reasonable padding
+    padding: '10mm 15mm 15mm 15mm',
     backgroundColor: 'white',
     boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
     borderRadius: '8px',
@@ -135,18 +138,17 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
     fontSize: '11pt',
     lineHeight: 1.3,
     color: '#333',
-    // Remove overflow: 'hidden' to prevent name chopping
+    overflow: 'hidden',
+    boxSizing: 'border-box' as const,
   };
 
   const headerStyle: React.CSSProperties = {
     display: 'flex',
-    alignItems: 'flex-start', // This ensures name aligns with top of photo
+    alignItems: 'flex-start',
     gap: '10mm',
     marginBottom: '6mm',
     borderBottom: '2pt solid #333',
     paddingBottom: '3mm',
-    paddingTop: '0', // Remove top padding to align name with photo
-    marginTop: '0', // Remove any top margin
   };
 
   const profileImageStyle: React.CSSProperties = {
@@ -164,11 +166,9 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
     fontSize: '22pt',
     fontWeight: 'bold',
     margin: 0,
-    padding: 0, // Remove all padding
+    padding: 0,
     color: '#333',
-    alignSelf: 'flex-start', // Ensure name aligns with top of photo
-    lineHeight: 1, // Tight line height for better alignment
-    marginTop: '-2mm', // Move name up to align with photo top
+    lineHeight: 1.1,
   };
 
   const bioStyle: React.CSSProperties = {
@@ -258,17 +258,8 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
     lineHeight: 1.3,
   };
 
-  const contentWrapperStyle: React.CSSProperties = {
-    height: 'calc(297mm - 30mm)',
-    overflow: 'hidden',
-    display: 'flex',
-    flexDirection: 'column' as const,
-  };
-
-  const scrollableContentStyle: React.CSSProperties = {
-    flex: 1,
-    overflowY: 'auto' as const,
-  };
+  // No inner content wrapper needed — the container's A4 dimensions
+  // with overflow:hidden handle page bounds for both preview and PDF.
 
   return (
     <>
@@ -301,9 +292,7 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
               margin: 0 !important;
               padding: 0 !important;
               color: #333 !important;
-              line-height: 1 !important;
-              align-self: flex-start !important; /* Match preview alignment */
-              margin-top: -2mm !important; /* Move name up to align with photo top */
+              line-height: 1.1 !important;
             }
             
             .resume-container h2 {
@@ -333,15 +322,13 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
             }
             
             /* Ensure header alignment matches preview */
-            .resume-container > div > div > div:first-child {
+            .resume-container > div:first-child {
               display: flex !important;
               align-items: flex-start !important;
               gap: 10mm !important;
               margin-bottom: 6mm !important;
               border-bottom: 2pt solid #333 !important;
               padding-bottom: 3mm !important;
-              padding-top: 0 !important;
-              margin-top: 0 !important;
             }
             
             @page {
@@ -350,20 +337,31 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
             }
           }
           
-          @media screen and (max-width: 210mm) {
-            .resume-container {
-              width: 100% !important;
-              max-width: 210mm !important;
-              height: auto !important;
-              min-height: 297mm !important;
+          /* Responsive preview: scale the A4 page to fit its parent */
+          .resume-preview-wrapper {
+            width: 100%;
+            overflow: visible;
+          }
+
+          @media screen and (max-width: 850px) {
+            .resume-preview-wrapper .resume-container {
+              transform-origin: top left;
+              /* Scale factor is calculated by JS, but provide a sensible CSS fallback */
+              transform: scale(0.85);
+              margin-bottom: -40mm; /* compensate for the scaled whitespace */
+            }
+          }
+
+          @media screen and (max-width: 650px) {
+            .resume-preview-wrapper .resume-container {
+              transform: scale(0.65);
+              margin-bottom: -100mm;
             }
           }
         `}
       </style>
       
       <div className="resume-container" style={containerStyle}>
-        <div style={contentWrapperStyle}>
-          <div style={scrollableContentStyle}>
             {/* Header */}
             <div style={headerStyle}>
               {managedProfileImageUrl && (
@@ -384,7 +382,7 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
             </div>
 
             {/* Languages */}
-            {profile.languages && profile.languages.length > 0 && contentLimits.find(s => s.type === 'languages') && (
+            {profile.languages && profile.languages.length > 0 && sectionVisible('languages') && (
               <section style={sectionStyle}>
                 <div style={sectionTitleStyle}>{t('resume.sections.languages')}</div>
                 <ul style={jobTitlesListStyle}>
@@ -401,7 +399,7 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
             )}
 
             {/* Residences */}
-            {profile.residences && profile.residences.length > 0 && contentLimits.find(s => s.type === 'residences') && (
+            {profile.residences && profile.residences.length > 0 && sectionVisible('residences') && (
               <section style={sectionStyle}>
                 <div style={sectionTitleStyle}>{t('resume.sections.residences')}</div>
                 <ul style={jobTitlesListStyle}>
@@ -421,7 +419,7 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
             )}
 
             {/* Job Titles */}
-            {profile.jobTitles && profile.jobTitles.filter(jt => jt.department && jt.title).length > 0 && contentLimits.find(s => s.type === 'jobTitles') && (
+            {profile.jobTitles && profile.jobTitles.filter(jt => jt.department && jt.title).length > 0 && sectionVisible('jobTitles') && (
               <div style={sectionStyle}>
                 <h2 style={sectionTitleStyle}>{t('resume.sections.professionalExperience')}</h2>
                 <ul style={jobTitlesListStyle}>
@@ -443,7 +441,7 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
             )}
 
             {/* Projects */}
-            {profile.projects && profile.projects.filter(p => p.projectName && p.role).length > 0 && contentLimits.find(s => s.type === 'projects') && (
+            {profile.projects && profile.projects.filter(p => p.projectName && p.role).length > 0 && sectionVisible('projects') && (
               <div style={sectionStyle}>
                 <h2 style={sectionTitleStyle}>{t('resume.sections.selectedProjects')}</h2>
                 <ul style={projectsListStyle}>
@@ -465,7 +463,7 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
             )}
 
             {/* Education */}
-            {profile.education && profile.education.length > 0 && contentLimits.find(s => s.type === 'education') && (
+            {profile.education && profile.education.length > 0 && sectionVisible('education') && (
               <div style={sectionStyle}>
                 <h2 style={sectionTitleStyle}>{t('resume.sections.education')}</h2>
                 <ul style={jobTitlesListStyle}>
@@ -552,12 +550,12 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
             )}
 
             {/* Other Info */}
-            {profile.otherInfo && contentLimits.find(s => s.type === 'otherInfo') && (
+            {profile.otherInfo && sectionVisible('otherInfo') && (
               <div style={sectionStyle}>
                 <h2 style={sectionTitleStyle}>{t('resume.sections.additionalInformation')}</h2>
                 <p style={{
                   ...otherInfoStyle,
-                  maxHeight: '8mm', // Limit height for other info
+                  maxHeight: '8mm',
                   overflow: 'hidden',
                   display: '-webkit-box',
                   WebkitLineClamp: 2,
@@ -565,8 +563,6 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
                 }}>{profile.otherInfo}</p>
               </div>
             )}
-          </div>
-        </div>
       </div>
     </>
   );
