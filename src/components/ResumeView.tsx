@@ -138,7 +138,6 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
     fontSize: '11pt',
     lineHeight: 1.3,
     color: '#333',
-    overflow: 'hidden',
     boxSizing: 'border-box' as const,
   };
 
