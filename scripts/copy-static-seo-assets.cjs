@@ -11,11 +11,13 @@ const filesToCopy = [
   'ads.txt',
   'googlebc4b6f0f06687f39.html',
   'my-icon.png',
+  'og-image.jpg',
   'bust-avatar.svg',
   'default-avatar.svg',
   'movie-production-avatar.svg',
   'firebase-error-suppressor.js',
   '404.html',
+  'healthz.json',
 ];
 
 function withFreshLastmod(fileName, contents) {

@@ -1,4 +1,6 @@
 const DEFAULT_ROBOTS = 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
+export const DEFAULT_OG_IMAGE_URL = 'https://myfilmjobs.com/og-image.jpg';
+const DEFAULT_OG_IMAGE_ALT = 'My Film Jobs crew networking dashboard preview';
 const HREFLANG_CODES = ['en', 'es'] as const;
 const MANAGED_HREFLANG_SELECTOR = 'link[rel="alternate"][data-seo-managed="hreflang"]';
 const MANAGED_PAGINATION_SELECTOR = 'link[rel="prev"][data-seo-managed="pagination"], link[rel="next"][data-seo-managed="pagination"]';
@@ -10,6 +12,7 @@ export interface SeoConfig {
   robots?: string;
   ogType?: string;
   ogImage?: string;
+  ogImageAlt?: string;
   twitterCard?: 'summary' | 'summary_large_image';
 }
 
@@ -118,9 +121,12 @@ export function setPageSeo(config: SeoConfig): void {
     canonicalUrl,
     robots = DEFAULT_ROBOTS,
     ogType = 'website',
-    ogImage,
+    ogImage = DEFAULT_OG_IMAGE_URL,
+    ogImageAlt = DEFAULT_OG_IMAGE_ALT,
     twitterCard = 'summary_large_image',
   } = config;
+  const resolvedOgImage = ogImage || DEFAULT_OG_IMAGE_URL;
+  const resolvedOgImageAlt = ogImageAlt || DEFAULT_OG_IMAGE_ALT;
 
   document.title = title;
   upsertMetaTag('description', description);
@@ -130,12 +136,17 @@ export function setPageSeo(config: SeoConfig): void {
   upsertMetaTag('og:title', title, 'property');
   upsertMetaTag('og:description', description, 'property');
   upsertMetaTag('og:url', canonicalUrl, 'property');
-  if (ogImage) {
-    upsertMetaTag('og:image', ogImage, 'property');
-    upsertMetaTag('twitter:image', ogImage);
+  upsertMetaTag('og:image', resolvedOgImage, 'property');
+  upsertMetaTag('og:image:secure_url', resolvedOgImage, 'property');
+  upsertMetaTag('og:image:alt', resolvedOgImageAlt, 'property');
+  upsertMetaTag('twitter:image', resolvedOgImage);
+  upsertMetaTag('twitter:image:alt', resolvedOgImageAlt);
+  if (resolvedOgImage === DEFAULT_OG_IMAGE_URL) {
+    upsertMetaTag('og:image:width', '1200', 'property');
+    upsertMetaTag('og:image:height', '630', 'property');
   } else {
-    removeMetaTag('og:image', 'property');
-    removeMetaTag('twitter:image');
+    removeMetaTag('og:image:width', 'property');
+    removeMetaTag('og:image:height', 'property');
   }
   upsertMetaTag('twitter:card', twitterCard);
   upsertMetaTag('twitter:title', title);

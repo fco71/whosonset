@@ -1,0 +1,25 @@
+[debug] [2026-05-04T17:09:52.611Z] ----------------------------------------------------------------------
+[debug] [2026-05-04T17:09:52.614Z] Command:       /usr/bin/node /sessions/elegant-zen-euler/mnt/whosonset/node_modules/.bin/firebase projects:list
+[debug] [2026-05-04T17:09:52.614Z] CLI Version:   14.11.1
+[debug] [2026-05-04T17:09:52.614Z] Platform:      linux
+[debug] [2026-05-04T17:09:52.614Z] Node Version:  v22.22.0
+[debug] [2026-05-04T17:09:52.614Z] Time:          Mon May 04 2026 17:09:52 GMT+0000 (Coordinated Universal Time)
+[debug] [2026-05-04T17:09:52.614Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-05-04T17:09:52.616Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[debug] [2026-05-04T17:09:52.902Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-05-04T17:09:52.941Z] <<< [apiv2][status] GET https://firebase-public.firebaseio.com/cli.json 403
+[debug] [2026-05-04T17:09:52.942Z] <<< [apiv2][body] GET https://firebase-public.firebaseio.com/cli.json "Connection blocked by network allowlist"
+[warn] ⚠  Unable to fetch the CLI MOTD and remote config. This is not a fatal error, but may indicate an issue with your network connection. 
+[debug] [2026-05-04T17:09:52.942Z] Failed to fetch MOTD FirebaseError: Unable to parse JSON: SyntaxError: Unexpected token 'C', "Connection"... is not valid JSON
+[debug] [2026-05-04T17:09:52.947Z] Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/sessions/elegant-zen-euler/mnt/whosonset/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async GoogleAuth._GoogleAuth_determineClient (/sessions/elegant-zen-euler/mnt/whosonset/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/sessions/elegant-zen-euler/mnt/whosonset/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GoogleAuth.getAccessToken (/sessions/elegant-zen-euler/mnt/whosonset/node_modules/google-auth-library/build/src/auth/googleauth.js:722:24)
+    at async autoAuth (/sessions/elegant-zen-euler/mnt/whosonset/node_modules/firebase-tools/lib/requireAuth.js:28:19)
+    at async Object.requireAuth [as fn] (/sessions/elegant-zen-euler/mnt/whosonset/node_modules/firebase-tools/lib/requireAuth.js:87:20)
+    at async /sessions/elegant-zen-euler/mnt/whosonset/node_modules/firebase-tools/lib/command.js:242:17
+[error] 
+[error] Error: Failed to authenticate, have you run firebase login?

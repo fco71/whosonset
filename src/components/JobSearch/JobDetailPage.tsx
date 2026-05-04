@@ -137,7 +137,6 @@ const JobDetailPage: React.FC = () => {
         description: 'The job listing you are looking for is not available.',
         canonicalUrl,
         robots: 'noindex, nofollow',
-        ogImage: 'https://myfilmjobs.com/my-icon.png',
       });
       removeStructuredData(JOB_POSTING_SCHEMA_ID);
       return;
@@ -155,7 +154,6 @@ const JobDetailPage: React.FC = () => {
       canonicalUrl,
       robots: isIndexable ? undefined : 'noindex, nofollow',
       ogType: 'article',
-      ogImage: 'https://myfilmjobs.com/my-icon.png',
     });
 
     if (isIndexable) {

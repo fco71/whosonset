@@ -12,6 +12,7 @@ import {
   setPageSeo,
   setPaginationLinks,
   setStructuredData,
+  DEFAULT_OG_IMAGE_URL,
 } from '../utilities/seo';
 
 const BLOG_LIST_SCHEMA_ID = 'blog-list-structured-data';
@@ -62,7 +63,7 @@ const BlogPage: React.FC = () => {
     loadPosts();
   }, [currentPage]);
 
-  const previewImage = posts.find((item) => Boolean(item.imageUrl))?.imageUrl || 'https://myfilmjobs.com/my-icon.png';
+  const previewImage = posts.find((item) => Boolean(item.imageUrl))?.imageUrl || DEFAULT_OG_IMAGE_URL;
 
   useEffect(() => {
     const pageTitle = currentPage === 1

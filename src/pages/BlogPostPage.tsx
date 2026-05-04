@@ -12,7 +12,7 @@ import {
   sanitizeBlogSummary,
 } from '../utilities/blogSeo';
 import { trackConversion } from '../utilities/conversionTracking';
-import { clearPaginationLinks, removeStructuredData, setPageSeo, setStructuredData } from '../utilities/seo';
+import { DEFAULT_OG_IMAGE_URL, clearPaginationLinks, removeStructuredData, setPageSeo, setStructuredData } from '../utilities/seo';
 
 const BLOG_POST_SCHEMA_ID = 'blog-post-structured-data';
 const BlogCommentSection = React.lazy(() => import('../components/Blog/BlogCommentSection'));
@@ -104,7 +104,6 @@ const BlogPostPage: React.FC = () => {
         description: 'The requested blog post is not available.',
         canonicalUrl: fallbackCanonical,
         robots: 'noindex, nofollow',
-        ogImage: 'https://myfilmjobs.com/my-icon.png',
       });
       removeStructuredData(BLOG_POST_SCHEMA_ID);
       return;
@@ -115,7 +114,7 @@ const BlogPostPage: React.FC = () => {
       description: buildBlogMetaDescription(post),
       canonicalUrl: getBlogPostCanonicalUrl(post.id),
       ogType: 'article',
-      ogImage: post.imageUrl || 'https://myfilmjobs.com/my-icon.png',
+      ogImage: post.imageUrl || DEFAULT_OG_IMAGE_URL,
     });
     setStructuredData(BLOG_POST_SCHEMA_ID, {
       '@context': 'https://schema.org',
