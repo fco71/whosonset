@@ -2,6 +2,8 @@ import { JobTitleEntry } from './JobTitleEntry';
 import { ProjectEntry } from './ProjectEntry';
 
 // Unified CrewProfile interface for the entire application
+export type CrewProfileType = 'professional' | 'student';
+
 export type EducationLevel = 
   | 'high_school' 
   | 'associate' 
@@ -55,12 +57,23 @@ export const DEFAULT_EDUCATION_ENTRY: Omit<EducationEntry, 'isCurrent'> = {
   description: ''
 };
 
+export interface StudentProfileInfo {
+  /** Optional school, university, or training program name */
+  institution?: string;
+}
+
 export interface CrewProfile {
   uid: string;
   name: string;
   username: string;
   bio?: string;
   profileImageUrl?: string;
+  profileType?: CrewProfileType;
+  studentInfo?: StudentProfileInfo;
+  /** Legacy/simple flag kept for compatibility with existing reads and filters */
+  isStudent?: boolean;
+  /** Legacy/simple school field kept for compatibility with existing reads and filters */
+  school?: string;
   jobTitles: JobTitleEntry[];
   residences: Residence[];
   projects?: ProjectEntry[];
@@ -103,6 +116,8 @@ export interface CrewProfileFormData {
   name: string;
   bio: string;
   profileImageUrl: string;
+  profileType?: CrewProfileType;
+  studentInfo?: StudentProfileInfo;
   jobTitles: JobTitleEntry[];
   residences: Residence[];
   projects: ProjectEntry[];

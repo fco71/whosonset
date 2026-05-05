@@ -14,6 +14,12 @@ interface PublicCrewProfile {
   residences: any[];
   bio?: string;
   availability?: string;
+  profileType?: 'professional' | 'student';
+  studentInfo?: {
+    institution?: string;
+  };
+  isStudent?: boolean;
+  school?: string;
 }
 
 const PublicCrewPage: React.FC = () => {
@@ -42,7 +48,13 @@ const PublicCrewPage: React.FC = () => {
               jobTitles: data.jobTitles || [],
               residences: data.residences || [],
               bio: data.bio,
-              availability: data.availability
+              availability: data.availability,
+              profileType: data.profileType || (data.isStudent ? 'student' : 'professional'),
+              studentInfo: {
+                institution: data.studentInfo?.institution || data.school || ''
+              },
+              isStudent: data.isStudent,
+              school: data.school
             });
           }
         });
@@ -160,6 +172,14 @@ const PublicCrewPage: React.FC = () => {
                           ? profile.residences[0] 
                           : `${profile.residences[0]?.city || 'Unknown'}, ${profile.residences[0]?.country || 'Unknown'}`}
                       </p>
+                    )}
+                    {(profile.profileType === 'student' || profile.isStudent) && (
+                      <span
+                        className="inline-block mt-2 px-2 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100"
+                        title={profile.studentInfo?.institution || profile.school || 'Student'}
+                      >
+                        Student{(profile.studentInfo?.institution || profile.school) ? ` - ${profile.studentInfo?.institution || profile.school}` : ''}
+                      </span>
                     )}
                   </div>
                 </div>

@@ -38,6 +38,7 @@ const ProducerView: React.FC = () => {
 
   // Filter states
   const [filters, setFilters] = useState({
+    profileType: '',
     department: '',
     jobTitle: '',
     country: '',
@@ -47,6 +48,7 @@ const ProducerView: React.FC = () => {
   });
 
   const [appliedFilters, setAppliedFilters] = useState({
+    profileType: '',
     department: '',
     jobTitle: '',
     country: '',
@@ -65,6 +67,14 @@ const ProducerView: React.FC = () => {
   // Sorting state
   const [sortBy, setSortBy] = useState<'relevance' | 'name' | 'dateAdded'>('relevance');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  const getProfileType = (profile: CrewProfile): 'professional' | 'student' => {
+    return profile.profileType === 'student' || profile.isStudent === true ? 'student' : 'professional';
+  };
+
+  const getStudentInstitution = (profile: CrewProfile): string => {
+    return profile.studentInfo?.institution || profile.school || '';
+  };
 
   // Load favorite crew IDs
   useEffect(() => {
@@ -272,6 +282,8 @@ const ProducerView: React.FC = () => {
           const query = appliedFilters.searchQuery.toLowerCase();
           results = results.filter(profile =>
             profile.name.toLowerCase().includes(query) ||
+            getProfileType(profile).includes(query) ||
+            getStudentInstitution(profile).toLowerCase().includes(query) ||
             profile.jobTitles?.some(job => 
               job.title.toLowerCase().includes(query) ||
               job.department.toLowerCase().includes(query)
@@ -282,6 +294,11 @@ const ProducerView: React.FC = () => {
               project.role.toLowerCase().includes(query)
             )
           );
+        }
+
+        // Filter by profile type, treating older profiles without the field as professionals
+        if (appliedFilters.profileType) {
+          results = results.filter(profile => getProfileType(profile) === appliedFilters.profileType);
         }
 
         // Filter by department
@@ -343,7 +360,7 @@ const ProducerView: React.FC = () => {
     }
 
     // Instantly update appliedFilters for dropdowns, not for searchQuery
-    if (["department", "jobTitle", "country", "availability"].includes(filterName)) {
+    if (["profileType", "department", "jobTitle", "country", "availability"].includes(filterName)) {
       setAppliedFilters(prev => ({
         ...prev,
         [filterName]: value,
@@ -362,6 +379,7 @@ const ProducerView: React.FC = () => {
 
   const clearFilters = () => {
     const emptyFilters = {
+      profileType: '',
       department: '',
       jobTitle: '',
       country: '',
@@ -409,7 +427,7 @@ const ProducerView: React.FC = () => {
       <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           {/* Compact single row with better organization */}
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             {/* Search Box - Compact */}
             <div className="w-48 sm:w-56">
               <div className="relative">
@@ -432,7 +450,33 @@ const ProducerView: React.FC = () => {
             </div>
 
             {/* Filters Group - Compact and organized */}
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Profile Type Toggle */}
+              <div
+                className="flex items-center bg-white border border-gray-300 rounded-md overflow-hidden"
+                aria-label="Filter by profile type"
+              >
+                {[
+                  { value: '', label: 'All' },
+                  { value: 'professional', label: 'Professional' },
+                  { value: 'student', label: 'Students' }
+                ].map(option => (
+                  <button
+                    key={option.value || 'all'}
+                    type="button"
+                    onClick={() => handleFilterChange('profileType', option.value)}
+                    className={`px-2.5 py-1 text-xs font-medium transition-colors duration-200 ${
+                      filters.profileType === option.value
+                        ? 'bg-indigo-50 text-indigo-700'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
+                    }`}
+                    aria-pressed={filters.profileType === option.value}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+
               {/* Department Filter */}
               <div className="relative">
                 <select
@@ -868,8 +912,10 @@ const CrewProfileCard: React.FC<{
   isBookmarked: boolean;
   onBookmarkToggle: (crewId: string, isBookmarked: boolean) => Promise<void>;
 }> = ({ profile, index, isFiltering, currentUserId, isBookmarked, onBookmarkToggle }) => {
-  const primaryJob = profile.jobTitles[0];
-  const primaryResidence = profile.residences[0];
+  const primaryJob = profile.jobTitles?.[0];
+  const primaryResidence = profile.residences?.[0];
+  const isStudentProfile = profile.profileType === 'student' || profile.isStudent === true;
+  const studentInstitution = profile.studentInfo?.institution || profile.school || '';
   const [isBookmarking, setIsBookmarking] = useState(false);
 
   const handleBookmarkClick = async (e: React.MouseEvent) => {
@@ -943,6 +989,14 @@ const CrewProfileCard: React.FC<{
           >
             {profile.name}
           </h3>
+          {isStudentProfile && (
+            <p
+              className="text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-full px-2 py-1 mb-2 inline-block max-w-full truncate"
+              title={studentInstitution ? `Student - ${studentInstitution}` : 'Student'}
+            >
+              Student{studentInstitution ? ` - ${studentInstitution}` : ''}
+            </p>
+          )}
           {primaryJob && (
             <p 
               className="text-sm font-medium text-gray-600 mb-1 tracking-wide transition-colors duration-300 group-hover:text-gray-800 leading-tight"

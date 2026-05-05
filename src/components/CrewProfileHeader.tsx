@@ -65,6 +65,8 @@ const CrewProfileHeader: React.FC<CrewProfileHeaderProps> = ({ profile }) => {
   const mainLocation = profile.residences?.[0]
     ? `${profile.residences[0].city ? profile.residences[0].city + ', ' : ''}${profile.residences[0].country || ''}`
     : '';
+  const isStudentProfile = profile.profileType === 'student' || profile.isStudent === true;
+  const studentInstitution = profile.studentInfo?.institution || profile.school || '';
   // Fallback: use photoURL if profileImageUrl is missing
       const imageUrl = profile.profileImageUrl || '/bust-avatar.svg';
   const availability = profile.availability || '';
@@ -83,6 +85,14 @@ const CrewProfileHeader: React.FC<CrewProfileHeaderProps> = ({ profile }) => {
       <div className="flex-1 min-w-0 text-center md:text-left">
         <div className="font-bold text-2xl text-gray-900 mb-1">{profile.name}</div>
         <div className="text-sm text-gray-500 mb-1">{mainTitle}{mainLocation ? ' · ' + mainLocation : ''}</div>
+        {isStudentProfile && (
+          <span
+            className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100 mr-2"
+            title={studentInstitution ? `Student - ${studentInstitution}` : 'Student'}
+          >
+            Student{studentInstitution ? ` - ${studentInstitution}` : ''}
+          </span>
+        )}
         {availability && (
           <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${availability.toLowerCase() === 'available' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
             {getAvailabilityText(availability)}

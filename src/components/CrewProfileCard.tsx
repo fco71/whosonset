@@ -76,6 +76,8 @@ const CrewProfileCard: React.FC<CrewProfileCardProps> = ({
   const primaryJobTitle = profile.jobTitles?.[0]?.title || t('crew.crewMember');
   const primaryLocation = profile.residences?.[0] ? 
     `${profile.residences[0].city}, ${profile.residences[0].country}` : t('crew.locationNotSpecified');
+  const isStudentProfile = profile.profileType === 'student' || profile.isStudent === true;
+  const studentInstitution = profile.studentInfo?.institution || profile.school || '';
 
   return (
     <div 
@@ -168,6 +170,27 @@ const CrewProfileCard: React.FC<CrewProfileCardProps> = ({
         >
           {primaryLocation}
         </div>
+        {isStudentProfile && (
+          <div
+            style={{
+              display: 'inline-block',
+              marginTop: 6,
+              padding: '3px 8px',
+              borderRadius: 999,
+              backgroundColor: '#eef2ff',
+              color: '#4338ca',
+              fontSize: 12,
+              fontWeight: 600,
+              maxWidth: '100%',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap'
+            }}
+            title={studentInstitution ? `Student - ${studentInstitution}` : 'Student'}
+          >
+            Student{studentInstitution ? ` - ${studentInstitution}` : ''}
+          </div>
+        )}
       </div>
       <div style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: 12, marginTop: 'auto' }}>
         {user && user.uid !== profile.uid && (

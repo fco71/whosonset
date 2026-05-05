@@ -31,6 +31,12 @@ interface CrewProfileData {
   profileImageUrl?: string;
   photoURL?: string; // Fallback for legacy data
   bio?: string;
+  profileType?: 'professional' | 'student';
+  studentInfo?: {
+    institution?: string;
+  };
+  isStudent?: boolean;
+  school?: string;
   jobTitles: JobTitleEntry[];
   projects?: Project[];
   residences?: Residence[];
@@ -51,6 +57,8 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
   const { t } = useTranslation();
   // Fallback: use photoURL if profileImageUrl is missing
   const managedProfileImageUrl = useManagedUrl(profile?.profileImageUrl || profile?.photoURL);
+  const isStudentProfile = profile.profileType === 'student' || profile.isStudent === true;
+  const studentInstitution = profile.studentInfo?.institution || profile.school || '';
   
   // Calculate available space and prioritize content
   const calculateContentLimits = () => {
@@ -183,6 +191,19 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
     WebkitLineClamp: 8, // Allow more lines to fill the space
     WebkitBoxOrient: 'vertical',
     lineHeight: 1.3,
+  };
+
+  const profileTypeStyle: React.CSSProperties = {
+    display: 'inline-block',
+    fontSize: '9pt',
+    fontWeight: 'bold',
+    color: '#333',
+    border: '1pt solid #777',
+    borderRadius: '2mm',
+    padding: '1mm 2mm',
+    margin: '2mm 0 0 0',
+    textTransform: 'uppercase' as const,
+    letterSpacing: '0.4pt',
   };
 
   const sectionStyle: React.CSSProperties = {
@@ -374,6 +395,11 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
               )}
               <div>
                 <h1 style={nameStyle}>{profile.name}</h1>
+                {isStudentProfile && (
+                  <div style={profileTypeStyle}>
+                    Student{studentInstitution ? ` - ${studentInstitution}` : ''}
+                  </div>
+                )}
                 {profile.bio && (
                   <p style={bioStyle}>{profile.bio}</p>
                 )}
@@ -420,7 +446,9 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
             {/* Job Titles */}
             {profile.jobTitles && profile.jobTitles.filter(jt => jt.department && jt.title).length > 0 && sectionVisible('jobTitles') && (
               <div style={sectionStyle}>
-                <h2 style={sectionTitleStyle}>{t('resume.sections.professionalExperience')}</h2>
+                <h2 style={sectionTitleStyle}>
+                  {isStudentProfile ? 'Crew Focus' : t('resume.sections.professionalExperience')}
+                </h2>
                 <ul style={jobTitlesListStyle}>
                   {profile.jobTitles
                     .filter(jt => jt.department && jt.title)

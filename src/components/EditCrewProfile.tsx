@@ -67,6 +67,10 @@ const EditCrewProfile: React.FC = () => {
     name: '',
     bio: '',
     profileImageUrl: '',
+    profileType: 'professional',
+    studentInfo: {
+      institution: ''
+    },
     jobTitles: [{ department: '', title: '', subcategories: [] }],
     residences: [{ country: '', city: '' }],
     projects: [],
@@ -267,6 +271,10 @@ const EditCrewProfile: React.FC = () => {
             name: data.name || '',
             bio: data.bio || '',
             profileImageUrl: data.profileImageUrl || '',
+            profileType: data.profileType || (data.isStudent ? 'student' : 'professional'),
+            studentInfo: {
+              institution: data.studentInfo?.institution || data.school || ''
+            },
             // Arrays with type safety
             jobTitles: data.jobTitles?.length ? migratedJobTitles : [{ department: '', title: '', subcategories: [] }],
             residences: data.residences?.length ? data.residences : [{ country: '', city: '' }],
@@ -612,10 +620,18 @@ const EditCrewProfile: React.FC = () => {
       }
 
       // Ensure email is included in the saved data
+      const profileType = form.profileType === 'student' ? 'student' : 'professional';
+      const studentInstitution = form.studentInfo?.institution?.trim() || '';
       const dataToSave = {
         ...form,
         name: safeName,
         profileImageUrl: safeProfileImageUrl,
+        profileType,
+        studentInfo: {
+          institution: profileType === 'student' ? studentInstitution : ''
+        },
+        isStudent: profileType === 'student',
+        school: profileType === 'student' ? studentInstitution : '',
         // Note: uid field is intentionally omitted since document ID should be the UID
         email: user.email || form.contactInfo?.email || '', // Use auth email as primary, fallback to contact info
         contactInfo: {
@@ -714,6 +730,58 @@ const EditCrewProfile: React.FC = () => {
                       className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02] resize-none" 
                     />
                   </div>
+                </div>
+
+                {/* Student Profile Section */}
+                <div className="mb-8 p-6 bg-gray-50 rounded-lg border border-gray-200">
+                  <h3 className="text-lg font-light text-gray-900 mb-4 tracking-wide">Profile Type</h3>
+                  <label className="flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      id="student-profile-toggle"
+                      checked={form.profileType === 'student'}
+                      onChange={(e) => {
+                        const isStudent = e.target.checked;
+                        setForm(f => ({
+                          ...f,
+                          profileType: isStudent ? 'student' : 'professional',
+                          studentInfo: isStudent
+                            ? { institution: f.studentInfo?.institution || '' }
+                            : { institution: '' }
+                        }));
+                      }}
+                      className="mt-1 w-5 h-5 text-indigo-600 bg-white border-gray-300 rounded focus:ring-indigo-500 focus:ring-2"
+                    />
+                    <span>
+                      <span className="block font-medium text-gray-900">I am a student</span>
+                      <span className="block text-sm text-gray-600">
+                        Student profiles can be filtered separately in the crew directory.
+                      </span>
+                    </span>
+                  </label>
+
+                  {form.profileType === 'student' && (
+                    <div className="mt-5">
+                      <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
+                        School or Institution (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        value={form.studentInfo?.institution || ''}
+                        onChange={e =>
+                          setForm(f => ({
+                            ...f,
+                            studentInfo: {
+                              ...(f.studentInfo || {}),
+                              institution: e.target.value
+                            }
+                          }))
+                        }
+                        placeholder="e.g., NYU Tisch, UCLA Film School, Altos de Chavon"
+                        className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Job Titles Section */}
