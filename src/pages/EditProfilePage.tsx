@@ -14,12 +14,21 @@ const EditProfilePage: React.FC = () => {
     /*
       Bare wrapper — no card, no border, no shadow. The EditCrewProfile
       component below renders its own full-bleed ventovault background and
-      handles its own internal padding/cards. Adding ANY frame here (the old
-      "bg-white shadow-md rounded-lg p-6" was the culprit) creates a dark
-      drop-shadow halo around the entire form on mobile that reads as a
-      thick border eating up viewport real estate.
+      handles its own internal padding/cards.
+
+      Negative side margins (`-mx-4 sm:mx-0`) escape the parent <main>'s
+      `px-4` gutter on mobile so the ventovault world background reaches
+      the actual viewport edge. Without this, the page wraps the form in a
+      16px-on-each-side gray-50 strip (App.tsx line 164's `bg-gray-50`
+      showing through the gutter), which reads on a phone as a visible dark
+      "border" framing the resume builder. On sm+ we restore the gutter so
+      the framed-card aesthetic comes back on tablet/desktop where there's
+      enough viewport real estate for it to look intentional.
+
+      Negative bottom margin (`-mb-8`) closes the gap between the last
+      section and the footer for the same reason.
     */
-    <div>
+    <div className="-mx-4 -mb-8 sm:mx-0 sm:mb-0">
       <Suspense
         fallback={
           <div className="flex items-center justify-center h-64">

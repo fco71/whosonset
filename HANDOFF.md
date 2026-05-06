@@ -256,6 +256,62 @@ These fixes are dev-mode quality-of-life only — production was never affected 
 - Sticky toolbar: either fully visible OR moves out of the way on scroll — not partially covering inputs
 - Verify on real iPhone (owner's device) — DevTools responsive mode is approximate
 
+### 2P. May 6 continuation — DARK MODE was the real culprit all along (uncommitted, NOT YET DEPLOYED)
+
+**Owner provided a screenshot finally.** The "thick dark border around the resume form" turned out to be **`dark:bg-gray-800` (Tailwind's dark-mode variant) painting the EditProfilePage card wrapper navy-grey because the owner's iPhone is in dark mode**. Tailwind defaults `darkMode: 'media'` (no override in `tailwind.config.js`), so `dark:` variants activate on `prefers-color-scheme: dark` automatically.
+
+Old code in `EditProfilePage.tsx` (BEFORE §2N's removal):
+```tsx
+<div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+  <EditCrewProfile />
+</div>
+```
+Light mode → white card on white-ish page → no visible "frame"
+**Dark mode → `bg-gray-800` (#1f2937) card on light-mode page bg → very visible navy "frame"**
+
+This is why prior mobile audits in §2H, §2I, §2L missed it: the bug literally doesn't manifest in light mode, and nobody had tested with the iPhone in dark mode.
+
+**§2N's fix (already applied, unrelated motivation) accidentally fixes this too:** removing the entire `bg-white dark:bg-gray-800 ... p-6` wrapper in EditProfilePage.tsx kills the dark-mode variant along with the frame.
+
+**Next agent — KEY LEARNINGS:**
+1. Always test mobile in BOTH light AND dark mode. Tailwind's `dark:` variants are easy to miss because they only render under specific conditions.
+2. The ventovault design system in `src/styles/globals.css` was built ONLY for light mode. Its translucent white panels and subtle navy tints look correct on a light page background. They were never designed for dark mode.
+3. Owner's device IS in dark mode. After confirming the frame is gone, we need to decide:
+   a. **Force light-mode rendering** for `mfj-vv-*` views (`color-scheme: only light` on the world wrapper, or wrap in a `<div>` with explicit light bg)
+   b. **Build proper dark-mode variants** for the ventovault classes (more work, but respects user preference)
+4. Audit other pages for `dark:bg-gray-800`, `dark:bg-gray-900`, etc. — `grep -rn "dark:bg-gray" src/` will find them all. Each one is a potential "ugly in dark mode" surprise.
+
+**Status:** §2N + §2O fixes already in working tree, ready to deploy. Once deployed AND verified by owner on the iPhone (dark mode), the dark frame is fully resolved.
+
+### 2O. May 6 continuation — full-bleed mobile escape for `<main>` gutter (uncommitted, NOT YET DEPLOYED)
+
+**Owner reported after §2N deploy:** "are you sure? I keep seeing dark border around resume form"
+
+**Real culprit (NOT what §2L, §2M, or §2N targeted):** `src/App.tsx` line 170:
+```tsx
+<main id="main-content" className="container mx-auto px-4 py-8 pt-24">
+```
+This `<main>` wraps EVERY page. The `px-4` adds 16px horizontal gutter. The wrapper one level up at line 164 is `<div className="min-h-screen bg-gray-50 ...">` — light gray. Inside the form, the `mfj-vv-world` paints its own `#eef5fa` (subtle blue-gray) background.
+
+→ **The 16px gutter on each side leaks the page's gray-50 background through, which on a 375–414px iPhone reads as a visible "frame" of darker color around the bluish form.** That IS the "dark border" the owner kept seeing — it has nothing to do with shadows. It's a literal background-color difference between the page wrapper and the form's own world background.
+
+**Fix applied:** `src/pages/EditProfilePage.tsx` outer wrapper now has `-mx-4 -mb-8 sm:mx-0 sm:mb-0`:
+- On mobile: negative side margins escape `<main>`'s `px-4` so the ventovault world reaches the viewport edge
+- On mobile: negative bottom margin closes the gap to the footer
+- On `sm:` (≥640px) and up: restored to default (no negative margins) so the framed-card aesthetic returns on tablet/desktop where there's enough viewport real estate for it to look intentional
+
+**Why this hadn't been spotted by previous mobile passes:** every prior pass focused on EditCrewProfile internals or its CSS. The gutter is created by the LAYOUT level — `App.tsx`'s `<main>` is the parent of `<Outlet />` which renders pages. None of the mobile audits in §2H, §2I, §2L, §2N opened `App.tsx` because there's no obvious "card" or "border" class there — just generic Tailwind layout utilities.
+
+**Lesson for next agent:** when an owner says "border around the form" and you've removed every visible border + shadow inside the form, **check whether the body/page background and the form's own background are different colors**. The "frame" might just be the literal background-color contrast at the gutter. Use browser DevTools to inspect the actual pixel color at the suspected "border" — if it's a solid hex color (gray-50 = `#f9fafb`), it's a background leak, not a border/shadow.
+
+**Verification done in sandbox:**
+- `tsc --noEmit -p tsconfig.json`: ✅ clean
+- Only file changed: `src/pages/EditProfilePage.tsx`
+
+**Verification needed before claiming done:** owner inspects on real iPhone after deploy. If frame is finally gone: ship it. If STILL framed:
+1. Worth checking that the deploy actually went out — Safari's CSS cache is sticky.
+2. The next-likeliest remaining culprit is the `mfj-vv-world` background pattern itself (the 1px navy grid lines every 56px) being misperceived as a dark frame at the viewport edges. Could test by temporarily setting `mfj-vv-world { background-image: none }` in DevTools.
+
 ### 2N. May 6 continuation — REAL dark frame source identified & removed (uncommitted, NOT YET DEPLOYED)
 
 **Owner reported after §2L deploy:** "the dark border is still present. in general it looks better now but this border around the resume builder takes much space physically and perceptually."
