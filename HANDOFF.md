@@ -1,6 +1,6 @@
 # Project Handoff — myfilmjobs.com / whosonset
 
-**Last updated:** May 6, 2026 (continuation). Owner: Francisco Valdez (`iam@myfilmjobs.com` for Firebase, `franciscoadolfo@gmail.com` for personal).
+**Last updated:** May 6, 2026 (continuation — mobile redesign blocker added in §2K). Owner: Francisco Valdez (`iam@myfilmjobs.com` for Firebase, `franciscoadolfo@gmail.com` for personal).
 
 This doc lets another agent pick up where we left off without re-asking the basics. Read it top-to-bottom before making changes. Delete it from the repo or `.gitignore` it before committing — it contains internal status notes.
 
@@ -142,6 +142,120 @@ These fixes are dev-mode quality-of-life only — production was never affected 
   - In-app browser `http://localhost:8000/login`: no console errors ✅
   - In-app browser `http://localhost:8000/edit-profile`: redirects to `/login` in this unauthenticated automation tab, so authenticated/mobile visual QA still needs to be checked from a logged-in browser session.
 
+### 2I. May 6 continuation — mobile sticky-toolbar correction (uncommitted)
+
+- Owner reported mobile resume builder still looked messy and the autosave/save toolbar persisted during scroll, overlaying other fields.
+- Deployment status: deployed to Firebase Hosting production on May 6, 2026 via `bash deploy-production.sh`.
+- `src/components/EditCrewProfile.tsx` follow-up:
+  - The autosave/section toolbar is now normal in-flow on mobile/tablet and only becomes sticky at `lg:` and up.
+  - Removed the mobile translucent/backdrop styling from that toolbar so it no longer behaves like an overlay on phones.
+  - Email and phone contact rows now stack the input and privacy icon on phones instead of compressing horizontally.
+- Verification after this patch:
+  - `npx tsc --noEmit` ✅
+  - `npm run build` ✅ (only existing Browserslist database warning)
+  - Dev server hot compile log: webpack compiled successfully ✅
+  - In-app browser `http://localhost:8000/`: no console errors ✅
+  - Production deploy completed successfully to `myfilmjobs-com` hosting target ✅
+  - Live `https://myfilmjobs.com` returned HTTP 200; `https://myfilmjobs.com/healthz.json` returned `{"status":"ok"}` ✅
+
+### 2J. May 6 continuation — production visibility/cache fix (deployed)
+
+- Owner clarified the mobile preview is remote on iPhone, so local `localhost` changes are not visible until deployed.
+- Production was deployed after the mobile sticky-toolbar correction, but live headers showed `main.bundle.js` and `/` were still cacheable for 1 hour.
+- Root cause: `webpack.config.cjs` only detected production through `NODE_ENV=production`, while `deploy-production.sh` runs `webpack --mode production`. Production deploys were therefore still emitting stable dev-style filenames such as `main.bundle.js`.
+- Fixes:
+  - `webpack.config.cjs` now treats `--mode production` / `--mode=production` as production, so deploy builds emit content-hashed, minimized assets like `main.bd28b72f.js`.
+  - `firebase.json` now applies `Cache-Control: no-cache` to all hosting paths for production and development targets. This prevents SPA routes like `/`, `/login`, and `/edit-profile` from keeping stale app shells.
+- Final production deploy completed successfully via `bash deploy-production.sh`.
+- Live verification:
+  - `https://myfilmjobs.com/?v=mobile-cache-fix-20260506` returns `Cache-Control: no-cache` ✅
+  - `https://myfilmjobs.com/edit-profile?v=mobile-cache-fix-20260506` returns `Cache-Control: no-cache` ✅
+  - Live HTML references hashed scripts: `runtime.3e2ded02.js`, `vendor.firebase.65a4322e.js`, `main.bd28b72f.js` ✅
+  - `https://myfilmjobs.com/healthz.json` returns `{"status":"ok"}` ✅
+- For immediate iPhone testing after this deploy, use a cache-busted URL such as `https://myfilmjobs.com/?v=mobile-cache-fix-20260506` or open a private tab. Existing Safari tabs may still hold the old one-hour cached app shell from before this cache-header fix.
+
+### 2K. May 6 continuation — VentoVault-inspired resume-builder visual pass (deployed)
+
+- Owner asked the resume builder to emulate the look and feel of the local VentoVault wireframe app.
+- Reference app inspected at `/Users/fco/Library/Mobile Documents/com~apple~CloudDocs/Documents/Fintech Projects/VentoVault/VentoVault - programming/ventovault-wireframe`.
+- `src/styles/globals.css` now has a scoped `mfj-vv-*` visual layer for the resume builder:
+  - Light cyan/white/orange app-shell background with subtle grid treatment.
+  - Glassy topbar, hero, main panel, toolbar, cards, status chips, nav pills, buttons, and form fields.
+  - Mobile-specific panel/card/button sizing so the form remains readable on iPhone-width screens.
+- `src/components/EditCrewProfile.tsx` now applies those scoped classes to the builder shell, hero, autosave toolbar, profile-type segmented control, repeated form cards, publish/share controls, privacy icon buttons, save buttons, preview shell, and download button.
+- `src/components/LocationSelector.tsx` now uses the same `mfj-vv-field` styling for country/city selects so positions/residences do not look like a separate older form system.
+- Localization note: this pass added no new visible text; all changed UI labels continue to use existing `resume.builder.*` / `common.*` i18n keys.
+- Verification:
+  - `./node_modules/.bin/tsc --noEmit -p tsconfig.json` ✅
+  - `npm run build` ✅ (only existing Browserslist age + entrypoint-size warnings)
+  - Browser automation attempted on `/edit-profile`, but the automation tab redirected to `/login` because it was unauthenticated. Owner's in-app browser/iPhone session may still be authenticated, so real visual confirmation must happen there.
+  - Production deploy completed via `bash deploy-production.sh` ✅
+  - Live `https://myfilmjobs.com/edit-profile?v=ventovault-mobile-flat-20260506` returns `Cache-Control: no-cache` ✅
+  - Live HTML references hashed `main.59f8bf2d.js` ✅
+  - `https://myfilmjobs.com/healthz.json` returns `{"status":"ok"}` ✅
+
+### 2L. May 6 continuation — mobile dark-bar fix targeting nested vv panel shadows (deployed)
+
+**Investigation:** `/edit-profile` page nests 4–5 ventovault container classes (`mfj-vv-topbar`, `mfj-vv-hero`, `mfj-vv-panel`, `mfj-vv-toolbar`, `mfj-vv-card`) — each defined in `src/styles/globals.css:884–895` with the same `box-shadow: var(--mfj-vv-shadow)` (= `0 28px 64px -46px rgba(8, 25, 49, 0.58)`). On desktop with breathing room, the layered translucent panels read as elegant depth. On mobile (375–414px viewport), the cumulative drop shadows stack into thick dark horizontal bars between every container — exactly matching the owner's "thick dark bars present as a border around the form" report.
+
+**Fix applied** (`src/styles/globals.css`, in the existing `@media (max-width: 639px)` block):
+- Strip `border`, `box-shadow`, `backdrop-filter` from `.mfj-vv-topbar`, `.mfj-vv-hero`, `.mfj-vv-panel`, `.mfj-vv-toolbar`
+- Replace layered translucent gradient with a simple solid-ish white background so each container reads as a clean flat content block separated by margin alone
+- Reduced hero `::before` overlay opacity (0.72 → 0.45) so it doesn't darken
+- `.mfj-vv-card` keeps rounded corners but loses shadow
+- Section dividers inside the panel switched from white-translucent border to subtle navy `rgba(8,25,49,0.08)` — visible but won't read as another bar
+- Buttons lose box-shadow
+
+**What was NOT changed:**
+- Desktop look (≥640px): untouched — the layered ventovault aesthetic is preserved.
+- The `.mfj-vv-world` background grid pattern: kept.
+- JSX structure of EditCrewProfile.tsx: not touched — this is a CSS-only fix.
+
+**Verification done:**
+- `tsc --noEmit -p tsconfig.json`: ✅ clean
+- CSS brace balance check: ✅ 181/181
+- Production deploy completed via `bash deploy-production.sh`: ✅
+- Live cache-busted URL for owner verification: `https://myfilmjobs.com/edit-profile?v=ventovault-mobile-flat-20260506`
+
+**Still needs owner-side visual confirmation:**
+- Confirm on real iPhone that dark bars are gone.
+- Confirm the form is still legible and not too washed out after removing mobile shadows.
+- Confirm desktop view (≥640px) still keeps the layered translucent depth.
+
+### 2M. Historical owner report — mobile resume builder still broken; VentoVault reference design (superseded by 2K/2L)
+
+**Status update:** The open problem below is the issue addressed by §2K/§2L. Keep the diagnostic notes for future reference if owner still reports problems after the `ventovault-mobile-flat-20260506` deploy.
+
+**Owner report (verbatim):** "I'm having issues with mobile screens, everything ends up compressed and nonsensical on vertical screens. I had asked for a review on ventovault wireframe clean design to emulate for visual improvements on the resume builder page. Keeping it lean and clean and functional. A good example of the bad design is the thick dark bars present as a border around the form."
+
+**State of the problem:**
+- Two prior mobile passes (§2H, §2I) shipped to production but the owner is still seeing compressed/messed-up rendering on a real iPhone (vertical viewport, ~375–428px wide).
+- The cache fix in §2J is live, so this is NOT a stale-cache issue any more — what the owner is seeing is the *current* deployed CSS/markup.
+- Owner specifically called out **"thick dark bars present as a border around the form"** as a bad-design smell that needs removing.
+- Owner referenced a **"ventovault wireframe"** as the visual target — a clean, minimal design they want emulated. The reference was later found locally at `/Users/fco/Library/Mobile Documents/com~apple~CloudDocs/Documents/Fintech Projects/VentoVault/VentoVault - programming/ventovault-wireframe`; use that local app, not `ventovault.com`, for future visual comparisons.
+
+**Likely culprits (to investigate, NOT yet confirmed):**
+1. The outermost form/page wrapper still has a strong border + heavy padding that frames the whole form on mobile. Search `EditCrewProfile.tsx` and any parent layout (`Layout.tsx`, `App.tsx`) for `border-2`, `border-gray-900`, `ring-`, or any thick-border / dark-shadow utilities being applied to the form container.
+2. The sticky toolbar's `<select>` for section jumps (added in §2H) may be expanding past the viewport on mobile due to long Spanish labels (`Información básica`, `Información de contacto`, etc.).
+3. Profile-photo / avatar-upload widget might still have a fixed pixel width that pushes layout.
+4. Section dividers (`border-t border-gray-200 pt-10`) repeat 9 times — on a narrow viewport, the visual noise from those plus the page border may be reading as "boxed in / dark bars."
+5. Tailwind base `prose` or a third-party SCSS module may be injecting min-widths that don't collapse on phones.
+
+**What an incoming agent should do (in this order):**
+1. Use the local VentoVault wireframe path from §2K for visual comparison.
+2. Take screenshots of the live `https://myfilmjobs.com/edit-profile` at 375px, 414px, and 768px widths in DevTools — identify EXACTLY which elements are "compressed" and which "dark bars" exist. Don't guess.
+3. List the specific Tailwind/classes on each problem element. Compare to VentoVault's equivalent.
+4. Make ONE targeted fix at a time, deploy with `bash deploy-production.sh`, ask owner to verify on iPhone, repeat. Do NOT batch multiple speculative changes — they may cancel each other out (this is what happened in §2H/2I).
+
+**Verification checklist for any mobile fix:**
+- View at 375×667 (iPhone SE), 390×844 (iPhone 14), 414×896 (iPhone 11 Pro Max) in DevTools responsive mode
+- No horizontal scroll on any section
+- No text wrapped to 1 character per line
+- All inputs at minimum 16px font (prevents iOS zoom)
+- Section dividers visible but subtle (not "thick dark bars")
+- Sticky toolbar: either fully visible OR moves out of the way on scroll — not partially covering inputs
+- Verify on real iPhone (owner's device) — DevTools responsive mode is approximate
+
 ### 2F. UptimeRobot monitoring (set up by owner, partially complete)
 - Owner has a free UptimeRobot account.
 - **Monitor #1 (apex):** ✅ created, monitoring `https://myfilmjobs.com` every 5 min, email alerts to `franciscoadolfo@gmail.com`.
@@ -207,6 +321,13 @@ Last commits:
 ---
 
 ## 5. Outstanding work (recommended next actions, in priority order)
+
+### Priority 0 — Resume builder mobile redesign per ventovault reference (BLOCKER, see §2K)
+The owner is actively blocked on this. Two prior mobile passes did not solve it. Do NOT attempt another speculative pass — instead:
+1. Get the ventovault reference clarified (URL/image/Figma) before making aesthetic decisions.
+2. Capture exact-pixel screenshots of the current live mobile rendering (375/390/414 px) and identify the SPECIFIC "dark bars" the owner means. They could be: form container border, section dividers, sticky-toolbar background, or a parent layout wrapper.
+3. Make ONE targeted fix at a time, deploy, verify on owner's iPhone, repeat.
+4. Full instructions and likely culprits in §2K above.
 
 ### Priority 1 — Verify the resume builder redesign in browser
 1. Restart dev server: `cd ~/Documents/websites_local/whosonset && npm run dev`

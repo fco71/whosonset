@@ -50,7 +50,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
   return (
     <div className="space-y-3">
       <select
-        className="w-full min-w-0 rounded-lg border border-gray-200 bg-white px-3 py-3 text-base font-light text-gray-900 transition-colors duration-200 hover:border-gray-300 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-100 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4"
+        className="mfj-vv-field"
         value={selectedCountry}
         onChange={e => onCountryChange(e.target.value)}
         disabled={loading}
@@ -61,7 +61,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
         ))}
       </select>
       <select
-        className="w-full min-w-0 rounded-lg border border-gray-200 bg-white px-3 py-3 text-base font-light text-gray-900 transition-colors duration-200 hover:border-gray-300 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-100 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4"
+        className="mfj-vv-field"
         value={selectedCity}
         onChange={e => onCityChange(e.target.value)}
         disabled={!selectedCountry || loading}
