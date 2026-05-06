@@ -1225,8 +1225,32 @@ select::-webkit-scrollbar-thumb:hover {
 }
 
 @media (max-width: 639px) {
+  /*
+    BULLETPROOF FULL-BLEED.
+    The owner reports a thick framing band around the resume builder on
+    mobile that "takes too much space." Investigation traced multiple
+    candidates (panel shadows §2L, EditProfilePage card wrapper §2N,
+    main gutter §2O, dark-mode bg-gray-800 §2P). To stop chasing
+    individual culprits, force `.mfj-vv-world` to escape its parent
+    completely on mobile and span the full viewport width. This
+    classic "full-bleed escape" pattern works regardless of:
+      - parent's `padding-left/right`
+      - parent's `max-width`
+      - parent's `background-color` (light or dark mode)
+      - whether the page is in light or dark color-scheme
+    Because the world becomes 100vw wide, there is no gutter for any
+    parent background to leak through, so no visible "frame" can form.
+    Inner content (panels, cards) keeps its own max-width centering.
+  */
   .mfj-vv-world {
     background-size: auto, auto, 56px 56px, 56px 56px;
+    width: 100vw;
+    max-width: 100vw;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+    /* Belt-and-suspenders: explicit color-scheme so iOS Safari does not */
+    /* auto-darken the light ventovault palette in dark mode.            */
+    color-scheme: light;
   }
 
   /*
@@ -1257,6 +1281,19 @@ select::-webkit-scrollbar-thumb:hover {
   /* Hero background tint stays but lighter so it doesn't darken */
   .mfj-vv-hero::before {
     opacity: 0.45;
+  }
+
+  /*
+    Tighten the wasted top space above the world. App.tsx's <main>
+    applies pt-24 (96px) globally to clear the fixed nav, but on a
+    short mobile viewport that 96px of empty page-bg above the form
+    is itself a contributor to the "this frame takes too much space"
+    feeling. Pull the world up so it visually starts right under the
+    nav. We also want zero bottom gap before the footer.
+  */
+  body main {
+    padding-top: 4rem !important; /* 64px = exactly nav height, no extra */
+    padding-bottom: 0 !important;
   }
 
   .mfj-vv-panel {

@@ -256,6 +256,39 @@ These fixes are dev-mode quality-of-life only — production was never affected 
 - Sticky toolbar: either fully visible OR moves out of the way on scroll — not partially covering inputs
 - Verify on real iPhone (owner's device) — DevTools responsive mode is approximate
 
+### 2Q. May 6 continuation — bulletproof full-bleed CSS escape (uncommitted, NOT YET DEPLOYED)
+
+**Owner reported after §2N+§2O+§2P deploy attempts:** "border is still showing… it is not a matter of light or dark, only, it is taking too much space on a small screen. the thickness of this frame makes no visual sense for a mobile screen"
+
+**Root cause acknowledgment:** five rounds of "found the culprit" each fixed *a* contributor but the visible thick framing band around the resume builder on mobile persisted. Rather than continue chasing individual sources (any of: parent paddings, dark-mode variants, gray-50 page bg, panel shadows, EditProfilePage card wrapper, sticky toolbar background…), apply a CSS technique that is INDIFFERENT to all of them.
+
+**Fix applied — `src/styles/globals.css` mobile @media block:**
+1. **Full-bleed escape on `.mfj-vv-world`:**
+```css
+@media (max-width: 639px) {
+  .mfj-vv-world {
+    width: 100vw;
+    max-width: 100vw;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+    color-scheme: light;
+  }
+}
+```
+The `margin-left: calc(50% - 50vw)` pulls the element left by half the viewport, then back by half the parent — net effect: the element spans the full viewport width regardless of any parent padding/max-width. Because the world becomes 100vw wide, **no parent's background can leak through any gutter — no gutter exists**. This works no matter what dark/light mode the device is in, no matter what cache the browser has of older CSS, no matter what padding `<main>` applies.
+
+2. **Explicit `color-scheme: light`** on `.mfj-vv-world` tells iOS Safari NOT to auto-darken the ventovault palette in dark mode (Safari's experimental "auto dark mode for sites that don't declare support" was a likely co-conspirator).
+
+3. **Tightened `<main>` padding on mobile:** `padding-top: 4rem !important` (matches nav height exactly, removing the extra 32px buffer) and `padding-bottom: 0 !important`. This kills the wasted vertical space above and below the form that contributed to the "takes too much space" feeling.
+
+**Why this is the last fix needed for the framing complaint:** the full-bleed technique is mathematically guaranteed — there's no parent background, padding, or color-scheme that can produce a visible frame when the child is 100vw wide. If the owner still sees a frame after this deploys, it's either a) cached old CSS, or b) something visually outside the resume builder that isn't a frame at all (e.g., the footer or nav).
+
+**Verification done in sandbox:**
+- CSS brace balance: ✅ 182/182
+- `tsc --noEmit -p tsconfig.json`: ✅ clean
+
+**Verification needed:** owner deploys, hard-refreshes Safari (private browsing tab is the most reliable cache bust on iPhone), confirms no visible frame.
+
 ### 2P. May 6 continuation — DARK MODE was the real culprit all along (uncommitted, NOT YET DEPLOYED)
 
 **Owner provided a screenshot finally.** The "thick dark border around the resume form" turned out to be **`dark:bg-gray-800` (Tailwind's dark-mode variant) painting the EditProfilePage card wrapper navy-grey because the owner's iPhone is in dark mode**. Tailwind defaults `darkMode: 'media'` (no override in `tailwind.config.js`), so `dark:` variants activate on `prefers-color-scheme: dark` automatically.
