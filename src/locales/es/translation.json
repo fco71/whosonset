@@ -2,7 +2,7 @@
   "nav": {
     "home": "Inicio",
     "crew": "Equipo",
-    "jobs": "Trabajos", 
+    "jobs": "Trabajos",
     "projects": "Proyectos",
     "collaboration": "Colaboración",
     "social": "Social",
@@ -10,14 +10,15 @@
     "resumeBuilder": "Constructor de CV",
     "myPostedJobs": "Mis Trabajos Publicados",
     "jobAnalytics": "Analíticas de Trabajos",
-    "postNewJob": "Publicar Nuevo Trabajo", 
+    "postNewJob": "Publicar Nuevo Trabajo",
     "myApplications": "Mis Aplicaciones",
     "postedJobs": "Trabajos Publicados",
     "settings": "Configuración",
     "notificationSettings": "Configuración de Notificaciones",
     "signOut": "Cerrar Sesión",
     "signIn": "Iniciar Sesión",
-    "getStarted": "Registrarse"
+    "getStarted": "Registrarse",
+    "myStudents": "Mis estudiantes"
   },
   "notificationSettings": {
     "title": "Configuración de Notificaciones",
@@ -37,7 +38,7 @@
     "loading": "Cargando...",
     "stats": {
       "activeProfessionals": "Profesionales Activos",
-      "projectsCompleted": "Proyectos Completados", 
+      "projectsCompleted": "Proyectos Completados",
       "successRate": "Tasa de Éxito",
       "countries": "Países"
     },
@@ -57,7 +58,7 @@
         "desc": "Muestra tu mejor trabajo y conecta con profesionales de la industria"
       },
       "crewNetworking": {
-        "title": "Red de Equipo", 
+        "title": "Red de Equipo",
         "desc": "Construye conexiones significativas con cineastas talentosos de todo el mundo"
       },
       "jobBoard": {
@@ -222,7 +223,7 @@
     "tryAdjustingFilters": "Intenta ajustar tu búsqueda o filtros para encontrar más oportunidades.",
     "departments": {
       "camera": "Cámara",
-      "sound": "Sonido", 
+      "sound": "Sonido",
       "lighting": "Iluminación",
       "art": "Arte",
       "costume": "Vestuario",
@@ -254,6 +255,7 @@
     "searchPlaceholder": "Buscar por nombre, rol o habilidades...",
     "search": "Buscar",
     "filters": "Filtros",
+    "clear": "Limpiar",
     "clearFilters": "Limpiar Todos los Filtros",
     "resetFilters": "Restablecer Filtros",
     "applyFilters": "Aplicar Filtros",
@@ -268,7 +270,17 @@
     "teamMembers": "Miembros del Equipo",
     "loading": "Cargando equipo...",
     "loadingProfiles": "Cargando perfiles...",
+    "profileTypes": {
+      "all": "Todos",
+      "professional": "Profesional",
+      "professionals": "Profesionales",
+      "student": "Estudiante",
+      "students": "Estudiantes",
+      "teacher": "Profesor",
+      "teachers": "Profesores"
+    },
     "department": "Departamento",
+    "departmentShort": "Depto.",
     "allDepartments": "Todos los Departamentos",
     "role": "Rol",
     "allRoles": "Todos los Roles",
@@ -303,6 +315,14 @@
     "browseCrewProfiles": "Explorar Perfiles del Equipo",
     "curatedCollection": "Tu colección curada de miembros talentosos del equipo",
     "talentsFound": "Talentos Encontrados",
+    "talentFound": "talento encontrado",
+    "favorites": "Favoritos",
+    "favs": "Favs",
+    "showAllProfiles": "Mostrar todos los perfiles",
+    "showFavoritesOnly": "Mostrar solo favoritos",
+    "showSelectedStudentsOnly": "Mostrar solo estudiantes seleccionados",
+    "selectedStudents": "Estudiantes Seleccionados",
+    "myStudents": "Mis Estudiantes",
     "totalResults": "miembros del equipo encontrados",
     "showingResults": "Mostrando resultados que coinciden con tus filtros",
     "loadMore": "Cargar Más",
@@ -470,7 +490,7 @@
     "title": "Panel de Publicador de Trabajos",
     "subtitle": "Gestiona tus publicaciones de trabajo, rastrea aplicaciones y analiza el rendimiento.",
     "loading": "Cargando panel...",
-    "overview": "Resumen", 
+    "overview": "Resumen",
     "postedJobs": "Trabajos Publicados",
     "applications": "Aplicaciones",
     "analytics": "Analíticas",
@@ -1114,6 +1134,9 @@
       "languages": "Idiomas",
       "residences": "Residencias",
       "professionalExperience": "Experiencia Profesional",
+      "crewFocus": "Enfoque de Equipo",
+      "teachingCrewFocus": "Docencia / Enfoque de Equipo",
+      "classes": "Clases",
       "selectedProjects": "Proyectos Seleccionados",
       "education": "Educación",
       "contactInformation": "Información de Contacto",
@@ -1137,6 +1160,25 @@
       "crewProfile": "Perfil de Equipo",
       "updateDescription": "Actualiza tu información profesional y muestra tu experiencia. Mantén tu perfil actualizado para atraer las mejores oportunidades.",
       "profileInformation": "Información del Perfil",
+      "profileType": "Tipo de Perfil",
+      "selectProfileType": "Seleccionar tipo de perfil",
+      "profileTypeDescription": "Profesional es el valor predeterminado. Los perfiles de estudiante y profesor se pueden filtrar por separado en el directorio de equipo.",
+      "profileTypes": {
+        "professional": "Profesional",
+        "student": "Estudiante",
+        "teacher": "Profesor"
+      },
+      "schoolInstitution": "Escuela o Institución (Opcional)",
+      "schoolInstitutionPlaceholder": "ej., NYU Tisch, UCLA Film School, Altos de Chavón",
+      "registeredTeachers": "Profesores Registrados (Opcional)",
+      "pickInstitutionFirst": "Ingresa una institución para ver profesores registrados de esa institución.",
+      "noRegisteredTeachers": "Aún no se encontraron profesores registrados para esta institución.",
+      "teacherInstitution": "Institución (Opcional)",
+      "teacherInstitutionPlaceholder": "ej., escuela de cine, universidad, programa de talleres",
+      "teacherClasses": "Clases (Opcional)",
+      "teacherClassPlaceholder": "Clase #{{number}}",
+      "addTeacherClass": "+ Agregar Clase",
+      "removeTeacherClass": "Eliminar",
       "published": "🌐 Publicado",
       "private": "🔒 Privado",
       "fullName": "Nombre Completo",
@@ -1161,6 +1203,14 @@
       "noEducationDescription": "Agrega tu historial educativo para mostrar tu formación",
       "addEducation": "Agregar Educación",
       "save": "Guardar Perfil",
+      "saveNow": "Guardar ahora",
+      "autoSaveTitle": "Autoguardado",
+      "autoSaveReady": "El autoguardado está listo",
+      "unsavedChanges": "Cambios sin guardar. Se autoguardarán en breve.",
+      "savingChanges": "Guardando cambios...",
+      "allChangesSaved": "Todos los cambios están guardados",
+      "lastSaved": "Guardado por última vez a las {{time}}",
+      "saveFailedStatus": "Error al guardar. Usa Guardar ahora para reintentar.",
       "cancel": "Cancelar",
       "loading": "Guardando...",
       "loadingBuilder": "Cargando constructor de currículum...",
@@ -1172,7 +1222,8 @@
       "linkCopied": "¡Enlace copiado al portapapeles!",
       "shareDescription": "Comparte este enlace con potenciales empleadores o colaboradores",
       "resumePreview": "Vista Previa del Currículum",
-      "downloadPDF": "Descargar como PDF"
+      "downloadPDF": "Descargar como PDF",
+      "enrolledClasses": "Clases en las que estás inscrito"
     },
     "page": {
       "title": "Editar Tu Perfil",
@@ -1182,9 +1233,34 @@
   "events": {
     "title": "Próximos Eventos",
     "attend": "Asistir",
-    "viewDetails": "Ver Detalles", 
+    "viewDetails": "Ver Detalles",
     "attending": "asistiendo",
     "maxAttendees": "Máx",
     "noEvents": "No hay próximos eventos"
+  },
+  "myStudents": {
+    "title": "Mis estudiantes",
+    "subtitle_one": "{{count}} estudiante te ha elegido como su profesor.",
+    "subtitle_other": "{{count}} estudiantes te han elegido como su profesor.",
+    "signInPrompt": "Inicia sesión para ver a tus estudiantes.",
+    "notTeacherTitle": "Esta página es para profesores.",
+    "notTeacherBody": "Cambia tu tipo de perfil a Profesor en tu perfil para comenzar a recibir selecciones de estudiantes.",
+    "goToProfile": "Ir a mi perfil",
+    "emptyTitle": "Aún no tienes estudiantes.",
+    "emptyBody": "Cuando los estudiantes de tu institución te marquen como su profesor, aparecerán aquí agrupados por clase.",
+    "classCount_one": "{{count}} estudiante",
+    "classCount_other": "{{count}} estudiantes",
+    "noStudentsInClass": "Aún no hay estudiantes en esta clase.",
+    "otherStudents": "Otros estudiantes",
+    "noOtherStudents": "No hay estudiantes sin clase asignada.",
+    "alsoIn": "También en: {{classes}}",
+    "unnamedStudent": "Estudiante sin nombre",
+    "exportCsv": "Exportar CSV",
+    "csv": {
+      "name": "Nombre",
+      "username": "Usuario",
+      "institution": "Institución",
+      "classes": "Clases"
+    }
   }
-} 
+}

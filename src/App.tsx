@@ -14,8 +14,6 @@ import { removeStructuredData, setPageSeo, setStructuredData } from './utilities
 // Import components
 import Navigation from './components/Navigation';
 import Footer from './components/Footer';
-import { AdProvider, useAds } from './components/Ads/AdProvider';
-import AdManager from './components/Ads/AdManager';
 
 const DEFAULT_SEO = {
   title: 'My Film Jobs | Film Industry Jobs and Crew Networking',
@@ -105,7 +103,6 @@ function buildGlobalSiteStructuredData(): Record<string, unknown> {
 function AppContent() {
   const { currentUser, logout } = useAuth();
   const { i18n } = useTranslation();
-  const { currentPagePlacements, trackAdEvent } = useAds();
   const location = useLocation();
   
   console.log('[App] Rendering with currentUser:', currentUser?.email);
@@ -191,15 +188,6 @@ function AppContent() {
               userSignOut={handleSignOut} 
             />
             
-            {/* Header Ad Banner - Temporarily disabled for professional launch */}
-            {/* <div className="pt-16">
-              <AdManager 
-                placements={currentPagePlacements.filter(p => p.position === 'header')}
-                onAdLoad={(placementId) => trackAdEvent(placementId, 'load')}
-                onAdError={(placementId, error) => trackAdEvent(placementId, 'error')}
-              />
-            </div> */}
-            
             <main id="main-content" className="container mx-auto px-4 py-8 pt-24">
               <Suspense fallback={
                 <div className="flex items-center justify-center min-h-[400px]">
@@ -209,14 +197,7 @@ function AppContent() {
                 <Outlet />
               </Suspense>
             </main>
-            
-            {/* Footer Ad Banner - Temporarily disabled for professional launch */}
-            {/* <AdManager 
-              placements={currentPagePlacements.filter(p => p.position === 'footer')}
-              onAdLoad={(placementId) => trackAdEvent(placementId, 'load')}
-              onAdError={(placementId, error) => trackAdEvent(placementId, 'error')}
-            /> */}
-            
+
             <Footer />
           </div>
         
@@ -246,9 +227,7 @@ function AppContent() {
 function App() {
   return (
     <ThemeProvider>
-      <AdProvider>
-        <AppContent />
-      </AdProvider>
+      <AppContent />
     </ThemeProvider>
   );
 }

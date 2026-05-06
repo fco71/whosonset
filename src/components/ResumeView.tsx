@@ -31,12 +31,19 @@ interface CrewProfileData {
   profileImageUrl?: string;
   photoURL?: string; // Fallback for legacy data
   bio?: string;
-  profileType?: 'professional' | 'student';
+  profileType?: 'professional' | 'student' | 'teacher';
   studentInfo?: {
     institution?: string;
   };
+  teacherInfo?: {
+    institution?: string;
+    classes?: string[];
+  };
   isStudent?: boolean;
+  isTeacher?: boolean;
   school?: string;
+  teacherInstitution?: string;
+  teacherClasses?: string[];
   jobTitles: JobTitleEntry[];
   projects?: Project[];
   residences?: Residence[];
@@ -58,7 +65,16 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
   // Fallback: use photoURL if profileImageUrl is missing
   const managedProfileImageUrl = useManagedUrl(profile?.profileImageUrl || profile?.photoURL);
   const isStudentProfile = profile.profileType === 'student' || profile.isStudent === true;
+  const isTeacherProfile = profile.profileType === 'teacher' || profile.isTeacher === true;
   const studentInstitution = profile.studentInfo?.institution || profile.school || '';
+  const teacherInstitution = profile.teacherInfo?.institution || profile.teacherInstitution || '';
+  const teacherClasses = (profile.teacherInfo?.classes || profile.teacherClasses || []).filter(Boolean);
+  const profileTypeLabel = isTeacherProfile
+    ? t('crew.profileTypes.teacher')
+    : isStudentProfile
+    ? t('crew.profileTypes.student')
+    : '';
+  const profileTypeInstitution = isTeacherProfile ? teacherInstitution : studentInstitution;
   
   // Calculate available space and prioritize content
   const calculateContentLimits = () => {
@@ -76,6 +92,7 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
       (profile.languages && profile.languages.length > 2) ||
       (profile.residences && profile.residences.length > 2) ||
       (profile.jobTitles && profile.jobTitles.filter(jt => jt.department && jt.title).length > 4) ||
+      (isTeacherProfile && teacherClasses.length > 4) ||
       (profile.projects && profile.projects.filter(p => p.projectName && p.role).length > 3) ||
       (profile.education && profile.education.length > 2) ||
       (profile.otherInfo && profile.otherInfo.length > 200)
@@ -105,6 +122,12 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
       const jobHeight = Math.min(30, availableHeight);
       sections.push({ type: 'jobTitles', height: jobHeight, priority: 2 });
       availableHeight -= jobHeight + sectionSpacing;
+    }
+
+    if (isTeacherProfile && teacherClasses.length > 0) {
+      const classHeight = Math.min(18, availableHeight);
+      sections.push({ type: 'teacherClasses', height: classHeight, priority: 2 });
+      availableHeight -= classHeight + sectionSpacing;
     }
     
     // Projects (medium priority)
@@ -395,9 +418,9 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
               )}
               <div>
                 <h1 style={nameStyle}>{profile.name}</h1>
-                {isStudentProfile && (
+                {(isStudentProfile || isTeacherProfile) && (
                   <div style={profileTypeStyle}>
-                    Student{studentInstitution ? ` - ${studentInstitution}` : ''}
+                    {profileTypeLabel}{profileTypeInstitution ? ` - ${profileTypeInstitution}` : ''}
                   </div>
                 )}
                 {profile.bio && (
@@ -447,7 +470,7 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
             {profile.jobTitles && profile.jobTitles.filter(jt => jt.department && jt.title).length > 0 && sectionVisible('jobTitles') && (
               <div style={sectionStyle}>
                 <h2 style={sectionTitleStyle}>
-                  {isStudentProfile ? 'Crew Focus' : t('resume.sections.professionalExperience')}
+                  {isStudentProfile ? t('resume.sections.crewFocus') : isTeacherProfile ? t('resume.sections.teachingCrewFocus') : t('resume.sections.professionalExperience')}
                 </h2>
                 <ul style={jobTitlesListStyle}>
                   {profile.jobTitles
@@ -464,6 +487,18 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
                     ({t('resume.labels.showingTop', { count: 4, type: t('resume.types.positions') })})
                   </p>
                 )}
+              </div>
+            )}
+
+            {/* Teacher Classes */}
+            {isTeacherProfile && teacherClasses.length > 0 && sectionVisible('teacherClasses') && (
+              <div style={sectionStyle}>
+                <h2 style={sectionTitleStyle}>{t('resume.sections.classes')}</h2>
+                <ul style={jobTitlesListStyle}>
+                  {teacherClasses.slice(0, 4).map((className, i) => (
+                    <li key={i} style={jobTitleItemStyle}>{className}</li>
+                  ))}
+                </ul>
               </div>
             )}
 

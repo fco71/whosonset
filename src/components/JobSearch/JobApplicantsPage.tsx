@@ -873,7 +873,6 @@ const JobApplicantsPage: React.FC<JobApplicantsPageProps> = ({ jobId: propJobId 
                                     <ResumeDownloadButton
                                       resumeUrl={resumeAttachment.url}
                                       fileName={resumeAttachment.name}
-                                      showAdPopup={true}
                                       className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-100 rounded-lg transition-colors"
                                       variant="outline"
                                       size="small"

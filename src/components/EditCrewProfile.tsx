@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 // --- MODIFIED: Added onAuthStateChanged for robust user checking ---
 import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
@@ -41,6 +41,15 @@ interface JobDepartment {
   titles: string[];
 }
 
+interface RegisteredTeacher {
+  uid: string;
+  name: string;
+  institution: string;
+  classes: string[];
+}
+
+type SaveStatus = 'idle' | 'dirty' | 'saving' | 'saved' | 'error';
+
 const fetchJobDepartments = async (): Promise<JobDepartment[]> => {
   const snapshot = await getDocs(collection(db, "jobDepartments"));
   // This map assumes the data shape is correct in Firestore (i.e., has a 'titles' field)
@@ -51,12 +60,12 @@ const fetchJobDepartments = async (): Promise<JobDepartment[]> => {
 };
 
 const EditCrewProfile: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const auth = getAuth();
 
   // --- MODIFIED: Use state to track the user, which is more reliable on load ---
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
@@ -71,6 +80,12 @@ const EditCrewProfile: React.FC = () => {
     studentInfo: {
       institution: ''
     },
+    teacherInfo: {
+      institution: '',
+      classes: []
+    },
+    selectedTeacherIds: [],
+    selectedTeachers: [],
     jobTitles: [{ department: '', title: '', subcategories: [] }],
     residences: [{ country: '', city: '' }],
     projects: [],
@@ -93,6 +108,27 @@ const EditCrewProfile: React.FC = () => {
   const [message, setMessage] = useState<string | null>(null);
   const [isPublished, setIsPublished] = useState(true);
   const [photoConflict, setPhotoConflict] = useState<{hasConflict: boolean, conflictUsers: string[]}>({hasConflict: false, conflictUsers: []});
+  const [registeredTeachers, setRegisteredTeachers] = useState<RegisteredTeacher[]>([]);
+  const [profileLoaded, setProfileLoaded] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+
+  const latestFormRef = useRef<CrewProfileFormData>(form);
+  const latestPublishedRef = useRef(isPublished);
+  const latestSnapshotRef = useRef('');
+  const lastSavedSnapshotRef = useRef('');
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const savingRef = useRef(false);
+  const pendingAutoSaveRef = useRef(false);
+
+  const getSaveSnapshot = (formData: CrewProfileFormData, published: boolean) =>
+    JSON.stringify({ formData, published });
+
+  useEffect(() => {
+    latestFormRef.current = form;
+    latestPublishedRef.current = isPublished;
+    latestSnapshotRef.current = getSaveSnapshot(form, isPublished);
+  }, [form, isPublished]);
 
   // Helper function to ensure education entries have consistent structure
   const ensureEducationFields = (eduArray: any[] = []): EducationEntry[] => {
@@ -201,9 +237,15 @@ const EditCrewProfile: React.FC = () => {
   // This ensures we don't try to fetch data before we know who the user is.
   useEffect(() => {
     // Don't run if the user isn't logged in yet
-    if (!user) return;
+    if (!user) {
+      setProfileLoaded(false);
+      setSaveStatus('idle');
+      return;
+    }
 
     console.log("DEBUG: User confirmed. Now loading lookup data...");
+    setProfileLoaded(false);
+    setSaveStatus('idle');
     const loadLookups = async () => {
       try {
         // Fetch departments
@@ -271,10 +313,16 @@ const EditCrewProfile: React.FC = () => {
             name: data.name || '',
             bio: data.bio || '',
             profileImageUrl: data.profileImageUrl || '',
-            profileType: data.profileType || (data.isStudent ? 'student' : 'professional'),
+            profileType: data.profileType || (data.isTeacher ? 'teacher' : data.isStudent ? 'student' : 'professional'),
             studentInfo: {
               institution: data.studentInfo?.institution || data.school || ''
             },
+            teacherInfo: {
+              institution: data.teacherInfo?.institution || data.teacherInstitution || '',
+              classes: data.teacherInfo?.classes || data.teacherClasses || []
+            },
+            selectedTeacherIds: data.selectedTeacherIds || data.selectedTeachers?.map((teacher: any) => teacher.uid).filter(Boolean) || [],
+            selectedTeachers: data.selectedTeachers || [],
             // Arrays with type safety
             jobTitles: data.jobTitles?.length ? migratedJobTitles : [{ department: '', title: '', subcategories: [] }],
             residences: data.residences?.length ? data.residences : [{ country: '', city: '' }],
@@ -288,19 +336,56 @@ const EditCrewProfile: React.FC = () => {
             availability: data.availability || 'available'
           };
           
+          const loadedPublished = data.isPublished || false;
+          const loadedSnapshot = getSaveSnapshot(formData, loadedPublished);
+          lastSavedSnapshotRef.current = loadedSnapshot;
+          latestSnapshotRef.current = loadedSnapshot;
           setForm(formData);
-          setIsPublished(data.isPublished || false);
+          setIsPublished(loadedPublished);
+          setSaveStatus('saved');
           console.log("DEBUG: Form state updated with profile data");
         } else {
           console.log("DEBUG: No profile document found for user:", user.uid);
+          const initialSnapshot = getSaveSnapshot(latestFormRef.current, latestPublishedRef.current);
+          lastSavedSnapshotRef.current = initialSnapshot;
+          latestSnapshotRef.current = initialSnapshot;
+          setSaveStatus('idle');
         }
       } catch (error) {
         console.error("DEBUG: Error loading profile:", error);
+        setSaveStatus('error');
+      } finally {
+        setProfileLoaded(true);
+      }
+    };
+
+    const loadRegisteredTeachers = async () => {
+      try {
+        const teachersSnap = await getDocs(collection(db, 'crewProfiles'));
+        const teachers = teachersSnap.docs
+          .map(profileDoc => {
+            const data = profileDoc.data();
+            const isTeacher = data.profileType === 'teacher' || data.isTeacher === true;
+            if (!isTeacher || data.isPublished === false) return null;
+
+            return {
+              uid: profileDoc.id,
+              name: data.name || data.displayName || 'Teacher',
+              institution: data.teacherInfo?.institution || data.teacherInstitution || '',
+              classes: data.teacherInfo?.classes || data.teacherClasses || []
+            };
+          })
+          .filter(Boolean) as RegisteredTeacher[];
+
+        setRegisteredTeachers(teachers);
+      } catch (error) {
+        console.error("DEBUG: Error loading registered teachers:", error);
       }
     };
 
     loadLookups();
     loadProfile();
+    loadRegisteredTeachers();
   }, [user]); // This entire block now runs only when 'user' changes
 
   // --- Helper function to ensure subcategories are in correct format ---
@@ -577,6 +662,141 @@ const EditCrewProfile: React.FC = () => {
     setForm(f => ({ ...f, languages: (f.languages || []).filter((_: string, idx: number) => idx !== i) }));
   };
 
+  const updateProfileType = (profileType: 'professional' | 'student' | 'teacher') => {
+    setForm(f => ({
+      ...f,
+      profileType,
+      studentInfo: {
+        institution: profileType === 'student' ? f.studentInfo?.institution || '' : ''
+      },
+      teacherInfo: {
+        institution: profileType === 'teacher' ? f.teacherInfo?.institution || '' : '',
+        classes: profileType === 'teacher' ? f.teacherInfo?.classes || [] : []
+      },
+      selectedTeacherIds: profileType === 'student' ? f.selectedTeacherIds || [] : [],
+      selectedTeachers: profileType === 'student' ? f.selectedTeachers || [] : []
+    }));
+  };
+
+  const normalizeInstitution = (value: string) => value.trim().toLowerCase().replace(/\s+/g, ' ');
+
+  const getMatchingRegisteredTeachers = () => {
+    const studentInstitution = normalizeInstitution(form.studentInfo?.institution || '');
+    if (!studentInstitution) return [];
+
+    return registeredTeachers.filter(teacher =>
+      normalizeInstitution(teacher.institution) === studentInstitution
+    );
+  };
+
+  const updateStudentInstitution = (institution: string) => {
+    setForm(f => {
+      const normalizedInstitution = normalizeInstitution(institution);
+      const stillMatchingTeacherIds = new Set(
+        registeredTeachers
+          .filter(teacher => normalizeInstitution(teacher.institution) === normalizedInstitution)
+          .map(teacher => teacher.uid)
+      );
+
+      return {
+        ...f,
+        studentInfo: {
+          ...(f.studentInfo || {}),
+          institution
+        },
+        selectedTeacherIds: (f.selectedTeacherIds || []).filter(teacherId => stillMatchingTeacherIds.has(teacherId)),
+        selectedTeachers: (f.selectedTeachers || []).filter(teacher => stillMatchingTeacherIds.has(teacher.uid))
+      };
+    });
+  };
+
+  const toggleSelectedTeacher = (teacher: RegisteredTeacher, checked: boolean) => {
+    setForm(f => {
+      const selectedTeacherIds = new Set(f.selectedTeacherIds || []);
+      // Preserve existing per-teacher class enrollments so unchecking and
+      // re-checking the same teacher doesn't lose the student's class picks.
+      const existingClassesByTeacher = new Map(
+        (f.selectedTeachers || []).map(entry => [entry.uid, entry.classes || []])
+      );
+
+      if (checked) {
+        selectedTeacherIds.add(teacher.uid);
+      } else {
+        selectedTeacherIds.delete(teacher.uid);
+        existingClassesByTeacher.delete(teacher.uid);
+      }
+
+      const selectedTeachers = Array.from(selectedTeacherIds)
+        .map(teacherId => {
+          const matchedTeacher = registeredTeachers.find(registeredTeacher => registeredTeacher.uid === teacherId);
+          if (!matchedTeacher) return null;
+          return {
+            uid: matchedTeacher.uid,
+            name: matchedTeacher.name,
+            institution: matchedTeacher.institution,
+            classes: existingClassesByTeacher.get(matchedTeacher.uid) || []
+          };
+        })
+        .filter(Boolean) as NonNullable<CrewProfileFormData['selectedTeachers']>;
+
+      return {
+        ...f,
+        selectedTeacherIds: Array.from(selectedTeacherIds),
+        selectedTeachers
+      };
+    });
+  };
+
+  // Toggle a single class enrollment for a specific teacher on the student's
+  // profile. Used by the per-teacher class checkboxes that appear under each
+  // selected teacher. Powers the teacher's "My Students" page grouping.
+  const toggleStudentEnrolledClass = (teacherUid: string, className: string, checked: boolean) => {
+    setForm(f => {
+      const selectedTeachers = (f.selectedTeachers || []).map(entry => {
+        if (entry.uid !== teacherUid) return entry;
+        const existing = new Set(entry.classes || []);
+        if (checked) existing.add(className);
+        else existing.delete(className);
+        return { ...entry, classes: Array.from(existing) };
+      });
+      return { ...f, selectedTeachers };
+    });
+  };
+
+  const updateTeacherClass = (index: number, value: string) => {
+    setForm(f => {
+      const classes = [...(f.teacherInfo?.classes || [])];
+      classes[index] = value;
+      return {
+        ...f,
+        teacherInfo: {
+          ...(f.teacherInfo || {}),
+          classes
+        }
+      };
+    });
+  };
+
+  const addTeacherClass = () => {
+    setForm(f => ({
+      ...f,
+      teacherInfo: {
+        ...(f.teacherInfo || {}),
+        classes: [...(f.teacherInfo?.classes || []), '']
+      }
+    }));
+  };
+
+  const removeTeacherClass = (index: number) => {
+    setForm(f => ({
+      ...f,
+      teacherInfo: {
+        ...(f.teacherInfo || {}),
+        classes: (f.teacherInfo?.classes || []).filter((_, idx) => idx !== index)
+      }
+    }));
+  };
+
   // Helper function to remove undefined values from objects recursively
   const removeUndefinedValues = (obj: any): any => {
     if (obj === null || obj === undefined) {
@@ -597,22 +817,34 @@ const EditCrewProfile: React.FC = () => {
     return obj;
   };
 
-  const handleSave = async (e: React.MouseEvent) => {
-    e.preventDefault();
+  const saveProfile = useCallback(async (options: { silent?: boolean } = {}) => {
     if (!user) {
       console.log("DEBUG: No user found, cannot save");
-      return;
+      return false;
     }
+
+    if (savingRef.current) {
+      pendingAutoSaveRef.current = true;
+      return false;
+    }
+
+    const formToSave = latestFormRef.current;
+    const publishedToSave = latestPublishedRef.current;
+    const snapshotToSave = getSaveSnapshot(formToSave, publishedToSave);
+
     console.log("DEBUG: Starting save process for user:", user.uid);
-    console.log("DEBUG: Form data to save:", form);
+    console.log("DEBUG: Form data to save:", formToSave);
+    savingRef.current = true;
+    setSaving(true);
     setLoading(true);
+    setSaveStatus('saving');
     try {
       const docRef = doc(db, 'crewProfiles', user.uid);
       console.log("DEBUG: Saving to document:", docRef.path);
 
       // Always ensure name and profileImageUrl are set
-      const safeName = form.name && form.name.trim() !== '' ? form.name : 'Unknown Crew';
-              let safeProfileImageUrl = form.profileImageUrl && form.profileImageUrl.trim() !== '' ? form.profileImageUrl : '/bust-avatar.svg';
+      const safeName = formToSave.name && formToSave.name.trim() !== '' ? formToSave.name : 'Unknown Crew';
+              let safeProfileImageUrl = formToSave.profileImageUrl && formToSave.profileImageUrl.trim() !== '' ? formToSave.profileImageUrl : '/bust-avatar.svg';
       // Prevent saving blob: URLs
       if (safeProfileImageUrl.startsWith('blob:')) {
         // If the current image is a blob, fallback to previous or default
@@ -620,27 +852,65 @@ const EditCrewProfile: React.FC = () => {
       }
 
       // Ensure email is included in the saved data
-      const profileType = form.profileType === 'student' ? 'student' : 'professional';
-      const studentInstitution = form.studentInfo?.institution?.trim() || '';
+      const profileType = formToSave.profileType === 'student' || formToSave.profileType === 'teacher' ? formToSave.profileType : 'professional';
+      const studentInstitution = formToSave.studentInfo?.institution?.trim() || '';
+      const teacherInstitution = formToSave.teacherInfo?.institution?.trim() || '';
+      const teacherClasses = (formToSave.teacherInfo?.classes || [])
+        .map(className => className.trim())
+        .filter(Boolean);
+      const selectedTeacherIds = profileType === 'student' ? formToSave.selectedTeacherIds || [] : [];
+      // Preserve per-teacher class enrollments from the form state so we don't
+      // wipe them when the student saves. Falls back to existing form entry
+      // if the teacher record isn't in registeredTeachers anymore.
+      const formClassesByTeacher = new Map(
+        (formToSave.selectedTeachers || []).map(entry => [entry.uid, entry.classes || []])
+      );
+      const selectedTeachers = profileType === 'student'
+        ? selectedTeacherIds
+            .map(teacherId => {
+              const matchedTeacher = registeredTeachers.find(teacher => teacher.uid === teacherId);
+              const classes = formClassesByTeacher.get(teacherId) || [];
+              if (!matchedTeacher) {
+                const fallback = formToSave.selectedTeachers?.find(teacher => teacher.uid === teacherId);
+                return fallback ? { ...fallback, classes: fallback.classes || classes } : null;
+              }
+              return {
+                uid: matchedTeacher.uid,
+                name: matchedTeacher.name,
+                institution: matchedTeacher.institution,
+                classes
+              };
+            })
+            .filter(Boolean)
+        : [];
       const dataToSave = {
-        ...form,
+        ...formToSave,
         name: safeName,
         profileImageUrl: safeProfileImageUrl,
         profileType,
         studentInfo: {
           institution: profileType === 'student' ? studentInstitution : ''
         },
-        isStudent: profileType === 'student',
-        school: profileType === 'student' ? studentInstitution : '',
-        // Note: uid field is intentionally omitted since document ID should be the UID
-        email: user.email || form.contactInfo?.email || '', // Use auth email as primary, fallback to contact info
-        contactInfo: {
-          ...form.contactInfo,
-          email: user.email || form.contactInfo?.email || '', // Ensure email is in contact info
-          instagram: getCleanInstagramHandle(form.contactInfo?.instagram || ''), // Clean Instagram handle before saving
+        teacherInfo: {
+          institution: profileType === 'teacher' ? teacherInstitution : '',
+          classes: profileType === 'teacher' ? teacherClasses : []
         },
-        languages: form.languages || [],
-        isPublished, // Save publish state
+        isStudent: profileType === 'student',
+        isTeacher: profileType === 'teacher',
+        school: profileType === 'student' ? studentInstitution : '',
+        teacherInstitution: profileType === 'teacher' ? teacherInstitution : '',
+        teacherClasses: profileType === 'teacher' ? teacherClasses : [],
+        selectedTeacherIds,
+        selectedTeachers,
+        // Note: uid field is intentionally omitted since document ID should be the UID
+        email: user.email || formToSave.contactInfo?.email || '', // Use auth email as primary, fallback to contact info
+        contactInfo: {
+          ...formToSave.contactInfo,
+          email: user.email || formToSave.contactInfo?.email || '', // Ensure email is in contact info
+          instagram: getCleanInstagramHandle(formToSave.contactInfo?.instagram || ''), // Clean Instagram handle before saving
+        },
+        languages: formToSave.languages || [],
+        isPublished: publishedToSave, // Save publish state
         updatedAt: new Date()
       };
 
@@ -649,14 +919,118 @@ const EditCrewProfile: React.FC = () => {
 
       await setDoc(docRef, cleanedData, { merge: true });
       console.log("DEBUG: Save successful!");
-      setMessage(t('resume.builder.savedMessage'));
+      lastSavedSnapshotRef.current = snapshotToSave;
+      setLastSavedAt(new Date());
+      setSaveStatus(latestSnapshotRef.current === snapshotToSave ? 'saved' : 'dirty');
+      if (!options.silent) {
+        setMessage(t('resume.builder.savedMessage'));
+        setTimeout(() => setMessage(null), 3000);
+      }
+      return true;
     } catch(error) { // Added error logging
       console.error("DEBUG: Save failed with error:", error);
-      setMessage(t('resume.builder.saveError'));
+      setSaveStatus('error');
+      if (!options.silent) {
+        setMessage(t('resume.builder.saveError'));
+      }
+      return false;
     } finally {
+      savingRef.current = false;
+      setSaving(false);
       setLoading(false);
+      if (pendingAutoSaveRef.current) {
+        pendingAutoSaveRef.current = false;
+        if (autoSaveTimerRef.current) {
+          clearTimeout(autoSaveTimerRef.current);
+        }
+        autoSaveTimerRef.current = setTimeout(() => {
+          void saveProfile({ silent: true });
+        }, 500);
+      }
     }
+  }, [registeredTeachers, t, user]);
+
+  useEffect(() => {
+    if (!profileLoaded || !user) return;
+
+    const currentSnapshot = getSaveSnapshot(form, isPublished);
+    latestSnapshotRef.current = currentSnapshot;
+
+    if (currentSnapshot === lastSavedSnapshotRef.current) {
+      if (saveStatus === 'dirty') {
+        setSaveStatus('saved');
+      }
+      return;
+    }
+
+    if (savingRef.current) {
+      pendingAutoSaveRef.current = true;
+      return;
+    }
+
+    setSaveStatus('dirty');
+
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+    }
+
+    autoSaveTimerRef.current = setTimeout(() => {
+      void saveProfile({ silent: true });
+    }, 1500);
+
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+    };
+  }, [form, isPublished, profileLoaded, saveProfile, saveStatus, user]);
+
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+    };
+  }, []);
+
+  const handleSave = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    await saveProfile({ silent: false });
   };
+
+  const matchingRegisteredTeachers = getMatchingRegisteredTeachers();
+  const hasStudentInstitution = Boolean(normalizeInstitution(form.studentInfo?.institution || ''));
+  const registeredTeacherInstitutions = Array.from(
+    new Set(registeredTeachers.map(teacher => teacher.institution).filter(Boolean))
+  ).sort((a, b) => a.localeCompare(b));
+  const saveStatusText = (() => {
+    switch (saveStatus) {
+      case 'dirty':
+        return t('resume.builder.unsavedChanges');
+      case 'saving':
+        return t('resume.builder.savingChanges');
+      case 'saved':
+        return lastSavedAt
+          ? t('resume.builder.lastSaved', {
+              time: lastSavedAt.toLocaleTimeString(i18n.language.startsWith('es') ? 'es-DO' : 'en-US', {
+                hour: 'numeric',
+                minute: '2-digit'
+              })
+            })
+          : t('resume.builder.allChangesSaved');
+      case 'error':
+        return t('resume.builder.saveFailedStatus');
+      default:
+        return t('resume.builder.autoSaveReady');
+    }
+  })();
+  const saveStatusClass = saveStatus === 'error'
+    ? 'text-red-700'
+    : saveStatus === 'dirty'
+      ? 'text-amber-700'
+      : saveStatus === 'saving'
+        ? 'text-blue-700'
+        : 'text-green-700';
 
   // --- JSX / HTML (no changes) ---
   return (
@@ -702,6 +1076,210 @@ const EditCrewProfile: React.FC = () => {
                   </div>
                 </div>
 
+                <div className="sticky top-20 z-30 mb-8 rounded-lg border border-gray-200 bg-white/95 p-4 shadow-sm backdrop-blur">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{t('resume.builder.autoSaveTitle')}</p>
+                      <p className={`mt-1 text-sm ${saveStatusClass}`}>{saveStatusText}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleSave}
+                      disabled={saving}
+                      className="w-full rounded-lg bg-gray-900 px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                    >
+                      {saving ? t('resume.builder.loading') : t('resume.builder.saveNow')}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Profile Type Section */}
+                <div className="mb-8 p-6 bg-gray-50 rounded-lg border border-gray-200">
+                  <h3 className="text-lg font-light text-gray-900 mb-4 tracking-wide">{t('resume.builder.profileType')}</h3>
+                  <div
+                    className="inline-flex flex-wrap items-center bg-white border border-gray-300 rounded-lg overflow-hidden"
+                    aria-label={t('resume.builder.selectProfileType')}
+                  >
+                    {[
+                      { value: 'professional', label: t('resume.builder.profileTypes.professional') },
+                      { value: 'student', label: t('resume.builder.profileTypes.student') },
+                      { value: 'teacher', label: t('resume.builder.profileTypes.teacher') }
+                    ].map(option => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => updateProfileType(option.value as 'professional' | 'student' | 'teacher')}
+                        className={`px-4 py-2 text-sm font-medium transition-colors duration-200 ${
+                          form.profileType === option.value
+                            ? 'bg-gray-900 text-white'
+                            : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                        aria-pressed={form.profileType === option.value}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="mt-3 text-sm text-gray-600">
+                    {t('resume.builder.profileTypeDescription')}
+                  </p>
+
+                  {form.profileType === 'student' && (
+                    <div className="mt-5 space-y-5">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
+                          {t('resume.builder.schoolInstitution')}
+                        </label>
+                        <input
+                          type="text"
+                          list="registered-teacher-institutions"
+                          value={form.studentInfo?.institution || ''}
+                          onChange={e => updateStudentInstitution(e.target.value)}
+                          placeholder={t('resume.builder.schoolInstitutionPlaceholder')}
+                          className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
+                        />
+                        <datalist id="registered-teacher-institutions">
+                          {registeredTeacherInstitutions.map(institution => (
+                            <option key={institution} value={institution} />
+                          ))}
+                        </datalist>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
+                          {t('resume.builder.registeredTeachers')}
+                        </label>
+                        {!hasStudentInstitution ? (
+                          <p className="text-sm text-gray-500 bg-white border border-gray-200 rounded-lg p-4">
+                            {t('resume.builder.pickInstitutionFirst')}
+                          </p>
+                        ) : matchingRegisteredTeachers.length === 0 ? (
+                          <p className="text-sm text-gray-500 bg-white border border-gray-200 rounded-lg p-4">
+                            {t('resume.builder.noRegisteredTeachers')}
+                          </p>
+                        ) : (
+                          <div className="space-y-3">
+                            {matchingRegisteredTeachers.map(teacher => {
+                              const isTeacherSelected = (form.selectedTeacherIds || []).includes(teacher.uid);
+                              const enrolledClasses = new Set(
+                                (form.selectedTeachers || []).find(entry => entry.uid === teacher.uid)?.classes || []
+                              );
+                              return (
+                                <div
+                                  key={teacher.uid}
+                                  className="bg-white border border-gray-200 rounded-lg p-4"
+                                >
+                                  <label className="flex items-start gap-3">
+                                    <input
+                                      type="checkbox"
+                                      checked={isTeacherSelected}
+                                      onChange={e => toggleSelectedTeacher(teacher, e.target.checked)}
+                                      className="mt-1 w-4 h-4 text-indigo-600 bg-white border-gray-300 rounded focus:ring-indigo-500 focus:ring-2"
+                                    />
+                                    <span className="min-w-0">
+                                      <span className="block text-sm font-medium text-gray-900">{teacher.name}</span>
+                                      {teacher.classes.length > 0 && (
+                                        <span className="block text-xs text-gray-500 truncate">
+                                          {teacher.classes.join(', ')}
+                                        </span>
+                                      )}
+                                    </span>
+                                  </label>
+
+                                  {/* Per-teacher class enrollment checkboxes.
+                                      Only shown once the student has actually
+                                      selected this teacher AND the teacher has
+                                      published a class list. Lets the teacher's
+                                      "My Students" page group students by class. */}
+                                  {isTeacherSelected && teacher.classes.length > 0 && (
+                                    <div className="mt-3 ml-7 pl-3 border-l-2 border-indigo-100 space-y-2">
+                                      <p className="text-xs font-medium text-gray-700 uppercase tracking-wider">
+                                        {t('resume.builder.enrolledClasses')}
+                                      </p>
+                                      {teacher.classes.map(className => (
+                                        <label
+                                          key={className}
+                                          className="flex items-center gap-2 text-sm text-gray-700"
+                                        >
+                                          <input
+                                            type="checkbox"
+                                            checked={enrolledClasses.has(className)}
+                                            onChange={e =>
+                                              toggleStudentEnrolledClass(teacher.uid, className, e.target.checked)
+                                            }
+                                            className="w-4 h-4 text-indigo-600 bg-white border-gray-300 rounded focus:ring-indigo-500 focus:ring-2"
+                                          />
+                                          <span>{className}</span>
+                                        </label>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {form.profileType === 'teacher' && (
+                    <div className="mt-5 space-y-5">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
+                          {t('resume.builder.teacherInstitution')}
+                        </label>
+                        <input
+                          type="text"
+                          value={form.teacherInfo?.institution || ''}
+                          onChange={e =>
+                            setForm(f => ({
+                              ...f,
+                              teacherInfo: {
+                                ...(f.teacherInfo || {}),
+                                institution: e.target.value
+                              }
+                            }))
+                          }
+                          placeholder={t('resume.builder.teacherInstitutionPlaceholder')}
+                          className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
+                          {t('resume.builder.teacherClasses')}
+                        </label>
+                        {(form.teacherInfo?.classes || []).map((className, index) => (
+                          <div key={index} className="mb-3 flex items-center gap-3">
+                            <input
+                              type="text"
+                              value={className}
+                              onChange={e => updateTeacherClass(index, e.target.value)}
+                              placeholder={t('resume.builder.teacherClassPlaceholder', { number: index + 1 })}
+                              className="flex-1 p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeTeacherClass(index)}
+                              className="text-red-600 hover:text-red-700 text-sm font-medium transition-colors"
+                            >
+                              {t('resume.builder.removeTeacherClass')}
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={addTeacherClass}
+                          className="text-gray-600 hover:text-gray-800 font-medium text-sm transition-colors"
+                        >
+                          {t('resume.builder.addTeacherClass')}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 {/* Basic Information */}
                 <div className="space-y-6 mb-8">
                   <div>
@@ -730,58 +1308,6 @@ const EditCrewProfile: React.FC = () => {
                       className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02] resize-none" 
                     />
                   </div>
-                </div>
-
-                {/* Student Profile Section */}
-                <div className="mb-8 p-6 bg-gray-50 rounded-lg border border-gray-200">
-                  <h3 className="text-lg font-light text-gray-900 mb-4 tracking-wide">Profile Type</h3>
-                  <label className="flex items-start gap-3">
-                    <input
-                      type="checkbox"
-                      id="student-profile-toggle"
-                      checked={form.profileType === 'student'}
-                      onChange={(e) => {
-                        const isStudent = e.target.checked;
-                        setForm(f => ({
-                          ...f,
-                          profileType: isStudent ? 'student' : 'professional',
-                          studentInfo: isStudent
-                            ? { institution: f.studentInfo?.institution || '' }
-                            : { institution: '' }
-                        }));
-                      }}
-                      className="mt-1 w-5 h-5 text-indigo-600 bg-white border-gray-300 rounded focus:ring-indigo-500 focus:ring-2"
-                    />
-                    <span>
-                      <span className="block font-medium text-gray-900">I am a student</span>
-                      <span className="block text-sm text-gray-600">
-                        Student profiles can be filtered separately in the crew directory.
-                      </span>
-                    </span>
-                  </label>
-
-                  {form.profileType === 'student' && (
-                    <div className="mt-5">
-                      <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
-                        School or Institution (Optional)
-                      </label>
-                      <input
-                        type="text"
-                        value={form.studentInfo?.institution || ''}
-                        onChange={e =>
-                          setForm(f => ({
-                            ...f,
-                            studentInfo: {
-                              ...(f.studentInfo || {}),
-                              institution: e.target.value
-                            }
-                          }))
-                        }
-                        placeholder="e.g., NYU Tisch, UCLA Film School, Altos de Chavon"
-                        className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
-                      />
-                    </div>
-                  )}
                 </div>
 
                 {/* Job Titles Section */}
@@ -1504,14 +2030,14 @@ const EditCrewProfile: React.FC = () => {
                 {/* Save Button */}
                 <button 
                   onClick={handleSave} 
-                  disabled={loading} 
+                  disabled={saving} 
                   className="w-full bg-gray-900 text-white py-4 rounded-lg hover:bg-gray-800 disabled:opacity-50 font-light tracking-wide transition-all duration-300 hover:scale-[1.02]"
                 >
-                  {loading ? t('resume.builder.loading') : t('resume.builder.save')}
+                  {saving ? t('resume.builder.loading') : t('resume.builder.save')}
                 </button>
                 
                 {message && (
-                  <p className="text-center text-green-600 mt-4 font-medium">{message}</p>
+                  <p className={`text-center mt-4 font-medium ${saveStatus === 'error' ? 'text-red-600' : 'text-green-600'}`}>{message}</p>
                 )}
 
                 {/* Resume Preview */}
@@ -1533,7 +2059,6 @@ const EditCrewProfile: React.FC = () => {
                 <ResumeDownloadButton
                   resumeUrl="#"
                   fileName={`${form.name.replace(/\s+/g, '_')}_Resume.pdf`}
-                  showAdPopup={false}
                   className="mt-6 bg-gray-900 hover:bg-gray-800 text-white py-3 px-6 rounded-lg font-light tracking-wide transition-all duration-300 hover:scale-105"
                   variant="primary"
                   size="large"

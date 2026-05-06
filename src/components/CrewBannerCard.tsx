@@ -72,8 +72,19 @@ const CrewBannerCard: React.FC<CrewBannerCardProps> = ({
   const mainTitle = profile.jobTitles?.[0]?.title || t('crew.crewMember');
   const mainLocation = profile.residences?.[0] ? 
     `${profile.residences[0].city ? profile.residences[0].city + ', ' : ''}${profile.residences[0].country || ''}` : '';
-  const isStudentProfile = profile.profileType === 'student' || profile.isStudent === true;
-  const studentInstitution = profile.studentInfo?.institution || profile.school || '';
+  const profileType = profile.profileType === 'teacher' || profile.isTeacher === true
+    ? 'teacher'
+    : profile.profileType === 'student' || profile.isStudent === true
+    ? 'student'
+    : 'professional';
+  const profileTypeLabel = profileType === 'teacher'
+    ? t('crew.profileTypes.teacher')
+    : profileType === 'student'
+    ? t('crew.profileTypes.student')
+    : '';
+  const profileTypeInstitution = profileType === 'teacher'
+    ? profile.teacherInfo?.institution || profile.teacherInstitution || ''
+    : profile.studentInfo?.institution || profile.school || '';
           const imageUrl =
     profile.profileImageUrl &&
     !profile.profileImageUrl.includes('lh3.googleusercontent.com/a')
@@ -136,12 +147,12 @@ const CrewBannerCard: React.FC<CrewBannerCardProps> = ({
                title={`${mainTitle}${mainLocation ? ' · ' + mainLocation : ''}`}>
             {mainTitle}{mainLocation ? ' · ' + mainLocation : ''}
           </div>
-          {isStudentProfile && (
+          {profileType !== 'professional' && (
             <div
               className="mt-1 text-xs font-semibold text-indigo-700 truncate"
-              title={studentInstitution ? `Student - ${studentInstitution}` : 'Student'}
+              title={profileTypeInstitution ? `${profileTypeLabel} - ${profileTypeInstitution}` : profileTypeLabel}
             >
-              Student{studentInstitution ? ` - ${studentInstitution}` : ''}
+              {profileTypeLabel}{profileTypeInstitution ? ` - ${profileTypeInstitution}` : ''}
             </div>
           )}
         </div>

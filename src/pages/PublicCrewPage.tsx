@@ -14,12 +14,19 @@ interface PublicCrewProfile {
   residences: any[];
   bio?: string;
   availability?: string;
-  profileType?: 'professional' | 'student';
+  profileType?: 'professional' | 'student' | 'teacher';
   studentInfo?: {
     institution?: string;
   };
+  teacherInfo?: {
+    institution?: string;
+    classes?: string[];
+  };
   isStudent?: boolean;
+  isTeacher?: boolean;
   school?: string;
+  teacherInstitution?: string;
+  teacherClasses?: string[];
 }
 
 const PublicCrewPage: React.FC = () => {
@@ -49,12 +56,19 @@ const PublicCrewPage: React.FC = () => {
               residences: data.residences || [],
               bio: data.bio,
               availability: data.availability,
-              profileType: data.profileType || (data.isStudent ? 'student' : 'professional'),
+              profileType: data.profileType || (data.isTeacher ? 'teacher' : data.isStudent ? 'student' : 'professional'),
               studentInfo: {
                 institution: data.studentInfo?.institution || data.school || ''
               },
+              teacherInfo: {
+                institution: data.teacherInfo?.institution || data.teacherInstitution || '',
+                classes: data.teacherInfo?.classes || data.teacherClasses || []
+              },
               isStudent: data.isStudent,
-              school: data.school
+              isTeacher: data.isTeacher,
+              school: data.school,
+              teacherInstitution: data.teacherInstitution,
+              teacherClasses: data.teacherClasses
             });
           }
         });
@@ -173,14 +187,30 @@ const PublicCrewPage: React.FC = () => {
                           : `${profile.residences[0]?.city || 'Unknown'}, ${profile.residences[0]?.country || 'Unknown'}`}
                       </p>
                     )}
-                    {(profile.profileType === 'student' || profile.isStudent) && (
-                      <span
-                        className="inline-block mt-2 px-2 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100"
-                        title={profile.studentInfo?.institution || profile.school || 'Student'}
-                      >
-                        Student{(profile.studentInfo?.institution || profile.school) ? ` - ${profile.studentInfo?.institution || profile.school}` : ''}
-                      </span>
-                    )}
+                    {(() => {
+                      const profileType = profile.profileType === 'teacher' || profile.isTeacher
+                        ? 'teacher'
+                        : profile.profileType === 'student' || profile.isStudent
+                        ? 'student'
+                        : 'professional';
+                      const profileTypeLabel = profileType === 'teacher'
+                        ? t('crew.profileTypes.teacher')
+                        : profileType === 'student'
+                        ? t('crew.profileTypes.student')
+                        : '';
+                      const institution = profileType === 'teacher'
+                        ? profile.teacherInfo?.institution || profile.teacherInstitution || ''
+                        : profile.studentInfo?.institution || profile.school || '';
+
+                      return profileType !== 'professional' ? (
+                        <span
+                          className="inline-block mt-2 px-2 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100"
+                          title={institution || profileTypeLabel}
+                        >
+                          {profileTypeLabel}{institution ? ` - ${institution}` : ''}
+                        </span>
+                      ) : null;
+                    })()}
                   </div>
                 </div>
 

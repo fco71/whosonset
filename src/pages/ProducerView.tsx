@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../firebase';
 import { CrewProfile, Residence, ContactInfo } from '../types/CrewProfile';
 import { JobTitleEntry } from '../types/JobTitleEntry';
@@ -12,7 +12,6 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { Bookmark, BookmarkCheck } from 'lucide-react';
 import CrewViewSwitcher, { CrewViewMode } from '../components/CrewViewSwitcher';
 import CrewBannerCard from '../components/CrewBannerCard';
-import AdManager from '../components/Ads/AdManager';
 
 interface JobDepartment {
   name: string;
@@ -34,6 +33,7 @@ const ProducerView: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isFiltering, setIsFiltering] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string>('');
+  const [currentUserProfile, setCurrentUserProfile] = useState<CrewProfile | null>(null);
   const [favoriteCrewIds, setFavoriteCrewIds] = useState<string[]>([]);
 
   // Filter states
@@ -59,6 +59,7 @@ const ProducerView: React.FC = () => {
 
   const [isSearching, setIsSearching] = useState(false);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [showSelectedStudentsOnly, setShowSelectedStudentsOnly] = useState(false);
   const [viewMode, setViewMode] = useState<CrewViewMode>(() => {
     const saved = localStorage.getItem('crewViewMode');
     return (saved === 'banners' || saved === 'cards') ? saved : 'cards';
@@ -68,13 +69,24 @@ const ProducerView: React.FC = () => {
   const [sortBy, setSortBy] = useState<'relevance' | 'name' | 'dateAdded'>('relevance');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  const getProfileType = (profile: CrewProfile): 'professional' | 'student' => {
-    return profile.profileType === 'student' || profile.isStudent === true ? 'student' : 'professional';
+  const getProfileType = (profile: CrewProfile): 'professional' | 'student' | 'teacher' => {
+    if (profile.profileType === 'teacher' || profile.isTeacher === true) return 'teacher';
+    if (profile.profileType === 'student' || profile.isStudent === true) return 'student';
+    return 'professional';
   };
 
   const getStudentInstitution = (profile: CrewProfile): string => {
+    if (getProfileType(profile) === 'teacher') {
+      return profile.teacherInfo?.institution || profile.teacherInstitution || '';
+    }
     return profile.studentInfo?.institution || profile.school || '';
   };
+
+  const getTeacherClasses = (profile: CrewProfile): string[] => {
+    return profile.teacherInfo?.classes || profile.teacherClasses || [];
+  };
+
+  const isCurrentUserTeacher = currentUserProfile ? getProfileType(currentUserProfile) === 'teacher' : false;
 
   // Load favorite crew IDs
   useEffect(() => {
@@ -100,6 +112,13 @@ const ProducerView: React.FC = () => {
     if (showFavoritesOnly) {
       filtered = filtered.filter(profile => 
         favoriteCrewIds.includes(profile.uid)
+      );
+    }
+
+    if (showSelectedStudentsOnly && currentUserId) {
+      filtered = filtered.filter(profile =>
+        getProfileType(profile) === 'student' &&
+        (profile.selectedTeacherIds || []).includes(currentUserId)
       );
     }
 
@@ -175,7 +194,7 @@ const ProducerView: React.FC = () => {
     });
     
     setFilteredProfiles(filtered);
-  }, [showFavoritesOnly, crewProfiles, favoriteCrewIds, sortBy, sortOrder]);
+  }, [showFavoritesOnly, showSelectedStudentsOnly, currentUserId, crewProfiles, favoriteCrewIds, sortBy, sortOrder]);
 
   // Handle crew bookmarking
   const handleCrewBookmark = async (crewId: string, isBookmarked: boolean) => {
@@ -245,6 +264,35 @@ const ProducerView: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
+  useEffect(() => {
+    const loadCurrentUserProfile = async () => {
+      if (!currentUserId) {
+        setCurrentUserProfile(null);
+        setShowSelectedStudentsOnly(false);
+        return;
+      }
+
+      try {
+        const profileDoc = await getDoc(doc(db, 'crewProfiles', currentUserId));
+        if (!profileDoc.exists()) {
+          setCurrentUserProfile(null);
+          setShowSelectedStudentsOnly(false);
+          return;
+        }
+
+        setCurrentUserProfile({
+          uid: profileDoc.id,
+          ...profileDoc.data()
+        } as CrewProfile);
+      } catch (error) {
+        console.error('Error loading current user profile:', error);
+        setCurrentUserProfile(null);
+      }
+    };
+
+    loadCurrentUserProfile();
+  }, [currentUserId]);
+
   // Fetch crew profiles with optimized queries
   useEffect(() => {
     const fetchCrewProfiles = async () => {
@@ -284,6 +332,11 @@ const ProducerView: React.FC = () => {
             profile.name.toLowerCase().includes(query) ||
             getProfileType(profile).includes(query) ||
             getStudentInstitution(profile).toLowerCase().includes(query) ||
+            getTeacherClasses(profile).some(className => className.toLowerCase().includes(query)) ||
+            profile.selectedTeachers?.some(teacher =>
+              teacher.name.toLowerCase().includes(query) ||
+              (teacher.institution || '').toLowerCase().includes(query)
+            ) ||
             profile.jobTitles?.some(job => 
               job.title.toLowerCase().includes(query) ||
               job.department.toLowerCase().includes(query)
@@ -389,6 +442,7 @@ const ProducerView: React.FC = () => {
     };
     setFilters(emptyFilters);
     setAppliedFilters(emptyFilters);
+    setShowSelectedStudentsOnly(false);
   };
 
   const getAvailableJobTitles = () => {
@@ -457,9 +511,10 @@ const ProducerView: React.FC = () => {
                 aria-label="Filter by profile type"
               >
                 {[
-                  { value: '', label: 'All' },
-                  { value: 'professional', label: 'Professional' },
-                  { value: 'student', label: 'Students' }
+                  { value: '', label: t('crew.profileTypes.all') },
+                  { value: 'professional', label: t('crew.profileTypes.professionals') },
+                  { value: 'student', label: t('crew.profileTypes.students') },
+                  { value: 'teacher', label: t('crew.profileTypes.teachers') }
                 ].map(option => (
                   <button
                     key={option.value || 'all'}
@@ -487,7 +542,7 @@ const ProducerView: React.FC = () => {
                   className="pl-2 pr-6 py-1 text-xs bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 appearance-none w-28"
                   aria-label="Filter by department"
                 >
-                  <option value="">Dept</option>
+                  <option value="">{t('crew.departmentShort')}</option>
                   {departments.map(dept => (
                     <option key={dept.name} value={dept.name}>
                       {dept.name}
@@ -513,7 +568,7 @@ const ProducerView: React.FC = () => {
                   aria-label="Filter by role"
                   aria-disabled={!filters.department}
                 >
-                  <option value="">Role</option>
+                  <option value="">{t('crew.role')}</option>
                   {getAvailableJobTitles().map(title => (
                     <option key={title} value={title}>
                       {title}
@@ -538,7 +593,7 @@ const ProducerView: React.FC = () => {
                   aria-label="Filter by country"
                   autoComplete="country"
                 >
-                  <option value="">Country</option>
+                  <option value="">{t('crew.country')}</option>
                   {countries.map(country => (
                     <option key={country.name} value={country.name}>
                       {country.name}
@@ -562,7 +617,7 @@ const ProducerView: React.FC = () => {
                   className="pl-2 pr-6 py-1 text-xs bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 appearance-none w-28"
                   aria-label="Filter by availability"
                 >
-                  <option value="">Status</option>
+                  <option value="">{t('crew.status')}</option>
                   <option value="available">{t('crew.available')}</option>
                   <option value="soon">{t('crew.soon')}</option>
                   <option value="unavailable">{t('crew.unavailable')}</option>
@@ -614,12 +669,26 @@ const ProducerView: React.FC = () => {
                       ? 'text-blue-600 border-blue-200 bg-blue-50 hover:bg-blue-100' 
                       : 'text-gray-500 border-gray-200 bg-white hover:bg-gray-50 hover:text-gray-700'
                   }`}
-                  title={showFavoritesOnly ? 'Show all profiles' : 'Show favorites only'}
+                  title={showFavoritesOnly ? t('crew.showAllProfiles') : t('crew.showFavoritesOnly')}
                 >
                   <svg className="w-3 h-3 mr-1" fill={showFavoritesOnly ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
                   </svg>
-                  {showFavoritesOnly ? 'Favorites' : 'Favs'}
+                  {showFavoritesOnly ? t('crew.favorites') : t('crew.favs')}
+                </button>
+              )}
+              {isCurrentUserTeacher && (
+                <button
+                  type="button"
+                  onClick={() => setShowSelectedStudentsOnly(!showSelectedStudentsOnly)}
+                  className={`px-2 py-1.5 text-xs font-medium transition-colors duration-200 flex items-center border rounded-md ${
+                    showSelectedStudentsOnly 
+                      ? 'text-indigo-700 border-indigo-200 bg-indigo-50 hover:bg-indigo-100' 
+                      : 'text-gray-500 border-gray-200 bg-white hover:bg-gray-50 hover:text-gray-700'
+                  }`}
+                  title={showSelectedStudentsOnly ? t('crew.showAllProfiles') : t('crew.showSelectedStudentsOnly')}
+                >
+                  {showSelectedStudentsOnly ? t('crew.selectedStudents') : t('crew.myStudents')}
                 </button>
               )}
               <button
@@ -630,7 +699,7 @@ const ProducerView: React.FC = () => {
                 <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
-                Clear
+                {t('crew.clear')}
               </button>
               <button
                 type="button"
@@ -644,14 +713,14 @@ const ProducerView: React.FC = () => {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    Loading...
+                    {t('common.loading', 'Loading...')}
                   </>
                 ) : (
                   <>
                     <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
-                    Search
+                    {t('crew.search')}
                   </>
                 )}
               </button>
@@ -668,7 +737,7 @@ const ProducerView: React.FC = () => {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
                 <h2 className="text-sm font-medium text-gray-600">
-                  {filteredProfiles.length} {filteredProfiles.length === 1 ? 'talent found' : 'talents found'}
+                  {filteredProfiles.length} {filteredProfiles.length === 1 ? t('crew.talentFound') : t('crew.talentsFound')}
                 </h2>
                 <p className="mt-1 text-xs text-gray-500">
                   {t('crew.showingResults', 'Showing results matching your filters')}
@@ -782,15 +851,6 @@ const ProducerView: React.FC = () => {
                       />
                     </div>
                   ))}
-                  
-                  {/* Inline Ad placeholder - will be added when AdSense is fully configured */}
-                  {/* {filteredProfiles.length > 6 && (
-                    <div className="col-span-full my-6">
-                      <div className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                        <p className="text-gray-500">Ad Space</p>
-                      </div>
-                    </div>
-                  )} */}
                 </div>
               )}
 
@@ -914,8 +974,15 @@ const CrewProfileCard: React.FC<{
 }> = ({ profile, index, isFiltering, currentUserId, isBookmarked, onBookmarkToggle }) => {
   const primaryJob = profile.jobTitles?.[0];
   const primaryResidence = profile.residences?.[0];
-  const isStudentProfile = profile.profileType === 'student' || profile.isStudent === true;
-  const studentInstitution = profile.studentInfo?.institution || profile.school || '';
+  const profileType = profile.profileType === 'teacher' || profile.isTeacher === true
+    ? 'teacher'
+    : profile.profileType === 'student' || profile.isStudent === true
+    ? 'student'
+    : 'professional';
+  const profileTypeLabel = profileType === 'teacher' ? 'Teacher' : profileType === 'student' ? 'Student' : '';
+  const profileTypeInstitution = profileType === 'teacher'
+    ? profile.teacherInfo?.institution || profile.teacherInstitution || ''
+    : profile.studentInfo?.institution || profile.school || '';
   const [isBookmarking, setIsBookmarking] = useState(false);
 
   const handleBookmarkClick = async (e: React.MouseEvent) => {
@@ -989,12 +1056,12 @@ const CrewProfileCard: React.FC<{
           >
             {profile.name}
           </h3>
-          {isStudentProfile && (
+          {profileType !== 'professional' && (
             <p
               className="text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-full px-2 py-1 mb-2 inline-block max-w-full truncate"
-              title={studentInstitution ? `Student - ${studentInstitution}` : 'Student'}
+              title={profileTypeInstitution ? `${profileTypeLabel} - ${profileTypeInstitution}` : profileTypeLabel}
             >
-              Student{studentInstitution ? ` - ${studentInstitution}` : ''}
+              {profileTypeLabel}{profileTypeInstitution ? ` - ${profileTypeInstitution}` : ''}
             </p>
           )}
           {primaryJob && (

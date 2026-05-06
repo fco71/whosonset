@@ -2,7 +2,7 @@ import { JobTitleEntry } from './JobTitleEntry';
 import { ProjectEntry } from './ProjectEntry';
 
 // Unified CrewProfile interface for the entire application
-export type CrewProfileType = 'professional' | 'student';
+export type CrewProfileType = 'professional' | 'student' | 'teacher';
 
 export type EducationLevel = 
   | 'high_school' 
@@ -62,6 +62,25 @@ export interface StudentProfileInfo {
   institution?: string;
 }
 
+export interface TeacherProfileInfo {
+  /** Optional school, university, or training program name */
+  institution?: string;
+  /** Optional classes, workshops, or subjects taught */
+  classes?: string[];
+}
+
+export interface SelectedTeacherInfo {
+  uid: string;
+  name: string;
+  institution?: string;
+  /**
+   * Names of this teacher's classes that the student is enrolled in.
+   * Optional — student may select the teacher without picking a specific class.
+   * Used by the teacher's "My Students" view to group/single out students by class.
+   */
+  classes?: string[];
+}
+
 export interface CrewProfile {
   uid: string;
   name: string;
@@ -70,10 +89,21 @@ export interface CrewProfile {
   profileImageUrl?: string;
   profileType?: CrewProfileType;
   studentInfo?: StudentProfileInfo;
+  teacherInfo?: TeacherProfileInfo;
   /** Legacy/simple flag kept for compatibility with existing reads and filters */
   isStudent?: boolean;
+  /** Legacy/simple flag kept for compatibility with existing reads and filters */
+  isTeacher?: boolean;
   /** Legacy/simple school field kept for compatibility with existing reads and filters */
   school?: string;
+  /** Legacy/simple teacher institution field kept for compatibility with existing reads and filters */
+  teacherInstitution?: string;
+  /** Legacy/simple teacher classes field kept for compatibility with existing reads and filters */
+  teacherClasses?: string[];
+  /** Teachers selected by a student profile */
+  selectedTeacherIds?: string[];
+  /** Display metadata for selected teachers */
+  selectedTeachers?: SelectedTeacherInfo[];
   jobTitles: JobTitleEntry[];
   residences: Residence[];
   projects?: ProjectEntry[];
@@ -118,6 +148,9 @@ export interface CrewProfileFormData {
   profileImageUrl: string;
   profileType?: CrewProfileType;
   studentInfo?: StudentProfileInfo;
+  teacherInfo?: TeacherProfileInfo;
+  selectedTeacherIds?: string[];
+  selectedTeachers?: SelectedTeacherInfo[];
   jobTitles: JobTitleEntry[];
   residences: Residence[];
   projects: ProjectEntry[];

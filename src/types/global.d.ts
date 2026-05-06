@@ -2,9 +2,6 @@
 
 declare global {
   interface Window {
-    // Google AdSense
-    adsbygoogle: any[];
-    
     // Google Analytics (gtag)
     gtag: (
       command: string,
@@ -21,39 +18,7 @@ declare global {
     
     // Google Tag Manager
     dataLayer: any[];
-    
-    // Custom analytics events
-    trackAdEvent?: (eventType: string, data: any) => void;
   }
-}
-
-// AdSense specific types
-export interface AdSenseConfig {
-  client: string;
-  slot: string;
-  format?: string;
-  responsive?: boolean;
-  fullWidthResponsive?: boolean;
-}
-
-// Analytics event types
-export interface AnalyticsEvent {
-  type: string;
-  placementId: string;
-  timestamp: Date;
-  metadata?: Record<string, any>;
-}
-
-// Revenue tracking types
-export interface RevenueData {
-  placementId: string;
-  revenue: number;
-  currency: string;
-  date: string;
-  impressions: number;
-  clicks: number;
-  ctr: number;
-  cpm: number;
 }
 
 export {}; 

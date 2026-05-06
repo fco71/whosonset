@@ -2,14 +2,14 @@
   "nav": {
     "home": "Home",
     "crew": "Crew",
-    "jobs": "Jobs", 
+    "jobs": "Jobs",
     "projects": "Projects",
     "collaboration": "Collaboration",
     "social": "Social",
     "favorites": "Favorites",
     "resumeBuilder": "Resume Builder",
     "myPostedJobs": "My Posted Jobs",
-    "jobAnalytics": "Job Analytics", 
+    "jobAnalytics": "Job Analytics",
     "postNewJob": "Post New Job",
     "myApplications": "My Applications",
     "postedJobs": "Posted Jobs",
@@ -20,7 +20,8 @@
     "getStarted": "Sign Up",
     "chat": "Chat",
     "profile": "Profile",
-    "logout": "Logout"
+    "logout": "Logout",
+    "myStudents": "My Students"
   },
   "notificationSettings": {
     "title": "Notification Settings",
@@ -40,7 +41,7 @@
     "loading": "Loading...",
     "stats": {
       "activeProfessionals": "Active Professionals",
-      "projectsCompleted": "Projects Completed", 
+      "projectsCompleted": "Projects Completed",
       "successRate": "Success Rate",
       "countries": "Countries"
     },
@@ -60,7 +61,7 @@
         "desc": "Display your best work and connect with industry professionals"
       },
       "crewNetworking": {
-        "title": "Crew Networking", 
+        "title": "Crew Networking",
         "desc": "Build meaningful connections with talented filmmakers worldwide"
       },
       "jobBoard": {
@@ -225,7 +226,7 @@
     "tryAdjustingFilters": "Try adjusting your search or filters to find more opportunities.",
     "departments": {
       "camera": "Camera",
-      "sound": "Sound", 
+      "sound": "Sound",
       "lighting": "Lighting",
       "art": "Art",
       "costume": "Costume",
@@ -253,10 +254,11 @@
     "discoverSubtitle": "Connect with exceptional crew members from around the world.",
     "refineSearch": "Refine Your Search",
     "findPerfectCrew": "Find the perfect crew member for your project",
-    "searchCrew": "Search crew members...", 
+    "searchCrew": "Search crew members...",
     "searchPlaceholder": "Search by name, role, or skills...",
     "search": "Search",
     "filters": "Filters",
+    "clear": "Clear",
     "clearFilters": "Clear All Filters",
     "resetFilters": "Reset Filters",
     "applyFilters": "Apply Filters",
@@ -271,7 +273,17 @@
     "teamMembers": "Team Members",
     "loading": "Loading crew...",
     "loadingProfiles": "Loading profiles...",
+    "profileTypes": {
+      "all": "All",
+      "professional": "Professional",
+      "professionals": "Professionals",
+      "student": "Student",
+      "students": "Students",
+      "teacher": "Teacher",
+      "teachers": "Teachers"
+    },
     "department": "Department",
+    "departmentShort": "Dept",
     "allDepartments": "All Departments",
     "role": "Role",
     "allRoles": "All Roles",
@@ -306,6 +318,14 @@
     "browseCrewProfiles": "Browse Crew Profiles",
     "curatedCollection": "Your curated collection of talented crew members",
     "talentsFound": "Talents Found",
+    "talentFound": "talent found",
+    "favorites": "Favorites",
+    "favs": "Favs",
+    "showAllProfiles": "Show all profiles",
+    "showFavoritesOnly": "Show favorites only",
+    "showSelectedStudentsOnly": "Show selected students only",
+    "selectedStudents": "Selected Students",
+    "myStudents": "My Students",
     "totalResults": "crew members found",
     "showingResults": "Showing results matching your filters",
     "loadMore": "Load More",
@@ -315,7 +335,7 @@
     "date": "Date",
     "sortAscending": "Sort ascending",
     "sortDescending": "Sort descending",
-    "experience": "Experience", 
+    "experience": "Experience",
     "rating": "Rating",
     "recentlyAdded": "Recently Added",
     "alphabetical": "Alphabetical",
@@ -473,7 +493,7 @@
     "title": "Job Poster Dashboard",
     "subtitle": "Manage your job postings, track applications, and analyze performance.",
     "loading": "Loading dashboard...",
-    "overview": "Overview", 
+    "overview": "Overview",
     "postedJobs": "Posted Jobs",
     "applications": "Applications",
     "analytics": "Analytics",
@@ -566,7 +586,7 @@
   "projectForm": {
     "generalInfo": "General Information",
     "generalInfoDesc": "Basic project details and company information",
-    "creativeInfo": "Creative Information", 
+    "creativeInfo": "Creative Information",
     "creativeInfoDesc": "Story details and creative team",
     "basicInfo": "Basic Information",
     "storyInfo": "Story Info",
@@ -716,7 +736,7 @@
     },
     "workspaceTypes": {
       "project": "Project",
-      "department": "Department", 
+      "department": "Department",
       "general": "General"
     },
     "createWorkspaceModal": {
@@ -762,10 +782,10 @@
       "deleteConfirm": "Are you sure you want to delete this screenplay?",
       "deleteSuccess": "Screenplay deleted successfully",
       "deleteFailed": "Failed to delete screenplay",
-             "uploadSuccess": "uploaded successfully!",
-       "uploadFailed": "Failed to upload screenplay"
-     },
-     "workspaceDeleteConfirm": "Are you sure you want to delete this workspace and all its data? This action cannot be undone."
+      "uploadSuccess": "uploaded successfully!",
+      "uploadFailed": "Failed to upload screenplay"
+    },
+    "workspaceDeleteConfirm": "Are you sure you want to delete this workspace and all its data? This action cannot be undone."
   },
   "tasks": {
     "title": "Collaborative Tasks",
@@ -780,7 +800,7 @@
     "addComment": "Add Comment",
     "viewModes": {
       "list": "List",
-      "calendar": "Calendar", 
+      "calendar": "Calendar",
       "kanban": "Kanban",
       "analytics": "Analytics"
     },
@@ -854,27 +874,27 @@
       "teamMembers": "Team Members",
       "estimatedHours": "Estimated Hours",
       "location": "Location",
-             "subtasks": "Subtasks",
-       "subtasksCompleted": "completed",
-       "noMembersAssigned": "No members assigned",
-       "moreMembers": "more members",
-       "due": "Due",
-       "noDueDate": "No due date",
-       "subtasksCount": "subtasks",
-       "changeStatus": "Change task status",
-       "editTask": "Edit Task"
-     },
-     "errors": {
-       "loginRequired": "You must be logged in to create tasks",
-       "createFailed": "Failed to create task. Please try again.",
-       "updateFailed": "Failed to update task. Please try again.",
-       "deleteFailed": "Failed to delete task. Please try again.",
-       "completeFailed": "Failed to complete task. Please try again.",
-       "startFailed": "Failed to start task. Please try again.",
-       "restoreFailed": "Failed to restore task. Please try again.",
-       "commentFailed": "Failed to add comment. Please try again.",
-       "saveFailed": "Failed to save task"
-     }
+      "subtasks": "Subtasks",
+      "subtasksCompleted": "completed",
+      "noMembersAssigned": "No members assigned",
+      "moreMembers": "more members",
+      "due": "Due",
+      "noDueDate": "No due date",
+      "subtasksCount": "subtasks",
+      "changeStatus": "Change task status",
+      "editTask": "Edit Task"
+    },
+    "errors": {
+      "loginRequired": "You must be logged in to create tasks",
+      "createFailed": "Failed to create task. Please try again.",
+      "updateFailed": "Failed to update task. Please try again.",
+      "deleteFailed": "Failed to delete task. Please try again.",
+      "completeFailed": "Failed to complete task. Please try again.",
+      "startFailed": "Failed to start task. Please try again.",
+      "restoreFailed": "Failed to restore task. Please try again.",
+      "commentFailed": "Failed to add comment. Please try again.",
+      "saveFailed": "Failed to save task"
+    }
   },
   "social": {
     "title": "Social",
@@ -1065,7 +1085,7 @@
     },
     "actions": {
       "goTo": "Go to",
-      "delete": "Delete", 
+      "delete": "Delete",
       "resolve": "Resolve",
       "reopen": "Reopen",
       "reply": "Reply"
@@ -1149,6 +1169,9 @@
       "languages": "Languages",
       "residences": "Residences",
       "professionalExperience": "Professional Experience",
+      "crewFocus": "Crew Focus",
+      "teachingCrewFocus": "Teaching / Crew Focus",
+      "classes": "Classes",
       "selectedProjects": "Selected Projects",
       "education": "Education",
       "contactInformation": "Contact Information",
@@ -1170,6 +1193,25 @@
       "crewProfile": "Crew Profile",
       "updateDescription": "Update your professional information and showcase your experience. Keep your profile current to attract the best opportunities.",
       "profileInformation": "Profile Information",
+      "profileType": "Profile Type",
+      "selectProfileType": "Select profile type",
+      "profileTypeDescription": "Professional is the default. Student and teacher profiles can be filtered separately in the crew directory.",
+      "profileTypes": {
+        "professional": "Professional",
+        "student": "Student",
+        "teacher": "Teacher"
+      },
+      "schoolInstitution": "School or Institution (Optional)",
+      "schoolInstitutionPlaceholder": "e.g., NYU Tisch, UCLA Film School, Altos de Chavon",
+      "registeredTeachers": "Registered Teachers (Optional)",
+      "pickInstitutionFirst": "Enter an institution to see registered teachers from that institution.",
+      "noRegisteredTeachers": "No registered teachers found for this institution yet.",
+      "teacherInstitution": "Institution (Optional)",
+      "teacherInstitutionPlaceholder": "e.g., Film school, university, workshop program",
+      "teacherClasses": "Classes (Optional)",
+      "teacherClassPlaceholder": "Class #{{number}}",
+      "addTeacherClass": "+ Add Class",
+      "removeTeacherClass": "Remove",
       "published": "🌐 Published",
       "private": "🔒 Private",
       "fullName": "Full Name",
@@ -1194,6 +1236,14 @@
       "noEducationDescription": "Add your education history to showcase your background",
       "addEducation": "Add Education",
       "save": "Save Profile",
+      "saveNow": "Save now",
+      "autoSaveTitle": "Autosave",
+      "autoSaveReady": "Autosave is ready",
+      "unsavedChanges": "Unsaved changes. Autosave will run shortly.",
+      "savingChanges": "Saving changes...",
+      "allChangesSaved": "All changes saved",
+      "lastSaved": "Last saved at {{time}}",
+      "saveFailedStatus": "Save failed. Use Save now to retry.",
       "cancel": "Cancel",
       "loading": "Saving...",
       "loadingBuilder": "Loading resume builder...",
@@ -1205,7 +1255,8 @@
       "linkCopied": "Link copied to clipboard!",
       "shareDescription": "Share this link with potential employers or collaborators",
       "resumePreview": "Resume Preview",
-      "downloadPDF": "Download as PDF"
+      "downloadPDF": "Download as PDF",
+      "enrolledClasses": "Classes you're enrolled in"
     },
     "page": {
       "title": "Edit Your Profile",
@@ -1219,5 +1270,30 @@
     "attending": "attending",
     "maxAttendees": "Max",
     "noEvents": "No upcoming events"
+  },
+  "myStudents": {
+    "title": "My Students",
+    "subtitle_one": "{{count}} student has selected you as their teacher.",
+    "subtitle_other": "{{count}} students have selected you as their teacher.",
+    "signInPrompt": "Please sign in to see your students.",
+    "notTeacherTitle": "This page is for teachers.",
+    "notTeacherBody": "Set your profile type to Teacher in your profile to start receiving student selections.",
+    "goToProfile": "Go to my profile",
+    "emptyTitle": "No students yet.",
+    "emptyBody": "Once students at your institution mark you as their teacher, they'll appear here grouped by class.",
+    "classCount_one": "{{count}} student",
+    "classCount_other": "{{count}} students",
+    "noStudentsInClass": "No students in this class yet.",
+    "otherStudents": "Other students",
+    "noOtherStudents": "No students without a class.",
+    "alsoIn": "Also in: {{classes}}",
+    "unnamedStudent": "Unnamed student",
+    "exportCsv": "Export CSV",
+    "csv": {
+      "name": "Name",
+      "username": "Username",
+      "institution": "Institution",
+      "classes": "Classes"
+    }
   }
-} 
+}

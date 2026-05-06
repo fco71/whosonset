@@ -58,10 +58,23 @@ const handleFirestoreError = (error: any) => {
   }
 };
 
-// Global error handler for unhandled promise rejections
+// Firestore-specific rejection swallower. The global handler in index.tsx
+// already catches benign timeouts; this one specifically suppresses Firestore
+// internal rejections that have a `.code` (e.g. 'unavailable',
+// 'deadline-exceeded') but no .message, which previously leaked through.
 window.addEventListener('unhandledrejection', (event) => {
-  if (event.reason && event.reason.message && event.reason.message.includes('FIRESTORE')) {
-    console.warn('Caught Firestore error:', event.reason);
+  const r: any = event.reason;
+  if (!r) return;
+  const text = (r.message || r.code || '') + '';
+  if (
+    text.includes('FIRESTORE') ||
+    text.includes('firestore') ||
+    text === 'unavailable' ||
+    text === 'deadline-exceeded' ||
+    text === 'cancelled' ||
+    text === 'aborted'
+  ) {
+    console.warn('[Firestore]', text || r);
     event.preventDefault();
   }
 });

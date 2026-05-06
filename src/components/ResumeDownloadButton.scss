@@ -148,35 +148,6 @@
   }
 }
 
-.download-disclaimer {
-  margin-top: 0.75rem;
-  padding: 0.75rem 1rem;
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%) !important;
-  border: 1px solid #bae6fd !important;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-
-  p {
-    margin: 0;
-    font-size: 0.75rem;
-    color: #0369a1 !important;
-    line-height: 1.4;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-
-    small {
-      font-size: inherit;
-      color: #0369a1 !important;
-    }
-
-    strong {
-      color: #0c4a6e !important;
-      font-weight: 600;
-    }
-  }
-}
-
 // Animation
 @keyframes spin {
   0% { transform: rotate(0deg); }
@@ -189,14 +160,6 @@
     &.btn-large {
       padding: 0.875rem 1.75rem;
       font-size: 1rem;
-    }
-  }
-
-  .download-disclaimer {
-    padding: 0.625rem;
-    
-    p {
-      font-size: 0.6875rem;
     }
   }
 }
@@ -235,16 +198,4 @@
     }
   }
 
-  .download-disclaimer {
-    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%) !important;
-    border-color: #bae6fd !important;
-
-    p {
-      color: #0369a1 !important;
-
-      strong {
-        color: #0c4a6e !important;
-      }
-    }
-  }
 } 

@@ -8,6 +8,8 @@ import NotificationCenter from './NotificationCenter';
 import NotificationSettings from './NotificationSettings';
 import { useTranslation } from 'react-i18next';
 import { trackConversion } from '../utilities/conversionTracking';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 
 interface NavigationProps {
     authUser: any;
@@ -25,6 +27,10 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
     const [isScrolled, setIsScrolled] = useState(false);
     const [showNotificationCenter, setShowNotificationCenter] = useState(false);
     const [showNotificationSettings, setShowNotificationSettings] = useState(false);
+    // Tracks whether the signed-in user has profileType === 'teacher' (or the
+    // legacy isTeacher flag). Used to conditionally show the "My Students"
+    // link in the user dropdown so it doesn't clutter non-teacher menus.
+    const [isTeacherUser, setIsTeacherUser] = useState(false);
     const { t, i18n } = useTranslation();
     const activeLanguage = i18n.language.startsWith('es') ? 'es' : 'en';
 
@@ -48,6 +54,32 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
     useEffect(() => {
         setActivePath(location.pathname);
     }, [location]);
+
+    // Look up the current user's profile once per signed-in session to decide
+    // whether the dropdown should include the teacher-only "My Students" link.
+    // Failures are swallowed silently — if we can't tell, just hide the link.
+    useEffect(() => {
+        let cancelled = false;
+        if (!authUser?.uid) {
+            setIsTeacherUser(false);
+            return;
+        }
+        (async () => {
+            try {
+                const snap = await getDoc(doc(db, 'crewProfiles', authUser.uid));
+                if (cancelled) return;
+                const data: any = snap.exists() ? snap.data() : null;
+                setIsTeacherUser(
+                    Boolean(data && (data.profileType === 'teacher' || data.isTeacher === true))
+                );
+            } catch {
+                if (!cancelled) setIsTeacherUser(false);
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [authUser?.uid]);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -372,13 +404,26 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                                                     >
                                                         📝 {t('nav.myApplications')}
                                                     </Link>
-                                                    <Link 
-                                                        to="/jobs/posted" 
+                                                    <Link
+                                                        to="/jobs/posted"
                                                         className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors"
                                                         onClick={closeAllMenus}
                                                     >
                                                         💼 {t('nav.postedJobs')}
                                                     </Link>
+                                                    {/*
+                                                      Teacher-only entry point.
+                                                      Hidden for students/professionals so the menu stays focused.
+                                                    */}
+                                                    {isTeacherUser && (
+                                                        <Link
+                                                            to="/my-students"
+                                                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+                                                            onClick={closeAllMenus}
+                                                        >
+                                                            🎓 {t('nav.myStudents')}
+                                                        </Link>
+                                                    )}
                                                     <Link 
                                                         to="/settings" 
                                                         className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors"

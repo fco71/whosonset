@@ -76,8 +76,19 @@ const CrewProfileCard: React.FC<CrewProfileCardProps> = ({
   const primaryJobTitle = profile.jobTitles?.[0]?.title || t('crew.crewMember');
   const primaryLocation = profile.residences?.[0] ? 
     `${profile.residences[0].city}, ${profile.residences[0].country}` : t('crew.locationNotSpecified');
-  const isStudentProfile = profile.profileType === 'student' || profile.isStudent === true;
-  const studentInstitution = profile.studentInfo?.institution || profile.school || '';
+  const profileType = profile.profileType === 'teacher' || profile.isTeacher === true
+    ? 'teacher'
+    : profile.profileType === 'student' || profile.isStudent === true
+    ? 'student'
+    : 'professional';
+  const profileTypeLabel = profileType === 'teacher'
+    ? t('crew.profileTypes.teacher')
+    : profileType === 'student'
+    ? t('crew.profileTypes.student')
+    : '';
+  const profileTypeInstitution = profileType === 'teacher'
+    ? profile.teacherInfo?.institution || profile.teacherInstitution || ''
+    : profile.studentInfo?.institution || profile.school || '';
 
   return (
     <div 
@@ -170,7 +181,7 @@ const CrewProfileCard: React.FC<CrewProfileCardProps> = ({
         >
           {primaryLocation}
         </div>
-        {isStudentProfile && (
+        {profileType !== 'professional' && (
           <div
             style={{
               display: 'inline-block',
@@ -186,9 +197,9 @@ const CrewProfileCard: React.FC<CrewProfileCardProps> = ({
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap'
             }}
-            title={studentInstitution ? `Student - ${studentInstitution}` : 'Student'}
+            title={profileTypeInstitution ? `${profileTypeLabel} - ${profileTypeInstitution}` : profileTypeLabel}
           >
-            Student{studentInstitution ? ` - ${studentInstitution}` : ''}
+            {profileTypeLabel}{profileTypeInstitution ? ` - ${profileTypeInstitution}` : ''}
           </div>
         )}
       </div>
