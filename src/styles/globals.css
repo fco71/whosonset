@@ -881,17 +881,35 @@ select::-webkit-scrollbar-thumb:hover {
   background-attachment: fixed;
 }
 
+/*
+  ===== FLAT VENTOVAULT (resume builder) =====
+  Per owner request "make consistent on desktop version" + "lean and clean
+  and functional". Previously these container classes (topbar, hero, panel,
+  toolbar, card) layered a translucent white-with-tint gradient + dark navy
+  drop shadow + 16px backdrop blur on top of each other — cumulative dark
+  shadows at the top/bottom of each block read as "thick dark bars" on
+  mobile, and even on desktop the design felt heavy / 2018-era SaaS.
+
+  The flat treatment below applies to ALL viewports (desktop included —
+  this is the consistency the owner asked for, scoped to /edit-profile
+  since these mfj-vv-* classes are only used there).
+
+    - Solid near-white surface (better contrast than the old translucent)
+    - 1px hairline navy border @ 6% opacity for subtle delineation
+    - No drop shadow, no backdrop-filter, no inset white highlight
+    - World background still shows through the gutters between blocks
+
+  If we ever want to bring depth back for a specific element, add a
+  modifier class like `.mfj-vv-elevated` rather than putting shadow back
+  on the base classes.
+*/
 .mfj-vv-topbar,
 .mfj-vv-hero,
 .mfj-vv-panel,
 .mfj-vv-toolbar,
 .mfj-vv-card {
-  border: 1px solid var(--mfj-vv-border);
-  background:
-    linear-gradient(155deg, var(--mfj-vv-surface-strong), var(--mfj-vv-surface-soft)),
-    linear-gradient(42deg, rgba(14, 116, 144, 0.06), rgba(249, 115, 22, 0.08));
-  box-shadow: var(--mfj-vv-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.78);
-  backdrop-filter: blur(16px) saturate(130%);
+  border: 1px solid rgba(8, 25, 49, 0.06);
+  background: rgba(255, 255, 255, 0.92);
 }
 
 .mfj-vv-topbar {

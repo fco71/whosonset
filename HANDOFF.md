@@ -1,6 +1,6 @@
 # Project Handoff — myfilmjobs.com / whosonset
 
-**Last updated:** May 6, 2026 (continuation — mobile redesign blocker added in §2K). Owner: Francisco Valdez (`iam@myfilmjobs.com` for Firebase, `franciscoadolfo@gmail.com` for personal).
+**Last updated:** May 6, 2026 (continuation — mobile border/frame issue confirmed fixed; §2R desktop consistency + polish is next). Owner: Francisco Valdez (`iam@myfilmjobs.com` for Firebase, `franciscoadolfo@gmail.com` for personal).
 
 This doc lets another agent pick up where we left off without re-asking the basics. Read it top-to-bottom before making changes. Delete it from the repo or `.gitignore` it before committing — it contains internal status notes.
 
@@ -256,7 +256,40 @@ These fixes are dev-mode quality-of-life only — production was never affected 
 - Sticky toolbar: either fully visible OR moves out of the way on scroll — not partially covering inputs
 - Verify on real iPhone (owner's device) — DevTools responsive mode is approximate
 
-### 2Q. May 6 continuation — bulletproof full-bleed CSS escape (uncommitted, NOT YET DEPLOYED)
+### 2R. May 6 continuation — broader UX/visual polish + desktop consistency (in progress, uncommitted)
+
+**Owner reported after §2Q deploy:** "it's gone. now review for any other look and feel and user experience improvements. and make consistent on desktop version."
+
+**Latest owner update:** the mobile border issue is fixed. Ignore older warnings that still describe the frame/border as an active blocker.
+
+**Context:** the framing battle ended (§2Q's full-bleed fix worked once a clean deploy went out + cache was bypassed). The mobile resume builder now reads as a single full-bleed flat surface with the ventovault world background. **The desktop view (≥640px) still has the layered translucent panels with soft navy drop shadows** unless the uncommitted §2R flat CSS is kept and deployed.
+
+**The new ask: make mobile and desktop visually consistent.** Owner did not specify which direction. Two reasonable interpretations:
+- **A. Bring desktop down to mobile's flat clean look** (more minimalist; matches the modern direction; less visual chrome to maintain)
+- **B. Bring mobile up to desktop's layered look** (rejected by history — this is what caused the framing complaints in the first place)
+
+**Recommended approach: option A** — bring desktop in line with the cleaner flat treatment. Reasoning:
+- Owner has consistently said "lean and clean and functional" and called the heavy chrome "no visual sense"
+- Mobile is where the design lands cleanly today; replicating that on desktop is the consistency they want
+- Layered cards-with-shadows feel like 2015–2018 SaaS; a flatter typography-driven layout feels more 2025
+
+**Other UX polish candidates to audit (for an incoming agent to triage):**
+1. **Section navigator pills:** currently no active-section indicator — clicking a pill scrolls but doesn't visually highlight which section is in view. Add `IntersectionObserver` to highlight the active pill.
+2. **Save flow:** the manual "Save Now" button shares the sticky toolbar with the autosave status text. Consider whether autosave is reliable enough that the manual button can be removed entirely (less UI to explain).
+3. **Empty states:** when sections like Job Titles, Projects, Education are empty, what shows? Confirm there's a friendly "Add your first…" CTA, not just blank space.
+4. **Form validation feedback:** currently unknown — does the form show inline validation errors (e.g., bad URL in the website field)? Consider adding lightweight inline validation.
+5. **Mobile keyboard handling:** when an input is focused on mobile, does iOS Safari scroll the field above the keyboard? Verify with the sticky toolbar — toolbar stickiness might overlap focused fields.
+6. **Field consistency:** the ventovault `.mfj-vv-field` class is applied to most inputs but verify that ALL inputs (including date pickers, number inputs, file uploads) use it. Inconsistent field styling reads as low quality.
+7. **Button hierarchy:** primary vs secondary vs danger button styling — confirm `.mfj-vv-btn-primary`, `.mfj-vv-btn-secondary` are used consistently and not mixed with raw Tailwind buttons.
+8. **Section dividers spacing:** the `pt-10` between sections might be too generous on mobile (eats screen real estate); consider tighter on mobile (`pt-6`) and looser on desktop (`pt-12`).
+9. **Profile photo upload area:** likely a heavy custom widget — verify it uses ventovault styling, not its own visual language.
+10. **The hero card at top with "Resume Builder" + description:** large block. On mobile, consider collapsing the description text after first visit (saves ~5 vertical inches).
+11. **Accessibility:** verify color contrast on the ventovault palette meets WCAG AA (translucent surfaces over the world background can fail contrast checks).
+12. **Long-form Spanish text overflow:** several i18n keys are noticeably longer in Spanish than English (`Información básica` > `Basic Info`, etc.). Verify nav pills and labels don't overflow in ES locale.
+
+**Status:** §2R audit is in progress; concrete code changes will be itemized as sub-sections (§2R-1, §2R-2, …) as they ship.
+
+### 2Q. May 6 continuation — bulletproof full-bleed CSS escape (CONFIRMED DEPLOYED + WORKING)
 
 **Owner reported after §2N+§2O+§2P deploy attempts:** "border is still showing… it is not a matter of light or dark, only, it is taking too much space on a small screen. the thickness of this frame makes no visual sense for a mobile screen"
 
@@ -287,7 +320,7 @@ The `margin-left: calc(50% - 50vw)` pulls the element left by half the viewport,
 - CSS brace balance: ✅ 182/182
 - `tsc --noEmit -p tsconfig.json`: ✅ clean
 
-**Verification needed:** owner deploys, hard-refreshes Safari (private browsing tab is the most reliable cache bust on iPhone), confirms no visible frame.
+**Owner confirmation:** mobile border/frame issue is fixed. Do not treat prior border warnings as active blockers.
 
 ### 2P. May 6 continuation — DARK MODE was the real culprit all along (uncommitted, NOT YET DEPLOYED)
 
@@ -439,12 +472,12 @@ Last commits:
 
 ## 5. Outstanding work (recommended next actions, in priority order)
 
-### Priority 0 — Resume builder mobile redesign per ventovault reference (BLOCKER, see §2K)
-The owner is actively blocked on this. Two prior mobile passes did not solve it. Do NOT attempt another speculative pass — instead:
-1. Get the ventovault reference clarified (URL/image/Figma) before making aesthetic decisions.
-2. Capture exact-pixel screenshots of the current live mobile rendering (375/390/414 px) and identify the SPECIFIC "dark bars" the owner means. They could be: form container border, section dividers, sticky-toolbar background, or a parent layout wrapper.
-3. Make ONE targeted fix at a time, deploy, verify on owner's iPhone, repeat.
-4. Full instructions and likely culprits in §2K above.
+### Priority 0 — Resume builder desktop consistency + UX polish
+The mobile border/frame blocker is resolved. Next work should focus on making the resume builder feel consistent and polished across desktop and mobile:
+1. Decide whether to keep the uncommitted flat VentoVault CSS treatment for desktop. Current recommendation: keep it, because it matches the clean mobile direction and removes heavy layered shadows.
+2. Run `tsc` + `npm run build`, then deploy if the flat desktop treatment is accepted.
+3. Verify `/edit-profile` in English and Spanish at mobile and desktop widths.
+4. Audit remaining UX polish: field consistency, button hierarchy, section spacing, profile photo upload styling, empty states, and save/autosave clarity.
 
 ### Priority 1 — Verify the resume builder redesign in browser
 1. Restart dev server: `cd ~/Documents/websites_local/whosonset && npm run dev`
@@ -457,12 +490,12 @@ The owner is actively blocked on this. Two prior mobile passes did not solve it.
 4. **As a student profile**, open Profile Type → Student → confirm institution input is a free-text field with autocomplete dropdown of registered teacher institutions (NOT a strict select)
 5. If anything looks broken, check `EditCrewProfile.tsx` lines 1095–2150 for stray `<div>` wrappers that should have been removed
 
-### Priority 2 — Commit the redesign
+### Priority 2 — Commit the redesign / polish batch
 ```
 cd ~/Documents/websites_local/whosonset
 rm -f .git/index.lock          # in case it's stuck again
-git add src/components/EditCrewProfile.tsx src/locales/
-git commit -m "Resume builder UI redesign: sectioned, sticky nav, modern minimalist"
+git add src/components/EditCrewProfile.tsx src/components/LocationSelector.tsx src/pages/EditProfilePage.tsx src/styles/globals.css src/locales/ firebase.json webpack.config.cjs HANDOFF.md
+git commit -m "Polish resume builder mobile and desktop experience"
 git push
 ```
 
