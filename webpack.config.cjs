@@ -22,6 +22,13 @@ module.exports = {
       directory: path.join(__dirname, 'public'),
       publicPath: '/',
     },
+    client: {
+      overlay: {
+        errors: true,
+        warnings: false,
+        runtimeErrors: false,
+      },
+    },
     compress: true,
     port: 8000,
     open: false,

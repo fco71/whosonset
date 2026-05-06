@@ -107,27 +107,6 @@ function AppContent() {
   
   console.log('[App] Rendering with currentUser:', currentUser?.email);
   
-  // Global error handler for unhandled promise rejections
-  useEffect(() => {
-    console.log('[App] Setting up global error handlers...');
-    
-    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      console.error('Unhandled promise rejection:', event.reason);
-    };
-
-    const handleUnhandledError = (event: ErrorEvent) => {
-      console.error('Unhandled error:', event.error);
-    };
-
-    window.addEventListener('unhandledrejection', handleUnhandledRejection);
-    window.addEventListener('error', handleUnhandledError);
-
-    return () => {
-      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
-      window.removeEventListener('error', handleUnhandledError);
-    };
-  }, []);
-
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const requestedLanguage = params.get('lang');

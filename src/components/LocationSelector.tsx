@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 
@@ -23,6 +24,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
   onCityChange,
   placeholder = "Select location..."
 }) => {
+  const { t } = useTranslation();
   const [countries, setCountries] = useState<Country[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -48,23 +50,23 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
   return (
     <div className="space-y-3">
       <select
-        className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full min-w-0 rounded-lg border border-gray-200 bg-white px-3 py-3 text-base font-light text-gray-900 transition-colors duration-200 hover:border-gray-300 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-100 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4"
         value={selectedCountry}
         onChange={e => onCountryChange(e.target.value)}
         disabled={loading}
       >
-        <option value="">Select Country</option>
+        <option value="">{t('resume.builder.selectCountry')}</option>
         {countries.map(country => (
           <option key={country.name} value={country.name}>{country.name}</option>
         ))}
       </select>
       <select
-        className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full min-w-0 rounded-lg border border-gray-200 bg-white px-3 py-3 text-base font-light text-gray-900 transition-colors duration-200 hover:border-gray-300 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-100 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4"
         value={selectedCity}
         onChange={e => onCityChange(e.target.value)}
         disabled={!selectedCountry || loading}
       >
-        <option value="">Select City</option>
+        <option value="">{t('resume.builder.selectCity')}</option>
         {cityOptions.map(city => (
           <option key={city} value={city}>{city}</option>
         ))}

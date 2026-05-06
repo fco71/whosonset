@@ -1,6 +1,6 @@
 # Project Handoff — myfilmjobs.com / whosonset
 
-**Last updated:** May 5, 2026 (mid-session). Owner: Francisco Valdez (`iam@myfilmjobs.com` for Firebase, `franciscoadolfo@gmail.com` for personal).
+**Last updated:** May 6, 2026 (continuation). Owner: Francisco Valdez (`iam@myfilmjobs.com` for Firebase, `franciscoadolfo@gmail.com` for personal).
 
 This doc lets another agent pick up where we left off without re-asking the basics. Read it top-to-bottom before making changes. Delete it from the repo or `.gitignore` it before committing — it contains internal status notes.
 
@@ -102,6 +102,45 @@ These fixes are dev-mode quality-of-life only — production was never affected 
 - **Tighter input padding:** `p-4` (16px) on inputs is still chunky. Consider `py-2.5 px-3` for a more modern compact feel. ~30 inputs across the file — risky to touch in one shot, suggest a follow-up pass.
 - **Mobile testing:** the sticky nav bar is horizontally scrollable but hasn't been tested on a narrow viewport. Verify pill nav doesn't overlap the save button on phones.
 - **Class-name-as-combobox for students:** owner mentioned wanting students to also be able to free-type a class name (in addition to checking the teacher's existing classes). Currently students can ONLY check teacher-defined classes — they can't type a custom one. Future enhancement: add a "+ Add other class" input under each teacher's class list. Even further: pre-populate class dropdown from a future per-university course catalog (`universities/{slug}/courses` collection, doesn't exist yet).
+
+### 2G. May 6 continuation — dev overlay cleanup + nav polish (uncommitted)
+
+- `webpack.config.cjs` now sets `devServer.client.overlay.runtimeErrors = false` while keeping compile `errors: true`. This stops webpack-dev-server's own runtime `unhandledrejection` listener from showing the overlay for benign Firestore/Safari/extension timeouts.
+- `src/App.tsx` duplicate global `console.error` error listeners removed. Global filtering remains centralized in `src/index.tsx` and `src/firebase.ts`.
+- Removed tracked stale build artifacts from `public/`:
+  - `public/*.bundle.js`
+  - `public/*.bundle.js.map`
+- Added those public bundle/hot-update patterns to `.gitignore` so build artifacts do not come back.
+- `src/components/EditCrewProfile.tsx` sticky section navigator now has an active section indicator using `IntersectionObserver` and `aria-current="step"`.
+- Verification done:
+  - `npx tsc --noEmit` ✅
+  - `npm run build` ✅
+  - Restarted `localhost:8000` dev server in detached `screen` session ✅
+  - In-app browser reload of `http://localhost:8000/login`: no overlay, no console errors. Only remaining warning is React Router's v7 future flag warning.
+
+### 2H. May 6 continuation — mobile resume-builder formatting pass (uncommitted)
+
+- `src/components/EditCrewProfile.tsx` mobile layout pass:
+  - Form wrapper now uses phone-safe padding (`px-0` outer form, `p-4` card on mobile; larger padding restored on `sm/lg`).
+  - Sticky builder toolbar now uses a mobile `<select>` for section jumps instead of cramming all pills horizontally; desktop/tablet still use the pill nav with active section state.
+  - Save status + Save now button stack on phones; buttons become full width on narrow screens.
+  - Profile-type selector stacks vertically on phones and remains segmented on larger screens.
+  - Repeated rows (teacher classes, languages, share link, education current/end-year) now stack vertically on phones.
+  - Education institution field changed from `col-span-2` to `md:col-span-2` to avoid creating an implicit second grid column on mobile.
+  - Inputs/selects/textareas now share phone-safe `text-base`, `min-w-0`, and no `focus:scale` so iOS does not zoom or overflow fields.
+  - Resume preview now sits inside a horizontal overflow wrapper so the fixed A4 preview cannot force the whole form wider than the viewport.
+- Spanish/localization cleanup while touching the builder:
+  - Replaced hardcoded builder labels for job titles, residences, education, profile photo, contact, publish/availability, and share controls with `resume.builder.*` keys.
+  - `LocationSelector` now uses `react-i18next` for `Select Country` / `Select City` and removed mobile-hostile focus scaling.
+  - Added matching English/Spanish translation keys, plus `common.remove`.
+- Verification done:
+  - `node` JSON parse for `src/locales/en/translation.json` and `src/locales/es/translation.json` ✅
+  - Component i18n-key scan for `EditCrewProfile.tsx` and `LocationSelector.tsx`: all `t()` keys present in English and Spanish ✅
+  - `npx tsc --noEmit` ✅
+  - `npm run build` ✅ (only existing Browserslist database warning)
+  - Dev server hot compile log: webpack compiled successfully ✅
+  - In-app browser `http://localhost:8000/login`: no console errors ✅
+  - In-app browser `http://localhost:8000/edit-profile`: redirects to `/login` in this unauthenticated automation tab, so authenticated/mobile visual QA still needs to be checked from a logged-in browser session.
 
 ### 2F. UptimeRobot monitoring (set up by owner, partially complete)
 - Owner has a free UptimeRobot account.

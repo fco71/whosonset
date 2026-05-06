@@ -72,3 +72,10 @@ node_modules
 # Build output
 dist/
 build/
+public/*.bundle.js
+public/*.bundle.js.map
+public/*.chunk.js
+public/*.chunk.js.map
+public/*.hot-update.js
+public/*.hot-update.json
+public/*.hot-update.js.map
