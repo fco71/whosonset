@@ -11,34 +11,33 @@ const EditProfilePage: React.FC = () => {
   const { t } = useTranslation();
   
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{t('resume.page.title')}</h1>
-        <p className="text-gray-600 dark:text-gray-300">
-          {t('resume.page.description')}
-        </p>
-      </div>
-      
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-        <Suspense 
-          fallback={
-            <div className="flex items-center justify-center h-64">
-              <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
-              <span className="ml-2 text-gray-600 dark:text-gray-300">{t('resume.builder.loadingBuilder')}</span>
-            </div>
-          }
-        >
-          {currentUser ? (
-            <EditCrewProfile />
-          ) : (
-            <div className="text-center py-12">
-              <p className="text-gray-600 dark:text-gray-300">
-                {t('resume.builder.signInRequired')}
-              </p>
-            </div>
-          )}
-        </Suspense>
-      </div>
+    /*
+      Bare wrapper — no card, no border, no shadow. The EditCrewProfile
+      component below renders its own full-bleed ventovault background and
+      handles its own internal padding/cards. Adding ANY frame here (the old
+      "bg-white shadow-md rounded-lg p-6" was the culprit) creates a dark
+      drop-shadow halo around the entire form on mobile that reads as a
+      thick border eating up viewport real estate.
+    */
+    <div>
+      <Suspense
+        fallback={
+          <div className="flex items-center justify-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+            <span className="ml-2 text-gray-600 dark:text-gray-300">{t('resume.builder.loadingBuilder')}</span>
+          </div>
+        }
+      >
+        {currentUser ? (
+          <EditCrewProfile />
+        ) : (
+          <div className="max-w-6xl mx-auto px-4 py-12 text-center">
+            <p className="text-gray-600 dark:text-gray-300">
+              {t('resume.builder.signInRequired')}
+            </p>
+          </div>
+        )}
+      </Suspense>
     </div>
   );
 };

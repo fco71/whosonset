@@ -256,6 +256,34 @@ These fixes are dev-mode quality-of-life only — production was never affected 
 - Sticky toolbar: either fully visible OR moves out of the way on scroll — not partially covering inputs
 - Verify on real iPhone (owner's device) — DevTools responsive mode is approximate
 
+### 2N. May 6 continuation — REAL dark frame source identified & removed (uncommitted, NOT YET DEPLOYED)
+
+**Owner reported after §2L deploy:** "the dark border is still present. in general it looks better now but this border around the resume builder takes much space physically and perceptually."
+
+**Root cause discovered (NOT what §2L targeted):** `src/pages/EditProfilePage.tsx` — the page-level wrapper around `<EditCrewProfile />` was a Tailwind card:
+```tsx
+<div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+  <EditCrewProfile />
+</div>
+```
+That `shadow-md` + `p-6` painted a card-with-drop-shadow framing the entire resume builder. EditCrewProfile already renders its own full-bleed ventovault world background internally (`mfj-vv-world` on its outermost div), so this outer card was redundant AND added a visible dark frame on top of the inner panels — exactly the "border around the resume builder" the owner described.
+
+It's a pre-ventovault leftover that survived the redesign because no one had grepped for `shadow-md` on the page wrapper.
+
+**Fix applied:** `EditProfilePage.tsx` simplified to a bare wrapper:
+- Removed the `bg-white shadow-md rounded-lg p-6` card div
+- Removed the duplicate page title (`{t('resume.page.title')}`) — EditCrewProfile already shows its own title in the `mfj-vv-topbar`, so duplicating it was visual noise
+- Removed the outer `max-w-6xl mx-auto px-4 py-8` so the inner ventovault world can render full-bleed
+- Kept Suspense + auth check; signed-out empty state still gets a properly-padded message
+
+**Why this matters for next agent:** the ventovault visual system in `src/styles/globals.css` is *complete* — all panel/card/toolbar classes are well-tuned. The bug was that wrapping any `mfj-vv-*` element in a generic Tailwind card cancels out the ventovault layering and adds extra dark shadows. **Audit other pages for the same pattern**: `grep -rn "bg-white.*shadow-md.*p-" src/pages/` before adding new pages.
+
+**Verification done in sandbox:**
+- `tsc --noEmit -p tsconfig.json`: ✅ clean
+- Only file changed: `src/pages/EditProfilePage.tsx`
+
+**Verification needed before claiming done:** owner must inspect on real iPhone after deploy. If the dark frame is finally gone, ship it; if there's STILL framing, the next likely culprit is the global `Layout.tsx` (already audited and confirmed clean: `Layout.scss` is just `.layout > .content` with no borders/shadows) — at that point start checking individual section dividers inside the panel.
+
 ### 2F. UptimeRobot monitoring (set up by owner, partially complete)
 - Owner has a free UptimeRobot account.
 - **Monitor #1 (apex):** ✅ created, monitoring `https://myfilmjobs.com` every 5 min, email alerts to `franciscoadolfo@gmail.com`.
