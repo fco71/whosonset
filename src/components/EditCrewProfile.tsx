@@ -1076,26 +1076,73 @@ const EditCrewProfile: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="sticky top-20 z-30 mb-8 rounded-lg border border-gray-200 bg-white/95 p-4 shadow-sm backdrop-blur">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{t('resume.builder.autoSaveTitle')}</p>
-                      <p className={`mt-1 text-sm ${saveStatusClass}`}>{saveStatusText}</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleSave}
-                      disabled={saving}
-                      className="w-full rounded-lg bg-gray-900 px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                {/*
+                  Combined sticky bar: section navigator on the left, autosave
+                  + manual-save controls on the right. Replaces the previous
+                  save-only sticky bar so the user has one persistent toolbar
+                  (less vertical real estate consumed, fewer "where do I save"
+                  moments). The pill list is horizontally scrollable on small
+                  screens and uses anchor links — each pill jumps to a section.
+                */}
+                <div className="sticky top-20 z-30 mb-10 rounded-xl border border-gray-200 bg-white/95 px-4 py-3 shadow-sm backdrop-blur">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <nav
+                      aria-label={t('resume.builder.sectionNavLabel')}
+                      className="-mx-1 flex flex-1 items-center gap-1 overflow-x-auto pb-1 scrollbar-thin"
                     >
-                      {saving ? t('resume.builder.loading') : t('resume.builder.saveNow')}
-                    </button>
+                      {[
+                        { id: 'profile-type', label: t('resume.builder.sections.profileType') },
+                        { id: 'basic-info', label: t('resume.builder.sections.basicInfo') },
+                        { id: 'job-titles', label: t('resume.builder.sections.jobTitles') },
+                        { id: 'languages', label: t('resume.builder.sections.languages') },
+                        { id: 'residences', label: t('resume.builder.sections.residences') },
+                        { id: 'projects', label: t('resume.builder.sections.projects') },
+                        { id: 'education', label: t('resume.builder.sections.education') },
+                        { id: 'contact', label: t('resume.builder.sections.contact') },
+                        { id: 'publish', label: t('resume.builder.sections.publish') }
+                      ].map(section => (
+                        <a
+                          key={section.id}
+                          href={`#section-${section.id}`}
+                          onClick={e => {
+                            e.preventDefault();
+                            const el = document.getElementById(`section-${section.id}`);
+                            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          }}
+                          className="whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-300"
+                        >
+                          {section.label}
+                        </a>
+                      ))}
+                    </nav>
+                    <div className="flex items-center justify-between gap-3 lg:justify-end">
+                      <p className={`text-xs ${saveStatusClass}`}>{saveStatusText}</p>
+                      <button
+                        type="button"
+                        onClick={handleSave}
+                        disabled={saving}
+                        className="rounded-lg bg-gray-900 px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {saving ? t('resume.builder.loading') : t('resume.builder.saveNow')}
+                      </button>
+                    </div>
                   </div>
                 </div>
 
-                {/* Profile Type Section */}
-                <div className="mb-8 p-6 bg-gray-50 rounded-lg border border-gray-200">
-                  <h3 className="text-lg font-light text-gray-900 mb-4 tracking-wide">{t('resume.builder.profileType')}</h3>
+                {/*
+                  -- SECTION 01 — Profile Type --
+                  All sections below follow the same pattern:
+                    id="section-X"  → anchor target for the sticky nav
+                    scroll-mt-44    → leaves room for sticky nav so anchor lands cleanly
+                    Section number  → tiny gray label for clear progression
+                    border-t        → subtle divider between sections (instead of heavy cards)
+                    pt-8 / pb-10    → generous breathing room
+                */}
+                <section id="section-profile-type" className="scroll-mt-44 pb-10">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-400 mb-1">
+                    {t('resume.builder.sectionNumberLabel', { number: '01' })}
+                  </p>
+                  <h3 className="text-xl font-medium text-gray-900 mb-5 tracking-tight">{t('resume.builder.profileType')}</h3>
                   <div
                     className="inline-flex flex-wrap items-center bg-white border border-gray-300 rounded-lg overflow-hidden"
                     aria-label={t('resume.builder.selectProfileType')}
@@ -1130,19 +1177,32 @@ const EditCrewProfile: React.FC = () => {
                         <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
                           {t('resume.builder.schoolInstitution')}
                         </label>
+                        {/*
+                          COMBOBOX — free-typeable with suggested institutions.
+                          Students whose teacher is registered will see the
+                          institution name appear in the dropdown autocomplete
+                          and pick it directly (so wording matches teacher's).
+                          Students whose teacher isn't on the platform yet can
+                          still type their school freely.
+                          The <datalist> populates the suggestion menu without
+                          restricting input — best of both worlds.
+                        */}
                         <input
                           type="text"
                           list="registered-teacher-institutions"
                           value={form.studentInfo?.institution || ''}
                           onChange={e => updateStudentInstitution(e.target.value)}
                           placeholder={t('resume.builder.schoolInstitutionPlaceholder')}
-                          className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02]"
+                          className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300"
                         />
                         <datalist id="registered-teacher-institutions">
                           {registeredTeacherInstitutions.map(institution => (
                             <option key={institution} value={institution} />
                           ))}
                         </datalist>
+                        <p className="mt-2 text-xs text-gray-500">
+                          {t('resume.builder.schoolInstitutionHint')}
+                        </p>
                       </div>
 
                       <div>
@@ -1278,10 +1338,15 @@ const EditCrewProfile: React.FC = () => {
                       </div>
                     </div>
                   )}
-                </div>
+                </section>
 
-                {/* Basic Information */}
-                <div className="space-y-6 mb-8">
+                {/* -- SECTION 02 — Basic Information (Name + Bio) -- */}
+                <section id="section-basic-info" className="scroll-mt-44 pb-10 border-t border-gray-200 pt-10">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-400 mb-1">
+                    {t('resume.builder.sectionNumberLabel', { number: '02' })}
+                  </p>
+                  <h3 className="text-xl font-medium text-gray-900 mb-5 tracking-tight">{t('resume.builder.basicInformation')}</h3>
+                  <div className="space-y-6">
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-3 uppercase tracking-wider">
                       {t('resume.builder.fullName')}
@@ -1308,11 +1373,15 @@ const EditCrewProfile: React.FC = () => {
                       className="w-full p-4 bg-white border border-gray-200 rounded-lg focus:border-gray-400 focus:outline-none text-gray-900 font-light transition-all duration-300 hover:border-gray-300 focus:scale-[1.02] resize-none" 
                     />
                   </div>
-                </div>
+                  </div>
+                </section>
 
-                {/* Job Titles Section */}
-                <div className="mb-8">
-                  <h3 className="text-lg font-light text-gray-900 mb-4 tracking-wide">Job Titles</h3>
+                {/* -- SECTION 03 — Job Titles -- */}
+                <section id="section-job-titles" className="scroll-mt-44 pb-10 border-t border-gray-200 pt-10">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-400 mb-1">
+                    {t('resume.builder.sectionNumberLabel', { number: '03' })}
+                  </p>
+                  <h3 className="text-xl font-medium text-gray-900 mb-5 tracking-tight">Job Titles</h3>
                   {form.jobTitles.map((entry, i) => (
                     <div key={i} className="mb-6 p-6 bg-gray-50 rounded-lg space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1452,11 +1521,14 @@ const EditCrewProfile: React.FC = () => {
                   >
                     + Add Job Title
                   </button>
-                </div>
+                </section>
 
                 {/* Languages Section */}
-                <div className="mb-8">
-                  <h3 className="text-lg font-light text-gray-900 mb-4 tracking-wide">{t('resume.builder.languages')}</h3>
+                <section id="section-languages" className="scroll-mt-44 pb-10 border-t border-gray-200 pt-10">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-400 mb-1">
+                    {t('resume.builder.sectionNumberLabel', { number: '04' })}
+                  </p>
+                  <h3 className="text-xl font-medium text-gray-900 mb-5 tracking-tight">{t('resume.builder.languages')}</h3>
                   {(form.languages || []).map((lang: string, idx: number) => (
                     <div key={idx} className="mb-3 flex items-center gap-3">
                       <input
@@ -1485,11 +1557,14 @@ const EditCrewProfile: React.FC = () => {
                       {t('resume.builder.addLanguage')}
                     </button>
                   )}
-                </div>
+                </section>
 
                 {/* Residences Section */}
-                <div className="mb-8">
-                  <h3 className="text-lg font-light text-gray-900 mb-4 tracking-wide">Residences</h3>
+                <section id="section-residences" className="scroll-mt-44 pb-10 border-t border-gray-200 pt-10">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-400 mb-1">
+                    {t('resume.builder.sectionNumberLabel', { number: '05' })}
+                  </p>
+                  <h3 className="text-xl font-medium text-gray-900 mb-5 tracking-tight">Residences</h3>
                   {form.residences.map((res, i) => (
                     <div key={i} className="mb-4 p-6 bg-gray-50 rounded-lg space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1523,11 +1598,14 @@ const EditCrewProfile: React.FC = () => {
                   >
                     + Add Residence
                   </button>
-                </div>
+                </section>
 
                 {/* Projects Section */}
-                <div className="mb-8">
-                  <h3 className="text-lg font-light text-gray-900 mb-4 tracking-wide">{t('resume.builder.projects')}</h3>
+                <section id="section-projects" className="scroll-mt-44 pb-10 border-t border-gray-200 pt-10">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-400 mb-1">
+                    {t('resume.builder.sectionNumberLabel', { number: '06' })}
+                  </p>
+                  <h3 className="text-xl font-medium text-gray-900 mb-5 tracking-tight">{t('resume.builder.projects')}</h3>
                   {form.projects.map((proj, i) => (
                     <div key={i} className="mb-4 p-6 bg-gray-50 rounded-lg space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1584,12 +1662,15 @@ const EditCrewProfile: React.FC = () => {
                   >
                     {t('resume.builder.addProject')}
                   </button>
-                </div>
+                </section>
 
                 {/* Education Section */}
-                <div className="mb-8">
+                <section id="section-education" className="scroll-mt-44 pb-10 border-t border-gray-200 pt-10">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-400 mb-1">
+                    {t('resume.builder.sectionNumberLabel', { number: '07' })}
+                  </p>
                   <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-light text-gray-900 tracking-wide">{t('resume.builder.education')}</h3>
+                    <h3 className="text-xl font-medium text-gray-900 tracking-tight">{t('resume.builder.education')}</h3>
                     <span className="text-sm text-gray-500">
                                               {t('resume.builder.educationEntries', { count: form.education.length })}
                     </span>
@@ -1729,7 +1810,7 @@ const EditCrewProfile: React.FC = () => {
                       </div>
                     </div>
                   )}
-                </div>
+                </section>
 
                 {/* Profile Picture Section */}
                 <div className="mb-8">
@@ -1778,8 +1859,11 @@ const EditCrewProfile: React.FC = () => {
                 </div>
 
                 {/* Contact Info Section */}
-                <div className="mb-8">
-                  <h3 className="text-lg font-light text-gray-900 mb-4 tracking-wide">Contact Information (Optional)</h3>
+                <section id="section-contact" className="scroll-mt-44 pb-10 border-t border-gray-200 pt-10">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-400 mb-1">
+                    {t('resume.builder.sectionNumberLabel', { number: '08' })}
+                  </p>
+                  <h3 className="text-xl font-medium text-gray-900 mb-5 tracking-tight">Contact Information (Optional)</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Email with Privacy Toggle */}
                     <div className="space-y-2">
@@ -1908,7 +1992,7 @@ const EditCrewProfile: React.FC = () => {
                       />
                     </div>
                   </div>
-                </div>
+                </section>
 
                 {/* Other Info Section */}
                 <div className="mb-8">
@@ -1926,106 +2010,116 @@ const EditCrewProfile: React.FC = () => {
                   />
                 </div>
 
-                {/* Publish Toggle Section */}
-                <div className="mb-8 p-6 bg-gray-50 rounded-lg border border-gray-200">
-                  <div className="flex items-center gap-3 mb-3">
-                    <input
-                      type="checkbox"
-                      id="publish-toggle"
-                      checked={isPublished}
-                      onChange={(e) => setIsPublished(e.target.checked)}
-                      className="w-5 h-5 text-gray-600 bg-white border-gray-300 rounded focus:ring-gray-500 focus:ring-2"
-                    />
-                    <label htmlFor="publish-toggle" className="font-medium text-gray-900">
-                      Publish Resume Publicly
-                    </label>
-                  </div>
-                  {isPublished ? (
-                    <div className="text-sm text-green-600">
-                      ✅ Your resume will be visible via a public link once saved.
-                    </div>
-                  ) : (
-                    <div className="text-sm text-gray-600">
-                      🔒 Your resume is private and only visible to you.
-                    </div>
-                  )}
-                  {isPublished && (
-                    <p className="text-yellow-600 text-sm mt-2">
-                      ⚠️ Once published, your resume will be accessible to anyone with the link.
-                    </p>
-                  )}
-                </div>
-
-                {/* Availability Section */}
-                <div className="mb-8 p-6 bg-gray-50 rounded-lg border border-gray-200">
-                  <h4 className="font-medium text-gray-900 mb-4">Availability Status</h4>
-                  <div className="space-y-3">
-                    <label className="flex items-center gap-3">
-                      <input
-                        type="radio"
-                        name="availability"
-                        value="available"
-                        checked={form.availability === 'available'}
-                        onChange={(e) => setForm(f => ({ ...f, availability: e.target.value as 'available' | 'unavailable' | 'soon' }))}
-                        className="w-4 h-4 text-green-600 bg-white border-gray-300 focus:ring-green-500 focus:ring-2"
-                      />
-                      <span className="text-green-700 font-medium">✅ Available for work</span>
-                    </label>
-                    <label className="flex items-center gap-3">
-                      <input
-                        type="radio"
-                        name="availability"
-                        value="soon"
-                        checked={form.availability === 'soon'}
-                        onChange={(e) => setForm(f => ({ ...f, availability: e.target.value as 'available' | 'unavailable' | 'soon' }))}
-                        className="w-4 h-4 text-yellow-600 bg-white border-gray-300 focus:ring-yellow-500 focus:ring-2"
-                      />
-                      <span className="text-yellow-700 font-medium">⏰ Available soon</span>
-                    </label>
-                    <label className="flex items-center gap-3">
-                      <input
-                        type="radio"
-                        name="availability"
-                        value="unavailable"
-                        checked={form.availability === 'unavailable'}
-                        onChange={(e) => setForm(f => ({ ...f, availability: e.target.value as 'available' | 'unavailable' | 'soon' }))}
-                        className="w-4 h-4 text-red-600 bg-white border-gray-300 focus:ring-red-500 focus:ring-2"
-                      />
-                      <span className="text-red-700 font-medium">❌ Currently unavailable</span>
-                    </label>
-                  </div>
-                  <p className="text-sm text-gray-600 mt-3">
-                    This helps producers know when you're available for new projects
+                {/* Publish & Visibility Section */}
+                <section id="section-publish" className="scroll-mt-44 pb-10 border-t border-gray-200 pt-10">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-400 mb-1">
+                    {t('resume.builder.sectionNumberLabel', { number: '09' })}
                   </p>
-                </div>
+                  <h3 className="text-xl font-medium text-gray-900 mb-5 tracking-tight">Publish & Visibility</h3>
 
-                {/* Share Resume Section */}
-                {isPublished && user && (
-                  <div className="mb-8 p-6 bg-blue-50 rounded-lg border border-blue-200">
-                    <h4 className="font-medium text-blue-900 mb-3">{t('resume.builder.shareResume')}</h4>
-                    <div className="flex items-center gap-3 mb-3">
-                      <input
-                        type="text"
-                        value={`${window.location.origin}/resume/${user.uid}`}
-                        readOnly
-                        className="flex-1 p-3 bg-white border border-blue-200 rounded-lg text-sm text-gray-600"
-                      />
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(`${window.location.origin}/resume/${user.uid}`);
-                          setMessage(t('resume.builder.linkCopied'));
-                          setTimeout(() => setMessage(null), 3000);
-                        }}
-                        className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
-                      >
-                        {t('resume.builder.copyLink')}
-                      </button>
+                  <div className="space-y-8">
+                    {/* Publish Toggle */}
+                    <div className="p-6 bg-gray-50 rounded-lg border border-gray-200">
+                      <div className="flex items-center gap-3 mb-3">
+                        <input
+                          type="checkbox"
+                          id="publish-toggle"
+                          checked={isPublished}
+                          onChange={(e) => setIsPublished(e.target.checked)}
+                          className="w-5 h-5 text-gray-600 bg-white border-gray-300 rounded focus:ring-gray-500 focus:ring-2"
+                        />
+                        <label htmlFor="publish-toggle" className="font-medium text-gray-900">
+                          Publish Resume Publicly
+                        </label>
+                      </div>
+                      {isPublished ? (
+                        <div className="text-sm text-green-600">
+                          ✅ Your resume will be visible via a public link once saved.
+                        </div>
+                      ) : (
+                        <div className="text-sm text-gray-600">
+                          🔒 Your resume is private and only visible to you.
+                        </div>
+                      )}
+                      {isPublished && (
+                        <p className="text-yellow-600 text-sm mt-2">
+                          ⚠️ Once published, your resume will be accessible to anyone with the link.
+                        </p>
+                      )}
                     </div>
-                    <p className="text-xs text-blue-700">
-                      {t('resume.builder.shareDescription')}
-                    </p>
+
+                    {/* Availability Status */}
+                    <div className="p-6 bg-gray-50 rounded-lg border border-gray-200">
+                      <h4 className="font-medium text-gray-900 mb-4">Availability Status</h4>
+                      <div className="space-y-3">
+                        <label className="flex items-center gap-3">
+                          <input
+                            type="radio"
+                            name="availability"
+                            value="available"
+                            checked={form.availability === 'available'}
+                            onChange={(e) => setForm(f => ({ ...f, availability: e.target.value as 'available' | 'unavailable' | 'soon' }))}
+                            className="w-4 h-4 text-green-600 bg-white border-gray-300 focus:ring-green-500 focus:ring-2"
+                          />
+                          <span className="text-green-700 font-medium">✅ Available for work</span>
+                        </label>
+                        <label className="flex items-center gap-3">
+                          <input
+                            type="radio"
+                            name="availability"
+                            value="soon"
+                            checked={form.availability === 'soon'}
+                            onChange={(e) => setForm(f => ({ ...f, availability: e.target.value as 'available' | 'unavailable' | 'soon' }))}
+                            className="w-4 h-4 text-yellow-600 bg-white border-gray-300 focus:ring-yellow-500 focus:ring-2"
+                          />
+                          <span className="text-yellow-700 font-medium">⏰ Available soon</span>
+                        </label>
+                        <label className="flex items-center gap-3">
+                          <input
+                            type="radio"
+                            name="availability"
+                            value="unavailable"
+                            checked={form.availability === 'unavailable'}
+                            onChange={(e) => setForm(f => ({ ...f, availability: e.target.value as 'available' | 'unavailable' | 'soon' }))}
+                            className="w-4 h-4 text-red-600 bg-white border-gray-300 focus:ring-red-500 focus:ring-2"
+                          />
+                          <span className="text-red-700 font-medium">❌ Currently unavailable</span>
+                        </label>
+                      </div>
+                      <p className="text-sm text-gray-600 mt-3">
+                        This helps producers know when you're available for new projects
+                      </p>
+                    </div>
+
+                    {/* Share Resume */}
+                    {isPublished && user && (
+                      <div className="p-6 bg-blue-50 rounded-lg border border-blue-200">
+                        <h4 className="font-medium text-blue-900 mb-3">{t('resume.builder.shareResume')}</h4>
+                        <div className="flex items-center gap-3 mb-3">
+                          <input
+                            type="text"
+                            value={`${window.location.origin}/resume/${user.uid}`}
+                            readOnly
+                            className="flex-1 p-3 bg-white border border-blue-200 rounded-lg text-sm text-gray-600"
+                          />
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(`${window.location.origin}/resume/${user.uid}`);
+                              setMessage(t('resume.builder.linkCopied'));
+                              setTimeout(() => setMessage(null), 3000);
+                            }}
+                            className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                          >
+                            {t('resume.builder.copyLink')}
+                          </button>
+                        </div>
+                        <p className="text-xs text-blue-700">
+                          {t('resume.builder.shareDescription')}
+                        </p>
+                      </div>
+                    )}
                   </div>
-                )}
+                </section>
 
                 {/* Save Button */}
                 <button 

@@ -1256,7 +1256,24 @@
       "shareDescription": "Share this link with potential employers or collaborators",
       "resumePreview": "Resume Preview",
       "downloadPDF": "Download as PDF",
-      "enrolledClasses": "Classes you're enrolled in"
+      "enrolledClasses": "Classes you're enrolled in",
+      "schoolInstitutionPickPlaceholder": "Select your school or institution…",
+      "noInstitutionsAvailable": "No institutions available yet — your teacher needs to register first and add their school in the Teacher section of their profile.",
+      "basicInformation": "Basic Information",
+      "sectionNumberLabel": "Section {{number}}",
+      "sectionNavLabel": "Resume sections",
+      "sections": {
+        "profileType": "Profile Type",
+        "basicInfo": "Basic Info",
+        "jobTitles": "Job Titles",
+        "languages": "Languages",
+        "residences": "Where",
+        "projects": "Projects",
+        "education": "Education",
+        "contact": "Contact",
+        "publish": "Publish"
+      },
+      "schoolInstitutionHint": "If your teacher is registered, their school will appear as a suggestion. Otherwise, type your school name."
     },
     "page": {
       "title": "Edit Your Profile",

@@ -1223,7 +1223,24 @@
       "shareDescription": "Comparte este enlace con potenciales empleadores o colaboradores",
       "resumePreview": "Vista Previa del Currículum",
       "downloadPDF": "Descargar como PDF",
-      "enrolledClasses": "Clases en las que estás inscrito"
+      "enrolledClasses": "Clases en las que estás inscrito",
+      "schoolInstitutionPickPlaceholder": "Selecciona tu escuela o institución…",
+      "noInstitutionsAvailable": "Aún no hay instituciones disponibles — tu profesor debe registrarse primero y agregar su escuela en la sección Profesor de su perfil.",
+      "basicInformation": "Información básica",
+      "sectionNumberLabel": "Sección {{number}}",
+      "sectionNavLabel": "Secciones del currículum",
+      "sections": {
+        "profileType": "Tipo de perfil",
+        "basicInfo": "Información básica",
+        "jobTitles": "Cargos",
+        "languages": "Idiomas",
+        "residences": "Lugar",
+        "projects": "Proyectos",
+        "education": "Educación",
+        "contact": "Contacto",
+        "publish": "Publicar"
+      },
+      "schoolInstitutionHint": "Si tu profesor está registrado, su escuela aparecerá como sugerencia. De lo contrario, escribe el nombre de tu escuela."
     },
     "page": {
       "title": "Editar Tu Perfil",
