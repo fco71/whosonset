@@ -79,7 +79,7 @@ export class SocialService {
         relatedUserId: fromUserId,
         isRead: false,
         createdAt: new Date(),
-        actionUrl: `/social/requests`
+        actionUrl: '/social?tab=requests'
       });
       console.log('[SocialService] Notification created successfully');
 
@@ -187,7 +187,7 @@ export class SocialService {
             relatedUserId: toUserId,
             isRead: false,
             createdAt: new Date(),
-            actionUrl: `/social/profile/${toUserId}`
+            actionUrl: '/social?tab=connections'
           });
 
           // Create activity feed item

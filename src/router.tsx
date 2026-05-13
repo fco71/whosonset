@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
 import React from 'react';
 import { ProtectedRoute, PublicRoute } from './components/ProtectedRoute';
 
@@ -226,6 +226,22 @@ export function createAppRouter() {
               <SocialPage />
             </ProtectedRoute>
           ) 
+        },
+        {
+          path: 'social/requests',
+          element: (
+            <ProtectedRoute>
+              <Navigate to="/social?tab=requests" replace />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'social/profile/:userId',
+          element: (
+            <ProtectedRoute>
+              <Navigate to="/social?tab=connections" replace />
+            </ProtectedRoute>
+          )
         },
         { 
           path: 'chat', 

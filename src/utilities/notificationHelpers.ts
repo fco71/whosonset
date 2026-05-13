@@ -54,10 +54,22 @@ function toTitleFromType(type: string): string {
     .join(' ');
 }
 
+function normalizeKnownLink(link: string): string {
+  if (link === '/social/requests') {
+    return '/social?tab=requests';
+  }
+
+  if (/^\/social\/profile\/[^/]+$/.test(link)) {
+    return '/social?tab=connections';
+  }
+
+  return link;
+}
+
 function deriveLink(type: string, data: Record<string, unknown>): string {
   const explicitLink = asText(data.link) || asText(data.actionUrl);
   if (explicitLink) {
-    return explicitLink;
+    return normalizeKnownLink(explicitLink);
   }
 
   const normalizedType = toLower(type);
