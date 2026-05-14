@@ -124,11 +124,13 @@ describe('TaskCard', () => {
     // Check if the user's initial is rendered in the avatar
     const avatarInitial = screen.getByTestId('user-avatar-initial');
     expect(avatarInitial).toHaveTextContent('T');
-    
-    // Verify the tooltip trigger is in the document
-    const tooltipTrigger = screen.getByRole('button', { name: /Test User/ });
-    expect(tooltipTrigger).toBeInTheDocument();
-    
-    // Tooltip content is not rendered by default (Radix UI renders it in a portal)
+
+    // Verify the TooltipTrigger element is in the document.
+    // Radix UI's TooltipTrigger uses `asChild`, so it doesn't render a <button> —
+    // the child div becomes the trigger and gets `data-state` set on it.
+    // (Tooltip content is not rendered by default — Radix renders it in a portal
+    // only when the trigger is hovered/focused.)
+    const triggerEl = avatarInitial.closest('[data-state]');
+    expect(triggerEl).not.toBeNull();
   });
 });

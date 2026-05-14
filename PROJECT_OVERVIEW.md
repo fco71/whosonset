@@ -4,6 +4,38 @@ last_reviewed: 2026-05-14
 status: living document — all reviews and plans go here
 ---
 
+## Session log
+
+### 2026-05-14 (latest agent pass)
+
+**Done this session** (all code-only, no Firestore writes — safe to commit as one batch):
+
+1. **P0 functions/ cleanup.** Staged: `functions/fix-crew-photos.js` → `scripts/fix-crew-photos.js` (rename), `functions/test-email.js` (delete). The deleted file had a hardcoded Gmail app password — see ⚠️ rotation note below.
+2. **P0 storage.rules verified** on disk (`screenplays/` and `project-documents/` are auth-only). **Not yet deployed** — `firebase` CLI is not in the sandbox; user must run `firebase deploy --only storage:rules` from their machine.
+3. **P3 tsconfig pass 2 — `strictNullChecks: true`.** Recon said ~63 errors; reality was 13. All fixed across 7 files (ProjectDashboard, ChatTestPage, NotificationCenter, AuthContext, EmailVerificationPage, SavedCrewProfilesPage, ProjectCrewService, conversionTracking). Surface includes 3 real bugs (TS2783 duplicate-key overwrites). Full typecheck (`npx tsc --noEmit`) is clean.
+4. **P3 tsconfig pass 3 — full `strict: true`.** Collapsed all granular flags to `strict: true`. `strictPropertyInitialization` surfaced 0 errors (functional-components codebase). **Strict-mode migration COMPLETE.**
+5. **P3 `react-beautiful-dnd` → `@dnd-kit/core`.** Migrated all 3 call sites (`JobApplicantsPage`, `TaskManager/KanbanView`, `TaskManager/TaskCard`). Removed `react-beautiful-dnd` + types from `package.json`. Installed only `@dnd-kit/core` (sortable+utilities tried then uninstalled — unused). Found and **fixed a pre-existing latent bug** in `TaskManager/KanbanView`: cards were never actually draggable because `index` was never passed to `TaskCard`. Typecheck clean. **Needs a quick visual smoke test** — drag a card in JobApplicants Kanban and in a Project TaskManager Kanban.
+6. **P1 `ChatTestPage` → `ChatPage` rename.** File, component identifier, default export, lazy import in `router.tsx`, and JSX usage all updated. `/chat` route handler now has a non-misleading name. Typecheck clean. **`socialService.v2.ts` reconcile remains deferred** — the two services use different profile types (`CrewProfile` vs `SocialUser`); merging is a design call, not a sweep. See P1 deferred section for details.
+7. **P5 testing decision.** Prior agent's "both tests fail" claim was misleading. `socialService.test.ts` was not a real test — deleted. `TaskCard.test.tsx`: 1 of 5 assertions had a wrong Radix Tooltip query — fixed. Added `.claude/**` to vitest `exclude` so it stops running tests from throwaway worktrees. `npx vitest run` now passes **5/5**.
+
+**Outstanding manual actions** (need human / Firebase console):
+
+- Rotate the Firebase Web API key (P0 #2 follow-up — pre-existing).
+- Rotate the leaked Gmail app password `ersb xtpm slup jgfn` on `iam@myfilmjobs.com` (new this session). Update `firebase functions:secrets:set GMAIL_APP_PASSWORD` and redeploy `functions`.
+- Deploy storage rules: `firebase deploy --only storage:rules`.
+- Review and commit staged changes from this session.
+
+**Suggested next focus** (when picking up):
+
+- **Visual smoke test** the dnd-kit migration: drag a card in JobApplicants Kanban (`/jobs/<jobId>/applicants` → Kanban tab) and in a project's TaskManager Kanban. Confirm cards reorder/restatus and Firestore writes happen.
+- **socialService v1 vs v2 reconcile** (needs user decision on canonical profile type).
+- **P2 Service/component reorganization**: pick one home for services (`src/services/` vs `src/utilities/`), regroup `src/components/` (67 flat files) by feature.
+- **P3 upgrades**: `pdfjs-dist@^2.16.105` (2021) + `react-pdf@5` together; React 18 → 19.
+- **P5 testing decision**: fix the two existing failing test files, or remove the Vitest scaffolding to stop the false signal.
+- **P0 #6** dual-Projects-collection migration (multi-day; needs user decision on canonical schema first).
+
+---
+
 # WhosOnSet — Project Overview
 
 A React 18 + TypeScript + Firebase social/jobs platform for the film industry. Bundled with Webpack, deployed to Firebase Hosting + Cloud Functions + Firestore + Storage.
@@ -117,7 +149,10 @@ These are not stylistic; they cost the repo size, leak credentials, or pollute h
 
 ### Done 2026-05-14 (continued)
 
-- ✅ **#5 `storage.rules` tightened**: `screenplays/` and `project-documents/` are now `read: if request.auth != null` (were `if true`). Verified consumers (`ScreenplayViewer`, `CollaborationPage`, `ProjectDocuments`, `ProjectDashboard`) are all behind `ProtectedRoute`, so no logged-out flow breaks. **You still need to deploy the rules** (`firebase deploy --only storage:rules`) for this to take effect on production.
+- ✅ **#5 `storage.rules` tightened**: `screenplays/` and `project-documents/` are now `read: if request.auth != null` (were `if true`). Verified consumers (`ScreenplayViewer`, `CollaborationPage`, `ProjectDocuments`, `ProjectDashboard`) are all behind `ProtectedRoute`, so no logged-out flow breaks. **Still needs deploy** — confirmed in `storage.rules` on disk 2026-05-14, but `firebase` CLI is not in the sandbox PATH, so the deploy must be run from your machine:
+  ```sh
+  firebase deploy --only storage:rules
+  ```
 
 ### Open — needs follow-up
 
@@ -133,7 +168,10 @@ These are not stylistic; they cost the repo size, leak credentials, or pollute h
   4. The old key in git history is now invalid even if someone finds it.
   5. (Optional later) restrict the new key to your domains in Google Cloud Console → Credentials.
 
-- ℹ️ Other clutter still in `functions/` root (not blocking): `fix-crew-photos.js`, `test-email.js` — one-off scripts. Move to `scripts/` if still useful, else delete.
+- ✅ **`functions/` root clutter cleaned up 2026-05-14**:
+  - `functions/fix-crew-photos.js` → moved to `scripts/fix-crew-photos.js` (staged, not yet committed). Useful as a reference for future Firestore REST scripts using the Firebase CLI's stored OAuth.
+  - `functions/test-email.js` → **deleted** (staged, not yet committed). It was a standalone Nodemailer ping script with a **hardcoded Gmail app password** (`ersb xtpm slup jgfn`) for `iam@myfilmjobs.com`. The real implementation lives in `functions/src/emailService.ts`.
+  - ⚠️ **Manual action required — rotate that Gmail app password.** It exists in git history. Steps: Google Account → Security → 2-Step Verification → App passwords → revoke the leaked one and generate a new one. Then update the Cloud Function secret (`firebase functions:secrets:set GMAIL_APP_PASSWORD`) and redeploy `functions`. Add to the same checklist as the Firebase Web API key rotation.
 
 ## P1 — Dead / duplicate code  ✅ done 2026-05-14
 
@@ -151,7 +189,12 @@ Burns mental load, hides bugs, inflates bundle.
 - `PasswordResetTestPage` (`/password-reset-test`)
 
 **Deferred — needs follow-up work:**
-- `src/utilities/socialService.v2.ts` is still referenced by `src/components/Chat/ChatTestPage.tsx`, which is the **production `/chat` route handler** despite the misleading filename. So `socialService.v2.ts` is NOT dead. Future cleanup: rename `ChatTestPage` → `ChatPage`, then diff `socialService.ts` vs `.v2` and either migrate `ChatTestPage` to the canonical service or rename `.v2` to be the canonical one. This is a non-trivial refactor; out of scope for the P1 hygiene sweep.
+- ✅ **Mechanical rename done 2026-05-14**: `src/components/Chat/ChatTestPage.tsx` → `src/components/Chat/ChatPage.tsx`; component name + default export renamed; router import + JSX usage updated. Typecheck clean.
+- ⏳ **`socialService.ts` vs `socialService.v2.ts` reconcile — still deferred.** On investigation in 2026-05-14 these are not just versions of the same code; they're two parallel implementations with **different type models**:
+  - `socialService.ts` (1040 lines): comprehensive social features (follow requests, notifications, likes, comments, activity feed with its own cache + email-notification integration), returns `CrewProfile` types throughout.
+  - `socialService.v2.ts` (492 lines): leaner; focused on follows with explicit `FollowStatus` typing and its own profile cache, returns `SocialUser` types. Adds a `getProfile(userId)` method that v1 does not have.
+  - `ChatPage.tsx` uses exactly one method from v2: `SocialService.getProfile`. A safe merge requires deciding the canonical profile type (`SocialUser` vs `CrewProfile`) and migrating downstream consumers — it's a design call, not a sweep. **Out of scope for unsupervised refactoring.**
+  - Recommended next step for this item: ask the user which type model is canonical going forward, then port `getProfile` (or its equivalent) into the canonical service and delete the other.
 
 ## P2 — Code organization
 
@@ -167,10 +210,23 @@ Burns mental load, hides bugs, inflates bundle.
 - ✅ **Two test runners configured** (done 2026-05-14): deleted `jest.config.mjs` and the Jest-only devDeps (`jest`, `babel-jest`, `@types/jest`, `identity-obj-proxy`). Vitest remains as the sole runner. Note: the 2 existing test files (`socialService.test.ts`, `TaskCard.test.tsx`) **fail under Vitest already** — pre-existing issue, separate from this cleanup; logged under P5.
 - ⏳ **`tsconfig.json` strict migration** — in progress, staged:
   - ✅ 2026-05-14 pass 1: enabled `alwaysStrict`, `noImplicitThis`, `strictBindCallApply`, `strictFunctionTypes`, `useUnknownInCatchVariables`, `noImplicitAny`. 35 errors found and fixed (mostly Firestore-write object literals annotated `: any` with `TODO` comments, plus a few callback parameter annotations).
-  - ⏳ pass 2 (pending): enable `strictNullChecks` — recon shows ~63 errors. Bigger lift; catches real null/undefined bugs.
-  - ⏳ pass 3 (pending): enable full `strict: true` (adds `strictPropertyInitialization`, requires `strictNullChecks` first).
+  - ✅ 2026-05-14 pass 2: enabled `strictNullChecks`. Recon said ~63 errors; actual surface was **13** (the pass-1 cleanup must have eliminated most of the projected null-check issues). All 13 fixed:
+    - `src/pages/ProjectManagement/ProjectDashboard.tsx` — added `|| !projectId` to the render guard so `projectId` (from `useParams`) narrows to `string` for the 5 child-component props.
+    - `src/components/Chat/ChatTestPage.tsx` — `initialSelectedUser` (which is `string | null` from `URLSearchParams.get`) coerced with `?? undefined` to match the prop type.
+    - `src/components/NotificationCenter.tsx` — `markConversationAsRead(currentUser?.uid, …)` was passing `string | undefined`. Now guarded with `&& currentUser?.uid` and the values are captured into local `const`s so TS doesn't widen them inside the dynamic-import `.then`.
+    - `src/contexts/AuthContext.tsx` — `userToDelete = auth.currentUser` (which is `User | null`) was widening `userToDelete`. Captured into a local `const refreshedUser`, null-checked, then assigned to `userToDelete`.
+    - `src/pages/EmailVerificationPage.tsx` — `handleCheckVerification` was using `currentUser` without local narrowing (the `useEffect` redirect doesn't narrow across renders). Added an explicit early-return guard at the top of the handler.
+    - **Real bugs found**: three TS2783 "specified more than once" duplicate-key errors that strictNullChecks surfaced in `SavedCrewProfilesPage.tsx:46` (`{ uid: crewId, ...crewData }`), `ProjectCrewService.ts:156` (`{ id: doc.id, ...projectData }`), `conversionTracking.ts:44` (`{ event: eventName, ...payload }`). In each case the explicit field was being overwritten by the spread — the author's clear intent was the opposite. Fixed by swapping order (spread first, explicit field last).
+  - ✅ 2026-05-14 pass 3: collapsed all granular flags to `strict: true` (kept explicit `useUnknownInCatchVariables: true` for documentation, though it's redundant under `strict`). `strictPropertyInitialization` (the only remaining strict flag not previously enabled) surfaced **0 errors** — the codebase is functional-components + hooks, so there are no class-field initialization sites. `tsconfig.json` is now 9 lines slimmer.
+  - 🎉 **`tsconfig.json` strict migration is COMPLETE.**
+  - **Note for follow-up agent**: changes to `tsconfig.json` and the 7 source files from pass 2 are not yet committed. They're code-only (no Firestore writes) so safe to commit as a batch with a message like "P3 tsconfig: full strict mode + fix 13 errors".
 - **`pdfjs-dist@^2.16.105` is from 2021**. `react-pdf@5` + pdfjs-dist v2 is a known fragile combo. Either pin compatibility carefully or upgrade both together.
-- **`react-beautiful-dnd@^13.1.1` is unmaintained** (since 2022). Used in `JobApplicantsPage.tsx`, `TaskManager/TaskCard.tsx`, `TaskManager/KanbanView.tsx`. Replace with `@dnd-kit/core` (modern, maintained) before it breaks against React 19.
+- ✅ **`react-beautiful-dnd` → `@dnd-kit/core` (done 2026-05-14).** All three call sites (`JobApplicantsPage.tsx`, `TaskManager/views/KanbanView.tsx`, `TaskManager/components/TaskCard.tsx`) migrated to `@dnd-kit/core`. `react-beautiful-dnd` + `@types/react-beautiful-dnd` removed from `package.json`. Tried `@dnd-kit/sortable` and `@dnd-kit/utilities` too but uninstalled them since the current call sites only need the basics from `@dnd-kit/core`. Migration notes:
+  - **`JobApplicantsPage.tsx`**: kanban-by-status board with 6 columns. Replaced `<DragDropContext>` with `<DndContext>` (using `PointerSensor` with `distance: 5` activation constraint so card buttons remain clickable, plus `KeyboardSensor` for a11y) and `closestCorners` collision detection. The inline `<Draggable>` / `<Droppable>` render-prop blocks became two new sub-components in the same file (`KanbanCard` using `useDraggable`, `KanbanColumn` using `useDroppable`). Action buttons inside cards now call `stopPropagation` on `pointerDown` so the drag handler doesn't swallow clicks.
+  - **`TaskManager/components/TaskCard.tsx`**: replaced the conditional `<Draggable>` wrapper with `useDraggable`. Added a new `draggable?: boolean` prop (legacy `index?: number` retained for backward compat). The hook is always called (React rules), but its outputs are only applied to the rendered DOM when `isDraggable` is true.
+  - **`TaskManager/views/KanbanView.tsx`**: replaced `<DragDropContext>` / `<Droppable>` with `<DndContext>` / a new local `KanbanColumn` using `useDroppable`. **Fixed a pre-existing latent bug**: TaskCards were previously rendered without `index`, so the conditional `<Draggable>` wrapper never activated and the kanban looked draggable but cards weren't actually draggable. Now passes `draggable` to TaskCard so cards are real drop sources.
+  - **Risk note for follow-up agent**: this is the change in this session most likely to need a quick visual smoke test. Open `/jobs/<jobId>/applicants` (or `/applicants`) → switch to Kanban view → drag a card across columns; the card's status should update via `handleStatusUpdate` (Firestore write + email notification). And open a project's TaskManager Kanban view → drag a task card; status should update via `onTaskUpdate`. Typecheck is clean but the runtime behavior was not exercised.
+  - `src/components/TaskManager/README.md` also updated to point at `@dnd-kit/core`.
 
 ## P4 — Documentation ✅ done 2026-05-14
 
@@ -180,8 +236,12 @@ Burns mental load, hides bugs, inflates bundle.
 
 ## P5 — Testing
 
-- Only ~2 test files in the repo (`socialService.test.ts`, `TaskCard.test.tsx`); coverage near zero. **Both fail under Vitest** (TaskCard: `useState` errors suggesting React/test-renderer mismatch; socialService: collection-level failure). Pre-existing — discovered during P3 verification on 2026-05-14.
-- Decide: is testing a goal? If yes: (a) fix the two existing tests first, (b) then add baseline smoke tests for 5 critical paths (auth, project create, social follow, job apply, message send). If not, remove the test files + Vitest scaffolding so it isn't a false signal.
+- ✅ **P5 testing reality reconciled 2026-05-14**: prior agent's claim that "both fail" was misleading. The real story:
+  - `socialService.test.ts` was **not a real test** — no `describe`/`it`/`expect`, just a manual debug helper exporting `testSocialService()`. Failed only because importing it pulled in `src/firebase.ts` which calls `getAuth()` without test-env config. **Deleted** (no consumers found).
+  - `TaskCard.test.tsx` was **4/5 passing**; the failing assertion used `getByRole('button', { name: /Test User/ })` to find a Radix `TooltipTrigger` with `asChild`, which doesn't render a `<button>` — the child `<div>` becomes the trigger with `data-state` attribute. Replaced with a `closest('[data-state]')` check.
+  - Also added `.claude/**` to vitest `exclude` config — vitest was running tests from the throwaway worktree at `.claude/worktrees/adoring-leakey-58f090/`, doubling runtime and reporting duplicate results.
+  - **Result**: `npx vitest run` → 5/5 passing, 1 test file. Tests are no longer a false signal.
+- ⏳ **If testing is a goal going forward**, the next step would be: add baseline smoke tests for the 5 critical paths (auth, project create, social follow, job apply, message send). Currently coverage is near zero on production code paths.
 
 ---
 

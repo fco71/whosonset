@@ -1,7 +1,35 @@
 import React, { useMemo, useState } from 'react';
-import { DragDropContext, Droppable, DropResult } from 'react-beautiful-dnd';
+import {
+  DndContext,
+  DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  closestCorners,
+  useDroppable,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
 import { Task, TaskStatus } from '../types';
 import TaskCard from '../components/TaskCard';
+
+// Droppable column wrapper using @dnd-kit's useDroppable hook.
+// Replaces react-beautiful-dnd's <Droppable> render-prop API.
+interface KanbanColumnProps {
+  columnId: string;
+  children: React.ReactNode;
+}
+
+const KanbanColumn: React.FC<KanbanColumnProps> = ({ columnId, children }) => {
+  const { isOver, setNodeRef } = useDroppable({ id: columnId });
+  return (
+    <div
+      ref={setNodeRef}
+      className={`p-2 min-h-[200px] transition-colors ${isOver ? 'bg-gray-100' : 'bg-gray-50'}`}
+    >
+      {children}
+    </div>
+  );
+};
 
 interface KanbanViewProps {
   tasks: Task[];
@@ -104,34 +132,36 @@ const KanbanView: React.FC<KanbanViewProps> = ({
     });
   }, [tasks]);
 
-  const onDragEnd = (result: DropResult) => {
-    const { destination, source, draggableId } = result;
-
-    // If there's no destination or the item was dropped back to its original position
-    if (!destination || (destination.droppableId === source.droppableId && destination.index === source.index)) {
+  // @dnd-kit drag-end handler.
+  // active.id = task id being dragged; over?.id = column id it was dropped on.
+  const onDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over) {
       return;
     }
 
-    // Find the destination column config
-    const destColumnConfig = columnConfigs.find(col => col && col.id === destination.droppableId);
+    const draggableId = String(active.id);
+    const destColumnId = String(over.id);
+
+    // Don't update if dropped on a column the task is already in.
+    const destColumnConfig = columnConfigs.find(col => col && col.id === destColumnId);
     if (!destColumnConfig) return;
 
-    // Find the task being moved
     const task = tasks.find(t => t.id === draggableId);
-    if (!task) return;
-    
-    // Update the task status based on the destination column
-    const updatedTask = {
-      ...task,
-      status: destColumnConfig.status
-    };
+    if (!task || task.status === destColumnConfig.status) return;
 
-    // Update the task in the parent component
-    onTaskUpdate(updatedTask);
+    onTaskUpdate({ ...task, status: destColumnConfig.status });
   };
 
+  // Require a small pointer movement before dragging so card buttons (e.g. the
+  // complete-checkbox) stay clickable.
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor),
+  );
+
   return (
-    <DragDropContext onDragEnd={onDragEnd}>
+    <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={onDragEnd}>
       <div className="flex flex-1 overflow-x-auto pb-4">
         <div className="flex space-x-4 min-w-max">
           {columns.map((column) => (
@@ -142,33 +172,28 @@ const KanbanView: React.FC<KanbanViewProps> = ({
                   {column.tasks.length}
                 </span>
               </div>
-              <Droppable droppableId={column.id} key={column.id}>
-                {(provided, snapshot) => (
-                  <div
-                    ref={provided.innerRef}
-                    {...provided.droppableProps}
-                    className={`p-2 min-h-[200px] transition-colors ${snapshot.isDraggingOver ? 'bg-gray-100' : 'bg-gray-50'}`}
-                  >
-                    {column.tasks.map((task: Task) => (
-                      <div key={task.id} className="mb-2">
-                        <TaskCard
-                          task={task}
-                          onClick={onTaskSelect}
-                          onUpdate={onTaskUpdate}
-                          onDelete={onTaskDelete}
-                          isSelected={selectedTaskId === task.id}
-                        />
-                      </div>
-                    ))}
-                    {provided.placeholder}
-                  </div>
-                )}
-              </Droppable>
+              <KanbanColumn columnId={column.id}>
+                {column.tasks.map((task: Task) => (
+                  // Pre-existing latent bug fixed: previously TaskCard was rendered
+                  // without `index` so its inner Draggable wrapper never activated —
+                  // the kanban looked draggable but cards weren't actually draggable.
+                  // We now pass `draggable` so the card hooks into @dnd-kit's drag system.
+                  <TaskCard
+                    key={task.id}
+                    task={task}
+                    onClick={onTaskSelect}
+                    onUpdate={onTaskUpdate}
+                    onDelete={onTaskDelete}
+                    isSelected={selectedTaskId === task.id}
+                    draggable
+                  />
+                ))}
+              </KanbanColumn>
             </div>
           ))}
         </div>
       </div>
-    </DragDropContext>
+    </DndContext>
   );
 };
 

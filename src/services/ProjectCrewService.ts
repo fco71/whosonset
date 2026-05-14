@@ -153,7 +153,7 @@ export class ProjectCrewService {
         
         if (isCrewMember) {
           console.log('[ProjectCrewService] User is crew member of project:', doc.id);
-          projects.push({ id: doc.id, ...projectData });
+          projects.push({ ...projectData, id: doc.id });
         }
       });
       

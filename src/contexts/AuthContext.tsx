@@ -340,10 +340,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           await reauthenticateWithCredential(currentUser, credential);
           
           // Get the updated user object after re-authentication
-          userToDelete = auth.currentUser;
-          if (!userToDelete) {
+          const refreshedUser = auth.currentUser;
+          if (!refreshedUser) {
             throw new Error('Failed to get current user after re-authentication');
           }
+          userToDelete = refreshedUser;
           
           console.log('[AuthContext] Re-authentication successful, proceeding with deletion');
         } else {

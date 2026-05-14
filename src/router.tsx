@@ -18,7 +18,7 @@ const JobDetailPage = React.lazy(() => import('./components/JobSearch/JobDetailP
 const DebugJobsPage = React.lazy(() => import('./pages/DebugJobsPage'));
 const EditProfilePage = React.lazy(() => import('./pages/EditProfilePage'));
 const PublicResumePage = React.lazy(() => import('./components/PublicResumePage'));
-const ChatTestPage = React.lazy(() => import('./components/Chat/ChatTestPage'));
+const ChatPage = React.lazy(() => import('./components/Chat/ChatPage'));
 const LoginPage = React.lazy(() => import('./pages/LoginPage'));
 const RegisterPage = React.lazy(() => import('./pages/RegisterPage'));
 const EmailVerificationPage = React.lazy(() => import('./pages/EmailVerificationPage'));
@@ -235,7 +235,7 @@ export function createAppRouter() {
           path: 'chat', 
           element: (
             <ProtectedRoute>
-              <ChatTestPage />
+              <ChatPage />
             </ProtectedRoute>
           ) 
         },

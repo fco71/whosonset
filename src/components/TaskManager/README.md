@@ -20,7 +20,7 @@ A comprehensive task management system with multiple view modes, filtering, and 
 1. Install the required dependencies:
 
 ```bash
-npm install react-beautiful-dnd date-fns lucide-react react-day-picker
+npm install @dnd-kit/core date-fns lucide-react react-day-picker
 ```
 
 2. Import the TaskManager component:
@@ -139,7 +139,7 @@ You can customize the appearance and behavior of the TaskManager by:
 - React
 - Firebase/Firestore
 - date-fns
-- react-beautiful-dnd
+- @dnd-kit/core
 - lucide-react
 - react-day-picker
 

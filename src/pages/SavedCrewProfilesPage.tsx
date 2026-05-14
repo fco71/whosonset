@@ -43,8 +43,8 @@ const SavedCrewProfilesPage: React.FC = () => {
             if (crewDoc.exists()) {
               const crewData = crewDoc.data() as CrewProfile;
               profiles.push({
+                ...crewData,
                 uid: crewId,
-                ...crewData
               });
             }
           } catch (error) {

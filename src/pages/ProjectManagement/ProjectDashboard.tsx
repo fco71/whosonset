@@ -111,7 +111,7 @@ const ProjectDashboard: React.FC = () => {
     );
   }
 
-  if (!project) {
+  if (!project || !projectId) {
     return (
       <div className="text-center py-8">
         <h2 className="text-2xl font-bold text-gray-900 mb-4">Project Not Found</h2>

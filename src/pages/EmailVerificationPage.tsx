@@ -62,10 +62,17 @@ const EmailVerificationPage: React.FC = () => {
     try {
       setLoading(true);
       setError('');
-      
+
+      // useEffect already redirects to /login when currentUser is null,
+      // but TS can't see across the render boundary — narrow explicitly.
+      if (!currentUser) {
+        navigate('/login');
+        return;
+      }
+
       // Reload the user to check if email was verified
       await currentUser.reload();
-      
+
       if (currentUser.emailVerified) {
         navigate('/edit-profile');
       } else {

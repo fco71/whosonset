@@ -8,6 +8,10 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: './src/setupTests.ts',
+    // Don't discover tests inside git worktrees (the .claude folder holds
+    // ephemeral worktrees created by other agents — running their tests
+    // doubles the runtime and reports duplicate results).
+    exclude: ['**/node_modules/**', '**/dist/**', '.claude/**'],
     coverage: {
       provider: 'v8', // or 'istanbul'
       reporter: ['text', 'json', 'html'],

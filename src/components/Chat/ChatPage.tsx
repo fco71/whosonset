@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { SocialService } from '../../utilities/socialService.v2';
 import { getDisplayName, getPhotoUrl } from '../../types/Profile';
 
-const ChatTestPage: React.FC = () => {
+const ChatPage: React.FC = () => {
   const { currentUser } = useAuth();
   const [searchParams] = useSearchParams();
   const [showChat, setShowChat] = useState(false);
@@ -126,9 +126,9 @@ const ChatTestPage: React.FC = () => {
       currentUserId={currentUser.uid}
       currentUserName={userProfile?.displayName || 'User'}
       currentUserAvatar={userProfile?.avatar}
-      initialSelectedUser={initialSelectedUser}
+      initialSelectedUser={initialSelectedUser ?? undefined}
     />
   );
 };
 
-export default ChatTestPage; 
+export default ChatPage; 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Draggable } from 'react-beautiful-dnd';
+import { useDraggable } from '@dnd-kit/core';
 import { Task } from '../types';
 import { Avatar, AvatarFallback, AvatarImage } from '../../ui/Avatar';
 import { Badge } from '../../ui/Badge';
@@ -14,6 +14,12 @@ interface TaskCardProps {
   onClick: (task: Task) => void;
   isSelected: boolean;
   isDragging?: boolean;
+  /**
+   * When `draggable` is true, wraps the card with @dnd-kit's useDraggable so it can be moved
+   * between Kanban columns. The legacy `index?: number` prop is retained for backward compat
+   * — any truthy `index` is treated as `draggable=true`.
+   */
+  draggable?: boolean;
   index?: number;
 }
 
@@ -38,9 +44,24 @@ const TaskCard: React.FC<TaskCardProps> = ({
   onDelete,
   onClick,
   isSelected,
-  isDragging = false,
-  index = 0,
+  isDragging: isDraggingProp = false,
+  draggable = false,
+  index,
 }) => {
+  // Backward-compat: when caller supplies index (>= 0), treat as draggable.
+  const isDraggable = draggable || (index !== undefined && index >= 0);
+
+  // useDraggable must be called unconditionally per React hook rules.
+  // When isDraggable is false, the returned ref/attrs are simply unused below.
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    isDragging: dndIsDragging,
+  } = useDraggable({ id: task.id });
+  const isDragging = isDraggable ? dndIsDragging : isDraggingProp;
+
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onClick(task);
@@ -162,23 +183,24 @@ const TaskCard: React.FC<TaskCardProps> = ({
     </div>
   );
 
-  // If we're in a draggable context, wrap with Draggable
-  if (index !== undefined) {
+  // If draggable, wrap with @dnd-kit's setNodeRef + listeners.
+  if (isDraggable) {
+    const style: React.CSSProperties = {
+      transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+      opacity: dndIsDragging ? 0.4 : 1,
+      cursor: 'grab',
+      touchAction: 'none',
+    };
     return (
-      <Draggable draggableId={task.id} index={index}>
-        {(provided, snapshot) => (
-          <div
-            ref={provided.innerRef}
-            {...provided.draggableProps}
-            {...provided.dragHandleProps}
-            className="mb-2"
-          >
-            {React.cloneElement(cardContent, {
-              isDragging: snapshot.isDragging,
-            })}
-          </div>
-        )}
-      </Draggable>
+      <div
+        ref={setNodeRef}
+        style={style}
+        {...attributes}
+        {...listeners}
+        className="mb-2"
+      >
+        {cardContent}
+      </div>
     );
   }
 

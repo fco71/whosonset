@@ -11,7 +11,19 @@ import Card from '../ui/Card';
 import { Avatar, AvatarImage, AvatarFallback } from '../ui/Avatar';
 import ApplicationMessaging from './ApplicationMessaging';
 import ResumeDownloadButton from '../ResumeDownloadButton';
-import { DragDropContext, Draggable, Droppable, DropResult } from 'react-beautiful-dnd';
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+  KeyboardSensor,
+  PointerSensor,
+  closestCorners,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
 import { 
   Users, 
   MessageSquare, 
@@ -76,6 +88,89 @@ const KANBAN_COLUMNS: Array<{
   { id: 'hired', label: 'Offer / Hired', badgeClass: 'bg-green-100 text-green-800' },
   { id: 'rejected', label: 'Rejected', badgeClass: 'bg-red-100 text-red-800' },
 ];
+
+// Sub-component: a single draggable applicant card.
+// Uses @dnd-kit/core's useDraggable hook — replaces react-beautiful-dnd's <Draggable>.
+interface KanbanCardProps {
+  applicationId: string;
+  name: string;
+  jobTitle: string;
+  appliedAtLabel: string;
+  onDetails: () => void;
+  onMessage: () => void;
+}
+
+const KanbanCard: React.FC<KanbanCardProps> = ({
+  applicationId,
+  name,
+  jobTitle,
+  appliedAtLabel,
+  onDetails,
+  onMessage,
+}) => {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: applicationId,
+  });
+
+  const style: React.CSSProperties = {
+    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+    opacity: isDragging ? 0.4 : 1,
+    cursor: 'grab',
+    touchAction: 'none',
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className="rounded-lg border border-gray-200 bg-white p-3 shadow-sm"
+    >
+      <p className="font-semibold text-gray-900">{name}</p>
+      <p className="mt-1 text-xs text-gray-600">{jobTitle}</p>
+      <p className="mt-1 text-xs text-gray-500">Applied {appliedAtLabel}</p>
+      <div className="mt-3 flex gap-2">
+        <button
+          type="button"
+          // Stop drag listeners from swallowing the click.
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={onDetails}
+          className="rounded border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+        >
+          Details
+        </button>
+        <button
+          type="button"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={onMessage}
+          className="rounded border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+        >
+          Message
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// Sub-component: a droppable kanban column.
+// Uses @dnd-kit/core's useDroppable hook — replaces react-beautiful-dnd's <Droppable>.
+interface KanbanColumnProps {
+  columnId: ApplicationStatus;
+  children: React.ReactNode;
+}
+
+const KanbanColumn: React.FC<KanbanColumnProps> = ({ columnId, children }) => {
+  const { isOver, setNodeRef } = useDroppable({ id: columnId });
+  return (
+    <div
+      ref={setNodeRef}
+      className={`min-h-[240px] space-y-3 p-3 transition ${isOver ? 'bg-gray-50' : ''}`}
+    >
+      {children}
+    </div>
+  );
+};
 
 const JobApplicantsPage: React.FC<JobApplicantsPageProps> = ({ jobId: propJobId }) => {
   const navigate = useNavigate();
@@ -348,17 +443,17 @@ const JobApplicantsPage: React.FC<JobApplicantsPageProps> = ({ jobId: propJobId 
     return acc;
   }, {} as Record<ApplicationStatus, JobApplication[]>);
 
-  const onKanbanDragEnd = async (result: DropResult) => {
-    const { destination, source, draggableId } = result;
-    if (!destination) {
+  // @dnd-kit drag-end handler.
+  // active.id is the dragged item (application id), over?.id is the target droppable (column id).
+  const onKanbanDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over) {
       return;
     }
 
-    if (destination.droppableId === source.droppableId) {
-      return;
-    }
+    const draggableId = String(active.id);
+    const destinationStatus = String(over.id) as ApplicationStatus;
 
-    const destinationStatus = destination.droppableId as ApplicationStatus;
     const currentApplication = applications.find((application) => application.id === draggableId);
     if (!currentApplication || currentApplication.status === destinationStatus) {
       return;
@@ -366,6 +461,12 @@ const JobApplicantsPage: React.FC<JobApplicantsPageProps> = ({ jobId: propJobId 
 
     await handleStatusUpdate(draggableId, destinationStatus);
   };
+
+  // dnd-kit sensors: require a small pointer movement before drag starts so card buttons stay clickable.
+  const dragSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor),
+  );
 
   if (isLoading) {
     return (
@@ -637,7 +738,11 @@ const JobApplicantsPage: React.FC<JobApplicantsPageProps> = ({ jobId: propJobId 
           </div>
         ) : (
           <div className="overflow-x-auto pb-3">
-            <DragDropContext onDragEnd={onKanbanDragEnd}>
+            <DndContext
+              sensors={dragSensors}
+              collisionDetection={closestCorners}
+              onDragEnd={onKanbanDragEnd}
+            >
               <div className="flex min-w-max gap-4">
                 {KANBAN_COLUMNS.map((column) => (
                   <div key={column.id} className="w-72 rounded-xl border border-gray-200 bg-white">
@@ -647,64 +752,32 @@ const JobApplicantsPage: React.FC<JobApplicantsPageProps> = ({ jobId: propJobId 
                         {kanbanByStatus[column.id]?.length || 0}
                       </span>
                     </div>
-                    <Droppable droppableId={column.id}>
-                      {(provided, snapshot) => (
-                        <div
-                          ref={provided.innerRef}
-                          {...provided.droppableProps}
-                          className={`min-h-[240px] space-y-3 p-3 transition ${snapshot.isDraggingOver ? 'bg-gray-50' : ''}`}
-                        >
-                          {(kanbanByStatus[column.id] || []).map((application, index) => {
-                            const profile = applicantProfiles[application.applicantId];
-                            return (
-                              <Draggable key={application.id} draggableId={application.id} index={index}>
-                                {(dragProvided) => (
-                                  <div
-                                    ref={dragProvided.innerRef}
-                                    {...dragProvided.draggableProps}
-                                    {...dragProvided.dragHandleProps}
-                                    className="rounded-lg border border-gray-200 bg-white p-3 shadow-sm"
-                                  >
-                                    <p className="font-semibold text-gray-900">{profile?.name || 'Unknown Applicant'}</p>
-                                    <p className="mt-1 text-xs text-gray-600">
-                                      {profile?.jobTitles?.slice(0, 1).join(', ') || 'No title listed'}
-                                    </p>
-                                    <p className="mt-1 text-xs text-gray-500">Applied {formatDate(application.appliedAt)}</p>
-                                    <div className="mt-3 flex gap-2">
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setSelectedApplication(application);
-                                          setShowApplicantModal(true);
-                                        }}
-                                        className="rounded border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
-                                      >
-                                        Details
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setSelectedApplication(application);
-                                          setShowMessageModal(true);
-                                        }}
-                                        className="rounded border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
-                                      >
-                                        Message
-                                      </button>
-                                    </div>
-                                  </div>
-                                )}
-                              </Draggable>
-                            );
-                          })}
-                          {provided.placeholder}
-                        </div>
-                      )}
-                    </Droppable>
+                    <KanbanColumn columnId={column.id}>
+                      {(kanbanByStatus[column.id] || []).map((application) => {
+                        const profile = applicantProfiles[application.applicantId];
+                        return (
+                          <KanbanCard
+                            key={application.id}
+                            applicationId={application.id}
+                            name={profile?.name || 'Unknown Applicant'}
+                            jobTitle={profile?.jobTitles?.slice(0, 1).join(', ') || 'No title listed'}
+                            appliedAtLabel={formatDate(application.appliedAt)}
+                            onDetails={() => {
+                              setSelectedApplication(application);
+                              setShowApplicantModal(true);
+                            }}
+                            onMessage={() => {
+                              setSelectedApplication(application);
+                              setShowMessageModal(true);
+                            }}
+                          />
+                        );
+                      })}
+                    </KanbanColumn>
                   </div>
                 ))}
               </div>
-            </DragDropContext>
+            </DndContext>
           </div>
         )}
 

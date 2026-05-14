@@ -41,8 +41,8 @@ export function trackConversion(
   try {
     window.dataLayer = window.dataLayer || [];
     window.dataLayer.push({
-      event: eventName,
       ...payload,
+      event: eventName,
     });
   } catch (error) {
     console.error('[conversionTracking] Failed to push event to dataLayer:', error);
