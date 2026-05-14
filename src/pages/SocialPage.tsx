@@ -6,6 +6,8 @@ import { SocialService } from '../utilities/socialService';
 import { MessagingService, ConversationSummary } from '../utilities/messagingService';
 import { getProfileId, getDisplayName, getPhotoUrl, isCrewProfile } from '../types/Profile';
 import { useTranslation } from 'react-i18next';
+import { useNotifications } from '../hooks/useNotifications';
+import { getNotificationDateValue } from '../utilities/notificationHelpers';
 
 // Define a discriminated union type for profiles
 type BaseProfile = {
@@ -89,6 +91,7 @@ const SocialPage = () => {
   const [sentRequests, setSentRequests] = useState<AppProfile[]>([]);
   const [connections, setConnections] = useState<AppProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { notifications, markAsRead } = useNotifications();
   
   // Messaging state
   const [showMessagePane, setShowMessagePane] = useState(false);
@@ -227,7 +230,7 @@ const SocialPage = () => {
         const mappedIncomingRequests = await Promise.all(
           realIncomingRequests.map(async (req: any) => {
             const userProfile = await fetchUserProfile(req.fromUserId);
-            return { ...userProfile, requestId: req.id };
+            return { ...userProfile, requestId: req.id, requestCreatedAt: req.createdAt, requestDirection: 'incoming' };
           })
         );
         setConnectionRequests(mappedIncomingRequests);
@@ -244,7 +247,7 @@ const SocialPage = () => {
         const mappedSentRequests = await Promise.all(
           realSentRequests.map(async (req: any) => {
             const userProfile = await fetchUserProfile(req.toUserId);
-            return userProfile;
+            return { ...userProfile, requestId: req.id, requestCreatedAt: req.createdAt, requestDirection: 'outgoing' };
           })
         );
         setSentRequests(mappedSentRequests);
@@ -367,7 +370,7 @@ const SocialPage = () => {
       const mappedRequests = await Promise.all(
         requests.map(async (req: any) => {
           const userProfile = await fetchUserProfile(req.fromUserId);
-          const result = { ...userProfile, requestId: req.id };
+          const result = { ...userProfile, requestId: req.id, requestCreatedAt: req.createdAt, requestDirection: 'incoming' };
           console.log('[SocialPage] Mapped request:', { userId: req.fromUserId, requestId: req.id, profileId: getProfileId(result) });
           return result;
         })
@@ -381,7 +384,7 @@ const SocialPage = () => {
       const mappedRequests = await Promise.all(
         requests.map(async (req: any) => {
           const userProfile = await fetchUserProfile(req.toUserId);
-          return userProfile;
+          return { ...userProfile, requestId: req.id, requestCreatedAt: req.createdAt, requestDirection: 'outgoing' };
         })
       );
       setSentRequests(mappedRequests);
@@ -418,10 +421,14 @@ const SocialPage = () => {
 
   // Filter profiles based on search query and active tab
   const filteredItems = useMemo(() => {
+    const discoverProfiles = filteredProfiles.filter((profile) => (
+      !user?.uid || getProfileId(profile) !== user.uid
+    ));
+
     const items = {
       connections: [...connections],
       requests: [...connectionRequests, ...sentRequests],
-      discover: [...filteredProfiles],
+      discover: discoverProfiles,
       notifications: []
     }[activeTab] || [];
 
@@ -433,7 +440,47 @@ const SocialPage = () => {
       const bio = p.bio ? p.bio.toLowerCase() : '';
       return name.includes(query) || bio.includes(query);
     });
-  }, [activeTab, connections, connectionRequests, sentRequests, filteredProfiles, searchQuery]);
+  }, [activeTab, connections, connectionRequests, sentRequests, filteredProfiles, searchQuery, user?.uid]);
+
+  const filterProfilesBySearch = useCallback((items: AppProfile[]) => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return items;
+
+    return items.filter((profile) => {
+      const name = getDisplayName(profile).toLowerCase();
+      const bio = profile.bio ? profile.bio.toLowerCase() : '';
+      const role = profile.type === 'crew'
+        ? String((profile as any).jobTitles?.[0]?.title || '').toLowerCase()
+        : '';
+
+      return name.includes(query) || bio.includes(query) || role.includes(query);
+    });
+  }, [searchQuery]);
+
+  const filteredIncomingRequests = useMemo(
+    () => filterProfilesBySearch(connectionRequests),
+    [connectionRequests, filterProfilesBySearch]
+  );
+
+  const filteredSentRequests = useMemo(
+    () => filterProfilesBySearch(sentRequests),
+    [sentRequests, filterProfilesBySearch]
+  );
+
+  const connectedIds = useMemo(
+    () => new Set(connections.map((profile) => getProfileId(profile))),
+    [connections]
+  );
+
+  const sentRequestIds = useMemo(
+    () => new Set(sentRequests.map((profile) => getProfileId(profile))),
+    [sentRequests]
+  );
+
+  const incomingRequestIds = useMemo(
+    () => new Set(connectionRequests.map((profile) => getProfileId(profile))),
+    [connectionRequests]
+  );
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
@@ -453,6 +500,10 @@ const SocialPage = () => {
   // Handle follow/unfollow action
   const handleFollowChange = async (profileId: string, follow: boolean) => {
     if (!user?.uid) return;
+    if (user.uid === profileId) {
+      toast.error('You cannot follow yourself.');
+      return;
+    }
     
     try {
       if (follow) {
@@ -470,16 +521,14 @@ const SocialPage = () => {
   };
 
   // Handle follow request response (accept/reject)
-  const handleFollowRequest = async (userId: string, action: 'accept' | 'reject') => {
-    // Find the follow request for this user
-    const request = connectionRequests.find(p => getProfileId(p) === userId);
+  const handleFollowRequest = async (requestId: string, userId: string, action: 'accept' | 'reject') => {
+    const request = connectionRequests.find(p => (p as any).requestId === requestId);
     if (!request) {
-      console.error('[handleFollowRequest] Request not found for userId:', userId);
+      console.error('[handleFollowRequest] Request not found:', { requestId, userId });
       console.log('[handleFollowRequest] Available requests:', connectionRequests.map(p => ({ id: getProfileId(p), requestId: (p as any).requestId })));
       return;
     }
-    
-    const requestId = (request as any).requestId;
+
     if (!requestId) {
       console.error('[handleFollowRequest] Request ID not found for request:', request);
       return;
@@ -493,12 +542,12 @@ const SocialPage = () => {
         setConnections(prev => [...prev, request]);
         toast.success('Follow request accepted!');
       } else {
-        toast.success('Follow request rejected.');
+        toast.success('Follow request ignored.');
       }
-      setConnectionRequests(prev => prev.filter(p => getProfileId(p) !== userId));
+      setConnectionRequests(prev => prev.filter(p => (p as any).requestId !== requestId));
     } catch (error) {
       console.error(`Error ${action}ing follow request:`, error);
-      toast.error(`Failed to ${action} follow request. Please try again.`);
+      toast.error(`Failed to ${action === 'accept' ? 'accept' : 'ignore'} follow request. Please try again.`);
     }
   };
 
@@ -535,10 +584,30 @@ const SocialPage = () => {
       setShowStartConversation(true);
       setShowMessagePane(false);
     } else {
-      // Navigate to chat or open chat interface
       setShowMessagePane(false);
       setShowStartConversation(false);
-      console.log('Starting conversation with:', userId);
+      navigate(`/chat?user=${encodeURIComponent(userId)}`);
+    }
+  };
+
+  const formatRequestDate = (value: unknown) => {
+    const date = getNotificationDateValue(value);
+    if (!date) return '';
+
+    return date.toLocaleDateString([], {
+      month: 'short',
+      day: 'numeric',
+      year: date.getFullYear() === new Date().getFullYear() ? undefined : 'numeric'
+    });
+  };
+
+  const handleNotificationClick = async (notification: any) => {
+    if (!notification.isRead) {
+      await markAsRead(notification.id);
+    }
+
+    if (notification.link) {
+      navigate(notification.link);
     }
   };
 
@@ -648,25 +717,95 @@ const SocialPage = () => {
 
       case 'requests':
         return (
-          <div className="space-y-4">
-            {filteredItems.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {filteredItems.map((profile: AppProfile) => (
-                  <UserCard
-                    key={getProfileId(profile)}
-                    profile={profile}
-                    action={
-                      (profile as any).requestId ? (
-                        <Button
-                          variant="default"
-                          size="sm"
-                          className="whitespace-nowrap"
-                          onClick={() => handleFollowRequest(getProfileId(profile), 'accept')}
-                        >
-                          <UserCheck className="h-4 w-4 mr-2" />
-                          {t('social.actions.accept')}
-                        </Button>
-                      ) : (
+          <div className="space-y-8">
+            <section>
+              <div className="mb-3 flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900">Incoming requests</h2>
+                  <p className="text-sm text-gray-500">Accept people you want to connect with, or ignore old requests.</p>
+                </div>
+                <Badge variant="secondary">{connectionRequests.length}</Badge>
+              </div>
+
+              {filteredIncomingRequests.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {filteredIncomingRequests.map((profile: AppProfile) => {
+                    const requestId = String((profile as any).requestId || '');
+                    const requestDate = formatRequestDate((profile as any).requestCreatedAt);
+
+                    return (
+                      <UserCard
+                        key={`${getProfileId(profile)}-${requestId}`}
+                        profile={profile}
+                        meta={requestDate ? `Requested ${requestDate}` : 'Pending request'}
+                        action={
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="default"
+                              size="sm"
+                              className="whitespace-nowrap"
+                              onClick={() => handleFollowRequest(requestId, getProfileId(profile), 'accept')}
+                            >
+                              <UserCheck className="h-4 w-4 mr-2" />
+                              {t('social.actions.accept')}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="whitespace-nowrap border-gray-300 text-gray-600 hover:bg-gray-50"
+                              onClick={() => handleFollowRequest(requestId, getProfileId(profile), 'reject')}
+                            >
+                              <X className="h-4 w-4 mr-2" />
+                              Ignore
+                            </Button>
+                          </div>
+                        }
+                      />
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="rounded-xl border border-dashed border-gray-200 bg-white p-6 text-center text-sm text-gray-500">
+                  {searchQuery.trim() ? `No incoming requests match "${searchQuery}".` : t('social.empty.noRequests')}
+                </div>
+              )}
+            </section>
+
+            <section>
+              <div className="mb-3 flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900">Sent requests</h2>
+                  <p className="text-sm text-gray-500">Pending requests you sent. Cancel old requests you no longer need.</p>
+                </div>
+                <Badge variant="secondary">{sentRequests.length}</Badge>
+              </div>
+
+              {filteredSentRequests.length > 0 ? (
+                <div className="max-h-[460px] overflow-y-auto rounded-xl border border-gray-200 bg-white">
+                  {filteredSentRequests.map((profile: AppProfile) => {
+                    const requestDate = formatRequestDate((profile as any).requestCreatedAt);
+
+                    return (
+                      <div
+                        key={`${getProfileId(profile)}-${(profile as any).requestId || 'sent'}`}
+                        className="flex items-center justify-between gap-4 border-b border-gray-100 p-3 last:border-b-0"
+                      >
+                        <div className="flex min-w-0 items-center gap-3">
+                          <img
+                            src={getPhotoUrl(profile)}
+                            alt={getDisplayName(profile)}
+                            className="h-10 w-10 flex-shrink-0 rounded-full border border-gray-200 object-cover"
+                            onError={(event) => {
+                              event.currentTarget.src = '/bust-avatar.svg';
+                            }}
+                          />
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium text-gray-900">{getDisplayName(profile)}</p>
+                            <p className="truncate text-xs text-gray-500">
+                              {requestDate ? `Sent ${requestDate}` : 'Pending'}
+                            </p>
+                          </div>
+                        </div>
                         <Button
                           variant="outline"
                           size="sm"
@@ -676,16 +815,16 @@ const SocialPage = () => {
                           <X className="h-4 w-4 mr-2" />
                           Cancel
                         </Button>
-                      )
-                    }
-                  />
-                ))}
-              </div>
-            ) : searchQuery.trim() ? (
-              <p className="text-gray-500">No requests found matching "{searchQuery}"</p>
-            ) : (
-              <p className="text-gray-500">{t('social.empty.noRequests')}</p>
-            )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="rounded-xl border border-dashed border-gray-200 bg-white p-6 text-center text-sm text-gray-500">
+                  {searchQuery.trim() ? `No sent requests match "${searchQuery}".` : 'No sent requests pending.'}
+                </div>
+              )}
+            </section>
           </div>
         );
 
@@ -695,23 +834,60 @@ const SocialPage = () => {
             <h2 className="text-xl font-semibold mb-4">{t('social.headers.discoverPeople')}</h2>
             {filteredItems.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {filteredItems.map((profile: AppProfile) => (
-                  <UserCard
-                    key={getProfileId(profile)}
-                    profile={profile}
-                    action={
-                      <Button
-                        variant="default"
-                        size="sm"
-                        className="whitespace-nowrap"
-                        onClick={() => handleFollowChange(getProfileId(profile), true)}
-                      >
-                        <UserPlus className="h-4 w-4 mr-2" />
-                        {t('social.actions.follow')}
-                      </Button>
-                    }
-                  />
-                ))}
+                {filteredItems.map((profile: AppProfile) => {
+                  const profileId = getProfileId(profile);
+                  const isConnected = connectedIds.has(profileId);
+                  const hasSentRequest = sentRequestIds.has(profileId);
+                  const hasIncomingRequest = incomingRequestIds.has(profileId);
+
+                  return (
+                    <UserCard
+                      key={profileId}
+                      profile={profile}
+                      action={
+                        isConnected ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="whitespace-nowrap border-blue-500 text-blue-600 hover:bg-blue-50"
+                            onClick={() => navigate(`/chat?user=${encodeURIComponent(profileId)}`)}
+                          >
+                            <MessageCircle className="h-4 w-4 mr-2" />
+                            Message
+                          </Button>
+                        ) : hasSentRequest ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="whitespace-nowrap cursor-not-allowed border-yellow-200 bg-yellow-50 text-yellow-700"
+                            disabled
+                          >
+                            Pending
+                          </Button>
+                        ) : hasIncomingRequest ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="whitespace-nowrap"
+                            onClick={() => handleTabChange('requests')}
+                          >
+                            Respond
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="default"
+                            size="sm"
+                            className="whitespace-nowrap"
+                            onClick={() => handleFollowChange(profileId, true)}
+                          >
+                            <UserPlus className="h-4 w-4 mr-2" />
+                            {t('social.actions.follow')}
+                          </Button>
+                        )
+                      }
+                    />
+                  );
+                })}
               </div>
             ) : searchQuery.trim() ? (
               <p className="text-gray-500">No people found matching "{searchQuery}"</p>
@@ -724,19 +900,71 @@ const SocialPage = () => {
       case 'notifications':
       default:
         return (
-          <div className="text-center py-12">
-            <Bell className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                          <h2 className="text-xl font-semibold text-gray-700 mb-2">{t('social.empty.noNotifications')}</h2>
-              <p className="text-gray-500">{t('social.headers.yourNotifications')}</p>
+          <div>
+            <h2 className="text-xl font-semibold mb-4">{t('social.tabs.notifications')}</h2>
+            {notifications.length > 0 ? (
+              <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+                {notifications.map((notification) => {
+                  const timestamp =
+                    getNotificationDateValue(notification.createdAt) ||
+                    getNotificationDateValue(notification.timestamp);
+
+                  return (
+                    <button
+                      key={notification.id}
+                      type="button"
+                      onClick={() => handleNotificationClick(notification)}
+                      className={`flex w-full items-start gap-3 border-b border-gray-100 p-4 text-left transition last:border-b-0 hover:bg-gray-50 ${
+                        notification.isRead ? 'bg-white' : 'bg-blue-50/70'
+                      }`}
+                    >
+                      <div className="mt-1 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-700">
+                        <Bell className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="truncate text-sm font-semibold text-gray-900">
+                            {notification.title}
+                          </p>
+                          {!notification.isRead && (
+                            <span className="h-2 w-2 flex-shrink-0 rounded-full bg-blue-600" />
+                          )}
+                        </div>
+                        <p className="mt-1 line-clamp-2 text-sm text-gray-600">
+                          {notification.message || notification.body}
+                        </p>
+                        {timestamp && (
+                          <p className="mt-2 text-xs text-gray-400">
+                            {timestamp.toLocaleString([], {
+                              month: 'short',
+                              day: 'numeric',
+                              hour: 'numeric',
+                              minute: '2-digit'
+                            })}
+                          </p>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <Bell className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                <h2 className="text-xl font-semibold text-gray-700 mb-2">{t('social.empty.noNotifications')}</h2>
+                <p className="text-gray-500">{t('social.headers.yourNotifications')}</p>
+              </div>
+            )}
           </div>
         );
     }
   };
 
   // User card component - Exact copy of CrewBannerCard style
-  const UserCard = ({ profile, action, showBio = true }: { 
+  const UserCard = ({ profile, action, meta, showBio = true }: { 
     profile: AppProfile; 
     action?: React.ReactNode;
+    meta?: string;
     showBio?: boolean;
   }) => {
     // Get the proper avatar and display name like crew cards do
@@ -781,6 +1009,11 @@ const SocialPage = () => {
                  title={`${jobTitle || ''}${location ? ' · ' + location : ''}`}>
               {jobTitle}{location ? ' · ' + location : ''}
             </div>
+            {meta && (
+              <div className="mt-1 text-xs text-gray-400 truncate" title={meta}>
+                {meta}
+              </div>
+            )}
           </div>
         </div>
 
@@ -1298,6 +1531,15 @@ const SocialPage = () => {
           <Button
             variant="outline"
             size="sm"
+            onClick={() => setShowStartConversation(true)}
+            className="flex items-center space-x-2"
+          >
+            <Plus className="h-4 w-4" />
+            <span>New message</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => {
               // Navigate to full messaging environment
               navigate('/chat');
@@ -1334,7 +1576,7 @@ const SocialPage = () => {
         <TabButton 
           active={activeTab === 'requests'}
           onClick={() => handleTabChange('requests')}
-          count={connectionRequests.length}
+          count={connectionRequests.length + sentRequests.length}
           icon={UserX}
         >
           {t('social.tabs.requests')}

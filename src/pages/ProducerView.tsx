@@ -66,7 +66,7 @@ const ProducerView: React.FC = () => {
   });
 
   // Sorting state
-  const [sortBy, setSortBy] = useState<'relevance' | 'name' | 'dateAdded'>('relevance');
+  const [sortBy, setSortBy] = useState<'dateAdded' | 'favorites' | 'relevance' | 'name'>('dateAdded');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   const getProfileType = (profile: CrewProfile): 'professional' | 'student' | 'teacher' => {
@@ -88,6 +88,17 @@ const ProducerView: React.FC = () => {
 
   const isCurrentUserTeacher = currentUserProfile ? getProfileType(currentUserProfile) === 'teacher' : false;
 
+  const getProfileTimestamp = (profile: CrewProfile): number => {
+    const value = (profile as any).createdAt || (profile as any).updatedAt;
+    if (!value) return 0;
+    if (typeof value.toMillis === 'function') return value.toMillis();
+    if (typeof value.toDate === 'function') return value.toDate().getTime();
+    if (value instanceof Date) return value.getTime();
+
+    const parsed = new Date(value).getTime();
+    return Number.isNaN(parsed) ? 0 : parsed;
+  };
+
   // Load favorite crew IDs
   useEffect(() => {
     const loadFavoriteCrewIds = async () => {
@@ -106,7 +117,7 @@ const ProducerView: React.FC = () => {
 
   // Filter and sort profiles
   useEffect(() => {
-    let filtered = crewProfiles;
+    let filtered = [...crewProfiles];
     
     // Filter by favorites if enabled
     if (showFavoritesOnly) {
@@ -125,6 +136,24 @@ const ProducerView: React.FC = () => {
     // Sort the filtered results
     filtered.sort((a, b) => {
       let comparison = 0;
+
+      const compareByNewest = () => {
+        const timeComparison = getProfileTimestamp(b) - getProfileTimestamp(a);
+        if (timeComparison !== 0) return timeComparison;
+
+        const favoriteComparison =
+          Number(favoriteCrewIds.includes(b.uid)) - Number(favoriteCrewIds.includes(a.uid));
+        if (favoriteComparison !== 0) return favoriteComparison;
+
+        return (a.name || '').localeCompare(b.name || '');
+      };
+
+      if (sortBy === 'favorites') {
+        const favoriteComparison =
+          Number(favoriteCrewIds.includes(b.uid)) - Number(favoriteCrewIds.includes(a.uid));
+        if (favoriteComparison !== 0) return favoriteComparison;
+        return compareByNewest();
+      }
 
       if (sortBy === 'relevance') {
         // Calculate relevance score based on multiple factors
@@ -170,10 +199,7 @@ const ProducerView: React.FC = () => {
         const bName = b.name || '';
         comparison = aName.localeCompare(bName);
       } else { // dateAdded
-        // Check if createdAt exists in the data (it might be in the Firestore document)
-        const aDate = (a as any).createdAt?.toDate?.() || new Date(0);
-        const bDate = (b as any).createdAt?.toDate?.() || new Date(0);
-        comparison = aDate.getTime() - bDate.getTime();
+        comparison = compareByNewest();
       }
 
       // For relevance sorting, always use descending (highest scores first)
@@ -181,6 +207,10 @@ const ProducerView: React.FC = () => {
         return comparison; // Already calculated as bScore - aScore (descending)
       }
       
+      if (sortBy === 'dateAdded') {
+        return sortOrder === 'asc' ? -comparison : comparison;
+      }
+
       return sortOrder === 'asc' ? comparison : -comparison;
     });
 
@@ -750,14 +780,38 @@ const ProducerView: React.FC = () => {
                 <div className="flex items-center bg-white border border-gray-200 rounded-md overflow-hidden">
                   <button
                     type="button"
-                    onClick={() => setSortBy('relevance')}
+                    onClick={() => setSortBy('dateAdded')}
                     className={`px-2 py-1 text-xs font-medium transition-colors duration-200 ${
-                      sortBy === 'relevance' 
+                      sortBy === 'dateAdded'
                         ? 'bg-indigo-50 text-indigo-600 border-r border-gray-200' 
                         : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
                     }`}
                   >
-                    {t('crew.popular')}
+                    {t('crew.newest', 'Newest')}
+                  </button>
+                  {user && (
+                    <button
+                      type="button"
+                      onClick={() => setSortBy('favorites')}
+                      className={`px-2 py-1 text-xs font-medium transition-colors duration-200 ${
+                        sortBy === 'favorites'
+                          ? 'bg-indigo-50 text-indigo-600 border-r border-gray-200'
+                          : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                      }`}
+                    >
+                      {t('crew.favorites')}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setSortBy('relevance')}
+                    className={`px-2 py-1 text-xs font-medium transition-colors duration-200 ${
+                      sortBy === 'relevance'
+                        ? 'bg-indigo-50 text-indigo-600 border-r border-gray-200'
+                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                    }`}
+                  >
+                    {t('crew.recommended', 'Recommended')}
                   </button>
                   <button
                     type="button"
@@ -770,21 +824,10 @@ const ProducerView: React.FC = () => {
                   >
                     {t('crew.name')}
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setSortBy('dateAdded')}
-                    className={`px-2 py-1 text-xs font-medium transition-colors duration-200 ${
-                      sortBy === 'dateAdded' 
-                        ? 'bg-indigo-50 text-indigo-600' 
-                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
-                    }`}
-                  >
-                    {t('crew.date')}
-                  </button>
                 </div>
                 
                 {/* Sort Order Toggle - Hidden for relevance sorting */}
-                {sortBy !== 'relevance' && (
+                {sortBy !== 'relevance' && sortBy !== 'favorites' && (
                   <button
                     type="button"
                     onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}

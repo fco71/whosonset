@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { db } from '../firebase';
-import { collection, getDocs, limit, query } from 'firebase/firestore';
+import { collection, getDocs, query } from 'firebase/firestore';
 import { PhotoConflictMonitor } from '../utilities/photoConflictMonitor';
 
 interface PublicCrewProfile {
@@ -27,6 +27,8 @@ interface PublicCrewProfile {
   school?: string;
   teacherInstitution?: string;
   teacherClasses?: string[];
+  createdAt?: unknown;
+  updatedAt?: unknown;
 }
 
 const PublicCrewPage: React.FC = () => {
@@ -37,9 +39,19 @@ const PublicCrewPage: React.FC = () => {
   useEffect(() => {
     const loadPublicCrewProfiles = async () => {
       try {
+        const getProfileTimestamp = (profile: PublicCrewProfile): number => {
+          const value = profile.createdAt || profile.updatedAt;
+          if (!value) return 0;
+          if (typeof (value as any).toMillis === 'function') return (value as any).toMillis();
+          if (typeof (value as any).toDate === 'function') return (value as any).toDate().getTime();
+          if (value instanceof Date) return value.getTime();
+
+          const parsed = new Date(String(value)).getTime();
+          return Number.isNaN(parsed) ? 0 : parsed;
+        };
+
         const crewQuery = query(
-          collection(db, 'crewProfiles'),
-          limit(12) // Limit for public demo
+          collection(db, 'crewProfiles')
         );
         const snapshot = await getDocs(crewQuery);
         
@@ -68,12 +80,20 @@ const PublicCrewPage: React.FC = () => {
               isTeacher: data.isTeacher,
               school: data.school,
               teacherInstitution: data.teacherInstitution,
-              teacherClasses: data.teacherClasses
+              teacherClasses: data.teacherClasses,
+              createdAt: data.createdAt,
+              updatedAt: data.updatedAt
             });
           }
         });
+
+        profiles.sort((a, b) => {
+          const timeComparison = getProfileTimestamp(b) - getProfileTimestamp(a);
+          if (timeComparison !== 0) return timeComparison;
+          return (a.displayName || '').localeCompare(b.displayName || '');
+        });
         
-        setCrewProfiles(profiles);
+        setCrewProfiles(profiles.slice(0, 12));
         
         // Enhanced Photo URL Conflict Detection using PhotoConflictMonitor
         // This runs in development to help identify potential issues

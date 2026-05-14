@@ -35,6 +35,10 @@ export class SocialService {
   static async sendFollowRequest(fromUserId: string, toUserId: string, message?: string): Promise<void> {
     try {
       console.log('[SocialService] Sending follow request:', { fromUserId, toUserId, message });
+
+      if (fromUserId === toUserId) {
+        throw new Error('Cannot send a follow request to yourself');
+      }
       
       // Check if request already exists
       const existingRequest = await this.getFollowRequest(fromUserId, toUserId);
@@ -889,8 +893,22 @@ export class SocialService {
         };
       }) as CrewProfile[];
       
-      // Sort in memory instead of using orderBy to avoid index requirement
-      profiles.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      const getProfileTime = (profile: CrewProfile) => {
+        const value = (profile as any).createdAt || (profile as any).updatedAt;
+        if (!value) return 0;
+        if (typeof value.toMillis === 'function') return value.toMillis();
+        if (typeof value.toDate === 'function') return value.toDate().getTime();
+        if (value instanceof Date) return value.getTime();
+        const parsed = new Date(value).getTime();
+        return Number.isNaN(parsed) ? 0 : parsed;
+      };
+
+      // Newest first keeps social discovery fresh without requiring a Firestore index.
+      profiles.sort((a, b) => {
+        const timeComparison = getProfileTime(b) - getProfileTime(a);
+        if (timeComparison !== 0) return timeComparison;
+        return (a.name || '').localeCompare(b.name || '');
+      });
       
       console.log('[SocialService] Fetched crew profiles:', profiles.length);
       return profiles;
