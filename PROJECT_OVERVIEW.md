@@ -8,6 +8,20 @@ status: living document — all reviews and plans go here
 
 A React 18 + TypeScript + Firebase social/jobs platform for the film industry. Bundled with Webpack, deployed to Firebase Hosting + Cloud Functions + Firestore + Storage.
 
+## ⚠️ Before every build / fresh checkout
+
+The `.env` file is not in git. It must exist on disk at the repo root before `npm run build`, otherwise `dotenv-webpack` injects `undefined` for all `REACT_APP_FIREBASE_*` keys and the deployed site dies with `auth/invalid-api-key`.
+
+**Symptoms of a missing `.env`:**
+- `dist/main.*.js` has no `AIzaSy...` string in it
+- Deployed site throws `FirebaseError: Firebase: Error (auth/invalid-api-key)` on first load
+
+**Procedure for any fresh checkout / new worktree / new machine:**
+1. Copy `.env` over from a working install, or rebuild it from `env-template.txt`.
+2. Verify with `grep -c AIza dist/main.*.js` after `npm run build` — should print `1`, not `0`.
+
+**Incident 2026-05-14:** committing `git rm --cached .env` in a branch and then fast-forward merging it into `main` caused git to delete `.env` from `main`'s working tree (correct git behavior, since the file had been "tracked", became "deleted", and your local copy matched HEAD so git didn't preserve it). A subsequent prod deploy shipped a bundle with no API key. Resolution: copied `.env` back from the worktree, rebuilt, redeployed.
+
 ## ⚠️ Data safety — read first
 
 This is a **live production site with real personal user data in Firestore**. The owner has stated explicitly that lost data is irrecoverable. Treat this as a hard guardrail:
