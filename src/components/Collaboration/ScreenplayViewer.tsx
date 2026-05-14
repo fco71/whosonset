@@ -3,7 +3,7 @@ import { collection, addDoc, query, where, orderBy, getDocs, onSnapshot, updateD
 import { Document, Page, pdfjs } from 'react-pdf';
 import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
-import { toast } from 'react-toastify';
+import { toast } from 'react-hot-toast';
 import './ScreenplayViewer.scss';
 import { useTranslation } from 'react-i18next';
 import EmailNotificationService from '../../utilities/emailNotificationService';
@@ -1012,7 +1012,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       
       leftUsers.forEach(user => {
         if (user.userId !== currentUser?.uid) {
-          toast.info(`${user.userName} left the session`);
+          toast(`${user.userName} left the session`);
         }
       });
     }

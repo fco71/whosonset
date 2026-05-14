@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { db, auth } from '../firebase';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { FaDownload, FaBookmark, FaRegBookmark } from 'react-icons/fa';
 import { CrewProfile } from '../types/CrewProfile';
 import FollowButton from './Social/FollowButton';
 import { imageErrorFallback } from '../utilities/imageErrorFallback';

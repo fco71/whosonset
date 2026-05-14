@@ -8,3 +8,7 @@ typings/
 # Node.js dependency directory
 node_modules/
 *.local
+
+# Local backup dumps (run from scripts/backup-firestore*.sh)
+crewProfiles-backup-*.json
+*-backup-*.json

@@ -79,3 +79,8 @@ public/*.chunk.js.map
 public/*.hot-update.js
 public/*.hot-update.json
 public/*.hot-update.js.map
+
+# OS / editor scratch files
+.DS_Store
+**/.DS_Store
+.fuse_hidden*

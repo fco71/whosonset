@@ -136,19 +136,7 @@ export function createAppRouter() {
           )
         },
         {
-          path: 'email-test',
-          element: <SimpleEmailTestPage />
-        },
-        { 
-          path: 'email-integration-test', 
-          element: <EmailIntegrationTestPage />
-        },
-        { 
-          path: 'password-reset-test', 
-          element: <PasswordResetTestPage />
-        },
-        { 
-          path: 'login', 
+          path: 'login',
           element: (
             <PublicRoute>
               <LoginPage />
@@ -400,7 +388,12 @@ export function createAppRouter() {
           path: 'contact', 
           element: <ContactPage />
         },
-        ...(process.env.NODE_ENV === 'development' ? [{ path: 'debug-jobs', element: <DebugJobsPage /> }] : []),
+        ...(process.env.NODE_ENV === 'development' ? [
+          { path: 'debug-jobs', element: <DebugJobsPage /> },
+          { path: 'email-test', element: <SimpleEmailTestPage /> },
+          { path: 'email-integration-test', element: <EmailIntegrationTestPage /> },
+          { path: 'password-reset-test', element: <PasswordResetTestPage /> },
+        ] : []),
       ],
     },
   ]);

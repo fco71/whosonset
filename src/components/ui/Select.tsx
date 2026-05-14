@@ -1,6 +1,6 @@
 import React, { SelectHTMLAttributes, forwardRef, useState } from 'react';
 import { useTheme } from '../../theme/ThemeProvider';
-import { FiChevronDown, FiCheck } from 'react-icons/fi';
+import { ChevronDown, Check } from 'lucide-react';
 
 interface Option {
   value: string | number;
@@ -150,7 +150,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
               {selectedOption?.label || <span className="text-gray-500">{placeholder}</span>}
             </span>
 
-            <FiChevronDown
+            <ChevronDown
               className={`absolute right-3 h-4 w-4 text-gray-500 dark:text-gray-500 transition-transform duration-200 ${
                 isOpen ? 'transform rotate-180' : ''
               }`}
@@ -184,7 +184,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
                   <div className="flex items-center justify-between">
                     <span className="truncate">{option.label}</span>
                     {selectedOption?.value === option.value && (
-                      <FiCheck className="h-4 w-4 text-blue-600 dark:text-blue-700 flex-shrink-0 ml-2" />
+                      <Check className="h-4 w-4 text-blue-600 dark:text-blue-700 flex-shrink-0 ml-2" />
                     )}
                   </div>
                 </div>

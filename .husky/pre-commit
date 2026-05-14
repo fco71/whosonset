@@ -4,15 +4,15 @@
 # Pre-commit hook to check for potential secrets
 echo "🔍 Checking for potential secrets..."
 
-# Check for API keys, tokens, and other secrets
-if git diff --cached --name-only | xargs grep -l -E "(AIza[0-9A-Za-z_-]{35}|sk_[0-9a-zA-Z]{48}|pk_[0-9a-zA-Z]{48}|ghp_[0-9a-zA-Z]{36}|gho_[0-9a-zA-Z]{36}|ghu_[0-9a-zA-Z]{36}|ghs_[0-9a-zA-Z]{36}|ghr_[0-9a-zA-Z]{36})" 2>/dev/null; then
+# Check for API keys, tokens, and other secrets (only in added/modified files)
+if git diff --cached --name-only --diff-filter=AM | xargs grep -l -E "(AIza[0-9A-Za-z_-]{35}|sk_[0-9a-zA-Z]{48}|pk_[0-9a-zA-Z]{48}|ghp_[0-9a-zA-Z]{36}|gho_[0-9a-zA-Z]{36}|ghu_[0-9a-zA-Z]{36}|ghs_[0-9a-zA-Z]{36}|ghr_[0-9a-zA-Z]{36})" 2>/dev/null; then
     echo "❌ Potential secrets detected in staged files!"
     echo "Please remove any API keys, tokens, or other secrets before committing."
     exit 1
 fi
 
-# Check for .env files being committed
-if git diff --cached --name-only | grep -E "\.env$"; then
+# Check for .env files being added or modified (deletions are fine)
+if git diff --cached --name-only --diff-filter=AM | grep -E "\.env$"; then
     echo "❌ .env file detected in staged files!"
     echo "Please ensure .env files are not committed to version control."
     exit 1

@@ -7,7 +7,7 @@ import Select, { SingleValue, ActionMeta } from 'react-select';
 import Card, { CardHeader, CardTitle, CardDescription, CardBody } from '../components/ui/Card';
 import { createJobPosting, getJobPostingById } from '../services/api/jobService';
 import { useAuth } from '../contexts/AuthContext';
-import { toast } from 'react-toastify';
+import { toast } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 
 type JobType = 'full_time' | 'part_time' | 'contract' | 'freelance' | 'temporary' | 'internship' | 'volunteer';
