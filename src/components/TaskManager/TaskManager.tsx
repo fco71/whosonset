@@ -10,12 +10,12 @@ import { Plus } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 // Temporary ProjectContext mock - replace with actual implementation
-const useProject = () => ({
-  currentUser: { 
+const useProject = (): any => ({
+  currentUser: {
     uid: 'temp-user-id',
-    activeProjectId: 'temp-project-id' 
+    activeProjectId: 'temp-project-id'
   },
-  currentProject: { 
+  currentProject: {
     id: 'temp-project-id',
     name: 'Temporary Project',
     description: 'A temporary project for development',
@@ -115,7 +115,7 @@ const TaskManager: React.FC<TaskManagerProps> = ({ projectId }) => {
 
   const handleTaskCreate = useCallback(async (taskData: Partial<Task>) => {
     try {
-      const newTask = {
+      const newTask: any = {
         ...taskData,
         projectId,
         status: 'pending',

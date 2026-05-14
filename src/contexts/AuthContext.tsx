@@ -122,7 +122,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const displayName = user.displayName || user.email?.split('@')[0] || 'User';
         
         // Create crew profile
-        const crewProfileData = {
+        // TODO: type this against the CrewProfile interface
+        const crewProfileData: any = {
           // Note: uid field is intentionally omitted since document ID should be the UID
           name: displayName,
           email: user.email,
@@ -151,7 +152,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.log('[AuthContext] Crew profile created for OAuth user');
         
         // Create user collections document
-        const userCollectionsData = {
+        const userCollectionsData: any = {
           savedProjects: [],
           savedCrew: [],
           createdAt: serverTimestamp(),
@@ -201,7 +202,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('[AuthContext] Firebase Auth profile updated');
       
       // Create ONLY the crew profile (this is the single source of truth)
-      const crewProfileData = {
+      // TODO: type this against the CrewProfile interface
+      const crewProfileData: any = {
         // Note: uid field is intentionally omitted since document ID should be the UID
         name: displayName, // This will autopopulate the resume name
         email: user.email,
@@ -245,7 +247,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       
       // Create user collections document (for favorites, etc.)
-      const userCollectionsData = {
+      const userCollectionsData: any = {
         savedProjects: [],
         savedCrew: [],
         createdAt: serverTimestamp(),

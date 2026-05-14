@@ -130,7 +130,7 @@ const ProjectDetail: React.FC = () => {
             coverImageBlobRef.current = null;
         }
         setCoverImageBlobUrl(null);
-        setFormState(prevState => ({
+        setFormState((prevState: any) => ({
             ...prevState,
             projectName: project?.projectName || '',
             country: project?.country || '',
@@ -244,7 +244,7 @@ const ProjectDetail: React.FC = () => {
                 updatedData.genres = formState.genres;
                 if (updatedData.hasOwnProperty('genre')) delete (updatedData as any).genre;
             } else if (typeof formState.genre === 'string') {
-                updatedData.genres = formState.genre.split(',').map(g => g.trim()).filter(g => g);
+                updatedData.genres = formState.genre.split(',').map((g: string) => g.trim()).filter((g: string) => g);
                 if (updatedData.hasOwnProperty('genre')) delete (updatedData as any).genre;
             }
             const { id, owner_uid, ownerId, ...writableData } = updatedData as any; // ownerId might also be immutable
@@ -255,7 +255,7 @@ const ProjectDetail: React.FC = () => {
             await updateDoc(doc(db, 'Projects', projectId), writableData);
 
             // Update local project state
-            setProject(prev => {
+            setProject((prev: any) => {
                 if (!prev) return null;
                 const newProjectState: Project = {
                     ...prev, // Start with previous state
@@ -277,7 +277,7 @@ const ProjectDetail: React.FC = () => {
                 return newProjectState;
             });
             // Also update formState to reflect the saved state, including new image URLs
-            setFormState(prev => ({...prev, ...writableData, coverImageUrl: newCoverImageUrl})); // Removed posterImageUrl from here
+            setFormState((prev: any) => ({...prev, ...writableData, coverImageUrl: newCoverImageUrl})); // Removed posterImageUrl from here
 
             setCoverImage(null); // Removed setPosterImage
             // Clean up blob URL after successful save
@@ -303,13 +303,13 @@ const ProjectDetail: React.FC = () => {
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
-        setFormState(prevState => ({ ...prevState, [name]: value }));
+        setFormState((prevState: any) => ({ ...prevState, [name]: value }));
     };
 
     const handleGenresChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { value } = e.target;
-        const genresArray = value.split(',').map(g => g.trim()).filter(g => g);
-        setFormState(prev => ({ ...prev, genres: genresArray, genre: value })); // Keep genre string for input field
+        const genresArray = value.split(',').map((g: string) => g.trim()).filter((g: string) => g);
+        setFormState((prev: any) => ({ ...prev, genres: genresArray, genre: value })); // Keep genre string for input field
     };
 
     const handleSuggestClick = () => {

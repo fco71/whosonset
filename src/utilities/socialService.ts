@@ -712,7 +712,7 @@ export class SocialService {
     try {
       console.log('[SocialService] Adding comment to activity:', activityId);
       
-      const commentData = {
+      const commentData: any = {
         activityId,
         userId,
         userName,

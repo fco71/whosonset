@@ -266,13 +266,13 @@ const ProjectsPage: React.FC = () => {
         productionCompany: fav.projectData?.productionCompany || '',
         status: fav.projectData?.status || 'active',
         synopsis: '', // Not stored in favorites
-        director: undefined,
-        producer: undefined,
+        director: undefined as any,
+        producer: undefined as any,
         coverImageUrl: fav.projectData?.coverImageUrl,
-        genres: undefined,
-        country: undefined,
-        productionLocations: undefined,
-        owner_uid: undefined,
+        genres: undefined as any,
+        country: undefined as any,
+        productionLocations: undefined as any,
+        owner_uid: undefined as any,
         isFavorite: true,
         projectType: 'favorite' as const
       })) as Project[];

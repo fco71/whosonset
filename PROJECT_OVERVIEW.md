@@ -151,7 +151,10 @@ Burns mental load, hides bugs, inflates bundle.
 
 - ✅ **Two Babel configs** (done 2026-05-14): `babel.config.json` was dead (Babel loads `.js` first), with plugins (`lodash`, `transform-react-remove-prop-types`, `plugin-transform-runtime`) that were never running. Deleted the JSON config and removed the three orphaned plugins from devDeps. `babel.config.js` (the active one) is unchanged.
 - ✅ **Two test runners configured** (done 2026-05-14): deleted `jest.config.mjs` and the Jest-only devDeps (`jest`, `babel-jest`, `@types/jest`, `identity-obj-proxy`). Vitest remains as the sole runner. Note: the 2 existing test files (`socialService.test.ts`, `TaskCard.test.tsx`) **fail under Vitest already** — pre-existing issue, separate from this cleanup; logged under P5.
-- **`tsconfig.json` has `strict: false`**. Turning it on is a multi-day cleanup but high ROI. Could be staged with `noImplicitAny` first.
+- ⏳ **`tsconfig.json` strict migration** — in progress, staged:
+  - ✅ 2026-05-14 pass 1: enabled `alwaysStrict`, `noImplicitThis`, `strictBindCallApply`, `strictFunctionTypes`, `useUnknownInCatchVariables`, `noImplicitAny`. 35 errors found and fixed (mostly Firestore-write object literals annotated `: any` with `TODO` comments, plus a few callback parameter annotations).
+  - ⏳ pass 2 (pending): enable `strictNullChecks` — recon shows ~63 errors. Bigger lift; catches real null/undefined bugs.
+  - ⏳ pass 3 (pending): enable full `strict: true` (adds `strictPropertyInitialization`, requires `strictNullChecks` first).
 - **`pdfjs-dist@^2.16.105` is from 2021**. `react-pdf@5` + pdfjs-dist v2 is a known fragile combo. Either pin compatibility carefully or upgrade both together.
 - **`react-beautiful-dnd@^13.1.1` is unmaintained** (since 2022). Used in `JobApplicantsPage.tsx`, `TaskManager/TaskCard.tsx`, `TaskManager/KanbanView.tsx`. Replace with `@dnd-kit/core` (modern, maintained) before it breaks against React 19.
 

@@ -695,7 +695,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     if (!annotation.trim()) return;
 
     try {
-      const annotationData = {
+      const annotationData: any = {
         screenplayId: screenplay.id,
         userId: currentUser?.uid || 'unknown',
         userName: currentUser?.displayName || 'Anonymous',
