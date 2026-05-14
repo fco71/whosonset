@@ -63,6 +63,6 @@ This is a **live production site** with real user data in Firestore. Backups are
 
 - [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) — current state, in-flight cleanup work, known issues
 - [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) — UI patterns
-- [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) — deploy workflow
+- [docs/deployment/DEPLOYMENT_GUIDE.md](docs/deployment/DEPLOYMENT_GUIDE.md) — deploy workflow
 
-Other top-level `*.md` files contain historical handoffs and feature-specific notes. They are kept for reference but most are stale; treat `PROJECT_OVERVIEW.md` as the source of truth.
+Older notes and historical handoffs live under [`docs/`](docs/), grouped by topic (`deployment/`, `email/`, `firebase/`, `features/`, `testing/`, `status/`, `handoffs/`, `misc/`). Most are stale snapshots; treat `PROJECT_OVERVIEW.md` as the source of truth.

@@ -155,11 +155,11 @@ Burns mental load, hides bugs, inflates bundle.
 - **`pdfjs-dist@^2.16.105` is from 2021**. `react-pdf@5` + pdfjs-dist v2 is a known fragile combo. Either pin compatibility carefully or upgrade both together.
 - **`react-beautiful-dnd@^13.1.1` is unmaintained** (since 2022). Used in `JobApplicantsPage.tsx`, `TaskManager/TaskCard.tsx`, `TaskManager/KanbanView.tsx`. Replace with `@dnd-kit/core` (modern, maintained) before it breaks against React 19.
 
-## P4 — Documentation
+## P4 — Documentation ✅ done 2026-05-14
 
-- ✅ **`README.md`** rewritten 2026-05-14 with stack, setup, commands, layout, data-safety pointer, and links to PROJECT_OVERVIEW.md / DESIGN_SYSTEM.md / DEPLOYMENT_GUIDE.md.
-- **28 top-level markdown files**. Most are operational notes, post-incident summaries, or migration checklists. Suggest: move to `docs/` (subgrouped by topic: `docs/email/`, `docs/firebase/`, `docs/deployment/`, `docs/handoffs/`) and keep root clean.
-- **`HANDOFF.md` is 47 KB** — almost certainly stale; archive a snapshot under `docs/handoffs/2026-…-handoff.md`.
+- ✅ **`README.md`** rewritten with stack, setup, commands, layout, data-safety pointer, and pointers to PROJECT_OVERVIEW.md / DESIGN_SYSTEM.md / docs/deployment/DEPLOYMENT_GUIDE.md.
+- ✅ **Root cleaned up**: 26 stale top-level `*.md`/`*.txt` files relocated into `docs/` subgroups (`deployment/`, `email/`, `firebase/`, `features/`, `testing/`, `status/`, `handoffs/`, `misc/`). Root now keeps only `README.md`, `PROJECT_OVERVIEW.md`, `DESIGN_SYSTEM.md`, and `env-template.txt`.
+- **`HANDOFF.md` (47 KB)** moved to `docs/handoffs/`. Not pruned — still stale and worth archiving with a date in the filename if you want history.
 
 ## P5 — Testing
 
