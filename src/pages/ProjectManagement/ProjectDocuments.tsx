@@ -9,7 +9,9 @@ import Modal from 'react-modal';
 import ScreenplayBreakdown from '../../components/ScreenplayBreakdown';
 import toast from 'react-hot-toast';
 
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
+// pdfjs-dist v5 (pulled in by react-pdf v10) only ships the ES-module worker (.mjs).
+// cdnjs hosts the matching file at the same version path.
+pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.mjs`;
 
 interface ProjectDocumentsProps {
   projectId: string;
