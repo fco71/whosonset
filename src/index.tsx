@@ -1,7 +1,3 @@
-
-// Initialize console filter BEFORE anything else to catch Firebase errors
-// import './utilities/consoleFilter';
-
 import './styles/globals.css';
 import './i18n';
 import React from 'react';

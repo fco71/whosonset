@@ -19,6 +19,12 @@ status: living document — all reviews and plans go here
 7. **P5 testing decision.** Prior agent's "both tests fail" claim was misleading. `socialService.test.ts` was not a real test — deleted. `TaskCard.test.tsx`: 1 of 5 assertions had a wrong Radix Tooltip query — fixed. Added `.claude/**` to vitest `exclude` so it stops running tests from throwaway worktrees. `npx vitest run` now passes **5/5**.
 8. **P3 `react-pdf` v5 → v10, drop standalone `pdfjs-dist`.** Removed the version-skew root cause (project had `pdfjs-dist@2` while react-pdf@5 bundled `pdfjs-dist@2.12.313`). Now react-pdf@10 brings `pdfjs-dist@5` as a transitive dep, and nothing in `src/` imports `pdfjs-dist` directly. Worker URL switched to `.mjs` (v5 ESM-only). Typecheck + production build both clean. **Visual smoke test needed** — render a screenplay PDF + a project document PDF.
 9. **P2 services consolidation.** Moved 11 `*Service.ts` files from `src/utilities/` to `src/services/`, rewrote 39 importers, fixed 3 cross-folder edges. Typecheck + tests + production build all clean. Affects ~52 files in one commit.
+10. **Dead-code sweep.** Audited every file in `src/services/` and `src/utilities/` for both static and dynamic imports + string-name references in `src/`, `functions/`, `scripts/`, build configs. Deleted 4 files with zero references:
+    - `src/services/userPreferencesService.ts`
+    - `src/utilities/collectionsHelpers.ts`
+    - `src/utilities/consoleFilter.ts` (plus the dead `// import './utilities/consoleFilter';` comment in `src/index.tsx`)
+    - `src/utilities/notificationTriggers.ts`
+    Typecheck + tests + production build all clean.
 
 **Outstanding manual actions** (need human / Firebase console):
 
