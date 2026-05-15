@@ -22,7 +22,7 @@ import {
   Award,
   CheckCircle
 } from 'lucide-react';
-import { JobMatchingService, JobMatchScore } from '../../utilities/jobMatchingService';
+import { JobMatchingService, JobMatchScore } from '../../services/jobMatchingService';
 import { jobCache, userCache, CACHE_KEYS } from '../../utilities/cacheManager';
 import { toast } from 'react-hot-toast';
 

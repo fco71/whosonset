@@ -4,7 +4,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { useTranslation } from 'react-i18next';
 import { auth } from '../firebase';
 import { Project } from '../types/Project';
-import { FavoritesService, FavoriteProject } from '../utilities/favoritesService';
+import { FavoritesService, FavoriteProject } from '../services/favoritesService';
 import ProjectCard from '../components/ProjectCard';
 import { Heart, Star, BookOpen, ArrowRight, Filter, Search } from 'lucide-react';
 

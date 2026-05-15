@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { SavedJobsService, SavedJob } from '../../utilities/savedJobsService';
+import { SavedJobsService, SavedJob } from '../../services/savedJobsService';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { Button } from '../ui/Button';

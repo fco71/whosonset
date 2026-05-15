@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { SocialService } from '../../utilities/socialService';
+import { SocialService } from '../../services/socialService';
 import { ActivityFeedItem, SocialComment, SocialLike } from '../../types/Social';
 import { useDebounce, useIntersectionObserver, performanceMonitor } from '../../utilities/performanceUtils';
 import { UserUtils, UserProfile } from '../../utilities/userUtils';

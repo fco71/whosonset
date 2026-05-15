@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import ChatInterface from './ChatInterface';
 import { useAuth } from '../../contexts/AuthContext';
-import { SocialService } from '../../utilities/socialService.v2';
+import { SocialService } from '../../services/socialService.v2';
 import { getDisplayName, getPhotoUrl } from '../../types/Profile';
 
 const ChatPage: React.FC = () => {

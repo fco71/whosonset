@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { MessagingService, ConversationSummary } from '../../utilities/messagingService';
+import { MessagingService, ConversationSummary } from '../../services/messagingService';
 import { DirectMessage } from '../../types/Chat';
 import { collection, getDocs, where, limit, query as firestoreQuery, doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { imageErrorFallback } from '../../utilities/imageErrorFallback';
 import { useTranslation } from 'react-i18next';
-import EmailNotificationService from '../../utilities/emailNotificationService';
+import EmailNotificationService from '../../services/emailNotificationService';
 import './ChatInterface.scss';
 
 interface ChatInterfaceProps {

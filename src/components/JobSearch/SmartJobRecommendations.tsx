@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { JobMatchingService, JobMatchScore } from '../../utilities/jobMatchingService';
+import { JobMatchingService, JobMatchScore } from '../../services/jobMatchingService';
 import Card, { CardHeader, CardBody, CardTitle } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { TrendingUp, MapPin, Clock, DollarSign, Star, Users, Briefcase } from 'lucide-react';

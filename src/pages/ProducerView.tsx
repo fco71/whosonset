@@ -7,7 +7,7 @@ import { ProjectEntry } from '../types/ProjectEntry';
 import { auth } from '../firebase';
 import FollowButton from '../components/Social/FollowButton';
 import { useTranslation } from 'react-i18next';
-import { CrewFavoritesService } from '../utilities/crewFavoritesService';
+import { CrewFavoritesService } from '../services/crewFavoritesService';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { Bookmark, BookmarkCheck } from 'lucide-react';
 import CrewViewSwitcher, { CrewViewMode } from '../components/CrewViewSwitcher';

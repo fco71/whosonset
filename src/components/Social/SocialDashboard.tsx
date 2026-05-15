@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { SocialService } from '../../utilities/socialService';
+import { SocialService } from '../../services/socialService';
 import { FollowRequest, Follow } from '../../types/Social';
 import { Button } from '../ui/Button';
 import { 

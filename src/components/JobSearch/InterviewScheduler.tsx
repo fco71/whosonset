@@ -5,7 +5,7 @@ import { db } from '../../firebase';
 import { JobApplication, JobPosting } from '../../types/JobApplication';
 import { Button } from '../../components/ui/Button';
 import { toast } from 'react-hot-toast';
-import EmailNotificationService from '../../utilities/emailNotificationService';
+import EmailNotificationService from '../../services/emailNotificationService';
 
 interface InterviewSchedulerProps {
   applicationId: string;

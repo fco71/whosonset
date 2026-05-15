@@ -6,7 +6,7 @@ import Card, { CardHeader, CardBody, CardFooter, CardTitle, CardDescription } fr
 import { Button } from '../ui/Button';
 import { Calendar, MapPin, Briefcase, Clock, DollarSign, Tag, ExternalLink, Bookmark, BookmarkCheck } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { SavedJobsService } from '../../utilities/savedJobsService';
+import { SavedJobsService } from '../../services/savedJobsService';
 import { toast } from 'react-hot-toast';
 
 interface JobCardProps {

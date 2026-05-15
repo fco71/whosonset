@@ -7,7 +7,7 @@ import {
   doc 
 } from 'firebase/firestore';
 import { db } from '../firebase';
-import EmailNotificationService from './emailNotificationService';
+import EmailNotificationService from '../services/emailNotificationService';
 
 // Initialize Firebase with error handling
 let auth: any;

@@ -6,7 +6,7 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import CrewProfileCard from '../components/CrewProfileCard';
 import { CrewProfile } from '../types/CrewProfile';
 import { useTranslation } from 'react-i18next';
-import { CrewFavoritesService } from '../utilities/crewFavoritesService';
+import { CrewFavoritesService } from '../services/crewFavoritesService';
 
 const SavedCrewProfilesPage: React.FC = () => {
   const { t } = useTranslation();

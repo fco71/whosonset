@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { JobPosting, JobApplication } from '../../types/JobApplication';
-import { JobApplicationService } from '../../utilities/jobApplicationService';
+import { JobApplicationService } from '../../services/jobApplicationService';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
 import { Avatar, AvatarImage, AvatarFallback } from '../ui/Avatar';

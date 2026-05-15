@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { SocialService } from '../../utilities/socialService';
+import { SocialService } from '../../services/socialService';
 import runSocialSystemTest from '../../utilities/socialTestData';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase';

@@ -5,7 +5,7 @@ import { db, auth } from '../firebase';
 import { doc as firestoreDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import ProjectForm from './ProjectForm';
-import EmailNotificationService from '../utilities/emailNotificationService';
+import EmailNotificationService from '../services/emailNotificationService';
 
 const COUNTRIES = [
   'United States', 'Canada', 'United Kingdom', 'Australia', 'Germany', 'France', 'Italy', 'Spain', 'Netherlands', 'Belgium',

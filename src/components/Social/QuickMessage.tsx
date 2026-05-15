@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { MessagingService } from '../../utilities/messagingService';
-import { SocialService } from '../../utilities/socialService';
+import { MessagingService } from '../../services/messagingService';
+import { SocialService } from '../../services/socialService';
 import { Follow } from '../../types/Social';
 
 interface QuickMessageProps {

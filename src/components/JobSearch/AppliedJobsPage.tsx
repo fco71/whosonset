@@ -5,7 +5,7 @@ import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firesto
 import { JobApplication } from '../../types/JobApplication';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { JobApplicationService } from '../../utilities/jobApplicationService';
+import { JobApplicationService } from '../../services/jobApplicationService';
 import ApplicationStatusBadge, { ApplicationStatus } from './ApplicationStatusBadge';
 import Card, { CardHeader, CardBody, CardFooter, CardTitle, CardDescription } from '../ui/Card';
 

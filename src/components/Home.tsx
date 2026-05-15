@@ -4,9 +4,9 @@ import { collection, getDocs, orderBy, limit, query } from 'firebase/firestore';
 import { Link } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
 import ProjectCard from './ProjectCard';
-import { FavoritesService } from '../utilities/favoritesService';
+import { FavoritesService } from '../services/favoritesService';
 import GridSkeleton from './GridSkeleton';
-import { CrewFavoritesService } from '../utilities/crewFavoritesService';
+import { CrewFavoritesService } from '../services/crewFavoritesService';
 
 
 import CrewProfileCard from './CrewProfileCard';

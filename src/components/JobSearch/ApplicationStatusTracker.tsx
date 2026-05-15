@@ -9,7 +9,7 @@ import { Button } from '../ui/Button';
 import Card, { CardHeader, CardBody, CardTitle } from '../ui/Card';
 import { MessageSquare, Send, Clock, CheckCircle, XCircle, AlertCircle, Star, Calendar, Download, Eye, FileText, Paperclip } from 'lucide-react';
 import ApplicationMessaging from './ApplicationMessaging';
-import { FileUploadService } from '../../utilities/fileUploadService';
+import { FileUploadService } from '../../services/fileUploadService';
 import ResumeDownloadButton from '../ResumeDownloadButton';
 
 interface ApplicationStatusTrackerProps {

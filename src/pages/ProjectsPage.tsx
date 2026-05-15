@@ -4,7 +4,7 @@ import { db, auth } from '../firebase';
 import { useNavigate } from 'react-router-dom';
 import ProjectCard from '../components/ProjectCard';
 import { useTranslation } from 'react-i18next';
-import { FavoritesService, FavoriteProject } from '../utilities/favoritesService';
+import { FavoritesService, FavoriteProject } from '../services/favoritesService';
 import { ProjectCrewService } from '../services/ProjectCrewService';
 
 interface Project {

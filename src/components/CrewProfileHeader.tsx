@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import FollowButton from './Social/FollowButton';
-import { CrewFavoritesService } from '../utilities/crewFavoritesService';
+import { CrewFavoritesService } from '../services/crewFavoritesService';
 import { useAuth } from '../contexts/AuthContext';
 import { imageErrorFallback } from '../utilities/imageErrorFallback';
 import { useTranslation } from 'react-i18next';

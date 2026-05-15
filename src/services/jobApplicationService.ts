@@ -19,7 +19,7 @@ import {
   setDoc,
   increment as firestoreIncrement
 } from 'firebase/firestore';
-import { firebaseConnectionManager } from './firebaseConnectionManager';
+import { firebaseConnectionManager } from '../utilities/firebaseConnectionManager';
 import { db } from '../firebase';
 import { 
   JobApplication, 

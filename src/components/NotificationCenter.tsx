@@ -159,7 +159,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
     if ((notification.type === 'message' || notification.type === 'message_received') && notification.senderId && currentUser?.uid) {
       const uid = currentUser.uid;
       const senderId = notification.senderId;
-      import('../utilities/messagingService').then(({ MessagingService }) => {
+      import('../services/messagingService').then(({ MessagingService }) => {
         MessagingService
           .markConversationAsRead(uid, senderId)
           .catch((error: unknown) => {

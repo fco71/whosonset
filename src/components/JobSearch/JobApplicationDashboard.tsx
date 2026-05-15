@@ -4,7 +4,7 @@ import { db } from '../../firebase';
 import { JobApplication, JobPosting } from '../../types/JobApplication';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { JobApplicationService } from '../../utilities/jobApplicationService';
+import { JobApplicationService } from '../../services/jobApplicationService';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface ApplicationStats {

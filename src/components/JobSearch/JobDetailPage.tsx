@@ -6,7 +6,7 @@ import { db } from '../../firebase';
 import { JobPosting } from '../../types/JobApplication';
 import { toast } from 'react-hot-toast';
 import FirebaseDiagnostic from './FirebaseDiagnostic';
-import { SavedJobsService } from '../../utilities/savedJobsService';
+import { SavedJobsService } from '../../services/savedJobsService';
 import { removeStructuredData, setPageSeo, setStructuredData } from '../../utilities/seo';
 
 const JOB_POSTING_SCHEMA_ID = 'job-posting-structured-data';

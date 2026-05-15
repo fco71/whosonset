@@ -23,7 +23,7 @@ import {
   BookmarkCheck,
   Globe,
 } from 'lucide-react';
-import { SavedJobsService } from '../utilities/savedJobsService';
+import { SavedJobsService } from '../services/savedJobsService';
 import { toast } from 'react-hot-toast';
 import Card, { CardHeader, CardBody, CardFooter, CardTitle, CardDescription } from '../components/ui/Card';
 

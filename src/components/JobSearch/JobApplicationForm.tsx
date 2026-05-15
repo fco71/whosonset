@@ -4,10 +4,10 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { JobPosting, JobApplication } from '../../types/JobApplication';
-import { JobApplicationService } from '../../utilities/jobApplicationService';
-import { FileUploadService, UploadedFile } from '../../utilities/fileUploadService';
+import { JobApplicationService } from '../../services/jobApplicationService';
+import { FileUploadService, UploadedFile } from '../../services/fileUploadService';
 import { useTranslation } from 'react-i18next';
-import EmailNotificationService from '../../utilities/emailNotificationService';
+import EmailNotificationService from '../../services/emailNotificationService';
 
 interface JobApplicationFormData {
   coverLetter: string;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { SocialService } from '../../utilities/socialService';
+import { SocialService } from '../../services/socialService';
 import { UserUtils, UserProfile } from '../../utilities/userUtils';
 import { SocialNotification } from '../../types/Social';
 

@@ -14,7 +14,7 @@ import { db, auth } from '../firebase';
 import { Link } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
 import ProjectCard from './ProjectCard';
-import { FavoritesService } from '../utilities/favoritesService';
+import { FavoritesService } from '../services/favoritesService';
 import { useTranslation } from 'react-i18next';
 
 interface Project {

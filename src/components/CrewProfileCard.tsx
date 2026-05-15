@@ -6,7 +6,7 @@ import { CrewProfile } from '../types/CrewProfile';
 import FollowButton from './Social/FollowButton';
 import { imageErrorFallback } from '../utilities/imageErrorFallback';
 import { useTranslation } from 'react-i18next';
-import { CrewFavoritesService } from '../utilities/crewFavoritesService';
+import { CrewFavoritesService } from '../services/crewFavoritesService';
 import { Bookmark, BookmarkCheck } from 'lucide-react';
 
 interface CrewProfileCardProps {

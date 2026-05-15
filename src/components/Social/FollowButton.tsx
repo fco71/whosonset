@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { SocialService } from '../../utilities/socialService';
+import { SocialService } from '../../services/socialService';
 import { toast } from 'react-hot-toast';
 
 interface FollowButtonProps {

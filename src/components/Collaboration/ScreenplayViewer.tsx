@@ -6,7 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
 import './ScreenplayViewer.scss';
 import { useTranslation } from 'react-i18next';
-import EmailNotificationService from '../../utilities/emailNotificationService';
+import EmailNotificationService from '../../services/emailNotificationService';
 
 // pdfjs-dist v5 (pulled in by react-pdf v10) only ships the ES-module worker (.mjs).
 // cdnjs hosts the matching file at the same version path.

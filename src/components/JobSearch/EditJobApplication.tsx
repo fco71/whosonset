@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { JobApplicationService } from '../../utilities/jobApplicationService';
+import { JobApplicationService } from '../../services/jobApplicationService';
 import { JobApplication } from '../../types/JobApplication';
 import { toast } from 'react-hot-toast';
 

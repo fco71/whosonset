@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import EmailNotificationService from '../utilities/emailNotificationService';
+import EmailNotificationService from '../services/emailNotificationService';
 
 const EmailIntegrationTestPage: React.FC = () => {
   const [testResults, setTestResults] = useState<Record<string, { success: boolean; message: string }>>({});

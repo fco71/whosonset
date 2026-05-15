@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { JobApplicationService } from '../../utilities/jobApplicationService';
+import { JobApplicationService } from '../../services/jobApplicationService';
 import { JobApplication } from '../../types/JobApplication';
 import ApplicationStatusBadge, { ApplicationStatus } from './ApplicationStatusBadge';
 import Card, { CardHeader, CardBody, CardTitle } from '../ui/Card';

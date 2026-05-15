@@ -18,6 +18,7 @@ status: living document — all reviews and plans go here
 6. **P1 `ChatTestPage` → `ChatPage` rename.** File, component identifier, default export, lazy import in `router.tsx`, and JSX usage all updated. `/chat` route handler now has a non-misleading name. Typecheck clean. **`socialService.v2.ts` reconcile remains deferred** — the two services use different profile types (`CrewProfile` vs `SocialUser`); merging is a design call, not a sweep. See P1 deferred section for details.
 7. **P5 testing decision.** Prior agent's "both tests fail" claim was misleading. `socialService.test.ts` was not a real test — deleted. `TaskCard.test.tsx`: 1 of 5 assertions had a wrong Radix Tooltip query — fixed. Added `.claude/**` to vitest `exclude` so it stops running tests from throwaway worktrees. `npx vitest run` now passes **5/5**.
 8. **P3 `react-pdf` v5 → v10, drop standalone `pdfjs-dist`.** Removed the version-skew root cause (project had `pdfjs-dist@2` while react-pdf@5 bundled `pdfjs-dist@2.12.313`). Now react-pdf@10 brings `pdfjs-dist@5` as a transitive dep, and nothing in `src/` imports `pdfjs-dist` directly. Worker URL switched to `.mjs` (v5 ESM-only). Typecheck + production build both clean. **Visual smoke test needed** — render a screenplay PDF + a project document PDF.
+9. **P2 services consolidation.** Moved 11 `*Service.ts` files from `src/utilities/` to `src/services/`, rewrote 39 importers, fixed 3 cross-folder edges. Typecheck + tests + production build all clean. Affects ~52 files in one commit.
 
 **Outstanding manual actions** (need human / Firebase console):
 
@@ -199,7 +200,12 @@ Burns mental load, hides bugs, inflates bundle.
 
 ## P2 — Code organization
 
-- **`src/services/` vs `src/utilities/` is inconsistent.** `src/services/` has 3 files; meanwhile `utilities/` contains `socialService.ts`, `messagingService.ts`, `emailNotificationService.ts`, `jobApplicationService.ts`, `savedJobsService.ts`, `userPreferencesService.ts`, `favoritesService.ts`, `crewFavoritesService.ts`, `jobMatchingService.ts`. Pick one home for services and move them.
+- ✅ **`src/services/` consolidation done 2026-05-14.** Moved 11 `*Service.ts` files from `src/utilities/` to `src/services/` via `git mv` (preserves history): `crewFavoritesService`, `emailNotificationService`, `favoritesService`, `fileUploadService`, `jobApplicationService`, `jobMatchingService`, `messagingService`, `savedJobsService`, `socialService`, `socialService.v2`, `userPreferencesService`. Bulk-rewrote 39 importer files (`from '…/utilities/<svc>'` → `from '…/services/<svc>'`) via per-service `sed`. Fixed 3 cross-folder edges that the bulk pass missed:
+  - `services/socialService.ts`: `./userUtils` → `../utilities/userUtils`
+  - `services/jobApplicationService.ts`: `./firebaseConnectionManager` → `../utilities/firebaseConnectionManager`
+  - `utilities/notificationTriggers.ts`: `./emailNotificationService` → `../services/emailNotificationService`
+  Verified clean: `npx tsc --noEmit` ✓, `npx vitest run` 5/5 ✓, `npm run build` ✓.
+  Note: `userPreferencesService.ts` had 0 importers — possibly dead code, kept it (move, don't delete) so a follow-up can decide.
 - **`src/components/` is 67 flat files** mixing page-level (`Home.tsx`, `Layout.tsx`, `Auth.tsx`, `LandingPage.tsx`) with leaf components. Suggestion: group by feature (the partial subfolders already hint at it) or by kind (`layout/`, `ui/`, `features/<name>/`).
 - **`src/pages/` has 39 files** with multiple naming styles (PascalCase + `test-task-manager.tsx`). Consolidate.
 - ✅ **Two toast libraries** (done 2026-05-14): `react-hot-toast` was used in 34 files vs `react-toastify` in 2 — kept the popular one. Migrated `ScreenplayViewer.tsx` and `PostJobPage.tsx` to `react-hot-toast`; removed `react-toastify` + `@types/react-toastify` from `package.json`. Discovered while migrating: **the two `react-toastify` call sites had been silently failing** because no `<ToastContainer />` was ever mounted in the app — those success/error toasts simply never appeared. After migration they actually render (via the existing `<Toaster />` in `App.tsx`). One `toast.info(...)` call in `ScreenplayViewer.tsx` was rewritten to `toast(...)` because react-hot-toast has no `.info` method.

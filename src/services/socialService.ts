@@ -21,7 +21,7 @@ import {
 import { db } from '../firebase';
 import { FollowRequest, Follow, SocialNotification, ActivityFeedItem, SocialLike, SocialComment } from '../types/Social';
 import { CrewProfile } from '../types/CrewProfile';
-import { UserUtils } from './userUtils';
+import { UserUtils } from '../utilities/userUtils';
 import EmailNotificationService from './emailNotificationService';
 
 export class SocialService {

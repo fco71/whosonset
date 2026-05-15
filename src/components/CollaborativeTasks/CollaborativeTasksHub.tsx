@@ -7,7 +7,7 @@ import TaskForm from './TaskForm';
 import './CollaborativeTasksHub.scss';
 import { toast } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
-import EmailNotificationService from '../../utilities/emailNotificationService';
+import EmailNotificationService from '../../services/emailNotificationService';
 
 interface CollaborativeTasksHubProps {
   projectId: string;

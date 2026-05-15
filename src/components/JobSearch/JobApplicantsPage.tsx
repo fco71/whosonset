@@ -4,7 +4,7 @@ import { doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serv
 import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { JobApplication } from '../../types/JobApplication';
-import { FileUploadService } from '../../utilities/fileUploadService';
+import { FileUploadService } from '../../services/fileUploadService';
 import { toast } from 'react-hot-toast';
 import { Button } from '../ui/Button';
 import Card from '../ui/Card';
@@ -51,7 +51,7 @@ import {
   FileText,
   Paperclip
 } from 'lucide-react';
-import EmailNotificationService from '../../utilities/emailNotificationService';
+import EmailNotificationService from '../../services/emailNotificationService';
 
 interface ApplicantProfile {
   uid: string;
