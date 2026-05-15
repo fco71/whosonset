@@ -73,7 +73,9 @@ module.exports = {
         removeRedundantAttributes: true,
       } : {},
     }),
-    new Dotenv(),
+    new Dotenv({
+      systemvars: true,
+    }),
     isProduction && new BundleAnalyzerPlugin({
       analyzerMode: 'static',
       reportFilename: '../bundle-analysis.html',

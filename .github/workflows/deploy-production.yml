@@ -22,6 +22,14 @@ jobs:
     name: Build and deploy to myfilmjobs.com
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      REACT_APP_FIREBASE_API_KEY: ${{ secrets.REACT_APP_FIREBASE_API_KEY }}
+      REACT_APP_FIREBASE_AUTH_DOMAIN: ${{ secrets.REACT_APP_FIREBASE_AUTH_DOMAIN }}
+      REACT_APP_FIREBASE_PROJECT_ID: ${{ secrets.REACT_APP_FIREBASE_PROJECT_ID }}
+      REACT_APP_FIREBASE_STORAGE_BUCKET: ${{ secrets.REACT_APP_FIREBASE_STORAGE_BUCKET }}
+      REACT_APP_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.REACT_APP_FIREBASE_MESSAGING_SENDER_ID }}
+      REACT_APP_FIREBASE_APP_ID: ${{ secrets.REACT_APP_FIREBASE_APP_ID }}
+      REACT_APP_FIREBASE_MEASUREMENT_ID: ${{ secrets.REACT_APP_FIREBASE_MEASUREMENT_ID }}
 
     steps:
       - name: Checkout repo
@@ -35,6 +43,23 @@ jobs:
 
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
+
+      - name: Verify Firebase web config
+        run: |
+          missing=0
+          for key in \
+            REACT_APP_FIREBASE_API_KEY \
+            REACT_APP_FIREBASE_AUTH_DOMAIN \
+            REACT_APP_FIREBASE_PROJECT_ID \
+            REACT_APP_FIREBASE_STORAGE_BUCKET \
+            REACT_APP_FIREBASE_MESSAGING_SENDER_ID \
+            REACT_APP_FIREBASE_APP_ID; do
+            if [ -z "${!key}" ]; then
+              echo "::error::$key is not configured in GitHub Actions secrets"
+              missing=1
+            fi
+          done
+          exit "$missing"
 
       - name: Build production bundle
         run: npm run build
@@ -51,6 +76,15 @@ jobs:
             echo "::error::dist/healthz.json missing - did copy-static-seo-assets run?"
             exit 1
           fi
+          for key in \
+            REACT_APP_FIREBASE_API_KEY \
+            REACT_APP_FIREBASE_PROJECT_ID \
+            REACT_APP_FIREBASE_APP_ID; do
+            if ! grep -R -F "${!key}" dist --include='*.js' >/dev/null; then
+              echo "::error::$key was not injected into the production bundle"
+              exit 1
+            fi
+          done
           echo "Build OK. dist/ size:"
           du -sh dist/
 
