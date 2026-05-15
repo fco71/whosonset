@@ -8,6 +8,10 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  id-token: write
+
 # Prevent two deploys running at the same time
 concurrency:
   group: deploy-production
@@ -50,14 +54,14 @@ jobs:
           echo "Build OK. dist/ size:"
           du -sh dist/
 
-      - name: Deploy to Firebase Hosting (production target)
-        uses: FirebaseExtended/action-hosting-deploy@v0
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
         with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_MY_FILM_JOBS }}
-          projectId: my-film-jobs
-          target: production
-          channelId: live
+          workload_identity_provider: projects/403346239424/locations/global/workloadIdentityPools/github-actions/providers/github
+          service_account: github-action-whosonset@my-film-jobs.iam.gserviceaccount.com
+
+      - name: Deploy to Firebase Hosting (production target)
+        run: npx firebase deploy --only hosting:production --project my-film-jobs --non-interactive
 
       - name: Smoke-test the live site
         run: |
