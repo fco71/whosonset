@@ -60,7 +60,7 @@ export class FileUploadService {
       
       // Create storage path
       const storagePath = applicationId 
-        ? `applications/${applicationId}/${type}/${fileName}`
+        ? `applications/${applicationId}/${userId}/${type}/${fileName}`
         : `users/${userId}/${type}/${fileName}`;
       
       const storageRef = ref(storage, storagePath);
@@ -179,4 +179,4 @@ export class FileUploadService {
     // For now, return null for non-image files
     return null;
   }
-} 
+}

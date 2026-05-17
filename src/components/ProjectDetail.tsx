@@ -197,7 +197,8 @@ const ProjectDetail: React.FC = () => {
         if (!imageFile) return '';
         if (!projectId) { setError("Project ID is missing for image upload."); return ''; }
         if (!imageFile.type.startsWith("image/")) { setError("Please upload a valid image file."); return ''; }
-        const storageRef = ref(storage, `projects/${projectId}/${baseImageName}`);
+        if (!currentUser) { setError("You must be signed in to upload project images."); return ''; }
+        const storageRef = ref(storage, `projects/${projectId}/${currentUser.uid}/${baseImageName}`);
         try {
             await uploadBytes(storageRef, imageFile);
             return await getDownloadURL(storageRef);

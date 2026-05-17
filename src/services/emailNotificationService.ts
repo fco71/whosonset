@@ -1,6 +1,12 @@
 import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 
+const debugLog = (...args: unknown[]) => {
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(...args);
+  }
+};
+
 interface EmailNotificationData {
   to: string;
   subject: string;
@@ -55,7 +61,7 @@ class EmailNotificationService {
           // Check if email notifications are enabled for this template
           const emailEnabled = notificationPreferences.emailNotifications?.[template];
           if (!emailEnabled) {
-            console.log(`[EmailNotificationService] Email notifications disabled for ${userIdentifier} (${template})`);
+            debugLog(`[EmailNotificationService] Email notifications disabled for ${userIdentifier} (${template})`);
             return false;
           }
 
@@ -147,13 +153,13 @@ class EmailNotificationService {
 
   static async sendNotification(data: EmailNotificationData): Promise<boolean> {
     try {
-      console.log('[EmailNotificationService] Sending notification:', data);
+      debugLog('[EmailNotificationService] Sending notification:', data);
 
       // Check frequency limit using userId if available, otherwise use email
       const userIdentifier = data.userId || data.to;
       const canSend = await this.canSendEmail(userIdentifier, data.template || 'general');
       if (!canSend) {
-        console.log(`[EmailNotificationService] Frequency limit reached for ${data.to} (${data.template})`);
+        debugLog(`[EmailNotificationService] Frequency limit reached for ${data.to} (${data.template})`);
         return false;
       }
 
@@ -171,7 +177,7 @@ class EmailNotificationService {
       });
 
       const result = await response.json();
-      console.log('[EmailNotificationService] Response:', result);
+      debugLog('[EmailNotificationService] Response:', result);
 
       if (result.success) {
         // Update tracking after successful send
@@ -195,7 +201,7 @@ class EmailNotificationService {
       // Get recipient's email
       const recipientEmail = await this.getUserEmail(recipientUserId);
       if (!recipientEmail) {
-        console.log('[EmailNotificationService] No email found for user:', recipientUserId);
+        debugLog('[EmailNotificationService] No email found for user:', recipientUserId);
         return false;
       }
 
@@ -236,7 +242,7 @@ The My Film Jobs Team
       // Get recipient's email
       const recipientEmail = await this.getUserEmail(recipientUserId);
       if (!recipientEmail) {
-        console.log('[EmailNotificationService] No email found for user:', recipientUserId);
+        debugLog('[EmailNotificationService] No email found for user:', recipientUserId);
         return false;
       }
 
@@ -276,7 +282,7 @@ The My Film Jobs Team
       // Get recipient's email
       const recipientEmail = await this.getUserEmail(recipientUserId);
       if (!recipientEmail) {
-        console.log('[EmailNotificationService] No email found for user:', recipientUserId);
+        debugLog('[EmailNotificationService] No email found for user:', recipientUserId);
         return false;
       }
 
@@ -317,7 +323,7 @@ The My Film Jobs Team
       // Get recipient's email
       const recipientEmail = await this.getUserEmail(recipientUserId);
       if (!recipientEmail) {
-        console.log('[EmailNotificationService] No email found for user:', recipientUserId);
+        debugLog('[EmailNotificationService] No email found for user:', recipientUserId);
         return false;
       }
 
@@ -358,7 +364,7 @@ The My Film Jobs Team
       // Get recipient's email
       const recipientEmail = await this.getUserEmail(recipientUserId);
       if (!recipientEmail) {
-        console.log('[EmailNotificationService] No email found for user:', recipientUserId);
+        debugLog('[EmailNotificationService] No email found for user:', recipientUserId);
         return false;
       }
 
@@ -398,7 +404,7 @@ The My Film Jobs Team
       // Get recipient's email
       const recipientEmail = await this.getUserEmail(recipientUserId);
       if (!recipientEmail) {
-        console.log('[EmailNotificationService] No email found for user:', recipientUserId);
+        debugLog('[EmailNotificationService] No email found for user:', recipientUserId);
         return false;
       }
 
@@ -438,7 +444,7 @@ The My Film Jobs Team
       // Get recipient's email
       const recipientEmail = await this.getUserEmail(recipientUserId);
       if (!recipientEmail) {
-        console.log('[EmailNotificationService] No email found for user:', recipientUserId);
+        debugLog('[EmailNotificationService] No email found for user:', recipientUserId);
         return false;
       }
 
@@ -480,7 +486,7 @@ The My Film Jobs Team
       // Get recipient's email
       const recipientEmail = await this.getUserEmail(recipientUserId);
       if (!recipientEmail) {
-        console.log('[EmailNotificationService] No email found for user:', recipientUserId);
+        debugLog('[EmailNotificationService] No email found for user:', recipientUserId);
         return false;
       }
 
@@ -611,4 +617,4 @@ The My Film Jobs Team
   }
 }
 
-export default EmailNotificationService; 
+export default EmailNotificationService;

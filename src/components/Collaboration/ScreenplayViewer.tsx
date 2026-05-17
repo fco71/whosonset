@@ -8,6 +8,12 @@ import './ScreenplayViewer.scss';
 import { useTranslation } from 'react-i18next';
 import EmailNotificationService from '../../services/emailNotificationService';
 
+const debugLog = (...args: unknown[]) => {
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(...args);
+  }
+};
+
 // pdfjs-dist v5 (pulled in by react-pdf v10) only ships the ES-module worker (.mjs).
 // cdnjs hosts the matching file at the same version path.
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.mjs`;
@@ -232,7 +238,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
             : [];
           updateDoc(annotationRef, { replies: safeReplies })
             .then(() => {
-              console.log('[DEBUG] Reply saved to Firestore successfully');
+              debugLog('[DEBUG] Reply saved to Firestore successfully');
             })
             .catch((error) => {
               console.error('[DEBUG] Error saving reply to Firestore:', error);
@@ -459,7 +465,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
 
   // Initialize collaboration session
   useEffect(() => {
-    console.log('[DEBUG] ScreenplayViewer mounted with screenplay:', screenplay);
+    debugLog('[DEBUG] ScreenplayViewer mounted with screenplay:', screenplay);
     if (!screenplay.url || typeof screenplay.url !== 'string' || screenplay.url.trim() === '') {
       setError('No PDF URL found for this screenplay.');
       setLoading(false);
@@ -567,7 +573,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
             }))
           : [];
         
-        console.log(`[DEBUG] Annotation ${doc.id} has ${processedReplies.length} replies:`, processedReplies);
+        debugLog(`[DEBUG] Annotation ${doc.id} has ${processedReplies.length} replies:`, processedReplies);
         
         return {
           id: doc.id,
@@ -640,7 +646,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
 
   const loadAnnotations = async () => {
     try {
-      console.log('[DEBUG] Querying screenplayAnnotations with screenplayId:', screenplay.id);
+      debugLog('[DEBUG] Querying screenplayAnnotations with screenplayId:', screenplay.id);
       const q = query(
         collection(db, 'screenplayAnnotations'),
         where('screenplayId', '==', screenplay.id),
@@ -656,7 +662,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
             }))
           : [];
         
-        console.log(`[DEBUG] Loaded annotation ${doc.id} with ${processedReplies.length} replies:`, processedReplies);
+        debugLog(`[DEBUG] Loaded annotation ${doc.id} with ${processedReplies.length} replies:`, processedReplies);
         
         return {
           id: doc.id,
@@ -666,7 +672,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         };
       }) as Annotation[];
       setAnnotations(annotationsData);
-      console.log('[DEBUG] Total annotations loaded:', annotationsData.length);
+      debugLog('[DEBUG] Total annotations loaded:', annotationsData.length);
     } catch (error) {
       console.error('[DEBUG] Error loading annotations:', error);
     }
@@ -674,7 +680,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
 
   const loadTags = async () => {
     try {
-      console.log('[DEBUG] Querying screenplayTags with screenplayId:', screenplay.id);
+      debugLog('[DEBUG] Querying screenplayTags with screenplayId:', screenplay.id);
       const q = query(
         collection(db, 'screenplayTags'),
         where('screenplayId', '==', screenplay.id),
@@ -687,7 +693,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         timestamp: toDate(doc.data().timestamp)
       })) as Tag[];
       setTags(tagsData);
-      console.log('[DEBUG] Loaded tags:', tagsData);
+      debugLog('[DEBUG] Loaded tags:', tagsData);
     } catch (error) {
       console.error('[DEBUG] Error loading tags:', error);
     }
@@ -937,9 +943,9 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
 
   // Debug replies when annotations change
   useEffect(() => {
-    console.log('[DEBUG] Annotations updated:', annotations.length);
+    debugLog('[DEBUG] Annotations updated:', annotations.length);
     annotations.forEach(annotation => {
-      console.log(`[DEBUG] Annotation ${annotation.id}:`, {
+      debugLog(`[DEBUG] Annotation ${annotation.id}:`, {
         content: annotation.annotation,
         repliesCount: annotation.replies?.length || 0,
         replies: annotation.replies,
@@ -1026,7 +1032,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   useEffect(() => {
     if (!screenplay.id) return;
 
-    console.log('Setting up real-time collaborators listener for screenplay:', screenplay.id);
+    debugLog('Setting up real-time collaborators listener for screenplay:', screenplay.id);
 
     const collaboratorsUnsubscribe = onSnapshot(
       doc(db, 'screenplays', screenplay.id),
@@ -1034,10 +1040,10 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         if (doc.exists()) {
           const data = doc.data();
           const teamMembers = data.teamMembers || [];
-          console.log('Real-time collaborators update received:', teamMembers);
+          debugLog('Real-time collaborators update received:', teamMembers);
           setCollaborators(teamMembers);
         } else {
-          console.log('Screenplay document does not exist');
+          debugLog('Screenplay document does not exist');
           setCollaborators([]);
         }
       },
@@ -1048,7 +1054,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     );
 
     return () => {
-      console.log('Cleaning up collaborators listener');
+      debugLog('Cleaning up collaborators listener');
       collaboratorsUnsubscribe();
     };
   }, [screenplay.id]);
@@ -1129,7 +1135,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         // Fallback: search all crew profiles
         const crewRef = collection(db, 'crewProfiles');
         const snap = await getDocs(crewRef);
-        console.log('[ScreenplayCollabModal] Fallback: found', snap.docs.length, 'crew profiles in Firestore');
+        debugLog('[ScreenplayCollabModal] Fallback: found', snap.docs.length, 'crew profiles in Firestore');
         allResults = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         if (allResults.length === 0) {
           console.warn('[ScreenplayCollabModal] No crew profiles found in Firestore crewProfiles collection.');
@@ -1151,7 +1157,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
           isFollowing: userFollows.includes(user.id),
           connectionStatus: 'connected',
         }));
-      console.log('[ScreenplayCollabModal] Filtered users after search:', filtered.length, filtered.map(u => u.name));
+      debugLog('[ScreenplayCollabModal] Filtered users after search:', filtered.length, filtered.map(u => u.name));
       setCollaboratorResults(filtered);
       setSearchLoading(false);
     } catch (error) {
@@ -1168,8 +1174,8 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     }
     setAddingCollaborator(true);
     try {
-      console.log('Adding collaborator:', user);
-      console.log('Screenplay ID:', screenplay.id);
+      debugLog('Adding collaborator:', user);
+      debugLog('Screenplay ID:', screenplay.id);
       
       // First check if the screenplay document exists
       const screenplayRef = doc(db, 'screenplays', screenplay.id);
@@ -1180,7 +1186,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       }
       
       const screenplayData = screenplayDoc.data();
-      console.log('Current screenplay data:', screenplayData);
+      debugLog('Current screenplay data:', screenplayData);
       
       const newCollaborator = {
         id: user.id,
@@ -1192,19 +1198,19 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         addedBy: currentUser?.uid
       };
 
-      console.log('New collaborator object:', newCollaborator);
+      debugLog('New collaborator object:', newCollaborator);
 
       // Update the database
       await updateDoc(screenplayRef, {
         teamMembers: arrayUnion(newCollaborator)
       });
 
-      console.log('Database updated successfully');
+      debugLog('Database updated successfully');
 
       // Update local state immediately
       setCollaborators(prev => {
         const updated = [...prev, newCollaborator];
-        console.log('Updated collaborators list:', updated);
+        debugLog('Updated collaborators list:', updated);
         return updated;
       });
 
@@ -1329,7 +1335,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                   <Document
                     file={screenplay.url}
                     onLoadSuccess={({ numPages }: { numPages: number }) => {
-                      console.log('PDF loaded successfully, numPages:', numPages);
+                      debugLog('PDF loaded successfully, numPages:', numPages);
                       setNumPages(numPages);
                       setLoading(false);
                       setCurrentPage(1);
@@ -1361,11 +1367,11 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                                     pageNumber={pageNumber}
                                     scale={scale}
                                     onLoadSuccess={() => {
-                                      console.log(`Page ${pageNumber} loaded successfully`);
+                                      debugLog(`Page ${pageNumber} loaded successfully`);
                                       attachSelectionHandlers();
                                     }}
                                     onRenderSuccess={() => {
-                                      console.log(`Page ${pageNumber} rendered successfully`);
+                                      debugLog(`Page ${pageNumber} rendered successfully`);
                                       attachSelectionHandlers();
                                     }}
                                     onLoadError={(error: Error) => console.error(`Error loading page ${pageNumber}:`, error)}
@@ -2152,4 +2158,4 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   );
 };
 
-export default ScreenplayViewer; 
+export default ScreenplayViewer;

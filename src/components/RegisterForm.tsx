@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom'; // Optional: for redirecting after registration
 import { useAuth } from '../contexts/AuthContext';
-import { db, storage } from '../firebase';
+import { auth, db, storage } from '../firebase';
 import { doc, setDoc, collection, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { ProjectEntry } from '../types/ProjectEntry';
@@ -131,7 +131,11 @@ const RegisterForm: React.FC = () => {
       // 2. Upload profile image if one was selected
       let uploadedImageUrl = '';
       if (imageFile) {
-        const storageRef = ref(storage, `profileImages/${form.email}`);
+        const userId = auth.currentUser?.uid;
+        if (!userId) {
+          throw new Error('Unable to upload profile image before sign-in completes.');
+        }
+        const storageRef = ref(storage, `profileImages/${userId}/${Date.now()}_${imageFile.name}`);
         await uploadBytes(storageRef, imageFile);
         uploadedImageUrl = await getDownloadURL(storageRef);
       }

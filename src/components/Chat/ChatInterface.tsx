@@ -373,10 +373,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       let fileUrl = '';
       if (pendingAttachmentType?.startsWith('audio/')) {
         // For voice messages, upload to storage
-        fileUrl = await MessagingService.uploadFileToStorage(pendingAttachment, 'voice-messages');
+        fileUrl = await MessagingService.uploadFileToStorage(pendingAttachment, 'voice-messages', currentUserId);
       } else {
         // For other files, use existing logic
-        fileUrl = await MessagingService.uploadFileToStorage(pendingAttachment);
+        fileUrl = await MessagingService.uploadFileToStorage(pendingAttachment, 'chat-uploads', currentUserId);
       }
 
       const content = pendingAttachmentType?.startsWith('audio/') 

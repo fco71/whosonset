@@ -17,6 +17,12 @@ import { db, storage } from '../../firebase';
 import ScreenplayViewer from './ScreenplayViewer';
 import { useTranslation } from 'react-i18next';
 
+const debugLog = (...args: unknown[]) => {
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(...args);
+  }
+};
+
 interface CollaborationHubProps {
   projectId?: string;
 }
@@ -301,7 +307,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         // Fallback: search all crew profiles
         const crewProfilesRef = collection(db, 'crewProfiles');
         const snap = await getDocs(crewProfilesRef);
-        console.log('[CollabModal] Fallback: found', snap.docs.length, 'crew profiles in Firestore');
+        debugLog('[CollabModal] Fallback: found', snap.docs.length, 'crew profiles in Firestore');
         allResults = snap.docs.map(doc => ({
           id: doc.id,
           name: doc.data().name || doc.data().displayName || `Crew Member ${doc.id.slice(-4)}`,
@@ -321,7 +327,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         (user.role || '').toLowerCase().includes(queryStr.toLowerCase()) ||
         (user.company || '').toLowerCase().includes(queryStr.toLowerCase())
       );
-      console.log('[CollabModal] Filtered users after search:', filtered.length, filtered.map(u => u.name));
+      debugLog('[CollabModal] Filtered users after search:', filtered.length, filtered.map(u => u.name));
       setUserSearchResults(filtered);
     } catch (error) {
       console.error('[CollabModal] Error searching users:', error);
@@ -387,7 +393,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 
   const handleCreateWorkspace = () => {
     try {
-      console.log('Creating workspace with data:', newWorkspaceData);
+      debugLog('Creating workspace with data:', newWorkspaceData);
 
       const newWorkspace: CollaborationWorkspace = {
         id: Date.now().toString(),
@@ -485,7 +491,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   // Handle joining a workspace
   const handleJoinWorkspace = (workspaceId: string) => {
     try {
-      console.log('Join workspace clicked:', workspaceId);
+      debugLog('Join workspace clicked:', workspaceId);
       const workspace = workspaces.find(ws => ws.id === workspaceId);
       if (workspace) {
         setSelectedWorkspace(workspace);
@@ -499,7 +505,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   // Handle workspace settings
   const handleWorkspaceSettings = (workspaceId: string) => {
     try {
-      console.log('Workspace settings clicked:', workspaceId);
+      debugLog('Workspace settings clicked:', workspaceId);
       const workspace = workspaces.find(ws => ws.id === workspaceId);
       if (workspace) {
         setWorkspaceSettings(workspace.settings);
@@ -520,7 +526,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 
     try {
       // Upload file to storage
-      const storageRef = ref(storage, `screenplays/${Date.now()}_${file.name}`);
+      const storageRef = ref(storage, `screenplays/${currentUser.uid}/${Date.now()}_${file.name}`);
       const snapshot = await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(snapshot.ref);
       
@@ -1284,7 +1290,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     );
   }
 
-  console.log('Rendering CollaborationHub with:', {
+  debugLog('Rendering CollaborationHub with:', {
     activeTab,
     workspacesCount: workspaces.length,
     selectedWorkspace: selectedWorkspace?.name
@@ -1401,4 +1407,4 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   );
 };
 
-export default CollaborationHub; 
+export default CollaborationHub;

@@ -29,7 +29,7 @@ status: living document — all reviews and plans go here
 **Outstanding manual actions** (need human / Firebase console):
 
 - Rotate the Firebase Web API key (P0 #2 follow-up — pre-existing).
-- Rotate the leaked Gmail app password `ersb xtpm slup jgfn` on `iam@myfilmjobs.com` (new this session). Update `firebase functions:secrets:set GMAIL_APP_PASSWORD` and redeploy `functions`.
+- Rotate the leaked Gmail app password `[REDACTED_GMAIL_APP_PASSWORD]` on `iam@myfilmjobs.com` (new this session). Update `firebase functions:secrets:set GMAIL_APP_PASSWORD` and redeploy `functions`.
 - Deploy storage rules: `firebase deploy --only storage:rules`.
 - Review and commit staged changes from this session.
 
@@ -48,15 +48,15 @@ status: living document — all reviews and plans go here
 
 A React 18 + TypeScript + Firebase social/jobs platform for the film industry. Bundled with Webpack, deployed to Firebase Hosting + Cloud Functions + Firestore + Storage.
 
-## ⚠️ Before every build / fresh checkout
+## ⚠️ Before every local/manual build / fresh checkout
 
-The `.env` file is not in git. It must exist on disk at the repo root before `npm run build`, otherwise `dotenv-webpack` injects `undefined` for all `REACT_APP_FIREBASE_*` keys and the deployed site dies with `auth/invalid-api-key`.
+The `.env` file is not in git. It must exist on disk at the repo root before a local/manual `npm run build`, otherwise `dotenv-webpack` injects `undefined` for all `REACT_APP_FIREBASE_*` keys and the built site dies with `auth/invalid-api-key`. GitHub Actions production deploys write `.env` from repository secrets before building.
 
 **Symptoms of a missing `.env`:**
 - `dist/main.*.js` has no `AIzaSy...` string in it
 - Deployed site throws `FirebaseError: Firebase: Error (auth/invalid-api-key)` on first load
 
-**Procedure for any fresh checkout / new worktree / new machine:**
+**Procedure for any fresh checkout / new worktree / new machine running local builds:**
 1. Copy `.env` over from a working install, or rebuild it from `env-template.txt`.
 2. Verify with `grep -c AIza dist/main.*.js` after `npm run build` — should print `1`, not `0`.
 
@@ -178,7 +178,7 @@ These are not stylistic; they cost the repo size, leak credentials, or pollute h
 
 - ✅ **`functions/` root clutter cleaned up 2026-05-14**:
   - `functions/fix-crew-photos.js` → moved to `scripts/fix-crew-photos.js` (staged, not yet committed). Useful as a reference for future Firestore REST scripts using the Firebase CLI's stored OAuth.
-  - `functions/test-email.js` → **deleted** (staged, not yet committed). It was a standalone Nodemailer ping script with a **hardcoded Gmail app password** (`ersb xtpm slup jgfn`) for `iam@myfilmjobs.com`. The real implementation lives in `functions/src/emailService.ts`.
+  - `functions/test-email.js` → **deleted** (staged, not yet committed). It was a standalone Nodemailer ping script with a **hardcoded Gmail app password** (`[REDACTED_GMAIL_APP_PASSWORD]`) for `iam@myfilmjobs.com`. The real implementation lives in `functions/src/emailService.ts`.
   - ⚠️ **Manual action required — rotate that Gmail app password.** It exists in git history. Steps: Google Account → Security → 2-Step Verification → App passwords → revoke the leaked one and generate a new one. Then update the Cloud Function secret (`firebase functions:secrets:set GMAIL_APP_PASSWORD`) and redeploy `functions`. Add to the same checklist as the Firebase Web API key rotation.
 
 ## P1 — Dead / duplicate code  ✅ done 2026-05-14

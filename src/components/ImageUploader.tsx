@@ -5,12 +5,18 @@ import {
   uploadBytesResumable,
   getDownloadURL,
 } from 'firebase/storage';
-import { app } from '../firebase';
+import { app, auth } from '../firebase';
 import { Crop, PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import ReactCrop from 'react-image-crop';
 import getCroppedImg from './getCroppedImg';
 import { imageErrorFallback } from '../utilities/imageErrorFallback';
+
+const debugLog = (...args: unknown[]) => {
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(...args);
+  }
+};
 
 interface ImageUploaderProps {
   // Called with the download URL after upload
@@ -117,7 +123,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
       return;
     }
 
-    console.log('[ImageUploader] File selected:', selectedFile.name, selectedFile.size, 'bytes');
+    debugLog('[ImageUploader] File selected:', selectedFile.name, selectedFile.size, 'bytes');
 
     // Clean up existing blob URLs before creating new ones
     if (currentImageBlobRef.current) {
@@ -131,7 +137,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
     currentImageBlobRef.current = objectURL;
     setImageSrc(objectURL);
     
-    console.log('[ImageUploader] Created blob URL:', objectURL);
+    debugLog('[ImageUploader] Created blob URL:', objectURL);
     
     if (cropEnabled) {
       setShowCrop(true);
@@ -142,16 +148,16 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
   };
 
   const onCropComplete = useCallback((crop: PixelCrop, percentageCrop: Crop) => {
-    console.log('[ImageUploader] Crop complete - pixels:', crop, 'percentage:', percentageCrop);
-    console.log('[ImageUploader] Current zoom level:', zoom);
-    console.log('[ImageUploader] Image ref dimensions:', imageRef.current?.width, 'x', imageRef.current?.height);
-    console.log('[ImageUploader] Image natural dimensions:', imageRef.current?.naturalWidth, 'x', imageRef.current?.naturalHeight);
+    debugLog('[ImageUploader] Crop complete - pixels:', crop, 'percentage:', percentageCrop);
+    debugLog('[ImageUploader] Current zoom level:', zoom);
+    debugLog('[ImageUploader] Image ref dimensions:', imageRef.current?.width, 'x', imageRef.current?.height);
+    debugLog('[ImageUploader] Image natural dimensions:', imageRef.current?.naturalWidth, 'x', imageRef.current?.naturalHeight);
     
     if (crop.width > 0 && crop.height > 0) {
-      console.log('[ImageUploader] Setting cropped area pixels:', crop);
+      debugLog('[ImageUploader] Setting cropped area pixels:', crop);
       setCroppedAreaPixels(crop);
     } else {
-      console.log('[ImageUploader] Crop area too small or invalid, not setting');
+      debugLog('[ImageUploader] Crop area too small or invalid, not setting');
     }
   }, [zoom]);
 
@@ -179,16 +185,16 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
       return;
     }
     
-    console.log('[ImageUploader] Starting crop save process...');
-    console.log('[ImageUploader] Image source:', imageSrc);
-    console.log('[ImageUploader] Crop pixels:', croppedAreaPixels);
-    console.log('[ImageUploader] Current zoom level:', zoom);
-    console.log('[ImageUploader] Image ref available:', !!imageRef.current);
+    debugLog('[ImageUploader] Starting crop save process...');
+    debugLog('[ImageUploader] Image source:', imageSrc);
+    debugLog('[ImageUploader] Crop pixels:', croppedAreaPixels);
+    debugLog('[ImageUploader] Current zoom level:', zoom);
+    debugLog('[ImageUploader] Image ref available:', !!imageRef.current);
     if (imageRef.current) {
-      console.log('[ImageUploader] Image ref dimensions:', imageRef.current.width, 'x', imageRef.current.height);
-      console.log('[ImageUploader] Image natural dimensions:', imageRef.current.naturalWidth, 'x', imageRef.current.naturalHeight);
-      console.log('[ImageUploader] Image complete:', imageRef.current.complete);
-      console.log('[ImageUploader] Image currentSrc:', imageRef.current.currentSrc);
+      debugLog('[ImageUploader] Image ref dimensions:', imageRef.current.width, 'x', imageRef.current.height);
+      debugLog('[ImageUploader] Image natural dimensions:', imageRef.current.naturalWidth, 'x', imageRef.current.naturalHeight);
+      debugLog('[ImageUploader] Image complete:', imageRef.current.complete);
+      debugLog('[ImageUploader] Image currentSrc:', imageRef.current.currentSrc);
     }
     
     // Only set cropping state if user actually selected a crop area
@@ -206,25 +212,25 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
       
       // If no crop area is selected, use the original file directly
       if (!hasCropSelection) {
-        console.log('[ImageUploader] No crop selection, using original file');
+        debugLog('[ImageUploader] No crop selection, using original file');
         // Get the original file from the file input
         const fileInput = fileInputRef.current;
         if (fileInput && fileInput.files && fileInput.files[0]) {
           croppedBlob = fileInput.files[0];
-          console.log('[ImageUploader] Using original file:', croppedBlob.size, 'bytes');
+          debugLog('[ImageUploader] Using original file:', croppedBlob.size, 'bytes');
         } else {
           // Fallback: convert blob URL back to blob
-          console.log('[ImageUploader] Converting blob URL to blob');
+          debugLog('[ImageUploader] Converting blob URL to blob');
           const response = await fetch(imageSrc);
           croppedBlob = await response.blob();
-          console.log('[ImageUploader] Converted blob:', croppedBlob.size, 'bytes');
+          debugLog('[ImageUploader] Converted blob:', croppedBlob.size, 'bytes');
         }
       } else {
         // Only crop if user actually selected an area
-        console.log('[ImageUploader] Cropping image with selection:', croppedAreaPixels);
+        debugLog('[ImageUploader] Cropping image with selection:', croppedAreaPixels);
         try {
           croppedBlob = await getCroppedImg(imageSrc, croppedAreaPixels, imageRef.current);
-          console.log('[ImageUploader] Cropped blob created:', croppedBlob.size, 'bytes');
+          debugLog('[ImageUploader] Cropped blob created:', croppedBlob.size, 'bytes');
           
           // Verify the blob has content
           if (croppedBlob.size === 0) {
@@ -236,13 +242,13 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
           const fileInput = fileInputRef.current;
           if (fileInput && fileInput.files && fileInput.files[0]) {
             croppedBlob = fileInput.files[0];
-            console.log('[ImageUploader] Using original file as fallback:', croppedBlob.size, 'bytes');
+            debugLog('[ImageUploader] Using original file as fallback:', croppedBlob.size, 'bytes');
           } else {
             // Last resort: convert blob URL back to blob
-            console.log('[ImageUploader] Converting blob URL to blob as last resort');
+            debugLog('[ImageUploader] Converting blob URL to blob as last resort');
             const response = await fetch(imageSrc);
             croppedBlob = await response.blob();
-            console.log('[ImageUploader] Converted blob as fallback:', croppedBlob.size, 'bytes');
+            debugLog('[ImageUploader] Converted blob as fallback:', croppedBlob.size, 'bytes');
           }
         }
       }
@@ -253,26 +259,30 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
       const fileName = `${sanitizedProjectName}-cover-${timestamp}.jpg`;
       const croppedFile = new File([croppedBlob], fileName, { type: 'image/jpeg' });
       
-      console.log('[ImageUploader] Created file:', fileName, croppedFile.size, 'bytes');
+      debugLog('[ImageUploader] Created file:', fileName, croppedFile.size, 'bytes');
       
       // Create preview URL for the cropped image
       const previewURL = URL.createObjectURL(croppedBlob);
       currentPreviewBlobRef.current = previewURL;
       setPreviewUrl(previewURL);
       
-      console.log('[ImageUploader] Created preview URL:', previewURL);
+      debugLog('[ImageUploader] Created preview URL:', previewURL);
       
       // Upload to Firebase Storage
       setUploading(true);
       const storage = getStorage(app);
-      const storagePath = `project-images/${fileName}`;
+      const userId = auth.currentUser?.uid;
+      if (!userId) {
+        throw new Error('You must be signed in to upload images.');
+      }
+      const storagePath = `project-images/${userId}/${fileName}`;
       const storageRef = ref(storage, storagePath);
       const uploadTask = uploadBytesResumable(storageRef, croppedFile);
       uploadTask.on('state_changed',
         (snapshot) => {
           const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
           setUploadProgress(progress);
-          console.log('[ImageUploader] Upload progress:', progress.toFixed(1) + '%');
+          debugLog('[ImageUploader] Upload progress:', progress.toFixed(1) + '%');
         },
         (error) => {
           console.error('[ImageUploader] Upload error:', error);
@@ -282,12 +292,12 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
           alert('Image upload failed: ' + error.message);
         },
         async () => {
-          console.log('[ImageUploader] Upload completed successfully');
+          debugLog('[ImageUploader] Upload completed successfully');
           setUploading(false);
           setUploadSuccess(true);
           try {
             const url = await getDownloadURL(storageRef);
-            console.log('[ImageUploader] Got download URL:', url);
+            debugLog('[ImageUploader] Got download URL:', url);
             onImageUploaded(url);
           } catch (err) {
             console.error('[ImageUploader] Failed to get download URL:', err);
@@ -450,9 +460,9 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
                   }}
                   className="max-w-full h-auto"
                   onLoad={() => {
-                    console.log('[ImageUploader] Crop image loaded');
-                    console.log('[ImageUploader] Image dimensions:', imageRef.current?.width, 'x', imageRef.current?.height);
-                    console.log('[ImageUploader] Natural dimensions:', imageRef.current?.naturalWidth, 'x', imageRef.current?.naturalHeight);
+                    debugLog('[ImageUploader] Crop image loaded');
+                    debugLog('[ImageUploader] Image dimensions:', imageRef.current?.width, 'x', imageRef.current?.height);
+                    debugLog('[ImageUploader] Natural dimensions:', imageRef.current?.naturalWidth, 'x', imageRef.current?.naturalHeight);
                   }}
                   onError={(e) => {
                     console.error('[ImageUploader] Crop image failed to load:', e);

@@ -18,7 +18,7 @@ cp env-template.txt .env   # then fill in Firebase keys
 npm run dev                # webpack dev server on http://localhost:8080
 ```
 
-> ⚠️ **`.env` is required for every build, including production deploys.** It's gitignored, so it doesn't get pulled in with `git clone` / `git pull` / `git merge`. Make sure it exists at the repo root before `npm run build`, otherwise the deployed bundle has no Firebase API key and the site dies with `auth/invalid-api-key`. See [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) §⚠️ Before every build for the full incident postmortem.
+> ⚠️ **`.env` is required for local/manual builds.** It's gitignored, so it doesn't get pulled in with `git clone` / `git pull` / `git merge`. GitHub Actions writes `.env` from repository secrets during production deploys, but a local `npm run build` still needs the file at the repo root. Without it, the built bundle has no Firebase API key and the site dies with `auth/invalid-api-key`. See [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) §⚠️ Before every local/manual build for the full incident postmortem.
 
 The Firebase project is `my-film-jobs` (see `.firebaserc`). You need a Firebase account with access to deploy.
 
@@ -31,6 +31,7 @@ The Firebase project is `my-film-jobs` (see `.firebaserc`). You need a Firebase 
 | `npm run build:prod` | Same, with `REACT_APP_ENV=production` |
 | `npm test` | Vitest (watch) |
 | `npm run test:run` | Vitest single run |
+| `npm run deploy:prod` | Deploy to Firebase project `my-film-jobs` |
 | `firebase deploy` | Deploy hosting + rules + functions |
 | `firebase deploy --only hosting` | Frontend only |
 | `firebase deploy --only firestore:rules` | Firestore rules only |

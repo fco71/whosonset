@@ -14,6 +14,12 @@ import {
 import { db } from '../firebase';
 import { JobPosting } from '../types/JobApplication';
 
+const debugLog = (...args: unknown[]) => {
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(...args);
+  }
+};
+
 export interface SavedJob {
   id: string;
   userId: string;
@@ -39,7 +45,7 @@ export class SavedJobsService {
       }
 
       const docRef = await addDoc(collection(db, 'savedJobs'), savedJobData);
-      console.log('[SavedJobsService] Job saved successfully:', docRef.id);
+      debugLog('[SavedJobsService] Job saved successfully:', docRef.id);
       return docRef.id;
     } catch (error) {
       console.error('Error saving job:', error);
@@ -51,7 +57,7 @@ export class SavedJobsService {
   static async removeSavedJob(savedJobId: string): Promise<void> {
     try {
       await deleteDoc(doc(db, 'savedJobs', savedJobId));
-      console.log('[SavedJobsService] Job removed from saved list');
+      debugLog('[SavedJobsService] Job removed from saved list');
     } catch (error) {
       console.error('Error removing saved job:', error);
       throw error;
@@ -73,7 +79,7 @@ export class SavedJobsService {
         ...doc.data()
       })) as SavedJob[];
 
-      console.log('[SavedJobsService] Loaded saved jobs:', savedJobs.length);
+      debugLog('[SavedJobsService] Loaded saved jobs:', savedJobs.length);
       return savedJobs;
     } catch (error) {
       console.error('Error getting saved jobs:', error);
@@ -155,7 +161,7 @@ export class SavedJobsService {
         notes,
         updatedAt: serverTimestamp()
       });
-      console.log('[SavedJobsService] Saved job notes updated');
+      debugLog('[SavedJobsService] Saved job notes updated');
     } catch (error) {
       console.error('Error updating saved job notes:', error);
       throw error;
@@ -216,4 +222,4 @@ export class SavedJobsService {
       return 0;
     }
   }
-} 
+}

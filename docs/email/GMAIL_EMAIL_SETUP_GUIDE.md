@@ -26,7 +26,7 @@ Since you'll be using Gmail to send emails programmatically, you need to create 
    - Enter name: "WhosOnSet Notifications"
    - Click "Generate"
    - **COPY THE 16-CHARACTER PASSWORD** (you'll need this in Step 2)
-   - Example format: `abcd efgh ijkl mnop`
+   - Example format: `[REDACTED_GMAIL_APP_PASSWORD]`
 
 ## 🔐 Step 2: Set Firebase Secrets
 

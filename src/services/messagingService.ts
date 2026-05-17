@@ -21,12 +21,18 @@ import {
   arrayUnion,
   arrayRemove
 } from 'firebase/firestore';
-import { db } from '../firebase';
+import { auth, db } from '../firebase';
 import { DirectMessage, ChatRoom, ChatSettings, MessageReaction, ChatPresence } from '../types/Chat';
 import { SocialService } from './socialService';
 import { storage } from '../firebase';
 import { ref, uploadBytes, getDownloadURL, ref as storageRef, deleteObject } from 'firebase/storage';
 import EmailNotificationService from './emailNotificationService';
+
+const debugLog = (...args: unknown[]) => {
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(...args);
+  }
+};
 
 export interface ConversationSummary {
   userId: string;
@@ -97,7 +103,7 @@ export class MessagingService {
     fileUrl?: string
   ): Promise<string> {
     try {
-      console.log('[MessagingService] Sending direct message from', senderId, 'to', receiverId);
+      debugLog('[MessagingService] Sending direct message from', senderId, 'to', receiverId);
       
       // Check permissions
       const canMessage = await this.canSendMessage(senderId, receiverId);
@@ -149,7 +155,7 @@ export class MessagingService {
       // Create notification for receiver
       await this.createMessageNotification(receiverId, senderId, docRef.id, content, messageType);
 
-      console.log('[MessagingService] Message sent successfully:', docRef.id);
+      debugLog('[MessagingService] Message sent successfully:', docRef.id);
       return docRef.id;
     } catch (error) {
       console.error('[MessagingService] Error sending message:', error);
@@ -345,7 +351,7 @@ export class MessagingService {
     callback: (conversations: ConversationSummary[]) => void
   ): () => void {
     // Offline fallback: return empty conversations immediately
-    console.log('[MessagingService] Using offline fallback for subscribeToConversationsWithQueries');
+    debugLog('[MessagingService] Using offline fallback for subscribeToConversationsWithQueries');
     
     const listenerKey = `conversations_${userId}`;
     
@@ -369,7 +375,7 @@ export class MessagingService {
 
   static async markMessageAsRead(messageId: string): Promise<void> {
     try {
-      console.log('[MessagingService] Marking message as read:', messageId);
+      debugLog('[MessagingService] Marking message as read:', messageId);
 
       // Find the message in conversations subcollection
       const conversationsQuery = query(collection(db, 'conversations'));
@@ -406,7 +412,7 @@ export class MessagingService {
         readAt: serverTimestamp() 
       });
 
-      console.log('[MessagingService] Message marked as read successfully:', messageId);
+      debugLog('[MessagingService] Message marked as read successfully:', messageId);
     } catch (error) {
       console.error('[MessagingService] Error marking message as read:', error);
     }
@@ -414,7 +420,7 @@ export class MessagingService {
 
   static async updateMessageStatus(messageId: string, status: 'sending' | 'sent' | 'delivered' | 'read' | 'failed'): Promise<void> {
     try {
-      console.log('[MessagingService] Updating message status:', { messageId, status });
+      debugLog('[MessagingService] Updating message status:', { messageId, status });
 
       // Find the message in conversations subcollection
       const conversationsQuery = query(collection(db, 'conversations'));
@@ -455,7 +461,7 @@ export class MessagingService {
       
       await updateDoc(messageRef, updateData);
 
-      console.log('[MessagingService] Message status updated successfully:', { messageId, status });
+      debugLog('[MessagingService] Message status updated successfully:', { messageId, status });
     } catch (error) {
       console.error('[MessagingService] Error updating message status:', error);
     }
@@ -495,7 +501,7 @@ export class MessagingService {
 
   static async addMessageReaction(messageId: string, userId: string, userName: string, emoji: string): Promise<void> {
     try {
-      console.log('[MessagingService] Adding reaction:', { messageId, userId, userName, emoji });
+      debugLog('[MessagingService] Adding reaction:', { messageId, userId, userName, emoji });
 
       // Find the message in conversations subcollection
       const conversationsQuery = query(collection(db, 'conversations'));
@@ -532,7 +538,7 @@ export class MessagingService {
       const messageData = messageDoc.data();
       const currentReactions = messageData.reactions || [];
 
-      console.log('[MessagingService] Current reactions:', currentReactions);
+      debugLog('[MessagingService] Current reactions:', currentReactions);
 
       // Check if user already reacted with this emoji
       const existingReaction = currentReactions.find(
@@ -541,7 +547,7 @@ export class MessagingService {
 
       if (existingReaction) {
         // Remove existing reaction by filtering it out
-        console.log('[MessagingService] Removing existing reaction:', existingReaction);
+        debugLog('[MessagingService] Removing existing reaction:', existingReaction);
         const updatedReactions = currentReactions.filter(
           (reaction: any) => !(reaction.userId === userId && reaction.emoji === emoji)
         );
@@ -558,7 +564,7 @@ export class MessagingService {
           timestamp: new Date().toISOString() // Convert to ISO string for better compatibility
         };
         
-        console.log('[MessagingService] Adding reaction object:', newReaction);
+        debugLog('[MessagingService] Adding reaction object:', newReaction);
         
         const updatedReactions = [...currentReactions, newReaction];
         
@@ -567,7 +573,7 @@ export class MessagingService {
         });
       }
 
-      console.log('[MessagingService] Reaction updated successfully');
+      debugLog('[MessagingService] Reaction updated successfully');
     } catch (error) {
       console.error('[MessagingService] Error adding reaction:', error);
       throw error;
@@ -578,17 +584,17 @@ export class MessagingService {
 
   static async setTypingStatus(userId: string, receiverId: string, isTyping: boolean): Promise<void> {
     // Offline fallback: do nothing to prevent permission errors
-    console.log('[MessagingService] Using offline fallback for setTypingStatus', { userId, receiverId, isTyping });
+    debugLog('[MessagingService] Using offline fallback for setTypingStatus', { userId, receiverId, isTyping });
   }
 
   static subscribeToTypingIndicators(receiverId: string, callback: (typingUsers: string[]) => void) {
     // Offline fallback: return empty array immediately
-    console.log('[MessagingService] Using offline fallback for subscribeToTypingIndicators');
+    debugLog('[MessagingService] Using offline fallback for subscribeToTypingIndicators');
     callback([]);
     
     // Return a no-op unsubscribe function
     return () => {
-      console.log('[MessagingService] Unsubscribed from typing indicators (offline mode)');
+      debugLog('[MessagingService] Unsubscribed from typing indicators (offline mode)');
     };
   }
 
@@ -596,7 +602,7 @@ export class MessagingService {
 
   static async getChatSettings(userId: string): Promise<ChatSettings | null> {
     // Offline fallback: return default settings to prevent permission errors
-    console.log('[MessagingService] Using offline fallback for getChatSettings');
+    debugLog('[MessagingService] Using offline fallback for getChatSettings');
     return {
       userId,
       allowMessagesFrom: 'everyone',
@@ -608,7 +614,7 @@ export class MessagingService {
 
   static async updateChatSettings(userId: string, settings: Partial<ChatSettings>): Promise<void> {
     // Offline fallback: do nothing to prevent permission errors
-    console.log('[MessagingService] Using offline fallback for updateChatSettings');
+    debugLog('[MessagingService] Using offline fallback for updateChatSettings');
   }
 
   // ===== UTILITY METHODS =====
@@ -633,7 +639,7 @@ export class MessagingService {
 
   static async getConversationParticipants(userId: string): Promise<string[]> {
     // Offline fallback: return empty array to prevent permission errors
-    console.log('[MessagingService] Using offline fallback for getConversationParticipants');
+    debugLog('[MessagingService] Using offline fallback for getConversationParticipants');
     return [];
   }
 
@@ -693,7 +699,7 @@ export class MessagingService {
     messageType: string
   ): Promise<void> {
     try {
-      console.log('[MessagingService] Creating message notification for:', receiverId);
+      debugLog('[MessagingService] Creating message notification for:', receiverId);
       
       // Get sender info
       const senderProfile = await this.getUserProfile(senderId);
@@ -719,7 +725,7 @@ export class MessagingService {
       // Send email notification
       await EmailNotificationService.sendMessageNotificationEmail(receiverId, senderName, messagePreview);
       
-      console.log('[MessagingService] Message notification created successfully');
+      debugLog('[MessagingService] Message notification created successfully');
     } catch (error) {
       console.error('[MessagingService] Error creating message notification:', error);
       // Don't throw error - notification failure shouldn't break message sending
@@ -739,9 +745,9 @@ export class MessagingService {
     this.typingUsers.clear();
   }
 
-  static async uploadFileToStorage(file: File, pathPrefix: string = 'chat-uploads'): Promise<string> {
+  static async uploadFileToStorage(file: File, pathPrefix: string = 'chat-uploads', userId?: string): Promise<string> {
     try {
-      console.log('[MessagingService] Uploading file to storage:', file.name, 'Size:', file.size, 'bytes');
+      debugLog('[MessagingService] Uploading file to storage:', file.name, 'Size:', file.size, 'bytes');
       
       // Check file size - limit to 5MB for Firebase Storage (more generous than Firestore)
       const maxSize = 5 * 1024 * 1024; // 5MB
@@ -749,10 +755,15 @@ export class MessagingService {
         throw new Error(`File size (${file.size} bytes) exceeds maximum allowed size (${maxSize} bytes)`);
       }
       
-      const fileRef = ref(storage, `${pathPrefix}/${Date.now()}-${file.name}`);
+      const ownerId = userId || auth.currentUser?.uid;
+      if (!ownerId) {
+        throw new Error('You must be signed in to upload files');
+      }
+
+      const fileRef = ref(storage, `${pathPrefix}/${ownerId}/${Date.now()}-${file.name}`);
       await uploadBytes(fileRef, file);
       const downloadURL = await getDownloadURL(fileRef);
-      console.log('[MessagingService] File uploaded successfully:', downloadURL);
+      debugLog('[MessagingService] File uploaded successfully:', downloadURL);
       return downloadURL;
     } catch (error) {
       console.error('[MessagingService] Error uploading file:', error);
@@ -789,7 +800,7 @@ export class MessagingService {
                 console.warn('[MessagingService] Data URL too long, using placeholder');
                 resolve(`UPLOAD_FAILED:${file.name}`);
               } else {
-                console.log('[MessagingService] Using data URL fallback for permission error');
+                debugLog('[MessagingService] Using data URL fallback for permission error');
                 resolve(dataUrl);
               }
             };
@@ -803,7 +814,7 @@ export class MessagingService {
       // For other errors (network, permissions, etc.), try data URL fallback for small files
       const maxDataUrlSize = 200 * 1024; // 200KB - increased for better fallback
       if (file.size <= maxDataUrlSize) {
-        console.log('[MessagingService] Upload failed, trying data URL fallback for small file');
+        debugLog('[MessagingService] Upload failed, trying data URL fallback for small file');
         return new Promise((resolve) => {
           const reader = new FileReader();
           reader.onload = () => {
@@ -813,7 +824,7 @@ export class MessagingService {
               console.warn('[MessagingService] Data URL too long, using placeholder');
               resolve(`FILE_TOO_LARGE:${file.name}`);
             } else {
-              console.log('[MessagingService] Using data URL fallback successfully');
+              debugLog('[MessagingService] Using data URL fallback successfully');
               resolve(dataUrl);
             }
           };
@@ -830,7 +841,7 @@ export class MessagingService {
   // Optional storage connectivity test (non-blocking)
   static async testStorageConnection(): Promise<boolean> {
     try {
-      console.log('[MessagingService] Testing Firebase Storage connection...');
+      debugLog('[MessagingService] Testing Firebase Storage connection...');
       
       // Create a simple test file
       const testContent = 'Hello Firebase Storage!';
@@ -838,11 +849,16 @@ export class MessagingService {
       const testFile = new File([testBlob], 'test.txt', { type: 'text/plain' });
       
       // Use a path that's allowed by storage rules
-      const fileRef = ref(storage, 'chat-uploads/test-connection.txt');
+      const ownerId = auth.currentUser?.uid;
+      if (!ownerId) {
+        return false;
+      }
+
+      const fileRef = ref(storage, `chat-uploads/${ownerId}/test-connection.txt`);
       await uploadBytes(fileRef, testFile);
       const downloadURL = await getDownloadURL(fileRef);
       
-      console.log('[MessagingService] Storage test successful:', downloadURL);
+      debugLog('[MessagingService] Storage test successful:', downloadURL);
       return true;
     } catch (error) {
       console.warn('[MessagingService] Storage test failed (this is normal if not authenticated):', error);
@@ -852,7 +868,7 @@ export class MessagingService {
 
   static async deleteMessage(messageId: string, fileUrl?: string, messageType?: string, deletedByUserId?: string): Promise<void> {
     try {
-      console.log('[MessagingService] Deleting message:', { messageId, fileUrl, messageType, deletedByUserId });
+      debugLog('[MessagingService] Deleting message:', { messageId, fileUrl, messageType, deletedByUserId });
 
       // Find the message in conversations subcollection
       // We need to search through all conversations to find this message
@@ -918,24 +934,24 @@ export class MessagingService {
           try {
             const fileRef = ref(storage, fileUrl);
             await deleteObject(fileRef);
-            console.log('[MessagingService] File deleted from Firebase Storage');
+            debugLog('[MessagingService] File deleted from Firebase Storage');
           } catch (storageError) {
             console.warn('[MessagingService] Could not delete file from storage:', storageError);
             // Don't throw error if file deletion fails, message deletion is more important
           }
         }
 
-        console.log('[MessagingService] Message marked as deleted for everyone');
+        debugLog('[MessagingService] Message marked as deleted for everyone');
       } else {
         // Receiver deletion: Mark as deleted for receiver but keep for sender
         await updateDoc(doc(db, 'conversations', conversationId, 'messages', messageId), {
           deletedForReceiver: true,
           deletedAt: serverTimestamp()
         });
-        console.log('[MessagingService] Message marked as deleted for receiver');
+        debugLog('[MessagingService] Message marked as deleted for receiver');
       }
 
-      console.log('[MessagingService] Message deletion completed successfully');
+      debugLog('[MessagingService] Message deletion completed successfully');
     } catch (error) {
       console.error('[MessagingService] Error deleting message:', error);
       throw error;

@@ -22,15 +22,11 @@ const BENIGN_ERROR_PATTERNS = [
   // Browser extensions / ad-blockers
   /ERR_BLOCKED_BY_ADBLOCKER/,
   /ERR_BLOCKED_BY_CLIENT/,
-  // Firebase transient network issues — common in dev, harmless
   /TimeoutError/i,
   /operation timed out/i,
-  /deadline-exceeded/i,
   /Failed to fetch/i,
   /NetworkError when attempting/i,
   /Load failed/i,                     // Safari fetch failure on intermittent network
-  /Listen for Query.*failed/i,        // Firestore long-polling reconnect noise
-  /firestore\.googleapis\.com/i,
   // React Fast Refresh / HMR artifact triggered when class components
   // (AppErrorBoundary, ErrorBoundary, CollaborationErrorBoundary) are
   // hot-reloaded. Does NOT happen in production builds. Safe to ignore.

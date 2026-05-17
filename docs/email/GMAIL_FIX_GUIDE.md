@@ -6,7 +6,7 @@ Email authentication is failing with error: `535-5.7.8 Username and Password not
 ## Root Cause
 The Firebase secrets may have:
 1. **Quotes** around the email address: `"iam@myfilmjobs.com"` instead of `iam@myfilmjobs.com`
-2. **Spaces** in the App Password: `krys ybjd nsiu hnmc` instead of `krysybjdnsiuhnmc`
+2. **Spaces** in the App Password: `[REDACTED_GMAIL_APP_PASSWORD]` instead of `[REDACTED_GMAIL_APP_PASSWORD_NO_SPACES]`
 3. **Invalid or revoked** App Password
 
 ---
@@ -51,9 +51,9 @@ The App Password may be invalid. Let's create a new one:
    - Click: "Generate"
 
 4. **Copy the 16-character password**:
-   - Example: `abcd efgh ijkl mnop`
+   - Example: `[REDACTED_GMAIL_APP_PASSWORD]`
    - **IMPORTANT**: Remove all spaces when saving
-   - Final format: `abcdefghijklmnop` (16 characters, no spaces)
+   - Final format: `[REDACTED_GMAIL_APP_PASSWORD_NO_SPACES]` (16 characters, no spaces)
 
 ---
 
@@ -76,7 +76,7 @@ echo -n 'iam@myfilmjobs.com' | gcloud secrets versions add EMAIL_FROM --data-fil
 - Use `echo -n` (with `-n` flag) to avoid newlines
 - Remove ALL spaces from the App Password
 - NO quotes around any values
-- Replace `abcdefghijklmnop` with your actual App Password
+- Replace `[REDACTED_GMAIL_APP_PASSWORD_NO_SPACES]` with your actual App Password
 
 ---
 
@@ -126,7 +126,7 @@ gcloud config set project my-film-jobs
 | Secret Name | Correct Value Format | Example |
 |-------------|---------------------|---------|
 | SMTP_USER | No quotes, no newlines | `iam@myfilmjobs.com` |
-| SMTP_PASS | 16 chars, no spaces | `abcdefghijklmnop` |
+| SMTP_PASS | 16 chars, no spaces | `[REDACTED_GMAIL_APP_PASSWORD_NO_SPACES]` |
 | EMAIL_FROM | No quotes, no newlines | `iam@myfilmjobs.com` |
 
 ---

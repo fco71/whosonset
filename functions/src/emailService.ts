@@ -31,12 +31,7 @@ export class EmailService {
       }
     };
 
-    console.log('[EmailService] SMTP Config:', {
-      host: smtpConfig.host,
-      port: smtpConfig.port,
-      user: smtpConfig.auth.user,
-      pass: smtpConfig.auth.pass ? 'present' : 'missing'
-    });
+    console.log('[EmailService] SMTP transport configured');
 
     this.transporter = nodemailer.createTransport(smtpConfig);
 
@@ -60,14 +55,12 @@ export class EmailService {
 
       // Get from email from environment variables
       const fromEmailValue = process.env.EMAIL_FROM || 'iam@myfilmjobs.com';
-      console.log('[EmailService] From email value:', fromEmailValue);
 
       // Create a professional display name for the from field
       const fromDisplayName = 'My Film Jobs';
       const fromWithDisplayName = `${fromDisplayName} <${fromEmailValue}>`;
 
       // Send email using Nodemailer (Gmail SMTP)
-      console.log('[EmailService] Using Nodemailer with Gmail SMTP');
       await this.transporter.sendMail({
         from: fromWithDisplayName,
         to,
@@ -76,7 +69,7 @@ export class EmailService {
         text
       });
 
-      console.log(`[EmailService] Email sent successfully to ${to}`);
+      console.log('[EmailService] Email sent successfully');
       return true;
     } catch (error) {
       console.error('[EmailService] Error sending email:', error);
@@ -336,4 +329,4 @@ The My Film Jobs Team
       `
     };
   }
-} 
+}

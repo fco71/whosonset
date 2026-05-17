@@ -65,7 +65,7 @@ const ProjectDocuments: React.FC<ProjectDocumentsProps> = ({
     setUploadingFile(true);
     try {
       // Upload file to Firebase Storage
-      const fileRef = ref(storage, `project-documents/${projectId}/${selectedFile.name}`);
+      const fileRef = ref(storage, `project-documents/${projectId}/${auth.currentUser.uid}/${selectedFile.name}`);
       await uploadBytes(fileRef, selectedFile);
       const downloadURL = await getDownloadURL(fileRef);
 
@@ -575,4 +575,4 @@ const ProjectDocuments: React.FC<ProjectDocumentsProps> = ({
   );
 };
 
-export default ProjectDocuments; 
+export default ProjectDocuments;

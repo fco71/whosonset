@@ -2,46 +2,95 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    match /project-images/{allPaths=**} {
-      allow read: if true; // Public read for project images
-      allow write: if request.auth != null; // Allow uploads for authenticated users
+    function signedIn() {
+      return request.auth != null;
     }
-    match /profileImages/{allPaths=**} {
+
+    function isOwner(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    function isImageUpload() {
+      return request.resource != null &&
+        request.resource.size < 10 * 1024 * 1024 &&
+        request.resource.contentType.matches('image/.*');
+    }
+
+    function isDocumentUpload() {
+      return request.resource != null &&
+        request.resource.size < 25 * 1024 * 1024;
+    }
+
+    match /project-images/{userId}/{allPaths=**} {
+      allow read: if true; // Public read for project images
+      allow create, update: if isOwner(userId) && isImageUpload();
+      allow delete: if isOwner(userId);
+    }
+
+    match /profileImages/{userId}/{allPaths=**} {
       allow read: if true; // Public read for profile images
-      allow write: if request.auth != null; // Allow uploads for authenticated users
+      allow create, update: if isOwner(userId) && isImageUpload();
+      allow delete: if isOwner(userId);
     }
-    match /screenplays/{allPaths=**} {
-      allow read: if request.auth != null; // Authenticated read only — screenplays are confidential
-      allow write: if request.auth != null;
+
+    match /screenplays/{userId}/{allPaths=**} {
+      allow read, delete: if isOwner(userId);
+      allow create, update: if isOwner(userId) && isDocumentUpload();
     }
-    match /chat-uploads/{allPaths=**} {
-      allow read: if request.auth != null; // Only authenticated users can read chat files
-      allow write: if request.auth != null; // Allow uploads for authenticated users
+
+    match /chat-uploads/{userId}/{allPaths=**} {
+      allow read: if signedIn();
+      allow create, update: if isOwner(userId) && isDocumentUpload();
+      allow delete: if isOwner(userId);
     }
-    match /chat-images/{allPaths=**} {
-      allow read: if request.auth != null; // Only authenticated users can read chat images
-      allow write: if request.auth != null; // Allow uploads for authenticated users
+
+    match /voice-messages/{userId}/{allPaths=**} {
+      allow read: if signedIn();
+      allow create, update: if isOwner(userId) && isDocumentUpload();
+      allow delete: if isOwner(userId);
     }
-    match /chat-audio/{allPaths=**} {
-      allow read: if request.auth != null; // Only authenticated users can read chat audio
-      allow write: if request.auth != null; // Allow uploads for authenticated users
+
+    match /chat-images/{userId}/{allPaths=**} {
+      allow read: if signedIn();
+      allow create, update: if isOwner(userId) && isImageUpload();
+      allow delete: if isOwner(userId);
     }
+
+    match /chat-audio/{userId}/{allPaths=**} {
+      allow read: if signedIn();
+      allow create, update: if isOwner(userId) && isDocumentUpload();
+      allow delete: if isOwner(userId);
+    }
+
     match /test/{allPaths=**} {
-      allow read: if request.auth != null; // Only authenticated users can read test files
-      allow write: if request.auth != null; // Allow uploads for authenticated users
+      allow read, write: if false;
     }
+
     match /users/{userId}/{allPaths=**} {
-      allow read: if request.auth != null && request.auth.uid == userId; // Users can only read their own files
-      allow write: if request.auth != null && request.auth.uid == userId; // Users can only write to their own folder
+      allow read: if isOwner(userId); // Users can only read their own files
+      allow create, update: if isOwner(userId) && isDocumentUpload();
+      allow delete: if isOwner(userId);
     }
-    match /projects/{projectId}/{allPaths=**} {
+
+    match /applications/{applicationId}/{userId}/{allPaths=**} {
+      allow read, delete: if isOwner(userId);
+      allow create, update: if isOwner(userId) && isDocumentUpload();
+    }
+
+    match /projects/{projectId}/{userId}/{allPaths=**} {
       allow read: if true; // Public read for project images
-      allow write: if request.auth != null; // Allow uploads for authenticated users
+      allow create, update: if isOwner(userId) && isImageUpload();
+      allow delete: if isOwner(userId);
     }
-    match /project-documents/{projectId}/{allPaths=**} {
-      allow read: if request.auth != null; // Authenticated read only — project documents are confidential
-      allow write: if request.auth != null;
+
+    match /project-documents/{projectId}/{userId}/{allPaths=**} {
+      allow read: if signedIn(); // Authenticated read only; Firestore metadata controls discoverability.
+      allow create, update: if isOwner(userId) && isDocumentUpload();
+      allow delete: if isOwner(userId);
     }
-    // Add more rules as needed for other folders
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
   }
 }

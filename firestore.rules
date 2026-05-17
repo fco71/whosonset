@@ -3,6 +3,48 @@ rules_version = '2';
 // Regular security rules for client access
 service cloud.firestore {
   match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function ownsUserId(data) {
+      return signedIn() && data.userId == request.auth.uid;
+    }
+
+    function ownsSenderOrReceiver(data) {
+      return signedIn() && (
+        data.senderId == request.auth.uid ||
+        data.receiverId == request.auth.uid
+      );
+    }
+
+    function isConnectionParticipant(data) {
+      return signedIn() && (
+        data.userId == request.auth.uid ||
+        data.connectedUserId == request.auth.uid
+      );
+    }
+
+    function isConversationParticipant(data) {
+      return signedIn() &&
+        data.participants is list &&
+        data.participants.hasAny([request.auth.uid]);
+    }
+
+    function isScreenplayMemberData(data) {
+      return signedIn() && (
+        data.uploadedBy == request.auth.uid ||
+        (data.teamMembers is list && data.teamMembers.hasAny([request.auth.uid]))
+      );
+    }
+
+    function canAccessScreenplay(screenplayId) {
+      return signedIn() &&
+        screenplayId is string &&
+        exists(/databases/$(database)/documents/screenplays/$(screenplayId)) &&
+        isScreenplayMemberData(get(/databases/$(database)/documents/screenplays/$(screenplayId)).data);
+    }
+
     // User collections - users can only access their own collections
     match /UserCollections/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
@@ -24,9 +66,23 @@ service cloud.firestore {
     // Crew profiles - allow public read for homepage stats, authenticated users can read/write all
     match /crewProfiles/{profileId} {
       allow read: if true; // Allow public read for homepage statistics
-      allow create: if request.auth != null && resource.data.uid == request.auth.uid;
-      allow update: if request.auth != null && resource.data.uid == request.auth.uid;
-      allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
+      allow create: if signedIn() &&
+        profileId == request.auth.uid &&
+        (
+          !request.resource.data.keys().hasAny(['uid']) ||
+          request.resource.data.uid == request.auth.uid
+        );
+      allow update: if signedIn() &&
+        profileId == request.auth.uid &&
+        (
+          !request.resource.data.keys().hasAny(['uid']) ||
+          request.resource.data.uid == request.auth.uid
+        ) &&
+        (
+          !resource.data.keys().hasAny(['uid']) ||
+          request.resource.data.uid == resource.data.uid
+        );
+      allow delete: if signedIn() && profileId == request.auth.uid;
 
       // Notifications subcollection: only the user can read/write
       match /notifications/{notificationId} {
@@ -37,7 +93,11 @@ service cloud.firestore {
     // Projects - allow public read for homepage stats, authenticated users can read/write all
     match /projects/{projectId} {
       allow read: if true; // Allow public read for homepage statistics
-      allow write: if request.auth != null && resource.data.createdBy == request.auth.uid;
+      allow create: if signedIn() && request.resource.data.createdBy == request.auth.uid;
+      allow update: if signedIn() &&
+        resource.data.createdBy == request.auth.uid &&
+        request.resource.data.createdBy == resource.data.createdBy;
+      allow delete: if signedIn() && resource.data.createdBy == request.auth.uid;
     }
 
     // Job postings - public read for published/active jobs, authenticated users can write
@@ -104,6 +164,16 @@ service cloud.firestore {
         get(/databases/$(database)/documents/jobPostings/$(jobId)).data.postedById == request.auth.uid;
     }
 
+    function canAccessApplicationId(applicationId) {
+      return signedIn() &&
+        applicationId is string &&
+        exists(/databases/$(database)/documents/jobApplications/$(applicationId)) &&
+        (
+          isApplicant(get(/databases/$(database)/documents/jobApplications/$(applicationId))) ||
+          isJobPoster(get(/databases/$(database)/documents/jobApplications/$(applicationId)))
+        );
+    }
+
     match /jobApplications/{applicationId} {
       allow read: if request.auth != null && (isApplicant(resource) || isJobPoster(resource));
       allow create: if request.auth != null && request.resource.data.applicantId == request.auth.uid;
@@ -160,73 +230,282 @@ service cloud.firestore {
       allow read, write: if request.auth != null;
     }
 
-    // Saved jobs, job views, follows, connections, notifications, etc - only authenticated users
-    match /{collectionName}/{docId} {
-      allow read, write: if request.auth != null && collectionName != 'blogPosts';
+    // Public reference data. Client writes are intentionally blocked.
+    match /countries/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /cities/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /jobDepartments/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /jobTitles/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /savedJobs/{savedJobId} {
+      allow read, update, delete: if ownsUserId(resource.data);
+      allow create: if ownsUserId(request.resource.data);
+    }
+
+    match /savedSearches/{savedSearchId} {
+      allow read, update, delete: if ownsUserId(resource.data);
+      allow create: if ownsUserId(request.resource.data);
+    }
+
+    match /jobViewHistory/{viewId} {
+      allow read, update, delete: if ownsUserId(resource.data);
+      allow create: if ownsUserId(request.resource.data);
+    }
+
+    match /userPreferences/{userId} {
+      allow read, write: if signedIn() && userId == request.auth.uid;
+    }
+
+    match /emailTracking/{trackingId} {
+      allow read, write: if signedIn() &&
+        (trackingId == request.auth.uid || trackingId == request.auth.token.email);
+    }
+
+    match /notifications/{notificationId} {
+      allow read, update, delete: if ownsUserId(resource.data);
+      allow create: if signedIn() && request.resource.data.userId is string;
+    }
+
+    match /followRequests/{requestId} {
+      allow read, update, delete: if signedIn() && (
+        resource.data.fromUserId == request.auth.uid ||
+        resource.data.toUserId == request.auth.uid
+      );
+      allow create: if signedIn() &&
+        request.resource.data.fromUserId == request.auth.uid &&
+        request.resource.data.toUserId is string;
+    }
+
+    match /follows/{followId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && (
+        request.resource.data.followerId == request.auth.uid ||
+        request.resource.data.followingId == request.auth.uid
+      );
+      allow update, delete: if signedIn() && (
+        resource.data.followerId == request.auth.uid ||
+        resource.data.followingId == request.auth.uid
+      );
+    }
+
+    match /activityFeed/{activityId} {
+      allow read: if signedIn() || resource.data.isPublic == true;
+      allow create: if ownsUserId(request.resource.data);
+      allow update: if ownsUserId(resource.data) ||
+        (signedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'comments']));
+      allow delete: if ownsUserId(resource.data);
+    }
+
+    match /likes/{likeId} {
+      allow read: if signedIn();
+      allow create: if ownsUserId(request.resource.data);
+      allow delete: if ownsUserId(resource.data);
+      allow update: if false;
+    }
+
+    match /comments/{commentId} {
+      allow read: if signedIn();
+      allow create: if ownsUserId(request.resource.data);
+      allow update, delete: if ownsUserId(resource.data);
+    }
+
+    match /connections/{connectionId} {
+      allow read: if isConnectionParticipant(resource.data);
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isConnectionParticipant(resource.data);
+    }
+
+    match /collaborations/{collaborationId} {
+      allow read, update, delete: if ownsUserId(resource.data);
+      allow create: if signedIn() && request.resource.data.userId is string;
+    }
+
+    // Project-management collections still need project-member-level schema work;
+    // this explicit allow list removes the repo-wide wildcard while preserving current flows.
+    match /projectCrew/{docId} {
+      allow read, write: if signedIn();
+    }
+
+    match /projectBudgets/{docId} {
+      allow read, write: if signedIn();
+    }
+
+    match /projectTimelines/{docId} {
+      allow read, write: if signedIn();
+    }
+
+    match /projectDocuments/{docId} {
+      allow read, write: if signedIn();
+    }
+
+    match /projectMilestones/{docId} {
+      allow read, write: if signedIn();
+    }
+
+    match /projectBudget/{docId} {
+      allow read, write: if signedIn();
+    }
+
+    match /crewAvailability/{docId} {
+      allow read: if signedIn();
+      allow create: if ownsUserId(request.resource.data);
+      allow update, delete: if ownsUserId(resource.data);
+    }
+
+    match /collaborativeTasks/{taskId} {
+      allow read, write: if signedIn();
+    }
+
+    match /breakdownElements/{elementId} {
+      allow read, write: if signedIn();
+    }
+
+    match /applicationMessages/{messageId} {
+      allow read: if canAccessApplicationId(resource.data.applicationId);
+      allow create: if signedIn() &&
+        request.resource.data.senderId == request.auth.uid &&
+        canAccessApplicationId(request.resource.data.applicationId);
+      allow update: if signedIn() &&
+        request.resource.data.senderId == resource.data.senderId &&
+        canAccessApplicationId(resource.data.applicationId);
+      allow delete: if canAccessApplicationId(resource.data.applicationId);
+    }
+
+    match /interviews/{interviewId} {
+      allow read, update, delete: if canAccessApplicationId(resource.data.applicationId);
+      allow create: if canAccessApplicationId(request.resource.data.applicationId);
+    }
+
+    match /screenplays/{screenplayId} {
+      allow read, update, delete: if isScreenplayMemberData(resource.data);
+      allow create: if isScreenplayMemberData(request.resource.data);
+    }
+
+    match /screenplayAnnotations/{annotationId} {
+      allow read: if canAccessScreenplay(resource.data.screenplayId);
+      allow create: if signedIn() &&
+        request.resource.data.userId == request.auth.uid &&
+        canAccessScreenplay(request.resource.data.screenplayId);
+      allow update, delete: if signedIn() &&
+        canAccessScreenplay(resource.data.screenplayId);
+    }
+
+    match /screenplayTags/{tagId} {
+      allow read: if canAccessScreenplay(resource.data.screenplayId);
+      allow create: if signedIn() &&
+        request.resource.data.userId == request.auth.uid &&
+        canAccessScreenplay(request.resource.data.screenplayId);
+      allow update, delete: if signedIn() &&
+        canAccessScreenplay(resource.data.screenplayId);
+    }
+
+    match /screenplaySessions/{sessionId} {
+      allow read, update, delete: if canAccessScreenplay(resource.data.screenplayId);
+      allow create: if signedIn() &&
+        request.resource.data.participants is list &&
+        request.resource.data.participants.hasAny([request.auth.uid]) &&
+        canAccessScreenplay(request.resource.data.screenplayId);
+    }
+
+    match /workspaces/{workspaceId} {
+      allow read, write: if signedIn();
+    }
+
+    match /collaborationSessions/{sessionId} {
+      allow read, update, delete: if signedIn() &&
+        resource.data.participants is list &&
+        resource.data.participants.hasAny([request.auth.uid]);
+      allow create: if signedIn() &&
+        request.resource.data.participants is list &&
+        request.resource.data.participants.hasAny([request.auth.uid]);
+
+      match /messages/{messageId} {
+        allow read: if signedIn() &&
+          isConversationParticipant(get(/databases/$(database)/documents/collaborationSessions/$(sessionId)).data);
+        allow create: if signedIn() &&
+          request.resource.data.senderId == request.auth.uid &&
+          isConversationParticipant(get(/databases/$(database)/documents/collaborationSessions/$(sessionId)).data);
+      }
+
+      match /typing/{userId} {
+        allow read: if signedIn() &&
+          isConversationParticipant(get(/databases/$(database)/documents/collaborationSessions/$(sessionId)).data);
+        allow write: if signedIn() &&
+          userId == request.auth.uid &&
+          isConversationParticipant(get(/databases/$(database)/documents/collaborationSessions/$(sessionId)).data);
+      }
     }
 
     // Public homepage stats (if needed)
     match /Projects/{projectId} {
       allow read: if true; // Allow public reading for homepage statistics
-      allow write: if request.auth != null && resource.data.owner_uid == request.auth.uid;
+      allow create: if signedIn() && request.resource.data.owner_uid == request.auth.uid;
+      allow update: if signedIn() &&
+        resource.data.owner_uid == request.auth.uid &&
+        request.resource.data.owner_uid == resource.data.owner_uid;
+      allow delete: if signedIn() && resource.data.owner_uid == request.auth.uid;
     }
 
     // Direct Messages - users can only access their own conversations
     match /directMessages/{messageId} {
       // Allow read if user is either sender or receiver
-      allow read: if request.auth != null && 
-        (resource.data.senderId == request.auth.uid || 
-         resource.data.receiverId == request.auth.uid);
+      allow read: if ownsSenderOrReceiver(resource.data);
       
       // Allow create if user is the sender
-      allow create: if request.auth != null && 
+      allow create: if signedIn() &&
         request.resource.data.senderId == request.auth.uid;
       
       // Allow update for read receipts and reactions
-      allow update: if request.auth != null && 
-        (resource.data.senderId == request.auth.uid || 
-         resource.data.receiverId == request.auth.uid) &&
+      allow update: if ownsSenderOrReceiver(resource.data) &&
         // Only allow updating specific fields
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead', 'reactions', 'status']);
     }
     
     // Favorites - users can only access their own favorites
     match /favorites/{favoriteId} {
-      allow read, write: if request.auth != null && 
-        (resource.data.userId == request.auth.uid || 
-         request.resource.data.userId == request.auth.uid);
+      allow read, update, delete: if ownsUserId(resource.data);
+      allow create: if ownsUserId(request.resource.data);
     }
 
     match /crewFavorites/{favoriteId} {
-      allow read, write: if request.auth != null && 
-        (resource.data.userId == request.auth.uid || 
-         request.resource.data.userId == request.auth.uid);
+      allow read, update, delete: if ownsUserId(resource.data);
+      allow create: if ownsUserId(request.resource.data);
     }
     
     // Chat conversations - users can only access their own conversations
     match /conversations/{conversationId} {
       // Allow read if user is a participant in the conversation
-      allow read: if request.auth != null && 
-        (resource.data.participants && resource.data.participants.hasAny([request.auth.uid]));
+      allow read: if isConversationParticipant(resource.data);
       
       // Allow create if user is including themselves as a participant
-      allow create: if request.auth != null && 
-        request.resource.data.participants.hasAny([request.auth.uid]);
+      allow create: if isConversationParticipant(request.resource.data);
       
       // Messages subcollection
       match /messages/{messageId} {
         // Allow read if user is a participant in the parent conversation
-        allow read: if request.auth != null && 
-          get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants.hasAny([request.auth.uid]);
+        allow read: if isConversationParticipant(get(/databases/$(database)/documents/conversations/$(conversationId)).data);
         
         // Allow create if user is the sender and a participant in the conversation
-        allow create: if request.auth != null && 
+        allow create: if signedIn() &&
           request.auth.uid == request.resource.data.senderId &&
-          get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants.hasAny([request.auth.uid]);
+          isConversationParticipant(get(/databases/$(database)/documents/conversations/$(conversationId)).data);
         
         // Allow update for reactions, read receipts, and message deletion if user is a participant in the conversation
-        allow update: if request.auth != null && 
-          get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants.hasAny([request.auth.uid]) &&
+        allow update: if isConversationParticipant(get(/databases/$(database)/documents/conversations/$(conversationId)).data) &&
           // Only allow updating specific fields
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions', 'isRead', 'readAt', 'status', 'content', 'fileUrl', 'messageType', 'deletedAt', 'deletedForReceiver']);
         

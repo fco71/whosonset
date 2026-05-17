@@ -1,7 +1,7 @@
 # Security Fix Summary - API Key Leak
 
 ## Issue
-GitHub detected a leaked Google API key (`AIzaSyBxGQoM3qGCNKC2vtvBS9NUUXOSh88xHxY`) in the repository.
+GitHub detected a leaked Google API key (`[REDACTED_FIREBASE_API_KEY]`) in the repository.
 
 ## Root Cause
 The API key was hardcoded in backup scripts:
