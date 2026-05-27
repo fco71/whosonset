@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Project } from '../types/Project';
-import { Film, Calendar, MapPin, ImageOff } from 'lucide-react';
+import { Film, Calendar, MapPin } from 'lucide-react';
 import { cn } from '../lib/utils';
 import Card, { CardBody, CardTitle } from './ui/Card';
-import { imageErrorFallback } from '../utilities/imageErrorFallback';
+import { getProjectImagePlaceholder, resolveProjectImageUrl } from '../utilities/projectImageUtils';
 
 interface CompactProjectCardProps {
   project: Project;
@@ -49,40 +49,25 @@ const CompactProjectCard: React.FC<CompactProjectCardProps> = ({
 }) => {
   const navigate = useNavigate();
   const statusStyles = project.status ? getStatusStyles(project.status) : null;
-  const [coverImageUrl, setCoverImageUrl] = useState<string | null>(project.coverImageUrl || null);
+  const [coverImageUrl, setCoverImageUrl] = useState<string | null>(() => resolveProjectImageUrl(project.coverImageUrl));
   const [imageError, setImageError] = useState(false);
-  const lastProcessedUrlRef = useRef<string | null>(null);
 
   // Handle image URL changes and validate
   useEffect(() => {
-    // Skip if no URL or if we've already processed this URL
-    if (!project.coverImageUrl || project.coverImageUrl === lastProcessedUrlRef.current) {
-      return;
-    }
-
-    // Update the last processed URL
-    lastProcessedUrlRef.current = project.coverImageUrl;
-
-    // For blob URLs, we'll use a placeholder instead
-    if (project.coverImageUrl.startsWith('blob:')) {
-      if (process.env.NODE_ENV === 'development') {
-        console.debug('Using placeholder for blob URL in CompactProjectCard');
-      }
-      setCoverImageUrl(null);
-      setImageError(true);
-      return;
-    }
-
-    // For non-blob URLs, use them directly
-    setCoverImageUrl(project.coverImageUrl);
+    setCoverImageUrl(resolveProjectImageUrl(project.coverImageUrl));
     setImageError(false);
   }, [project.coverImageUrl]);
 
   const handleImageError = () => {
     console.warn(`[CompactProjectCard] Failed to load image: ${coverImageUrl}`);
-    setCoverImageUrl(null);
-    setImageError(true);
+    if (coverImageUrl && !imageError) {
+      setImageError(true);
+    }
   };
+
+  const placeholderImageUrl = getProjectImagePlaceholder(project.projectName);
+  const displayedImageUrl = coverImageUrl && !imageError ? coverImageUrl : placeholderImageUrl;
+  const isPlaceholderImage = displayedImageUrl === placeholderImageUrl;
   
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -126,33 +111,14 @@ const CompactProjectCard: React.FC<CompactProjectCardProps> = ({
       <div className="flex flex-col h-full">
         {/* Cover Image */}
         <div className="relative h-32 bg-gray-100 overflow-hidden">
-          {coverImageUrl && !imageError ? (
-            <>
-              <img
-                src={coverImageUrl}
-                alt={`${project.projectName} cover`}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                loading="lazy"
-                onError={imageErrorFallback}
-              />
-              {coverImageUrl.startsWith('blob:') && (
-                <div className="absolute inset-0 border-2 border-yellow-400 border-dashed pointer-events-none" />
-              )}
-            </>
-          ) : (
-            <div className="w-full h-full bg-gradient-to-br from-blue-50 to-purple-50 flex flex-col items-center justify-center text-center p-4">
-              {imageError ? (
-                <>
-                  <ImageOff size={24} className="text-gray-400 mb-1" />
-                  <p className="text-xs text-gray-500">Image not available</p>
-                </>
-              ) : (
-                <>
-                  <img src="/placeholder-project.jpg" alt="Placeholder image" />
-                </>
-              )}
-            </div>
-          )}
+          <img
+            src={displayedImageUrl}
+            alt={`${project.projectName} cover`}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            loading="lazy"
+            onError={isPlaceholderImage ? undefined : handleImageError}
+            onLoad={isPlaceholderImage ? undefined : () => setImageError(false)}
+          />
         </div>
         
         {/* Card Content */}
