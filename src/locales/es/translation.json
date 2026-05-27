@@ -750,7 +750,39 @@
       "uploadSuccess": "subido exitosamente!",
       "uploadFailed": "Error al subir guión"
     },
-    "workspaceDeleteConfirm": "¿Estás seguro de que quieres eliminar este espacio de trabajo y todos sus datos? Esta acción no se puede deshacer."
+    "workspaceDeleteConfirm": "¿Estás seguro de que quieres eliminar este espacio de trabajo y todos sus datos? Esta acción no se puede deshacer.",
+    "personalNoWorkspace": "Personal / sin espacio de trabajo",
+    "uploadToWorkspace": "Subir a espacio de trabajo",
+    "uploadHelp": "Sube ahora o invita colaboradores más tarde. El acceso al espacio puede actualizarse en cualquier momento.",
+    "inviteMembersOptional": "Invitar miembros (opcional)",
+    "noScreenplaysYet": "Aún no se han subido guiones.",
+    "onlyCreatorCanInvite": "Solo el creador del espacio puede invitar miembros.",
+    "supervisor": {
+      "actAs": "Actuar como supervisor",
+      "stepDown": "Dejar de ser supervisor",
+      "enabled": "Actuando como supervisor: ya no podrás editar guiones aquí.",
+      "disabled": "Dejaste de actuar como supervisor.",
+      "ownerCannot": "El creador del espacio no puede cambiar el modo supervisor.",
+      "toggleError": "No se pudo cambiar el modo supervisor.",
+      "yourRole": "Tú: {{role}}",
+      "selfTag": "(propio)",
+      "tooltipSelf": "Te etiquetaste como supervisor (edición deshabilitada aquí)",
+      "tooltipRole": "Tu rol en este espacio de trabajo"
+    },
+    "roles": {
+      "member": "Miembro",
+      "memberDesc": "Puede editar y comentar guiones del espacio.",
+      "supervisor": "Supervisor",
+      "supervisorDesc": "Lee, comenta y anota; no puede editar los guiones.",
+      "viewer": "Espectador",
+      "viewerDesc": "Acceso de solo lectura."
+    },
+    "badges": {
+      "unresolvedTooltip_one": "{{count}} nota sin resolver",
+      "unresolvedTooltip_other": "{{count}} notas sin resolver",
+      "unresolvedSupervisorTooltip_one": "{{count}} nota sin resolver de un supervisor",
+      "unresolvedSupervisorTooltip_other": "{{count}} notas sin resolver de un supervisor"
+    }
   },
   "tasks": {
     "title": "Tareas Colaborativas",
@@ -1067,6 +1099,63 @@
     },
     "navigation": {
       "navigatingTo": "Navegando a la anotación..."
+    },
+    "popupHeader": {
+      "dragToMove": "Arrastra para mover"
+    },
+    "supervisorBadge": {
+      "label": "supervisor",
+      "tooltip": "Comentario realizado como supervisor"
+    },
+    "marker": {
+      "annotation": "Anotación de {{user}}",
+      "supervisorNote": "Nota de supervisor de {{user}}",
+      "tag": "Etiqueta de {{user}}: {{content}}"
+    },
+    "toasts": {
+      "annotationAdded": "Anotación agregada.",
+      "supervisorNoteAdded": "Nota de supervisor agregada.",
+      "annotationFailed": "Error al agregar la anotación.",
+      "tagAdded": "Etiqueta agregada.",
+      "tagFailed": "Error al agregar la etiqueta.",
+      "annotationResolved": "Anotación resuelta.",
+      "annotationReopened": "Anotación reabierta.",
+      "tagResolved": "Etiqueta resuelta.",
+      "tagReopened": "Etiqueta reabierta.",
+      "updateFailed": "Error al actualizar."
+    },
+    "statusFilters": {
+      "open": "Abiertas ({{count}})",
+      "mine": "Mías ({{count}})",
+      "fromTeacher": "Del profesor ({{count}})",
+      "all": "Todas ({{count}})"
+    },
+    "export": {
+      "button": "Exportar informe (CSV)",
+      "buttonShort": "Exportar",
+      "generating": "Generando informe…",
+      "success": "Informe exportado.",
+      "empty": "Aún no hay nada que exportar — agrega etiquetas o anotaciones primero.",
+      "failed": "Error al exportar el informe.",
+      "columns": {
+        "type": "Tipo",
+        "category": "Categoría",
+        "page": "Página",
+        "content": "Contenido",
+        "author": "Autor",
+        "supervisor": "Supervisor",
+        "resolved": "Resuelto",
+        "timestamp": "Fecha",
+        "screenplay": "Guion"
+      },
+      "types": {
+        "annotation": "Anotación",
+        "tag": "Etiqueta"
+      },
+      "boolean": {
+        "yes": "Sí",
+        "no": "No"
+      }
     }
   },
   "common": {

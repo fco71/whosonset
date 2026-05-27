@@ -1,8 +1,21 @@
 [
   {
-    "origin": ["http://localhost:8080"],
-    "method": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    "responseHeader": ["Content-Type"],
+    "origin": [
+      "http://localhost:8000",
+      "http://localhost:8080",
+      "https://myfilmjobs.com",
+      "https://www.myfilmjobs.com",
+      "https://my-film-jobs.web.app",
+      "https://my-film-jobs.firebaseapp.com"
+    ],
+    "method": ["GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS"],
+    "responseHeader": [
+      "Accept-Ranges",
+      "Content-Disposition",
+      "Content-Length",
+      "Content-Range",
+      "Content-Type"
+    ],
     "maxAgeSeconds": 3600
   }
 ]

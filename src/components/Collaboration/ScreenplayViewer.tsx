@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { collection, addDoc, query, where, orderBy, getDocs, onSnapshot, updateDoc, doc, deleteDoc, arrayUnion, arrayRemove, limit, getDoc, serverTimestamp } from 'firebase/firestore';
 import { Document, Page, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+import 'react-pdf/dist/Page/TextLayer.css';
 import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
@@ -15,8 +17,8 @@ const debugLog = (...args: unknown[]) => {
 };
 
 // pdfjs-dist v5 (pulled in by react-pdf v10) only ships the ES-module worker (.mjs).
-// cdnjs hosts the matching file at the same version path.
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.mjs`;
+// jsDelivr serves the npm package version directly; cdnjs does not host every pdfjs-dist release.
+pdfjs.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 interface ScreenplayViewerProps {
   screenplay: {
@@ -47,6 +49,7 @@ interface Annotation {
   selection?: string;
   replies?: Reply[];
   resolved?: boolean;
+  supervisorAtAuthorTime?: boolean;
   priority?: 'low' | 'medium' | 'high' | 'critical';
 }
 
@@ -77,6 +80,7 @@ interface Tag {
   selection?: string;
   color: string;
   resolved?: boolean;
+  supervisorAtAuthorTime?: boolean;
 }
 
 interface ScreenplaySession {
@@ -121,6 +125,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   const [numPages, setNumPages] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [useNativePdfFallback, setUseNativePdfFallback] = useState(false);
   const [scale, setScale] = useState(1.2);
   const [showOverlays, setShowOverlays] = useState(true);
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
@@ -129,6 +134,8 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   const [activeUsers, setActiveUsers] = useState<ScreenplaySession['activeUsers']>([]);
   const [viewMode, setViewMode] = useState<'single' | 'split' | 'fullscreen'>('single');
   const [filterType, setFilterType] = useState<'all' | 'annotations' | 'tags' | 'resolved'>('all');
+  const [statusFilter, setStatusFilter] = useState<'open' | 'mine' | 'from_teacher' | 'all'>('open');
+  const [screenplayWorkspaceId, setScreenplayWorkspaceId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'time' | 'page' | 'type' | 'user'>('time');
   const [showUserCursors, setShowUserCursors] = useState(true);
@@ -169,10 +176,15 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   const pdfContainerRef = useRef<HTMLDivElement>(null);
   const drawingCanvasRef = useRef<HTMLCanvasElement>(null);
   const popupRef = useRef<HTMLDivElement>(null);
+  const popupTypeRef = useRef<'annotation' | 'tag' | null>(null);
   const pdfScrollRef = useRef<HTMLDivElement>(null);
 
   // Add state for virtualization
   const [visiblePageRange, setVisiblePageRange] = useState<[number, number]>([1, 10]);
+  // Measured live from the first rendered Page so virtualization + placeholders use the
+  // actual height (varies with PDF dimensions and the current zoom level). Defaults to
+  // a US Letter-ish guess until the first measurement lands.
+  const [measuredPageHeight, setMeasuredPageHeight] = useState(1100);
 
   // Focus trap for modal
   const modalRef = useRef<HTMLDivElement>(null);
@@ -182,6 +194,11 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   const { t } = useTranslation();
 
   if (!screenplay || !screenplay.id) return null;
+
+  const isPdfDocument =
+    screenplay.type?.toLowerCase().includes('pdf') ||
+    screenplay.name?.toLowerCase().endsWith('.pdf') ||
+    screenplay.url?.toLowerCase().includes('.pdf');
 
   // Prevent body scrolling when modal is open
   useEffect(() => {
@@ -364,6 +381,10 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     critical: '#7C3AED'
   };
 
+  useEffect(() => {
+    popupTypeRef.current = popupType;
+  }, [popupType]);
+
   // Smart popup positioning function
   const calculatePopupPosition = useCallback((rect: DOMRect, popupWidth: number = 280, popupHeight: number = 120) => {
     const viewportWidth = window.innerWidth;
@@ -387,9 +408,20 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     if (x < 16) {
       x = 16;
     }
-    
+
     return { x, y };
   }, []);
+
+  // Re-position the popup when its content changes shape (the annotation textarea is
+  // taller than the initial choice card and can overflow the viewport from where we
+  // first placed it). Use the last selection rect as the anchor.
+  useEffect(() => {
+    if (popupType && selectionRect) {
+      const popupHeight = popupType === 'annotation' ? 240 : 200;
+      const next = calculatePopupPosition(selectionRect as DOMRect, 320, popupHeight);
+      setPopupPosition(next);
+    }
+  }, [popupType, selectionRect, calculatePopupPosition]);
 
   // Navigate to specific annotation/tag location
   const navigateToElement = (element: Annotation | Tag) => {
@@ -466,15 +498,48 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   // Initialize collaboration session
   useEffect(() => {
     debugLog('[DEBUG] ScreenplayViewer mounted with screenplay:', screenplay);
+    setError(null);
+    setUseNativePdfFallback(false);
+    setLoading(true);
+    setNumPages(null);
+    setScreenplayWorkspaceId(null);
     if (!screenplay.url || typeof screenplay.url !== 'string' || screenplay.url.trim() === '') {
       setError('No PDF URL found for this screenplay.');
       setLoading(false);
+    } else if (!isPdfDocument) {
+      setLoading(false);
     }
+    let cancelled = false;
+    (async () => {
+      try {
+        const snap = await getDoc(doc(db, 'screenplays', screenplay.id));
+        if (cancelled) return;
+        const data = snap.exists() ? snap.data() : null;
+        setScreenplayWorkspaceId(typeof data?.workspaceId === 'string' ? data.workspaceId : null);
+      } catch (err) {
+        console.error('Failed to read screenplay workspaceId:', err);
+      }
+    })();
     initializeSession();
-    loadAnnotations();
-    loadTags();
-    startRealTimeSync();
+    // Single source of truth for annotations/tags — onSnapshot. The previous one-shot
+    // loadAnnotations()/loadTags() calls created a brief race against the live listeners.
+    const stopRealTimeSync = startRealTimeSync();
+    return () => {
+      cancelled = true;
+      if (typeof stopRealTimeSync === 'function') stopRealTimeSync();
+    };
   }, [screenplay.id]);
+
+  useEffect(() => {
+    if (!screenplay.url || !isPdfDocument || useNativePdfFallback || numPages) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setUseNativePdfFallback(true);
+      setLoading(false);
+    }, 12000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [screenplay.url, isPdfDocument, useNativePdfFallback, numPages]);
 
   const initializeSession = async () => {
     try {
@@ -644,58 +709,21 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     };
   };
 
-  const loadAnnotations = async () => {
+  // Read the screenplay's workspace at write time to determine whether the current
+  // user is effectively acting as a supervisor right now (owner-assigned or self-elected).
+  // Denormalized into the annotation/tag doc so read-time filters don't need a join.
+  const resolveSupervisorAtAuthorTime = async (): Promise<boolean> => {
+    if (!currentUser || !screenplayWorkspaceId) return false;
     try {
-      debugLog('[DEBUG] Querying screenplayAnnotations with screenplayId:', screenplay.id);
-      const q = query(
-        collection(db, 'screenplayAnnotations'),
-        where('screenplayId', '==', screenplay.id),
-        orderBy('timestamp', 'desc')
-      );
-      const querySnapshot = await getDocs(q);
-      const annotationsData = querySnapshot.docs.map(doc => {
-        const data = doc.data();
-        const processedReplies = Array.isArray(data.replies)
-          ? data.replies.map((reply: any) => ({
-              ...reply,
-              timestamp: toDate(reply.timestamp)
-            }))
-          : [];
-        
-        debugLog(`[DEBUG] Loaded annotation ${doc.id} with ${processedReplies.length} replies:`, processedReplies);
-        
-        return {
-          id: doc.id,
-          ...data,
-          timestamp: toDate(data.timestamp),
-          replies: processedReplies
-        };
-      }) as Annotation[];
-      setAnnotations(annotationsData);
-      debugLog('[DEBUG] Total annotations loaded:', annotationsData.length);
-    } catch (error) {
-      console.error('[DEBUG] Error loading annotations:', error);
-    }
-  };
-
-  const loadTags = async () => {
-    try {
-      debugLog('[DEBUG] Querying screenplayTags with screenplayId:', screenplay.id);
-      const q = query(
-        collection(db, 'screenplayTags'),
-        where('screenplayId', '==', screenplay.id),
-        orderBy('timestamp', 'desc')
-      );
-      const querySnapshot = await getDocs(q);
-      const tagsData = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        timestamp: toDate(doc.data().timestamp)
-      })) as Tag[];
-      setTags(tagsData);
-      debugLog('[DEBUG] Loaded tags:', tagsData);
-    } catch (error) {
-      console.error('[DEBUG] Error loading tags:', error);
+      const snap = await getDoc(doc(db, 'workspaces', screenplayWorkspaceId));
+      if (!snap.exists()) return false;
+      const data = snap.data();
+      const supervisorIds: string[] = Array.isArray(data.supervisorIds) ? data.supervisorIds : [];
+      const selfElected: string[] = Array.isArray(data.selfElectedSupervisors) ? data.selfElectedSupervisors : [];
+      return supervisorIds.includes(currentUser.uid) || selfElected.includes(currentUser.uid);
+    } catch (err) {
+      console.error('Failed to resolve supervisor-at-author-time:', err);
+      return false;
     }
   };
 
@@ -703,6 +731,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     if (!annotation.trim()) return;
 
     try {
+      const supervisorAtAuthorTime = await resolveSupervisorAtAuthorTime();
       const annotationData: any = {
         screenplayId: screenplay.id,
         userId: currentUser?.uid || 'unknown',
@@ -715,15 +744,16 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         position,
         replies: [],
         resolved: false,
+        supervisorAtAuthorTime,
         priority: 'medium' as const
       };
 
       await addDoc(collection(db, 'screenplayAnnotations'), annotationData);
       setNewAnnotation('');
-      toast.success('Annotation added successfully!');
+      toast.success(supervisorAtAuthorTime ? t('screenplay.toasts.supervisorNoteAdded') : t('screenplay.toasts.annotationAdded'));
     } catch (error) {
       console.error('Error adding annotation:', error);
-      toast.error('Failed to add annotation');
+      toast.error(t('screenplay.toasts.annotationFailed'));
     }
   };
 
@@ -731,6 +761,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     if (!tag.trim()) return;
 
     try {
+      const supervisorAtAuthorTime = await resolveSupervisorAtAuthorTime();
       const tagData = {
         screenplayId: screenplay.id,
         userId: currentUser?.uid || 'unknown',
@@ -743,15 +774,16 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         pageNumber,
         position,
         color: tagColors[selectedTagType],
-        resolved: false
+        resolved: false,
+        supervisorAtAuthorTime
       };
 
       await addDoc(collection(db, 'screenplayTags'), tagData);
       setNewTag('');
-      toast.success('Tag added successfully!');
+      toast.success(t('screenplay.toasts.tagAdded'));
     } catch (error) {
       console.error('Error adding tag:', error);
-      toast.error('Failed to add tag');
+      toast.error(t('screenplay.toasts.tagFailed'));
     }
   };
 
@@ -778,6 +810,10 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     requestAnimationFrame(() => {
       const selection = window.getSelection();
       if (!selection || selection.toString().trim() === '') {
+        // While the popup is composing an annotation/tag, an empty selection on the PDF
+        // (e.g. an accidental click outside the popup) MUST NOT clear selectionRect/page
+        // — that silently breaks Save in createAnnotation.
+        if (popupTypeRef.current) return;
         setShowSelectionPopup(false);
         setSelectionRect(null);
         setSelectedText('');
@@ -785,6 +821,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         return;
       }
 
+      if (selection.rangeCount === 0) return;
       const range = selection.getRangeAt(0);
       const rect = range.getBoundingClientRect();
       
@@ -838,20 +875,146 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     return `${days}d ago`;
   };
 
-  const toggleElementResolved = async (elementId: string, type: 'annotation' | 'tag') => {
+  // CSV export — tags + annotations together. Useful as a film-breakdown deliverable for
+  // production crew and as an evaluation artifact for the supervisor.
+  const escapeCsvCell = (value: unknown): string => {
+    const stringified = value === null || value === undefined ? '' : String(value);
+    // Always wrap in quotes; escape internal quotes by doubling them. This handles
+    // commas, line breaks and semicolons that often appear in annotation content.
+    return `"${stringified.replace(/"/g, '""')}"`;
+  };
+
+  const formatTimestampForCsv = (ts: any): string => {
+    const d = toDate(ts);
+    if (!d || isNaN(d.getTime())) return '';
+    return d.toISOString();
+  };
+
+  const exportTagReport = () => {
+    if (annotations.length === 0 && tags.length === 0) {
+      toast(t('screenplay.export.empty'));
+      return;
+    }
     try {
-      const collectionName = type === 'annotation' ? 'screenplayAnnotations' : 'screenplayTags';
-      const elementRef = doc(db, collectionName, elementId);
-      const element = type === 'annotation' 
-        ? annotations.find(c => c.id === elementId)
-        : tags.find(t => t.id === elementId);
-      if (element) {
-        await updateDoc(elementRef, { resolved: !element.resolved });
-        toast.success(`${type === 'annotation' ? 'Annotation' : 'Tag'} ${element.resolved ? 'reopened' : 'resolved'}!`);
-      }
+      const screenplayLabel = screenplay.name || 'screenplay';
+      const headers = [
+        t('screenplay.export.columns.type'),
+        t('screenplay.export.columns.category'),
+        t('screenplay.export.columns.page'),
+        t('screenplay.export.columns.content'),
+        t('screenplay.export.columns.author'),
+        t('screenplay.export.columns.supervisor'),
+        t('screenplay.export.columns.resolved'),
+        t('screenplay.export.columns.timestamp'),
+        t('screenplay.export.columns.screenplay')
+      ].map(escapeCsvCell).join(',');
+
+      const yes = t('screenplay.export.boolean.yes');
+      const no = t('screenplay.export.boolean.no');
+
+      type Row = {
+        type: string;
+        category: string;
+        page: number;
+        content: string;
+        author: string;
+        supervisor: string;
+        resolved: string;
+        timestamp: string;
+      };
+
+      const annotationRows: Row[] = annotations.map(annotation => ({
+        type: t('screenplay.export.types.annotation'),
+        category: '',
+        page: annotation.pageNumber ?? 0,
+        content: annotation.annotation || '',
+        author: annotation.userName || '',
+        supervisor: annotation.supervisorAtAuthorTime ? yes : no,
+        resolved: annotation.resolved ? yes : no,
+        timestamp: formatTimestampForCsv(annotation.timestamp)
+      }));
+
+      const tagRows: Row[] = tags.map(tag => ({
+        type: t('screenplay.export.types.tag'),
+        category: tag.tagType ? t(`screenplay.categories.${tag.tagType}`, { defaultValue: tag.tagType }) : '',
+        page: tag.pageNumber ?? 0,
+        content: tag.content || '',
+        author: tag.userName || '',
+        supervisor: tag.supervisorAtAuthorTime ? yes : no,
+        resolved: tag.resolved ? yes : no,
+        timestamp: formatTimestampForCsv(tag.timestamp)
+      }));
+
+      const allRows = [...annotationRows, ...tagRows].sort((a, b) => {
+        if (a.page !== b.page) return a.page - b.page;
+        return a.timestamp.localeCompare(b.timestamp);
+      });
+
+      const csvRows = allRows.map(row => [
+        row.type,
+        row.category,
+        row.page,
+        row.content,
+        row.author,
+        row.supervisor,
+        row.resolved,
+        row.timestamp,
+        screenplayLabel
+      ].map(escapeCsvCell).join(','));
+
+      // BOM prefix so Excel detects UTF-8 (otherwise é/í/ñ render as mojibake on open).
+      const csv = '﻿' + [headers, ...csvRows].join('\r\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+
+      const date = new Date().toISOString().slice(0, 10);
+      const safeName = screenplayLabel.replace(/\.[^.]+$/, '').replace(/[^a-z0-9\-_]+/gi, '-').slice(0, 60) || 'screenplay';
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${safeName}-breakdown-${date}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      // Revoke after a tick so the click has time to bind the URL in some browsers.
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+      toast.success(t('screenplay.export.success'));
+    } catch (err) {
+      console.error('Export failed:', err);
+      toast.error(t('screenplay.export.failed'));
+    }
+  };
+
+  const toggleElementResolved = async (elementId: string, type: 'annotation' | 'tag') => {
+    const collectionName = type === 'annotation' ? 'screenplayAnnotations' : 'screenplayTags';
+    const elementRef = doc(db, collectionName, elementId);
+    const element = type === 'annotation'
+      ? annotations.find(c => c.id === elementId)
+      : tags.find(t => t.id === elementId);
+    if (!element) return;
+    const nextResolved = !element.resolved;
+    // Optimistic update so the user sees the state flip instantly, without waiting for
+    // the onSnapshot round-trip. If the write fails we roll back below.
+    if (type === 'annotation') {
+      setAnnotations(prev => prev.map(a => a.id === elementId ? { ...a, resolved: nextResolved } : a));
+    } else {
+      setTags(prev => prev.map(t => t.id === elementId ? { ...t, resolved: nextResolved } : t));
+    }
+    try {
+      await updateDoc(elementRef, { resolved: nextResolved });
+      const toastKey = type === 'annotation'
+        ? (nextResolved ? 'annotationResolved' : 'annotationReopened')
+        : (nextResolved ? 'tagResolved' : 'tagReopened');
+      toast.success(t(`screenplay.toasts.${toastKey}`));
     } catch (error) {
       console.error(`Error toggling ${type}:`, error);
-      toast.error(`Failed to update ${type}`);
+      toast.error(t('screenplay.toasts.updateFailed'));
+      // Roll back the optimistic flip
+      if (type === 'annotation') {
+        setAnnotations(prev => prev.map(a => a.id === elementId ? { ...a, resolved: !nextResolved } : a));
+      } else {
+        setTags(prev => prev.map(t => t.id === elementId ? { ...t, resolved: !nextResolved } : t));
+      }
     }
   };
 
@@ -886,10 +1049,10 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     
     try {
       const position = {
-        x: (selectionRect as any).relativeX || selectionRect.left / window.innerWidth,
-        y: (selectionRect as any).relativeY || selectionRect.top / window.innerHeight,
-        width: (selectionRect as any).relativeWidth || selectionRect.width / window.innerWidth,
-        height: (selectionRect as any).relativeHeight || selectionRect.height / window.innerHeight,
+        x: (selectionRect as any).relativeX ?? selectionRect.left / window.innerWidth,
+        y: (selectionRect as any).relativeY ?? selectionRect.top / window.innerHeight,
+        width: (selectionRect as any).relativeWidth ?? selectionRect.width / window.innerWidth,
+        height: (selectionRect as any).relativeHeight ?? selectionRect.height / window.innerHeight,
       };
       
       if (type === 'annotation') {
@@ -916,21 +1079,22 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     }
   }, [selectionRect, selectionPage, currentUser, annotationInput, newTag, addAnnotation, addTag]);
 
-  // Helper to calculate visible pages based on scroll
+  // Helper to calculate visible pages based on scroll. Uses the live-measured page height
+  // (set from the first rendered Page) so virtualization stays in sync with whatever the
+  // PDF and current zoom actually produce.
   const handleVirtualizedScroll = useCallback(() => {
     if (!pdfScrollRef.current || !numPages) return;
     const scrollTop = pdfScrollRef.current.scrollTop;
     const containerHeight = pdfScrollRef.current.clientHeight;
-    
-    // Calculate which pages should be visible with a larger buffer
-    const pageHeight = 900; // Approximate page height
-    const buffer = 2; // Show 2 pages before and after
-    
+
+    const pageHeight = Math.max(200, measuredPageHeight);
+    const buffer = 2;
+
     const firstVisible = Math.max(1, Math.floor(scrollTop / pageHeight) - buffer);
     const lastVisible = Math.min(numPages, Math.ceil((scrollTop + containerHeight) / pageHeight) + buffer);
-    
+
     setVisiblePageRange([firstVisible, lastVisible]);
-  }, [numPages]);
+  }, [numPages, measuredPageHeight]);
 
   // Attach scroll handler
   useEffect(() => {
@@ -1330,6 +1494,24 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
             >
               {error ? (
                 <div className="error-message">{error}</div>
+              ) : screenplay.url && !isPdfDocument ? (
+                <div className="file-preview-fallback">
+                  <div className="fallback-heading">Preview unavailable</div>
+                  <p>This file type cannot be previewed in the screenplay annotator.</p>
+                  <a href={screenplay.url} target="_blank" rel="noopener noreferrer">
+                    Open file
+                  </a>
+                </div>
+              ) : screenplay.url && useNativePdfFallback ? (
+                <div className="native-pdf-fallback">
+                  <div className="fallback-heading">PDF preview unavailable</div>
+                  <p>
+                    The embedded PDF renderer could not load this file. Open it directly while Storage CORS is being applied.
+                  </p>
+                  <a href={screenplay.url} target="_blank" rel="noopener noreferrer">
+                    Open PDF
+                  </a>
+                </div>
               ) : screenplay.url ? (
                 <>
                   <Document
@@ -1342,7 +1524,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                     }}
                     onLoadError={(error: Error) => {
                       console.error('Error loading PDF:', error);
-                      setError('Failed to load PDF document');
+                      setUseNativePdfFallback(true);
                       setLoading(false);
                     }}
                     loading={
@@ -1360,9 +1542,27 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                           const [first, last] = visiblePageRange;
                           const isVisible = pageNumber >= first && pageNumber <= last;
                           return (
-                            <div key={`page_${pageNumber}`} className="page-container" style={{ position: 'relative', marginBottom: '20px', minHeight: 900 }}>
+                            <div
+                              key={`page_${pageNumber}`}
+                              className="page-container"
+                              data-page-number={pageNumber}
+                              style={{
+                                position: 'relative',
+                                marginBottom: '20px',
+                                // Reserve the same vertical space whether the page is rendered or virtualized,
+                                // so toggling visibility on scroll never shifts the scroll position.
+                                minHeight: measuredPageHeight
+                              }}
+                            >
                               {isVisible ? (
-                                <>
+                                // The page-frame wrapper is `display: inline-block` so it shrinks to the
+                                // Page's actual rendered size. Selection capture stores positions relative
+                                // to .react-pdf__Page; rendering the overlays as children of an
+                                // inline-block wrapper that ALSO matches the page's box means a `%`
+                                // coordinate inside refers to the same coordinate space as capture.
+                                // Without this wrapper, overlays render against the wider .page-container
+                                // (which is centered-flex), so highlights drift left by half the gutter.
+                                <div className="page-frame" style={{ position: 'relative', display: 'inline-block', lineHeight: 0 }}>
                                   <Page
                                     pageNumber={pageNumber}
                                     scale={scale}
@@ -1373,6 +1573,16 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                                     onRenderSuccess={() => {
                                       debugLog(`Page ${pageNumber} rendered successfully`);
                                       attachSelectionHandlers();
+                                      // Measure the rendered Page height from the DOM on the first successful render,
+                                      // and again whenever the user changes zoom (page-container minHeight needs to
+                                      // track the real rendered size, not a 900px guess).
+                                      if (pageNumber === 1) {
+                                        const node = document.querySelector(`.page-container[data-page-number="${pageNumber}"] .react-pdf__Page`) as HTMLElement | null;
+                                        const height = node?.offsetHeight;
+                                        if (height && Math.abs(height - measuredPageHeight) > 16) {
+                                          setMeasuredPageHeight(height);
+                                        }
+                                      }
                                     }}
                                     onLoadError={(error: Error) => console.error(`Error loading page ${pageNumber}:`, error)}
                                     error={(error: Error) => (
@@ -1390,7 +1600,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                                   {/* Annotation Overlays for this page */}
                                   {showOverlays && annotations.filter(annotation => annotation.pageNumber === pageNumber).map(annotation => {
                                     const overlayHeight = `${annotation.position.height * 100}%`;
-                                    const pagePixelHeight = 900;
+                                    const pagePixelHeight = measuredPageHeight;
                                     const heightPx = annotation.position.height * pagePixelHeight;
                                     const isSingleLine = heightPx < 32;
                                     const verticalPad = isSingleLine ? 4 : 0;
@@ -1407,15 +1617,25 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                                             height: `calc(${overlayHeight} + ${verticalPad * 2}px)`,
                                             border: isSingleLine ? '1px solid rgba(239, 68, 68, 0.45)' : '2px solid rgba(239, 68, 68, 0.7)',
                                             borderRadius: isSingleLine ? 3 : 8,
-                                            cursor: 'pointer',
                                             zIndex: 5,
                                             transition: 'all 0.15s ease',
-                                            pointerEvents: 'auto',
+                                            // Let clicks/mouseups fall through to the underlying PDF text layer so the user
+                                            // can still select text beneath an existing annotation. The marker (rendered
+                                            // separately below) keeps pointer-events to remain clickable.
+                                            pointerEvents: 'none',
                                             background: 'none',
                                             boxShadow: '0 2px 8px rgba(239, 68, 68, 0.08)'
                                           }}
                                           data-element-id={annotation.id}
-                                          onClick={(e) => {
+                                          title={`${t('screenplay.marker.annotation', { user: annotation.userName })}: ${annotation.annotation}`}
+                                        />
+                                        <div
+                                          className="annotation-marker"
+                                          role="button"
+                                          tabIndex={0}
+                                          aria-label={`Open annotation by ${annotation.userName}`}
+                                          onMouseDown={e => e.stopPropagation()}
+                                          onClick={e => {
                                             e.stopPropagation();
                                             setActiveAnnotation(annotation);
                                             setShowAnnotationPanel(true);
@@ -1424,29 +1644,30 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                                             setSelectedElement(annotation.id);
                                             setActiveThread(null);
                                           }}
-                                          title={`Annotation by ${annotation.userName}: ${annotation.annotation}`}
-                                        />
-                                        <div
-                                          className="annotation-marker"
                                           style={{
                                             position: 'absolute',
                                             left: `calc(${annotation.position.x * 100}% + ${annotation.position.width * 100}% - 10px)`,
                                             top: `calc(${annotation.position.y * 100}% - ${verticalPad}px + ${markerOffset}px)`,
-                                            width: 20,
-                                            height: 20,
+                                            width: 22,
+                                            height: 22,
                                             borderRadius: '50%',
-                                            background: '#EF4444',
+                                            background: annotation.supervisorAtAuthorTime ? '#f59e0b' : '#EF4444',
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
-                                            fontSize: 10,
+                                            fontSize: 11,
                                             color: 'white',
-                                            boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                                            boxShadow: '0 2px 4px rgba(0,0,0,0.25)',
                                             border: '1px solid white',
+                                            cursor: 'pointer',
+                                            pointerEvents: 'auto',
                                             zIndex: 10
                                           }}
+                                          title={annotation.supervisorAtAuthorTime
+                                            ? t('screenplay.marker.supervisorNote', { user: annotation.userName })
+                                            : t('screenplay.marker.annotation', { user: annotation.userName })}
                                         >
-                                          💬
+                                          {annotation.supervisorAtAuthorTime ? '🎓' : '💬'}
                                         </div>
                                       </React.Fragment>
                                     );
@@ -1454,7 +1675,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                                   {/* Tag Overlays for this page */}
                                   {showOverlays && tags.filter(tag => tag.pageNumber === pageNumber).map(tag => {
                                     const overlayHeight = `${tag.position.height * 100}%`;
-                                    const pagePixelHeight = 900;
+                                    const pagePixelHeight = measuredPageHeight;
                                     const heightPx = tag.position.height * pagePixelHeight;
                                     const isSingleLine = heightPx < 32;
                                     const verticalPad = isSingleLine ? 4 : 0;
@@ -1471,14 +1692,22 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                                             height: `calc(${overlayHeight} + ${verticalPad * 2}px)`,
                                             border: isSingleLine ? '1px solid rgba(245, 158, 11, 0.45)' : '2px solid rgba(245, 158, 11, 0.7)',
                                             borderRadius: isSingleLine ? 3 : 8,
-                                            cursor: 'pointer',
                                             zIndex: 5,
                                             transition: 'all 0.15s ease',
-                                            pointerEvents: 'auto',
+                                            // Let text selection pass through. The marker (rendered below) is the click target.
+                                            pointerEvents: 'none',
                                             background: 'none',
                                             boxShadow: '0 2px 8px rgba(245, 158, 11, 0.08)'
                                           }}
                                           data-element-id={tag.id}
+                                          title={t('screenplay.marker.tag', { user: tag.userName, content: tag.content })}
+                                        />
+                                        <div
+                                          className="tag-marker"
+                                          role="button"
+                                          tabIndex={0}
+                                          aria-label={`Open tag by ${tag.userName}`}
+                                          onMouseDown={e => e.stopPropagation()}
                                           onClick={(e) => {
                                             e.stopPropagation();
                                             setActiveAnnotation(null);
@@ -1488,36 +1717,35 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                                             setSelectedElement(tag.id);
                                             setActiveThread(null);
                                           }}
-                                          title={`Tag by ${tag.userName}: ${tag.content}`}
-                                        />
-                                        <div
-                                          className="tag-marker"
                                           style={{
                                             position: 'absolute',
                                             left: `calc(${tag.position.x * 100}% + ${tag.position.width * 100}% - 10px)`,
                                             top: `calc(${tag.position.y * 100}% - ${verticalPad}px + ${markerOffset}px)`,
-                                            width: 20,
-                                            height: 20,
+                                            width: 22,
+                                            height: 22,
                                             borderRadius: '50%',
                                             background: '#f59e0b',
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
-                                            fontSize: 10,
+                                            fontSize: 11,
                                             color: 'white',
-                                            boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                                            boxShadow: '0 2px 4px rgba(0,0,0,0.25)',
                                             border: '1px solid white',
+                                            cursor: 'pointer',
+                                            pointerEvents: 'auto',
                                             zIndex: 10
                                           }}
+                                          title={t('screenplay.marker.tag', { user: tag.userName, content: tag.content })}
                                         >
                                           🏷️
                                         </div>
                                       </React.Fragment>
                                     );
                                   })}
-                                </>
+                                </div>
                               ) : (
-                                <div className="page-loading" style={{ minHeight: 900 }} />
+                                <div className="page-loading" style={{ minHeight: measuredPageHeight }} />
                               )}
                             </div>
                           );
@@ -1708,10 +1936,76 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
 
                   {/* Annotations List */}
                   <div className="annotations-section">
-                    <h4>💬 {t('screenplay.annotations')} ({annotations.length})</h4>
+                    {(() => {
+                      const openCount = annotations.filter(a => !a.resolved).length;
+                      const mineCount = annotations.filter(a => a.userId === currentUser?.uid).length;
+                      const teacherCount = annotations.filter(a => a.supervisorAtAuthorTime === true).length;
+                      return (
+                        <>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                            <h4 style={{ margin: 0 }}>💬 {t('screenplay.annotations')} ({annotations.length})</h4>
+                            <button
+                              type="button"
+                              className="btn-secondary"
+                              onClick={exportTagReport}
+                              title={t('screenplay.export.button')}
+                              style={{
+                                padding: '4px 10px',
+                                fontSize: '0.78em',
+                                border: '1px solid #cbd5e1',
+                                background: '#ffffff',
+                                color: '#1e293b',
+                                borderRadius: 6,
+                                cursor: 'pointer',
+                                whiteSpace: 'nowrap'
+                              }}
+                            >
+                              ⬇ {t('screenplay.export.buttonShort')}
+                            </button>
+                          </div>
+                          <div className="annotations-filter-chips" style={{ display: 'flex', flexWrap: 'wrap', gap: 6, margin: '6px 0 10px' }}>
+                            {([
+                              { key: 'open', label: t('screenplay.statusFilters.open', { count: openCount }) },
+                              { key: 'mine', label: t('screenplay.statusFilters.mine', { count: mineCount }) },
+                              { key: 'from_teacher', label: t('screenplay.statusFilters.fromTeacher', { count: teacherCount }) },
+                              { key: 'all', label: t('screenplay.statusFilters.all', { count: annotations.length }) }
+                            ] as Array<{ key: typeof statusFilter; label: string }>).map(option => {
+                              const active = statusFilter === option.key;
+                              return (
+                                <button
+                                  key={option.key}
+                                  type="button"
+                                  onClick={() => setStatusFilter(option.key)}
+                                  style={{
+                                    border: '1px solid',
+                                    borderColor: active ? '#2563eb' : '#cbd5e1',
+                                    background: active ? '#2563eb' : '#ffffff',
+                                    color: active ? '#ffffff' : '#1e293b',
+                                    borderRadius: 999,
+                                    padding: '3px 10px',
+                                    fontSize: '0.78em',
+                                    fontWeight: 600,
+                                    cursor: 'pointer'
+                                  }}
+                                >
+                                  {option.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </>
+                      );
+                    })()}
                     <div className="annotations-list">
-                      {annotations.map(annotation => (
-                        <div key={annotation.id} className={`annotation-item ${annotation.resolved ? 'resolved' : ''}`}>
+                      {annotations
+                        .filter(annotation => {
+                          if (statusFilter === 'open') return !annotation.resolved;
+                          if (statusFilter === 'mine') return annotation.userId === currentUser?.uid;
+                          if (statusFilter === 'from_teacher') return annotation.supervisorAtAuthorTime === true;
+                          return true;
+                        })
+                        .map(annotation => (
+                        <div key={annotation.id} className={`annotation-item ${annotation.resolved ? 'resolved' : ''} ${annotation.supervisorAtAuthorTime ? 'from-supervisor' : ''}`}>
                           <div className="annotation-header">
                             <div className="annotation-author">
                               {annotation.userAvatar ? (
@@ -1720,6 +2014,22 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                                 <div className="avatar-placeholder">{annotation.userName.charAt(0)}</div>
                               )}
                               <span>{annotation.userName}</span>
+                              {annotation.supervisorAtAuthorTime && (
+                                <span
+                                  title={t('screenplay.supervisorBadge.tooltip')}
+                                  style={{
+                                    marginLeft: 6,
+                                    padding: '1px 6px',
+                                    borderRadius: 999,
+                                    fontSize: '0.7em',
+                                    fontWeight: 700,
+                                    background: '#fde68a',
+                                    color: '#92400e'
+                                  }}
+                                >
+                                  🎓 {t('screenplay.supervisorBadge.label')}
+                                </span>
+                              )}
                             </div>
                             <div className="annotation-meta">
                               <span className="annotation-time">{formatTimeAgo(toDate(annotation.timestamp))}</span>
@@ -1916,12 +2226,26 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
               zIndex: 3000,
               minWidth: 260,
               maxWidth: 340,
-              cursor: isDragging ? 'grabbing' : 'grab',
-              userSelect: 'none',
+              // Default cursor on the popup body so inputs/buttons/selects behave normally.
+              // Only the header drags the popup (see below).
             }}
-            onMouseDown={handlePopupMouseDown}
           >
-            <div className="popup-header" style={{ fontWeight: 600, color: '#374151', marginBottom: 8, cursor: 'grab' }}>
+            <div
+              className="popup-header"
+              onMouseDown={handlePopupMouseDown}
+              style={{
+                fontWeight: 600,
+                color: '#374151',
+                marginBottom: 8,
+                cursor: isDragging ? 'grabbing' : 'grab',
+                userSelect: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6
+              }}
+              title={t('screenplay.popupHeader.dragToMove')}
+            >
+              <span aria-hidden="true" style={{ color: '#9ca3af', fontSize: 14, lineHeight: 1 }}>⠿</span>
               {popupType === 'annotation' ? t('screenplay.popup.addAnnotation') : popupType === 'tag' ? t('screenplay.popup.addTag') : t('screenplay.popup.addToSelection')}
             </div>
             {popupType === 'annotation' && (

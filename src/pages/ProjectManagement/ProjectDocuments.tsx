@@ -4,14 +4,16 @@ import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage
 import { db, auth, storage } from '../../firebase';
 import { ProjectDocument } from '../../types/ProjectManagement';
 import { Document, Page, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+import 'react-pdf/dist/Page/TextLayer.css';
 import { XMLParser } from 'fast-xml-parser';
 import Modal from 'react-modal';
 import ScreenplayBreakdown from '../../components/ScreenplayBreakdown';
 import toast from 'react-hot-toast';
 
 // pdfjs-dist v5 (pulled in by react-pdf v10) only ships the ES-module worker (.mjs).
-// cdnjs hosts the matching file at the same version path.
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.mjs`;
+// jsDelivr serves the npm package version directly; cdnjs does not host every pdfjs-dist release.
+pdfjs.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 interface ProjectDocumentsProps {
   projectId: string;

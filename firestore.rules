@@ -34,8 +34,81 @@ service cloud.firestore {
     function isScreenplayMemberData(data) {
       return signedIn() && (
         data.uploadedBy == request.auth.uid ||
-        (data.teamMembers is list && data.teamMembers.hasAny([request.auth.uid]))
+        (data.teamMembers is list && data.teamMembers.hasAny([request.auth.uid])) ||
+        canAccessWorkspace(data.workspaceId)
       );
+    }
+
+    function canAccessWorkspace(workspaceId) {
+      return signedIn() &&
+        workspaceId is string &&
+        exists(/databases/$(database)/documents/workspaces/$(workspaceId)) &&
+        get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.memberIds is list &&
+        get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.memberIds.hasAny([request.auth.uid]);
+    }
+
+    function isEffectiveWorkspaceSupervisor(workspaceId, uid) {
+      return signedIn() &&
+        workspaceId is string &&
+        exists(/databases/$(database)/documents/workspaces/$(workspaceId)) &&
+        (
+          (
+            get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.supervisorIds is list &&
+            get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.supervisorIds.hasAny([uid])
+          ) ||
+          (
+            get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.selfElectedSupervisors is list &&
+            get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.selfElectedSupervisors.hasAny([uid])
+          )
+        );
+    }
+
+    function isWorkspaceViewer(workspaceId, uid) {
+      return signedIn() &&
+        workspaceId is string &&
+        exists(/databases/$(database)/documents/workspaces/$(workspaceId)) &&
+        get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.viewerIds is list &&
+        get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.viewerIds.hasAny([uid]);
+    }
+
+    function isWorkspaceReadOnlyParticipant(workspaceId, uid) {
+      return isEffectiveWorkspaceSupervisor(workspaceId, uid) ||
+        isWorkspaceViewer(workspaceId, uid);
+    }
+
+    function isWorkspaceOwner(workspaceId, uid) {
+      return signedIn() &&
+        workspaceId is string &&
+        exists(/databases/$(database)/documents/workspaces/$(workspaceId)) &&
+        get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.ownerId == uid;
+    }
+
+    function canEditScreenplayData(data) {
+      return isScreenplayMemberData(data) &&
+        !isWorkspaceReadOnlyParticipant(data.workspaceId, request.auth.uid);
+    }
+
+    function canDeleteScreenplayData(data) {
+      return canEditScreenplayData(data) &&
+        (
+          data.uploadedBy == request.auth.uid ||
+          isWorkspaceOwner(data.workspaceId, request.auth.uid)
+        );
+    }
+
+    function keepsScreenplayOwnership(newData, oldData) {
+      return newData.uploadedBy == oldData.uploadedBy &&
+        (
+          (
+            !newData.keys().hasAny(['workspaceId']) &&
+            !oldData.keys().hasAny(['workspaceId'])
+          ) ||
+          (
+            newData.keys().hasAny(['workspaceId']) &&
+            oldData.keys().hasAny(['workspaceId']) &&
+            newData.workspaceId == oldData.workspaceId
+          )
+        );
     }
 
     function canAccessScreenplay(screenplayId) {
@@ -43,6 +116,40 @@ service cloud.firestore {
         screenplayId is string &&
         exists(/databases/$(database)/documents/screenplays/$(screenplayId)) &&
         isScreenplayMemberData(get(/databases/$(database)/documents/screenplays/$(screenplayId)).data);
+    }
+
+    function profileIsTeacher(uid) {
+      return exists(/databases/$(database)/documents/crewProfiles/$(uid)) &&
+        (
+          get(/databases/$(database)/documents/crewProfiles/$(uid)).data.isTeacher == true ||
+          get(/databases/$(database)/documents/crewProfiles/$(uid)).data.profileType == 'teacher'
+        );
+    }
+
+    function isSelfSupervisorToggle(workspaceData, requestData, uid) {
+      return signedIn() &&
+        workspaceData.memberIds is list &&
+        workspaceData.memberIds.hasAny([uid]) &&
+        workspaceData.ownerId != uid &&
+        profileIsTeacher(uid) &&
+        requestData.diff(workspaceData).affectedKeys().hasOnly(['selfElectedSupervisors', 'updatedAt']) &&
+        requestData.selfElectedSupervisors is list &&
+        (
+          // Adding self: new = old + [uid]
+          (
+            requestData.selfElectedSupervisors.hasAll(workspaceData.get('selfElectedSupervisors', [])) &&
+            requestData.selfElectedSupervisors.hasAny([uid]) &&
+            !workspaceData.get('selfElectedSupervisors', []).hasAny([uid]) &&
+            requestData.selfElectedSupervisors.size() == workspaceData.get('selfElectedSupervisors', []).size() + 1
+          ) ||
+          // Removing self: new = old - [uid]
+          (
+            workspaceData.get('selfElectedSupervisors', []).hasAll(requestData.selfElectedSupervisors) &&
+            !requestData.selfElectedSupervisors.hasAny([uid]) &&
+            workspaceData.get('selfElectedSupervisors', []).hasAny([uid]) &&
+            requestData.selfElectedSupervisors.size() == workspaceData.get('selfElectedSupervisors', []).size() - 1
+          )
+        );
     }
 
     // User collections - users can only access their own collections
@@ -391,8 +498,11 @@ service cloud.firestore {
     }
 
     match /screenplays/{screenplayId} {
-      allow read, update, delete: if isScreenplayMemberData(resource.data);
-      allow create: if isScreenplayMemberData(request.resource.data);
+      allow read: if isScreenplayMemberData(resource.data);
+      allow create: if canEditScreenplayData(request.resource.data);
+      allow update: if canEditScreenplayData(resource.data) &&
+        keepsScreenplayOwnership(request.resource.data, resource.data);
+      allow delete: if canDeleteScreenplayData(resource.data);
     }
 
     match /screenplayAnnotations/{annotationId} {
@@ -422,7 +532,25 @@ service cloud.firestore {
     }
 
     match /workspaces/{workspaceId} {
-      allow read, write: if signedIn();
+      allow get: if signedIn() &&
+        resource.data.memberIds is list &&
+        resource.data.memberIds.hasAny([request.auth.uid]);
+      // Firestore cannot always prove array-membership rules for collection queries.
+      // The client still queries by memberIds; direct document reads remain member-only.
+      allow list: if signedIn();
+      allow create: if signedIn() &&
+        request.resource.data.ownerId == request.auth.uid &&
+        request.resource.data.memberIds is list &&
+        request.resource.data.memberIds.hasAny([request.auth.uid]);
+      allow update: if signedIn() && (
+        resource.data.ownerId == request.auth.uid ||
+        isSelfSupervisorToggle(resource.data, request.resource.data, request.auth.uid)
+      );
+      allow delete: if signedIn() &&
+        resource.data.ownerId == request.auth.uid &&
+        resource.data.status == 'deleted' &&
+        resource.data.deleteRecoverableUntil is timestamp &&
+        request.time > resource.data.deleteRecoverableUntil;
     }
 
     match /collaborationSessions/{sessionId} {

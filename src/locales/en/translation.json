@@ -785,7 +785,39 @@
       "uploadSuccess": "uploaded successfully!",
       "uploadFailed": "Failed to upload screenplay"
     },
-    "workspaceDeleteConfirm": "Are you sure you want to delete this workspace and all its data? This action cannot be undone."
+    "workspaceDeleteConfirm": "Are you sure you want to delete this workspace and all its data? This action cannot be undone.",
+    "personalNoWorkspace": "Personal / no workspace",
+    "uploadToWorkspace": "Upload to workspace",
+    "uploadHelp": "Upload now, or invite collaborators later. Workspace access can be updated at any time.",
+    "inviteMembersOptional": "Invite members (optional)",
+    "noScreenplaysYet": "No screenplays uploaded yet.",
+    "onlyCreatorCanInvite": "Only the workspace creator can invite members.",
+    "supervisor": {
+      "actAs": "Act as supervisor",
+      "stepDown": "Step down from supervisor",
+      "enabled": "Acting as supervisor — edits to screenplays here are now blocked.",
+      "disabled": "Stepped down from supervisor mode.",
+      "ownerCannot": "The workspace owner cannot toggle supervisor mode.",
+      "toggleError": "Could not change supervisor mode.",
+      "yourRole": "You: {{role}}",
+      "selfTag": "(self)",
+      "tooltipSelf": "You self-tagged as supervisor (edits disabled here)",
+      "tooltipRole": "Your role in this workspace"
+    },
+    "roles": {
+      "member": "Member",
+      "memberDesc": "Can edit and comment on workspace screenplays.",
+      "supervisor": "Supervisor",
+      "supervisorDesc": "Read + comment/annotate; cannot edit screenplays.",
+      "viewer": "Viewer",
+      "viewerDesc": "Read-only access."
+    },
+    "badges": {
+      "unresolvedTooltip_one": "{{count}} unresolved note",
+      "unresolvedTooltip_other": "{{count}} unresolved notes",
+      "unresolvedSupervisorTooltip_one": "{{count}} unresolved note from a supervisor",
+      "unresolvedSupervisorTooltip_other": "{{count}} unresolved notes from a supervisor"
+    }
   },
   "tasks": {
     "title": "Collaborative Tasks",
@@ -1102,6 +1134,63 @@
     },
     "navigation": {
       "navigatingTo": "Navigating to annotation..."
+    },
+    "popupHeader": {
+      "dragToMove": "Drag to move"
+    },
+    "supervisorBadge": {
+      "label": "supervisor",
+      "tooltip": "Comment left while acting as supervisor"
+    },
+    "marker": {
+      "annotation": "Annotation by {{user}}",
+      "supervisorNote": "Supervisor note by {{user}}",
+      "tag": "Tag by {{user}}: {{content}}"
+    },
+    "toasts": {
+      "annotationAdded": "Annotation added.",
+      "supervisorNoteAdded": "Supervisor note added.",
+      "annotationFailed": "Failed to add annotation.",
+      "tagAdded": "Tag added.",
+      "tagFailed": "Failed to add tag.",
+      "annotationResolved": "Annotation resolved.",
+      "annotationReopened": "Annotation reopened.",
+      "tagResolved": "Tag resolved.",
+      "tagReopened": "Tag reopened.",
+      "updateFailed": "Failed to update."
+    },
+    "statusFilters": {
+      "open": "Open ({{count}})",
+      "mine": "Mine ({{count}})",
+      "fromTeacher": "From teacher ({{count}})",
+      "all": "All ({{count}})"
+    },
+    "export": {
+      "button": "Export report (CSV)",
+      "buttonShort": "Export",
+      "generating": "Generating report…",
+      "success": "Report exported.",
+      "empty": "Nothing to export yet — add tags or annotations first.",
+      "failed": "Failed to export report.",
+      "columns": {
+        "type": "Type",
+        "category": "Category",
+        "page": "Page",
+        "content": "Content",
+        "author": "Author",
+        "supervisor": "Supervisor",
+        "resolved": "Resolved",
+        "timestamp": "Timestamp",
+        "screenplay": "Screenplay"
+      },
+      "types": {
+        "annotation": "Annotation",
+        "tag": "Tag"
+      },
+      "boolean": {
+        "yes": "Yes",
+        "no": "No"
+      }
     }
   },
   "common": {

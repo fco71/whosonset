@@ -3,7 +3,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import {
   CollaborationWorkspace,
   Task,
-  WorkspaceMember
+  WorkspaceMember,
+  WorkspaceRole
 } from '../../types/Collaboration';
 import CollaborativeTasksHub from '../CollaborativeTasks/CollaborativeTasksHub';
 import ScreenplayBreakdown from '../ScreenplayBreakdown';
@@ -12,7 +13,7 @@ import './CollaborationHub.scss';
 import UserAutocomplete, { UserAutocompleteOption } from './UserAutocomplete';
 import { toast } from 'react-hot-toast';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { collection, addDoc, query, where, orderBy, getDocs, onSnapshot, updateDoc, doc, deleteDoc } from 'firebase/firestore';
+import { collection, addDoc, query, where, orderBy, getDocs, getDoc, onSnapshot, updateDoc, doc, deleteDoc, serverTimestamp, Timestamp, arrayUnion, arrayRemove, QuerySnapshot, Unsubscribe } from 'firebase/firestore';
 import { db, storage } from '../../firebase';
 import ScreenplayViewer from './ScreenplayViewer';
 import { useTranslation } from 'react-i18next';
@@ -45,6 +46,8 @@ interface Screenplay {
   url: string;
   uploadedBy?: string;
   teamMembers?: string[];
+  workspaceId?: string | null;
+  projectId?: string | null;
   uploadedAt?: Date | { seconds: number; nanoseconds: number };
   lastModified?: Date | { seconds: number; nanoseconds: number };
   size?: number;
@@ -67,6 +70,17 @@ type WorkspaceCreationStep = 'details' | 'members' | 'settings';
 
 // Define TabType at the top of the file
 type TabType = 'workspaces' | 'tasks' | 'screenplays';
+
+const WORKSPACE_DELETE_RECOVERY_DAYS = 30;
+// Labels + descriptions are resolved via i18n at render time (collaboration.roles.*)
+// so the invite dropdown matches the active language.
+const INVITABLE_WORKSPACE_ROLES: Array<{
+  value: Extract<WorkspaceRole, 'member' | 'supervisor' | 'viewer'>;
+}> = [
+  { value: 'member' },
+  { value: 'supervisor' },
+  { value: 'viewer' }
+];
 
 // Error Boundary Component
 interface ErrorBoundaryProps {
@@ -129,6 +143,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     description: '',
     type: 'project' as const,
     selectedMembers: [] as UserSearchResult[],
+    selectedMemberRoles: {} as Record<string, Extract<WorkspaceRole, 'member' | 'supervisor' | 'viewer'>>,
     settings: {
       allowGuestAccess: false,
       requireApproval: true,
@@ -143,6 +158,9 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [userSearchResults, setUserSearchResults] = useState<UserSearchResult[]>([]);
   const [isSearchingUsers, setIsSearchingUsers] = useState(false);
+  const [pendingMembersToAdd, setPendingMembersToAdd] = useState<UserAutocompleteOption[]>([]);
+  const [pendingMemberRole, setPendingMemberRole] = useState<Extract<WorkspaceRole, 'member' | 'supervisor' | 'viewer'>>('member');
+  const [isAddingMembers, setIsAddingMembers] = useState(false);
 
   // Settings state
   const [workspaceSettings, setWorkspaceSettings] = useState(newWorkspaceData.settings);
@@ -151,6 +169,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const [screenplayFile, setScreenplayFile] = useState<File | null>(null);
   const [uploadingScreenplay, setUploadingScreenplay] = useState(false);
   const [uploadedScreenplay, setUploadedScreenplay] = useState<Screenplay | null>(null);
+  const [uploadWorkspaceId, setUploadWorkspaceId] = useState('');
 
   // Screenplay collaboration state
   const [screenplayAnnotations, setScreenplayAnnotations] = useState<ScreenplayAnnotation[]>([]);
@@ -166,57 +185,390 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   }[]>([]);
 
   const [userScreenplays, setUserScreenplays] = useState<Screenplay[]>([]);
+  const [unresolvedCountByScreenplay, setUnresolvedCountByScreenplay] = useState<Record<string, number>>({});
+  const [unresolvedFromTeacherCountByScreenplay, setUnresolvedFromTeacherCountByScreenplay] = useState<Record<string, number>>({});
   const [selectedScreenplayId, setSelectedScreenplayId] = useState<string | null>(null);
 
   const [approvedContacts, setApprovedContacts] = useState<string[]>([]);
+  const [isTeacher, setIsTeacher] = useState(false);
+  const [toggleSupervisorPending, setToggleSupervisorPending] = useState(false);
+
+  const getWorkspaceMemberIds = (workspace: CollaborationWorkspace): string[] => {
+    const ids = workspace.memberIds?.length
+      ? workspace.memberIds
+      : workspace.members?.map(member => member.userId) || [];
+    return Array.from(new Set(ids.filter(Boolean)));
+  };
+
+  const getWorkspaceSupervisorIds = (members: WorkspaceMember[]): string[] =>
+    members.filter(member => member.role === 'supervisor').map(member => member.userId);
+
+  const getWorkspaceViewerIds = (members: WorkspaceMember[]): string[] =>
+    members.filter(member => member.role === 'viewer').map(member => member.userId);
+
+  const getPermissionsForRole = (role: WorkspaceRole): string[] => {
+    switch (role) {
+      case 'owner':
+      case 'admin':
+        return ['read', 'write', 'comment', 'manage'];
+      case 'supervisor':
+        return ['read', 'comment', 'annotate'];
+      case 'viewer':
+        return ['read'];
+      case 'member':
+      default:
+        return ['read', 'write', 'comment'];
+    }
+  };
+
+  const normalizeScreenplay = (screenplayId: string, data: any): Screenplay => ({
+    id: screenplayId,
+    name: data.name || 'Untitled Screenplay',
+    type: data.type || 'pdf',
+    url: data.url || '',
+    uploadedBy: data.uploadedBy,
+    teamMembers: data.teamMembers || [],
+    workspaceId: data.workspaceId || null,
+    projectId: data.projectId || null,
+    size: data.size,
+    uploadedAt: data.uploadedAt?.toDate ? data.uploadedAt.toDate() : data.uploadedAt,
+    lastModified: data.lastModified?.toDate ? data.lastModified.toDate() : data.lastModified
+  });
+
+  const normalizeWorkspace = (workspaceId: string, data: any): CollaborationWorkspace => {
+    const members = (data.members || []) as WorkspaceMember[];
+    const rawMemberIds: string[] = data.memberIds?.length ? data.memberIds : members.map(member => member.userId);
+    const memberIds = Array.from(new Set(rawMemberIds.filter(Boolean)));
+
+    return {
+      id: workspaceId,
+      projectId: data.projectId ?? null,
+      ownerId: data.ownerId,
+      name: data.name || 'Untitled Workspace',
+      description: data.description || '',
+      type: data.type || 'project',
+      members,
+      memberIds,
+      supervisorIds: data.supervisorIds || getWorkspaceSupervisorIds(members),
+      viewerIds: data.viewerIds || getWorkspaceViewerIds(members),
+      selfElectedSupervisors: data.selfElectedSupervisors || [],
+      status: data.status || 'active',
+      archivedAt: data.archivedAt || null,
+      deletedAt: data.deletedAt || null,
+      deleteRecoverableUntil: data.deleteRecoverableUntil || null,
+      channels: data.channels,
+      documents: data.documents,
+      whiteboards: data.whiteboards,
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt,
+      settings: data.settings || newWorkspaceData.settings
+    };
+  };
+
+  const isWorkspaceCreator = (workspace: CollaborationWorkspace): boolean => {
+    if (!currentUser) return false;
+    if (workspace.ownerId) return workspace.ownerId === currentUser.uid;
+    return workspace.members?.some(member => member.userId === currentUser.uid && member.role === 'owner') || false;
+  };
+
+  const canManageWorkspace = (workspace: CollaborationWorkspace): boolean => {
+    return isWorkspaceCreator(workspace);
+  };
+
+  const isWorkspaceReadOnlyParticipant = (workspace: CollaborationWorkspace): boolean => {
+    if (!currentUser) return true;
+    const currentMember = workspace.members?.find(member => member.userId === currentUser.uid);
+    return (
+      currentMember?.role === 'supervisor' ||
+      currentMember?.role === 'viewer' ||
+      workspace.supervisorIds?.includes(currentUser.uid) ||
+      workspace.viewerIds?.includes(currentUser.uid) ||
+      workspace.selfElectedSupervisors?.includes(currentUser.uid)
+    ) || false;
+  };
+
+  const canEditWorkspaceContent = (workspace: CollaborationWorkspace): boolean => {
+    if (!currentUser || (workspace.status || 'active') !== 'active') return false;
+    return getWorkspaceMemberIds(workspace).includes(currentUser.uid) && !isWorkspaceReadOnlyParticipant(workspace);
+  };
+
+  const canDeleteScreenplay = (screenplay: Screenplay): boolean => {
+    if (!currentUser) return false;
+    if (screenplay.uploadedBy === currentUser.uid) return true;
+    const workspace = screenplay.workspaceId ? getWorkspaceById(screenplay.workspaceId) : null;
+    return workspace ? isWorkspaceCreator(workspace) && !isWorkspaceReadOnlyParticipant(workspace) : false;
+  };
+
+  const toDate = (value: any): Date | null => {
+    if (!value) return null;
+    if (value instanceof Date) return value;
+    if (typeof value.toDate === 'function') return value.toDate();
+    if (typeof value.seconds === 'number') return new Date(value.seconds * 1000);
+    return null;
+  };
+
+  const isDeleteRecoveryExpired = (workspace: CollaborationWorkspace): boolean => {
+    const recoveryDate = toDate(workspace.deleteRecoverableUntil);
+    return Boolean(recoveryDate && Date.now() > recoveryDate.getTime());
+  };
+
+  const getWorkspaceById = (workspaceId: string) => workspaces.find(workspace => workspace.id === workspaceId);
+
+  const getWorkspaceLabel = (workspaceId?: string | null): string => {
+    if (!workspaceId) return t('collaboration.personalNoWorkspace');
+    return getWorkspaceById(workspaceId)?.name || 'Workspace';
+  };
+
+  const updateWorkspaceState = (workspace: CollaborationWorkspace) => {
+    setWorkspaces(prev => prev.map(item => item.id === workspace.id ? workspace : item));
+    setSelectedWorkspace(prev => prev?.id === workspace.id ? workspace : prev);
+  };
+
+  const isSelfElectedSupervisor = (workspace: CollaborationWorkspace): boolean => {
+    if (!currentUser) return false;
+    return workspace.selfElectedSupervisors?.includes(currentUser.uid) || false;
+  };
+
+  const getEffectiveRole = (workspace: CollaborationWorkspace): WorkspaceRole | null => {
+    if (!currentUser) return null;
+    if (isSelfElectedSupervisor(workspace)) return 'supervisor';
+    const currentMember = workspace.members?.find(member => member.userId === currentUser.uid);
+    return currentMember?.role ?? null;
+  };
+
+  const canSelfElectSupervisor = (workspace: CollaborationWorkspace): boolean => {
+    if (!currentUser || !isTeacher) return false;
+    if ((workspace.status || 'active') !== 'active') return false;
+    if (workspace.ownerId === currentUser.uid) return false;
+    return getWorkspaceMemberIds(workspace).includes(currentUser.uid);
+  };
+
+  const toggleSelfElectedSupervisor = async (workspace: CollaborationWorkspace) => {
+    if (!currentUser || !canSelfElectSupervisor(workspace) || toggleSupervisorPending) return;
+    const enabling = !isSelfElectedSupervisor(workspace);
+    setToggleSupervisorPending(true);
+    try {
+      await updateDoc(doc(db, 'workspaces', workspace.id), {
+        selfElectedSupervisors: enabling ? arrayUnion(currentUser.uid) : arrayRemove(currentUser.uid),
+        updatedAt: serverTimestamp()
+      });
+      toast.success(enabling
+        ? t('collaboration.supervisor.enabled')
+        : t('collaboration.supervisor.disabled'));
+    } catch (err) {
+      console.error('Failed to toggle supervisor mode:', err);
+      toast.error(t('collaboration.supervisor.toggleError'));
+    } finally {
+      setToggleSupervisorPending(false);
+    }
+  };
+
+  const openAddMemberModalForWorkspace = (workspace: CollaborationWorkspace) => {
+    setSelectedWorkspace(workspace);
+    setPendingMembersToAdd([]);
+    setPendingMemberRole('member');
+    setUserSearchQuery('');
+    setUserSearchResults([]);
+    setShowAddMemberModal(true);
+  };
+
+  const getDeleteRecoveryDate = () =>
+    Timestamp.fromDate(new Date(Date.now() + WORKSPACE_DELETE_RECOVERY_DAYS * 24 * 60 * 60 * 1000));
 
   useEffect(() => {
-    // Load workspaces and team members
-    loadWorkspaces();
-    loadTeamMembers();
-    if (!currentUser) return;
-    
-    // Load all screenplays for this user (uploaded or as team member)
-    const fetchScreenplays = async () => {
-      try {
-        const screenplaysRef = collection(db, 'screenplays');
-        const q1 = query(screenplaysRef, where('uploadedBy', '==', currentUser.uid));
-        const snap1 = await getDocs(q1);
-        const q2 = query(screenplaysRef, where('teamMembers', 'array-contains', currentUser.uid));
-        const snap2 = await getDocs(q2);
-        
-        // Combine and deduplicate screenplays
-        const allScreenplays = [...snap1.docs, ...snap2.docs];
-        const uniqueScreenplays = Array.from(
-          new Map(
-            allScreenplays.map(doc => {
-              const data = doc.data();
-              // Ensure we have all required fields and handle timestamps
-              const screenplay: Screenplay = {
-                id: doc.id,
-                name: data.name || 'Untitled Screenplay',
-                type: data.type || 'pdf',
-                url: data.url || '',
-                uploadedBy: data.uploadedBy,
-                teamMembers: data.teamMembers || [],
-                size: data.size,
-                // Convert Firestore timestamps to Date objects
-                uploadedAt: data.uploadedAt?.toDate ? data.uploadedAt.toDate() : data.uploadedAt,
-                lastModified: data.lastModified?.toDate ? data.lastModified.toDate() : data.lastModified
-              };
-              return [doc.id, screenplay];
-            })
-          ).values()
-        ) as Screenplay[];
-        
-        setUserScreenplays(uniqueScreenplays);
-      } catch (err) {
-        console.error('Error fetching user screenplays:', err);
+    if (!currentUser) {
+      setWorkspaces([]);
+      setSelectedWorkspace(null);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    const workspacesRef = collection(db, 'workspaces');
+    const workspacesQuery = query(workspacesRef, where('memberIds', 'array-contains', currentUser.uid));
+
+    const unsubscribe = onSnapshot(
+      workspacesQuery,
+      snapshot => {
+        const workspaceList = snapshot.docs
+          .map(document => normalizeWorkspace(document.id, document.data()))
+          .filter(workspace => !projectId || workspace.projectId === projectId)
+          .sort((a, b) => {
+            const statusOrder = { active: 0, archived: 1, deleted: 2 };
+            return statusOrder[a.status || 'active'] - statusOrder[b.status || 'active'];
+          });
+
+        setWorkspaces(workspaceList);
+
+        setSelectedWorkspace(prev => {
+          const fresh = prev ? workspaceList.find(workspace => workspace.id === prev.id) : null;
+          if (fresh) return fresh;
+          if (prev) return null;
+          return workspaceList.find(workspace => (workspace.status || 'active') === 'active') || workspaceList[0] || null;
+        });
+
+        setLoading(false);
+      },
+      err => {
+        console.error('Error subscribing to workspaces:', err);
+        setError('Failed to load workspaces');
+        setLoading(false);
       }
-    };
-    
-    fetchScreenplays();
+    );
+
+    return () => unsubscribe();
   }, [currentUser, projectId]);
+
+  const accessibleWorkspaceIds = workspaces
+    .filter(workspace => (workspace.status || 'active') !== 'deleted')
+    .filter(workspace => currentUser ? getWorkspaceMemberIds(workspace).includes(currentUser.uid) : false)
+    .map(workspace => workspace.id);
+  const accessibleWorkspaceIdsKey = [...accessibleWorkspaceIds].sort().join(',');
+
+  useEffect(() => {
+    if (!currentUser) {
+      setUserScreenplays([]);
+      return;
+    }
+
+    const screenplaysRef = collection(db, 'screenplays');
+    const subscriptionResults = new Map<string, Map<string, Screenplay>>();
+
+    const recompute = () => {
+      const merged = new Map<string, Screenplay>();
+      subscriptionResults.forEach(subMap => {
+        subMap.forEach((screenplay, id) => {
+          merged.set(id, screenplay);
+        });
+      });
+      setUserScreenplays(Array.from(merged.values()));
+    };
+
+    const handleSnapshot = (key: string) => (snapshot: QuerySnapshot) => {
+      const subMap = new Map<string, Screenplay>();
+      snapshot.docs.forEach(documentSnapshot => {
+        subMap.set(documentSnapshot.id, normalizeScreenplay(documentSnapshot.id, documentSnapshot.data()));
+      });
+      subscriptionResults.set(key, subMap);
+      recompute();
+    };
+
+    const handleError = (label: string) => (err: Error) => {
+      console.error(`Error subscribing to screenplays (${label}):`, err);
+    };
+
+    const unsubscribes: Unsubscribe[] = [];
+
+    unsubscribes.push(onSnapshot(
+      query(screenplaysRef, where('uploadedBy', '==', currentUser.uid)),
+      handleSnapshot('uploadedBy'),
+      handleError('uploadedBy')
+    ));
+    unsubscribes.push(onSnapshot(
+      query(screenplaysRef, where('teamMembers', 'array-contains', currentUser.uid)),
+      handleSnapshot('teamMembers'),
+      handleError('teamMembers')
+    ));
+
+    const ids = accessibleWorkspaceIdsKey ? accessibleWorkspaceIdsKey.split(',') : [];
+    for (let i = 0; i < ids.length; i += 10) {
+      const chunk = ids.slice(i, i + 10);
+      const chunkKey = `workspaceChunk_${i}`;
+      unsubscribes.push(onSnapshot(
+        query(screenplaysRef, where('workspaceId', 'in', chunk)),
+        handleSnapshot(chunkKey),
+        handleError(chunkKey)
+      ));
+    }
+
+    return () => {
+      unsubscribes.forEach(fn => fn());
+    };
+  }, [currentUser, accessibleWorkspaceIdsKey]);
+
+  const userScreenplaysKey = [...userScreenplays].map(item => item.id).sort().join(',');
+
+  useEffect(() => {
+    if (!currentUser || userScreenplaysKey === '') {
+      setUnresolvedCountByScreenplay({});
+      setUnresolvedFromTeacherCountByScreenplay({});
+      return;
+    }
+
+    const screenplayIds = userScreenplaysKey.split(',');
+    const annotationsRef = collection(db, 'screenplayAnnotations');
+    const chunkAnnotations = new Map<number, Array<{ screenplayId?: string; resolved?: boolean; supervisorAtAuthorTime?: boolean }>>();
+
+    const recompute = () => {
+      const open: Record<string, number> = {};
+      const fromTeacher: Record<string, number> = {};
+      chunkAnnotations.forEach(list => {
+        list.forEach(annotation => {
+          const id = annotation.screenplayId;
+          if (!id || annotation.resolved) return;
+          open[id] = (open[id] || 0) + 1;
+          if (annotation.supervisorAtAuthorTime) {
+            fromTeacher[id] = (fromTeacher[id] || 0) + 1;
+          }
+        });
+      });
+      setUnresolvedCountByScreenplay(open);
+      setUnresolvedFromTeacherCountByScreenplay(fromTeacher);
+    };
+
+    const unsubs: Unsubscribe[] = [];
+    for (let i = 0; i < screenplayIds.length; i += 10) {
+      const chunkIndex = i;
+      const chunk = screenplayIds.slice(i, i + 10);
+      const q = query(annotationsRef, where('screenplayId', 'in', chunk));
+      unsubs.push(onSnapshot(
+        q,
+        snapshot => {
+          const list = snapshot.docs.map(d => d.data() as { screenplayId?: string; resolved?: boolean; supervisorAtAuthorTime?: boolean });
+          chunkAnnotations.set(chunkIndex, list);
+          recompute();
+        },
+        err => console.error('Annotation count subscription error:', err)
+      ));
+    }
+
+    return () => {
+      unsubs.forEach(u => u());
+    };
+  }, [currentUser, userScreenplaysKey]);
+
+  useEffect(() => {
+    loadTeamMembers();
+  }, [selectedWorkspace?.id]);
+
+  useEffect(() => {
+    if (selectedWorkspace && (selectedWorkspace.status || 'active') === 'active') {
+      setUploadWorkspaceId(selectedWorkspace.id);
+    }
+  }, [selectedWorkspace?.id, selectedWorkspace?.status]);
+
+  useEffect(() => {
+    if (!currentUser) {
+      setIsTeacher(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const snap = await getDoc(doc(db, 'crewProfiles', currentUser.uid));
+        if (cancelled || !snap.exists()) return;
+        const data = snap.data();
+        setIsTeacher(data?.isTeacher === true || data?.profileType === 'teacher');
+      } catch (err) {
+        console.error('Failed to load teacher flag:', err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUser]);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -245,32 +597,6 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     };
     fetchApprovedContacts();
   }, [currentUser]);
-
-  const loadWorkspaces = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      // Load real workspaces from Firestore
-      const workspacesRef = collection(db, 'workspaces');
-      let q = query(workspacesRef);
-      if (projectId) {
-        q = query(workspacesRef, where('projectId', '==', projectId));
-      }
-      const snap = await getDocs(q);
-      const workspaceList = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as CollaborationWorkspace[];
-      setWorkspaces(workspaceList);
-      if (workspaceList.length > 0) {
-        setSelectedWorkspace(workspaceList[0]);
-      } else {
-        setSelectedWorkspace(null);
-      }
-    } catch (error) {
-      console.error('Error loading workspaces:', error);
-      setError('Failed to load workspaces');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // User search functionality
   const searchUsers = async (queryStr: string) => {
@@ -346,34 +672,100 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     }
   };
 
-  const addUserToWorkspace = (user: UserSearchResult) => {
-    if (!selectedWorkspace) return;
-
-    const newMember: WorkspaceMember = {
+  const buildWorkspaceMember = (
+    user: Pick<UserSearchResult, 'id' | 'email'>,
+    role: Extract<WorkspaceRole, 'member' | 'supervisor' | 'viewer'>
+  ): WorkspaceMember => ({
       userId: user.id,
       email: user.email,
-      role: 'member',
+      role,
       joinedAt: new Date(),
-      permissions: ['read', 'write'],
+      permissions: getPermissionsForRole(role),
       isOnline: false,
       lastSeen: new Date()
-    };
+  });
 
-    setWorkspaces(prev => prev.map(ws =>
-      ws.id === selectedWorkspace.id
-        ? { ...ws, members: [...ws.members, newMember] }
-        : ws
-    ));
+  const syncWorkspaceScreenplayAccess = async (workspaceId: string, memberIds: string[]) => {
+    const screenplaysQuery = query(
+      collection(db, 'screenplays'),
+      where('workspaceId', '==', workspaceId)
+    );
+    const snapshot = await getDocs(screenplaysQuery);
 
-    setSelectedWorkspace(prev => prev ? {
-      ...prev,
-      members: [...prev.members, newMember]
-    } : null);
+    await Promise.all(snapshot.docs.map(screenplayDoc => {
+      const data = screenplayDoc.data();
+      const currentTeamMembers = Array.isArray(data.teamMembers) ? data.teamMembers : [];
+      const mergedTeamMembers = Array.from(new Set([...currentTeamMembers, ...memberIds]));
+      return updateDoc(doc(db, 'screenplays', screenplayDoc.id), {
+        teamMembers: mergedTeamMembers,
+        lastModified: serverTimestamp()
+      });
+    }));
+  };
 
-    setShowAddMemberModal(false);
-    setUserSearchQuery('');
-    setUserSearchResults([]);
-    toast.success(`Added ${user.name} to workspace successfully!`);
+  const addUsersToWorkspace = async (
+    users: UserAutocompleteOption[],
+    role: Extract<WorkspaceRole, 'member' | 'supervisor' | 'viewer'>,
+    workspace: CollaborationWorkspace | null = selectedWorkspace
+  ) => {
+    if (!workspace || users.length === 0) return;
+
+    if (!canManageWorkspace(workspace)) {
+      toast.error(t('collaboration.onlyCreatorCanInvite'));
+      return;
+    }
+
+    setIsAddingMembers(true);
+
+    try {
+      const existingIds = new Set(getWorkspaceMemberIds(workspace));
+      const newMembers = users
+        .filter(user => !existingIds.has(user.id))
+        .map(user => buildWorkspaceMember(user, role));
+
+      if (newMembers.length === 0) {
+        toast.error('Those users are already in this workspace.');
+        return;
+      }
+
+      const updatedMembers = [...(workspace.members || []), ...newMembers];
+      const memberIds = Array.from(new Set(updatedMembers.map(member => member.userId).filter(Boolean)));
+      const supervisorIds = getWorkspaceSupervisorIds(updatedMembers);
+      const viewerIds = getWorkspaceViewerIds(updatedMembers);
+
+      await updateDoc(doc(db, 'workspaces', workspace.id), {
+        members: updatedMembers,
+        memberIds,
+        supervisorIds,
+        viewerIds,
+        updatedAt: serverTimestamp()
+      });
+
+      await syncWorkspaceScreenplayAccess(workspace.id, memberIds);
+
+      const updatedWorkspace: CollaborationWorkspace = {
+        ...workspace,
+        members: updatedMembers,
+        memberIds,
+        supervisorIds,
+        viewerIds,
+        updatedAt: new Date()
+      };
+
+      updateWorkspaceState(updatedWorkspace);
+
+      setShowAddMemberModal(false);
+      setPendingMembersToAdd([]);
+      setPendingMemberRole('member');
+      setUserSearchQuery('');
+      setUserSearchResults([]);
+      toast.success(`Added ${newMembers.length} member${newMembers.length === 1 ? '' : 's'} to ${workspace.name}.`);
+    } catch (error) {
+      console.error('Error adding users to workspace:', error);
+      toast.error('Failed to add members. Please try again.');
+    } finally {
+      setIsAddingMembers(false);
+    }
   };
 
   // Workspace creation handlers
@@ -391,42 +783,64 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     }
   };
 
-  const handleCreateWorkspace = () => {
+  const handleCreateWorkspace = async () => {
+    if (!currentUser) {
+      toast.error('Please sign in to create a workspace.');
+      return;
+    }
+
     try {
       debugLog('Creating workspace with data:', newWorkspaceData);
 
-      const newWorkspace: CollaborationWorkspace = {
-        id: Date.now().toString(),
-        projectId: projectId || 'default-project',
+      const members: WorkspaceMember[] = [
+        {
+          userId: currentUser.uid,
+          email: currentUser.email || '',
+          role: 'owner',
+          joinedAt: new Date(),
+          permissions: getPermissionsForRole('owner'),
+          isOnline: true,
+          lastSeen: new Date()
+        },
+        ...newWorkspaceData.selectedMembers.map(user => buildWorkspaceMember(
+          user,
+          newWorkspaceData.selectedMemberRoles[user.id] || 'member'
+        ))
+      ];
+      const memberIds = Array.from(new Set(members.map(member => member.userId).filter(Boolean)));
+      const supervisorIds = getWorkspaceSupervisorIds(members);
+      const viewerIds = getWorkspaceViewerIds(members);
+      const workspacePayload = {
+        projectId: projectId || null,
+        ownerId: currentUser.uid,
         name: newWorkspaceData.name.trim(),
         description: newWorkspaceData.description.trim(),
         type: newWorkspaceData.type,
-        members: [
-          {
-            userId: currentUser?.uid || 'default-user',
-            role: 'admin',
-            joinedAt: new Date(),
-            permissions: ['read', 'write'],
-            isOnline: true,
-            lastSeen: new Date()
-          },
-          ...newWorkspaceData.selectedMembers.map(user => ({
-            userId: user.id,
-            email: user.email,
-            role: 'member' as const,
-            joinedAt: new Date(),
-            permissions: ['read', 'write'],
-            isOnline: false,
-            lastSeen: new Date()
-          }))
-        ],
+        members,
+        memberIds,
+        supervisorIds,
+        viewerIds,
+        selfElectedSupervisors: [],
+        status: 'active' as const,
+        archivedAt: null,
+        deletedAt: null,
+        deleteRecoverableUntil: null,
+        settings: newWorkspaceData.settings,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      };
+
+      const docRef = await addDoc(collection(db, 'workspaces'), workspacePayload);
+      const newWorkspace: CollaborationWorkspace = {
+        ...workspacePayload,
+        id: docRef.id,
         createdAt: new Date(),
-        updatedAt: new Date(),
-        settings: newWorkspaceData.settings
+        updatedAt: new Date()
       };
 
       setWorkspaces(prev => [...prev, newWorkspace]);
       setSelectedWorkspace(newWorkspace);
+      setUploadWorkspaceId(newWorkspace.id);
 
       // Reset form
       setNewWorkspaceData({
@@ -434,6 +848,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         description: '',
         type: 'project',
         selectedMembers: [],
+        selectedMemberRoles: {},
         settings: {
           allowGuestAccess: false,
           requireApproval: true,
@@ -456,7 +871,11 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     if (!newWorkspaceData.selectedMembers.find(m => m.id === user.id)) {
       setNewWorkspaceData(prev => ({
         ...prev,
-        selectedMembers: [...prev.selectedMembers, user]
+        selectedMembers: [...prev.selectedMembers, user],
+        selectedMemberRoles: {
+          ...prev.selectedMemberRoles,
+          [user.id]: prev.selectedMemberRoles[user.id] || 'member'
+        }
       }));
     }
   };
@@ -464,26 +883,39 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const handleRemoveMemberFromCreation = (userId: string) => {
     setNewWorkspaceData(prev => ({
       ...prev,
-      selectedMembers: prev.selectedMembers.filter(m => m.id !== userId)
+      selectedMembers: prev.selectedMembers.filter(m => m.id !== userId),
+      selectedMemberRoles: Object.fromEntries(
+        Object.entries(prev.selectedMemberRoles).filter(([id]) => id !== userId)
+      ) as Record<string, Extract<WorkspaceRole, 'member' | 'supervisor' | 'viewer'>>
     }));
   };
 
-  const handleUpdateWorkspaceSettings = () => {
+  const handleUpdateWorkspaceSettings = async () => {
     if (!selectedWorkspace) return;
 
-    setWorkspaces(prev => prev.map(ws =>
-      ws.id === selectedWorkspace.id
-        ? { ...ws, settings: workspaceSettings }
-        : ws
-    ));
+    if (!canManageWorkspace(selectedWorkspace)) {
+      toast.error('Only the workspace creator can update settings.');
+      return;
+    }
 
-    setSelectedWorkspace(prev => prev ? {
-      ...prev,
-      settings: workspaceSettings
-    } : null);
+    try {
+      await updateDoc(doc(db, 'workspaces', selectedWorkspace.id), {
+        settings: workspaceSettings,
+        updatedAt: serverTimestamp()
+      });
 
-    setShowSettingsModal(false);
-    toast.success('Workspace settings updated successfully!');
+      const updatedWorkspace = {
+        ...selectedWorkspace,
+        settings: workspaceSettings,
+        updatedAt: new Date()
+      };
+      updateWorkspaceState(updatedWorkspace);
+      setShowSettingsModal(false);
+      toast.success('Workspace settings updated successfully!');
+    } catch (error) {
+      console.error('Error updating workspace settings:', error);
+      toast.error('Failed to update workspace settings.');
+    }
   };
 
   // Video call functionality will be added in a future update
@@ -508,6 +940,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       debugLog('Workspace settings clicked:', workspaceId);
       const workspace = workspaces.find(ws => ws.id === workspaceId);
       if (workspace) {
+        setSelectedWorkspace(workspace);
         setWorkspaceSettings(workspace.settings);
         setShowSettingsModal(true);
       }
@@ -529,6 +962,22 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       const storageRef = ref(storage, `screenplays/${currentUser.uid}/${Date.now()}_${file.name}`);
       const snapshot = await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(snapshot.ref);
+      const uploadWorkspace = uploadWorkspaceId
+        ? workspaces.find(workspace => workspace.id === uploadWorkspaceId && (workspace.status || 'active') === 'active') || null
+        : null;
+      if (uploadWorkspaceId && !uploadWorkspace) {
+        toast.error('Choose an active workspace before uploading.');
+        return;
+      }
+      if (uploadWorkspace && !canEditWorkspaceContent(uploadWorkspace)) {
+        toast.error('Your role in this workspace can view and comment, but cannot upload screenplays.');
+        return;
+      }
+      const workspaceMemberIds = uploadWorkspace ? getWorkspaceMemberIds(uploadWorkspace) : [];
+      const teamMemberIds = Array.from(new Set([
+        currentUser.uid,
+        ...workspaceMemberIds
+      ]));
       
       // Create screenplay data with proper typing
       const now = new Date();
@@ -537,7 +986,9 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         type: file.type || 'application/octet-stream',
         url: downloadURL,
         uploadedBy: currentUser.uid,
-        teamMembers: [currentUser.uid],
+        teamMembers: teamMemberIds,
+        workspaceId: uploadWorkspace?.id || null,
+        projectId: projectId || uploadWorkspace?.projectId || null,
         size: file.size,
         uploadedAt: now,
         lastModified: now
@@ -688,58 +1139,20 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   }
 
   const handleDeleteScreenplay = async (screenplayId: string) => {
+    const screenplay = userScreenplays.find(item => item.id === screenplayId);
+    if (!screenplay || !canDeleteScreenplay(screenplay)) {
+      toast.error('Only the screenplay uploader or workspace creator can delete this screenplay.');
+      return;
+    }
+
     if (window.confirm(t('collaboration.screenplaysTab.deleteConfirm'))) {
       try {
         await deleteDoc(doc(db, 'screenplays', screenplayId));
         toast.success(t('collaboration.screenplaysTab.deleteSuccess'));
-        // Refresh the screenplays list
-        loadUserScreenplays();
       } catch (error) {
         console.error('Error deleting screenplay:', error);
         toast.error(t('collaboration.screenplaysTab.deleteFailed'));
       }
-    }
-  };
-
-  const loadUserScreenplays = async () => {
-    if (!currentUser) return;
-
-    try {
-      const screenplaysRef = collection(db, 'screenplays');
-      // Query 1: uploadedBy == currentUser.uid
-      const q1 = query(screenplaysRef, where('uploadedBy', '==', currentUser.uid));
-      const snap1 = await getDocs(q1);
-      // Query 2: teamMembers array-contains currentUser.uid
-      const q2 = query(screenplaysRef, where('teamMembers', 'array-contains', currentUser.uid));
-      const snap2 = await getDocs(q2);
-      
-      // Combine and deduplicate screenplays
-      const allScreenplays = [...snap1.docs, ...snap2.docs];
-      const uniqueScreenplays = Array.from(
-        new Map(
-          allScreenplays.map(doc => {
-            const data = doc.data();
-            // Ensure we have all required fields and handle timestamps
-            const screenplay: Screenplay = {
-              id: doc.id,
-              name: data.name || 'Untitled Screenplay',
-              type: data.type || 'pdf',
-              url: data.url || '',
-              uploadedBy: data.uploadedBy,
-              teamMembers: data.teamMembers || [],
-              size: data.size,
-              // Convert Firestore timestamps to Date objects
-              uploadedAt: data.uploadedAt?.toDate ? data.uploadedAt.toDate() : data.uploadedAt,
-              lastModified: data.lastModified?.toDate ? data.lastModified.toDate() : data.lastModified
-            };
-            return [doc.id, screenplay];
-          })
-        ).values()
-      ) as Screenplay[];
-      
-      setUserScreenplays(uniqueScreenplays);
-    } catch (err) {
-      console.error('Error fetching user screenplays:', err);
     }
   };
 
@@ -749,17 +1162,122 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     setShowScreenplayModal(true);
   };
 
-  // Delete workspace handler
-  const handleDeleteWorkspace = (workspaceId: string) => {
-    if (window.confirm(t('collaboration.workspaceDeleteConfirm'))) {
-      setWorkspaces(prev => prev.filter(ws => ws.id !== workspaceId));
-      if (selectedWorkspace?.id === workspaceId) {
-        setSelectedWorkspace(null);
+  const handleArchiveWorkspace = async (workspaceId: string) => {
+    const workspace = getWorkspaceById(workspaceId);
+    if (!workspace || !isWorkspaceCreator(workspace)) return;
+
+    try {
+      await updateDoc(doc(db, 'workspaces', workspaceId), {
+        status: 'archived',
+        archivedAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+      updateWorkspaceState({
+        ...workspace,
+        status: 'archived',
+        archivedAt: new Date(),
+        updatedAt: new Date()
+      });
+      toast.success(`Archived ${workspace.name}.`);
+    } catch (error) {
+      console.error('Error archiving workspace:', error);
+      toast.error('Failed to archive workspace.');
+    }
+  };
+
+  const handleRestoreWorkspace = async (workspaceId: string) => {
+    const workspace = getWorkspaceById(workspaceId);
+    if (!workspace || !isWorkspaceCreator(workspace)) return;
+
+    try {
+      await updateDoc(doc(db, 'workspaces', workspaceId), {
+        status: 'active',
+        archivedAt: null,
+        deletedAt: null,
+        deleteRecoverableUntil: null,
+        updatedAt: serverTimestamp()
+      });
+      const updatedWorkspace = {
+        ...workspace,
+        status: 'active' as const,
+        archivedAt: null,
+        deletedAt: null,
+        deleteRecoverableUntil: null,
+        updatedAt: new Date()
+      };
+      updateWorkspaceState(updatedWorkspace);
+      setSelectedWorkspace(updatedWorkspace);
+      toast.success(`Restored ${workspace.name}.`);
+    } catch (error) {
+      console.error('Error restoring workspace:', error);
+      toast.error('Failed to restore workspace.');
+    }
+  };
+
+  // Soft-delete workspace handler. The document remains recoverable for 30 days.
+  const handleDeleteWorkspace = async (workspaceId: string) => {
+    const workspace = getWorkspaceById(workspaceId);
+    if (!workspace || !isWorkspaceCreator(workspace)) return;
+
+    if (window.confirm('Delete this workspace? It can be restored for 30 days.')) {
+      try {
+        const deleteRecoverableUntil = getDeleteRecoveryDate();
+        await updateDoc(doc(db, 'workspaces', workspaceId), {
+          status: 'deleted',
+          deletedAt: serverTimestamp(),
+          deleteRecoverableUntil,
+          updatedAt: serverTimestamp()
+        });
+        const updatedWorkspace = {
+          ...workspace,
+          status: 'deleted' as const,
+          deletedAt: new Date(),
+          deleteRecoverableUntil: deleteRecoverableUntil.toDate(),
+          updatedAt: new Date()
+        };
+        updateWorkspaceState(updatedWorkspace);
+        if (selectedWorkspace?.id === workspaceId) {
+          setSelectedWorkspace(updatedWorkspace);
+        }
+        toast.success(`${workspace.name} moved to recently deleted.`);
+      } catch (error) {
+        console.error('Error deleting workspace:', error);
+        toast.error('Failed to delete workspace.');
       }
     }
   };
 
-  const renderWorkspacesTab = () => (
+  const handlePermanentDeleteWorkspace = async (workspaceId: string) => {
+    const workspace = getWorkspaceById(workspaceId);
+    if (!workspace || !isWorkspaceCreator(workspace)) return;
+
+    if (!isDeleteRecoveryExpired(workspace)) {
+      toast.error(`This workspace can be restored for ${WORKSPACE_DELETE_RECOVERY_DAYS} days before permanent deletion.`);
+      return;
+    }
+
+    if (window.confirm('Permanently delete this workspace? This cannot be undone.')) {
+      try {
+        await deleteDoc(doc(db, 'workspaces', workspaceId));
+        setWorkspaces(prev => prev.filter(item => item.id !== workspaceId));
+        if (selectedWorkspace?.id === workspaceId) {
+          setSelectedWorkspace(null);
+        }
+        toast.success(`${workspace.name} permanently deleted.`);
+      } catch (error) {
+        console.error('Error permanently deleting workspace:', error);
+        toast.error('Failed to permanently delete workspace.');
+      }
+    }
+  };
+
+  const renderWorkspacesTab = () => {
+    const workspaceList = [...workspaces].sort((a, b) => {
+      const statusOrder = { active: 0, archived: 1, deleted: 2 };
+      return statusOrder[a.status || 'active'] - statusOrder[b.status || 'active'];
+    });
+
+    return (
     <div className="workspaces-tab">
       <div className="workspaces-header">
         <h2>{t('collaboration.workspacesTab.title')}</h2>
@@ -773,40 +1291,44 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       </div>
 
       <div className="workspaces-grid">
-        {workspaces.map(workspace => (
-          <div
-            key={workspace.id}
-            className={`workspace-card ${selectedWorkspace?.id === workspace.id ? 'selected' : ''}`}
-            onClick={() => setSelectedWorkspace(workspace)}
-          >
+        {workspaceList.map(workspace => (
+	          <div
+	            key={workspace.id}
+	            className={`workspace-card ${selectedWorkspace?.id === workspace.id ? 'selected' : ''} ${workspace.status || 'active'}`}
+	            onClick={() => setSelectedWorkspace(workspace)}
+	          >
             {/* Settings gear icon in top-right */}
-            <button
-              className="workspace-settings-gear"
-              title="Settings"
-              aria-label="Settings"
-              onClick={e => { e.stopPropagation(); handleWorkspaceSettings(workspace.id); }}
-              style={{ position: 'absolute', top: 16, right: 48, background: 'none', border: 'none', padding: 0, cursor: 'pointer', zIndex: 2 }}
-            >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="3" />
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-              </svg>
-            </button>
-            {/* Delete workspace button */}
-            <button
-              className="workspace-delete-btn"
-              title="Delete Workspace"
-              aria-label="Delete Workspace"
-              onClick={e => { e.stopPropagation(); handleDeleteWorkspace(workspace.id); }}
-              style={{ position: 'absolute', top: 16, right: 16, background: 'none', border: 'none', padding: 0, cursor: 'pointer', zIndex: 2 }}
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="3 6 5 6 21 6" />
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
-                <line x1="10" y1="11" x2="10" y2="17" />
-                <line x1="14" y1="11" x2="14" y2="17" />
-              </svg>
-            </button>
+	            {canManageWorkspace(workspace) && workspace.status !== 'deleted' && (
+	              <button
+	                className="workspace-settings-gear"
+	                title="Settings"
+	                aria-label="Settings"
+	                onClick={e => { e.stopPropagation(); handleWorkspaceSettings(workspace.id); }}
+	                style={{ position: 'absolute', top: 16, right: isWorkspaceCreator(workspace) ? 48 : 16, background: 'none', border: 'none', padding: 0, cursor: 'pointer', zIndex: 2 }}
+	              >
+	                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+	                  <circle cx="12" cy="12" r="3" />
+	                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+	                </svg>
+	              </button>
+	            )}
+	            {/* Delete workspace button */}
+	            {isWorkspaceCreator(workspace) && workspace.status !== 'deleted' && (
+	              <button
+	                className="workspace-delete-btn"
+	                title="Delete Workspace"
+	                aria-label="Delete Workspace"
+	                onClick={e => { e.stopPropagation(); handleDeleteWorkspace(workspace.id); }}
+	                style={{ position: 'absolute', top: 16, right: 16, background: 'none', border: 'none', padding: 0, cursor: 'pointer', zIndex: 2 }}
+	              >
+	                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+	                  <polyline points="3 6 5 6 21 6" />
+	                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
+	                  <line x1="10" y1="11" x2="10" y2="17" />
+	                  <line x1="14" y1="11" x2="14" y2="17" />
+	                </svg>
+	              </button>
+	            )}
             {/* Card content */}
             <div className="workspace-header">
               <div className="workspace-title-section">
@@ -816,67 +1338,168 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                     <polyline points="9,22 9,12 15,12 15,22"/>
                   </svg>
                 </div>
-                <div className="workspace-info">
-                  <h3 className="workspace-title" style={{ color: selectedWorkspace?.id === workspace.id ? '#1a1a1a' : '#fff', fontWeight: 600 }}>{workspace.name}</h3>
-                  <span className={`workspace-type ${workspace.type}`} style={{ color: selectedWorkspace?.id === workspace.id ? '#666' : '#fff', background: selectedWorkspace?.id === workspace.id ? '#f0f0f0' : 'rgba(255,255,255,0.15)' }}>{workspace.type}</span>
-                </div>
+	                <div className="workspace-info">
+	                  <h3 className="workspace-title" style={{ color: '#1a1a1a', fontWeight: 600 }}>{workspace.name}</h3>
+	                  <span className={`workspace-type ${workspace.type}`} style={{ color: '#666', background: '#f0f0f0' }}>{workspace.type}</span>
+	                  {workspace.status && workspace.status !== 'active' && (
+	                    <span className={`workspace-status ${workspace.status}`}>{workspace.status === 'deleted' ? 'Recently deleted' : 'Archived'}</span>
+	                  )}
+	                </div>
               </div>
             </div>
 
-            <p className="workspace-description" style={{ color: selectedWorkspace?.id === workspace.id ? '#666' : 'rgba(255,255,255,0.85)', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{workspace.description}</p>
+            <p className="workspace-description" style={{ color: '#666', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{workspace.description}</p>
 
             <div className="workspace-stats">
-              <div className="stat" style={{ color: selectedWorkspace?.id === workspace.id ? '#666' : 'rgba(255,255,255,0.85)' }}>
+              <div className="stat" style={{ color: '#666' }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
                   <circle cx="9" cy="7" r="4"/>
                   <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
                   <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                 </svg>
-                <span className="stat-value" style={{ color: selectedWorkspace?.id === workspace.id ? '#333' : '#fff', fontWeight: 600 }}>{workspace.members.length}</span>
-                <span className="stat-label" style={{ color: selectedWorkspace?.id === workspace.id ? '#666' : 'rgba(255,255,255,0.85)' }}>Members</span>
+                <span className="stat-value" style={{ color: '#333', fontWeight: 600 }}>{workspace.members.length}</span>
+                <span className="stat-label" style={{ color: '#666' }}>Members</span>
               </div>
-              <div className="stat" style={{ color: selectedWorkspace?.id === workspace.id ? '#666' : 'rgba(255,255,255,0.85)' }}>
+              <div className="stat" style={{ color: '#666' }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="12" cy="12" r="10"/>
                   <polyline points="12,6 12,12 16,14"/>
                 </svg>
-                <span className="stat-value" style={{ color: selectedWorkspace?.id === workspace.id ? '#333' : '#fff', fontWeight: 600 }}>{workspace.members.filter(m => m.isOnline).length}</span>
-                <span className="stat-label" style={{ color: selectedWorkspace?.id === workspace.id ? '#666' : 'rgba(255,255,255,0.85)' }}>Online</span>
+                <span className="stat-value" style={{ color: '#333', fontWeight: 600 }}>{workspace.members.filter(m => m.isOnline).length}</span>
+                <span className="stat-label" style={{ color: '#666' }}>Online</span>
               </div>
             </div>
 
-            <div className="workspace-actions">
-              <button
-                className="btn-primary"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleJoinWorkspace(workspace.id);
-                }}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
-                  <polyline points="10,17 15,12 10,7"/>
-                  <line x1="15" y1="12" x2="3" y2="12"/>
-                </svg>
-                Join
-              </button>
-              <button
-                className="btn-secondary"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowAddMemberModal(true);
-                }}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                  <circle cx="8.5" cy="7" r="4"/>
-                  <line x1="20" y1="8" x2="20" y2="14"/>
-                  <line x1="23" y1="11" x2="17" y2="11"/>
-                </svg>
-                Add Member
-              </button>
-            </div>
+            {(getEffectiveRole(workspace) || canSelfElectSupervisor(workspace)) && (
+              <div className="workspace-self-role" style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '4px 0 12px', flexWrap: 'wrap' }}>
+                {getEffectiveRole(workspace) && (
+                  <span
+                    className={`role-chip role-chip--${getEffectiveRole(workspace)}`}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '2px 10px',
+                      borderRadius: 999,
+                      fontSize: '0.78em',
+                      fontWeight: 600,
+                      background: isSelfElectedSupervisor(workspace) ? '#fde68a' : '#e0e7ff',
+                      color: isSelfElectedSupervisor(workspace) ? '#92400e' : '#3730a3'
+                    }}
+                    title={isSelfElectedSupervisor(workspace) ? t('collaboration.supervisor.tooltipSelf') : t('collaboration.supervisor.tooltipRole')}
+                  >
+                    {t('collaboration.supervisor.yourRole', { role: t(`collaboration.roles.${getEffectiveRole(workspace)}`) })}
+                    {isSelfElectedSupervisor(workspace) ? ` ${t('collaboration.supervisor.selfTag')}` : ''}
+                  </span>
+                )}
+                {canSelfElectSupervisor(workspace) && (
+                  <button
+                    type="button"
+                    className="btn-text"
+                    disabled={toggleSupervisorPending}
+                    onClick={e => { e.stopPropagation(); toggleSelfElectedSupervisor(workspace); }}
+                    style={{
+                      background: 'transparent',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: 6,
+                      padding: '4px 10px',
+                      fontSize: '0.8em',
+                      color: '#1e293b',
+                      cursor: toggleSupervisorPending ? 'not-allowed' : 'pointer'
+                    }}
+                  >
+                    {isSelfElectedSupervisor(workspace) ? t('collaboration.supervisor.stepDown') : t('collaboration.supervisor.actAs')}
+                  </button>
+                )}
+              </div>
+            )}
+
+	            <div className="workspace-actions">
+	              {workspace.status !== 'deleted' && (
+	                <button
+	                  className="btn-primary"
+	                  onClick={(e) => {
+	                    e.stopPropagation();
+	                    handleJoinWorkspace(workspace.id);
+	                  }}
+	                >
+	                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+	                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+	                    <polyline points="10,17 15,12 10,7"/>
+	                    <line x1="15" y1="12" x2="3" y2="12"/>
+	                  </svg>
+	                  Open
+	                </button>
+	              )}
+	              {canManageWorkspace(workspace) && (workspace.status || 'active') === 'active' && (
+	                <button
+	                  className="btn-secondary"
+	                  onClick={(e) => {
+	                    e.stopPropagation();
+	                    openAddMemberModalForWorkspace(workspace);
+	                  }}
+	                >
+	                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+	                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+	                    <circle cx="8.5" cy="7" r="4"/>
+	                    <line x1="20" y1="8" x2="20" y2="14"/>
+	                    <line x1="23" y1="11" x2="17" y2="11"/>
+	                  </svg>
+	                  Invite
+	                </button>
+	              )}
+	              {isWorkspaceCreator(workspace) && (workspace.status || 'active') === 'active' && (
+	                <button
+	                  className="btn-secondary"
+	                  onClick={(e) => {
+	                    e.stopPropagation();
+	                    handleArchiveWorkspace(workspace.id);
+	                  }}
+	                >
+	                  Archive
+	                </button>
+	              )}
+	              {isWorkspaceCreator(workspace) && workspace.status === 'archived' && (
+	                <button
+	                  className="btn-secondary"
+	                  onClick={(e) => {
+	                    e.stopPropagation();
+	                    handleRestoreWorkspace(workspace.id);
+	                  }}
+	                >
+	                  Restore
+	                </button>
+	              )}
+	              {isWorkspaceCreator(workspace) && workspace.status === 'deleted' && (
+	                <>
+	                  <button
+	                    className="btn-secondary"
+	                    onClick={(e) => {
+	                      e.stopPropagation();
+	                      handleRestoreWorkspace(workspace.id);
+	                    }}
+	                  >
+	                    Restore
+	                  </button>
+	                  {isDeleteRecoveryExpired(workspace) ? (
+	                    <button
+	                      className="btn-danger"
+	                      onClick={(e) => {
+	                        e.stopPropagation();
+	                        handlePermanentDeleteWorkspace(workspace.id);
+	                      }}
+	                    >
+	                      Delete forever
+	                    </button>
+	                  ) : (
+	                    <span className="workspace-recovery-note">
+	                      Recoverable for {WORKSPACE_DELETE_RECOVERY_DAYS} days
+	                    </span>
+	                  )}
+	                </>
+	              )}
+	            </div>
           </div>
         ))}
       </div>
@@ -893,9 +1516,10 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                 setNewWorkspaceData({
                   name: '',
                   description: '',
-                  type: 'project',
-                  selectedMembers: [],
-                  settings: {
+	                  type: 'project',
+	                  selectedMembers: [],
+	                  selectedMemberRoles: {},
+	                  settings: {
                     allowGuestAccess: false,
                     requireApproval: true,
                     autoArchive: false,
@@ -952,17 +1576,54 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                   <h4>{t('collaboration.createWorkspaceModal.step2')}</h4>
                   <div className="form-group">
                     <label>{t('collaboration.createWorkspaceModal.searchUsers')}</label>
-                    <UserAutocomplete
-                      value={newWorkspaceData.selectedMembers}
-                      onChange={(users: UserAutocompleteOption[]) => setNewWorkspaceData(prev => ({ ...prev, selectedMembers: users }))}
-                      onSearch={handleUserSearchChange}
-                      options={userSearchResults}
-                      loading={isSearchingUsers}
-                      placeholder={t('collaboration.createWorkspaceModal.searchPlaceholder')}
-                    />
-                  </div>
-                </div>
-              )}
+	                    <UserAutocomplete
+	                      value={newWorkspaceData.selectedMembers}
+	                      onChange={(users: UserAutocompleteOption[]) => setNewWorkspaceData(prev => {
+	                        const nextRoles = { ...prev.selectedMemberRoles };
+	                        users.forEach(user => {
+	                          if (!nextRoles[user.id]) nextRoles[user.id] = 'member';
+	                        });
+	                        Object.keys(nextRoles).forEach(userId => {
+	                          if (!users.some(user => user.id === userId)) delete nextRoles[userId];
+	                        });
+	                        return { ...prev, selectedMembers: users, selectedMemberRoles: nextRoles };
+	                      })}
+	                      onSearch={handleUserSearchChange}
+	                      options={userSearchResults}
+	                      loading={isSearchingUsers}
+	                      placeholder={t('collaboration.createWorkspaceModal.searchPlaceholder')}
+	                    />
+	                    {newWorkspaceData.selectedMembers.length > 0 && (
+	                      <div className="selected-members">
+	                        <h5>Invite roles</h5>
+	                        {newWorkspaceData.selectedMembers.map(member => (
+	                          <div className="selected-member" key={member.id}>
+	                            <div>
+	                              <div className="member-name">{member.name}</div>
+	                              <div className="user-email">{member.email}</div>
+	                            </div>
+	                            <select
+	                              className="form-input role-select"
+	                              value={newWorkspaceData.selectedMemberRoles[member.id] || 'member'}
+	                              onChange={event => setNewWorkspaceData(prev => ({
+	                                ...prev,
+	                                selectedMemberRoles: {
+	                                  ...prev.selectedMemberRoles,
+	                                  [member.id]: event.target.value as Extract<WorkspaceRole, 'member' | 'supervisor' | 'viewer'>
+	                                }
+	                              }))}
+	                            >
+	                              {INVITABLE_WORKSPACE_ROLES.map(role => (
+	                                <option key={role.value} value={role.value}>{t(`collaboration.roles.${role.value}`)}</option>
+	                              ))}
+	                            </select>
+	                          </div>
+	                        ))}
+	                      </div>
+	                    )}
+	                  </div>
+	                </div>
+	              )}
 
               {/* Step 3: Settings */}
               {workspaceCreationStep === 'settings' && (
@@ -1041,52 +1702,89 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         </div>
       )}
 
-      {/* Add Member Modal */}
-      {showAddMemberModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h3>Add Member to Workspace</h3>
-              <button onClick={() => {
-                setShowAddMemberModal(false);
-                setUserSearchQuery('');
-                setUserSearchResults([]);
-              }} className="close-btn" aria-label="Close">×</button>
-            </div>
-            <div className="modal-body">
-              <div className="form-group">
-                <label>Search Users</label>
-                <UserAutocomplete
-                  value={selectedWorkspace ? selectedWorkspace.members.map(m => ({
-                    id: m.userId,
-                    name: m.email || m.userId,
-                    email: m.email || '',
-                    avatar: '',
-                    role: m.role,
-                    company: ''
-                  })) : []}
-                  onChange={(users: UserAutocompleteOption[]) => {
-                    // Only add new users
-                    const newUsers = users.filter((u: UserAutocompleteOption) => !(selectedWorkspace && selectedWorkspace.members.some(m => m.userId === u.id)));
-                    newUsers.forEach((user: UserAutocompleteOption) => addUserToWorkspace(user));
-                    setShowAddMemberModal(false);
-                    setUserSearchQuery('');
-                    setUserSearchResults([]);
-                  }}
-                  onSearch={handleUserSearchChange}
-                  options={userSearchResults}
-                  loading={isSearchingUsers}
-                  placeholder="Search by name, email, or role..."
-                />
+	      {/* Add Member Modal */}
+	      {showAddMemberModal && (
+	        <div className="modal-overlay">
+	          <div className="modal-content">
+	            <div className="modal-header">
+	              <h3>Add members to {selectedWorkspace?.name || 'workspace'}</h3>
+	              <button onClick={() => {
+	                setShowAddMemberModal(false);
+	                setPendingMembersToAdd([]);
+	                setPendingMemberRole('member');
+	                setUserSearchQuery('');
+	                setUserSearchResults([]);
+	              }} className="close-btn" aria-label="Close">×</button>
+	            </div>
+	            <div className="modal-body">
+	              <div className="form-group">
+	                <label>Search Users</label>
+	                <UserAutocomplete
+	                  value={pendingMembersToAdd}
+	                  onChange={(users: UserAutocompleteOption[]) => {
+	                    const existingIds = new Set(selectedWorkspace ? getWorkspaceMemberIds(selectedWorkspace) : []);
+	                    setPendingMembersToAdd(users.filter(user => !existingIds.has(user.id)));
+	                  }}
+	                  onSearch={handleUserSearchChange}
+	                  options={userSearchResults}
+	                  loading={isSearchingUsers}
+	                  placeholder="Search by name, email, or role..."
+	                />
                 {/* Live feedback for search */}
                 {isSearchingUsers && <div className="searching-indicator">Searching...</div>}
-                {!isSearchingUsers && userSearchQuery.trim() && userSearchResults.length === 0 && <div className="searching-indicator">No friends found.</div>}
-                {!isSearchingUsers && !userSearchQuery.trim() && <div className="searching-indicator">Start typing to search for users</div>}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+	                {!isSearchingUsers && userSearchQuery.trim() && userSearchResults.length === 0 && <div className="searching-indicator">No friends found.</div>}
+	                {!isSearchingUsers && !userSearchQuery.trim() && <div className="searching-indicator">Start typing to search for users</div>}
+	              </div>
+	              <div className="form-group">
+	                <label>Workspace role</label>
+	                <select
+	                  className="form-input"
+	                  value={pendingMemberRole}
+	                  onChange={event => setPendingMemberRole(event.target.value as Extract<WorkspaceRole, 'member' | 'supervisor' | 'viewer'>)}
+	                >
+	                  {INVITABLE_WORKSPACE_ROLES.map(role => (
+	                    <option key={role.value} value={role.value}>
+	                      {t(`collaboration.roles.${role.value}`)} — {t(`collaboration.roles.${role.value}Desc`)}
+	                    </option>
+	                  ))}
+	                </select>
+	              </div>
+	              {selectedWorkspace && selectedWorkspace.members.length > 0 && (
+	                <div className="selected-members">
+	                  <h5>Current members</h5>
+	                  {selectedWorkspace.members.map(member => (
+	                    <div className="selected-member" key={member.userId}>
+	                      <div>
+	                        <div className="member-name">{member.email || member.userId}</div>
+	                        <div className="user-email">{member.role}</div>
+	                      </div>
+	                    </div>
+	                  ))}
+	                </div>
+	              )}
+	            </div>
+	            <div className="modal-footer">
+	              <button
+	                className="btn-secondary"
+	                onClick={() => {
+	                  setShowAddMemberModal(false);
+	                  setPendingMembersToAdd([]);
+	                  setPendingMemberRole('member');
+	                }}
+	              >
+	                Cancel
+	              </button>
+	              <button
+	                className="btn-primary"
+	                disabled={isAddingMembers || pendingMembersToAdd.length === 0 || !selectedWorkspace}
+	                onClick={() => addUsersToWorkspace(pendingMembersToAdd, pendingMemberRole)}
+	              >
+	                {isAddingMembers ? 'Adding...' : 'Add members'}
+	              </button>
+	            </div>
+	          </div>
+	        </div>
+	      )}
 
       {/* Settings Modal */}
       {showSettingsModal && (
@@ -1163,7 +1861,8 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 
       {/* Video call functionality will be added in a future update */}
     </div>
-  );
+    );
+  };
 
   const renderTasksTab = () => (
     <div className="tasks-tab">
@@ -1178,80 +1877,179 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     </div>
   );
 
-  const renderScreenplaysTab = () => (
-    <div className="screenplays-tab">
-      <div className="screenplays-header">
-        <h2>{t('collaboration.screenplaysTab.title')}</h2>
-        <p>{t('collaboration.screenplaysTab.subtitle')}</p>
-      </div>
-      <div className="screenplays-content">
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <label htmlFor="screenplay-upload" style={{
-            display: 'inline-block',
-            background: '#1976d2',
-            color: '#fff',
-            padding: '0.75rem 2rem',
-            borderRadius: '6px',
-            fontWeight: 600,
-            cursor: uploadingScreenplay ? 'not-allowed' : 'pointer',
-            opacity: uploadingScreenplay ? 0.6 : 1,
-            boxShadow: '0 2px 8px rgba(25, 118, 210, 0.08)',
-            marginBottom: 16
-          }}>
-            {uploadingScreenplay ? t('collaboration.screenplaysTab.uploading') : t('collaboration.screenplaysTab.uploadScreenplay')}
-            <input
-              id="screenplay-upload"
-              type="file"
-              accept=".pdf,.doc,.docx,.txt"
-              style={{ display: 'none' }}
-              onChange={handleScreenplayUpload}
-              disabled={uploadingScreenplay}
-            />
-          </label>
+  const renderScreenplaysTab = () => {
+    const uploadableWorkspaces = workspaces.filter(workspace => canEditWorkspaceContent(workspace));
+    const selectedUploadWorkspace = uploadableWorkspaces.find(workspace => workspace.id === uploadWorkspaceId) || null;
+    const screenplaysByWorkspace = userScreenplays.reduce<Record<string, Screenplay[]>>((groups, screenplay) => {
+      const key = screenplay.workspaceId || 'personal';
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(screenplay);
+      return groups;
+    }, {});
+    const sectionKeys = [
+      ...workspaces
+        .filter(workspace => screenplaysByWorkspace[workspace.id]?.length)
+        .map(workspace => workspace.id),
+      ...(screenplaysByWorkspace.personal?.length ? ['personal'] : [])
+    ];
+
+    const renderScreenplayRows = (screenplays: Screenplay[]) => (
+      <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+        {screenplays.map(screenplay => {
+          const openCount = unresolvedCountByScreenplay[screenplay.id] || 0;
+          const teacherCount = unresolvedFromTeacherCountByScreenplay[screenplay.id] || 0;
+          return (
+            <li key={screenplay.id} style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 16,
+              padding: '0.75rem 0',
+              borderBottom: '1px solid #eee'
+            }}>
+              <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+                <span style={{ fontWeight: 600, color: '#222' }}>{screenplay.name}</span>
+                <span style={{ color: '#888', fontSize: '0.95em' }}>{screenplay.type}</span>
+                <span style={{ color: '#666', fontSize: '0.85em' }}>{getWorkspaceLabel(screenplay.workspaceId)}</span>
+                {openCount > 0 && (
+                  <span
+                    title={t('collaboration.badges.unresolvedTooltip', { count: openCount })}
+                    aria-label={t('collaboration.badges.unresolvedTooltip', { count: openCount })}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      padding: '2px 8px',
+                      borderRadius: 999,
+                      fontSize: '0.78em',
+                      fontWeight: 600,
+                      background: '#fee2e2',
+                      color: '#991b1b'
+                    }}
+                  >
+                    💬 {openCount}
+                  </span>
+                )}
+                {teacherCount > 0 && (
+                  <span
+                    title={t('collaboration.badges.unresolvedSupervisorTooltip', { count: teacherCount })}
+                    aria-label={t('collaboration.badges.unresolvedSupervisorTooltip', { count: teacherCount })}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      padding: '2px 8px',
+                      borderRadius: 999,
+                      fontSize: '0.78em',
+                      fontWeight: 700,
+                      background: '#fde68a',
+                      color: '#92400e'
+                    }}
+                  >
+                    🎓 {teacherCount}
+                  </span>
+                )}
+              </div>
+              <div style={{ display: 'flex', gap: 12 }}>
+                <button
+                  className="btn-secondary"
+                  style={{ padding: '0.4rem 1rem', fontSize: '0.95em' }}
+                  onClick={() => openScreenplayViewer(screenplay)}
+                >
+                  {t('collaboration.view')}
+                </button>
+                {canDeleteScreenplay(screenplay) && (
+                  <button
+                    className="btn-danger"
+                    style={{ padding: '0.4rem 1rem', fontSize: '0.95em' }}
+                    onClick={() => handleDeleteScreenplay(screenplay.id)}
+                  >
+                    {t('collaboration.delete')}
+                  </button>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    );
+
+    return (
+      <div className="screenplays-tab">
+        <div className="screenplays-header">
+          <h2>{t('collaboration.screenplaysTab.title')}</h2>
+          <p>{t('collaboration.screenplaysTab.subtitle')}</p>
         </div>
-        <div className="screenplays-list bg-white rounded-lg shadow-md p-6">
-          {userScreenplays.length === 0 ? (
-            <div style={{ color: '#888', textAlign: 'center', padding: '2rem 0' }}>
-              No screenplays uploaded yet.
+        <div className="screenplays-content">
+          <div className="screenplay-upload-card bg-white rounded-lg shadow-md p-6 mb-6">
+            <div className="form-group">
+              <label>{t('collaboration.uploadToWorkspace')}</label>
+              <select
+                className="form-input"
+                value={selectedUploadWorkspace?.id || ''}
+                onChange={event => setUploadWorkspaceId(event.target.value)}
+              >
+                <option value="">{t('collaboration.personalNoWorkspace')}</option>
+                {uploadableWorkspaces.map(workspace => (
+                  <option key={workspace.id} value={workspace.id}>{workspace.name}</option>
+                ))}
+              </select>
+              <p className="form-help">
+                {t('collaboration.uploadHelp')}
+              </p>
             </div>
-          ) : (
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-              {userScreenplays.map(screenplay => (
-                <li key={screenplay.id} style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '0.75rem 0',
-                  borderBottom: '1px solid #eee'
-                }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <span style={{ fontWeight: 600, color: '#222' }}>{screenplay.name}</span>
-                    <span style={{ color: '#888', fontSize: '0.95em', marginLeft: 12 }}>{screenplay.type}</span>
-                  </div>
-                  <div style={{ display: 'flex', gap: 12 }}>
-                    <button
-                      className="btn-secondary"
-                      style={{ padding: '0.4rem 1rem', fontSize: '0.95em' }}
-                      onClick={() => openScreenplayViewer(screenplay)}
-                    >
-                      {t('collaboration.view')}
-                    </button>
-                    <button
-                      className="btn-danger"
-                      style={{ padding: '0.4rem 1rem', fontSize: '0.95em' }}
-                      onClick={() => handleDeleteScreenplay(screenplay.id)}
-                    >
-                      {t('collaboration.delete')}
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
+            <label htmlFor="screenplay-upload" style={{
+              display: 'inline-block',
+              background: '#1976d2',
+              color: '#fff',
+              padding: '0.75rem 2rem',
+              borderRadius: '6px',
+              fontWeight: 600,
+              cursor: uploadingScreenplay ? 'not-allowed' : 'pointer',
+              opacity: uploadingScreenplay ? 0.6 : 1,
+              boxShadow: '0 2px 8px rgba(25, 118, 210, 0.08)',
+              marginBottom: 16
+            }}>
+              {uploadingScreenplay ? t('collaboration.screenplaysTab.uploading') : t('collaboration.screenplaysTab.uploadScreenplay')}
+              <input
+                id="screenplay-upload"
+                type="file"
+                accept=".pdf,.doc,.docx,.txt"
+                style={{ display: 'none' }}
+                onChange={handleScreenplayUpload}
+                disabled={uploadingScreenplay}
+              />
+            </label>
+            {selectedUploadWorkspace && canManageWorkspace(selectedUploadWorkspace) && (
+              <div className="optional-invite">
+                <button
+                  className="btn-secondary"
+                  type="button"
+                  onClick={() => openAddMemberModalForWorkspace(selectedUploadWorkspace)}
+                >
+                  {t('collaboration.inviteMembersOptional')}
+                </button>
+              </div>
+            )}
+          </div>
+          <div className="screenplays-list bg-white rounded-lg shadow-md p-6">
+            {userScreenplays.length === 0 ? (
+              <div style={{ color: '#888', textAlign: 'center', padding: '2rem 0' }}>
+                {t('collaboration.noScreenplaysYet')}
+              </div>
+            ) : (
+              sectionKeys.map(sectionKey => (
+                <section key={sectionKey} className="screenplay-section">
+                  <h3>{sectionKey === 'personal' ? t('collaboration.personalNoWorkspace') : getWorkspaceLabel(sectionKey)}</h3>
+                  {renderScreenplayRows(screenplaysByWorkspace[sectionKey] || [])}
+                </section>
+              ))
+            )}
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderTabContent = () => {
     switch (activeTab) {

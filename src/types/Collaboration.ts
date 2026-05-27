@@ -1,10 +1,22 @@
+export type WorkspaceRole = 'owner' | 'admin' | 'supervisor' | 'member' | 'viewer';
+export type WorkspaceStatus = 'active' | 'archived' | 'deleted';
+
 export interface CollaborationWorkspace {
   id: string;
-  projectId: string;
+  projectId: string | null;
+  ownerId?: string;
   name: string;
   description: string;
   type: 'project' | 'department' | 'general';
   members: WorkspaceMember[];
+  memberIds?: string[];
+  supervisorIds?: string[];
+  viewerIds?: string[];
+  selfElectedSupervisors?: string[];
+  status?: WorkspaceStatus;
+  archivedAt?: any;
+  deletedAt?: any;
+  deleteRecoverableUntil?: any;
   channels?: CollaborationChannel[];  // Made optional
   documents?: CollaborativeDocument[];  // Made optional
   whiteboards?: Whiteboard[];  // Made optional
@@ -16,7 +28,13 @@ export interface CollaborationWorkspace {
 export interface WorkspaceMember {
   userId: string;
   email?: string;
-  role: 'owner' | 'admin' | 'member' | 'viewer';
+  /**
+   * owner: creator, full workspace control.
+   * member: can edit/comment workspace screenplays.
+   * supervisor: can read/comment/annotate but must not edit screenplay text.
+   * viewer: read-only.
+   */
+  role: WorkspaceRole;
   joinedAt: any;
   permissions: string[];
   isOnline: boolean;
@@ -227,4 +245,4 @@ export interface CalendarEvent {
   recurrence?: 'daily' | 'weekly' | 'monthly' | 'yearly';
   createdAt: any;
   updatedAt: any;
-} 
+}

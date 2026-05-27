@@ -27,6 +27,10 @@ service firebase.storage {
       allow delete: if isOwner(userId);
     }
 
+    match /project-images/{allPaths=**} {
+      allow read: if true; // Public read for legacy project image paths
+    }
+
     match /profileImages/{userId}/{allPaths=**} {
       allow read: if true; // Public read for profile images
       allow create, update: if isOwner(userId) && isImageUpload();
@@ -81,6 +85,10 @@ service firebase.storage {
       allow read: if true; // Public read for project images
       allow create, update: if isOwner(userId) && isImageUpload();
       allow delete: if isOwner(userId);
+    }
+
+    match /projects/{projectId}/{allPaths=**} {
+      allow read: if true; // Public read for legacy project image paths
     }
 
     match /project-documents/{projectId}/{userId}/{allPaths=**} {
