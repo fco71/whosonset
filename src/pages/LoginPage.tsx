@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { auth } from '../firebase';
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -9,6 +10,9 @@ const LoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromPath = (location.state as { from?: string } | null)?.from;
+  const redirectPath = fromPath && fromPath.startsWith('/') && !fromPath.startsWith('//') ? fromPath : '/';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,11 +23,11 @@ const LoginPage: React.FC = () => {
       await login(email, password);
       
       // Check if email is verified
-      const { currentUser } = useAuth();
+      const currentUser = auth.currentUser;
       if (currentUser && !currentUser.emailVerified) {
         navigate('/verify-email');
       } else {
-        navigate('/');
+        navigate(redirectPath, { replace: true });
       }
     } catch (err: any) {
       console.error('Login error details:', err);
@@ -52,11 +56,9 @@ const LoginPage: React.FC = () => {
     setError('');
 
     try {
-      const { isNewUser } = await loginWithGoogle();
+      await loginWithGoogle();
       
-      // For login page, always go to home (existing users)
-      // New users would typically come from register page
-      navigate('/');
+      navigate(redirectPath, { replace: true });
     } catch (error: any) {
       console.error('Google sign-in error:', error);
       setError(
