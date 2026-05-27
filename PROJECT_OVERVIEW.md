@@ -689,9 +689,42 @@ Each step ends with a runnable acceptance check. An agent picking up step N shou
 
 ---
 
-## Where we are right now (pick-up pointer, 2026-05-27 night — after i18n + export pass)
+## Where we are right now (pick-up pointer, 2026-05-27 late-night — after C1 collaborator hydration fix)
 
-**Last meaningful step**: Localized the collaboration/screenplay flow to Spanish + added CSV report export for tags + annotations. Earlier in the same evening: annotation/tag/comment flow hardened (S1–S10) + G1 (teacher self-tag) + G2 (real-time hub) + G3 (badges + filters) + G4 (supervisor provenance) + S9 popup drag-handle fix + S10 highlight-coordinate-space fix. Typecheck clean throughout.
+**Last meaningful step**: Fixed the "Unknown" collaborator bug Francisco saw after deleting + re-uploading a screenplay. Collaborator listener now hydrates uid → crew-profile names; addCollaborator now writes uid strings instead of objects (aligning with the Firestore rule + the workspace-sync write path).
+
+Earlier this evening: G1 (teacher self-tag) + G2 (real-time hub) + G3 (comment-count badges + filter chips) + G4 (supervisor provenance) + S1–S10 (annotation UX hardening) + S9 (popup drag-handle) + S10 (highlight coordinate-space) + i18n (en/es) + CSV report export. Three commits landed on `main` (0f245a03 + 87f5beef + c2e85902) plus the C1 fix below is still uncommitted on top.
+
+### Roadmap items still to come — kept visible so they don't slip
+
+The original two-workstream plan has Workstream A (collab + supervisor flow) largely landed, but **Workstream B — the in-browser Fountain screenplay editor — has not been started**. Spec is in this doc under "Workstream B" (B1–B7). Francisco asked specifically to keep that visible 2026-05-27.
+
+| Item | Status | Notes |
+|------|--------|-------|
+| G6 — in-app notifications when a supervisor comments | not started | Highest leverage closing-the-loop feature. Spec in G6 below. |
+| G7 — drag-and-drop multi-upload + first-run empty state | not started | Smallest polish win, ~30 min. |
+| G5 — workspace activity feed | not started | "Maya uploaded X · 3m ago" timeline in workspace card. |
+| G9 — mobile pass for the hub | not started | Students mostly work on phones. |
+| G8 — workspace-level chat (non-spatial discussion) | not started | RealTimeCollaboration.tsx already exists, just needs wiring. |
+| **B (Fountain editor)** — in-browser screenplay writer with format toolbar, page-count badge, simplified Fountain markup, no live multi-cursor | **NOT started** | Workstream B1–B7 in this doc. Francisco wants this. The Fountain parser + page-count heuristic (B4) is the highest-risk piece and should be built + unit-tested in isolation first. |
+| C1 — collaborator hydration fix | ✅ done 2026-05-27 late, uncommitted | This commit |
+
+### C1 — Collaborator "Unknown" bug (this fix)
+
+**Bug**: After deleting + re-uploading a screenplay, the Collaborators side panel showed only "Unknown" entries instead of the workspace members who'd been added.
+
+**Root cause**: two write paths populate `screenplays.teamMembers` with incompatible shapes:
+1. `CollaborationHub.syncWorkspaceScreenplayAccess` (workspace member sync) writes **uid strings**.
+2. Legacy `ScreenplayViewer.addCollaborator` wrote **rich objects** (`{id, name, email, ...}`).
+
+The collaborator listener pulled `data.teamMembers` and set it directly as state, then the UI rendered `user.name || 'Unknown'`. For uid-string entries `.name` is undefined → "Unknown" for every workspace-synced member. Plus the Firestore rule `teamMembers.hasAny([request.auth.uid])` only matches uid strings, so the legacy object-write path was actually breaking rule-based access too.
+
+**Fix** (in [ScreenplayViewer.tsx](src/components/Collaboration/ScreenplayViewer.tsx)):
+- **Listener**: normalize each entry to a uid (string-as-is OR `entry.id`/`entry.userId` from object form), batch-fetch `crewProfiles` in chunks of 10, shape into `{id, name, email, avatar, role}` objects. Missing crew profiles fall back to `Crew Member XXXX` using the last 4 chars of the uid — never "Unknown". Guarded against stale async with a `requestToken` counter.
+- **Writer**: `addCollaborator` now writes `arrayUnion(user.id)` (just the uid). Optimistic local-state update still surfaces the rich profile so the UI doesn't flicker; the listener will reconcile within ~1s.
+- **Old data with object entries** keeps working because the listener handles both shapes — no migration needed.
+
+### Pre-existing pick-up pointer (smoke tests + deploy command)
 
 ### i18n + export pass (2026-05-27 night)
 

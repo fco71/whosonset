@@ -1192,24 +1192,93 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     setPreviousActiveUsers(activeUsers);
   }, [activeUsers, currentUser]);
 
-  // Real-time collaborators listener
+  // Real-time collaborators listener.
+  //
+  // teamMembers on a screenplay doc has historically been a MIX of shapes:
+  //   - flat uid strings (written by CollaborationHub.syncWorkspaceScreenplayAccess
+  //     when a workspace member is added)
+  //   - rich {id, name, email, ...} objects (written by the legacy addCollaborator
+  //     path inside this viewer)
+  // Firestore rules expect uid strings (rule: teamMembers.hasAny([request.auth.uid])).
+  // Going forward addCollaborator writes uid strings too — but historic docs can still
+  // contain objects, so this listener normalizes both forms to a uid, then hydrates
+  // each uid to a crewProfile record so the UI has the real name + avatar instead of
+  // the previous "Unknown" placeholder.
   useEffect(() => {
     if (!screenplay.id) return;
 
     debugLog('Setting up real-time collaborators listener for screenplay:', screenplay.id);
 
+    // Guard against stale async work landing after a newer snapshot has arrived.
+    let requestToken = 0;
+
     const collaboratorsUnsubscribe = onSnapshot(
       doc(db, 'screenplays', screenplay.id),
-      (doc) => {
-        if (doc.exists()) {
-          const data = doc.data();
-          const teamMembers = data.teamMembers || [];
-          debugLog('Real-time collaborators update received:', teamMembers);
-          setCollaborators(teamMembers);
-        } else {
-          debugLog('Screenplay document does not exist');
+      async (docSnap) => {
+        const myToken = ++requestToken;
+
+        if (!docSnap.exists()) {
           setCollaborators([]);
+          return;
         }
+        const data = docSnap.data();
+        const rawTeamMembers: any[] = Array.isArray(data.teamMembers) ? data.teamMembers : [];
+
+        const uids = Array.from(new Set(
+          rawTeamMembers
+            .map(entry => {
+              if (typeof entry === 'string') return entry;
+              if (entry && typeof entry === 'object') return entry.id || entry.userId || '';
+              return '';
+            })
+            .filter(Boolean)
+        )) as string[];
+
+        if (uids.length === 0) {
+          if (myToken !== requestToken) return;
+          setCollaborators([]);
+          return;
+        }
+
+        const profiles: Array<{ id: string; name: string; email: string; avatar: string; role: string }> = [];
+        const crewProfilesRef = collection(db, 'crewProfiles');
+        try {
+          for (let i = 0; i < uids.length; i += 10) {
+            const chunk = uids.slice(i, i + 10);
+            const q = query(crewProfilesRef, where('uid', 'in', chunk));
+            const snap = await getDocs(q);
+            snap.docs.forEach(d => {
+              const p: any = d.data();
+              profiles.push({
+                id: d.id,
+                name: p.name || p.displayName || `Crew Member ${d.id.slice(-4)}`,
+                email: p.email || '',
+                avatar: p.profileImageUrl || p.avatarUrl || '',
+                role: p.jobTitles?.[0]?.title || 'Crew Member'
+              });
+            });
+          }
+        } catch (err) {
+          console.error('Failed to hydrate collaborator profiles:', err);
+        }
+
+        // Include any uids we couldn't find a profile for, with a stable identifier
+        // (last 4 chars of uid) instead of "Unknown".
+        const foundIds = new Set(profiles.map(p => p.id));
+        uids.forEach(uid => {
+          if (!foundIds.has(uid)) {
+            profiles.push({
+              id: uid,
+              name: `Crew Member ${uid.slice(-4)}`,
+              email: '',
+              avatar: '',
+              role: 'Crew Member'
+            });
+          }
+        });
+
+        if (myToken !== requestToken) return;
+        setCollaborators(profiles);
       },
       (error) => {
         console.error('Error listening to collaborators:', error);
@@ -1352,30 +1421,28 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       const screenplayData = screenplayDoc.data();
       debugLog('Current screenplay data:', screenplayData);
       
-      const newCollaborator = {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        avatar: user.avatar || '',
-        role: user.role || 'collaborator',
-        addedAt: new Date(),
-        addedBy: currentUser?.uid
-      };
-
-      debugLog('New collaborator object:', newCollaborator);
+      // teamMembers stores uid strings (aligns with the Firestore rule
+      // `teamMembers.hasAny([request.auth.uid])` and with how workspace member sync
+      // writes the array). Display metadata is hydrated at read time from crewProfiles.
+      debugLog('Adding collaborator uid:', user.id);
 
       // Update the database
       await updateDoc(screenplayRef, {
-        teamMembers: arrayUnion(newCollaborator)
+        teamMembers: arrayUnion(user.id)
       });
 
       debugLog('Database updated successfully');
 
-      // Update local state immediately
+      // Optimistic local update — listener will refresh shortly with hydrated profile data.
       setCollaborators(prev => {
-        const updated = [...prev, newCollaborator];
-        debugLog('Updated collaborators list:', updated);
-        return updated;
+        if (prev.some(c => c.id === user.id)) return prev;
+        return [...prev, {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          avatar: user.avatar || '',
+          role: user.role || 'Crew Member'
+        }];
       });
 
       // Show success message
