@@ -870,18 +870,48 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await collaborationsBatch.commit();
       console.log('[AuthContext] Deleted', collaborationsSnapshot.size, 'collaborations');
       
-      // 29. Delete workspaces created by this user
-      const workspacesQuery = query(
-        collection(db, 'workspaces'),
-        where('createdBy', '==', userId)
-      );
-      const workspacesSnapshot = await getDocs(workspacesQuery);
-      const workspacesBatch = writeBatch(db);
-      workspacesSnapshot.docs.forEach(doc => {
-        workspacesBatch.delete(doc.ref);
-      });
-      await workspacesBatch.commit();
-      console.log('[AuthContext] Deleted', workspacesSnapshot.size, 'workspaces');
+      // 29. Clean up the user's workspaces.
+      // Workspaces are no longer collection-listable (firestore.rules: `list: if false`),
+      // so the old `collection(db,'workspaces') where createdBy==userId` query both used the
+      // wrong field (workspaces key on `ownerId`, not `createdBy`) AND now throws
+      // permission-denied — which would abort the rest of account deletion. Discover the
+      // user's workspaces via the listable `workspaceMemberships` collection instead, and for
+      // the ones they OWN, soft-delete the workspace + remove the membership doc (both
+      // permitted for the owner; immediate hard-delete is gated by the 30-day recovery
+      // window). Wrapped so any permission hiccup is logged, never fatal.
+      // NOTE: memberships the user holds in OTHER people's workspaces can't be removed
+      // client-side (owner-only delete) — a full cascade needs an admin Cloud Function
+      // (see PROJECT_OVERVIEW.md follow-up).
+      try {
+        const membershipsSnapshot = await getDocs(query(
+          collection(db, 'workspaceMemberships'),
+          where('userId', '==', userId)
+        ));
+        const ownedMemberships = membershipsSnapshot.docs.filter(membershipDoc => {
+          const data = membershipDoc.data();
+          return data.ownerId === userId || data.role === 'owner';
+        });
+        if (ownedMemberships.length > 0) {
+          const workspacesBatch = writeBatch(db);
+          const recoverableUntil = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+          ownedMemberships.forEach(membershipDoc => {
+            const workspaceId = membershipDoc.data().workspaceId;
+            if (typeof workspaceId === 'string' && workspaceId) {
+              workspacesBatch.update(doc(db, 'workspaces', workspaceId), {
+                status: 'deleted',
+                deletedAt: serverTimestamp(),
+                deleteRecoverableUntil: recoverableUntil,
+                updatedAt: serverTimestamp()
+              });
+            }
+            workspacesBatch.delete(membershipDoc.ref);
+          });
+          await workspacesBatch.commit();
+        }
+        console.log('[AuthContext] Soft-deleted', ownedMemberships.length, 'owned workspaces during account deletion');
+      } catch (workspaceCleanupError) {
+        console.warn('[AuthContext] Workspace cleanup during account deletion failed (non-fatal):', workspaceCleanupError);
+      }
       
       // 30. Delete tasks created by or assigned to this user
       const tasksQuery = query(

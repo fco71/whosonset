@@ -754,9 +754,23 @@ Each step ends with a runnable acceptance check. An agent picking up step N shou
 
 ---
 
-## Where we are right now (pick-up pointer, 2026-05-27 late-night — Workstream B first cut shipped)
+## Where we are right now (pick-up pointer, 2026-05-28 — post-hardening review fixes)
 
-**Last meaningful step**: Workstream B (in-browser Fountain editor) first cut — B1 schema, B2 creation flow, B3 editor, B4 parser/page-count (committed separately as 631a0e2b), B5 read-only viewer + ScreenplayViewer branching. Typecheck clean, 32 Vitest tests green.
+**Last meaningful step (2026-05-28, agent)**: reviewed Francisco's security/stability pass (commits b4f7c13c…bc1215bb) and fixed the two risks it surfaced. Typecheck clean, 39 Vitest tests green.
+
+Francisco's pass (reviewed, all solid): field-scoped screenplay update rules (content vs access), annotation moderation model (identity locked, supervisor notes protected), workspaces `list: if false` with a `workspaceMemberships` discovery collection, security-rules regression tests, responsive PDF viewer (ResizeObserver), FountainEditor `hasLocalEdit` race fix, removed the drop-upload (per his request), purged accidentally-tracked `.specstory/` history.
+
+### Review fixes (2026-05-28)
+
+- **Risk #1 — account-deletion crash (FIXED).** [AuthContext.tsx](src/contexts/AuthContext.tsx) step 29 was `getDocs(collection(db,'workspaces') where createdBy==userId)` — denied under `list: if false` (would abort the deletion sequence) and using the wrong field (`createdBy` vs `ownerId`). Rewritten to discover the user's workspaces via the listable `workspaceMemberships` collection, soft-delete the ones they OWN (+ remove those membership docs), wrapped in try/catch so it's never fatal. **Limitation (logged below)**: memberships the user holds in OTHER people's workspaces can't be removed client-side (owner-only delete) — full cascade needs an admin Cloud Function.
+- **Risk #2 — workspaceMemberships backfill (SCRIPT PROVIDED, needs a run).** New [scripts/backfill-workspace-memberships.cjs](scripts/backfill-workspace-memberships.cjs): Admin-SDK audit (dry-run default) that finds workspaces whose `memberIds`/`members[]` lack membership docs, and `--apply` to create them (shape matches the client writer). **Action for Francisco**: `gcloud auth application-default login` then `node scripts/backfill-workspace-memberships.cjs` (read-only) — if it reports gaps, re-run with `--apply`. Workspaces created before the discovery migration are the ones at risk.
+
+### New follow-ups identified this review
+
+- **Admin Cloud Function for account-deletion cascade**: the client can't delete a departing user's memberships in *other* people's workspaces, nor purge owned workspaces immediately (30-day recovery rule). An `onUserDeleted`/callable admin function should: remove the user from every workspace's `members[]`/`memberIds[]`, delete their membership docs everywhere, and hard-delete owned workspaces. This is the proper home for the full cascade.
+
+### Workstream B — in-browser Fountain editor (first cut shipped)
+
 
 ### Workstream B — in-browser Fountain editor (first cut shipped)
 
