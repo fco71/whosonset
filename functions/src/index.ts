@@ -11,6 +11,8 @@ import { EmailService } from "./emailService";
 // Admin cascade for a departing user's collaboration footprint (callable from the client
 // during account deletion). Defined in its own module; re-exported so Firebase deploys it.
 export { cleanupUserWorkspaces } from "./cleanupUserWorkspaces";
+export { respondToWorkspaceInvitation } from "./workspaceInvitations";
+export { setWorkspaceSupervisorMode } from "./workspaceSupervisors";
 
 // Helper function to get user data from crewProfiles first, then users
 async function getUserData(userId: string) {

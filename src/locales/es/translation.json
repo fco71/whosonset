@@ -756,6 +756,10 @@
       "addedToWorkspace": {
         "title": "{{inviter}} te agregó a {{workspace}}",
         "body": "Ahora eres {{role}} en {{workspace}}."
+      },
+      "invitedToWorkspace": {
+        "title": "{{inviter}} te invitó a {{workspace}}",
+        "body": "Acepta para unirte a {{workspace}} como {{role}}."
       }
     },
     "activity": {

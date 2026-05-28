@@ -465,16 +465,17 @@ const EditCrewProfile: React.FC = () => {
   // Validate education entry - simplified for our needs
   const validateEducation = (edu: EducationEntry): { isValid: boolean; errors: Record<string, string> } => {
     const errors: Record<string, string> = {};
+    const currentYear = new Date().getFullYear();
     
     // No required fields - all are optional
     
     // Simple year validation if dates are provided
     if (edu.startDate && !/^\d{4}$/.test(edu.startDate)) {
-      errors.startDate = 'Please enter a valid year (e.g., 2020)';
+      errors.startDate = `Please enter a valid year (e.g., ${currentYear - 6})`;
     }
     
     if (!edu.isCurrent && edu.endDate && !/^\d{4}$/.test(edu.endDate)) {
-      errors.endDate = 'Please enter a valid year (e.g., 2024)';
+      errors.endDate = `Please enter a valid year (e.g., ${currentYear})`;
     }
     
     // Validate end date is after start date if both are provided

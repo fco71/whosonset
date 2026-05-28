@@ -13,8 +13,9 @@ import './CollaborationHub.scss';
 import UserAutocomplete, { UserAutocompleteOption } from './UserAutocomplete';
 import { toast } from 'react-hot-toast';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { collection, addDoc, query, where, orderBy, limit, getDocs, getDoc, onSnapshot, updateDoc, doc, deleteDoc, serverTimestamp, Timestamp, arrayUnion, arrayRemove, QuerySnapshot, Unsubscribe, writeBatch } from 'firebase/firestore';
-import { db, storage } from '../../firebase';
+import { collection, addDoc, query, where, orderBy, limit, getDocs, getDoc, onSnapshot, updateDoc, doc, deleteDoc, serverTimestamp, Timestamp, QuerySnapshot, Unsubscribe, writeBatch } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { app, db, storage } from '../../firebase';
 import ScreenplayViewer from './ScreenplayViewer';
 import FountainEditor from './FountainEditor';
 import { logWorkspaceActivity } from '../../services/workspaceActivityService';
@@ -374,6 +375,76 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     await batch.commit();
   };
 
+  const createWorkspaceInvitations = async (
+    workspace: CollaborationWorkspace,
+    users: UserAutocompleteOption[],
+    getRole: (user: UserAutocompleteOption) => Extract<WorkspaceRole, 'member' | 'supervisor' | 'viewer'>
+  ) => {
+    if (!currentUser || users.length === 0) return 0;
+
+    const existingMemberIds = new Set(getWorkspaceMemberIds(workspace));
+    const invitees = users.filter(user => user.id && !existingMemberIds.has(user.id));
+    if (invitees.length === 0) return 0;
+
+    const inviterName = currentUser.displayName || t('collaboration.notifications.someone');
+
+    const sentInvites = await Promise.all(invitees.map(async user => {
+      const existingPendingInvite = await getDocs(query(
+        collection(db, 'workspaceInvitations'),
+        where('workspaceId', '==', workspace.id),
+        where('inviteeId', '==', user.id),
+        where('status', '==', 'pending'),
+        limit(1)
+      ));
+      if (!existingPendingInvite.empty) return false;
+
+      const role = getRole(user);
+      const batch = writeBatch(db);
+      const invitationRef = doc(collection(db, 'workspaceInvitations'));
+      const notificationRef = doc(collection(db, 'notifications'));
+
+      batch.set(invitationRef, {
+        workspaceId: workspace.id,
+        workspaceName: workspace.name,
+        inviterId: currentUser.uid,
+        inviterName,
+        inviteeId: user.id,
+        inviteeName: user.name || user.email || 'Collaborator',
+        inviteeEmail: user.email || '',
+        role,
+        status: 'pending',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+
+      batch.set(notificationRef, {
+        userId: user.id,
+        type: 'workspace_invitation',
+        title: t('collaboration.notifications.invitedToWorkspace.title', { inviter: inviterName, workspace: workspace.name }),
+        body: t('collaboration.notifications.invitedToWorkspace.body', { role: t(`collaboration.roles.${role}`), workspace: workspace.name }),
+        message: t('collaboration.notifications.invitedToWorkspace.body', { role: t(`collaboration.roles.${role}`), workspace: workspace.name }),
+        isRead: false,
+        read: false,
+        createdAt: serverTimestamp(),
+        timestamp: serverTimestamp(),
+        senderId: currentUser.uid,
+        senderName: inviterName,
+        relatedId: workspace.id,
+        link: '/collaboration',
+        metadata: {
+          invitationId: invitationRef.id,
+          workspaceId: workspace.id,
+          role
+        }
+      });
+
+      await batch.commit();
+      return true;
+    }));
+
+    return sentInvites.filter(Boolean).length;
+  };
+
   const updateWorkspaceState = (workspace: CollaborationWorkspace) => {
     setWorkspaces(prev => prev.map(item => item.id === workspace.id ? workspace : item));
     setSelectedWorkspace(prev => prev?.id === workspace.id ? workspace : prev);
@@ -403,10 +474,19 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     const enabling = !isSelfElectedSupervisor(workspace);
     setToggleSupervisorPending(true);
     try {
-      await updateDoc(doc(db, 'workspaces', workspace.id), {
-        selfElectedSupervisors: enabling ? arrayUnion(currentUser.uid) : arrayRemove(currentUser.uid),
-        updatedAt: serverTimestamp()
+      const functions = getFunctions(app, 'us-central1');
+      const setSupervisorMode = httpsCallable(functions, 'setWorkspaceSupervisorMode');
+      await setSupervisorMode({ workspaceId: workspace.id, enabled: enabling });
+
+      const updatedSelfElected = enabling
+        ? Array.from(new Set([...(workspace.selfElectedSupervisors || []), currentUser.uid]))
+        : (workspace.selfElectedSupervisors || []).filter(uid => uid !== currentUser.uid);
+      updateWorkspaceState({
+        ...workspace,
+        selfElectedSupervisors: updatedSelfElected,
+        updatedAt: new Date()
       });
+
       toast.success(enabling
         ? t('collaboration.supervisor.enabled')
         : t('collaboration.supervisor.disabled'));
@@ -784,41 +864,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     }
   };
 
-  const buildWorkspaceMember = (
-    user: Pick<UserSearchResult, 'id' | 'email'>,
-    role: Extract<WorkspaceRole, 'member' | 'supervisor' | 'viewer'>
-  ): WorkspaceMember => ({
-      userId: user.id,
-      // Coerce to '' — a crew profile may have no email, and an `undefined` field in the
-      // members[] array write throws "Unsupported field value: undefined", which silently
-      // failed the whole invite (member never added).
-      email: user.email || '',
-      role,
-      joinedAt: new Date(),
-      permissions: getPermissionsForRole(role),
-      isOnline: false,
-      lastSeen: new Date()
-  });
-
-  const syncWorkspaceScreenplayAccess = async (workspaceId: string, memberIds: string[]) => {
-    const screenplaysQuery = query(
-      collection(db, 'screenplays'),
-      where('workspaceId', '==', workspaceId)
-    );
-    const snapshot = await getDocs(screenplaysQuery);
-
-    await Promise.all(snapshot.docs.map(screenplayDoc => {
-      const data = screenplayDoc.data();
-      const currentTeamMembers = Array.isArray(data.teamMembers) ? data.teamMembers : [];
-      const mergedTeamMembers = Array.from(new Set([...currentTeamMembers, ...memberIds]));
-      return updateDoc(doc(db, 'screenplays', screenplayDoc.id), {
-        teamMembers: mergedTeamMembers,
-        lastModified: serverTimestamp()
-      });
-    }));
-  };
-
-  const addUsersToWorkspace = async (
+  const inviteUsersToWorkspace = async (
     users: UserAutocompleteOption[],
     role: Extract<WorkspaceRole, 'member' | 'supervisor' | 'viewer'>,
     workspace: CollaborationWorkspace | null = selectedWorkspace
@@ -833,94 +879,33 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     setIsAddingMembers(true);
 
     try {
-      const existingIds = new Set(getWorkspaceMemberIds(workspace));
-      const newMembers = users
-        .filter(user => !existingIds.has(user.id))
-        .map(user => buildWorkspaceMember(user, role));
+      const invitedCount = await createWorkspaceInvitations(workspace, users, () => role);
 
-      if (newMembers.length === 0) {
-        toast.error('Those users are already in this workspace.');
+      if (invitedCount === 0) {
+        toast.error('Those users are already in this workspace or could not be invited.');
         return;
       }
 
-      const updatedMembers = [...(workspace.members || []), ...newMembers];
-      const memberIds = Array.from(new Set(updatedMembers.map(member => member.userId).filter(Boolean)));
-      const supervisorIds = getWorkspaceSupervisorIds(updatedMembers);
-      const viewerIds = getWorkspaceViewerIds(updatedMembers);
-
-      await updateDoc(doc(db, 'workspaces', workspace.id), {
-        members: updatedMembers,
-        memberIds,
-        supervisorIds,
-        viewerIds,
-        updatedAt: serverTimestamp()
-      });
-
-      await writeWorkspaceMemberships({
-        ...workspace,
-        members: updatedMembers,
-        memberIds,
-        supervisorIds,
-        viewerIds
-      }, newMembers);
-
-      await syncWorkspaceScreenplayAccess(workspace.id, memberIds);
-
       if (currentUser) {
-        const addedNames = newMembers.map(m => m.email || 'a collaborator').join(', ');
+        const invitedNames = users.map(user => user.name || user.email || 'a collaborator').join(', ');
         logWorkspaceActivity({
           workspaceId: workspace.id,
           actorUid: currentUser.uid,
           actorName: currentUser.displayName,
           verb: 'member_added',
-          detail: addedNames
+          detail: invitedNames
         });
-
-        // Notify each newly-added member that they're now in the workspace. Best-effort:
-        // a notification failure must never undo the add. (The notifications create rule
-        // permits any signed-in user to write a doc with a string userId.) Full
-        // invite/accept consent flow is a planned follow-up; for now membership is direct
-        // and this is the heads-up.
-        const inviterName = currentUser.displayName || t('collaboration.notifications.someone');
-        await Promise.all(newMembers.map(member =>
-          addDoc(collection(db, 'notifications'), {
-            userId: member.userId,
-            type: 'workspace_invite',
-            title: t('collaboration.notifications.addedToWorkspace.title', { inviter: inviterName, workspace: workspace.name }),
-            body: t('collaboration.notifications.addedToWorkspace.body', { role: t(`collaboration.roles.${member.role}`), workspace: workspace.name }),
-            message: t('collaboration.notifications.addedToWorkspace.body', { role: t(`collaboration.roles.${member.role}`), workspace: workspace.name }),
-            isRead: false,
-            read: false,
-            createdAt: serverTimestamp(),
-            timestamp: serverTimestamp(),
-            senderId: currentUser.uid,
-            senderName: inviterName,
-            relatedId: workspace.id,
-            link: '/collaboration'
-          }).catch(err => console.warn('Failed to notify added member (non-fatal):', err))
-        ));
       }
-
-      const updatedWorkspace: CollaborationWorkspace = {
-        ...workspace,
-        members: updatedMembers,
-        memberIds,
-        supervisorIds,
-        viewerIds,
-        updatedAt: new Date()
-      };
-
-      updateWorkspaceState(updatedWorkspace);
 
       setShowAddMemberModal(false);
       setPendingMembersToAdd([]);
       setPendingMemberRole('member');
       setUserSearchQuery('');
       setUserSearchResults([]);
-      toast.success(`Added ${newMembers.length} member${newMembers.length === 1 ? '' : 's'} to ${workspace.name}.`);
+      toast.success(`Sent ${invitedCount} invitation${invitedCount === 1 ? '' : 's'} for ${workspace.name}.`);
     } catch (error) {
-      console.error('Error adding users to workspace:', error);
-      toast.error('Failed to add members. Please try again.');
+      console.error('Error inviting users to workspace:', error);
+      toast.error('Failed to send invitations. Please try again.');
     } finally {
       setIsAddingMembers(false);
     }
@@ -959,11 +944,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
           permissions: getPermissionsForRole('owner'),
           isOnline: true,
           lastSeen: new Date()
-        },
-        ...newWorkspaceData.selectedMembers.map(user => buildWorkspaceMember(
-          user,
-          newWorkspaceData.selectedMemberRoles[user.id] || 'member'
-        ))
+        }
       ];
       const memberIds = Array.from(new Set(members.map(member => member.userId).filter(Boolean)));
       const supervisorIds = getWorkspaceSupervisorIds(members);
@@ -996,6 +977,11 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         updatedAt: new Date()
       };
       await writeWorkspaceMemberships(newWorkspace, members);
+      const invitedCount = await createWorkspaceInvitations(
+        newWorkspace,
+        newWorkspaceData.selectedMembers,
+        user => newWorkspaceData.selectedMemberRoles[user.id] || 'member'
+      );
 
       setWorkspaces(prev => [...prev, newWorkspace]);
       setSelectedWorkspace(newWorkspace);
@@ -1019,7 +1005,9 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       });
       setWorkspaceCreationStep('details');
       setShowCreateWorkspaceModal(false);
-      toast.success(`Workspace "${newWorkspaceData.name.trim()}" created successfully!`);
+      toast.success(invitedCount > 0
+        ? `Workspace "${newWorkspaceData.name.trim()}" created and ${invitedCount} invitation${invitedCount === 1 ? '' : 's'} sent.`
+        : `Workspace "${newWorkspaceData.name.trim()}" created successfully!`);
     } catch (error) {
       console.error('Error in handleCreateWorkspace:', error);
       toast.error('Failed to create workspace. Please try again.');
@@ -2135,9 +2123,9 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 	              <button
 	                className="btn-primary"
 	                disabled={isAddingMembers || pendingMembersToAdd.length === 0 || !selectedWorkspace}
-	                onClick={() => addUsersToWorkspace(pendingMembersToAdd, pendingMemberRole)}
+	                onClick={() => inviteUsersToWorkspace(pendingMembersToAdd, pendingMemberRole)}
 	              >
-	                {isAddingMembers ? 'Adding...' : 'Add members'}
+	                {isAddingMembers ? 'Sending...' : 'Send invitations'}
 	              </button>
 	            </div>
 	          </div>

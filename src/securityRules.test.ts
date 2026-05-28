@@ -44,6 +44,16 @@ describe('security rules guardrails', () => {
     expect(activityRules).toMatch(/allow\s+delete:\s+if\s+signedIn\(\)\s+&&\s+isWorkspaceOwner/);
   });
 
+  it('keeps workspace invitation responses on the callable/Admin SDK path', () => {
+    const rules = readRepoFile('firestore.rules');
+    const invitationRules = rules.match(/match\s+\/workspaceInvitations\/\{invitationId\}\s+\{[\s\S]*?\n\s+\}/)?.[0] || '';
+
+    expect(invitationRules).toMatch(/request\.resource\.data\.inviterId\s+==\s+request\.auth\.uid/);
+    expect(invitationRules).toMatch(/isWorkspaceOwner\(request\.resource\.data\.workspaceId,\s+request\.auth\.uid\)/);
+    expect(invitationRules).toMatch(/request\.resource\.data\.status\s+==\s+'pending'/);
+    expect(invitationRules).toMatch(/allow\s+update:\s+if\s+false;/);
+  });
+
   it('keeps screenplay updates field-scoped', () => {
     const rules = readRepoFile('firestore.rules');
 

@@ -8,12 +8,16 @@ import {
   X,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { doc, updateDoc } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotifications } from '../hooks/useNotifications';
 import { AppNotification } from '../types/notifications';
 import { getNotificationDateValue } from '../utilities/notificationHelpers';
+import { app, db } from '../firebase';
 
 interface NotificationCenterProps {
   isOpen: boolean;
@@ -69,7 +73,14 @@ function resolveFallbackRoute(notification: AppNotification): string {
   // Supervisor-authored screenplay comments / tags (G6). The viewer itself isn't a
   // routable URL yet, so we land the user on the collaboration hub where they can
   // open the relevant screenplay.
-  if (type === 'supervisor_annotation' || type === 'supervisor_tag' || type === 'workspace_invite') {
+  if (
+    type === 'supervisor_annotation' ||
+    type === 'supervisor_tag' ||
+    type === 'workspace_invite' ||
+    type === 'workspace_invitation' ||
+    type === 'workspace_invitation_accepted' ||
+    type === 'workspace_invitation_declined'
+  ) {
     return '/collaboration';
   }
 
@@ -82,6 +93,9 @@ function getNotificationIcon(type: string): string {
     case 'supervisor_tag':
       return '🎓';
     case 'workspace_invite':
+    case 'workspace_invitation':
+    case 'workspace_invitation_accepted':
+    case 'workspace_invitation_declined':
       return '🤝';
     case 'job_application':
       return '💼';
@@ -130,6 +144,12 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
 
   const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [respondingInvitationId, setRespondingInvitationId] = useState<string | null>(null);
+
+  const getMetadataString = (notification: AppNotification, key: string): string => {
+    const value = notification.metadata?.[key];
+    return typeof value === 'string' ? value : '';
+  };
 
   const filteredNotifications = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
@@ -182,6 +202,40 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
 
     navigate(notification.link || resolveFallbackRoute(notification));
     onClose();
+  };
+
+  const handleWorkspaceInvitationResponse = async (
+    event: React.MouseEvent<HTMLButtonElement>,
+    notification: AppNotification,
+    response: 'accept' | 'decline'
+  ) => {
+    event.stopPropagation();
+    if (!currentUser) return;
+
+    const invitationId = getMetadataString(notification, 'invitationId');
+    if (!invitationId) {
+      toast.error('Invitation details are missing.');
+      return;
+    }
+
+    setRespondingInvitationId(invitationId);
+    try {
+      const functions = getFunctions(app, 'us-central1');
+      const respondToWorkspaceInvitation = httpsCallable(functions, 'respondToWorkspaceInvitation');
+      await respondToWorkspaceInvitation({ invitationId, response });
+      await updateDoc(doc(db, 'notifications', notification.id), {
+        status: response === 'accept' ? 'accepted' : 'declined',
+        isRead: true,
+        read: true,
+      });
+      await markAsRead(notification.id);
+      toast.success(response === 'accept' ? 'Workspace invitation accepted.' : 'Workspace invitation declined.');
+    } catch (error) {
+      console.error('[NotificationCenter] Failed to respond to workspace invitation:', error);
+      toast.error('Could not update the workspace invitation.');
+    } finally {
+      setRespondingInvitationId(null);
+    }
   };
 
   return (
@@ -259,6 +313,12 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
                 const timestamp =
                   getNotificationDateValue(notification.createdAt) ||
                   getNotificationDateValue(notification.timestamp);
+                const invitationId = getMetadataString(notification, 'invitationId');
+                const isPendingWorkspaceInvitation =
+                  notification.type === 'workspace_invitation' &&
+                  invitationId &&
+                  notification.status !== 'accepted' &&
+                  notification.status !== 'declined';
 
                 return (
                   <div
@@ -339,6 +399,27 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
                             {timestamp ? formatDistanceToNow(timestamp, { addSuffix: true }) : 'Unknown time'}
                           </span>
                         </div>
+
+                        {isPendingWorkspaceInvitation && (
+                          <div className="mt-3 flex gap-2">
+                            <button
+                              type="button"
+                              disabled={respondingInvitationId === invitationId}
+                              onClick={(event) => void handleWorkspaceInvitationResponse(event, notification, 'accept')}
+                              className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              Accept
+                            </button>
+                            <button
+                              type="button"
+                              disabled={respondingInvitationId === invitationId}
+                              onClick={(event) => void handleWorkspaceInvitationResponse(event, notification, 'decline')}
+                              className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              Decline
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

@@ -471,6 +471,28 @@ service cloud.firestore {
       allow create: if signedIn() && request.resource.data.userId is string;
     }
 
+    match /workspaceInvitations/{invitationId} {
+      allow read: if signedIn() && (
+        resource.data.inviteeId == request.auth.uid ||
+        resource.data.inviterId == request.auth.uid ||
+        isWorkspaceOwner(resource.data.workspaceId, request.auth.uid)
+      );
+      allow create: if signedIn() &&
+        request.resource.data.inviterId == request.auth.uid &&
+        request.resource.data.workspaceId is string &&
+        isWorkspaceOwner(request.resource.data.workspaceId, request.auth.uid) &&
+        request.resource.data.inviteeId is string &&
+        request.resource.data.role in ['member', 'supervisor', 'viewer'] &&
+        request.resource.data.status == 'pending';
+      // Invitation acceptance/decline changes membership and screenplay access, so it must
+      // go through the Admin SDK callable `respondToWorkspaceInvitation`.
+      allow update: if false;
+      allow delete: if signedIn() && (
+        resource.data.inviterId == request.auth.uid ||
+        isWorkspaceOwner(resource.data.workspaceId, request.auth.uid)
+      );
+    }
+
     match /followRequests/{requestId} {
       allow read, update, delete: if signedIn() && (
         resource.data.fromUserId == request.auth.uid ||

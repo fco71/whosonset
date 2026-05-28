@@ -132,7 +132,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           averageRate: 350,
           highestRate: 500,
           earningsByMonth: Array.from({ length: 12 }, (_, i) => ({
-            month: new Date(2024, i, 1).toLocaleDateString('en-US', { month: 'short' }),
+            month: new Date(new Date().getFullYear(), i, 1).toLocaleDateString('en-US', { month: 'short' }),
             earnings: Math.floor(Math.random() * 5000) + 2000,
             projects: Math.floor(Math.random() * 5) + 1
           }))
@@ -391,4 +391,4 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   );
 };
 
-export default AnalyticsDashboard; 
+export default AnalyticsDashboard;

@@ -10,6 +10,20 @@ interface SocialAnalyticsProps {
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
+const toIsoDate = (date: Date): string => date.toISOString().slice(0, 10);
+
+const buildRecentDailySeries = <TKey extends string>(
+  key: TKey,
+  values: number[]
+): Array<{ date: string } & Record<TKey, number>> => values.map((value, index) => {
+  const date = new Date();
+  date.setDate(date.getDate() - (values.length - 1 - index));
+  return {
+    date: toIsoDate(date),
+    [key]: value
+  } as { date: string } & Record<TKey, number>;
+});
+
 export const SocialAnalytics: React.FC<SocialAnalyticsProps> = ({ userId }) => {
   const [analytics, setAnalytics] = useState<SocialAnalyticsType | null>(null);
   const [loading, setLoading] = useState(true);
@@ -29,26 +43,10 @@ export const SocialAnalytics: React.FC<SocialAnalyticsProps> = ({ userId }) => {
         const mockAnalytics: SocialAnalyticsType = {
           userId,
           profileViews: 1247,
-          profileViewsHistory: [
-            { date: '2024-01-01', views: 45 },
-            { date: '2024-01-02', views: 52 },
-            { date: '2024-01-03', views: 38 },
-            { date: '2024-01-04', views: 67 },
-            { date: '2024-01-05', views: 89 },
-            { date: '2024-01-06', views: 76 },
-            { date: '2024-01-07', views: 94 }
-          ],
+          profileViewsHistory: buildRecentDailySeries('views', [45, 52, 38, 67, 89, 76, 94]),
           engagementRate: 0.087,
           topPosts: ['post1', 'post2', 'post3'],
-          followerGrowth: [
-            { date: '2024-01-01', followers: 156 },
-            { date: '2024-01-02', followers: 162 },
-            { date: '2024-01-03', followers: 168 },
-            { date: '2024-01-04', followers: 175 },
-            { date: '2024-01-05', followers: 183 },
-            { date: '2024-01-06', followers: 191 },
-            { date: '2024-01-07', followers: 198 }
-          ],
+          followerGrowth: buildRecentDailySeries('followers', [156, 162, 168, 175, 183, 191, 198]),
           activityScore: 85,
           influenceScore: 72,
           reachScore: 68,
@@ -327,4 +325,4 @@ export const SocialAnalytics: React.FC<SocialAnalyticsProps> = ({ userId }) => {
       </div>
     </div>
   );
-}; 
+};
