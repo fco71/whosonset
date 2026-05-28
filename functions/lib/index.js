@@ -36,7 +36,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.notifyNewMessage = exports.notifyFollowRequest = exports.emailSend = exports.testUserData = exports.testFollowRequestNotification = exports.jobsSitemap = exports.blogSitemap = exports.notifyJobApplicationMessageCreated = exports.notifyJobApplicationStatusChange = exports.notifyJobApplicationCreated = exports.onBlogCommentDeleted = exports.onBlogCommentCreated = exports.runBlogCurationNow = exports.blogFeedSources = exports.curateDailyBlogPosts = void 0;
+exports.notifyNewMessage = exports.notifyFollowRequest = exports.emailSend = exports.testUserData = exports.testFollowRequestNotification = exports.jobsSitemap = exports.blogSitemap = exports.notifyJobApplicationMessageCreated = exports.notifyJobApplicationStatusChange = exports.notifyJobApplicationCreated = exports.onBlogCommentDeleted = exports.onBlogCommentCreated = exports.runBlogCurationNow = exports.blogFeedSources = exports.curateDailyBlogPosts = exports.cleanupUserWorkspaces = void 0;
 const admin = __importStar(require("firebase-admin"));
 const https_1 = require("firebase-functions/v2/https");
 const firestore_1 = require("firebase-functions/v2/firestore");
@@ -45,6 +45,10 @@ const params_1 = require("firebase-functions/params");
 const rss_parser_1 = __importDefault(require("rss-parser"));
 const node_crypto_1 = require("node:crypto");
 const emailService_1 = require("./emailService");
+// Admin cascade for a departing user's collaboration footprint (callable from the client
+// during account deletion). Defined in its own module; re-exported so Firebase deploys it.
+var cleanupUserWorkspaces_1 = require("./cleanupUserWorkspaces");
+Object.defineProperty(exports, "cleanupUserWorkspaces", { enumerable: true, get: function () { return cleanupUserWorkspaces_1.cleanupUserWorkspaces; } });
 // Helper function to get user data from crewProfiles first, then users
 async function getUserData(userId) {
     var _a, _b, _c, _d, _e, _f;
