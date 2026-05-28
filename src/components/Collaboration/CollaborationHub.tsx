@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   CollaborationWorkspace,
@@ -200,6 +200,9 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const [selectedScreenplayId, setSelectedScreenplayId] = useState<string | null>(null);
 
   const [approvedContacts, setApprovedContacts] = useState<string[]>([]);
+  // Short-lived cache of all crew profiles for the member search (avoids re-fetching the
+  // whole collection on every keystroke). 30s TTL so newly-created classmates still appear.
+  const crewProfilesCacheRef = useRef<{ at: number; data: UserSearchResult[] } | null>(null);
   const [activityEvents, setActivityEvents] = useState<Array<{
     id: string;
     actorName?: string;
@@ -720,33 +723,18 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     setIsSearchingUsers(true);
     // Do NOT clear userSearchResults here; keep previous results while loading
     try {
-      let allResults: UserSearchResult[] = [];
-      if (approvedContacts.length > 0) {
-        // Fetch all approved contacts' crew profiles in chunks of 10
-        const crewProfilesRef = collection(db, 'crewProfiles');
-        const approvedChunks = [];
-        for (let i = 0; i < approvedContacts.length; i += 10) {
-          approvedChunks.push(approvedContacts.slice(i, i + 10));
-        }
-        for (const chunk of approvedChunks) {
-          const q = query(crewProfilesRef, where('uid', 'in', chunk));
-          const snap = await getDocs(q);
-          allResults = allResults.concat(
-            snap.docs.map(doc => ({
-              id: doc.id,
-              name: doc.data().name || doc.data().displayName || `Crew Member ${doc.id.slice(-4)}`,
-              email: doc.data().email || '',
-              avatar: doc.data().profileImageUrl || doc.data().avatarUrl || '',
-              role: doc.data().jobTitles?.[0]?.title || 'Crew Member',
-              company: doc.data().company || ''
-            }))
-          );
-        }
+      // Search ALL crew profiles, not just the user's approved contacts.
+      // The collaboration assignment requires students to add arbitrary classmates and the
+      // teacher — people they are NOT necessarily connected to. crewProfiles is public-read,
+      // so this is allowed. Approved contacts are ranked first as a convenience. Results are
+      // cached briefly (30s) so typing doesn't re-fetch the whole collection on every key.
+      const now = Date.now();
+      const cache = crewProfilesCacheRef.current;
+      let allResults: UserSearchResult[];
+      if (cache && now - cache.at < 30000) {
+        allResults = cache.data;
       } else {
-        // Fallback: search all crew profiles
-        const crewProfilesRef = collection(db, 'crewProfiles');
-        const snap = await getDocs(crewProfilesRef);
-        debugLog('[CollabModal] Fallback: found', snap.docs.length, 'crew profiles in Firestore');
+        const snap = await getDocs(collection(db, 'crewProfiles'));
         allResults = snap.docs.map(doc => ({
           id: doc.id,
           name: doc.data().name || doc.data().displayName || `Crew Member ${doc.id.slice(-4)}`,
@@ -755,17 +743,28 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
           role: doc.data().jobTitles?.[0]?.title || 'Crew Member',
           company: doc.data().company || ''
         }));
+        crewProfilesCacheRef.current = { at: now, data: allResults };
         if (allResults.length === 0) {
           console.warn('[CollabModal] No crew profiles found in Firestore crewProfiles collection.');
         }
       }
-      // Filter by search query
-      const filtered = allResults.filter(user =>
-        (user.name || '').toLowerCase().includes(queryStr.toLowerCase()) ||
-        (user.email || '').toLowerCase().includes(queryStr.toLowerCase()) ||
-        (user.role || '').toLowerCase().includes(queryStr.toLowerCase()) ||
-        (user.company || '').toLowerCase().includes(queryStr.toLowerCase())
-      );
+
+      const needle = queryStr.toLowerCase();
+      const filtered = allResults
+        .filter(user => user.id !== currentUser?.uid) // can't add yourself
+        .filter(user =>
+          (user.name || '').toLowerCase().includes(needle) ||
+          (user.email || '').toLowerCase().includes(needle) ||
+          (user.role || '').toLowerCase().includes(needle) ||
+          (user.company || '').toLowerCase().includes(needle)
+        )
+        .sort((a, b) => {
+          // Approved contacts first, then alphabetical.
+          const aContact = approvedContacts.includes(a.id) ? 0 : 1;
+          const bContact = approvedContacts.includes(b.id) ? 0 : 1;
+          if (aContact !== bContact) return aContact - bContact;
+          return (a.name || '').localeCompare(b.name || '');
+        });
       debugLog('[CollabModal] Filtered users after search:', filtered.length, filtered.map(u => u.name));
       setUserSearchResults(filtered);
     } catch (error) {

@@ -775,6 +775,14 @@ Per Francisco: cut the recovery window 30 → 7 days, and let owners permanently
 - "Delete permanently" button now always shown next to Restore on a deleted workspace (was gated behind window-expiry). `handlePermanentDeleteWorkspace` drops the expiry check, and also cleans up the workspace's `workspaceMemberships` docs (owner-permitted) before deleting the workspace doc. Card note shows "Auto-deletes after 7 days" / "Recovery period ended".
 - **Rule change** ([firestore.rules](firestore.rules)): workspaces `allow delete` no longer requires `request.time > deleteRecoverableUntil` — owner may hard-delete any `status == 'deleted'` workspace. **NEEDS DEPLOY**: `firebase deploy --only firestore:rules`. Until deployed, the button will hit permission-denied during the window (works after expiry).
 
+### CRITICAL fix — member search only showed existing connections (2026-05-28)
+
+Blocks the live assignment ("students add other students + the teacher"). `searchUsers` only searched ALL crew profiles when the student had ZERO approved contacts; if they had any connection, search was restricted to those contacts — so they couldn't find classmates/teacher they weren't already connected to.
+
+Fix ([CollaborationHub.tsx](src/components/Collaboration/CollaborationHub.tsx)): always search all crew profiles (public-read), exclude self, rank approved contacts first, 30s cache so typing doesn't refetch the whole collection. Typecheck clean.
+
+**This is client-side — students need it `git push`ed + hosting-deployed to use it.** Perf note: full-collection fetch (cached) is fine for now; a search index (Algolia/prefix query) is the eventual scale fix.
+
 ### Bug fix — invite-member-after-creation silently failed (2026-05-28)
 
 Francisco: inviting a member after creating a group wasn't activating. Cause: `buildWorkspaceMember` set `email: user.email`, which is `undefined` for any crew profile without an email. The client Firestore was initialized WITHOUT `ignoreUndefinedProperties`, so writing the `members[]` array with an `undefined` field throws `Unsupported field value: undefined` — the whole `addUsersToWorkspace` write failed and the member never got added. (Same latent risk in create-with-members.)
