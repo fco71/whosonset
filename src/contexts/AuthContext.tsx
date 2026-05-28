@@ -900,7 +900,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           });
           if (ownedMemberships.length > 0) {
             const workspacesBatch = writeBatch(db);
-            const recoverableUntil = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+            const recoverableUntil = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7-day recovery window
             ownedMemberships.forEach(membershipDoc => {
               const workspaceId = membershipDoc.data().workspaceId;
               if (typeof workspaceId === 'string' && workspaceId) {

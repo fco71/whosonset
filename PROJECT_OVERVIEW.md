@@ -758,6 +758,13 @@ Each step ends with a runnable acceptance check. An agent picking up step N shou
 
 **Last meaningful step (2026-05-28, agent)**: G5 workspace activity feed. Before that: account-deletion cascade Cloud Function + the two review fixes. Typecheck clean, 40 Vitest tests green, app+functions build clean.
 
+### Workspace deletion: 7-day window + delete-permanently during recovery (2026-05-28)
+
+Per Francisco: cut the recovery window 30 → 7 days, and let owners permanently delete a soft-deleted group *during* the window (not only after it expires).
+- `WORKSPACE_DELETE_RECOVERY_DAYS` 30 → 7 ([CollaborationHub.tsx](src/components/Collaboration/CollaborationHub.tsx)); account-deletion fallback soft-delete window in [AuthContext.tsx](src/contexts/AuthContext.tsx) also 30 → 7 for consistency.
+- "Delete permanently" button now always shown next to Restore on a deleted workspace (was gated behind window-expiry). `handlePermanentDeleteWorkspace` drops the expiry check, and also cleans up the workspace's `workspaceMemberships` docs (owner-permitted) before deleting the workspace doc. Card note shows "Auto-deletes after 7 days" / "Recovery period ended".
+- **Rule change** ([firestore.rules](firestore.rules)): workspaces `allow delete` no longer requires `request.time > deleteRecoverableUntil` — owner may hard-delete any `status == 'deleted'` workspace. **NEEDS DEPLOY**: `firebase deploy --only firestore:rules`. Until deployed, the button will hit permission-denied during the window (works after expiry).
+
 ### Bug fix — invite-member-after-creation silently failed (2026-05-28)
 
 Francisco: inviting a member after creating a group wasn't activating. Cause: `buildWorkspaceMember` set `email: user.email`, which is `undefined` for any crew profile without an email. The client Firestore was initialized WITHOUT `ignoreUndefinedProperties`, so writing the `members[]` array with an `undefined` field throws `Unsupported field value: undefined` — the whole `addUsersToWorkspace` write failed and the member never got added. (Same latent risk in create-with-members.)

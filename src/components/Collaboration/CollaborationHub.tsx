@@ -77,7 +77,7 @@ type WorkspaceCreationStep = 'details' | 'members' | 'settings';
 // Define TabType at the top of the file
 type TabType = 'workspaces' | 'tasks' | 'screenplays';
 
-const WORKSPACE_DELETE_RECOVERY_DAYS = 30;
+const WORKSPACE_DELETE_RECOVERY_DAYS = 7;
 // Labels + descriptions are resolved via i18n at render time (collaboration.roles.*)
 // so the invite dropdown matches the active language.
 const INVITABLE_WORKSPACE_ROLES: Array<{
@@ -1532,13 +1532,29 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     const workspace = getWorkspaceById(workspaceId);
     if (!workspace || !isWorkspaceCreator(workspace)) return;
 
-    if (!isDeleteRecoveryExpired(workspace)) {
-      toast.error(`This workspace can be restored for ${WORKSPACE_DELETE_RECOVERY_DAYS} days before permanent deletion.`);
+    // The owner can permanently delete a soft-deleted workspace at any point during the
+    // recovery window — no need to wait it out. (Firestore rule allows owner delete when
+    // status == 'deleted'.)
+    if (workspace.status !== 'deleted') {
+      toast.error('Move the workspace to the deleted state first.');
       return;
     }
 
     if (window.confirm('Permanently delete this workspace? This cannot be undone.')) {
       try {
+        // Clean up the workspace's membership docs first (owner-permitted), then the
+        // workspace doc — order matters because the membership delete rule reads the
+        // still-existing workspace to verify ownership.
+        const membershipSnap = await getDocs(query(
+          collection(db, 'workspaceMemberships'),
+          where('workspaceId', '==', workspaceId)
+        ));
+        if (!membershipSnap.empty) {
+          const membershipBatch = writeBatch(db);
+          membershipSnap.docs.forEach(membershipDoc => membershipBatch.delete(membershipDoc.ref));
+          await membershipBatch.commit();
+        }
+
         await deleteDoc(doc(db, 'workspaces', workspaceId));
         setWorkspaces(prev => prev.filter(item => item.id !== workspaceId));
         if (selectedWorkspace?.id === workspaceId) {
@@ -1763,21 +1779,20 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 	                  >
 	                    Restore
 	                  </button>
-	                  {isDeleteRecoveryExpired(workspace) ? (
-	                    <button
-	                      className="btn-danger"
-	                      onClick={(e) => {
-	                        e.stopPropagation();
-	                        handlePermanentDeleteWorkspace(workspace.id);
-	                      }}
-	                    >
-	                      Delete forever
-	                    </button>
-	                  ) : (
-	                    <span className="workspace-recovery-note">
-	                      Recoverable for {WORKSPACE_DELETE_RECOVERY_DAYS} days
-	                    </span>
-	                  )}
+	                  <button
+	                    className="btn-danger"
+	                    onClick={(e) => {
+	                      e.stopPropagation();
+	                      handlePermanentDeleteWorkspace(workspace.id);
+	                    }}
+	                  >
+	                    Delete permanently
+	                  </button>
+	                  <span className="workspace-recovery-note">
+	                    {isDeleteRecoveryExpired(workspace)
+	                      ? 'Recovery period ended'
+	                      : `Auto-deletes after ${WORKSPACE_DELETE_RECOVERY_DAYS} days`}
+	                  </span>
 	                </>
 	              )}
 	            </div>

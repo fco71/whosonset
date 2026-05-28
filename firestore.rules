@@ -659,11 +659,12 @@ service cloud.firestore {
         resource.data.ownerId == request.auth.uid ||
         isSelfSupervisorToggle(resource.data, request.resource.data, request.auth.uid)
       );
+      // The owner may permanently delete a soft-deleted workspace at any time during the
+      // recovery window (the "Delete permanently" action) — the window is a convenience for
+      // recovery, not a lock. Must be soft-deleted first (status == 'deleted').
       allow delete: if signedIn() &&
         resource.data.ownerId == request.auth.uid &&
-        resource.data.status == 'deleted' &&
-        resource.data.deleteRecoverableUntil is timestamp &&
-        request.time > resource.data.deleteRecoverableUntil;
+        resource.data.status == 'deleted';
     }
 
     match /collaborationSessions/{sessionId} {
