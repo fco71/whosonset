@@ -1071,6 +1071,12 @@
     "pageDivider": "Página {{page}}",
     "pageCountTooltip": "Número de página estimado (aproximado — sin saltos de página fijos)",
     "emptyDraft": "Este borrador está vacío.",
+    "downloadPdf": "Descargar PDF",
+    "pdfExporting": "Preparando PDF…",
+    "pdfError": "No se pudo generar el PDF.",
+    "togglePreview": "Mostrar/ocultar la vista previa con formato",
+    "showPreview": "Mostrar vista previa",
+    "hidePreview": "Ocultar vista previa",
     "placeholder": "INT. LUGAR - DÍA\n\nEscribe la acción aquí. Presiona Tab para cambiar el tipo de elemento, o usa los botones de arriba.\n\nPERSONAJE\nEl diálogo va aquí.",
     "elements": {
       "scene": "Escena",

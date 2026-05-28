@@ -1106,6 +1106,12 @@
     "pageDivider": "Page {{page}}",
     "pageCountTooltip": "Estimated page number (approximate — no fixed page breaks)",
     "emptyDraft": "This draft is empty.",
+    "downloadPdf": "Download PDF",
+    "pdfExporting": "Preparing PDF…",
+    "pdfError": "Couldn't generate the PDF.",
+    "togglePreview": "Toggle the formatted preview",
+    "showPreview": "Show preview",
+    "hidePreview": "Hide preview",
     "placeholder": "INT. LOCATION - DAY\n\nWrite action here. Press Tab to cycle element types, or use the buttons above.\n\nCHARACTER\nDialogue goes here.",
     "elements": {
       "scene": "Scene",

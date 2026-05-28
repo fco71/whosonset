@@ -13,6 +13,8 @@ import {
   nextElementType,
   prevElementType
 } from '../../utilities/fountain';
+import { exportElementToPdf } from '../../utilities/exportFountainPdf';
+import FountainPages from './FountainPages';
 
 interface FountainEditorProps {
   screenplay: { id: string; name: string; fountainSource?: string };
@@ -45,6 +47,9 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, onClose }) 
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [activeType, setActiveType] = useState<ScreenplayElementType>('action');
   const [currentPage, setCurrentPage] = useState(1);
+  const [showPreview, setShowPreview] = useState(true);
+  const [exporting, setExporting] = useState(false);
+  const printRef = useRef<HTMLDivElement>(null);
 
   const saveTimer = useRef<number | null>(null);
   const pendingCaret = useRef<number | null>(null);
@@ -152,6 +157,19 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, onClose }) 
     setCurrentPage(computePageAtCaret(result.source, result.caret));
   }, [scheduleSave]);
 
+  const handleDownloadPdf = async () => {
+    if (!printRef.current) return;
+    setExporting(true);
+    try {
+      await exportElementToPdf(printRef.current, screenplay.name);
+    } catch (err) {
+      console.error('PDF export failed:', err);
+      toast.error(t('fountain.pdfError'));
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     const el = textareaRef.current;
     if (!el) return;
@@ -164,10 +182,12 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, onClose }) 
       return;
     }
 
-    // Alt/Option + letter -> direct element type. Alt+letter is free inside a focused
-    // textarea once we preventDefault, so we "own" these while editing.
+    // Alt/Option + letter -> direct element type. NOTE: on macOS, Option+letter changes
+    // e.key to a composed glyph (Option+S => "ß"), so we must match on e.code ("KeyS"),
+    // which is layout/modifier independent. Alt+letter is free inside a focused textarea
+    // once we preventDefault, so we "own" these while editing.
     if (e.altKey && !e.ctrlKey && !e.metaKey) {
-      const match = TOOLBAR.find(item => item.key.toLowerCase() === e.key.toLowerCase());
+      const match = TOOLBAR.find(item => `Key${item.key.toUpperCase()}` === e.code);
       if (match) {
         e.preventDefault();
         applyType(match.type);
@@ -192,7 +212,18 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, onClose }) 
               {saveStatus === 'idle' && ''}
             </span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <button
+              type="button"
+              onClick={() => setShowPreview(p => !p)}
+              style={ghostBtnStyle}
+              title={t('fountain.togglePreview')}
+            >
+              {showPreview ? t('fountain.hidePreview') : t('fountain.showPreview')}
+            </button>
+            <button type="button" onClick={handleDownloadPdf} disabled={exporting} style={ghostBtnStyle}>
+              {exporting ? t('fountain.pdfExporting') : `⬇ ${t('fountain.downloadPdf')}`}
+            </button>
             <span style={pageBadgeStyle} title={t('fountain.pageCountTooltip')}>
               {t('fountain.pageOf', { current: currentPage, total: pageCount })}
             </span>
@@ -221,18 +252,30 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, onClose }) 
           })}
         </div>
 
-        {/* Editor body */}
-        <textarea
-          ref={textareaRef}
-          value={source}
-          onChange={handleChange}
-          onKeyDown={handleKeyDown}
-          onClick={refreshActiveType}
-          onKeyUp={refreshActiveType}
-          placeholder={t('fountain.placeholder')}
-          spellCheck
-          style={textareaStyle}
-        />
+        {/* Editor body: textarea + live formatted preview */}
+        <div style={bodyStyle}>
+          <textarea
+            ref={textareaRef}
+            value={source}
+            onChange={handleChange}
+            onKeyDown={handleKeyDown}
+            onClick={refreshActiveType}
+            onKeyUp={refreshActiveType}
+            placeholder={t('fountain.placeholder')}
+            spellCheck
+            style={textareaStyle}
+          />
+          {showPreview && (
+            <div style={previewPaneStyle}>
+              <FountainPages source={source} compact />
+            </div>
+          )}
+        </div>
+
+        {/* Offscreen print container targeted by html2pdf. */}
+        <div style={offscreenStyle} aria-hidden="true">
+          <FountainPages source={source} printMode innerRef={printRef} />
+        </div>
       </div>
     </div>
   );
@@ -252,12 +295,47 @@ const overlayStyle: React.CSSProperties = {
 const editorStyle: React.CSSProperties = {
   background: '#ffffff',
   borderRadius: 12,
-  width: 'min(860px, 100%)',
-  height: 'min(90vh, 100%)',
+  width: 'min(1200px, 100%)',
+  height: 'min(92vh, 100%)',
   display: 'flex',
   flexDirection: 'column',
   overflow: 'hidden',
   boxShadow: '0 24px 60px rgba(2, 6, 23, 0.45)'
+};
+
+const bodyStyle: React.CSSProperties = {
+  flex: 1,
+  display: 'flex',
+  minHeight: 0
+};
+
+const previewPaneStyle: React.CSSProperties = {
+  flex: 1,
+  minWidth: 0,
+  overflowY: 'auto',
+  borderLeft: '1px solid #e2e8f0',
+  background: '#e5e7eb'
+};
+
+const offscreenStyle: React.CSSProperties = {
+  position: 'absolute',
+  left: -10000,
+  top: 0,
+  width: 816,
+  pointerEvents: 'none',
+  opacity: 0
+};
+
+const ghostBtnStyle: React.CSSProperties = {
+  background: '#ffffff',
+  border: '1px solid #cbd5e1',
+  borderRadius: 6,
+  padding: '5px 10px',
+  fontSize: '0.82em',
+  fontWeight: 600,
+  color: '#1e293b',
+  cursor: 'pointer',
+  whiteSpace: 'nowrap'
 };
 
 const headerStyle: React.CSSProperties = {
@@ -320,11 +398,11 @@ const saveBadgeStyle = (status: SaveStatus): React.CSSProperties => ({
 
 const textareaStyle: React.CSSProperties = {
   flex: 1,
-  width: '100%',
+  minWidth: 0,
   border: 'none',
   outline: 'none',
   resize: 'none',
-  padding: '24px clamp(24px, 8%, 96px)',
+  padding: '24px clamp(24px, 6%, 64px)',
   fontFamily: '"Courier Prime", "Courier New", Courier, monospace',
   fontSize: 15,
   lineHeight: 1.5,

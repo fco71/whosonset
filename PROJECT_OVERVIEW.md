@@ -713,6 +713,19 @@ Francisco reconsidered the "no page breaks" constraint — wants page numbers + 
 - **Viewer** ([FountainViewer.tsx](src/components/Collaboration/FountainViewer.tsx)): renders a dashed **"Page N"** divider line between elements wherever the heuristic page increments — approximate visual page breaks in the read view.
 - All approximate (same line-count heuristic) — the tooltip says "approximate". Good enough; matches the accepted page-count approach.
 
+### Screenplay-format pages + PDF export + shortcut fix (2026-05-27, after Francisco feedback)
+
+Francisco: shortcuts weren't firing, the editor showed no page indicator while writing, the viewer's page break had no screenplay-style number, and he wants PDF download.
+
+- **Mac shortcut fix**: `Option+letter` sets `e.key` to a composed glyph (`Option+S` → `ß`), so the old `e.key` match never fired on macOS. Now matches `e.code` (`KeyS`). Tab/Shift+Tab + Alt/⌥+S/A/C/P/D/T all work.
+- **Shared `FountainPages` component** ([FountainPages.tsx](src/components/Collaboration/FountainPages.tsx)): renders real screenplay "page sheets" — white pages with the **page number top-right ("N.", page 1 unnumbered)**, standard element margins. `printMode` prop gives a continuous white sheet for PDF export. Used by viewer, editor preview, and export.
+- **Editor live preview**: the editor is now split — textarea on the left, **live formatted FountainPages preview on the right** (toggle to hide). This is the "see page numbers + breaks while writing" Francisco wanted; true in-textarea breaks aren't possible, but the preview updates as you type. Editor widened to `min(1200px)`.
+- **Viewer**: now renders `FountainPages` (real numbered pages) instead of the dashed-divider list.
+- **B7 PDF export** ([exportFountainPdf.ts](src/utilities/exportFountainPdf.ts)): "⬇ Download PDF" button in both editor and viewer. Renders an offscreen `FountainPages printMode` container to PDF via html2pdf.js (US Letter, Courier, html2canvas scale 2, physical auto-pagination). Filename = slugified screenplay name. **Production build verified — html2pdf.js bundles cleanly.**
+- i18n: `fountain.downloadPdf/pdfExporting/pdfError/togglePreview/showPreview/hidePreview` in en + es.
+
+**Caveat**: the exported PDF auto-paginates physically (clean continuous screenplay) but does NOT yet print page numbers in its corners — that's a jsPDF callback follow-up. On-screen pages DO show numbers.
+
 ### Known gaps / follow-ups for Workstream B
 
 - **B6 annotations on Fountain docs — PARTIAL.** The annotation side panel renders for fountain docs, but the *creation* flow is still PDF-selection-driven (handlers attach to `.react-pdf__Page__textContent`, which doesn't exist in the fountain render). So a supervisor can SEE existing comments on a fountain doc but can't yet ADD a spatially-anchored one. Next step: either (a) a doc-level "Add note" composer in the panel for fountain docs, or (b) wire text-selection on the FountainViewer to create offset-anchored annotations. Recommend (a) for MVP — simplest, and doc-level notes are fine for evaluation.
