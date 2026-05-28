@@ -21,6 +21,7 @@ Make the collaboration page strong enough for student project creation and teach
 ### Current implementation state
 
 - React 18 + TypeScript 5.8 + Firebase 11.7 + Webpack 5 app, deployed against Firebase project `my-film-jobs`.
+- Firebase CLI, Firebase Console, Hosting, Firestore, Storage, Functions, and secrets work must use `iam@myfilmjobs.com` for project `my-film-jobs`. `franciscoadolfo@gmail.com` is personal/profile/contact only and must not be used as the Firebase deploy account.
 - Collaboration workspaces persist in Firestore and are read through a `workspaceMemberships` query index.
 - Firestore rules now keep workspace collection listing locked down and allow direct workspace reads only for members.
 - Existing live workspace memberships were backfilled on 2026-05-28.
@@ -591,7 +592,7 @@ The "read-only participant" check is the union of `supervisorIds`, `viewerIds`, 
 - Add an "Invite by email" affordance: if the typed string matches an email pattern and no user is found, allow sending an invite. Two options:
   - **MVP**: look up the user in `crewProfiles` by email field; if exact match, add them as supervisor. If no match, show an error "User must first create an account at /signup". No email send required for MVP.
   - **Full**: write an `invitations` doc + send an email with a join link; on accept, add to `memberIds`. Defer this; it's its own workstream.
-- Acceptance for MVP: Francisco signs up once → student types `franciscoadolfo@gmail.com` → finds him → adds as supervisor.
+- Acceptance for MVP: Francisco has a teacher/supervisor profile discoverable by students, optionally by personal/profile email. This profile lookup is separate from deployment; the Firebase deploy identity remains `iam@myfilmjobs.com`.
 
 ### A7. Archive, soft-delete, restore, and permanently delete collaboration workspaces
 

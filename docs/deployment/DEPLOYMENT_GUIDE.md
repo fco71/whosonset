@@ -1,5 +1,22 @@
 # 🚀 Email Migration Deployment Guide
 
+## Firebase Account Requirement
+
+Use Firebase project `my-film-jobs` while logged into Firebase as `iam@myfilmjobs.com` for all CLI and Console work, including Hosting, Firestore, Storage, Functions, and secrets. Do not deploy from `franciscoadolfo@gmail.com`; that address is personal/profile/contact only.
+
+Before deploying, verify the active account:
+
+```bash
+firebase login:list
+```
+
+If the active Firebase account is wrong, reauthenticate and choose `iam@myfilmjobs.com`:
+
+```bash
+firebase logout
+firebase login --reauth
+```
+
 ## ✅ Migration Complete - Ready to Deploy!
 
 Your email notification system has been successfully migrated from **SendGrid to Gmail SMTP**. All code changes are complete.

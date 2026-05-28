@@ -1,6 +1,6 @@
 # Project Handoff — myfilmjobs.com / whosonset
 
-**Last updated:** May 6, 2026 (continuation — mobile border/frame issue confirmed fixed; §2R desktop consistency + polish is next). Owner: Francisco Valdez (`iam@myfilmjobs.com` for Firebase, `franciscoadolfo@gmail.com` for personal).
+**Last updated:** May 28, 2026 (Firebase account target clarified). Owner: Francisco Valdez. Firebase CLI/Console/deploy work must use `iam@myfilmjobs.com`; `franciscoadolfo@gmail.com` is personal/profile/contact only.
 
 This doc lets another agent pick up where we left off without re-asking the basics. Read it top-to-bottom before making changes. Delete it from the repo or `.gitignore` it before committing — it contains internal status notes.
 
