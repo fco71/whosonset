@@ -16,8 +16,8 @@ Primary collaboration roadmap: [src/components/Collaboration/IMPLEMENTATION_ROAD
 - Firebase project: `my-film-jobs`
 - Firebase CLI / Console account: `iam@myfilmjobs.com`
 - Hosting sites: `myfilmjobs-com` and `my-film-jobs`
-- Production Hosting live channel observed on 2026-05-28 at 14:27:13 local time for `myfilmjobs-com`
-- Development Hosting live channel observed on 2026-05-28 at 09:16:22 local time for `my-film-jobs`
+- Production Hosting live channel observed on 2026-05-28 at 16:34:07 local time for `myfilmjobs-com`
+- Development Hosting live channel observed on 2026-05-28 at 16:34:07 local time for `my-film-jobs`
 
 Do not deploy Firebase Hosting, Firestore, Storage, Functions, indexes, or secrets from any other Google account. If `firebase login:list` shows another active account, switch back to `iam@myfilmjobs.com` before running deploy commands.
 
@@ -57,10 +57,10 @@ Make the collaboration page strong enough for student project creation and teach
 - Collaboration workspaces persist in Firestore.
 - Workspace discovery uses `workspaceMemberships`; workspace collection listing is blocked by rules.
 - Workspace reads are member-scoped.
-- Workspace members can be added after upload; existing workspace screenplays are updated so new members can access them.
+- Workspace details are editable by the creator: name, description, type, and settings.
+- Workspace invitations can be sent before upload, during creation, or after upload.
+- Workspace invitations use a pending Accept/Decline consent flow; accepted invitations update membership and screenplay access through Cloud Functions.
 - Member search currently reads all `crewProfiles` client-side, ranks approved contacts first, and caches results briefly.
-- Add-member notifications are implemented as phase 1 of the consent flow.
-- Full invitation consent with Accept/Decline is not implemented yet.
 - Invite-before-upload is optional in UI copy.
 - Uploaded screenplay drag/drop has been removed; screenplay upload is through the explicit upload button.
 - PDF screenplay viewer renders readable white pages, fits modal width, and virtualizes visible pages.
@@ -78,21 +78,19 @@ Make the collaboration page strong enough for student project creation and teach
 Latest local verification on 2026-05-28:
 
 - `npx tsc --noEmit` passes.
-- `npm run test:run -- --run` passes: 40 tests.
+- `npm run test:run -- --run` passes: 41 tests.
 - `npm run build` passes with the known Webpack entrypoint-size warning (`main` about 1.06 MiB).
 - `firebase login:list` shows the active account as `iam@myfilmjobs.com`.
 - Legacy personal-account email and stale Firebase project identifiers have no matches in tracked source scope outside ignored build artifacts.
 
 ## Current Priorities
 
-1. Clean stale year/date references in source code and UI.
-2. Build full workspace invitation consent: pending invitations, Accept/Decline, and trusted server-side membership changes.
-3. Add teacher review status workflow: Draft, Submitted for review, Changes requested, Approved.
-4. Replace client-side all-profile member search with a safer indexed search or callable search endpoint.
-5. Remove unused dependencies and stale code paths.
-6. Consolidate the large duplicated `ScreenplayViewer.scss` rules.
-7. Reduce the main bundle size.
-8. Run a mobile QA pass for the collaboration hub.
+1. Add teacher review status workflow: Draft, Submitted for review, Changes requested, Approved.
+2. Replace client-side all-profile member search with a safer indexed search or callable search endpoint.
+3. Upgrade Cloud Functions from Node.js 20 before Firebase decommission dates.
+4. Consolidate the large duplicated `ScreenplayViewer.scss` rules.
+5. Reduce the main bundle size.
+6. Run a mobile QA pass for the collaboration hub.
 
 ## Collaboration Acceptance Path
 
@@ -100,22 +98,23 @@ Manual QA should cover:
 
 1. Student creates a workspace without inviting anyone.
 2. Student uploads a screenplay through the upload button.
-3. Student adds a classmate after upload.
-4. Student adds the teacher after upload.
-5. Teacher sees the workspace and screenplay.
-6. Teacher self-promotes to supervisor.
-7. Teacher adds notes/tags and resolves one item.
-8. Student receives in-app notification and sees the review items.
-9. Creator archives and restores the workspace.
-10. Creator soft-deletes and restores the workspace.
-11. Creator soft-deletes and permanently deletes a test workspace.
-12. Non-owner does not see destructive workspace actions.
+3. Student edits the workspace name/details from settings.
+4. Student invites a classmate after upload; classmate accepts from notifications.
+5. Student invites the teacher after upload; teacher accepts from notifications.
+6. Teacher sees the workspace and screenplay.
+7. Teacher self-promotes to supervisor.
+8. Teacher adds notes/tags and resolves one item.
+9. Student receives in-app notification and sees the review items.
+10. Creator archives and restores the workspace.
+11. Creator soft-deletes and restores the workspace.
+12. Creator soft-deletes and permanently deletes a test workspace.
+13. Non-owner does not see destructive workspace actions.
 
 ## Known Risks
 
-- Full invitation consent is not built yet; users are currently added immediately and notified.
 - Member search currently scans all crew profiles client-side, which is acceptable for the current assignment but not a long-term production search design.
 - Teacher review status is not first-class yet.
+- Cloud Functions currently deploy on Node.js 20, which Firebase warns is deprecated for future deployments.
 - The collaboration SCSS, especially `ScreenplayViewer.scss`, is too large and contains duplicated legacy rules.
 - The main Webpack entrypoint is over the recommended 1 MiB limit.
 - Cached alternate Firebase CLI accounts should be removed from developer machines to avoid accidental deploy confusion.

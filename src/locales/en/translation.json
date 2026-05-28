@@ -765,7 +765,12 @@
     },
     "workspaceSettings": {
       "title": "Workspace Settings",
-      "saveSettings": "Save Settings"
+      "detailsSection": "Workspace details",
+      "preferencesSection": "Preferences",
+      "workspaceName": "Workspace name",
+      "description": "Description",
+      "workspaceType": "Workspace type",
+      "saveSettings": "Save changes"
     },
     "addMemberModal": {
       "title": "Add Member to Workspace"

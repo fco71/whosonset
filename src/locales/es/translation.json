@@ -730,7 +730,12 @@
     },
     "workspaceSettings": {
       "title": "Configuración del Espacio de Trabajo",
-      "saveSettings": "Guardar Configuración"
+      "detailsSection": "Detalles del espacio",
+      "preferencesSection": "Preferencias",
+      "workspaceName": "Nombre del espacio",
+      "description": "Descripción",
+      "workspaceType": "Tipo de espacio",
+      "saveSettings": "Guardar cambios"
     },
     "addMemberModal": {
       "title": "Agregar Miembro al Espacio de Trabajo"

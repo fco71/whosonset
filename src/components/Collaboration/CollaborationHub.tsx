@@ -171,6 +171,11 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 
   // Settings state
   const [workspaceSettings, setWorkspaceSettings] = useState(newWorkspaceData.settings);
+  const [workspaceDetails, setWorkspaceDetails] = useState({
+    name: '',
+    description: '',
+    type: 'project' as CollaborationWorkspace['type']
+  });
 
   // Screenplay upload state
   const [uploadingScreenplay, setUploadingScreenplay] = useState(false);
@@ -1045,23 +1050,37 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       return;
     }
 
+    const nextName = workspaceDetails.name.trim();
+    if (!nextName) {
+      toast.error('Workspace name is required.');
+      return;
+    }
+
+    const nextDetails = {
+      name: nextName,
+      description: workspaceDetails.description.trim(),
+      type: workspaceDetails.type
+    };
+
     try {
       await updateDoc(doc(db, 'workspaces', selectedWorkspace.id), {
+        ...nextDetails,
         settings: workspaceSettings,
         updatedAt: serverTimestamp()
       });
 
       const updatedWorkspace = {
         ...selectedWorkspace,
+        ...nextDetails,
         settings: workspaceSettings,
         updatedAt: new Date()
       };
       updateWorkspaceState(updatedWorkspace);
       setShowSettingsModal(false);
-      toast.success('Workspace settings updated successfully!');
+      toast.success('Workspace updated successfully!');
     } catch (error) {
       console.error('Error updating workspace settings:', error);
-      toast.error('Failed to update workspace settings.');
+      toast.error('Failed to update workspace.');
     }
   };
 
@@ -1089,6 +1108,11 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       if (workspace) {
         setSelectedWorkspace(workspace);
         setWorkspaceSettings(workspace.settings);
+        setWorkspaceDetails({
+          name: workspace.name,
+          description: workspace.description || '',
+          type: workspace.type
+        });
         setShowSettingsModal(true);
       }
     } catch (error) {
@@ -2137,10 +2161,50 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         <div className="modal-overlay">
           <div className="modal-content">
             <div className="modal-header">
-              <h3>Workspace Settings</h3>
+              <h3>{t('collaboration.workspaceSettings.title')}</h3>
               <button onClick={() => setShowSettingsModal(false)} className="close-btn">×</button>
             </div>
             <div className="modal-body">
+              <div className="step-content">
+                <h4>{t('collaboration.workspaceSettings.detailsSection')}</h4>
+                <div className="form-group">
+                  <label>{t('collaboration.workspaceSettings.workspaceName')} *</label>
+                  <input
+                    type="text"
+                    value={workspaceDetails.name}
+                    onChange={(e) => setWorkspaceDetails(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder={t('collaboration.createWorkspaceModal.workspaceNamePlaceholder')}
+                    className="form-input"
+                    maxLength={80}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>{t('collaboration.workspaceSettings.description')}</label>
+                  <textarea
+                    value={workspaceDetails.description}
+                    onChange={(e) => setWorkspaceDetails(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder={t('collaboration.createWorkspaceModal.descriptionPlaceholder')}
+                    className="form-input"
+                    rows={3}
+                    maxLength={500}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>{t('collaboration.workspaceSettings.workspaceType')}</label>
+                  <select
+                    value={workspaceDetails.type}
+                    onChange={(e) => setWorkspaceDetails(prev => ({ ...prev, type: e.target.value as CollaborationWorkspace['type'] }))}
+                    className="form-input"
+                  >
+                    <option value="project">{t('collaboration.workspaceTypes.project')}</option>
+                    <option value="department">{t('collaboration.workspaceTypes.department')}</option>
+                    <option value="general">{t('collaboration.workspaceTypes.general')}</option>
+                  </select>
+                </div>
+              </div>
+              <div className="step-content">
+                <h4>{t('collaboration.workspaceSettings.preferencesSection')}</h4>
+              </div>
               <div className="form-group">
                 <label>
                   <input
@@ -2199,7 +2263,13 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
             </div>
             <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', padding: '1.5rem 2rem 1rem 2rem' }}>
               <button className="btn-secondary" onClick={() => setShowSettingsModal(false)}>Cancel</button>
-              <button className="btn-primary" onClick={handleUpdateWorkspaceSettings}>Save Settings</button>
+              <button
+                className="btn-primary"
+                onClick={handleUpdateWorkspaceSettings}
+                disabled={!workspaceDetails.name.trim()}
+              >
+                {t('collaboration.workspaceSettings.saveSettings')}
+              </button>
             </div>
           </div>
         </div>
