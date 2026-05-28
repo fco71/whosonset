@@ -21,6 +21,11 @@ const debugLog = (...args: unknown[]) => {
 // jsDelivr serves the npm package version directly; cdnjs does not host every pdfjs-dist release.
 pdfjs.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
+const PDF_PAGE_GAP = 20;
+const PDF_SCROLL_PADDING = 40;
+const MIN_PDF_PAGE_WIDTH = 280;
+const MAX_PDF_PAGE_WIDTH = 920;
+
 interface ScreenplayViewerProps {
   screenplay: {
     id: string;
@@ -129,7 +134,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [useNativePdfFallback, setUseNativePdfFallback] = useState(false);
-  const [scale, setScale] = useState(1.2);
+  const [scale, setScale] = useState(1);
   const [showOverlays, setShowOverlays] = useState(true);
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -187,6 +192,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
 
   // Add state for virtualization
   const [visiblePageRange, setVisiblePageRange] = useState<[number, number]>([1, 10]);
+  const [pageRenderWidth, setPageRenderWidth] = useState(760);
   // Measured live from the first rendered Page so virtualization + placeholders use the
   // actual height (varies with PDF dimensions and the current zoom level). Defaults to
   // a US Letter-ish guess until the first measurement lands.
@@ -207,6 +213,52 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     screenplay.name?.toLowerCase().endsWith('.pdf') ||
     screenplay.url?.toLowerCase().includes('.pdf')
   );
+  const renderedPageWidth = Math.max(
+    MIN_PDF_PAGE_WIDTH,
+    Math.round(pageRenderWidth * scale)
+  );
+
+  useEffect(() => {
+    if (!isPdfDocument) return;
+
+    const updatePageWidth = () => {
+      const container = pdfContainerRef.current;
+      if (!container) return;
+
+      const availableWidth = container.clientWidth || container.getBoundingClientRect().width;
+      if (!availableWidth) return;
+
+      const nextWidth = Math.min(
+        MAX_PDF_PAGE_WIDTH,
+        Math.max(MIN_PDF_PAGE_WIDTH, Math.floor(availableWidth - PDF_SCROLL_PADDING))
+      );
+
+      setPageRenderWidth(prev => (Math.abs(prev - nextWidth) > 4 ? nextWidth : prev));
+    };
+
+    updatePageWidth();
+
+    const resizeObserver = typeof ResizeObserver !== 'undefined'
+      ? new ResizeObserver(updatePageWidth)
+      : null;
+
+    if (resizeObserver && pdfContainerRef.current) {
+      resizeObserver.observe(pdfContainerRef.current);
+    }
+
+    window.addEventListener('resize', updatePageWidth);
+
+    return () => {
+      resizeObserver?.disconnect();
+      window.removeEventListener('resize', updatePageWidth);
+    };
+  }, [isPdfDocument, sidebarCollapsed]);
+
+  useEffect(() => {
+    if (!isPdfDocument) return;
+    setVisiblePageRange([1, 10]);
+    setMeasuredPageHeight(1100);
+  }, [isPdfDocument, renderedPageWidth]);
 
   // Prevent body scrolling when modal is open
   useEffect(() => {
@@ -1538,7 +1590,8 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
 
       // Update the database
       await updateDoc(screenplayRef, {
-        teamMembers: arrayUnion(user.id)
+        teamMembers: arrayUnion(user.id),
+        lastModified: serverTimestamp()
       });
 
       debugLog('Database updated successfully');
@@ -1635,7 +1688,8 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       if (!toRemove) return;
       const screenplayRef = doc(db, 'screenplays', screenplay.id);
       await updateDoc(screenplayRef, {
-        teamMembers: arrayRemove(toRemove)
+        teamMembers: arrayRemove(userId),
+        lastModified: serverTimestamp()
       });
       setCollaborators(collaborators.filter(c => c.id !== userId));
       toast.success('Collaborator removed.');
@@ -1729,11 +1783,12 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                               data-page-number={pageNumber}
                               style={{
                                 position: 'relative',
-                                marginBottom: '20px',
+                                marginBottom: PDF_PAGE_GAP,
                                 // Reserve the same vertical space whether the page is rendered or virtualized,
                                 // so toggling visibility on scroll never shifts the scroll position.
-                                minHeight: measuredPageHeight
-                              }}
+                                minHeight: measuredPageHeight,
+                                '--page-reserved-height': `${measuredPageHeight}px`
+                              } as React.CSSProperties}
                             >
                               {isVisible ? (
                                 // The page-frame wrapper is `display: inline-block` so it shrinks to the
@@ -1746,7 +1801,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                                 <div className="page-frame" style={{ position: 'relative', display: 'inline-block', lineHeight: 0 }}>
                                   <Page
                                     pageNumber={pageNumber}
-                                    scale={scale}
+                                    width={renderedPageWidth}
                                     onLoadSuccess={() => {
                                       debugLog(`Page ${pageNumber} loaded successfully`);
                                       attachSelectionHandlers();

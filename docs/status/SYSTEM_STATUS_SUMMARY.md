@@ -1,148 +1,70 @@
-# 🎯 **Email Notification System - Status Summary**
+# WhosOnSet System Status Summary
 
-## ✅ **COMPLETED IMPROVEMENTS**
+Last updated: 2026-05-28
 
-### **Frontend Enhancements**
-- ✅ **Enhanced NotificationSettings Component**
-  - Modern UI with better visual hierarchy
-  - Real-time feedback with loading states
-  - Granular control for each notification type
-  - Frequency options (immediate/daily/weekly)
-  - Error handling with retry options
+This status file replaces older status snapshots. Treat older dated docs as historical context only.
 
-- ✅ **Advanced NotificationCenter Component**
-  - Search and filter functionality
-  - Bulk selection and actions
-  - Visual type indicators with emoji icons
-  - Smart sorting with unread prioritization
-  - Real-time updates and status tracking
+## Overall Status
 
-- ✅ **Improved Navigation Integration**
-  - Easy access to notification settings
-  - Unread count display
-  - Seamless user experience
+WhosOnSet is an active production Firebase application for film-industry networking, jobs, projects, collaboration, and screenplay review. The current engineering focus is the collaboration page for student project creation and teacher review.
 
-### **Backend Improvements**
-- ✅ **Working Email Service**
-  - Google Workspace integration (`iam@myfilmjobs.com`)
-  - Nodemailer with Gmail SMTP
-  - Handlebars template system
-  - Comprehensive error handling
-  - Local testing verified ✅
+The app is not "done" or generically production-complete. It is live, useful, and improving, with specific release work still required before the collaboration workflow should be considered polished.
 
-- ✅ **Enhanced Notification Service**
-  - Centralized notification management
-  - Email and in-app notification creation
-  - User preference integration
-  - Firebase Functions triggers
+## Current Stack
 
-- ✅ **User Preferences System**
-  - Complete preference management
-  - Granular notification control
-  - Frequency and type settings
-  - Secure Firestore storage
+- Frontend: React 18, TypeScript 5.8, Webpack 5, TailwindCSS, SCSS.
+- Backend: Firebase Auth, Firestore, Storage, Hosting, Cloud Functions.
+- Firebase project: `my-film-jobs`.
+- PDF review: `react-pdf` 10 with `pdfjs-dist` 5 via the transitive dependency.
+- Drag and drop: `@dnd-kit/core`.
+- Tests: Vitest 3.
+- i18n: English and Spanish through i18next.
 
-### **System Architecture**
-- ✅ **Email Templates**: All 6 notification types
-- ✅ **Internationalization**: English/Spanish support
-- ✅ **Error Handling**: Comprehensive error recovery
-- ✅ **Security**: User consent and data protection
-- ✅ **Performance**: Optimized components and services
+## Verified On 2026-05-28
 
-## 🔧 **CURRENT STATUS**
+- `npx tsc --noEmit` passes.
+- `npm run test:run -- --run` passes: 39 tests.
+- `npm run build` passes with an existing Webpack entrypoint-size warning.
+- Browser smoke test on `/collaboration` confirms workspace load and readable PDF rendering.
 
-### **Working Components**
-- ✅ **Email Service**: Successfully tested with Gmail
-- ✅ **Notification Settings UI**: Fully functional
-- ✅ **Notification Center**: Advanced features implemented
-- ✅ **User Preferences**: Complete management system
-- ✅ **Firebase Functions**: All functions deployed
-- ✅ **Frontend Integration**: Seamless user experience
+## Current Collaboration State
 
-### **Deployment Status**
-- ✅ **Functions Deployed**: All Firebase Functions active
-- ✅ **Configuration Set**: Email settings configured
-- ✅ **Local Testing**: Email service verified
-- 🔧 **HTTP Access**: Functions deployed but HTTP access needs resolution
+- Workspace creation is persisted in Firestore.
+- Workspace members can be invited after workspace creation and after screenplay upload.
+- Inviting before upload is optional.
+- Workspaces support owner, supervisor, collaborator/member, and viewer roles.
+- Screenplays can be uploaded PDFs or in-browser Fountain documents.
+- PDF viewer supports annotations, tags, replies, resolved state, and readable page rendering.
+- Fountain editor supports writing, page count, formatting toolbar, autosave, and PDF export.
+- Workspace archive, restore, soft-delete, and recovery-window concepts exist.
+- Workspace querying now uses a `workspaceMemberships` index so Firestore rules can deny broad workspace listing.
 
-## 🚀 **NEXT STEPS**
+## Security And Data Safety
 
-### **Immediate Actions**
-1. **Resolve Firebase Functions HTTP Access**
-   - Check Google Cloud Console for specific permission errors
-   - Verify function URLs and routing
-   - Test function accessibility
+- The site uses live Firestore production data. Do not run destructive Firestore actions without explicit scoped approval in the current conversation.
+- Firestore PITR, scheduled backups, and delete protection are documented in [PROJECT_OVERVIEW.md](../../PROJECT_OVERVIEW.md).
+- Firestore rules were tightened on 2026-05-28 for workspace reads, screenplay updates, annotation moderation, and membership indexing.
+- Generated/private local artifacts are being removed from source control:
+  - `.specstory/`
+  - `bundle-analysis.html`
 
-2. **Production Testing**
-   - Test email templates in production
-   - Verify notification preferences UI
-   - Test all notification triggers
+## Current Goals
 
-3. **User Experience Validation**
-   - Test complete notification flow
-   - Verify settings persistence
-   - Test error scenarios
+1. Finish manual QA for the student/teacher collaboration loop.
+2. Deploy the staged collaboration UI/code changes after QA.
+3. Add a first-class teacher review workflow:
+   - Draft
+   - Submitted for review
+   - Changes requested
+   - Approved
+4. Add review summary counts to screenplay rows and review panels.
+5. Add pending email invitation acceptance through a trusted server/admin path.
+6. Consolidate duplicated PDF viewer SCSS and reduce bundle size.
 
-### **Future Enhancements**
-- **SendGrid Integration**: For production email delivery
-- **Email Analytics**: Track delivery and engagement
-- **Mobile Push Notifications**: Native mobile support
-- **Advanced Scheduling**: Custom notification timing
-- **Template Management**: Admin interface for templates
+## Known Risks
 
-## 📊 **SYSTEM METRICS**
-
-### **Technical Metrics**
-- **Email Service**: ✅ Working (Gmail SMTP)
-- **Notification Types**: ✅ 6 types implemented
-- **User Preferences**: ✅ Complete management
-- **UI Components**: ✅ Enhanced and responsive
-- **Error Handling**: ✅ Comprehensive coverage
-
-### **User Experience Metrics**
-- **Settings Access**: ✅ Easy navigation access
-- **Notification Management**: ✅ Advanced features
-- **Search & Filter**: ✅ Full functionality
-- **Bulk Actions**: ✅ Efficient management
-- **Visual Feedback**: ✅ Clear status indicators
-
-## 🎯 **SUCCESS CRITERIA MET**
-
-### **Functional Requirements**
-- ✅ **Email Notifications**: Working with Gmail
-- ✅ **In-App Notifications**: Complete system
-- ✅ **User Preferences**: Granular control
-- ✅ **Notification Types**: All 6 types supported
-- ✅ **Template System**: Handlebars-based emails
-
-### **User Experience Requirements**
-- ✅ **Intuitive Interface**: Modern, clean design
-- ✅ **Responsive Design**: Mobile-friendly
-- ✅ **Accessibility**: ARIA labels and keyboard support
-- ✅ **Error Recovery**: Graceful error handling
-- ✅ **Performance**: Optimized components
-
-### **Technical Requirements**
-- ✅ **Scalability**: Efficient architecture
-- ✅ **Security**: User consent and data protection
-- ✅ **Reliability**: Error handling and fallbacks
-- ✅ **Maintainability**: Clean, documented code
-- ✅ **Testing**: Comprehensive test coverage
-
-## 🏆 **ACHIEVEMENT SUMMARY**
-
-The email notification system has been **significantly improved** with:
-
-1. **Enhanced User Experience**: Modern UI with advanced features
-2. **Robust Email Service**: Working Gmail integration with templates
-3. **Comprehensive Management**: Complete notification control system
-4. **Production Ready**: All components tested and deployed
-5. **Future Proof**: Scalable architecture for growth
-
-**System Status**: **95% Complete** - Only HTTP access resolution needed for full production deployment.
-
----
-
-**Last Updated**: July 31, 2025  
-**Version**: 2.0.0  
-**Status**: Production Ready ✅ 
+- `ScreenplayViewer.scss` still contains duplicated legacy rules; current stability overrides work but the file should be consolidated.
+- Email invitations are not yet a production-grade access path.
+- Collaboration presence still uses array-based active users and can leave stale entries.
+- The production build still emits a Webpack entrypoint-size warning.
+- Older documentation may still describe historical implementation states; use files updated on or after 2026-05-28 as current.

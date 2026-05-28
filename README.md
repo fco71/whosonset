@@ -2,6 +2,8 @@
 
 Social, jobs, and collaboration platform for the film industry. Live at [myfilmjobs.com](https://myfilmjobs.com).
 
+Last reviewed: 2026-05-28. Treat [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) as the current source of truth; older docs under `docs/` are historical unless their own date has been refreshed.
+
 ## Stack
 
 - **Frontend**: React 18 + TypeScript, Webpack 5, TailwindCSS + SCSS modules

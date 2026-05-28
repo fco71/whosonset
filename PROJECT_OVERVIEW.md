@@ -1,12 +1,76 @@
 ---
 title: WhosOnSet — Project Overview
-last_reviewed: 2026-05-14
+last_reviewed: 2026-05-28
 status: living document — all reviews and plans go here
 ---
 
+## Current source of truth - 2026-05-28
+
+This file is the root project overview. The collaboration-specific plan lives in [src/components/Collaboration/IMPLEMENTATION_ROADMAP.md](src/components/Collaboration/IMPLEMENTATION_ROADMAP.md). Older files under `docs/status/`, `docs/features/`, `docs/email/`, and `docs/handoffs/` may contain historical context, but they must not be treated as current unless their date is 2026-05-28 or later.
+
+### Product goal right now
+
+Make the collaboration page strong enough for student project creation and teacher review:
+
+- A student or project creator can create a workspace, upload a PDF, or start a Fountain screenplay in any order.
+- Inviting teachers and collaborators is optional before upload and available later from the workspace/upload/review flow.
+- Teachers can review screenplays with notes, tags, replies, and resolved/open state.
+- Creators can archive, restore, soft-delete, and recover workspaces before permanent deletion.
+- Uploaded PDF review and in-browser Fountain writing should feel like one coherent workflow.
+
+### Current implementation state
+
+- React 18 + TypeScript 5.8 + Firebase 11.7 + Webpack 5 app, deployed against Firebase project `my-film-jobs`.
+- Collaboration workspaces persist in Firestore and are read through a `workspaceMemberships` query index.
+- Firestore rules now keep workspace collection listing locked down and allow direct workspace reads only for members.
+- Existing live workspace memberships were backfilled on 2026-05-28.
+- The updated Firestore rules were deployed on 2026-05-28. Hosting deployment for the staged UI/code changes is still the next release step.
+- Invite-before-upload is explicitly optional in UI copy.
+- PDF screenplay viewer now renders readable white pages, fits the modal width, and virtualizes visible pages instead of rendering all pages at once.
+- Fountain editor/viewer exists, with page count, toolbar, autosave, and PDF export.
+- `.specstory/` and generated `bundle-analysis.html` are being removed from source control and ignored going forward.
+
+### Verification snapshot
+
+Latest local verification on 2026-05-28:
+
+- `npx tsc --noEmit` passes.
+- `npm run test:run -- --run` passes: 39 tests.
+- `npm run build` passes with the existing Webpack entrypoint-size warning (`main` around 1.05 MiB).
+- Browser smoke test at `http://localhost:8000/collaboration` confirms workspace load, optional invite copy, and readable PDF scrolling.
+
+### Current priorities
+
+1. Manually QA creator/student and teacher/member collaboration flows on live-authenticated accounts.
+2. Commit and deploy the staged collaboration fixes.
+3. Build the teacher review status workflow: Draft, Submitted for review, Changes requested, Approved.
+4. Add pending email invitations through a trusted acceptance path.
+5. Consolidate the duplicated legacy `ScreenplayViewer.scss` rules and reduce bundle size.
+
 ## Session log
 
-### 2026-05-14 (latest agent pass)
+### 2026-05-28 (current collaboration stabilization pass)
+
+**Done this session**:
+
+1. Replaced the stale collaboration roadmap with a current 2026-05-28 implementation and QA plan.
+2. Fixed the missing owner role translations in English and Spanish.
+3. Made invite-before-upload explicitly optional in the collaboration UI.
+4. Added the `workspaceMemberships` index path for workspace queries and tightened Firestore list/read rules.
+5. Backfilled live `workspaceMemberships` for existing workspace members and deployed the updated Firestore rules.
+6. Fixed the Fountain editor load race so a delayed Firestore read cannot overwrite a local edit.
+7. Fixed uploaded PDF rendering so the modal constrains the PDF document, fits pages to available width, and restores virtualization.
+8. Fixed screenplay collaborator removal to remove UID strings from `teamMembers`.
+9. Kept workspace membership index status in sync when archiving, restoring, and soft-deleting a workspace.
+10. Removed `.specstory/` and generated `bundle-analysis.html` from tracked source scope.
+
+**Next**:
+
+- Run manual QA as creator/student and teacher/member.
+- Deploy the staged UI/code changes after QA.
+- Start the teacher review workflow slice.
+
+### 2026-05-14 (historical agent pass)
 
 **Done this session** (all code-only, no Firestore writes — safe to commit as one batch):
 

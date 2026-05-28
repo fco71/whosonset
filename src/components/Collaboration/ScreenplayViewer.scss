@@ -2826,3 +2826,84 @@
 }
 // Remove redundant avatar/card/button styles now covered by shared classes
 // ... existing code ...
+
+// PDF rendering stability overrides. The react-pdf Document must fill the modal
+// instead of growing to the height of every page, otherwise virtualization renders
+// the whole screenplay and the pages become clipped on narrow viewports.
+.screenplay-viewer {
+  .viewer-content {
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .pdf-panel,
+  .pdf-container,
+  .react-pdf__Document {
+    min-height: 0 !important;
+    height: 100% !important;
+  }
+
+  .pdf-panel {
+    display: flex !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    background: #f1f5f9 !important;
+  }
+
+  .pdf-container {
+    display: flex !important;
+    flex: 1 1 auto !important;
+    overflow: hidden !important;
+    background: #f1f5f9 !important;
+  }
+
+  .react-pdf__Document {
+    display: flex !important;
+    flex: 1 1 auto !important;
+    flex-direction: column !important;
+    width: 100% !important;
+  }
+
+  .pdf-scrollable-container {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    height: auto !important;
+    overflow-y: auto !important;
+    overflow-x: auto !important;
+    overscroll-behavior: contain;
+    padding: 20px !important;
+    box-sizing: border-box !important;
+    background: #e5e7eb !important;
+  }
+
+  .pdf-scrollable-container .page-container {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: flex-start !important;
+    width: max-content;
+    min-width: 100%;
+    min-height: var(--page-reserved-height) !important;
+    margin-bottom: 20px !important;
+    box-sizing: border-box !important;
+  }
+
+  .page-frame {
+    flex: 0 0 auto;
+    background: #ffffff;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
+  }
+
+  .react-pdf__Page {
+    margin: 0 !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+  }
+
+  .react-pdf__Page canvas {
+    display: block !important;
+    max-width: none !important;
+    background: #ffffff !important;
+  }
+}

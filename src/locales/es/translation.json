@@ -781,6 +781,8 @@
     "roles": {
       "member": "Miembro",
       "memberDesc": "Puede editar y comentar guiones del espacio.",
+      "owner": "Creador",
+      "ownerDesc": "Puede gestionar el espacio, los miembros y los guiones.",
       "supervisor": "Supervisor",
       "supervisorDesc": "Lee, comenta y anota; no puede editar los guiones.",
       "viewer": "Espectador",

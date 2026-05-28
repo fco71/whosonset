@@ -56,6 +56,7 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, onClose }) 
 
   const saveTimer = useRef<number | null>(null);
   const pendingCaret = useRef<number | null>(null);
+  const hasLocalEdit = useRef(false);
   const latestSource = useRef(source);
   latestSource.current = source;
 
@@ -69,7 +70,7 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, onClose }) 
         const snap = await getDoc(doc(db, 'screenplays', screenplay.id));
         if (cancelled || !snap.exists()) return;
         const data = snap.data();
-        if (typeof data.fountainSource === 'string') {
+        if (typeof data.fountainSource === 'string' && !hasLocalEdit.current) {
           setSource(data.fountainSource);
         }
       } catch (err) {
@@ -142,6 +143,7 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, onClose }) 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     const caret = e.target.selectionStart;
+    hasLocalEdit.current = true;
     setSource(value);
     scheduleSave(value);
     setActiveType(detectLineType(value, caret));
@@ -153,6 +155,7 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, onClose }) 
     if (!el) return;
     const caret = el.selectionStart;
     const result = applyElementType(el.value, caret, type);
+    hasLocalEdit.current = true;
     pendingCaret.current = result.caret;
     setSource(result.source);
     scheduleSave(result.source);

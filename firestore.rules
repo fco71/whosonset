@@ -31,6 +31,11 @@ service cloud.firestore {
         data.participants.hasAny([request.auth.uid]);
     }
 
+    function isWorkspaceMemberData(data, uid) {
+      return data.memberIds is list &&
+        uid in data.memberIds;
+    }
+
     function isScreenplayMemberData(data) {
       return signedIn() && (
         data.uploadedBy == request.auth.uid ||
@@ -43,8 +48,10 @@ service cloud.firestore {
       return signedIn() &&
         workspaceId is string &&
         exists(/databases/$(database)/documents/workspaces/$(workspaceId)) &&
-        get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.memberIds is list &&
-        get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.memberIds.hasAny([request.auth.uid]);
+        isWorkspaceMemberData(
+          get(/databases/$(database)/documents/workspaces/$(workspaceId)).data,
+          request.auth.uid
+        );
     }
 
     function isEffectiveWorkspaceSupervisor(workspaceId, uid) {
@@ -111,11 +118,93 @@ service cloud.firestore {
         );
     }
 
+    function isScreenplayContentUpdate(newData, oldData) {
+      return canEditScreenplayData(oldData) &&
+        newData.diff(oldData).affectedKeys().hasOnly([
+          'fountainSource',
+          'fountainUpdatedAt',
+          'lastEditedBy',
+          'lastModified'
+        ]) &&
+        (
+          !newData.diff(oldData).affectedKeys().hasAny(['lastEditedBy']) ||
+          newData.lastEditedBy == request.auth.uid
+        );
+    }
+
+    function isScreenplayAccessUpdate(newData, oldData) {
+      return (
+          oldData.uploadedBy == request.auth.uid ||
+          isWorkspaceOwner(oldData.workspaceId, request.auth.uid)
+        ) &&
+        newData.diff(oldData).affectedKeys().hasOnly([
+          'teamMembers',
+          'lastModified'
+        ]);
+    }
+
     function canAccessScreenplay(screenplayId) {
       return signedIn() &&
         screenplayId is string &&
         exists(/databases/$(database)/documents/screenplays/$(screenplayId)) &&
         isScreenplayMemberData(get(/databases/$(database)/documents/screenplays/$(screenplayId)).data);
+    }
+
+    function isScreenplayManager(screenplayId, uid) {
+      return signedIn() &&
+        screenplayId is string &&
+        exists(/databases/$(database)/documents/screenplays/$(screenplayId)) &&
+        (
+          get(/databases/$(database)/documents/screenplays/$(screenplayId)).data.uploadedBy == uid ||
+          isWorkspaceOwner(
+            get(/databases/$(database)/documents/screenplays/$(screenplayId)).data.workspaceId,
+            uid
+          )
+        );
+    }
+
+    function isScreenplaySupervisor(screenplayId, uid) {
+      return signedIn() &&
+        screenplayId is string &&
+        exists(/databases/$(database)/documents/screenplays/$(screenplayId)) &&
+        isEffectiveWorkspaceSupervisor(
+          get(/databases/$(database)/documents/screenplays/$(screenplayId)).data.workspaceId,
+          uid
+        );
+    }
+
+    function keepsAnnotationIdentity(newData, oldData) {
+      return newData.screenplayId == oldData.screenplayId &&
+        newData.userId == oldData.userId &&
+        newData.get('supervisorAtAuthorTime', false) == oldData.get('supervisorAtAuthorTime', false);
+    }
+
+    function canModerateAnnotationData(data) {
+      return canAccessScreenplay(data.screenplayId) &&
+        (
+          data.userId == request.auth.uid ||
+          (
+            data.get('supervisorAtAuthorTime', false) == true &&
+            isScreenplaySupervisor(data.screenplayId, request.auth.uid)
+          ) ||
+          (
+            data.get('supervisorAtAuthorTime', false) != true &&
+            (
+              isScreenplayManager(data.screenplayId, request.auth.uid) ||
+              isScreenplaySupervisor(data.screenplayId, request.auth.uid)
+            )
+          )
+        );
+    }
+
+    function isAnnotationReplyUpdate(newData, oldData) {
+      return canAccessScreenplay(oldData.screenplayId) &&
+        newData.diff(oldData).affectedKeys().hasOnly(['replies']);
+    }
+
+    function isAnnotationResolveUpdate(newData, oldData) {
+      return canModerateAnnotationData(oldData) &&
+        newData.diff(oldData).affectedKeys().hasOnly(['resolved']);
     }
 
     function profileIsTeacher(uid) {
@@ -499,9 +588,13 @@ service cloud.firestore {
 
     match /screenplays/{screenplayId} {
       allow read: if isScreenplayMemberData(resource.data);
-      allow create: if canEditScreenplayData(request.resource.data);
-      allow update: if canEditScreenplayData(resource.data) &&
-        keepsScreenplayOwnership(request.resource.data, resource.data);
+      allow create: if request.resource.data.uploadedBy == request.auth.uid &&
+        canEditScreenplayData(request.resource.data);
+      allow update: if keepsScreenplayOwnership(request.resource.data, resource.data) &&
+        (
+          isScreenplayContentUpdate(request.resource.data, resource.data) ||
+          isScreenplayAccessUpdate(request.resource.data, resource.data)
+        );
       allow delete: if canDeleteScreenplayData(resource.data);
     }
 
@@ -510,8 +603,12 @@ service cloud.firestore {
       allow create: if signedIn() &&
         request.resource.data.userId == request.auth.uid &&
         canAccessScreenplay(request.resource.data.screenplayId);
-      allow update, delete: if signedIn() &&
-        canAccessScreenplay(resource.data.screenplayId);
+      allow update: if keepsAnnotationIdentity(request.resource.data, resource.data) &&
+        (
+          isAnnotationReplyUpdate(request.resource.data, resource.data) ||
+          isAnnotationResolveUpdate(request.resource.data, resource.data)
+        );
+      allow delete: if canModerateAnnotationData(resource.data);
     }
 
     match /screenplayTags/{tagId} {
@@ -531,13 +628,21 @@ service cloud.firestore {
         canAccessScreenplay(request.resource.data.screenplayId);
     }
 
+    match /workspaceMemberships/{membershipId} {
+      allow get, list: if signedIn() &&
+        resource.data.userId == request.auth.uid;
+      allow create, update: if signedIn() &&
+        request.resource.data.workspaceId is string &&
+        request.resource.data.userId is string &&
+        isWorkspaceOwner(request.resource.data.workspaceId, request.auth.uid);
+      allow delete: if signedIn() &&
+        isWorkspaceOwner(resource.data.workspaceId, request.auth.uid);
+    }
+
     match /workspaces/{workspaceId} {
       allow get: if signedIn() &&
-        resource.data.memberIds is list &&
-        resource.data.memberIds.hasAny([request.auth.uid]);
-      // Firestore cannot always prove array-membership rules for collection queries.
-      // The client still queries by memberIds; direct document reads remain member-only.
-      allow list: if signedIn();
+        isWorkspaceMemberData(resource.data, request.auth.uid);
+      allow list: if false;
       allow create: if signedIn() &&
         request.resource.data.ownerId == request.auth.uid &&
         request.resource.data.memberIds is list &&

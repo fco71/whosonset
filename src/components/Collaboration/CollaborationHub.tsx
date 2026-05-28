@@ -13,7 +13,7 @@ import './CollaborationHub.scss';
 import UserAutocomplete, { UserAutocompleteOption } from './UserAutocomplete';
 import { toast } from 'react-hot-toast';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { collection, addDoc, query, where, orderBy, getDocs, getDoc, onSnapshot, updateDoc, doc, deleteDoc, serverTimestamp, Timestamp, arrayUnion, arrayRemove, QuerySnapshot, Unsubscribe } from 'firebase/firestore';
+import { collection, addDoc, query, where, orderBy, getDocs, getDoc, onSnapshot, updateDoc, doc, deleteDoc, serverTimestamp, Timestamp, arrayUnion, arrayRemove, QuerySnapshot, Unsubscribe, writeBatch } from 'firebase/firestore';
 import { db, storage } from '../../firebase';
 import ScreenplayViewer from './ScreenplayViewer';
 import FountainEditor from './FountainEditor';
@@ -343,6 +343,27 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     return getWorkspaceById(workspaceId)?.name || 'Workspace';
   };
 
+  const workspaceMembershipId = (workspaceId: string, userId: string) => `${workspaceId}_${userId}`;
+
+  const writeWorkspaceMemberships = async (workspace: CollaborationWorkspace, members: WorkspaceMember[]) => {
+    const validMembers = members.filter(member => member.userId);
+    if (validMembers.length === 0) return;
+
+    const batch = writeBatch(db);
+    validMembers.forEach(member => {
+      batch.set(doc(db, 'workspaceMemberships', workspaceMembershipId(workspace.id, member.userId)), {
+        workspaceId: workspace.id,
+        userId: member.userId,
+        role: member.role,
+        ownerId: workspace.ownerId || '',
+        projectId: workspace.projectId || null,
+        status: workspace.status || 'active',
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+    });
+    await batch.commit();
+  };
+
   const updateWorkspaceState = (workspace: CollaborationWorkspace) => {
     setWorkspaces(prev => prev.map(item => item.id === workspace.id ? workspace : item));
     setSelectedWorkspace(prev => prev?.id === workspace.id ? workspace : prev);
@@ -410,14 +431,28 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     setLoading(true);
     setError(null);
 
-    const workspacesRef = collection(db, 'workspaces');
-    const workspacesQuery = query(workspacesRef, where('memberIds', 'array-contains', currentUser.uid));
+    let cancelled = false;
+    const membershipsRef = collection(db, 'workspaceMemberships');
+    const membershipsQuery = query(membershipsRef, where('userId', '==', currentUser.uid));
 
     const unsubscribe = onSnapshot(
-      workspacesQuery,
-      snapshot => {
-        const workspaceList = snapshot.docs
-          .map(document => normalizeWorkspace(document.id, document.data()))
+      membershipsQuery,
+      async snapshot => {
+        const workspaceIds = Array.from(new Set(
+          snapshot.docs
+            .map(document => document.data().workspaceId)
+            .filter((workspaceId): workspaceId is string => typeof workspaceId === 'string' && workspaceId.length > 0)
+        ));
+
+        const workspaceSnapshots = await Promise.all(
+          workspaceIds.map(workspaceId => getDoc(doc(db, 'workspaces', workspaceId)))
+        );
+
+        if (cancelled) return;
+
+        const workspaceList = workspaceSnapshots
+          .filter(documentSnapshot => documentSnapshot.exists())
+          .map(documentSnapshot => normalizeWorkspace(documentSnapshot.id, documentSnapshot.data()))
           .filter(workspace => !projectId || workspace.projectId === projectId)
           .sort((a, b) => {
             const statusOrder = { active: 0, archived: 1, deleted: 2 };
@@ -442,7 +477,10 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       }
     );
 
-    return () => unsubscribe();
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
   }, [currentUser, projectId]);
 
   const accessibleWorkspaceIds = workspaces
@@ -765,6 +803,14 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         updatedAt: serverTimestamp()
       });
 
+      await writeWorkspaceMemberships({
+        ...workspace,
+        members: updatedMembers,
+        memberIds,
+        supervisorIds,
+        viewerIds
+      }, newMembers);
+
       await syncWorkspaceScreenplayAccess(workspace.id, memberIds);
 
       const updatedWorkspace: CollaborationWorkspace = {
@@ -861,6 +907,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         createdAt: new Date(),
         updatedAt: new Date()
       };
+      await writeWorkspaceMemberships(newWorkspace, members);
 
       setWorkspaces(prev => [...prev, newWorkspace]);
       setSelectedWorkspace(newWorkspace);
@@ -1345,6 +1392,15 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         archivedAt: new Date(),
         updatedAt: new Date()
       });
+      await writeWorkspaceMemberships(
+        {
+          ...workspace,
+          status: 'archived',
+          archivedAt: new Date(),
+          updatedAt: new Date()
+        },
+        workspace.members
+      );
       toast.success(`Archived ${workspace.name}.`);
     } catch (error) {
       console.error('Error archiving workspace:', error);
@@ -1374,6 +1430,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       };
       updateWorkspaceState(updatedWorkspace);
       setSelectedWorkspace(updatedWorkspace);
+      await writeWorkspaceMemberships(updatedWorkspace, workspace.members);
       toast.success(`Restored ${workspace.name}.`);
     } catch (error) {
       console.error('Error restoring workspace:', error);
@@ -1406,6 +1463,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         if (selectedWorkspace?.id === workspaceId) {
           setSelectedWorkspace(updatedWorkspace);
         }
+        await writeWorkspaceMemberships(updatedWorkspace, workspace.members);
         toast.success(`${workspace.name} moved to recently deleted.`);
       } catch (error) {
         console.error('Error deleting workspace:', error);

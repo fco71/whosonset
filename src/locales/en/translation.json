@@ -816,6 +816,8 @@
     "roles": {
       "member": "Member",
       "memberDesc": "Can edit and comment on workspace screenplays.",
+      "owner": "Owner",
+      "ownerDesc": "Can manage the workspace, members, and screenplays.",
       "supervisor": "Supervisor",
       "supervisorDesc": "Read + comment/annotate; cannot edit screenplays.",
       "viewer": "Viewer",
