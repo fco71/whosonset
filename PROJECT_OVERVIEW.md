@@ -758,6 +758,12 @@ Each step ends with a runnable acceptance check. An agent picking up step N shou
 
 **Last meaningful step (2026-05-28, agent)**: G5 workspace activity feed. Before that: account-deletion cascade Cloud Function + the two review fixes. Typecheck clean, 40 Vitest tests green, app+functions build clean.
 
+### Workspace cleanup tooling (2026-05-28)
+
+Two ways to clean up workspaces (e.g. test data):
+- **In-app**: a deleted workspace's card has Restore + "Delete permanently" (works any time in the recovery window once `firebase deploy --only firestore:rules` is run). Two clicks per workspace (Delete → Delete permanently).
+- **Bulk admin script** [scripts/cleanup-workspaces.cjs](scripts/cleanup-workspaces.cjs) — no deploy needed, bypasses rules. `node scripts/cleanup-workspaces.cjs` lists all workspaces; `--owner <uid>` filters; `--ids a,b,c [--apply]` or `--owner <uid> --apply` deletes (dry-run without `--apply`). Cascades workspaceMemberships + workspaceActivity; `--with-screenplays` also removes matching screenplays + their annotations/tags. Auth via `gcloud auth application-default login`.
+
 ### Workspace deletion: 7-day window + delete-permanently during recovery (2026-05-28)
 
 Per Francisco: cut the recovery window 30 → 7 days, and let owners permanently delete a soft-deleted group *during* the window (not only after it expires).
