@@ -689,9 +689,26 @@ Each step ends with a runnable acceptance check. An agent picking up step N shou
 
 ---
 
-## Where we are right now (pick-up pointer, 2026-05-27 late-night — after G6 in-app notifications)
+## Where we are right now (pick-up pointer, 2026-05-27 late-night — after G7, starting Workstream B)
 
-**Last meaningful step**: G6 in-app notifications — when a supervisor leaves an annotation or tag, the screenplay author gets an instant notification (red-dot bell + dropdown entry). No email; Francisco explicitly wanted to avoid bombardment per individual input. Email digest deferred to a future Cloud-Function workstream.
+**Last meaningful step**: G7 drag-and-drop multi-upload + first-run empty state. Next up: Workstream B (in-browser Fountain editor) — Francisco asked for "G7, then B".
+
+### G7 — drag-and-drop multi-upload + empty state (done)
+
+- Upload card is now a drop zone (`onDragEnter/Over/Leave/Drop`), highlights with a dashed outline + blue tint while dragging files over it.
+- File `<input>` gained `multiple`; both the input and the drop zone funnel through `handleMultiUpload`.
+- `handleScreenplayUpload` refactored: per-file logic extracted to `uploadSingleScreenplay` (returns the screenplay or null), wrapped by `handleMultiUpload` which filters unsupported types, uploads sequentially, shows an "Uploading N of M…" counter, and rolls up a per-batch toast (all-success / partial / all-fail).
+- First-run empty state: when the user has zero screenplays, a friendly panel (🎬 + heading + body) with an "Upload a screenplay" button (triggers the hidden input) and, when a manageable workspace is selected, an "Invite collaborators" button.
+- i18n: `collaboration.dropFilesHint/dropFilesNow/uploadProgress` + `collaboration.emptyState.*` in en + es.
+- Files: [CollaborationHub.tsx](src/components/Collaboration/CollaborationHub.tsx), [en](src/locales/en/translation.json) + [es](src/locales/es/translation.json) JSONs.
+
+### Workstream B — in-browser Fountain editor (STARTING NOW)
+
+Build order (per the plan's B-section): **B1 schema + B4 parser FIRST (pure, unit-tested in isolation), then B2 creation flow, then B3 editor + B5 viewer, then B6 annotations.** B4 (the Fountain → page-count heuristic) is the riskiest piece, so it lands as a standalone tested utility before any UI depends on it.
+
+Earlier in the same evening (all committed): G6 in-app notifications (2bc6c7d3), C1 collaborator hydration (cd8f26cc), G1–G4 + S1–S10 + i18n + CSV export (0f245a03 + 87f5beef + c2e85902).
+
+**G6 recap**: when a supervisor leaves an annotation or tag, the screenplay author gets an instant in-app notification (red-dot bell + dropdown). No email — Francisco explicitly wanted to avoid bombardment per individual input. Email digest deferred to a future Cloud-Function workstream.
 
 Prior in the same evening: C1 (collaborator hydration fix), 3 chunked commits landed (0f245a03 + 87f5beef + cd8f26cc), G1+G2+G3+G4+S1–S10+i18n+CSV export.
 
@@ -746,7 +763,7 @@ The original two-workstream plan has Workstream A (collab + supervisor flow) lar
 | Item | Status | Notes |
 |------|--------|-------|
 | G6 — in-app notifications when a supervisor comments | ✅ done 2026-05-27 late-night | Spec in G6 section below. Email digest is its own future workstream (G6.5). |
-| G7 — drag-and-drop multi-upload + first-run empty state | not started | Smallest polish win, ~30 min. |
+| G7 — drag-and-drop multi-upload + first-run empty state | ✅ done 2026-05-27 late-night | Drop zone on the upload card, multi-file `<input>`, sequential upload w/ progress counter, friendly empty state w/ upload + invite CTAs. |
 | G5 — workspace activity feed | not started | "Maya uploaded X · 3m ago" timeline in workspace card. |
 | G9 — mobile pass for the hub | not started | Students mostly work on phones. |
 | G8 — workspace-level chat (non-spatial discussion) | not started | RealTimeCollaboration.tsx already exists, just needs wiring. |

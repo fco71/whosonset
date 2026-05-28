@@ -756,6 +756,15 @@
     "uploadHelp": "Sube ahora o invita colaboradores más tarde. El acceso al espacio puede actualizarse en cualquier momento.",
     "inviteMembersOptional": "Invitar miembros (opcional)",
     "noScreenplaysYet": "Aún no se han subido guiones.",
+    "dropFilesHint": "o arrastra y suelta archivos aquí",
+    "dropFilesNow": "Suelta para subir",
+    "uploadProgress": "Subiendo {{current}} de {{total}}…",
+    "emptyState": {
+      "title": "Comienza tu primer guion",
+      "body": "Sube un PDF (o DOC / DOCX / TXT), o invita a tu profesor a comentar sobre lo que ya tienes.",
+      "uploadCta": "Subir un guion",
+      "inviteCta": "Invitar colaboradores"
+    },
     "onlyCreatorCanInvite": "Solo el creador del espacio puede invitar miembros.",
     "supervisor": {
       "actAs": "Actuar como supervisor",

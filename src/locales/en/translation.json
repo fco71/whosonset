@@ -791,6 +791,15 @@
     "uploadHelp": "Upload now, or invite collaborators later. Workspace access can be updated at any time.",
     "inviteMembersOptional": "Invite members (optional)",
     "noScreenplaysYet": "No screenplays uploaded yet.",
+    "dropFilesHint": "or drag and drop files here",
+    "dropFilesNow": "Drop to upload",
+    "uploadProgress": "Uploading {{current}} of {{total}}…",
+    "emptyState": {
+      "title": "Start your first screenplay",
+      "body": "Upload a PDF (or DOC / DOCX / TXT), or invite your teacher to comment on what you already have.",
+      "uploadCta": "Upload a screenplay",
+      "inviteCta": "Invite collaborators"
+    },
     "onlyCreatorCanInvite": "Only the workspace creator can invite members.",
     "supervisor": {
       "actAs": "Act as supervisor",

@@ -168,6 +168,8 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   // Screenplay upload state
   const [screenplayFile, setScreenplayFile] = useState<File | null>(null);
   const [uploadingScreenplay, setUploadingScreenplay] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
+  const [isDraggingFiles, setIsDraggingFiles] = useState(false);
   const [uploadedScreenplay, setUploadedScreenplay] = useState<Screenplay | null>(null);
   const [uploadWorkspaceId, setUploadWorkspaceId] = useState('');
 
@@ -949,37 +951,40 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     }
   };
 
-  // Screenplay upload handler
-  const handleScreenplayUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !currentUser) return;
+  // Accepted screenplay file extensions for the upload + drag-and-drop flow.
+  const SCREENPLAY_FILE_EXTENSIONS = ['.pdf', '.doc', '.docx', '.txt'] as const;
+  const isAcceptedScreenplayFile = (file: File): boolean => {
+    const lower = file.name.toLowerCase();
+    return SCREENPLAY_FILE_EXTENSIONS.some(ext => lower.endsWith(ext));
+  };
 
-    setScreenplayFile(file);
-    setUploadingScreenplay(true);
+  // Per-file upload — Storage + Firestore write. Returns the created screenplay or
+  // null on failure (so the multi-file loop can keep going after a single bad file).
+  const uploadSingleScreenplay = async (file: File): Promise<Screenplay | null> => {
+    if (!currentUser) return null;
+    const uploadWorkspace = uploadWorkspaceId
+      ? workspaces.find(workspace => workspace.id === uploadWorkspaceId && (workspace.status || 'active') === 'active') || null
+      : null;
+    if (uploadWorkspaceId && !uploadWorkspace) {
+      toast.error('Choose an active workspace before uploading.');
+      return null;
+    }
+    if (uploadWorkspace && !canEditWorkspaceContent(uploadWorkspace)) {
+      toast.error('Your role in this workspace can view and comment, but cannot upload screenplays.');
+      return null;
+    }
 
     try {
-      // Upload file to storage
       const storageRef = ref(storage, `screenplays/${currentUser.uid}/${Date.now()}_${file.name}`);
       const snapshot = await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(snapshot.ref);
-      const uploadWorkspace = uploadWorkspaceId
-        ? workspaces.find(workspace => workspace.id === uploadWorkspaceId && (workspace.status || 'active') === 'active') || null
-        : null;
-      if (uploadWorkspaceId && !uploadWorkspace) {
-        toast.error('Choose an active workspace before uploading.');
-        return;
-      }
-      if (uploadWorkspace && !canEditWorkspaceContent(uploadWorkspace)) {
-        toast.error('Your role in this workspace can view and comment, but cannot upload screenplays.');
-        return;
-      }
+
       const workspaceMemberIds = uploadWorkspace ? getWorkspaceMemberIds(uploadWorkspace) : [];
       const teamMemberIds = Array.from(new Set([
         currentUser.uid,
         ...workspaceMemberIds
       ]));
-      
-      // Create screenplay data with proper typing
+
       const now = new Date();
       const screenplayData: Omit<Screenplay, 'id'> = {
         name: file.name,
@@ -994,30 +999,116 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         lastModified: now
       };
 
-      // Save to Firestore
       const docRef = await addDoc(collection(db, 'screenplays'), screenplayData);
-      
-      // Create the complete screenplay object with ID
-      const uploadedScreenplay: Screenplay = {
-        ...screenplayData,
-        id: docRef.id
-      };
+      return { ...screenplayData, id: docRef.id };
+    } catch (err) {
+      console.error(`Failed to upload ${file.name}:`, err);
+      return null;
+    }
+  };
 
-      // Update state
-      setUploadedScreenplay(uploadedScreenplay);
-      setScreenplayFile(null);
-      
-      // Update the screenplays list
-      setUserScreenplays(prev => [...prev, uploadedScreenplay]);
-      
-      toast.success(`${file.name} ${t('collaboration.screenplaysTab.uploadSuccess')}`);
-      loadTeamMembers();
-    } catch (error) {
-      console.error('Error uploading screenplay:', error);
+  // Multi-file upload — used by both the file <input> (now multiple-enabled) and the
+  // drag-and-drop zone. Filters unsupported file types, uploads sequentially, shows a
+  // progress counter, and rolls up a per-batch toast at the end.
+  const handleMultiUpload = async (rawFiles: FileList | File[]) => {
+    if (!currentUser) {
+      toast.error('Please sign in to upload screenplays.');
+      return;
+    }
+    const files = Array.from(rawFiles);
+    if (files.length === 0) return;
+
+    const validFiles = files.filter(isAcceptedScreenplayFile);
+    const rejectedCount = files.length - validFiles.length;
+    if (rejectedCount > 0) {
+      toast(`${rejectedCount} file${rejectedCount === 1 ? '' : 's'} ignored — only PDF, DOC, DOCX, and TXT are supported.`);
+    }
+    if (validFiles.length === 0) return;
+
+    setUploadingScreenplay(true);
+    setUploadProgress({ current: 0, total: validFiles.length });
+
+    let successCount = 0;
+    let failureCount = 0;
+    let lastSuccess: Screenplay | null = null;
+
+    for (let i = 0; i < validFiles.length; i++) {
+      setUploadProgress({ current: i + 1, total: validFiles.length });
+      const file = validFiles[i];
+      setScreenplayFile(file);
+      const uploaded = await uploadSingleScreenplay(file);
+      if (uploaded) {
+        successCount++;
+        lastSuccess = uploaded;
+      } else {
+        failureCount++;
+      }
+    }
+
+    if (lastSuccess) {
+      setUploadedScreenplay(lastSuccess);
+    }
+    setScreenplayFile(null);
+    setUploadingScreenplay(false);
+    setUploadProgress(null);
+
+    if (successCount > 0 && failureCount === 0) {
+      toast.success(successCount === 1
+        ? `${validFiles[0].name} ${t('collaboration.screenplaysTab.uploadSuccess')}`
+        : `${successCount} screenplays uploaded.`);
+    } else if (successCount > 0 && failureCount > 0) {
+      toast(`Uploaded ${successCount} of ${validFiles.length}. ${failureCount} failed.`);
+    } else if (failureCount > 0) {
       toast.error(t('collaboration.screenplaysTab.uploadFailed'));
-    } finally {
-      setUploadingScreenplay(false);
-      e.target.value = '';
+    }
+
+    loadTeamMembers();
+  };
+
+  // Backwards-compatible name kept for the file <input>'s onChange wiring.
+  const handleScreenplayUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) {
+      return;
+    }
+    await handleMultiUpload(files);
+    e.target.value = '';
+  };
+
+  // Drag-and-drop wiring for the upload card. dragenter + dragover set the highlight;
+  // dragleave only collapses when we actually leave the drop zone (not when entering a
+  // child). The dragover handler must preventDefault to enable drop in browsers.
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer.types.includes('Files')) {
+      setIsDraggingFiles(true);
+    }
+  };
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer.types.includes('Files')) {
+      e.dataTransfer.dropEffect = 'copy';
+      setIsDraggingFiles(true);
+    }
+  };
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only collapse the highlight when the drag actually leaves the drop zone,
+    // not when it crosses into a child element.
+    if (e.currentTarget === e.target) {
+      setIsDraggingFiles(false);
+    }
+  };
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingFiles(false);
+    const files = e.dataTransfer?.files;
+    if (files && files.length > 0) {
+      handleMultiUpload(files);
     }
   };
 
@@ -1981,7 +2072,18 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
           <p>{t('collaboration.screenplaysTab.subtitle')}</p>
         </div>
         <div className="screenplays-content">
-          <div className="screenplay-upload-card bg-white rounded-lg shadow-md p-6 mb-6">
+          <div
+            className={`screenplay-upload-card bg-white rounded-lg shadow-md p-6 mb-6 ${isDraggingFiles ? 'drop-target-active' : ''}`}
+            onDragEnter={handleDragEnter}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            style={isDraggingFiles ? {
+              outline: '2px dashed #1976d2',
+              outlineOffset: -8,
+              background: '#eff6ff'
+            } : undefined}
+          >
             <div className="form-group">
               <label>{t('collaboration.uploadToWorkspace')}</label>
               <select
@@ -1998,30 +2100,39 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                 {t('collaboration.uploadHelp')}
               </p>
             </div>
-            <label htmlFor="screenplay-upload" style={{
-              display: 'inline-block',
-              background: '#1976d2',
-              color: '#fff',
-              padding: '0.75rem 2rem',
-              borderRadius: '6px',
-              fontWeight: 600,
-              cursor: uploadingScreenplay ? 'not-allowed' : 'pointer',
-              opacity: uploadingScreenplay ? 0.6 : 1,
-              boxShadow: '0 2px 8px rgba(25, 118, 210, 0.08)',
-              marginBottom: 16
-            }}>
-              {uploadingScreenplay ? t('collaboration.screenplaysTab.uploading') : t('collaboration.screenplaysTab.uploadScreenplay')}
-              <input
-                id="screenplay-upload"
-                type="file"
-                accept=".pdf,.doc,.docx,.txt"
-                style={{ display: 'none' }}
-                onChange={handleScreenplayUpload}
-                disabled={uploadingScreenplay}
-              />
-            </label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+              <label htmlFor="screenplay-upload" style={{
+                display: 'inline-block',
+                background: '#1976d2',
+                color: '#fff',
+                padding: '0.75rem 2rem',
+                borderRadius: '6px',
+                fontWeight: 600,
+                cursor: uploadingScreenplay ? 'not-allowed' : 'pointer',
+                opacity: uploadingScreenplay ? 0.6 : 1,
+                boxShadow: '0 2px 8px rgba(25, 118, 210, 0.08)'
+              }}>
+                {uploadingScreenplay
+                  ? (uploadProgress
+                    ? t('collaboration.uploadProgress', { current: uploadProgress.current, total: uploadProgress.total })
+                    : t('collaboration.screenplaysTab.uploading'))
+                  : t('collaboration.screenplaysTab.uploadScreenplay')}
+                <input
+                  id="screenplay-upload"
+                  type="file"
+                  multiple
+                  accept=".pdf,.doc,.docx,.txt"
+                  style={{ display: 'none' }}
+                  onChange={handleScreenplayUpload}
+                  disabled={uploadingScreenplay}
+                />
+              </label>
+              <span style={{ color: '#64748b', fontSize: '0.9em' }}>
+                {isDraggingFiles ? t('collaboration.dropFilesNow') : t('collaboration.dropFilesHint')}
+              </span>
+            </div>
             {selectedUploadWorkspace && canManageWorkspace(selectedUploadWorkspace) && (
-              <div className="optional-invite">
+              <div className="optional-invite" style={{ marginTop: 16 }}>
                 <button
                   className="btn-secondary"
                   type="button"
@@ -2034,8 +2145,42 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
           </div>
           <div className="screenplays-list bg-white rounded-lg shadow-md p-6">
             {userScreenplays.length === 0 ? (
-              <div style={{ color: '#888', textAlign: 'center', padding: '2rem 0' }}>
-                {t('collaboration.noScreenplaysYet')}
+              <div
+                className="screenplays-empty-state"
+                style={{
+                  textAlign: 'center',
+                  padding: '2.5rem 1.5rem',
+                  color: '#475569'
+                }}
+              >
+                <div style={{ fontSize: 36, marginBottom: 12 }} aria-hidden="true">🎬</div>
+                <h3 style={{ margin: '0 0 8px', color: '#1e293b', fontSize: '1.15em' }}>
+                  {t('collaboration.emptyState.title')}
+                </h3>
+                <p style={{ margin: '0 auto 20px', maxWidth: 460, lineHeight: 1.5 }}>
+                  {t('collaboration.emptyState.body')}
+                </p>
+                <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    onClick={() => {
+                      const input = document.getElementById('screenplay-upload') as HTMLInputElement | null;
+                      input?.click();
+                    }}
+                  >
+                    {t('collaboration.emptyState.uploadCta')}
+                  </button>
+                  {selectedUploadWorkspace && canManageWorkspace(selectedUploadWorkspace) && (
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={() => openAddMemberModalForWorkspace(selectedUploadWorkspace)}
+                    >
+                      {t('collaboration.emptyState.inviteCta')}
+                    </button>
+                  )}
+                </div>
               </div>
             ) : (
               sectionKeys.map(sectionKey => (
