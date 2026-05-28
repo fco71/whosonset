@@ -49,7 +49,10 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, onClose }) 
   const [currentPage, setCurrentPage] = useState(1);
   const [showPreview, setShowPreview] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [editorPanePct, setEditorPanePct] = useState(50); // width % of the editor pane when preview is shown
   const printRef = useRef<HTMLDivElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const resizingRef = useRef(false);
 
   const saveTimer = useRef<number | null>(null);
   const pendingCaret = useRef<number | null>(null);
@@ -157,6 +160,36 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, onClose }) 
     setCurrentPage(computePageAtCaret(result.source, result.caret));
   }, [scheduleSave]);
 
+  // Draggable divider between the textarea and the preview. Updates the editor pane's
+  // width % from the pointer position relative to the body container (clamped 20–80%).
+  const startResize = (e: React.MouseEvent) => {
+    e.preventDefault();
+    resizingRef.current = true;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  };
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      if (!resizingRef.current || !bodyRef.current) return;
+      const rect = bodyRef.current.getBoundingClientRect();
+      const pct = ((e.clientX - rect.left) / rect.width) * 100;
+      setEditorPanePct(Math.max(20, Math.min(80, pct)));
+    };
+    const onUp = () => {
+      if (!resizingRef.current) return;
+      resizingRef.current = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    return () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+  }, []);
+
   const handleDownloadPdf = async () => {
     if (!printRef.current) return;
     setExporting(true);
@@ -252,8 +285,8 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, onClose }) 
           })}
         </div>
 
-        {/* Editor body: textarea + live formatted preview */}
-        <div style={bodyStyle}>
+        {/* Editor body: textarea + (optional) live formatted preview, resizable divider */}
+        <div style={bodyStyle} ref={bodyRef}>
           <textarea
             ref={textareaRef}
             value={source}
@@ -263,12 +296,25 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, onClose }) 
             onKeyUp={refreshActiveType}
             placeholder={t('fountain.placeholder')}
             spellCheck
-            style={textareaStyle}
+            style={{
+              ...textareaStyle,
+              flex: showPreview ? `0 0 ${editorPanePct}%` : '1 1 100%'
+            }}
           />
           {showPreview && (
-            <div style={previewPaneStyle}>
-              <FountainPages source={source} compact />
-            </div>
+            <>
+              <div
+                style={dividerStyle}
+                onMouseDown={startResize}
+                role="separator"
+                aria-orientation="vertical"
+                aria-label={t('fountain.resizeHandle')}
+                title={t('fountain.resizeHandle')}
+              />
+              <div style={previewPaneStyle}>
+                <FountainPages source={source} compact />
+              </div>
+            </>
           )}
         </div>
 
@@ -313,8 +359,15 @@ const previewPaneStyle: React.CSSProperties = {
   flex: 1,
   minWidth: 0,
   overflowY: 'auto',
-  borderLeft: '1px solid #e2e8f0',
   background: '#e5e7eb'
+};
+
+const dividerStyle: React.CSSProperties = {
+  flex: '0 0 6px',
+  cursor: 'col-resize',
+  background: '#e2e8f0',
+  borderLeft: '1px solid #cbd5e1',
+  borderRight: '1px solid #cbd5e1'
 };
 
 const offscreenStyle: React.CSSProperties = {
