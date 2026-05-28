@@ -136,6 +136,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   const [filterType, setFilterType] = useState<'all' | 'annotations' | 'tags' | 'resolved'>('all');
   const [statusFilter, setStatusFilter] = useState<'open' | 'mine' | 'from_teacher' | 'all'>('open');
   const [screenplayWorkspaceId, setScreenplayWorkspaceId] = useState<string | null>(null);
+  const [screenplayUploadedBy, setScreenplayUploadedBy] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'time' | 'page' | 'type' | 'user'>('time');
   const [showUserCursors, setShowUserCursors] = useState(true);
@@ -503,6 +504,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     setLoading(true);
     setNumPages(null);
     setScreenplayWorkspaceId(null);
+    setScreenplayUploadedBy(null);
     if (!screenplay.url || typeof screenplay.url !== 'string' || screenplay.url.trim() === '') {
       setError('No PDF URL found for this screenplay.');
       setLoading(false);
@@ -516,8 +518,9 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         if (cancelled) return;
         const data = snap.exists() ? snap.data() : null;
         setScreenplayWorkspaceId(typeof data?.workspaceId === 'string' ? data.workspaceId : null);
+        setScreenplayUploadedBy(typeof data?.uploadedBy === 'string' ? data.uploadedBy : null);
       } catch (err) {
-        console.error('Failed to read screenplay workspaceId:', err);
+        console.error('Failed to read screenplay metadata:', err);
       }
     })();
     initializeSession();
@@ -727,6 +730,72 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     }
   };
 
+  // G6 — write an in-app notification to the screenplay author when a supervisor leaves a
+  // comment or tag. Guarded so:
+  //   - only fires when the author was acting as a supervisor at write time
+  //   - never notifies the screenplay's own uploader if they're the author of the comment
+  //     (no self-notifications when a teacher uploads + comments on their own demo)
+  //   - silently no-ops if uploadedBy is missing (defensive — old screenplays)
+  // The doc lives in the top-level `notifications` collection (same as the rest of the
+  // app's notification system, surfaced by useNotifications + NotificationBell).
+  // We deliberately do NOT send email here — see G6 design note. Email digest is a
+  // future Cloud-Function workstream so we don't bombard students per keystroke.
+  const writeSupervisorCommentNotification = async (params: {
+    kind: 'annotation' | 'tag';
+    pageNumber: number;
+    content: string;
+    refId: string;
+  }) => {
+    if (!currentUser || !screenplayUploadedBy) return;
+    if (screenplayUploadedBy === currentUser.uid) return;
+    try {
+      const authorName = currentUser.displayName || t('screenplay.notifications.fallbackAuthor');
+      const screenplayName = screenplay.name || t('screenplay.notifications.fallbackScreenplay');
+      const excerpt = params.content.length > 80
+        ? `${params.content.slice(0, 80).trim()}…`
+        : params.content;
+      const titleKey = params.kind === 'annotation'
+        ? 'screenplay.notifications.supervisorAnnotation.title'
+        : 'screenplay.notifications.supervisorTag.title';
+      const bodyKey = params.kind === 'annotation'
+        ? 'screenplay.notifications.supervisorAnnotation.body'
+        : 'screenplay.notifications.supervisorTag.body';
+      const title = t(titleKey, { author: authorName, screenplay: screenplayName });
+      const body = t(bodyKey, {
+        author: authorName,
+        screenplay: screenplayName,
+        page: params.pageNumber,
+        excerpt
+      });
+      await addDoc(collection(db, 'notifications'), {
+        userId: screenplayUploadedBy,
+        type: params.kind === 'annotation' ? 'supervisor_annotation' : 'supervisor_tag',
+        title,
+        body,
+        message: body,
+        isRead: false,
+        read: false,
+        createdAt: serverTimestamp(),
+        timestamp: serverTimestamp(),
+        senderId: currentUser.uid,
+        senderName: authorName,
+        relatedId: screenplay.id,
+        link: '/collaboration',
+        metadata: {
+          screenplayId: screenplay.id,
+          screenplayName,
+          workspaceId: screenplayWorkspaceId || null,
+          [params.kind === 'annotation' ? 'annotationId' : 'tagId']: params.refId,
+          pageNumber: params.pageNumber,
+          kind: params.kind
+        }
+      });
+    } catch (err) {
+      // Failure to write a notification must never block the underlying comment.
+      console.error('Failed to write supervisor-comment notification:', err);
+    }
+  };
+
   const addAnnotation = async (position: { x: number; y: number; width: number; height: number }, pageNumber: number, annotation: string) => {
     if (!annotation.trim()) return;
 
@@ -748,9 +817,19 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         priority: 'medium' as const
       };
 
-      await addDoc(collection(db, 'screenplayAnnotations'), annotationData);
+      const annotationRef = await addDoc(collection(db, 'screenplayAnnotations'), annotationData);
       setNewAnnotation('');
       toast.success(supervisorAtAuthorTime ? t('screenplay.toasts.supervisorNoteAdded') : t('screenplay.toasts.annotationAdded'));
+
+      if (supervisorAtAuthorTime) {
+        // Don't await — notification is best-effort, never block the user's flow.
+        writeSupervisorCommentNotification({
+          kind: 'annotation',
+          pageNumber,
+          content: annotation.trim(),
+          refId: annotationRef.id
+        });
+      }
     } catch (error) {
       console.error('Error adding annotation:', error);
       toast.error(t('screenplay.toasts.annotationFailed'));
@@ -778,9 +857,18 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         supervisorAtAuthorTime
       };
 
-      await addDoc(collection(db, 'screenplayTags'), tagData);
+      const tagRef = await addDoc(collection(db, 'screenplayTags'), tagData);
       setNewTag('');
       toast.success(t('screenplay.toasts.tagAdded'));
+
+      if (supervisorAtAuthorTime) {
+        writeSupervisorCommentNotification({
+          kind: 'tag',
+          pageNumber,
+          content: tag.trim(),
+          refId: tagRef.id
+        });
+      }
     } catch (error) {
       console.error('Error adding tag:', error);
       toast.error(t('screenplay.toasts.tagFailed'));

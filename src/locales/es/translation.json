@@ -1130,6 +1130,18 @@
       "fromTeacher": "Del profesor ({{count}})",
       "all": "Todas ({{count}})"
     },
+    "notifications": {
+      "fallbackAuthor": "Un supervisor",
+      "fallbackScreenplay": "tu guion",
+      "supervisorAnnotation": {
+        "title": "{{author}} dejó una nota en {{screenplay}}",
+        "body": "Página {{page}}: \"{{excerpt}}\""
+      },
+      "supervisorTag": {
+        "title": "{{author}} agregó una etiqueta en {{screenplay}}",
+        "body": "Página {{page}}: \"{{excerpt}}\""
+      }
+    },
     "export": {
       "button": "Exportar informe (CSV)",
       "buttonShort": "Exportar",

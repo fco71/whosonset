@@ -1165,6 +1165,18 @@
       "fromTeacher": "From teacher ({{count}})",
       "all": "All ({{count}})"
     },
+    "notifications": {
+      "fallbackAuthor": "A supervisor",
+      "fallbackScreenplay": "your screenplay",
+      "supervisorAnnotation": {
+        "title": "{{author}} left a note on {{screenplay}}",
+        "body": "Page {{page}}: \"{{excerpt}}\""
+      },
+      "supervisorTag": {
+        "title": "{{author}} added a tag on {{screenplay}}",
+        "body": "Page {{page}}: \"{{excerpt}}\""
+      }
+    },
     "export": {
       "button": "Export report (CSV)",
       "buttonShort": "Export",

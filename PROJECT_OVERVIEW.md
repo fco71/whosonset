@@ -689,9 +689,53 @@ Each step ends with a runnable acceptance check. An agent picking up step N shou
 
 ---
 
-## Where we are right now (pick-up pointer, 2026-05-27 late-night — after C1 collaborator hydration fix)
+## Where we are right now (pick-up pointer, 2026-05-27 late-night — after G6 in-app notifications)
 
-**Last meaningful step**: Fixed the "Unknown" collaborator bug Francisco saw after deleting + re-uploading a screenplay. Collaborator listener now hydrates uid → crew-profile names; addCollaborator now writes uid strings instead of objects (aligning with the Firestore rule + the workspace-sync write path).
+**Last meaningful step**: G6 in-app notifications — when a supervisor leaves an annotation or tag, the screenplay author gets an instant notification (red-dot bell + dropdown entry). No email; Francisco explicitly wanted to avoid bombardment per individual input. Email digest deferred to a future Cloud-Function workstream.
+
+Prior in the same evening: C1 (collaborator hydration fix), 3 chunked commits landed (0f245a03 + 87f5beef + cd8f26cc), G1+G2+G3+G4+S1–S10+i18n+CSV export.
+
+### G6 — in-app notifications on supervisor comments
+
+**Trigger**: `addAnnotation` and `addTag` in [ScreenplayViewer.tsx](src/components/Collaboration/ScreenplayViewer.tsx) — after the comment doc is written, IF `supervisorAtAuthorTime === true` AND the current user is NOT the screenplay's `uploadedBy`, write one notification doc.
+
+**Schema** (matches existing AppNotification used by useNotifications + NotificationBell + NotificationCenter):
+```ts
+{
+  userId: screenplayUploadedBy,
+  type: 'supervisor_annotation' | 'supervisor_tag',
+  title: "Francisco left a note on Scene 2.pdf",        // localized via i18n
+  body: "Page 4: \"<first 80 chars of comment>…\"",     // localized
+  message: <same>,                                       // legacy duality kept for older consumers
+  isRead: false, read: false,                            // same
+  createdAt: serverTimestamp(), timestamp: serverTimestamp(),
+  senderId, senderName,
+  relatedId: screenplayId,
+  link: '/collaboration',                                // sensible fallback target
+  metadata: { screenplayId, screenplayName, workspaceId, annotationId|tagId, pageNumber, kind }
+}
+```
+
+**Guarded against**:
+- Anonymous / no-author writes (no current user) — skipped.
+- Self-notify (teacher comments on their own demo screenplay) — `uploadedBy === currentUser.uid` short-circuits.
+- Missing `uploadedBy` (old screenplays with malformed data) — silent no-op.
+- Notification write failures don't block the comment — wrapped in try/catch, logged, not propagated.
+
+**No email path**: per Francisco's design decision 2026-05-27, NO email is sent here. Per-keystroke email = bombardment. Email is its own future workstream (a daily digest Cloud Function, opt-in via a user-profile setting). Logged separately as G6.5 / "later" below.
+
+**NotificationCenter route mapping**: added cases for `supervisor_annotation` and `supervisor_tag` so clicking the notification routes to `/collaboration`. The viewer itself isn't routable yet (modal-only), so this is the best non-deep-link landing for now.
+
+**i18n keys added**: `screenplay.notifications.supervisorAnnotation.{title,body}` and `…supervisorTag.{title,body}` plus `fallbackAuthor` / `fallbackScreenplay`. Both `en` and `es` translation JSONs updated.
+
+**Files touched**:
+- [src/components/Collaboration/ScreenplayViewer.tsx](src/components/Collaboration/ScreenplayViewer.tsx) — added `screenplayUploadedBy` state, extended mount-time `getDoc` to capture it, new `writeSupervisorCommentNotification` helper, calls from `addAnnotation` and `addTag`.
+- [src/components/NotificationCenter.tsx](src/components/NotificationCenter.tsx) — route mapping + 🎓 icon for the new types.
+- [src/locales/en/translation.json](src/locales/en/translation.json) + [src/locales/es/translation.json](src/locales/es/translation.json) — new `screenplay.notifications.*` keys.
+
+### Prior step: C1 collaborator hydration fix (committed cd8f26cc earlier this session)
+
+Fixed the "Unknown" collaborator bug Francisco saw after deleting + re-uploading a screenplay. Collaborator listener now hydrates uid → crew-profile names; addCollaborator now writes uid strings instead of objects (aligning with the Firestore rule + the workspace-sync write path).
 
 Earlier this evening: G1 (teacher self-tag) + G2 (real-time hub) + G3 (comment-count badges + filter chips) + G4 (supervisor provenance) + S1–S10 (annotation UX hardening) + S9 (popup drag-handle) + S10 (highlight coordinate-space) + i18n (en/es) + CSV report export. Three commits landed on `main` (0f245a03 + 87f5beef + c2e85902) plus the C1 fix below is still uncommitted on top.
 
@@ -701,7 +745,7 @@ The original two-workstream plan has Workstream A (collab + supervisor flow) lar
 
 | Item | Status | Notes |
 |------|--------|-------|
-| G6 — in-app notifications when a supervisor comments | not started | Highest leverage closing-the-loop feature. Spec in G6 below. |
+| G6 — in-app notifications when a supervisor comments | ✅ done 2026-05-27 late-night | Spec in G6 section below. Email digest is its own future workstream (G6.5). |
 | G7 — drag-and-drop multi-upload + first-run empty state | not started | Smallest polish win, ~30 min. |
 | G5 — workspace activity feed | not started | "Maya uploaded X · 3m ago" timeline in workspace card. |
 | G9 — mobile pass for the hub | not started | Students mostly work on phones. |

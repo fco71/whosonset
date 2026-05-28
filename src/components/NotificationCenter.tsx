@@ -66,11 +66,21 @@ function resolveFallbackRoute(notification: AppNotification): string {
     return '/projects';
   }
 
+  // Supervisor-authored screenplay comments / tags (G6). The viewer itself isn't a
+  // routable URL yet, so we land the user on the collaboration hub where they can
+  // open the relevant screenplay.
+  if (type === 'supervisor_annotation' || type === 'supervisor_tag') {
+    return '/collaboration';
+  }
+
   return '/';
 }
 
 function getNotificationIcon(type: string): string {
   switch (type) {
+    case 'supervisor_annotation':
+    case 'supervisor_tag':
+      return '🎓';
     case 'job_application':
       return '💼';
     case 'project_invitation':
