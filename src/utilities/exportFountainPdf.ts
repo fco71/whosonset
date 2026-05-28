@@ -25,5 +25,26 @@ export async function exportElementToPdf(element: HTMLElement, name: string): Pr
     pagebreak: { mode: ['css', 'legacy'] }
   } as Parameters<ReturnType<typeof html2pdf>['set']>[0];
 
-  await html2pdf().set(options).from(element).save();
+  // Render to a jsPDF instance, stamp screenplay-style page numbers (top-right "N.",
+  // page 1 unnumbered per convention), then save. The worker is cast to any because the
+  // bundled types model `.get('pdf').then(...)` as a plain Promise, losing the chainable
+  // `.save()` the runtime actually provides.
+  // Cast before .toPdf(): the html2pdf types resolved by ts-loader model the post-.from()
+  // value without .toPdf()/chainable .save(), so we step out to `any` for the jsPDF hook.
+  const worker = (html2pdf().set(options).from(element) as any).toPdf();
+  await worker
+    .get('pdf')
+    .then((pdf: any) => {
+      const totalPages = pdf.internal.getNumberOfPages();
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      pdf.setFont('courier', 'normal');
+      pdf.setFontSize(12);
+      pdf.setTextColor(0, 0, 0);
+      for (let page = 2; page <= totalPages; page++) {
+        pdf.setPage(page);
+        // ~1in from the right edge, ~0.5in from the top.
+        pdf.text(`${page}.`, pageWidth - 72, 50, { align: 'right' });
+      }
+    })
+    .save();
 }

@@ -758,6 +758,10 @@ Each step ends with a runnable acceptance check. An agent picking up step N shou
 
 **Last meaningful step (2026-05-28, agent)**: G5 workspace activity feed. Before that: account-deletion cascade Cloud Function + the two review fixes. Typecheck clean, 40 Vitest tests green, app+functions build clean.
 
+### PDF export now stamps screenplay page numbers (2026-05-28)
+
+The exported Fountain PDF previously had no printed page numbers (on-screen pages did). [exportFountainPdf.ts](src/utilities/exportFountainPdf.ts) now renders to the jsPDF instance (`.toPdf().get('pdf')`), iterates pages, and stamps a top-right "N." (Courier 12pt, ~1in from right / 0.5in from top), page 1 unnumbered per screenplay convention, then saves. Closes the last Fountain loose end. Typecheck + production build clean.
+
 ### Workspace cleanup tooling (2026-05-28)
 
 Two ways to clean up workspaces (e.g. test data):
