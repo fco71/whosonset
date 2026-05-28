@@ -38,6 +38,11 @@ const TOOLBAR: Array<{ type: ScreenplayElementType; labelKey: string; key: strin
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
 const modLabel = isMac ? '⌥' : 'Alt+';
 
+// Cap the typing column to a page-like character width (Courier is monospace, so `ch`
+// ≈ one character). Keeps lines from running the full width of the pane — closer to a
+// real screenplay page's text block than an infinite horizontal line.
+const EDITOR_COLUMN_CH = 63;
+
 const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, onClose }) => {
   const { currentUser } = useAuth();
   const { t } = useTranslation();
@@ -290,20 +295,29 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, onClose }) 
 
         {/* Editor body: textarea + (optional) live formatted preview, resizable divider */}
         <div style={bodyStyle} ref={bodyRef}>
-          <textarea
-            ref={textareaRef}
-            value={source}
-            onChange={handleChange}
-            onKeyDown={handleKeyDown}
-            onClick={refreshActiveType}
-            onKeyUp={refreshActiveType}
-            placeholder={t('fountain.placeholder')}
-            spellCheck
+          <div
             style={{
-              ...textareaStyle,
-              flex: showPreview ? `0 0 ${editorPanePct}%` : '1 1 100%'
+              flex: showPreview ? `0 0 ${editorPanePct}%` : '1 1 100%',
+              minWidth: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              background: '#ffffff',
+              overflow: 'hidden'
             }}
-          />
+          >
+            <textarea
+              ref={textareaRef}
+              value={source}
+              onChange={handleChange}
+              onKeyDown={handleKeyDown}
+              onClick={refreshActiveType}
+              onKeyUp={refreshActiveType}
+              placeholder={t('fountain.placeholder')}
+              spellCheck
+              style={textareaStyle}
+            />
+          </div>
           {showPreview && (
             <>
               <div
@@ -454,11 +468,13 @@ const saveBadgeStyle = (status: SaveStatus): React.CSSProperties => ({
 
 const textareaStyle: React.CSSProperties = {
   flex: 1,
-  minWidth: 0,
+  width: '100%',
+  // Page-like column width (≈ a screenplay text block) instead of full pane width.
+  maxWidth: `${EDITOR_COLUMN_CH}ch`,
   border: 'none',
   outline: 'none',
   resize: 'none',
-  padding: '24px clamp(24px, 6%, 64px)',
+  padding: '24px 12px',
   fontFamily: '"Courier Prime", "Courier New", Courier, monospace',
   fontSize: 15,
   lineHeight: 1.5,

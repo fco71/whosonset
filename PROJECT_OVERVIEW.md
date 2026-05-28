@@ -760,6 +760,8 @@ Each step ends with a runnable acceptance check. An agent picking up step N shou
 
 Francisco's pass (reviewed, all solid): field-scoped screenplay update rules (content vs access), annotation moderation model (identity locked, supervisor notes protected), workspaces `list: if false` with a `workspaceMemberships` discovery collection, security-rules regression tests, responsive PDF viewer (ResizeObserver), FountainEditor `hasLocalEdit` race fix, removed the drop-upload (per his request), purged accidentally-tracked `.specstory/` history.
 
+**Editor typing column (2026-05-28)**: the editor textarea used to wrap at the full pane width; capped it to a page-like monospace column (`maxWidth: 63ch`, centered, `EDITOR_COLUMN_CH` in [FountainEditor.tsx](src/components/Collaboration/FountainEditor.tsx)) so it wraps closer to a real screenplay text block. Editor-only cosmetic; preview/export unaffected.
+
 ### Review fixes (2026-05-28)
 
 - **Risk #1 — account-deletion crash (FIXED).** [AuthContext.tsx](src/contexts/AuthContext.tsx) step 29 was `getDocs(collection(db,'workspaces') where createdBy==userId)` — denied under `list: if false` (would abort the deletion sequence) and using the wrong field (`createdBy` vs `ownerId`). Rewritten to discover the user's workspaces via the listable `workspaceMemberships` collection, soft-delete the ones they OWN (+ remove those membership docs), wrapped in try/catch so it's never fatal. **Limitation (logged below)**: memberships the user holds in OTHER people's workspaces can't be removed client-side (owner-only delete) — full cascade needs an admin Cloud Function.
