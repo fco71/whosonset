@@ -791,8 +791,6 @@
     "uploadHelp": "Upload now, or invite collaborators later. Workspace access can be updated at any time.",
     "inviteMembersOptional": "Invite members (optional)",
     "noScreenplaysYet": "No screenplays uploaded yet.",
-    "dropFilesHint": "or drag and drop files here",
-    "dropFilesNow": "Drop to upload",
     "uploadProgress": "Uploading {{current}} of {{total}}…",
     "emptyState": {
       "title": "Start your first screenplay",

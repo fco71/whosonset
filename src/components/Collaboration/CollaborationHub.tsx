@@ -171,10 +171,8 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const [workspaceSettings, setWorkspaceSettings] = useState(newWorkspaceData.settings);
 
   // Screenplay upload state
-  const [screenplayFile, setScreenplayFile] = useState<File | null>(null);
   const [uploadingScreenplay, setUploadingScreenplay] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
-  const [isDraggingFiles, setIsDraggingFiles] = useState(false);
   const [uploadedScreenplay, setUploadedScreenplay] = useState<Screenplay | null>(null);
   const [uploadWorkspaceId, setUploadWorkspaceId] = useState('');
 
@@ -1020,7 +1018,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     }
   };
 
-  // Accepted screenplay file extensions for the upload + drag-and-drop flow.
+  // Accepted screenplay file extensions for the button-driven upload flow.
   const SCREENPLAY_FILE_EXTENSIONS = ['.pdf', '.doc', '.docx', '.txt'] as const;
   const isAcceptedScreenplayFile = (file: File): boolean => {
     const lower = file.name.toLowerCase();
@@ -1076,9 +1074,8 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     }
   };
 
-  // Multi-file upload — used by both the file <input> (now multiple-enabled) and the
-  // drag-and-drop zone. Filters unsupported file types, uploads sequentially, shows a
-  // progress counter, and rolls up a per-batch toast at the end.
+  // Multi-file upload from the upload button. Filters unsupported file types, uploads
+  // sequentially, shows a progress counter, and rolls up a per-batch toast at the end.
   const handleMultiUpload = async (rawFiles: FileList | File[]) => {
     if (!currentUser) {
       toast.error('Please sign in to upload screenplays.');
@@ -1104,7 +1101,6 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     for (let i = 0; i < validFiles.length; i++) {
       setUploadProgress({ current: i + 1, total: validFiles.length });
       const file = validFiles[i];
-      setScreenplayFile(file);
       const uploaded = await uploadSingleScreenplay(file);
       if (uploaded) {
         successCount++;
@@ -1117,7 +1113,6 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     if (lastSuccess) {
       setUploadedScreenplay(lastSuccess);
     }
-    setScreenplayFile(null);
     setUploadingScreenplay(false);
     setUploadProgress(null);
 
@@ -1196,43 +1191,6 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     }
     await handleMultiUpload(files);
     e.target.value = '';
-  };
-
-  // Drag-and-drop wiring for the upload card. dragenter + dragover set the highlight;
-  // dragleave only collapses when we actually leave the drop zone (not when entering a
-  // child). The dragover handler must preventDefault to enable drop in browsers.
-  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.dataTransfer.types.includes('Files')) {
-      setIsDraggingFiles(true);
-    }
-  };
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.dataTransfer.types.includes('Files')) {
-      e.dataTransfer.dropEffect = 'copy';
-      setIsDraggingFiles(true);
-    }
-  };
-  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    // Only collapse the highlight when the drag actually leaves the drop zone,
-    // not when it crosses into a child element.
-    if (e.currentTarget === e.target) {
-      setIsDraggingFiles(false);
-    }
-  };
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDraggingFiles(false);
-    const files = e.dataTransfer?.files;
-    if (files && files.length > 0) {
-      handleMultiUpload(files);
-    }
   };
 
   const loadTeamMembers = async () => {
@@ -2215,18 +2173,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
           <p>{t('collaboration.screenplaysTab.subtitle')}</p>
         </div>
         <div className="screenplays-content">
-          <div
-            className={`screenplay-upload-card bg-white rounded-lg shadow-md p-6 mb-6 ${isDraggingFiles ? 'drop-target-active' : ''}`}
-            onDragEnter={handleDragEnter}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            style={isDraggingFiles ? {
-              outline: '2px dashed #1976d2',
-              outlineOffset: -8,
-              background: '#eff6ff'
-            } : undefined}
-          >
+          <div className="screenplay-upload-card bg-white rounded-lg shadow-md p-6 mb-6">
             <div className="form-group">
               <label>{t('collaboration.uploadToWorkspace')}</label>
               <select
@@ -2244,32 +2191,43 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
               </p>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-              <label htmlFor="screenplay-upload" style={{
-                display: 'inline-block',
-                background: '#1976d2',
-                color: '#fff',
-                padding: '0.75rem 2rem',
-                borderRadius: '6px',
-                fontWeight: 600,
-                cursor: uploadingScreenplay ? 'not-allowed' : 'pointer',
-                opacity: uploadingScreenplay ? 0.6 : 1,
-                boxShadow: '0 2px 8px rgba(25, 118, 210, 0.08)'
-              }}>
+              <button
+                type="button"
+                onClick={() => {
+                  const input = document.getElementById('screenplay-upload') as HTMLInputElement | null;
+                  input?.click();
+                }}
+                disabled={uploadingScreenplay}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: '#1976d2',
+                  color: '#fff',
+                  padding: '0.75rem 2rem',
+                  borderRadius: '6px',
+                  border: 0,
+                  fontWeight: 600,
+                  cursor: uploadingScreenplay ? 'not-allowed' : 'pointer',
+                  opacity: uploadingScreenplay ? 0.6 : 1,
+                  boxShadow: '0 2px 8px rgba(25, 118, 210, 0.08)'
+                }}
+              >
                 {uploadingScreenplay
                   ? (uploadProgress
                     ? t('collaboration.uploadProgress', { current: uploadProgress.current, total: uploadProgress.total })
                     : t('collaboration.screenplaysTab.uploading'))
                   : t('collaboration.screenplaysTab.uploadScreenplay')}
-                <input
-                  id="screenplay-upload"
-                  type="file"
-                  multiple
-                  accept=".pdf,.doc,.docx,.txt"
-                  style={{ display: 'none' }}
-                  onChange={handleScreenplayUpload}
-                  disabled={uploadingScreenplay}
-                />
-              </label>
+              </button>
+              <input
+                id="screenplay-upload"
+                type="file"
+                multiple
+                accept=".pdf,.doc,.docx,.txt"
+                style={{ display: 'none' }}
+                onChange={handleScreenplayUpload}
+                disabled={uploadingScreenplay}
+              />
               <button
                 type="button"
                 className="btn-secondary"
@@ -2278,9 +2236,6 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
               >
                 ✍️ {t('fountain.startWriting')}
               </button>
-              <span style={{ color: '#64748b', fontSize: '0.9em' }}>
-                {isDraggingFiles ? t('collaboration.dropFilesNow') : t('collaboration.dropFilesHint')}
-              </span>
             </div>
             {selectedUploadWorkspace && canManageWorkspace(selectedUploadWorkspace) && (
               <div className="optional-invite" style={{ marginTop: 16 }}>

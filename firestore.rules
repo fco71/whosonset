@@ -355,11 +355,6 @@ service cloud.firestore {
       );
     }
     
-    function isJobPosterForJobId(jobId) {
-      return jobId != null &&
-        get(/databases/$(database)/documents/jobPostings/$(jobId)).data.postedById == request.auth.uid;
-    }
-
     function canAccessApplicationId(applicationId) {
       return signedIn() &&
         applicationId is string &&

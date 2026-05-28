@@ -181,7 +181,7 @@ gcloud firestore databases restore \
 - **Tests**: Vitest configured (`vitest.config.ts`); Jest also configured (`jest.config.mjs`); only ~2 actual test files exist
 - **Auth**: Firebase Auth (email/password + reset flow)
 - **Email**: Cloud Function calling Gmail SMTP (`functions/src/emailService.ts`)
-- **Misc**: PDF rendering (react-pdf + pdfjs-dist), drag-and-drop (react-beautiful-dnd — unmaintained), Recharts, dual icon libs (lucide-react + react-icons)
+- **Misc**: PDF rendering (react-pdf + pdfjs-dist), Kanban drag-and-drop via `@dnd-kit/core`, Recharts, dual icon libs (lucide-react + react-icons)
 
 ## Top-level shape
 
@@ -799,15 +799,15 @@ Francisco: shortcuts weren't firing, the editor showed no page indicator while w
 
 ### Prior steps this evening (all committed)
 
-G7 drag-and-drop + empty state (d46764dd), B4 parser (631a0e2b), G6 notifications (2bc6c7d3), C1 collaborator hydration (cd8f26cc), G1–G4 + S1–S10 + i18n + CSV (0f245a03 + 87f5beef + c2e85902).
+G7 button upload + empty state (d46764dd, revised 2026-05-28), B4 parser (631a0e2b), G6 notifications (2bc6c7d3), C1 collaborator hydration (cd8f26cc), G1–G4 + S1–S10 + i18n + CSV (0f245a03 + 87f5beef + c2e85902).
 
-### G7 — drag-and-drop multi-upload + empty state (done)
+### G7 — button-only upload + empty state (done, revised 2026-05-28)
 
-- Upload card is now a drop zone (`onDragEnter/Over/Leave/Drop`), highlights with a dashed outline + blue tint while dragging files over it.
-- File `<input>` gained `multiple`; both the input and the drop zone funnel through `handleMultiUpload`.
+- Screenplay file upload is available only through the explicit upload button.
+- File `<input>` remains hidden and can be opened by the upload button or the empty-state upload CTA.
 - `handleScreenplayUpload` refactored: per-file logic extracted to `uploadSingleScreenplay` (returns the screenplay or null), wrapped by `handleMultiUpload` which filters unsupported types, uploads sequentially, shows an "Uploading N of M…" counter, and rolls up a per-batch toast (all-success / partial / all-fail).
 - First-run empty state: when the user has zero screenplays, a friendly panel (🎬 + heading + body) with an "Upload a screenplay" button (triggers the hidden input) and, when a manageable workspace is selected, an "Invite collaborators" button.
-- i18n: `collaboration.dropFilesHint/dropFilesNow/uploadProgress` + `collaboration.emptyState.*` in en + es.
+- i18n: `collaboration.uploadProgress` + `collaboration.emptyState.*` in en + es. Drag/drop upload text was removed.
 - Files: [CollaborationHub.tsx](src/components/Collaboration/CollaborationHub.tsx), [en](src/locales/en/translation.json) + [es](src/locales/es/translation.json) JSONs.
 
 ### Workstream B — in-browser Fountain editor (STARTING NOW)
@@ -871,7 +871,7 @@ The original two-workstream plan has Workstream A (collab + supervisor flow) lar
 | Item | Status | Notes |
 |------|--------|-------|
 | G6 — in-app notifications when a supervisor comments | ✅ done 2026-05-27 late-night | Spec in G6 section below. Email digest is its own future workstream (G6.5). |
-| G7 — drag-and-drop multi-upload + first-run empty state | ✅ done 2026-05-27 late-night | Drop zone on the upload card, multi-file `<input>`, sequential upload w/ progress counter, friendly empty state w/ upload + invite CTAs. |
+| G7 — button-only upload + first-run empty state | ✅ done 2026-05-27, revised 2026-05-28 | Upload button opens the hidden file picker; sequential upload w/ progress counter; friendly empty state w/ upload + invite CTAs. Drag/drop screenplay upload was removed by product decision. |
 | G5 — workspace activity feed | not started | "Maya uploaded X · 3m ago" timeline in workspace card. |
 | G9 — mobile pass for the hub | not started | Students mostly work on phones. |
 | G8 — workspace-level chat (non-spatial discussion) | not started | RealTimeCollaboration.tsx already exists, just needs wiring. |
@@ -988,7 +988,7 @@ This affects G1 specifically — without it, the self-toggle button hits `permis
 7. Toggle back to member, add another annotation → that one has no badge. Filter chips: "From teacher" shows the first annotation only.
 8. Click "Resolve" on the supervisor-authored annotation → hub badge counts decrement; "Open" filter excludes it.
 
-**Next step**: smoke-test the annotation flow against the S1–S8 fixes (the list below was the priority Francisco requested — verifying these come first before moving to G6). After that's confirmed smooth, G6 in-app notifications when a supervisor comments — a red dot on the user menu, optional email. Reuses the `users/{uid}/notifications` pattern (need to confirm `NotificationCenter.tsx` exists and its shape). Then G7 (drag-and-drop multi-upload + first-run empty state) is a small, satisfying win. Spec for both in the G-series below.
+**Next step**: smoke-test the annotation flow against the S1–S8 fixes (the list below was the priority Francisco requested — verifying these come first before moving to G6). After that's confirmed smooth, G6 in-app notifications when a supervisor comments — a red dot on the user menu, optional email. Reuses the `users/{uid}/notifications` pattern (need to confirm `NotificationCenter.tsx` exists and its shape).
 
 **Annotation smoke test (do this first)**:
 1. Open the same PDF screenplay in two browsers as different workspace members. Add an annotation in one — appears in the other within ~1s (S1 — no leak means subscriptions don't stack).
@@ -1094,9 +1094,9 @@ Students should know without checking. Two surfaces:
 - **In-app**: a red dot on the user menu / a notification dropdown. Reuse the existing `NotificationCenter` ([src/components/NotificationCenter.tsx](src/components/NotificationCenter.tsx)) if it exists. Write a `users/{uid}/notifications/{nid}` doc on every supervisor-authored annotation (gated by `supervisorAtAuthorTime === true` from G4 so member-to-member chatter doesn't spam).
 - **Email**: optional, behind a profile setting. Call the existing Cloud Function ([functions/src/emailService.ts](functions/src/emailService.ts)).
 
-#### G7. Drag-and-drop multi-upload + first-run empty state — small/medium
+#### G7. Button-only multi-upload + first-run empty state — small/medium
 
-- Replace the styled `<input type="file">` with a drop zone that also accepts the same input. Use the browser drag/drop events; no library needed.
+- Use an explicit upload button that opens the hidden file input. Do not make the upload card a file drop target.
 - When a workspace has zero screenplays, render a friendly empty state with two CTAs: "Upload your first scene" and "Invite your teacher" (the latter only if the workspace lacks a supervisor).
 
 #### G8. Workspace discussion thread (non-spatial) — medium
