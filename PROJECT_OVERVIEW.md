@@ -28,7 +28,11 @@ Make the collaboration page strong enough for student project creation and teach
 - The updated Firestore rules were deployed on 2026-05-28. Hosting deployment for the staged UI/code changes is still the next release step.
 - Invite-before-upload is explicitly optional in UI copy.
 - PDF screenplay viewer now renders readable white pages, fits the modal width, and virtualizes visible pages instead of rendering all pages at once.
-- Fountain editor/viewer exists, with page count, toolbar, autosave, and PDF export.
+- Fountain editor/viewer exists, with page count, toolbar, autosave, and PDF export. PDF export now stamps screenplay-style page numbers (top-right "N.", page 1 unnumbered); editor typing column is capped to a page-like width.
+- Member search now covers ALL crew profiles (not just the user's connections), so students can find classmates + the teacher to add. Added members receive an in-app notification ("X added you to <workspace>").
+- Workspace soft-delete recovery window is 7 days; owners can permanently delete during the window (Restore + Delete permanently on the card). `scripts/cleanup-workspaces.cjs` is an admin bulk-cleanup tool.
+- Workspace activity feed (G5): live "Recent activity" panel per selected workspace (uploads, comments, members, etc.).
+- `ignoreUndefinedProperties` enabled on the client Firestore init (matches Admin SDK) — prevents undefined-field write failures (e.g. members with no email).
 - `.specstory/` and generated `bundle-analysis.html` are being removed from source control and ignored going forward.
 
 ### Verification snapshot
@@ -36,17 +40,17 @@ Make the collaboration page strong enough for student project creation and teach
 Latest local verification on 2026-05-28:
 
 - `npx tsc --noEmit` passes.
-- `npm run test:run -- --run` passes: 39 tests.
-- `npm run build` passes with the existing Webpack entrypoint-size warning (`main` around 1.05 MiB).
+- `npm run test:run -- --run` passes: 40 tests (added a workspace-activity rules guardrail; fountain util suite at 28).
+- `npm run build` passes with the existing Webpack entrypoint-size warning (`main` around 1.05 MiB). NOTE: `ts-loader` (build) can resolve narrower third-party types than `tsc --noEmit` — for html2pdf changes, the production build is the real gate, not just tsc.
 - Browser smoke test at `http://localhost:8000/collaboration` confirms workspace load, optional invite copy, and readable PDF scrolling.
 
 ### Current priorities
 
-1. Manually QA creator/student and teacher/member collaboration flows on live-authenticated accounts.
-2. Commit and deploy the staged collaboration fixes.
-3. Build the teacher review status workflow: Draft, Submitted for review, Changes requested, Approved.
-4. Add pending email invitations through a trusted acceptance path.
-5. Consolidate the duplicated legacy `ScreenplayViewer.scss` rules and reduce bundle size.
+1. **Deploy the staged fixes — highest priority (students are on the live assignment).** `git push` (hosting CI) ships the member-search fix, invite/undefined-email fix, add-member notifications, PDF page numbers, editor column, activity-feed UI. Then `firebase deploy --only firestore:rules,firestore:indexes,functions` activates: during-window permanent delete, the G5 `workspaceActivity` collection + index, and the `cleanupUserWorkspaces` account-deletion cascade. Several already-fixed bugs are just waiting on this.
+2. Manually QA the student→teacher chain on live accounts: student creates group → finds + adds a classmate → uploads a screenplay → adds the teacher → teacher self-promotes to supervisor (toggle only shows on a non-owner workspace) → teacher comments → student gets notified.
+3. **Full workspace consent flow** (the "no one joins without approval" feature): `workspaceInvitations` collection + a callable Cloud Function `respondToWorkspaceInvitation` (admin does the owner-only join on accept) + Accept/Decline UI. Phase 1 (notify on add) is done; this is phase 2.
+4. Teacher review status workflow: Draft / Submitted for review / Changes requested / Approved.
+5. Housekeeping: husky pre-commit deprecation (hard-fails at husky v10); consolidate duplicate `ScreenplayViewer.scss`; bundle size; mobile pass for the hub (G9).
 
 ## Session log
 
@@ -70,6 +74,30 @@ Latest local verification on 2026-05-28:
 - Run manual QA as creator/student and teacher/member.
 - Deploy the staged UI/code changes after QA.
 - Start the teacher review workflow slice.
+
+### 2026-05-28 (later — feature + fix pass, agent)
+
+Continues the same day. Detailed per-item notes are in the dated sub-sections further down this file (search them by name).
+
+**Done**:
+
+1. **G5 workspace activity feed** — `workspaceActivity` collection + rules + index + guardrail test; `logWorkspaceActivity` service; emits on upload/create/delete/member-add/self-promote/annotation/tag; live "Recent activity" panel.
+2. **Account-deletion cascade Cloud Function** `cleanupUserWorkspaces` (callable, admin) + AuthContext wiring (with client soft-delete fallback). Fixed the prior account-deletion crash on the now-`list:false` workspaces query.
+3. **`workspaceMemberships` backfill/audit script** + **`cleanup-workspaces.cjs`** admin maintenance tool.
+4. **PDF export page numbers** + editor typing column capped to page width.
+5. **Member-search fix (assignment-critical)** — search all crew profiles, not just connections; rank contacts first; 30s cache.
+6. **Invite/undefined-email fix** + `ignoreUndefinedProperties` on client Firestore init.
+7. **Permanent-delete fixes** — 7-day window; "Delete permanently" available during the window (rule + UI); fixed "Failed to delete workspace" (membership cleanup was using a denied query → now deletes by constructed id).
+8. **Add-member notifications (consent phase 1)** — invited users get an in-app notification; `workspace_invite` routed + iconed in NotificationCenter.
+9. Confirmed teacher account flag (`isTeacher: true` / `profileType: 'teacher'`) is correctly set on the crewProfile.
+
+**Next (in priority order)**:
+
+- **Deploy** (see Current priorities #1) — `git push` + `firebase deploy --only firestore:rules,firestore:indexes,functions`. Several fixes are committed but not live.
+- QA the full student→teacher chain on prod.
+- **Full consent flow (phase 2)**: `workspaceInvitations` + `respondToWorkspaceInvitation` callable + Accept/Decline UI.
+- Teacher review status workflow (Draft/Submitted/Changes requested/Approved).
+- Housekeeping: husky deprecation, dup SCSS, G9 mobile pass.
 
 ### 2026-05-14 (historical agent pass)
 
