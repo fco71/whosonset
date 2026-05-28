@@ -1541,17 +1541,24 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 
     if (window.confirm('Permanently delete this workspace? This cannot be undone.')) {
       try {
-        // Clean up the workspace's membership docs first (owner-permitted), then the
-        // workspace doc — order matters because the membership delete rule reads the
-        // still-existing workspace to verify ownership.
-        const membershipSnap = await getDocs(query(
-          collection(db, 'workspaceMemberships'),
-          where('workspaceId', '==', workspaceId)
-        ));
-        if (!membershipSnap.empty) {
-          const membershipBatch = writeBatch(db);
-          membershipSnap.docs.forEach(membershipDoc => membershipBatch.delete(membershipDoc.ref));
-          await membershipBatch.commit();
+        // Best-effort membership cleanup, by CONSTRUCTED doc id — NOT a query.
+        // Querying workspaceMemberships by workspaceId is denied (the list rule only permits
+        // listing your OWN memberships, by userId). The owner CAN delete each membership doc
+        // by id though, so we build the ids from the workspace's memberIds. Wrapped so a
+        // cleanup hiccup never blocks the actual workspace deletion; any leftover membership
+        // docs are harmless (the discovery query filters out memberships whose workspace is
+        // gone) and can be swept by scripts/cleanup-workspaces.cjs.
+        try {
+          const memberIds = getWorkspaceMemberIds(workspace);
+          if (memberIds.length > 0) {
+            const membershipBatch = writeBatch(db);
+            memberIds.forEach(uid => membershipBatch.delete(
+              doc(db, 'workspaceMemberships', `${workspaceId}_${uid}`)
+            ));
+            await membershipBatch.commit();
+          }
+        } catch (membershipError) {
+          console.warn('Membership cleanup during permanent delete failed (non-fatal):', membershipError);
         }
 
         await deleteDoc(doc(db, 'workspaces', workspaceId));

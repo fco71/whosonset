@@ -775,6 +775,13 @@ Per Francisco: cut the recovery window 30 → 7 days, and let owners permanently
 - "Delete permanently" button now always shown next to Restore on a deleted workspace (was gated behind window-expiry). `handlePermanentDeleteWorkspace` drops the expiry check, and also cleans up the workspace's `workspaceMemberships` docs (owner-permitted) before deleting the workspace doc. Card note shows "Auto-deletes after 7 days" / "Recovery period ended".
 - **Rule change** ([firestore.rules](firestore.rules)): workspaces `allow delete` no longer requires `request.time > deleteRecoverableUntil` — owner may hard-delete any `status == 'deleted'` workspace. **NEEDS DEPLOY**: `firebase deploy --only firestore:rules`. Until deployed, the button will hit permission-denied during the window (works after expiry).
 
+### Fix — "Failed to delete workspace" on permanent delete (2026-05-28)
+
+Two causes: (1) `handlePermanentDeleteWorkspace` cleaned up memberships via `getDocs(query(workspaceMemberships, where('workspaceId','==',id)))`, but the membership *list* rule only permits listing your OWN memberships (by `userId`), so that query is denied and threw before the workspace was deleted — failing even after the rule deploy. (2) the during-window delete rule isn't deployed.
+
+Fix #1 ([CollaborationHub.tsx](src/components/Collaboration/CollaborationHub.tsx)): delete membership docs by CONSTRUCTED id (`${workspaceId}_${uid}` from the workspace's memberIds — owner-permitted, no list needed), wrapped best-effort so cleanup never blocks the workspace delete. Leftover membership docs are harmless (discovery filters memberships whose workspace is gone) and sweepable via the cleanup script.
+Fix #2 still requires **`firebase deploy --only firestore:rules`** for the during-window permanent delete to be allowed. Without it, use `scripts/cleanup-workspaces.cjs` (admin, bypasses rules) to delete now.
+
 ### CRITICAL fix — member search only showed existing connections (2026-05-28)
 
 Blocks the live assignment ("students add other students + the teacher"). `searchUsers` only searched ALL crew profiles when the student had ZERO approved contacts; if they had any connection, search was restricted to those contacts — so they couldn't find classmates/teacher they weren't already connected to.
