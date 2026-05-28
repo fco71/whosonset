@@ -875,6 +875,30 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
           verb: 'member_added',
           detail: addedNames
         });
+
+        // Notify each newly-added member that they're now in the workspace. Best-effort:
+        // a notification failure must never undo the add. (The notifications create rule
+        // permits any signed-in user to write a doc with a string userId.) Full
+        // invite/accept consent flow is a planned follow-up; for now membership is direct
+        // and this is the heads-up.
+        const inviterName = currentUser.displayName || t('collaboration.notifications.someone');
+        await Promise.all(newMembers.map(member =>
+          addDoc(collection(db, 'notifications'), {
+            userId: member.userId,
+            type: 'workspace_invite',
+            title: t('collaboration.notifications.addedToWorkspace.title', { inviter: inviterName, workspace: workspace.name }),
+            body: t('collaboration.notifications.addedToWorkspace.body', { role: t(`collaboration.roles.${member.role}`), workspace: workspace.name }),
+            message: t('collaboration.notifications.addedToWorkspace.body', { role: t(`collaboration.roles.${member.role}`), workspace: workspace.name }),
+            isRead: false,
+            read: false,
+            createdAt: serverTimestamp(),
+            timestamp: serverTimestamp(),
+            senderId: currentUser.uid,
+            senderName: inviterName,
+            relatedId: workspace.id,
+            link: '/collaboration'
+          }).catch(err => console.warn('Failed to notify added member (non-fatal):', err))
+        ));
       }
 
       const updatedWorkspace: CollaborationWorkspace = {

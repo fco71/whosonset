@@ -786,6 +786,13 @@
       "uploadFailed": "Failed to upload screenplay"
     },
     "workspaceDeleteConfirm": "Are you sure you want to delete this workspace and all its data? This action cannot be undone.",
+    "notifications": {
+      "someone": "Someone",
+      "addedToWorkspace": {
+        "title": "{{inviter}} added you to {{workspace}}",
+        "body": "You're now a {{role}} in {{workspace}}."
+      }
+    },
     "activity": {
       "title": "Recent activity",
       "empty": "No activity yet.",
