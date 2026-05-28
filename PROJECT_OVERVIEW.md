@@ -728,7 +728,7 @@ Francisco: shortcuts weren't firing, the editor showed no page indicator while w
 
 ### Known gaps / follow-ups for Workstream B
 
-- **B6 annotations on Fountain docs — PARTIAL.** The annotation side panel renders for fountain docs, but the *creation* flow is still PDF-selection-driven (handlers attach to `.react-pdf__Page__textContent`, which doesn't exist in the fountain render). So a supervisor can SEE existing comments on a fountain doc but can't yet ADD a spatially-anchored one. Next step: either (a) a doc-level "Add note" composer in the panel for fountain docs, or (b) wire text-selection on the FountainViewer to create offset-anchored annotations. Recommend (a) for MVP — simplest, and doc-level notes are fine for evaluation.
+- **B6 annotations on Fountain docs — ✅ DONE 2026-05-27 (option a).** A doc-level "Add note" composer now sits at the top of the annotation panel for fountain docs (gated on `isFountain`). It calls the existing `addAnnotation({x:0,y:0,w:0,h:0}, 0, text)` so supervisor provenance (`supervisorAtAuthorTime`) and the G6 notification fire automatically; the note appears in the shared annotation list + drives the hub's 💬/🎓 count badges. Ctrl/⌘+Enter submits. Notes are document-level (no spatial anchor — fountain has no PDF text layer). Option (b), per-line offset anchoring, remains a possible future enhancement but doc-level is sufficient for evaluation. i18n: `screenplay.fountainNote.*` in en + es.
 - **B7 export to PDF** — still deferred (was always out of scope; confirm if wanted).
 - **CSV export** already works for fountain docs' annotations/tags (it reads the same collections).
 - The editor has no explicit "manual save" button — relies on debounce + unmount flush. Fine, but a visible "Saved ✓" is shown.
@@ -958,7 +958,7 @@ This affects G1 specifically — without it, the self-toggle button hits `permis
 | A4 rules (workspaces + screenplays) | ✅ done | `canEditScreenplayData`, `keepsScreenplayOwnership`, `isWorkspaceReadOnlyParticipant` in [firestore.rules](firestore.rules). **Deploy still required** |
 | A5 comment-count badges + quick action | ✅ done (2026-05-27, evening) — covered by G3 | unresolved + from-teacher count subscriptions in CollaborationHub; 💬 N and 🎓 N pills on each screenplay row |
 | A6 invite-by-email | ❌ not built | UserAutocomplete still restricted to existing crew profiles |
-| B (Fountain editor) | ✅ first cut shipped 2026-05-27 (B1–B5) | B6 (add-comment-on-fountain) partial; B7 (PDF export) deferred. See "Workstream B" section in pick-up pointer. |
+| B (Fountain editor) | ✅ B1–B7 shipped 2026-05-27 | Full editor + viewer + page numbers + PDF export + doc-level comments. Only remaining nice-to-haves: per-line comment anchoring, page numbers printed inside the exported PDF. |
 | **Beyond plan**: archive → soft-delete → 30-day recovery | ✅ done | [`handleArchiveWorkspace`](src/components/Collaboration/CollaborationHub.tsx:1037) etc.; rule branch on `deleteRecoverableUntil` in firestore.rules |
 | **PDF viewer dark-grey/duplicate-text bug** | ✅ fixed | TextLayer.css + AnnotationLayer.css imports added in [ScreenplayViewer.tsx:4-5](src/components/Collaboration/ScreenplayViewer.tsx:4) |
 

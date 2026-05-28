@@ -140,6 +140,8 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   const [statusFilter, setStatusFilter] = useState<'open' | 'mine' | 'from_teacher' | 'all'>('open');
   const [screenplayWorkspaceId, setScreenplayWorkspaceId] = useState<string | null>(null);
   const [screenplayUploadedBy, setScreenplayUploadedBy] = useState<string | null>(null);
+  const [fountainNote, setFountainNote] = useState('');
+  const [addingFountainNote, setAddingFountainNote] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'time' | 'page' | 'type' | 'user'>('time');
   const [showUserCursors, setShowUserCursors] = useState(true);
@@ -877,6 +879,21 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     } catch (error) {
       console.error('Error adding tag:', error);
       toast.error(t('screenplay.toasts.tagFailed'));
+    }
+  };
+
+  // B6 — doc-level note on a Fountain screenplay. Fountain docs have no PDF text layer to
+  // anchor a spatial annotation to, so notes are document-level (pageNumber 0, zero rect).
+  // Reuses addAnnotation so supervisor provenance + the G6 notification fire automatically.
+  const handleAddFountainNote = async () => {
+    const text = fountainNote.trim();
+    if (!text || addingFountainNote) return;
+    setAddingFountainNote(true);
+    try {
+      await addAnnotation({ x: 0, y: 0, width: 0, height: 0 }, 0, text);
+      setFountainNote('');
+    } finally {
+      setAddingFountainNote(false);
     }
   };
 
@@ -2160,6 +2177,43 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                         </>
                       );
                     })()}
+                    {isFountain && (
+                      <div className="fountain-note-composer" style={{ margin: '0 0 12px' }}>
+                        <textarea
+                          value={fountainNote}
+                          onChange={e => setFountainNote(e.target.value)}
+                          placeholder={t('screenplay.fountainNote.placeholder')}
+                          rows={3}
+                          style={{
+                            width: '100%',
+                            border: '1px solid #d1d5db',
+                            borderRadius: 6,
+                            padding: 8,
+                            fontSize: 13,
+                            resize: 'vertical',
+                            fontFamily: 'inherit',
+                            boxSizing: 'border-box'
+                          }}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                              e.preventDefault();
+                              handleAddFountainNote();
+                            }
+                          }}
+                        />
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 6 }}>
+                          <button
+                            type="button"
+                            className="btn-primary"
+                            disabled={addingFountainNote || !fountainNote.trim()}
+                            onClick={handleAddFountainNote}
+                            style={{ padding: '5px 14px', fontSize: 13 }}
+                          >
+                            {addingFountainNote ? t('screenplay.fountainNote.adding') : t('screenplay.fountainNote.add')}
+                          </button>
+                        </div>
+                      </div>
+                    )}
                     <div className="annotations-list">
                       {annotations
                         .filter(annotation => {

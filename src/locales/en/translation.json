@@ -1187,6 +1187,11 @@
       "label": "supervisor",
       "tooltip": "Comment left while acting as supervisor"
     },
+    "fountainNote": {
+      "placeholder": "Add a note on this screenplay… (Ctrl/⌘+Enter)",
+      "add": "Add note",
+      "adding": "Adding…"
+    },
     "marker": {
       "annotation": "Annotation by {{user}}",
       "supervisorNote": "Supervisor note by {{user}}",

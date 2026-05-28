@@ -1152,6 +1152,11 @@
       "label": "supervisor",
       "tooltip": "Comentario realizado como supervisor"
     },
+    "fountainNote": {
+      "placeholder": "Agrega una nota sobre este guion… (Ctrl/⌘+Enter)",
+      "add": "Agregar nota",
+      "adding": "Agregando…"
+    },
     "marker": {
       "annotation": "Anotación de {{user}}",
       "supervisorNote": "Nota de supervisor de {{user}}",
