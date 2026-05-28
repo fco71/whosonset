@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import EmailNotificationService from '../services/emailNotificationService';
 
+const TEST_EMAIL_RECIPIENT = process.env.REACT_APP_EMAIL_TEST_RECIPIENT || 'iam@myfilmjobs.com';
+
 const EmailIntegrationTestPage: React.FC = () => {
   const [testResults, setTestResults] = useState<Record<string, { success: boolean; message: string }>>({});
   const [loading, setLoading] = useState<string | null>(null);
@@ -25,7 +27,7 @@ const EmailIntegrationTestPage: React.FC = () => {
 
   const testChatNotification = async () => {
     return await EmailNotificationService.sendChatNotification(
-      'franciscoadolfo@gmail.com',
+      TEST_EMAIL_RECIPIENT,
       'Test User',
       'This is a test message from the integration test page',
       'http://localhost:8080/chat'
@@ -34,7 +36,7 @@ const EmailIntegrationTestPage: React.FC = () => {
 
   const testProjectNotification = async () => {
     return await EmailNotificationService.sendProjectUpdateNotification(
-      'franciscoadolfo@gmail.com',
+      TEST_EMAIL_RECIPIENT,
       'Test Project',
       'created',
       'http://localhost:8080/projects/test-project'
@@ -43,7 +45,7 @@ const EmailIntegrationTestPage: React.FC = () => {
 
   const testJobNotification = async () => {
     return await EmailNotificationService.sendJobApplicationNotification(
-      'franciscoadolfo@gmail.com',
+      TEST_EMAIL_RECIPIENT,
       'Test Job Position',
       'Test Applicant',
       'http://localhost:8080/applications/test-application'
@@ -52,7 +54,7 @@ const EmailIntegrationTestPage: React.FC = () => {
 
   const testGeneralNotification = async () => {
     return await EmailNotificationService.sendGeneralNotification(
-      'franciscoadolfo@gmail.com',
+      TEST_EMAIL_RECIPIENT,
       'Test General Notification',
       'This is a test general notification from the integration test page.'
     );
@@ -66,7 +68,7 @@ const EmailIntegrationTestPage: React.FC = () => {
           
           <div className="mb-6">
             <p className="text-gray-600">
-              This page tests the email notification integration. Each test will send an email to franciscoadolfo@gmail.com.
+              This page tests the email notification integration. Each test will send an email to {TEST_EMAIL_RECIPIENT}.
             </p>
           </div>
 
@@ -147,7 +149,7 @@ const EmailIntegrationTestPage: React.FC = () => {
           <div className="mt-8 p-4 bg-blue-50 rounded-lg">
             <h3 className="text-lg font-semibold text-blue-900 mb-2">📧 Test Results</h3>
             <p className="text-sm text-blue-800">
-              Check your email inbox (franciscoadolfo@gmail.com) for test messages. 
+              Check the configured test inbox ({TEST_EMAIL_RECIPIENT}) for test messages.
               Each successful test should send one email notification.
             </p>
           </div>
@@ -167,4 +169,4 @@ const EmailIntegrationTestPage: React.FC = () => {
   );
 };
 
-export default EmailIntegrationTestPage; 
+export default EmailIntegrationTestPage;

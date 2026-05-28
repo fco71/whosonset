@@ -2,7 +2,7 @@
 
 ## Firebase Account Requirement
 
-Use Firebase project `my-film-jobs` while logged into Firebase as `iam@myfilmjobs.com` for all CLI and Console work, including Hosting, Firestore, Storage, Functions, and secrets. Do not deploy from `franciscoadolfo@gmail.com`; that address is personal/profile/contact only.
+Use Firebase project `my-film-jobs` while logged into Firebase as `iam@myfilmjobs.com` for all CLI and Console work, including Hosting, Firestore, Storage, Functions, and secrets. Do not deploy from any other Google account.
 
 Before deploying, verify the active account:
 

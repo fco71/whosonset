@@ -1,6 +1,6 @@
 # Project Handoff — myfilmjobs.com / whosonset
 
-**Last updated:** May 28, 2026 (Firebase account target clarified). Owner: Francisco Valdez. Firebase CLI/Console/deploy work must use `iam@myfilmjobs.com`; `franciscoadolfo@gmail.com` is personal/profile/contact only.
+**Last updated:** May 28, 2026 (Firebase account target clarified). Owner: Francisco Valdez. Firebase CLI/Console/deploy work must use `iam@myfilmjobs.com`.
 
 This doc lets another agent pick up where we left off without re-asking the basics. Read it top-to-bottom before making changes. Delete it from the repo or `.gitignore` it before committing — it contains internal status notes.
 
@@ -408,7 +408,7 @@ It's a pre-ventovault leftover that survived the redesign because no one had gre
 
 ### 2F. UptimeRobot monitoring (set up by owner, partially complete)
 - Owner has a free UptimeRobot account.
-- **Monitor #1 (apex):** ✅ created, monitoring `https://myfilmjobs.com` every 5 min, email alerts to `franciscoadolfo@gmail.com`.
+- **Monitor #1 (apex):** ✅ created, monitoring `https://myfilmjobs.com` every 5 min. Alert recipient should be audited and moved to `iam@myfilmjobs.com` if needed.
 - **Monitor #2 (www):** ✅ created — and immediately fired a real 404 alert that revealed the missing `www` custom domain (which the owner then fixed in Firebase Console).
 - **Monitor #3 (healthz keyword check):** NOT YET CREATED. See §5 step 1.
 

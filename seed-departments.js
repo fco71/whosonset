@@ -6,7 +6,7 @@ import { getFirestore } from 'firebase-admin/firestore';
 // --- Configuration ---
 initializeApp({
   credential: applicationDefault(),
-  projectId: 'whosonsetdepez',
+  projectId: 'my-film-jobs',
 });
 
 const db = getFirestore();

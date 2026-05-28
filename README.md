@@ -22,7 +22,7 @@ npm run dev                # webpack dev server on http://localhost:8080
 
 > ⚠️ **`.env` is required for local/manual builds.** It's gitignored, so it doesn't get pulled in with `git clone` / `git pull` / `git merge`. GitHub Actions writes `.env` from repository secrets during production deploys, but a local `npm run build` still needs the file at the repo root. Without it, the built bundle has no Firebase API key and the site dies with `auth/invalid-api-key`. See [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) §⚠️ Before every local/manual build for the full incident postmortem.
 
-Firebase deploy target: use project `my-film-jobs` (see `.firebaserc`) while logged into Firebase as `iam@myfilmjobs.com`. Do not deploy Firebase Hosting, Firestore, Storage, Functions, or secrets work from `franciscoadolfo@gmail.com`; that address is personal/profile/contact only.
+Firebase deploy target: use project `my-film-jobs` (see `.firebaserc`) while logged into Firebase as `iam@myfilmjobs.com`. Do not deploy Firebase Hosting, Firestore, Storage, Functions, or secrets work from any other Google account.
 
 ## Common commands
 

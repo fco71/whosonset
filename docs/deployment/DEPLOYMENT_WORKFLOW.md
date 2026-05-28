@@ -6,7 +6,7 @@
 - **Firebase project:** `my-film-jobs`
 - **Hosting targets:** `myfilmjobs-com`, `my-film-jobs`
 
-All Firebase CLI, Firebase Console, Hosting, Firestore, Storage, Functions, and secrets work should target `iam@myfilmjobs.com`. Do not deploy from `franciscoadolfo@gmail.com`; that address is personal/profile/contact only.
+All Firebase CLI, Firebase Console, Hosting, Firestore, Storage, Functions, and secrets work should target `iam@myfilmjobs.com`. Do not deploy from any other Google account.
 
 ## Branch Strategy
 

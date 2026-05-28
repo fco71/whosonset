@@ -4,7 +4,7 @@ import { getFirestore } from 'firebase-admin/firestore';
 // Initialize Firebase Admin with the project-specific configuration
 initializeApp({
   credential: applicationDefault(),
-  projectId: 'whosonsetdepez', // Your project ID
+  projectId: 'my-film-jobs',
 });
 
 // Get a reference to the Firestore database
