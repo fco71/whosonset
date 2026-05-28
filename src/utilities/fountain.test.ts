@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import {
   parseFountain,
   computePageCount,
+  paginateElements,
+  computePageAtCaret,
   applyElementType,
   detectLineType,
   nextElementType,
@@ -137,6 +139,38 @@ describe('computePageCount', () => {
     expect(elements[1].type).toBe('dialogue');
     // Sanity: not zero pages.
     expect(computePageCount(dialogueSource)).toBe(1);
+  });
+});
+
+describe('paginateElements', () => {
+  it('puts a short script entirely on page 1', () => {
+    const source = ['INT. KITCHEN - DAY', '', 'PAUL stirs a pot.'].join('\n');
+    const paginated = paginateElements(source);
+    expect(paginated.every(el => el.page === 1)).toBe(true);
+  });
+
+  it('advances the page number past the line threshold', () => {
+    const source = Array.from({ length: 120 }, (_, i) => `Action paragraph ${i}.`).join('\n\n');
+    const paginated = paginateElements(source);
+    const maxPage = Math.max(...paginated.map(el => el.page));
+    expect(maxPage).toBeGreaterThanOrEqual(2);
+    // Pages must be monotonically non-decreasing through the document.
+    for (let i = 1; i < paginated.length; i++) {
+      expect(paginated[i].page).toBeGreaterThanOrEqual(paginated[i - 1].page);
+    }
+  });
+});
+
+describe('computePageAtCaret', () => {
+  it('returns 1 at the start', () => {
+    expect(computePageAtCaret('INT. ROOM - DAY\n\nAction.', 0)).toBe(1);
+    expect(computePageAtCaret('', 0)).toBe(1);
+  });
+
+  it('returns a later page deep in a long script', () => {
+    const source = Array.from({ length: 120 }, (_, i) => `Action paragraph ${i}.`).join('\n\n');
+    const pageAtEnd = computePageAtCaret(source, source.length);
+    expect(pageAtEnd).toBeGreaterThanOrEqual(2);
   });
 });
 

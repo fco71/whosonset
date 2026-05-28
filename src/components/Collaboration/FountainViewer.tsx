@@ -3,7 +3,7 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useTranslation } from 'react-i18next';
 import {
-  parseFountain,
+  paginateElements,
   computePageCount,
   ScreenplayElementType
 } from '../../utilities/fountain';
@@ -36,7 +36,7 @@ const FountainViewer: React.FC<FountainViewerProps> = ({ screenplayId, initialSo
     return () => unsubscribe();
   }, [screenplayId]);
 
-  const elements = useMemo(() => parseFountain(source), [source]);
+  const elements = useMemo(() => paginateElements(source), [source]);
   const pageCount = useMemo(() => computePageCount(source), [source]);
 
   return (
@@ -50,11 +50,20 @@ const FountainViewer: React.FC<FountainViewerProps> = ({ screenplayId, initialSo
         {elements.length === 0 ? (
           <div style={{ color: '#94a3b8', fontStyle: 'italic' }}>{t('fountain.emptyDraft')}</div>
         ) : (
-          elements.map((element, index) => (
-            <div key={index} style={elementStyle(element.type)}>
-              {element.text}
-            </div>
-          ))
+          elements.map((element, index) => {
+            const prevPage = index > 0 ? elements[index - 1].page : 1;
+            const showDivider = index > 0 && element.page > prevPage;
+            return (
+              <React.Fragment key={index}>
+                {showDivider && (
+                  <div style={pageDividerStyle} aria-label={t('fountain.pageDivider', { page: element.page })}>
+                    <span style={pageDividerLabelStyle}>{t('fountain.pageDivider', { page: element.page })}</span>
+                  </div>
+                )}
+                <div style={elementStyle(element.type)}>{element.text}</div>
+              </React.Fragment>
+            );
+          })
         )}
       </div>
     </div>
@@ -99,6 +108,24 @@ const pageStyle: React.CSSProperties = {
   lineHeight: 1.5,
   color: '#1e293b',
   minHeight: '60vh'
+};
+
+const pageDividerStyle: React.CSSProperties = {
+  position: 'relative',
+  textAlign: 'right',
+  borderTop: '1px dashed #cbd5e1',
+  margin: '2.5em -2% 1.5em',
+  paddingTop: 4
+};
+
+const pageDividerLabelStyle: React.CSSProperties = {
+  fontFamily: 'system-ui, sans-serif',
+  fontSize: '0.7em',
+  color: '#94a3b8',
+  background: '#ffffff',
+  padding: '0 6px',
+  position: 'relative',
+  top: -12
 };
 
 // Standard-ish screenplay layout. Approximate margins, not exact industry spec.

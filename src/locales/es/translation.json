@@ -1067,7 +1067,9 @@
     "saveError": "No se pudo guardar — revisa tu conexión.",
     "saveErrorShort": "Error al guardar",
     "pageCount": "{{count}} pp.",
-    "pageCountTooltip": "Número de páginas estimado (sin saltos de página visuales)",
+    "pageOf": "Página {{current}} / {{total}}",
+    "pageDivider": "Página {{page}}",
+    "pageCountTooltip": "Número de página estimado (aproximado — sin saltos de página fijos)",
     "emptyDraft": "Este borrador está vacío.",
     "placeholder": "INT. LUGAR - DÍA\n\nEscribe la acción aquí. Presiona Tab para cambiar el tipo de elemento, o usa los botones de arriba.\n\nPERSONAJE\nEl diálogo va aquí.",
     "elements": {

@@ -8,6 +8,7 @@ import {
   ScreenplayElementType,
   applyElementType,
   computePageCount,
+  computePageAtCaret,
   detectLineType,
   nextElementType,
   prevElementType
@@ -43,6 +44,7 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, onClose }) 
   const [source, setSource] = useState(screenplay.fountainSource || '');
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [activeType, setActiveType] = useState<ScreenplayElementType>('action');
+  const [currentPage, setCurrentPage] = useState(1);
 
   const saveTimer = useRef<number | null>(null);
   const pendingCaret = useRef<number | null>(null);
@@ -126,13 +128,16 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, onClose }) 
     const el = textareaRef.current;
     if (!el) return;
     setActiveType(detectLineType(el.value, el.selectionStart));
+    setCurrentPage(computePageAtCaret(el.value, el.selectionStart));
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
+    const caret = e.target.selectionStart;
     setSource(value);
     scheduleSave(value);
-    setActiveType(detectLineType(value, e.target.selectionStart));
+    setActiveType(detectLineType(value, caret));
+    setCurrentPage(computePageAtCaret(value, caret));
   };
 
   const applyType = useCallback((type: ScreenplayElementType) => {
@@ -144,6 +149,7 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, onClose }) 
     setSource(result.source);
     scheduleSave(result.source);
     setActiveType(type);
+    setCurrentPage(computePageAtCaret(result.source, result.caret));
   }, [scheduleSave]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -188,7 +194,7 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, onClose }) 
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <span style={pageBadgeStyle} title={t('fountain.pageCountTooltip')}>
-              {t('fountain.pageCount', { count: pageCount })}
+              {t('fountain.pageOf', { current: currentPage, total: pageCount })}
             </span>
             <button type="button" onClick={onClose} style={closeBtnStyle} aria-label={t('fountain.close')}>×</button>
           </div>

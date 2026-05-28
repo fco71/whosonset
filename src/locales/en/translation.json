@@ -1102,7 +1102,9 @@
     "saveError": "Couldn't save — check your connection.",
     "saveErrorShort": "Save failed",
     "pageCount": "{{count}} pp.",
-    "pageCountTooltip": "Estimated page count (no visual page breaks)",
+    "pageOf": "Page {{current}} / {{total}}",
+    "pageDivider": "Page {{page}}",
+    "pageCountTooltip": "Estimated page number (approximate — no fixed page breaks)",
     "emptyDraft": "This draft is empty.",
     "placeholder": "INT. LOCATION - DAY\n\nWrite action here. Press Tab to cycle element types, or use the buttons above.\n\nCHARACTER\nDialogue goes here.",
     "elements": {

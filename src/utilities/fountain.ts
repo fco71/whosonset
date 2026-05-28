@@ -158,6 +158,55 @@ export function computePageCount(source: string): number {
   return Math.max(1, Math.ceil(totalLines / LINES_PER_PAGE));
 }
 
+export interface PaginatedElement extends ParsedElement {
+  /** 1-based page this element begins on, per the line-count heuristic. */
+  page: number;
+}
+
+/**
+ * Annotate each element with the page it starts on. Same heuristic as computePageCount:
+ * element-specific wrap widths, a reserved blank line before scene headings + character
+ * cues, 55 wrapped lines per page.
+ */
+export function paginateElements(source: string): PaginatedElement[] {
+  const elements = parseFountain(source);
+  const result: PaginatedElement[] = [];
+  let totalLines = 0;
+  let prevType: ScreenplayElementType | null = null;
+
+  for (const element of elements) {
+    if ((element.type === 'scene_heading' || element.type === 'character') && prevType !== null) {
+      totalLines += 1;
+    }
+    const page = Math.floor(totalLines / LINES_PER_PAGE) + 1;
+    const width = ELEMENT_WIDTHS[element.type];
+    const stripped = element.text.replace(/^[.>@]/, '');
+    const wrapped = Math.max(1, Math.ceil(stripped.length / width));
+    totalLines += wrapped;
+    result.push({ ...element, page });
+    prevType = element.type;
+  }
+
+  return result;
+}
+
+/** Which page the caret currently sits on (1-based). Empty docs / caret-before-content => 1. */
+export function computePageAtCaret(source: string, caret: number): number {
+  const normalized = normalize(source);
+  const clamped = Math.max(0, Math.min(caret, normalized.length));
+  const caretLineIndex = (normalized.slice(0, clamped).match(/\n/g) || []).length;
+  const paginated = paginateElements(normalized);
+  let page = 1;
+  for (const element of paginated) {
+    if (element.lineIndex <= caretLineIndex) {
+      page = element.page;
+    } else {
+      break;
+    }
+  }
+  return page;
+}
+
 export interface LineBounds {
   start: number;
   end: number;

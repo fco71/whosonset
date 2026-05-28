@@ -705,6 +705,14 @@ A student/teacher can now write a screenplay in the browser, no upload:
 
 **Files**: new [FountainEditor.tsx](src/components/Collaboration/FountainEditor.tsx), [FountainViewer.tsx](src/components/Collaboration/FountainViewer.tsx), [fountain.ts](src/utilities/fountain.ts) + test; edited [CollaborationHub.tsx](src/components/Collaboration/CollaborationHub.tsx) (schema, creation flow, Write button, editor render), [ScreenplayViewer.tsx](src/components/Collaboration/ScreenplayViewer.tsx) (branch on format), en/es JSONs (`fountain.*`).
 
+### Page indicators (added 2026-05-27, after Francisco asked for page numbers + visual indicator)
+
+Francisco reconsidered the "no page breaks" constraint — wants page numbers + a visual indicator while writing AND in the read view. Done without true fixed page breaks (can't inject dividers into a `<textarea>`):
+- `fountain.ts`: `paginateElements(source)` annotates each element with its 1-based page; `computePageAtCaret(source, caret)` returns the page the caret is on. 4 new unit tests (28 total).
+- **Editor** ([FountainEditor.tsx](src/components/Collaboration/FountainEditor.tsx)): the top-right badge now shows **"Page X / Y"** (current page from caret + total), updating live on type / click / caret move / toolbar action.
+- **Viewer** ([FountainViewer.tsx](src/components/Collaboration/FountainViewer.tsx)): renders a dashed **"Page N"** divider line between elements wherever the heuristic page increments — approximate visual page breaks in the read view.
+- All approximate (same line-count heuristic) — the tooltip says "approximate". Good enough; matches the accepted page-count approach.
+
 ### Known gaps / follow-ups for Workstream B
 
 - **B6 annotations on Fountain docs — PARTIAL.** The annotation side panel renders for fountain docs, but the *creation* flow is still PDF-selection-driven (handlers attach to `.react-pdf__Page__textContent`, which doesn't exist in the fountain render). So a supervisor can SEE existing comments on a fountain doc but can't yet ADD a spatially-anchored one. Next step: either (a) a doc-level "Add note" composer in the panel for fountain docs, or (b) wire text-selection on the FountainViewer to create offset-anchored annotations. Recommend (a) for MVP — simplest, and doc-level notes are fine for evaluation.
