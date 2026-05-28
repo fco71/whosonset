@@ -34,6 +34,16 @@ describe('security rules guardrails', () => {
     expect(rules).not.toMatch(/allow\s+list:\s+if\s+signedIn\(\);/);
   });
 
+  it('keeps the workspace activity log member-scoped and append-only', () => {
+    const rules = readRepoFile('firestore.rules');
+    const activityRules = rules.match(/match\s+\/workspaceActivity\/\{activityId\}\s+\{[\s\S]*?\n\s+\}/)?.[0] || '';
+
+    expect(activityRules).toMatch(/allow\s+read:\s+if\s+canAccessWorkspace\(resource\.data\.workspaceId\)/);
+    expect(activityRules).toMatch(/request\.resource\.data\.actorUid\s+==\s+request\.auth\.uid/);
+    expect(activityRules).toMatch(/allow\s+update:\s+if\s+false;/);
+    expect(activityRules).toMatch(/allow\s+delete:\s+if\s+signedIn\(\)\s+&&\s+isWorkspaceOwner/);
+  });
+
   it('keeps screenplay updates field-scoped', () => {
     const rules = readRepoFile('firestore.rules');
 

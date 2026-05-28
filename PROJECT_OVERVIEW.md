@@ -754,9 +754,24 @@ Each step ends with a runnable acceptance check. An agent picking up step N shou
 
 ---
 
-## Where we are right now (pick-up pointer, 2026-05-28 — post-hardening review fixes)
+## Where we are right now (pick-up pointer, 2026-05-28 — G5 activity feed shipped)
 
-**Last meaningful step (2026-05-28, agent)**: reviewed Francisco's security/stability pass (commits b4f7c13c…bc1215bb) and fixed the two risks it surfaced. Typecheck clean, 39 Vitest tests green.
+**Last meaningful step (2026-05-28, agent)**: G5 workspace activity feed. Before that: account-deletion cascade Cloud Function + the two review fixes. Typecheck clean, 40 Vitest tests green, app+functions build clean.
+
+### G5 — workspace activity feed (2026-05-28)
+
+Turns a workspace from a static file list into a live "what changed" view for the evaluation experience.
+
+- **Collection** `workspaceActivity` ({ workspaceId, actorUid, actorName, verb, targetId?, targetName?, detail?, createdAt }). Rules ([firestore.rules](firestore.rules)): read if workspace member (`canAccessWorkspace`), create if member + `actorUid==auth.uid`, **no update** (append-only), delete owner-only. Composite index (workspaceId asc, createdAt desc) added to [firestore.indexes.json](firestore.indexes.json). Guardrail test added (`securityRules.test.ts`, now 4 rule tests).
+- **Service** [src/services/workspaceActivityService.ts](src/services/workspaceActivityService.ts) — `logWorkspaceActivity(...)`, best-effort (skips when no workspaceId, never throws).
+- **Emits**: screenplay uploaded / created / deleted, member added, self-promoted-supervisor (CollaborationHub); annotation added, tag added (ScreenplayViewer). All workspace-scoped only.
+- **UI**: live `onSnapshot` "Recent activity" panel under the workspaces grid for the selected workspace (latest 25, `orderBy createdAt desc`). Localized verb phrases (`collaboration.activity.*` en + es) + relative timestamps.
+- **ACTION for Francisco**: deploy rules + index — `firebase deploy --only firestore:rules,firestore:indexes`. Until the index builds, the activity query errors (feed shows empty); everything else is unaffected.
+
+### Earlier 2026-05-28 work
+
+- **Account-deletion cascade Cloud Function** (`cleanupUserWorkspaces`, callable, us-central1) — needs `firebase deploy --only functions:cleanupUserWorkspaces`. See section below.
+- Reviewed Francisco's security/stability pass (commits b4f7c13c…bc1215bb) and fixed the two risks it surfaced.
 
 Francisco's pass (reviewed, all solid): field-scoped screenplay update rules (content vs access), annotation moderation model (identity locked, supervisor notes protected), workspaces `list: if false` with a `workspaceMemberships` discovery collection, security-rules regression tests, responsive PDF viewer (ResizeObserver), FountainEditor `hasLocalEdit` race fix, removed the drop-upload (per his request), purged accidentally-tracked `.specstory/` history.
 
@@ -892,7 +907,7 @@ The original two-workstream plan has Workstream A (collab + supervisor flow) lar
 |------|--------|-------|
 | G6 — in-app notifications when a supervisor comments | ✅ done 2026-05-27 late-night | Spec in G6 section below. Email digest is its own future workstream (G6.5). |
 | G7 — button-only upload + first-run empty state | ✅ done 2026-05-27, revised 2026-05-28 | Upload button opens the hidden file picker; sequential upload w/ progress counter; friendly empty state w/ upload + invite CTAs. Drag/drop screenplay upload was removed by product decision. |
-| G5 — workspace activity feed | not started | "Maya uploaded X · 3m ago" timeline in workspace card. |
+| G5 — workspace activity feed | ✅ done 2026-05-28 | Live `workspaceActivity` feed under the workspaces grid. Needs rules+index deploy. |
 | G9 — mobile pass for the hub | not started | Students mostly work on phones. |
 | G8 — workspace-level chat (non-spatial discussion) | not started | RealTimeCollaboration.tsx already exists, just needs wiring. |
 | **B (Fountain editor)** — in-browser screenplay writer with format toolbar, page-count badge, simplified Fountain markup, no live multi-cursor | **NOT started** | Workstream B1–B7 in this doc. Francisco wants this. The Fountain parser + page-count heuristic (B4) is the highest-risk piece and should be built + unit-tested in isolation first. |

@@ -634,6 +634,19 @@ service cloud.firestore {
         isWorkspaceOwner(resource.data.workspaceId, request.auth.uid);
     }
 
+    // Append-only activity log per workspace. Readable by workspace members; each event is
+    // self-authored (actorUid == caller) by a member. Immutable (no update); owner may prune.
+    match /workspaceActivity/{activityId} {
+      allow read: if canAccessWorkspace(resource.data.workspaceId);
+      allow create: if signedIn() &&
+        request.resource.data.actorUid == request.auth.uid &&
+        request.resource.data.workspaceId is string &&
+        canAccessWorkspace(request.resource.data.workspaceId);
+      allow update: if false;
+      allow delete: if signedIn() &&
+        isWorkspaceOwner(resource.data.workspaceId, request.auth.uid);
+    }
+
     match /workspaces/{workspaceId} {
       allow get: if signedIn() &&
         isWorkspaceMemberData(resource.data, request.auth.uid);

@@ -9,6 +9,7 @@ import { toast } from 'react-hot-toast';
 import './ScreenplayViewer.scss';
 import { useTranslation } from 'react-i18next';
 import EmailNotificationService from '../../services/emailNotificationService';
+import { logWorkspaceActivity } from '../../services/workspaceActivityService';
 import FountainViewer from './FountainViewer';
 
 const debugLog = (...args: unknown[]) => {
@@ -880,6 +881,17 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       setNewAnnotation('');
       toast.success(supervisorAtAuthorTime ? t('screenplay.toasts.supervisorNoteAdded') : t('screenplay.toasts.annotationAdded'));
 
+      if (screenplayWorkspaceId && currentUser) {
+        logWorkspaceActivity({
+          workspaceId: screenplayWorkspaceId,
+          actorUid: currentUser.uid,
+          actorName: currentUser.displayName,
+          verb: 'annotation_added',
+          targetId: screenplay.id,
+          targetName: screenplay.name
+        });
+      }
+
       if (supervisorAtAuthorTime) {
         // Don't await — notification is best-effort, never block the user's flow.
         writeSupervisorCommentNotification({
@@ -919,6 +931,17 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       const tagRef = await addDoc(collection(db, 'screenplayTags'), tagData);
       setNewTag('');
       toast.success(t('screenplay.toasts.tagAdded'));
+
+      if (screenplayWorkspaceId && currentUser) {
+        logWorkspaceActivity({
+          workspaceId: screenplayWorkspaceId,
+          actorUid: currentUser.uid,
+          actorName: currentUser.displayName,
+          verb: 'tag_added',
+          targetId: screenplay.id,
+          targetName: screenplay.name
+        });
+      }
 
       if (supervisorAtAuthorTime) {
         writeSupervisorCommentNotification({

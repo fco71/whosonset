@@ -13,10 +13,11 @@ import './CollaborationHub.scss';
 import UserAutocomplete, { UserAutocompleteOption } from './UserAutocomplete';
 import { toast } from 'react-hot-toast';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { collection, addDoc, query, where, orderBy, getDocs, getDoc, onSnapshot, updateDoc, doc, deleteDoc, serverTimestamp, Timestamp, arrayUnion, arrayRemove, QuerySnapshot, Unsubscribe, writeBatch } from 'firebase/firestore';
+import { collection, addDoc, query, where, orderBy, limit, getDocs, getDoc, onSnapshot, updateDoc, doc, deleteDoc, serverTimestamp, Timestamp, arrayUnion, arrayRemove, QuerySnapshot, Unsubscribe, writeBatch } from 'firebase/firestore';
 import { db, storage } from '../../firebase';
 import ScreenplayViewer from './ScreenplayViewer';
 import FountainEditor from './FountainEditor';
+import { logWorkspaceActivity } from '../../services/workspaceActivityService';
 import { useTranslation } from 'react-i18next';
 
 const debugLog = (...args: unknown[]) => {
@@ -199,6 +200,14 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const [selectedScreenplayId, setSelectedScreenplayId] = useState<string | null>(null);
 
   const [approvedContacts, setApprovedContacts] = useState<string[]>([]);
+  const [activityEvents, setActivityEvents] = useState<Array<{
+    id: string;
+    actorName?: string;
+    verb: string;
+    targetName?: string | null;
+    detail?: string | null;
+    createdAt?: any;
+  }>>([]);
   const [isTeacher, setIsTeacher] = useState(false);
   const [toggleSupervisorPending, setToggleSupervisorPending] = useState(false);
 
@@ -398,6 +407,14 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       toast.success(enabling
         ? t('collaboration.supervisor.enabled')
         : t('collaboration.supervisor.disabled'));
+      if (enabling) {
+        logWorkspaceActivity({
+          workspaceId: workspace.id,
+          actorUid: currentUser.uid,
+          actorName: currentUser.displayName,
+          verb: 'member_self_promoted'
+        });
+      }
     } catch (err) {
       console.error('Failed to toggle supervisor mode:', err);
       toast.error(t('collaboration.supervisor.toggleError'));
@@ -602,6 +619,42 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   useEffect(() => {
     loadTeamMembers();
   }, [selectedWorkspace?.id]);
+
+  // G5 — live "Recent activity" feed for the selected workspace.
+  useEffect(() => {
+    const workspaceId = selectedWorkspace?.id;
+    if (!currentUser || !workspaceId) {
+      setActivityEvents([]);
+      return;
+    }
+    const activityQuery = query(
+      collection(db, 'workspaceActivity'),
+      where('workspaceId', '==', workspaceId),
+      orderBy('createdAt', 'desc'),
+      limit(25)
+    );
+    const unsubscribe = onSnapshot(
+      activityQuery,
+      snapshot => {
+        setActivityEvents(snapshot.docs.map(d => {
+          const data = d.data();
+          return {
+            id: d.id,
+            actorName: data.actorName,
+            verb: data.verb,
+            targetName: data.targetName ?? null,
+            detail: data.detail ?? null,
+            createdAt: data.createdAt
+          };
+        }));
+      },
+      err => {
+        console.error('Activity feed subscription error:', err);
+        setActivityEvents([]);
+      }
+    );
+    return () => unsubscribe();
+  }, [currentUser, selectedWorkspace?.id]);
 
   useEffect(() => {
     if (selectedWorkspace && (selectedWorkspace.status || 'active') === 'active') {
@@ -810,6 +863,17 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       }, newMembers);
 
       await syncWorkspaceScreenplayAccess(workspace.id, memberIds);
+
+      if (currentUser) {
+        const addedNames = newMembers.map(m => m.email || 'a collaborator').join(', ');
+        logWorkspaceActivity({
+          workspaceId: workspace.id,
+          actorUid: currentUser.uid,
+          actorName: currentUser.displayName,
+          verb: 'member_added',
+          detail: addedNames
+        });
+      }
 
       const updatedWorkspace: CollaborationWorkspace = {
         ...workspace,
@@ -1067,6 +1131,16 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       };
 
       const docRef = await addDoc(collection(db, 'screenplays'), screenplayData);
+      if (uploadWorkspace?.id) {
+        logWorkspaceActivity({
+          workspaceId: uploadWorkspace.id,
+          actorUid: currentUser.uid,
+          actorName: currentUser.displayName,
+          verb: 'screenplay_uploaded',
+          targetId: docRef.id,
+          targetName: file.name
+        });
+      }
       return { ...screenplayData, id: docRef.id };
     } catch (err) {
       console.error(`Failed to upload ${file.name}:`, err);
@@ -1171,6 +1245,17 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       };
       const docRef = await addDoc(collection(db, 'screenplays'), screenplayData);
       const created: Screenplay = { ...screenplayData, id: docRef.id };
+
+      if (uploadWorkspace?.id) {
+        logWorkspaceActivity({
+          workspaceId: uploadWorkspace.id,
+          actorUid: currentUser.uid,
+          actorName: currentUser.displayName,
+          verb: 'screenplay_created',
+          targetId: created.id,
+          targetName: title
+        });
+      }
 
       setShowStartWritingModal(false);
       setNewFountainTitle('');
@@ -1321,6 +1406,16 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       try {
         await deleteDoc(doc(db, 'screenplays', screenplayId));
         toast.success(t('collaboration.screenplaysTab.deleteSuccess'));
+        if (screenplay.workspaceId && currentUser) {
+          logWorkspaceActivity({
+            workspaceId: screenplay.workspaceId,
+            actorUid: currentUser.uid,
+            actorName: currentUser.displayName,
+            verb: 'screenplay_deleted',
+            targetId: screenplay.id,
+            targetName: screenplay.name
+          });
+        }
       } catch (error) {
         console.error('Error deleting screenplay:', error);
         toast.error(t('collaboration.screenplaysTab.deleteFailed'));
@@ -1686,6 +1781,38 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
           </div>
         ))}
       </div>
+
+      {/* G5 — Recent activity for the selected workspace */}
+      {selectedWorkspace && (selectedWorkspace.status || 'active') !== 'deleted' && (
+        <div className="workspace-activity" style={{ marginTop: 24, background: '#fff', borderRadius: 8, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', padding: '16px 20px' }}>
+          <h3 style={{ margin: '0 0 12px', fontSize: '1.05em', color: '#1e293b' }}>
+            {t('collaboration.activity.title')} — {selectedWorkspace.name}
+          </h3>
+          {activityEvents.length === 0 ? (
+            <p style={{ color: '#94a3b8', margin: 0 }}>{t('collaboration.activity.empty')}</p>
+          ) : (
+            <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+              {activityEvents.map(ev => {
+                const when = toDate(ev.createdAt);
+                return (
+                  <li key={ev.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '6px 0', borderBottom: '1px solid #f1f5f9' }}>
+                    <span style={{ color: '#334155', minWidth: 0 }}>
+                      <strong>{ev.actorName || t('collaboration.activity.someone')}</strong>{' '}
+                      {t(`collaboration.activity.verbs.${ev.verb}`, {
+                        target: ev.targetName || t('collaboration.activity.aScreenplay'),
+                        detail: ev.detail || ''
+                      })}
+                    </span>
+                    <span style={{ color: '#94a3b8', fontSize: '0.85em', whiteSpace: 'nowrap' }}>
+                      {when ? formatTimeAgo(when) : ''}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      )}
 
       {/* Create Workspace Modal - 2-Step Process */}
       {showCreateWorkspaceModal && (

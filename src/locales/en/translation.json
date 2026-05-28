@@ -786,6 +786,21 @@
       "uploadFailed": "Failed to upload screenplay"
     },
     "workspaceDeleteConfirm": "Are you sure you want to delete this workspace and all its data? This action cannot be undone.",
+    "activity": {
+      "title": "Recent activity",
+      "empty": "No activity yet.",
+      "someone": "Someone",
+      "aScreenplay": "a screenplay",
+      "verbs": {
+        "screenplay_uploaded": "uploaded {{target}}",
+        "screenplay_created": "started writing {{target}}",
+        "screenplay_deleted": "deleted {{target}}",
+        "member_added": "added {{detail}}",
+        "member_self_promoted": "is now supervising this workspace",
+        "annotation_added": "commented on {{target}}",
+        "tag_added": "tagged {{target}}"
+      }
+    },
     "personalNoWorkspace": "Personal / no workspace",
     "uploadToWorkspace": "Upload to workspace",
     "uploadHelp": "Upload now, or invite collaborators later. Workspace access can be updated at any time.",

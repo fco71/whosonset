@@ -751,6 +751,21 @@
       "uploadFailed": "Error al subir guión"
     },
     "workspaceDeleteConfirm": "¿Estás seguro de que quieres eliminar este espacio de trabajo y todos sus datos? Esta acción no se puede deshacer.",
+    "activity": {
+      "title": "Actividad reciente",
+      "empty": "Aún no hay actividad.",
+      "someone": "Alguien",
+      "aScreenplay": "un guion",
+      "verbs": {
+        "screenplay_uploaded": "subió {{target}}",
+        "screenplay_created": "empezó a escribir {{target}}",
+        "screenplay_deleted": "eliminó {{target}}",
+        "member_added": "agregó a {{detail}}",
+        "member_self_promoted": "ahora supervisa este espacio de trabajo",
+        "annotation_added": "comentó en {{target}}",
+        "tag_added": "etiquetó {{target}}"
+      }
+    },
     "personalNoWorkspace": "Personal / sin espacio de trabajo",
     "uploadToWorkspace": "Subir a espacio de trabajo",
     "uploadHelp": "Sube ahora o invita colaboradores más tarde. El acceso al espacio puede actualizarse en cualquier momento.",
