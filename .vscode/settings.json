@@ -30,5 +30,6 @@
         "**/*-recovering-from-app-crash-and-chat-loss.md": true
     },
     "typescript.preferences.includePackageJsonAutoImports": "off",
-    "typescript.suggest.autoImports": false
+    "typescript.suggest.autoImports": false,
+    "specstory.cloudSync.enabled": "never"
 }

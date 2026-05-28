@@ -37976,7 +37976,7 @@ _**User**_
 
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyDTvNBe3q-Wbog_sMlRFjwA_gqGXpw37UM",
+  apiKey: "[REDACTED_GOOGLE_API_KEY]",
   authDomain: "whosonsetdepez.firebaseapp.com",
   projectId: "whosonsetdepez",
   storageBucket: "whosonsetdepez.firebasestorage.app",
@@ -37998,7 +37998,7 @@ Great! You’ve pasted your Firebase config from the Firebase Console. Let’s c
 Copy and paste the following into your `.env` file in your project root (replace any existing values):
 
 ```
-REACT_APP_FIREBASE_API_KEY=AIzaSyDTvNBe3q-Wbog_sMlRFjwA_gqGXpw37UM
+REACT_APP_FIREBASE_API_KEY=[REDACTED_GOOGLE_API_KEY]
 REACT_APP_FIREBASE_AUTH_DOMAIN=whosonsetdepez.firebaseapp.com
 REACT_APP_FIREBASE_PROJECT_ID=whosonsetdepez
 REACT_APP_FIREBASE_STORAGE_BUCKET=whosonsetdepez.firebasestorage.app
@@ -38273,7 +38273,7 @@ It appears that your `.env` file exists in your project root (as seen in the dir
 
 - Make sure your `.env` contains these lines (with your real values):
   ```
-  REACT_APP_FIREBASE_API_KEY=AIzaSyDTvNBe3q-Wbog_sMlRFjwA_gqGXpw37UM
+  REACT_APP_FIREBASE_API_KEY=[REDACTED_GOOGLE_API_KEY]
   REACT_APP_FIREBASE_AUTH_DOMAIN=whosonsetdepez.firebaseapp.com
   REACT_APP_FIREBASE_PROJECT_ID=whosonsetdepez
   REACT_APP_FIREBASE_STORAGE_BUCKET=whosonsetdepez.appspot.com
@@ -40274,7 +40274,7 @@ _**User**_
 
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyDTvNBe3q-Wbog_sMlRFjwA_gqGXpw37UM",
+  apiKey: "[REDACTED_GOOGLE_API_KEY]",
   authDomain: "whosonsetdepez.firebaseapp.com",
   projectId: "whosonsetdepez",
   storageBucket: "whosonsetdepez.firebasestorage.app",
