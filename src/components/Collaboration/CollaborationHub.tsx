@@ -790,7 +790,10 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     role: Extract<WorkspaceRole, 'member' | 'supervisor' | 'viewer'>
   ): WorkspaceMember => ({
       userId: user.id,
-      email: user.email,
+      // Coerce to '' — a crew profile may have no email, and an `undefined` field in the
+      // members[] array write throws "Unsupported field value: undefined", which silently
+      // failed the whole invite (member never added).
+      email: user.email || '',
       role,
       joinedAt: new Date(),
       permissions: getPermissionsForRole(role),

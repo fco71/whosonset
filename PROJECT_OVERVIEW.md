@@ -758,6 +758,12 @@ Each step ends with a runnable acceptance check. An agent picking up step N shou
 
 **Last meaningful step (2026-05-28, agent)**: G5 workspace activity feed. Before that: account-deletion cascade Cloud Function + the two review fixes. Typecheck clean, 40 Vitest tests green, app+functions build clean.
 
+### Bug fix — invite-member-after-creation silently failed (2026-05-28)
+
+Francisco: inviting a member after creating a group wasn't activating. Cause: `buildWorkspaceMember` set `email: user.email`, which is `undefined` for any crew profile without an email. The client Firestore was initialized WITHOUT `ignoreUndefinedProperties`, so writing the `members[]` array with an `undefined` field throws `Unsupported field value: undefined` — the whole `addUsersToWorkspace` write failed and the member never got added. (Same latent risk in create-with-members.)
+
+Fix: (1) coerce `email: user.email || ''` in `buildWorkspaceMember` ([CollaborationHub.tsx](src/components/Collaboration/CollaborationHub.tsx)); (2) added `ignoreUndefinedProperties: true` to the client Firestore init ([firebase.ts](src/firebase.ts)) — matches the Admin SDK config and prevents this whole class of undefined-field write failures app-wide. Typecheck + 40 tests green. (No rules/deploy needed — client-only.)
+
 ### G5 — workspace activity feed (2026-05-28)
 
 Turns a workspace from a static file list into a live "what changed" view for the evaluation experience.
