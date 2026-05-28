@@ -751,6 +751,13 @@
       "uploadFailed": "Error al subir guión"
     },
     "workspaceDeleteConfirm": "¿Estás seguro de que quieres eliminar este espacio de trabajo y todos sus datos? Esta acción no se puede deshacer.",
+    "notifications": {
+      "someone": "Alguien",
+      "addedToWorkspace": {
+        "title": "{{inviter}} te agregó a {{workspace}}",
+        "body": "Ahora eres {{role}} en {{workspace}}."
+      }
+    },
     "activity": {
       "title": "Actividad reciente",
       "empty": "Aún no hay actividad.",

@@ -775,6 +775,14 @@ Per Francisco: cut the recovery window 30 → 7 days, and let owners permanently
 - "Delete permanently" button now always shown next to Restore on a deleted workspace (was gated behind window-expiry). `handlePermanentDeleteWorkspace` drops the expiry check, and also cleans up the workspace's `workspaceMemberships` docs (owner-permitted) before deleting the workspace doc. Card note shows "Auto-deletes after 7 days" / "Recovery period ended".
 - **Rule change** ([firestore.rules](firestore.rules)): workspaces `allow delete` no longer requires `request.time > deleteRecoverableUntil` — owner may hard-delete any `status == 'deleted'` workspace. **NEEDS DEPLOY**: `firebase deploy --only firestore:rules`. Until deployed, the button will hit permission-denied during the window (works after expiry).
 
+### Workspace-add notifications (2026-05-28) — phase 1 of consent flow
+
+Francisco wants invited users to be notified and (eventually) to approve joining. Decision (given a live assignment on the direct-add flow): **phase 1 = notify now, full accept/decline consent later.**
+
+Phase 1 (done): `addUsersToWorkspace` now writes a `notifications` doc to each newly-added member ("X added you to <workspace> — you're now a <role>"). Best-effort (`.catch`, never undoes the add). Surfaced by the existing notification bell; NotificationCenter routes `workspace_invite` → /collaboration with a 🤝 icon. No deploy needed (notifications create rule already permits it). Membership is still direct (immediate) — the workspace appears for them via membership discovery.
+
+**Planned follow-up — full consent flow** (after the assignment): a `workspaceInvitations` collection (pending/accepted/declined) + a callable Cloud Function `respondToWorkspaceInvitation` (admin, adds the invitee to members/memberIds + membership + screenplay sync on accept — the client can't, since workspace mutation + membership create are owner-only) + an Accept/Decline UI. Then no one joins without approval.
+
 ### Fix — "Failed to delete workspace" on permanent delete (2026-05-28)
 
 Two causes: (1) `handlePermanentDeleteWorkspace` cleaned up memberships via `getDocs(query(workspaceMemberships, where('workspaceId','==',id)))`, but the membership *list* rule only permits listing your OWN memberships (by `userId`), so that query is denied and threw before the workspace was deleted — failing even after the rule deploy. (2) the during-window delete rule isn't deployed.
