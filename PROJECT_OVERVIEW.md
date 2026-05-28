@@ -689,9 +689,32 @@ Each step ends with a runnable acceptance check. An agent picking up step N shou
 
 ---
 
-## Where we are right now (pick-up pointer, 2026-05-27 late-night — after G7, starting Workstream B)
+## Where we are right now (pick-up pointer, 2026-05-27 late-night — Workstream B first cut shipped)
 
-**Last meaningful step**: G7 drag-and-drop multi-upload + first-run empty state. Next up: Workstream B (in-browser Fountain editor) — Francisco asked for "G7, then B".
+**Last meaningful step**: Workstream B (in-browser Fountain editor) first cut — B1 schema, B2 creation flow, B3 editor, B4 parser/page-count (committed separately as 631a0e2b), B5 read-only viewer + ScreenplayViewer branching. Typecheck clean, 32 Vitest tests green.
+
+### Workstream B — in-browser Fountain editor (first cut shipped)
+
+A student/teacher can now write a screenplay in the browser, no upload:
+
+- **B1 schema**: `screenplays` docs gain `format: 'pdf' | 'fountain'` (default 'pdf' for legacy), `fountainSource: string`, `fountainUpdatedAt`, `lastEditedBy`. `normalizeScreenplay` resolves `format ?? 'pdf'`. No backfill needed.
+- **B2 creation**: "✍️ Start writing" button on the screenplays tab → modal (title + optional workspace) → creates a `format:'fountain'` doc with empty source, `teamMembers` seeded from the workspace, then opens the editor. New `canEditScreenplay()` helper gates who can write.
+- **B3 editor** ([FountainEditor.tsx](src/components/Collaboration/FountainEditor.tsx)): single textarea, monospace, debounced save (1500ms, last-write-wins, final flush on unmount), page-count badge top-right, save-status indicator. Format toolbar (Scene/Action/Character/Parenthetical/Dialogue/Transition) + keyboard shortcuts: **Tab/Shift+Tab cycle** element types, **Alt/⌥+S/A/C/P/D/T** jump to a type. Active-element highlight from `detectLineType`. All transforms come from the pure `fountain.ts` utility.
+- **B4 parser/page-count** ([fountain.ts](src/utilities/fountain.ts) + [fountain.test.ts](src/utilities/fountain.test.ts)): committed earlier as 631a0e2b. 24 unit tests.
+- **B5 viewer** ([FountainViewer.tsx](src/components/Collaboration/FountainViewer.tsx)): read-only formatted render that subscribes to the doc (live, last-write-wins). `ScreenplayViewer` now branches on `format` — fountain docs render `FountainViewer` in the main panel (PDF zoom controls hidden), pdf docs use the existing react-pdf path. The annotation side panel is shared, so supervisors can still comment.
+
+**Files**: new [FountainEditor.tsx](src/components/Collaboration/FountainEditor.tsx), [FountainViewer.tsx](src/components/Collaboration/FountainViewer.tsx), [fountain.ts](src/utilities/fountain.ts) + test; edited [CollaborationHub.tsx](src/components/Collaboration/CollaborationHub.tsx) (schema, creation flow, Write button, editor render), [ScreenplayViewer.tsx](src/components/Collaboration/ScreenplayViewer.tsx) (branch on format), en/es JSONs (`fountain.*`).
+
+### Known gaps / follow-ups for Workstream B
+
+- **B6 annotations on Fountain docs — PARTIAL.** The annotation side panel renders for fountain docs, but the *creation* flow is still PDF-selection-driven (handlers attach to `.react-pdf__Page__textContent`, which doesn't exist in the fountain render). So a supervisor can SEE existing comments on a fountain doc but can't yet ADD a spatially-anchored one. Next step: either (a) a doc-level "Add note" composer in the panel for fountain docs, or (b) wire text-selection on the FountainViewer to create offset-anchored annotations. Recommend (a) for MVP — simplest, and doc-level notes are fine for evaluation.
+- **B7 export to PDF** — still deferred (was always out of scope; confirm if wanted).
+- **CSV export** already works for fountain docs' annotations/tags (it reads the same collections).
+- The editor has no explicit "manual save" button — relies on debounce + unmount flush. Fine, but a visible "Saved ✓" is shown.
+
+### Prior steps this evening (all committed)
+
+G7 drag-and-drop + empty state (d46764dd), B4 parser (631a0e2b), G6 notifications (2bc6c7d3), C1 collaborator hydration (cd8f26cc), G1–G4 + S1–S10 + i18n + CSV (0f245a03 + 87f5beef + c2e85902).
 
 ### G7 — drag-and-drop multi-upload + empty state (done)
 
@@ -914,7 +937,7 @@ This affects G1 specifically — without it, the self-toggle button hits `permis
 | A4 rules (workspaces + screenplays) | ✅ done | `canEditScreenplayData`, `keepsScreenplayOwnership`, `isWorkspaceReadOnlyParticipant` in [firestore.rules](firestore.rules). **Deploy still required** |
 | A5 comment-count badges + quick action | ✅ done (2026-05-27, evening) — covered by G3 | unresolved + from-teacher count subscriptions in CollaborationHub; 💬 N and 🎓 N pills on each screenplay row |
 | A6 invite-by-email | ❌ not built | UserAutocomplete still restricted to existing crew profiles |
-| B (Fountain editor) | ❌ not started | no `FountainEditor.tsx`, no `fountain.ts` utility |
+| B (Fountain editor) | ✅ first cut shipped 2026-05-27 (B1–B5) | B6 (add-comment-on-fountain) partial; B7 (PDF export) deferred. See "Workstream B" section in pick-up pointer. |
 | **Beyond plan**: archive → soft-delete → 30-day recovery | ✅ done | [`handleArchiveWorkspace`](src/components/Collaboration/CollaborationHub.tsx:1037) etc.; rule branch on `deleteRecoverableUntil` in firestore.rules |
 | **PDF viewer dark-grey/duplicate-text bug** | ✅ fixed | TextLayer.css + AnnotationLayer.css imports added in [ScreenplayViewer.tsx:4-5](src/components/Collaboration/ScreenplayViewer.tsx:4) |
 

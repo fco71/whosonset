@@ -16,6 +16,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { collection, addDoc, query, where, orderBy, getDocs, getDoc, onSnapshot, updateDoc, doc, deleteDoc, serverTimestamp, Timestamp, arrayUnion, arrayRemove, QuerySnapshot, Unsubscribe } from 'firebase/firestore';
 import { db, storage } from '../../firebase';
 import ScreenplayViewer from './ScreenplayViewer';
+import FountainEditor from './FountainEditor';
 import { useTranslation } from 'react-i18next';
 
 const debugLog = (...args: unknown[]) => {
@@ -51,6 +52,10 @@ interface Screenplay {
   uploadedAt?: Date | { seconds: number; nanoseconds: number };
   lastModified?: Date | { seconds: number; nanoseconds: number };
   size?: number;
+  // Fountain (in-browser writing) support. format defaults to 'pdf' for legacy/uploaded
+  // docs; 'fountain' docs have no Storage file (url is empty) and store their text inline.
+  format?: 'pdf' | 'fountain';
+  fountainSource?: string;
 }
 
 // Screenplay Annotation interface
@@ -187,6 +192,10 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   }[]>([]);
 
   const [userScreenplays, setUserScreenplays] = useState<Screenplay[]>([]);
+  const [showStartWritingModal, setShowStartWritingModal] = useState(false);
+  const [newFountainTitle, setNewFountainTitle] = useState('');
+  const [creatingFountain, setCreatingFountain] = useState(false);
+  const [editingFountain, setEditingFountain] = useState<Screenplay | null>(null);
   const [unresolvedCountByScreenplay, setUnresolvedCountByScreenplay] = useState<Record<string, number>>({});
   const [unresolvedFromTeacherCountByScreenplay, setUnresolvedFromTeacherCountByScreenplay] = useState<Record<string, number>>({});
   const [selectedScreenplayId, setSelectedScreenplayId] = useState<string | null>(null);
@@ -233,6 +242,8 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     workspaceId: data.workspaceId || null,
     projectId: data.projectId || null,
     size: data.size,
+    format: data.format === 'fountain' ? 'fountain' : 'pdf',
+    fountainSource: typeof data.fountainSource === 'string' ? data.fountainSource : '',
     uploadedAt: data.uploadedAt?.toDate ? data.uploadedAt.toDate() : data.uploadedAt,
     lastModified: data.lastModified?.toDate ? data.lastModified.toDate() : data.lastModified
   });
@@ -299,6 +310,17 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     if (screenplay.uploadedBy === currentUser.uid) return true;
     const workspace = screenplay.workspaceId ? getWorkspaceById(screenplay.workspaceId) : null;
     return workspace ? isWorkspaceCreator(workspace) && !isWorkspaceReadOnlyParticipant(workspace) : false;
+  };
+
+  // Whether the current user may edit a screenplay's content (Fountain source).
+  // The uploader can always edit their own; otherwise they must be a non-read-only
+  // member of the screenplay's workspace. Mirrors the Firestore rule that blocks
+  // supervisors from mutating screenplay docs.
+  const canEditScreenplay = (screenplay: Screenplay): boolean => {
+    if (!currentUser) return false;
+    if (screenplay.uploadedBy === currentUser.uid) return true;
+    const workspace = screenplay.workspaceId ? getWorkspaceById(screenplay.workspaceId) : null;
+    return workspace ? canEditWorkspaceContent(workspace) : false;
   };
 
   const toDate = (value: any): Date | null => {
@@ -1063,6 +1085,60 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     }
 
     loadTeamMembers();
+  };
+
+  // B2 — create a new in-browser Fountain screenplay (no file upload). Seeds the doc with
+  // format: 'fountain' + an empty source, scoped to the selected workspace so collaborators
+  // inherit access, then opens the editor on it.
+  const handleCreateFountainScreenplay = async () => {
+    if (!currentUser) {
+      toast.error('Please sign in to start writing.');
+      return;
+    }
+    const title = newFountainTitle.trim();
+    if (!title) {
+      toast.error(t('fountain.titleRequired'));
+      return;
+    }
+
+    const uploadWorkspace = uploadWorkspaceId
+      ? workspaces.find(workspace => workspace.id === uploadWorkspaceId && (workspace.status || 'active') === 'active') || null
+      : null;
+    if (uploadWorkspace && !canEditWorkspaceContent(uploadWorkspace)) {
+      toast.error('Your role in this workspace can view and comment, but cannot create screenplays.');
+      return;
+    }
+
+    setCreatingFountain(true);
+    try {
+      const workspaceMemberIds = uploadWorkspace ? getWorkspaceMemberIds(uploadWorkspace) : [];
+      const teamMemberIds = Array.from(new Set([currentUser.uid, ...workspaceMemberIds]));
+      const now = new Date();
+      const screenplayData: Omit<Screenplay, 'id'> = {
+        name: title,
+        type: 'fountain',
+        url: '',
+        format: 'fountain',
+        fountainSource: '',
+        uploadedBy: currentUser.uid,
+        teamMembers: teamMemberIds,
+        workspaceId: uploadWorkspace?.id || null,
+        projectId: projectId || uploadWorkspace?.projectId || null,
+        uploadedAt: now,
+        lastModified: now
+      };
+      const docRef = await addDoc(collection(db, 'screenplays'), screenplayData);
+      const created: Screenplay = { ...screenplayData, id: docRef.id };
+
+      setShowStartWritingModal(false);
+      setNewFountainTitle('');
+      setEditingFountain(created);
+    } catch (err) {
+      console.error('Error creating Fountain screenplay:', err);
+      toast.error(t('fountain.createError'));
+    } finally {
+      setCreatingFountain(false);
+    }
   };
 
   // Backwards-compatible name kept for the file <input>'s onChange wiring.
@@ -2042,6 +2118,15 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                 )}
               </div>
               <div style={{ display: 'flex', gap: 12 }}>
+                {screenplay.format === 'fountain' && canEditScreenplay(screenplay) && (
+                  <button
+                    className="btn-primary"
+                    style={{ padding: '0.4rem 1rem', fontSize: '0.95em' }}
+                    onClick={() => setEditingFountain(screenplay)}
+                  >
+                    ✍️ {t('fountain.write')}
+                  </button>
+                )}
                 <button
                   className="btn-secondary"
                   style={{ padding: '0.4rem 1rem', fontSize: '0.95em' }}
@@ -2127,6 +2212,14 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                   disabled={uploadingScreenplay}
                 />
               </label>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => { setNewFountainTitle(''); setShowStartWritingModal(true); }}
+                style={{ padding: '0.75rem 1.5rem', fontWeight: 600 }}
+              >
+                ✍️ {t('fountain.startWriting')}
+              </button>
               <span style={{ color: '#64748b', fontSize: '0.9em' }}>
                 {isDraggingFiles ? t('collaboration.dropFilesNow') : t('collaboration.dropFilesHint')}
               </span>
@@ -2303,7 +2396,9 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
               id: uploadedScreenplay.id || '',
               name: uploadedScreenplay.name,
               url: uploadedScreenplay.url,
-              type: uploadedScreenplay.type
+              type: uploadedScreenplay.type,
+              format: uploadedScreenplay.format,
+              fountainSource: uploadedScreenplay.fountainSource
             }}
             projectId={projectId || 'default-project'}
             onClose={() => setShowScreenplayViewer(false)}
@@ -2330,7 +2425,9 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                         id: selectedScreenplay.id,
                         name: selectedScreenplay.name,
                         url: selectedScreenplay.url,
-                        type: selectedScreenplay.type
+                        type: selectedScreenplay.type,
+                        format: selectedScreenplay.format,
+                        fountainSource: selectedScreenplay.fountainSource
                       }}
                       projectId={projectId || 'default-project'}
                       onClose={() => {
@@ -2341,6 +2438,76 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                     />
                   );
                 })()}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* In-browser Fountain editor (B3) */}
+        {editingFountain && (
+          <FountainEditor
+            screenplay={{
+              id: editingFountain.id,
+              name: editingFountain.name,
+              fountainSource: editingFountain.fountainSource
+            }}
+            onClose={() => setEditingFountain(null)}
+          />
+        )}
+
+        {/* Start Writing modal (B2) */}
+        {showStartWritingModal && (
+          <div className="modal-overlay">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h3>{t('fountain.startWriting')}</h3>
+                <button
+                  className="close-btn"
+                  aria-label={t('fountain.close')}
+                  onClick={() => { setShowStartWritingModal(false); setNewFountainTitle(''); }}
+                >×</button>
+              </div>
+              <div className="modal-body">
+                <div className="form-group">
+                  <label>{t('fountain.titleLabel')}</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={newFountainTitle}
+                    autoFocus
+                    placeholder={t('fountain.titlePlaceholder')}
+                    onChange={e => setNewFountainTitle(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') handleCreateFountainScreenplay(); }}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>{t('collaboration.uploadToWorkspace')}</label>
+                  <select
+                    className="form-input"
+                    value={workspaces.find(w => w.id === uploadWorkspaceId && canEditWorkspaceContent(w)) ? uploadWorkspaceId : ''}
+                    onChange={e => setUploadWorkspaceId(e.target.value)}
+                  >
+                    <option value="">{t('collaboration.personalNoWorkspace')}</option>
+                    {workspaces.filter(canEditWorkspaceContent).map(workspace => (
+                      <option key={workspace.id} value={workspace.id}>{workspace.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', padding: '1.5rem 2rem 1rem 2rem' }}>
+                <button
+                  className="btn-secondary"
+                  onClick={() => { setShowStartWritingModal(false); setNewFountainTitle(''); }}
+                >
+                  {t('fountain.cancel')}
+                </button>
+                <button
+                  className="btn-primary"
+                  disabled={creatingFountain || !newFountainTitle.trim()}
+                  onClick={handleCreateFountainScreenplay}
+                >
+                  {creatingFountain ? t('fountain.creating') : t('fountain.create')}
+                </button>
               </div>
             </div>
           </div>

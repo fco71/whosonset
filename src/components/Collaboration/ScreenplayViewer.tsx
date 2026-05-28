@@ -9,6 +9,7 @@ import { toast } from 'react-hot-toast';
 import './ScreenplayViewer.scss';
 import { useTranslation } from 'react-i18next';
 import EmailNotificationService from '../../services/emailNotificationService';
+import FountainViewer from './FountainViewer';
 
 const debugLog = (...args: unknown[]) => {
   if (process.env.NODE_ENV !== 'production') {
@@ -26,6 +27,8 @@ interface ScreenplayViewerProps {
     name: string;
     url: string;
     type: string;
+    format?: 'pdf' | 'fountain';
+    fountainSource?: string;
   };
   projectId: string;
   onClose: () => void;
@@ -196,10 +199,12 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
 
   if (!screenplay || !screenplay.id) return null;
 
-  const isPdfDocument =
+  const isFountain = screenplay.format === 'fountain' || screenplay.type === 'fountain';
+  const isPdfDocument = !isFountain && (
     screenplay.type?.toLowerCase().includes('pdf') ||
     screenplay.name?.toLowerCase().endsWith('.pdf') ||
-    screenplay.url?.toLowerCase().includes('.pdf');
+    screenplay.url?.toLowerCase().includes('.pdf')
+  );
 
   // Prevent body scrolling when modal is open
   useEffect(() => {
@@ -1637,17 +1642,21 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
           <div 
             className={`pdf-panel ${viewMode} ${sidebarCollapsed ? 'expanded' : ''}`}
           >
-            <div className="pdf-floating-zoom-controls">
-              <button onClick={() => setScale(prev => Math.max(0.5, prev - 0.2))}>-</button>
-              <span>{Math.round(scale * 100)}%</span>
-              <button onClick={() => setScale(prev => Math.min(3, prev + 0.2))}>+</button>
-            </div>
-            <div 
+            {!isFountain && (
+              <div className="pdf-floating-zoom-controls">
+                <button onClick={() => setScale(prev => Math.max(0.5, prev - 0.2))}>-</button>
+                <span>{Math.round(scale * 100)}%</span>
+                <button onClick={() => setScale(prev => Math.min(3, prev + 0.2))}>+</button>
+              </div>
+            )}
+            <div
               className="pdf-container"
               ref={pdfContainerRef}
               style={{ position: 'relative' }}
             >
-              {error ? (
+              {isFountain ? (
+                <FountainViewer screenplayId={screenplay.id} initialSource={screenplay.fountainSource} />
+              ) : error ? (
                 <div className="error-message">{error}</div>
               ) : screenplay.url && !isPdfDocument ? (
                 <div className="file-preview-fallback">

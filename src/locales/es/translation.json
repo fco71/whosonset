@@ -1051,6 +1051,34 @@
       "followers": "seguidores"
     }
   },
+  "fountain": {
+    "startWriting": "Empezar a escribir",
+    "write": "Escribir",
+    "titleLabel": "Título del guion",
+    "titlePlaceholder": "ej. Proyecto sin título",
+    "titleRequired": "Por favor ingresa un título.",
+    "create": "Crear y escribir",
+    "creating": "Creando…",
+    "cancel": "Cancelar",
+    "close": "Cerrar",
+    "createError": "No se pudo crear el guion.",
+    "saving": "Guardando…",
+    "saved": "Guardado",
+    "saveError": "No se pudo guardar — revisa tu conexión.",
+    "saveErrorShort": "Error al guardar",
+    "pageCount": "{{count}} pp.",
+    "pageCountTooltip": "Número de páginas estimado (sin saltos de página visuales)",
+    "emptyDraft": "Este borrador está vacío.",
+    "placeholder": "INT. LUGAR - DÍA\n\nEscribe la acción aquí. Presiona Tab para cambiar el tipo de elemento, o usa los botones de arriba.\n\nPERSONAJE\nEl diálogo va aquí.",
+    "elements": {
+      "scene": "Escena",
+      "action": "Acción",
+      "character": "Personaje",
+      "parenthetical": "Acotación",
+      "dialogue": "Diálogo",
+      "transition": "Transición"
+    }
+  },
   "screenplay": {
     "addCollaborator": "Agregar Colaborador",
     "collaborators": "Colaboradores",
