@@ -792,6 +792,35 @@
       "uploadFailed": "Failed to upload screenplay"
     },
     "workspaceDeleteConfirm": "Are you sure you want to delete this workspace and all its data? This action cannot be undone.",
+    "gradingReport": {
+      "button": "Grading report",
+      "tooltip": "Download a CSV with every student's screenplay notes for grading.",
+      "generating": "Generating…",
+      "success": "Grading report exported.",
+      "failed": "Could not generate the grading report.",
+      "empty": "Nothing to export — this workspace has no screenplays yet.",
+      "notAllowed": "Only workspace owners and supervisors can export the grading report.",
+      "types": {
+        "annotation": "Annotation",
+        "tag": "Tag"
+      },
+      "boolean": {
+        "yes": "Yes",
+        "no": "No"
+      },
+      "columns": {
+        "student": "Student",
+        "screenplay": "Screenplay",
+        "type": "Type",
+        "category": "Category",
+        "page": "Page",
+        "content": "Content",
+        "author": "Author",
+        "supervisor": "From supervisor",
+        "resolved": "Resolved",
+        "timestamp": "Timestamp"
+      }
+    },
     "reviewStatus": {
       "title": "Teacher review",
       "labels": {

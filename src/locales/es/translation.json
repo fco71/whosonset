@@ -757,6 +757,35 @@
       "uploadFailed": "Error al subir guión"
     },
     "workspaceDeleteConfirm": "¿Estás seguro de que quieres eliminar este espacio de trabajo y todos sus datos? Esta acción no se puede deshacer.",
+    "gradingReport": {
+      "button": "Reporte de calificación",
+      "tooltip": "Descarga un CSV con las notas de guion de cada estudiante para calificar.",
+      "generating": "Generando…",
+      "success": "Reporte de calificación exportado.",
+      "failed": "No se pudo generar el reporte.",
+      "empty": "Nada para exportar — este espacio de trabajo aún no tiene guiones.",
+      "notAllowed": "Solo los propietarios y supervisores pueden exportar el reporte de calificación.",
+      "types": {
+        "annotation": "Anotación",
+        "tag": "Etiqueta"
+      },
+      "boolean": {
+        "yes": "Sí",
+        "no": "No"
+      },
+      "columns": {
+        "student": "Estudiante",
+        "screenplay": "Guion",
+        "type": "Tipo",
+        "category": "Categoría",
+        "page": "Página",
+        "content": "Contenido",
+        "author": "Autor",
+        "supervisor": "De supervisor",
+        "resolved": "Resuelto",
+        "timestamp": "Fecha y hora"
+      }
+    },
     "reviewStatus": {
       "title": "Revisión del profesor",
       "labels": {

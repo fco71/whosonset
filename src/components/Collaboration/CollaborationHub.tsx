@@ -1487,6 +1487,134 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     // Upload is handled by handleScreenplayUpload via file input
   }
 
+  // Workspace-level grading export: one CSV per workspace that combines every
+  // student's screenplay + the supervisor + peer notes left on each. Used by
+  // teachers at grading time so they don't have to walk into each screenplay
+  // and export individually. Visible only to workspace owners / supervisors.
+  const [exportingGradingReportFor, setExportingGradingReportFor] = useState<string | null>(null);
+  const canExportGradingReport = (workspace: CollaborationWorkspace | null | undefined): boolean => {
+    if (!currentUser || !workspace) return false;
+    if (isWorkspaceCreator(workspace)) return true;
+    if (workspace.supervisorIds?.includes(currentUser.uid)) return true;
+    if (workspace.selfElectedSupervisors?.includes(currentUser.uid)) return true;
+    return false;
+  };
+  const handleExportGradingReport = async (workspaceId: string) => {
+    const workspace = getWorkspaceById(workspaceId);
+    if (!workspace || !canExportGradingReport(workspace)) {
+      toast.error(t('collaboration.gradingReport.notAllowed'));
+      return;
+    }
+    const sectionScreenplays = (screenplaysByWorkspaceForExport(workspaceId) || []);
+    if (!sectionScreenplays.length) {
+      toast(t('collaboration.gradingReport.empty'));
+      return;
+    }
+    setExportingGradingReportFor(workspaceId);
+    try {
+      const screenplayIds = sectionScreenplays.map(s => s.id);
+      // 1. Pull annotations + tags across all screenplays in the workspace
+      //    (chunked by 10 — Firestore `in` limit).
+      const annotationsRef = collection(db, 'screenplayAnnotations');
+      const tagsRef = collection(db, 'screenplayTags');
+      type RawNote = { screenplayId?: string; userName?: string; userId?: string; pageNumber?: number; content?: string; annotation?: string; supervisorAtAuthorTime?: boolean; resolved?: boolean; timestamp?: unknown; tagType?: string };
+      const allAnnotations: RawNote[] = [];
+      const allTags: RawNote[] = [];
+      for (let i = 0; i < screenplayIds.length; i += 10) {
+        const chunk = screenplayIds.slice(i, i + 10);
+        const [annSnap, tagSnap] = await Promise.all([
+          getDocs(query(annotationsRef, where('screenplayId', 'in', chunk))),
+          getDocs(query(tagsRef, where('screenplayId', 'in', chunk)))
+        ]);
+        annSnap.docs.forEach(d => allAnnotations.push(d.data() as RawNote));
+        tagSnap.docs.forEach(d => allTags.push(d.data() as RawNote));
+      }
+      // 2. Resolve student names: fetch crewProfile for each unique uploadedBy uid.
+      const uploaderUids = Array.from(new Set(sectionScreenplays.map(s => s.uploadedBy).filter((u): u is string => Boolean(u))));
+      const uidToName = new Map<string, string>();
+      const crewProfilesRef = collection(db, 'crewProfiles');
+      for (let i = 0; i < uploaderUids.length; i += 10) {
+        const chunk = uploaderUids.slice(i, i + 10);
+        try {
+          const snap = await getDocs(query(crewProfilesRef, where('uid', 'in', chunk)));
+          snap.docs.forEach(d => {
+            const data: any = d.data();
+            uidToName.set(d.id, data.name || data.displayName || `Crew Member ${d.id.slice(-4)}`);
+          });
+        } catch {
+          // Ignore — fallback name handles missing profiles.
+        }
+      }
+      // 3. Build rows. One per note, with Student + Screenplay columns prepended.
+      const escapeCsv = (v: unknown): string => `"${(v === null || v === undefined ? '' : String(v)).replace(/"/g, '""')}"`;
+      const headers = [
+        t('collaboration.gradingReport.columns.student'),
+        t('collaboration.gradingReport.columns.screenplay'),
+        t('collaboration.gradingReport.columns.type'),
+        t('collaboration.gradingReport.columns.category'),
+        t('collaboration.gradingReport.columns.page'),
+        t('collaboration.gradingReport.columns.content'),
+        t('collaboration.gradingReport.columns.author'),
+        t('collaboration.gradingReport.columns.supervisor'),
+        t('collaboration.gradingReport.columns.resolved'),
+        t('collaboration.gradingReport.columns.timestamp')
+      ].map(escapeCsv).join(',');
+      const yes = t('collaboration.gradingReport.boolean.yes');
+      const no = t('collaboration.gradingReport.boolean.no');
+      const screenplayById = new Map(sectionScreenplays.map(s => [s.id, s]));
+      const toIso = (ts: unknown): string => {
+        if (!ts) return '';
+        try {
+          const d = (ts as any)?.toDate ? (ts as any).toDate() : new Date(ts as any);
+          return isNaN(d.getTime()) ? '' : d.toISOString();
+        } catch { return ''; }
+      };
+      type Row = { student: string; screenplay: string; type: string; category: string; page: number; content: string; author: string; supervisor: string; resolved: string; timestamp: string };
+      const rowsFromNotes = (notes: RawNote[], type: string, category: (note: RawNote) => string, content: (note: RawNote) => string): Row[] =>
+        notes.map(n => {
+          const sp = n.screenplayId ? screenplayById.get(n.screenplayId) : undefined;
+          const student = sp?.uploadedBy ? (uidToName.get(sp.uploadedBy) || `Crew Member ${sp.uploadedBy.slice(-4)}`) : '';
+          return {
+            student,
+            screenplay: sp?.name || '',
+            type,
+            category: category(n),
+            page: n.pageNumber ?? 0,
+            content: content(n) || '',
+            author: n.userName || '',
+            supervisor: n.supervisorAtAuthorTime ? yes : no,
+            resolved: n.resolved ? yes : no,
+            timestamp: toIso(n.timestamp)
+          };
+        });
+      const allRows: Row[] = [
+        ...rowsFromNotes(allAnnotations, t('collaboration.gradingReport.types.annotation'), () => '', n => n.annotation || ''),
+        ...rowsFromNotes(allTags, t('collaboration.gradingReport.types.tag'), n => n.tagType ? t(`screenplay.categories.${n.tagType}`, { defaultValue: n.tagType }) : '', n => n.content || '')
+      ];
+      allRows.sort((a, b) => a.student.localeCompare(b.student) || a.screenplay.localeCompare(b.screenplay) || a.page - b.page || a.timestamp.localeCompare(b.timestamp));
+      const csv = '﻿' + [headers, ...allRows.map(r => [r.student, r.screenplay, r.type, r.category, r.page, r.content, r.author, r.supervisor, r.resolved, r.timestamp].map(escapeCsv).join(','))].join('\r\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const date = new Date().toISOString().slice(0, 10);
+      const safeName = (workspace.name || 'workspace').replace(/[^a-z0-9\-_]+/gi, '-').slice(0, 60) || 'workspace';
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${safeName}-grading-${date}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast.success(t('collaboration.gradingReport.success'));
+    } catch (err) {
+      console.error('Grading report export failed:', err);
+      toast.error(t('collaboration.gradingReport.failed'));
+    } finally {
+      setExportingGradingReportFor(null);
+    }
+  };
+  const screenplaysByWorkspaceForExport = (workspaceId: string) =>
+    userScreenplays.filter(s => s.workspaceId === workspaceId);
+
   const handleDeleteScreenplay = async (screenplayId: string) => {
     const screenplay = userScreenplays.find(item => item.id === screenplayId);
     if (!screenplay || !canDeleteScreenplay(screenplay)) {
@@ -2704,12 +2832,31 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                 </div>
               </div>
             ) : (
-              sectionKeys.map(sectionKey => (
-                <section key={sectionKey} className="screenplay-section">
-                  <h3>{sectionKey === 'personal' ? t('collaboration.personalNoWorkspace') : getWorkspaceLabel(sectionKey)}</h3>
-                  {renderScreenplayRows(screenplaysByWorkspace[sectionKey] || [])}
-                </section>
-              ))
+              sectionKeys.map(sectionKey => {
+                const sectionWorkspace = sectionKey === 'personal' ? null : getWorkspaceById(sectionKey);
+                const showGradingExport = sectionWorkspace && canExportGradingReport(sectionWorkspace);
+                const exporting = exportingGradingReportFor === sectionKey;
+                return (
+                  <section key={sectionKey} className="screenplay-section">
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                      <h3 style={{ margin: 0 }}>{sectionKey === 'personal' ? t('collaboration.personalNoWorkspace') : getWorkspaceLabel(sectionKey)}</h3>
+                      {showGradingExport && (
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          onClick={() => handleExportGradingReport(sectionKey)}
+                          disabled={exporting}
+                          style={{ padding: '0.3rem 0.7rem', fontSize: '0.8rem' }}
+                          title={t('collaboration.gradingReport.tooltip')}
+                        >
+                          {exporting ? `⏳ ${t('collaboration.gradingReport.generating')}` : `📊 ${t('collaboration.gradingReport.button')}`}
+                        </button>
+                      )}
+                    </div>
+                    {renderScreenplayRows(screenplaysByWorkspace[sectionKey] || [])}
+                  </section>
+                );
+              })
             )}
           </div>
         </div>
