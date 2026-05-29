@@ -149,6 +149,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   const [viewMode, setViewMode] = useState<'single' | 'split' | 'fullscreen'>('single');
   const [filterType, setFilterType] = useState<'all' | 'annotations' | 'tags' | 'resolved'>('all');
   const [statusFilter, setStatusFilter] = useState<'open' | 'mine' | 'from_teacher' | 'all'>('open');
+  const [tagStatusFilter, setTagStatusFilter] = useState<'open' | 'mine' | 'from_teacher' | 'all'>('open');
   const [screenplayWorkspaceId, setScreenplayWorkspaceId] = useState<string | null>(null);
   const [screenplayUploadedBy, setScreenplayUploadedBy] = useState<string | null>(null);
   const [reviewStatus, setReviewStatus] = useState<ScreenplayReviewStatus>(screenplay.reviewStatus || 'draft');
@@ -2991,9 +2992,55 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
 
                   {/* Tags List */}
                   <div className="tags-section">
-                    <h4>🏷️ {t('screenplay.tags')} ({tags.length})</h4>
+                    {(() => {
+                      const openTagCount = tags.filter(tag => !tag.resolved).length;
+                      const mineTagCount = tags.filter(tag => tag.userId === currentUser?.uid).length;
+                      const teacherTagCount = tags.filter(tag => tag.supervisorAtAuthorTime === true).length;
+                      return (
+                        <>
+                          <h4>🏷️ {t('screenplay.tags')} ({tags.length})</h4>
+                          <div className="tags-filter-chips" style={{ display: 'flex', flexWrap: 'wrap', gap: 6, margin: '6px 0 10px' }}>
+                            {([
+                              { key: 'open', label: t('screenplay.statusFilters.open', { count: openTagCount }) },
+                              { key: 'mine', label: t('screenplay.statusFilters.mine', { count: mineTagCount }) },
+                              { key: 'from_teacher', label: t('screenplay.statusFilters.fromTeacher', { count: teacherTagCount }) },
+                              { key: 'all', label: t('screenplay.statusFilters.all', { count: tags.length }) }
+                            ] as Array<{ key: typeof tagStatusFilter; label: string }>).map(option => {
+                              const active = tagStatusFilter === option.key;
+                              return (
+                                <button
+                                  key={option.key}
+                                  type="button"
+                                  onClick={() => setTagStatusFilter(option.key)}
+                                  style={{
+                                    border: '1px solid',
+                                    borderColor: active ? '#2563eb' : '#cbd5e1',
+                                    background: active ? '#2563eb' : '#ffffff',
+                                    color: active ? '#ffffff' : '#334155',
+                                    padding: '3px 8px',
+                                    borderRadius: 999,
+                                    fontSize: '0.72em',
+                                    fontWeight: 600,
+                                    cursor: 'pointer'
+                                  }}
+                                >
+                                  {option.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </>
+                      );
+                    })()}
                     <div className="tags-list">
-                      {tags.map(tag => (
+                      {tags
+                        .filter(tag => {
+                          if (tagStatusFilter === 'open') return !tag.resolved;
+                          if (tagStatusFilter === 'mine') return tag.userId === currentUser?.uid;
+                          if (tagStatusFilter === 'from_teacher') return tag.supervisorAtAuthorTime === true;
+                          return true;
+                        })
+                        .map(tag => (
                         <div key={tag.id} className={`tag-item ${tag.resolved ? 'resolved' : ''} ${tag.supervisorAtAuthorTime ? 'from-supervisor' : ''}`}>
                           <div className="tag-header">
                             <div className="tag-author">
