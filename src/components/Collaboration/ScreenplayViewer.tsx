@@ -183,7 +183,12 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isNavigating, setIsNavigating] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  // On phones the side panel becomes a fixed overlay over the PDF, so default
+  // it to collapsed there — otherwise the user opens the viewer and sees the
+  // panel covering the document, with no obvious "back to PDF" affordance.
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(
+    typeof window !== 'undefined' && window.innerWidth <= 900
+  );
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyInput, setReplyInput] = useState('');
   const [userPresence, setUserPresence] = useState<{[key: string]: {isOnline: boolean, lastSeen: Date, currentPage: number}}>({});
