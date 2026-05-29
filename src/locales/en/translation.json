@@ -1318,6 +1318,14 @@
       "reviewApproved": {
         "title": "{{reviewer}} approved {{screenplay}}",
         "body": "Your screenplay was approved."
+      },
+      "mentionAnnotation": {
+        "title": "{{author}} mentioned you on {{screenplay}}",
+        "body": "Page {{page}}: \"{{excerpt}}\""
+      },
+      "mentionTag": {
+        "title": "{{author}} mentioned you in a tag on {{screenplay}}",
+        "body": "Page {{page}}: \"{{excerpt}}\""
       }
     },
     "export": {

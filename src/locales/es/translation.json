@@ -1283,6 +1283,14 @@
       "reviewApproved": {
         "title": "{{reviewer}} aprobó {{screenplay}}",
         "body": "Tu guion fue aprobado."
+      },
+      "mentionAnnotation": {
+        "title": "{{author}} te mencionó en {{screenplay}}",
+        "body": "Página {{page}}: \"{{excerpt}}\""
+      },
+      "mentionTag": {
+        "title": "{{author}} te mencionó en una etiqueta de {{screenplay}}",
+        "body": "Página {{page}}: \"{{excerpt}}\""
       }
     },
     "export": {

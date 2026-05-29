@@ -82,7 +82,9 @@ function resolveFallbackRoute(notification: AppNotification): string {
     type === 'workspace_invitation_declined' ||
     type === 'review_submitted' ||
     type === 'review_changes_requested' ||
-    type === 'review_approved'
+    type === 'review_approved' ||
+    type === 'mention_annotation' ||
+    type === 'mention_tag'
   ) {
     return '/collaboration';
   }
@@ -106,6 +108,9 @@ function getNotificationIcon(type: string): string {
       return '📝';
     case 'review_approved':
       return '✅';
+    case 'mention_annotation':
+    case 'mention_tag':
+      return '🔔';
     case 'job_application':
       return '💼';
     case 'project_invitation':

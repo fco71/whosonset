@@ -919,6 +919,77 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     }
   };
 
+  // Detect @mentions in free-text. Matches `@token` where token is letters,
+  // digits, underscore, dot, or hyphen — collaborators with multi-word names
+  // can be reached by their first-name token, or by the squashed full name.
+  // Returns deduped matching collaborator ids (excluding the current user).
+  const extractMentionedUserIds = (text: string): string[] => {
+    if (!text || !collaborators.length) return [];
+    const mentionPattern = /@([A-Za-z0-9_.-]{2,})/g;
+    const tokens = new Set<string>();
+    let match: RegExpExecArray | null;
+    while ((match = mentionPattern.exec(text)) !== null) {
+      tokens.add(match[1].toLowerCase());
+    }
+    if (tokens.size === 0) return [];
+    const ids = new Set<string>();
+    for (const c of collaborators) {
+      if (!c?.id || c.id === currentUser?.uid) continue;
+      const fullName = (c.name || '').toLowerCase();
+      const firstName = fullName.split(/\s+/)[0] || '';
+      const squashed = fullName.replace(/\s+/g, '');
+      const emailLocal = (c.email || '').toLowerCase().split('@')[0] || '';
+      for (const tok of tokens) {
+        if (tok === firstName || tok === squashed || tok === emailLocal) {
+          ids.add(c.id);
+          break;
+        }
+      }
+    }
+    return [...ids];
+  };
+
+  // Best-effort: write a "you were @mentioned" notification per target.
+  // Never blocks the underlying write; failures only console.error.
+  const notifyMentions = async (
+    text: string,
+    pageNumber: number,
+    refId: string,
+    kind: 'annotation' | 'tag'
+  ) => {
+    const targets = extractMentionedUserIds(text);
+    if (!targets.length || !currentUser) return;
+    const actorName = currentUser.displayName || t('screenplay.notifications.fallbackAuthor');
+    const screenplayName = screenplay.name || t('screenplay.notifications.fallbackScreenplay');
+    const excerpt = text.trim().slice(0, 140);
+    const titleKey = `screenplay.notifications.mention${kind === 'annotation' ? 'Annotation' : 'Tag'}.title`;
+    const bodyKey = `screenplay.notifications.mention${kind === 'annotation' ? 'Annotation' : 'Tag'}.body`;
+    const params = { author: actorName, screenplay: screenplayName, page: pageNumber, excerpt };
+    try {
+      await Promise.all(targets.map(uid => addDoc(collection(db, 'notifications'), {
+        userId: uid,
+        type: `mention_${kind}`,
+        title: t(titleKey, params),
+        body: t(bodyKey, params),
+        message: t(bodyKey, params),
+        titleKey,
+        bodyKey,
+        i18nParams: params,
+        isRead: false,
+        read: false,
+        createdAt: serverTimestamp(),
+        timestamp: serverTimestamp(),
+        senderId: currentUser.uid,
+        senderName: actorName,
+        relatedId: refId,
+        link: '/collaboration',
+        metadata: { screenplayId: screenplay.id, screenplayName, kind, refId, pageNumber }
+      })));
+    } catch (err) {
+      console.error('Failed to write @mention notification:', err);
+    }
+  };
+
   const addAnnotation = async (position: { x: number; y: number; width: number; height: number }, pageNumber: number, annotation: string) => {
     if (!annotation.trim()) return;
 
@@ -964,6 +1035,8 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
           refId: annotationRef.id
         });
       }
+      // @mention notifications — target anyone tagged in the text. Best-effort.
+      notifyMentions(annotation.trim(), pageNumber, annotationRef.id, 'annotation');
     } catch (error) {
       console.error('Error adding annotation:', error);
       toast.error(t('screenplay.toasts.annotationFailed'));
@@ -1014,6 +1087,8 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
           refId: tagRef.id
         });
       }
+      // @mention notifications also fire on tag content.
+      notifyMentions(tag.trim(), pageNumber, tagRef.id, 'tag');
     } catch (error) {
       console.error('Error adding tag:', error);
       toast.error(t('screenplay.toasts.tagFailed'));
