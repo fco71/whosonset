@@ -450,9 +450,14 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       batch.set(notificationRef, {
         userId: user.id,
         type: 'workspace_invitation',
+        // Stored title/body are a fallback (sender locale); titleKey/bodyKey/i18nParams let
+        // the recipient's client render in their own language.
         title: t('collaboration.notifications.invitedToWorkspace.title', { inviter: inviterName, workspace: workspace.name }),
         body: t('collaboration.notifications.invitedToWorkspace.body', { role: t(`collaboration.roles.${role}`), workspace: workspace.name }),
         message: t('collaboration.notifications.invitedToWorkspace.body', { role: t(`collaboration.roles.${role}`), workspace: workspace.name }),
+        titleKey: 'collaboration.notifications.invitedToWorkspace.title',
+        bodyKey: 'collaboration.notifications.invitedToWorkspace.body',
+        i18nParams: { inviter: inviterName, workspace: workspace.name, roleKey: `collaboration.roles.${role}` },
         isRead: false,
         read: false,
         createdAt: serverTimestamp(),

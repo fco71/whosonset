@@ -212,10 +212,45 @@ export function normalizeNotificationData(
     applicationId: asText(input.applicationId) || asText(input.relatedApplicationId) || undefined,
     senderId: asText(input.senderId) || undefined,
     status: asText(input.status) || undefined,
+    titleKey: asText(input.titleKey) || undefined,
+    bodyKey: asText(input.bodyKey) || undefined,
+    i18nParams: (input.i18nParams && typeof input.i18nParams === 'object')
+      ? (input.i18nParams as Record<string, unknown>)
+      : undefined,
     metadata: (input.metadata && typeof input.metadata === 'object')
       ? (input.metadata as Record<string, unknown>)
       : undefined,
   };
+}
+
+type TranslateFn = (key: string, params?: Record<string, unknown>) => string;
+
+// Resolve i18nParams for display: any param whose key ends in "Key" (e.g. roleKey) is
+// itself a translation key and gets resolved via t(), exposed under the base name
+// (roleKey -> role). Everything else passes through as data (names, counts).
+function resolveNotificationParams(t: TranslateFn, params?: Record<string, unknown>): Record<string, unknown> {
+  if (!params) return {};
+  const resolved: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(params)) {
+    if (key.endsWith('Key') && typeof value === 'string' && value) {
+      resolved[key.slice(0, -3)] = t(value);
+    } else {
+      resolved[key] = value;
+    }
+  }
+  return resolved;
+}
+
+// Title/body for display: prefer the i18n key (rendered in the reader's locale) and fall
+// back to the stored string (frozen in the sender's locale) for legacy notifications.
+export function getNotificationTitle(notification: AppNotification, t: TranslateFn): string {
+  if (notification.titleKey) return t(notification.titleKey, resolveNotificationParams(t, notification.i18nParams));
+  return notification.title;
+}
+
+export function getNotificationBody(notification: AppNotification, t: TranslateFn): string {
+  if (notification.bodyKey) return t(notification.bodyKey, resolveNotificationParams(t, notification.i18nParams));
+  return notification.body || notification.message;
 }
 
 export function normalizeNotificationDocument(

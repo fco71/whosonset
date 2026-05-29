@@ -16,7 +16,7 @@ import { toast } from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotifications } from '../hooks/useNotifications';
 import { AppNotification } from '../types/notifications';
-import { getNotificationDateValue } from '../utilities/notificationHelpers';
+import { getNotificationDateValue, getNotificationTitle, getNotificationBody } from '../utilities/notificationHelpers';
 import { app, db } from '../firebase';
 
 interface NotificationCenterProps {
@@ -350,14 +350,14 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
                         <div className="flex items-start justify-between gap-2">
                           <div>
                             <p className={`flex items-center gap-2 text-sm font-semibold ${notification.isRead ? 'text-gray-700' : 'text-gray-900'}`}>
-                              {notification.title}
+                              {getNotificationTitle(notification, t)}
                               {!notification.isRead && (
                                 <span className="inline-flex h-2.5 w-2.5 rounded-full bg-blue-600" aria-hidden="true" />
                               )}
                             </p>
-                            {notification.body && (
+                            {getNotificationBody(notification, t) && (
                               <p className={`mt-1 text-sm ${notification.isRead ? 'text-gray-500' : 'text-gray-800'}`}>
-                                {notification.body}
+                                {getNotificationBody(notification, t)}
                               </p>
                             )}
                           </div>

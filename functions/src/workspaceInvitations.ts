@@ -45,12 +45,22 @@ async function notifyInviter(
   workspaceName: string,
   accepted: boolean
 ): Promise<void> {
+  const safeInvitee = inviteeName || "Someone";
   await db.collection("notifications").add({
     userId: inviterId,
     type: accepted ? "workspace_invitation_accepted" : "workspace_invitation_declined",
+    // English fallback strings; titleKey/bodyKey/i18nParams let the recipient's client
+    // render in their own locale (the function has no notion of the recipient's language).
     title: accepted ? "Workspace invitation accepted" : "Workspace invitation declined",
-    body: `${inviteeName || "Someone"} ${accepted ? "accepted" : "declined"} the invitation to ${workspaceName}.`,
-    message: `${inviteeName || "Someone"} ${accepted ? "accepted" : "declined"} the invitation to ${workspaceName}.`,
+    body: `${safeInvitee} ${accepted ? "accepted" : "declined"} the invitation to ${workspaceName}.`,
+    message: `${safeInvitee} ${accepted ? "accepted" : "declined"} the invitation to ${workspaceName}.`,
+    titleKey: accepted
+      ? "collaboration.notifications.invitationAccepted.title"
+      : "collaboration.notifications.invitationDeclined.title",
+    bodyKey: accepted
+      ? "collaboration.notifications.invitationAccepted.body"
+      : "collaboration.notifications.invitationDeclined.body",
+    i18nParams: { invitee: safeInvitee, workspace: workspaceName },
     isRead: false,
     read: false,
     relatedId: workspaceId,

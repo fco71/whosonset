@@ -830,6 +830,14 @@
       "invitedToWorkspace": {
         "title": "{{inviter}} invited you to {{workspace}}",
         "body": "Accept to join {{workspace}} as {{role}}."
+      },
+      "invitationAccepted": {
+        "title": "Workspace invitation accepted",
+        "body": "{{invitee}} accepted the invitation to {{workspace}}."
+      },
+      "invitationDeclined": {
+        "title": "Workspace invitation declined",
+        "body": "{{invitee}} declined the invitation to {{workspace}}."
       }
     },
     "activity": {

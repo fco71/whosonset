@@ -795,6 +795,14 @@
       "invitedToWorkspace": {
         "title": "{{inviter}} te invitó a {{workspace}}",
         "body": "Acepta para unirte a {{workspace}} como {{role}}."
+      },
+      "invitationAccepted": {
+        "title": "Invitación al espacio aceptada",
+        "body": "{{invitee}} aceptó la invitación a {{workspace}}."
+      },
+      "invitationDeclined": {
+        "title": "Invitación al espacio rechazada",
+        "body": "{{invitee}} rechazó la invitación a {{workspace}}."
       }
     },
     "activity": {

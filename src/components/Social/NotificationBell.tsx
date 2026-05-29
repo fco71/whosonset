@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { SocialService } from '../../services/socialService';
 import { UserUtils, UserProfile } from '../../utilities/userUtils';
 import { SocialNotification } from '../../types/Social';
+import { useTranslation } from 'react-i18next';
+import { AppNotification } from '../../types/notifications';
+import { getNotificationTitle, getNotificationBody } from '../../utilities/notificationHelpers';
 
 interface NotificationBellProps {
   currentUserId: string;
@@ -15,6 +18,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ currentUserId, clas
   const [loading, setLoading] = useState(false);
   const [userProfiles, setUserProfiles] = useState<Map<string, UserProfile>>(new Map());
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (!currentUserId) return;
@@ -269,13 +273,13 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ currentUserId, clas
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-gray-900 mb-1">
-                            {notification.title}
+                            {getNotificationTitle(notification as unknown as AppNotification, t)}
                             {relatedUserName && (
                               <span className="text-blue-600 ml-1">from {relatedUserName}</span>
                             )}
                           </p>
                           <p className="text-sm text-gray-600 mb-2">
-                            {notification.message}
+                            {getNotificationBody(notification as unknown as AppNotification, t)}
                           </p>
                           <p className="text-xs text-gray-500">
                             {formatTimeAgo(notification.createdAt)}

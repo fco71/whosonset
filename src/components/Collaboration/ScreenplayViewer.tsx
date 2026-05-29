@@ -882,6 +882,11 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         title,
         body,
         message: body,
+        // Stored title/body are a fallback (author's locale); keys+params render in the
+        // recipient's locale. excerpt/screenplay are data; author is a name.
+        titleKey,
+        bodyKey,
+        i18nParams: { author: authorName, screenplay: screenplayName, page: params.pageNumber, excerpt },
         isRead: false,
         read: false,
         createdAt: serverTimestamp(),
