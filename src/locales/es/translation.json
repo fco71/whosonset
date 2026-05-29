@@ -843,6 +843,7 @@
     "activity": {
       "title": "Actividad reciente",
       "empty": "Aún no hay actividad.",
+      "loadMore": "Cargar más",
       "someone": "Alguien",
       "aScreenplay": "un guion",
       "verbs": {

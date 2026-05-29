@@ -760,23 +760,34 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     loadTeamMembers();
   }, [selectedWorkspace?.id]);
 
-  // G5 — live "Recent activity" feed for the selected workspace.
+  // G5 — live "Recent activity" feed for the selected workspace, paginated.
+  // The page grows in 25-event chunks via the "Load more" CTA; switching
+  // workspaces resets the page so we don't carry an unbounded snapshot across.
+  const ACTIVITY_PAGE_SIZE = 25;
+  const [activityLimit, setActivityLimit] = useState(ACTIVITY_PAGE_SIZE);
+  const [activityHasMore, setActivityHasMore] = useState(false);
+  // Reset pagination whenever the selected workspace changes.
+  useEffect(() => { setActivityLimit(ACTIVITY_PAGE_SIZE); }, [selectedWorkspace?.id]);
   useEffect(() => {
     const workspaceId = selectedWorkspace?.id;
     if (!currentUser || !workspaceId) {
       setActivityEvents([]);
+      setActivityHasMore(false);
       return;
     }
+    // Fetch one beyond the displayed window so we know whether there's a next
+    // page without having to make a second query. We slice the extra off
+    // before handing it to state.
     const activityQuery = query(
       collection(db, 'workspaceActivity'),
       where('workspaceId', '==', workspaceId),
       orderBy('createdAt', 'desc'),
-      limit(25)
+      limit(activityLimit + 1)
     );
     const unsubscribe = onSnapshot(
       activityQuery,
       snapshot => {
-        setActivityEvents(snapshot.docs.map(d => {
+        const all = snapshot.docs.map(d => {
           const data = d.data();
           return {
             id: d.id,
@@ -786,15 +797,18 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
             detail: data.detail ?? null,
             createdAt: data.createdAt
           };
-        }));
+        });
+        setActivityHasMore(all.length > activityLimit);
+        setActivityEvents(all.slice(0, activityLimit));
       },
       err => {
         console.error('Activity feed subscription error:', err);
         setActivityEvents([]);
+        setActivityHasMore(false);
       }
     );
     return () => unsubscribe();
-  }, [currentUser, selectedWorkspace?.id]);
+  }, [currentUser, selectedWorkspace?.id, activityLimit]);
 
   useEffect(() => {
     if (selectedWorkspace && (selectedWorkspace.status || 'active') === 'active') {
@@ -2118,6 +2132,18 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                 );
               })}
             </ul>
+          )}
+          {activityHasMore && (
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: 12 }}>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setActivityLimit(prev => prev + ACTIVITY_PAGE_SIZE)}
+                style={{ padding: '0.3rem 0.9rem', fontSize: '0.85em' }}
+              >
+                {t('collaboration.activity.loadMore')}
+              </button>
+            </div>
           )}
         </div>
       )}

@@ -102,14 +102,14 @@ State of supervisor differentiation today (audited 2026-05-29):
 - **Tags**: NO visual differentiation — pin is always 🏷️ amber, panel shows no badge. `supervisorAtAuthorTime` IS stored on tag docs and exported in CSV, just not surfaced.
 - **Hub row "🎓 N" badge**: counts unresolved supervisor *annotations* only — not tags.
 
-Queue:
-1. **Supervisor-tag visual parity + dead-class fix** — bring tags up to annotation parity (different pin glyph/color for supervisor tags, "🎓 Teacher" pill in tag panel header, "From teacher" filter on tags list); wire the dead `from-supervisor` className to a left amber border-stripe on annotation cards; have the hub-row 🎓 badge count tags too.
-2. **A: Notification persistence sweep** — earlier user complaint that notifications didn't clear on click. Audit bell+center handlers, verify isRead/read writes succeed across all types.
-3. **B: Viewer mobile (deeper)** — stack PDF + side-panel on ≤768px (currently the panel pushes the PDF off-screen).
-4. **C: @-mention in annotations** — `@user` parsing → targeted notification.
-5. **D: Student-side Resolve / Acknowledge** — one-click "Mark as addressed" for supervisor annotations.
-6. **E: Per-student annotation export** — grading-oriented CSV (screenplay + teacher annotations + resolved status per student).
-7. **F: Activity feed pagination** — limit 50 + Load more, before a month-old class workspace grows unbounded.
+Queue (all shipped 2026-05-29):
+1. ✅ **Supervisor-tag visual parity + dead-class fix** — supervisor tags now use deeper amber (#b45309) pin + overlay border; tag panel shows "🎓 Teacher" pill; `from-supervisor` className wired to 3px amber left stripe + #fffbeb tint on annotation/tag cards; hub-row 🎓 N badge now counts unresolved supervisor tags too. **Follow-up still open**: "From teacher" filter chip exists only on annotations panel; mirror to tags panel.
+2. ✅ **A: Notification persistence sweep** — bell now optimistically marks read locally (matched useNotifications behavior in center); invitation accept/decline collapsed from 2 writes to 1.
+3. ✅ **B: Viewer mobile (deeper)** — found the real blocker: `.sidebar-toggle-btn { display: none !important; }` at top-level. Restored the toggle inside `@media (max-width: 900px)`; default `sidebarCollapsed = (window.innerWidth <= 900)` so phones land on PDF; ≤480px sets panel width to 100vw and wraps pdf-controls.
+4. ✅ **C: @-mention in annotations** — `extractMentionedUserIds` matches @token against collaborator first-name/squashed-name/email-local-part; targets get a recipient-locale notification with `mention_annotation`/`mention_tag` types routed to /collaboration with 🔔 icon. Same logic also applies to tag content.
+5. ✅ **D: Student-side Resolve / Acknowledge** — when a non-supervisor acts on a supervisor's annotation, the verb relabels from "Resolve" to "Mark as addressed" (and Reopen → Reopen note). Underlying updateDoc unchanged; hub-row 🎓 N badge still works.
+6. ✅ **E: Per-student annotation export** — new "📊 Grading report" button in each workspace's screenplay section (visible only to canExportGradingReport = owner/supervisor). One CSV per workspace: Student | Screenplay | Type | Category | Page | Content | Author | From supervisor | Resolved | Timestamp, sorted Student→Screenplay→Page. Student names hydrated via crewProfiles. Per-screenplay export inside the viewer still works.
+7. ✅ **F: Activity feed pagination** — feed defaults to 25 events with a "Load more" CTA that bumps the live snapshot's limit by 25 each click. Switching workspaces resets the page size. Queries n+1 to know when to hide the CTA.
 
 ## Completed In Current Pass: Teacher Review Status
 

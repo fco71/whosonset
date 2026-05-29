@@ -878,6 +878,7 @@
     "activity": {
       "title": "Recent activity",
       "empty": "No activity yet.",
+      "loadMore": "Load more",
       "someone": "Someone",
       "aScreenplay": "a screenplay",
       "verbs": {
