@@ -1789,6 +1789,65 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     }
   };
 
+  // Close the review loop with notifications (recipient-locale via titleKey/bodyKey).
+  // approved / changes_requested -> notify the screenplay author.
+  // submitted -> notify the workspace's supervisors (owner-assigned + self-elected).
+  // returned_to_draft -> no notification (self-action by the creator).
+  // Best-effort: never blocks the status change.
+  const notifyReviewStatusChange = async (nextStatus: ScreenplayReviewStatus) => {
+    if (!currentUser || !screenplayWorkspaceId) return;
+    const actorName = currentUser.displayName || t('screenplay.notifications.fallbackAuthor');
+    const screenplayName = screenplay.name || t('screenplay.notifications.fallbackScreenplay');
+    const baseDoc = (userId: string, type: string, key: string, params: Record<string, unknown>) => ({
+      userId,
+      type,
+      title: t(`screenplay.notifications.${key}.title`, params),
+      body: t(`screenplay.notifications.${key}.body`, params),
+      message: t(`screenplay.notifications.${key}.body`, params),
+      titleKey: `screenplay.notifications.${key}.title`,
+      bodyKey: `screenplay.notifications.${key}.body`,
+      i18nParams: params,
+      isRead: false,
+      read: false,
+      createdAt: serverTimestamp(),
+      timestamp: serverTimestamp(),
+      senderId: currentUser.uid,
+      senderName: actorName,
+      relatedId: screenplay.id,
+      link: '/collaboration',
+      metadata: { screenplayId: screenplay.id, screenplayName, workspaceId: screenplayWorkspaceId }
+    });
+    try {
+      if (nextStatus === 'approved' || nextStatus === 'changes_requested') {
+        if (screenplayUploadedBy && screenplayUploadedBy !== currentUser.uid) {
+          const key = nextStatus === 'approved' ? 'reviewApproved' : 'reviewChangesRequested';
+          await addDoc(collection(db, 'notifications'), baseDoc(
+            screenplayUploadedBy,
+            `review_${nextStatus}`,
+            key,
+            { reviewer: actorName, screenplay: screenplayName }
+          ));
+        }
+      } else if (nextStatus === 'submitted') {
+        const wsSnap = await getDoc(doc(db, 'workspaces', screenplayWorkspaceId));
+        const data = wsSnap.exists() ? wsSnap.data() : {};
+        const supervisorIds = new Set<string>([
+          ...(Array.isArray(data.supervisorIds) ? data.supervisorIds : []),
+          ...(Array.isArray(data.selfElectedSupervisors) ? data.selfElectedSupervisors : [])
+        ]);
+        supervisorIds.delete(currentUser.uid);
+        await Promise.all([...supervisorIds].map(uid => addDoc(collection(db, 'notifications'), baseDoc(
+          uid,
+          'review_submitted',
+          'reviewSubmitted',
+          { author: actorName, screenplay: screenplayName }
+        ))));
+      }
+    } catch (err) {
+      console.error('Failed to write review-status notification:', err);
+    }
+  };
+
   const handleReviewStatusChange = async (nextStatus: ScreenplayReviewStatus) => {
     if (!currentUser) {
       toast.error(t('collaboration.reviewStatus.toasts.signIn'));
@@ -1823,6 +1882,8 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
           targetName: screenplay.name
         });
       }
+      // Notify the relevant party (best-effort — never blocks the status change).
+      notifyReviewStatusChange(nextStatus);
       toast.success(t(`collaboration.reviewStatus.toasts.${nextStatus}`));
     } catch (err) {
       console.error('Failed to update review status:', err);

@@ -1264,6 +1264,18 @@
       "supervisorTag": {
         "title": "{{author}} agregó una etiqueta en {{screenplay}}",
         "body": "Página {{page}}: \"{{excerpt}}\""
+      },
+      "reviewSubmitted": {
+        "title": "{{author}} envió {{screenplay}} para revisión",
+        "body": "Ábrelo para revisar y dejar notas."
+      },
+      "reviewChangesRequested": {
+        "title": "{{reviewer}} solicitó cambios en {{screenplay}}",
+        "body": "Ábrelo para ver las notas de revisión."
+      },
+      "reviewApproved": {
+        "title": "{{reviewer}} aprobó {{screenplay}}",
+        "body": "Tu guion fue aprobado."
       }
     },
     "export": {

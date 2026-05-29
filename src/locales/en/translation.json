@@ -1299,6 +1299,18 @@
       "supervisorTag": {
         "title": "{{author}} added a tag on {{screenplay}}",
         "body": "Page {{page}}: \"{{excerpt}}\""
+      },
+      "reviewSubmitted": {
+        "title": "{{author}} submitted {{screenplay}} for review",
+        "body": "Open it to review and leave notes."
+      },
+      "reviewChangesRequested": {
+        "title": "{{reviewer}} requested changes on {{screenplay}}",
+        "body": "Open it to see the review notes."
+      },
+      "reviewApproved": {
+        "title": "{{reviewer}} approved {{screenplay}}",
+        "body": "Your screenplay was approved."
       }
     },
     "export": {
