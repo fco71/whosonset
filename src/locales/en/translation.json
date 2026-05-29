@@ -787,6 +787,7 @@
       "deleteConfirm": "Are you sure you want to delete this screenplay?",
       "deleteSuccess": "Screenplay deleted successfully",
       "deleteFailed": "Failed to delete screenplay",
+      "deleteNotAllowed": "Only the screenplay uploader or workspace creator can delete this screenplay.",
       "uploadSuccess": "uploaded successfully!",
       "uploadFailed": "Failed to upload screenplay"
     },

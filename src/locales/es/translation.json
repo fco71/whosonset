@@ -752,6 +752,7 @@
       "deleteConfirm": "¿Estás seguro de que quieres eliminar este guión?",
       "deleteSuccess": "Guión eliminado exitosamente",
       "deleteFailed": "Error al eliminar guión",
+      "deleteNotAllowed": "Solo quien subió el guion o el creador del espacio de trabajo puede eliminarlo.",
       "uploadSuccess": "subido exitosamente!",
       "uploadFailed": "Error al subir guión"
     },

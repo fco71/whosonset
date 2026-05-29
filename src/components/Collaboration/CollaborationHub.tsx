@@ -1479,7 +1479,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const handleDeleteScreenplay = async (screenplayId: string) => {
     const screenplay = userScreenplays.find(item => item.id === screenplayId);
     if (!screenplay || !canDeleteScreenplay(screenplay)) {
-      toast.error('Only the screenplay uploader or workspace creator can delete this screenplay.');
+      toast.error(t('collaboration.screenplaysTab.deleteNotAllowed'));
       return;
     }
 
