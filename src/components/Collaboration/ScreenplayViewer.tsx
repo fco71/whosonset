@@ -9,8 +9,9 @@ import { toast } from 'react-hot-toast';
 import './ScreenplayViewer.scss';
 import { useTranslation } from 'react-i18next';
 import EmailNotificationService from '../../services/emailNotificationService';
-import { logWorkspaceActivity } from '../../services/workspaceActivityService';
+import { logWorkspaceActivity, WorkspaceActivityVerb } from '../../services/workspaceActivityService';
 import FountainViewer from './FountainViewer';
+import type { ScreenplayReviewStatus, WorkspaceMember } from '../../types/Collaboration';
 
 const debugLog = (...args: unknown[]) => {
   if (process.env.NODE_ENV !== 'production') {
@@ -26,6 +27,9 @@ const PDF_PAGE_GAP = 20;
 const PDF_SCROLL_PADDING = 40;
 const MIN_PDF_PAGE_WIDTH = 280;
 const MAX_PDF_PAGE_WIDTH = 920;
+const REVIEW_STATUS_ORDER: ScreenplayReviewStatus[] = ['draft', 'submitted', 'changes_requested', 'approved'];
+const isScreenplayReviewStatus = (value: unknown): value is ScreenplayReviewStatus =>
+  typeof value === 'string' && REVIEW_STATUS_ORDER.includes(value as ScreenplayReviewStatus);
 
 interface ScreenplayViewerProps {
   screenplay: {
@@ -35,6 +39,7 @@ interface ScreenplayViewerProps {
     type: string;
     format?: 'pdf' | 'fountain';
     fountainSource?: string;
+    reviewStatus?: ScreenplayReviewStatus;
   };
   projectId: string;
   onClose: () => void;
@@ -146,6 +151,10 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   const [statusFilter, setStatusFilter] = useState<'open' | 'mine' | 'from_teacher' | 'all'>('open');
   const [screenplayWorkspaceId, setScreenplayWorkspaceId] = useState<string | null>(null);
   const [screenplayUploadedBy, setScreenplayUploadedBy] = useState<string | null>(null);
+  const [reviewStatus, setReviewStatus] = useState<ScreenplayReviewStatus>(screenplay.reviewStatus || 'draft');
+  const [canUpdateReviewAsCreator, setCanUpdateReviewAsCreator] = useState(false);
+  const [canUpdateReviewAsReviewer, setCanUpdateReviewAsReviewer] = useState(false);
+  const [updatingReviewStatus, setUpdatingReviewStatus] = useState(false);
   const [fountainNote, setFountainNote] = useState('');
   const [addingFountainNote, setAddingFountainNote] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -565,6 +574,9 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     setNumPages(null);
     setScreenplayWorkspaceId(null);
     setScreenplayUploadedBy(null);
+    setReviewStatus(screenplay.reviewStatus || 'draft');
+    setCanUpdateReviewAsCreator(false);
+    setCanUpdateReviewAsReviewer(false);
     if (!screenplay.url || typeof screenplay.url !== 'string' || screenplay.url.trim() === '') {
       setError('No PDF URL found for this screenplay.');
       setLoading(false);
@@ -572,26 +584,63 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       setLoading(false);
     }
     let cancelled = false;
-    (async () => {
-      try {
-        const snap = await getDoc(doc(db, 'screenplays', screenplay.id));
-        if (cancelled) return;
-        const data = snap.exists() ? snap.data() : null;
-        setScreenplayWorkspaceId(typeof data?.workspaceId === 'string' ? data.workspaceId : null);
-        setScreenplayUploadedBy(typeof data?.uploadedBy === 'string' ? data.uploadedBy : null);
-      } catch (err) {
-        console.error('Failed to read screenplay metadata:', err);
+    const unsubscribeMetadata = onSnapshot(doc(db, 'screenplays', screenplay.id), async snap => {
+      if (cancelled) return;
+      const data = snap.exists() ? snap.data() : null;
+      const workspaceId = typeof data?.workspaceId === 'string' ? data.workspaceId : null;
+      const uploadedBy = typeof data?.uploadedBy === 'string' ? data.uploadedBy : null;
+      setScreenplayWorkspaceId(workspaceId);
+      setScreenplayUploadedBy(uploadedBy);
+      setReviewStatus(isScreenplayReviewStatus(data?.reviewStatus) ? data.reviewStatus : 'draft');
+
+      let creatorAllowed = Boolean(currentUser?.uid && uploadedBy === currentUser.uid);
+      let reviewerAllowed = false;
+
+      if (currentUser?.uid && workspaceId) {
+        try {
+          const workspaceSnap = await getDoc(doc(db, 'workspaces', workspaceId));
+          if (cancelled) return;
+          if (workspaceSnap.exists()) {
+            const workspace = workspaceSnap.data();
+            const members = Array.isArray(workspace.members) ? workspace.members as WorkspaceMember[] : [];
+            const memberIds = Array.isArray(workspace.memberIds)
+              ? workspace.memberIds
+              : members.map(member => member.userId).filter(Boolean);
+            const member = members.find(item => item.userId === currentUser.uid);
+            const supervisorIds = Array.isArray(workspace.supervisorIds) ? workspace.supervisorIds : [];
+            const viewerIds = Array.isArray(workspace.viewerIds) ? workspace.viewerIds : [];
+            const selfElectedSupervisors = Array.isArray(workspace.selfElectedSupervisors) ? workspace.selfElectedSupervisors : [];
+            const isSupervisor = member?.role === 'supervisor' ||
+              supervisorIds.includes(currentUser.uid) ||
+              selfElectedSupervisors.includes(currentUser.uid);
+            const isViewer = member?.role === 'viewer' || viewerIds.includes(currentUser.uid);
+            const isReadOnly = isSupervisor || isViewer;
+            creatorAllowed = creatorAllowed ||
+              ((workspace.status || 'active') === 'active' && memberIds.includes(currentUser.uid) && !isReadOnly);
+            reviewerAllowed = isSupervisor;
+          }
+        } catch (err) {
+          console.error('Failed to read screenplay workspace permissions:', err);
+        }
       }
-    })();
+
+      if (!cancelled) {
+        setCanUpdateReviewAsCreator(creatorAllowed);
+        setCanUpdateReviewAsReviewer(reviewerAllowed);
+      }
+    }, err => {
+      console.error('Failed to read screenplay metadata:', err);
+    });
     initializeSession();
     // Single source of truth for annotations/tags — onSnapshot. The previous one-shot
     // loadAnnotations()/loadTags() calls created a brief race against the live listeners.
     const stopRealTimeSync = startRealTimeSync();
     return () => {
       cancelled = true;
+      unsubscribeMetadata();
       if (typeof stopRealTimeSync === 'function') stopRealTimeSync();
     };
-  }, [screenplay.id]);
+  }, [screenplay.id, currentUser?.uid]);
 
   useEffect(() => {
     if (!screenplay.url || !isPdfDocument || useNativePdfFallback || numPages) return;
@@ -1721,6 +1770,63 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     }
   };
 
+  const getReviewActivityVerb = (status: ScreenplayReviewStatus): WorkspaceActivityVerb => {
+    switch (status) {
+      case 'submitted':
+        return 'review_submitted';
+      case 'changes_requested':
+        return 'review_changes_requested';
+      case 'approved':
+        return 'review_approved';
+      case 'draft':
+      default:
+        return 'review_returned_to_draft';
+    }
+  };
+
+  const handleReviewStatusChange = async (nextStatus: ScreenplayReviewStatus) => {
+    if (!currentUser) {
+      toast.error(t('collaboration.reviewStatus.toasts.signIn'));
+      return;
+    }
+    if (reviewStatus === nextStatus || updatingReviewStatus) return;
+
+    const creatorAllowed = canUpdateReviewAsCreator && (nextStatus === 'draft' || nextStatus === 'submitted');
+    const reviewerAllowed = canUpdateReviewAsReviewer && (nextStatus === 'changes_requested' || nextStatus === 'approved');
+    if (!creatorAllowed && !reviewerAllowed) {
+      toast.error(t('collaboration.reviewStatus.toasts.notAllowed'));
+      return;
+    }
+
+    setUpdatingReviewStatus(true);
+    try {
+      await updateDoc(doc(db, 'screenplays', screenplay.id), {
+        reviewStatus: nextStatus,
+        reviewStatusUpdatedAt: serverTimestamp(),
+        reviewStatusUpdatedBy: currentUser.uid,
+        reviewStatusNote: '',
+        lastModified: serverTimestamp()
+      });
+      setReviewStatus(nextStatus);
+      if (screenplayWorkspaceId) {
+        logWorkspaceActivity({
+          workspaceId: screenplayWorkspaceId,
+          actorUid: currentUser.uid,
+          actorName: currentUser.displayName,
+          verb: getReviewActivityVerb(nextStatus),
+          targetId: screenplay.id,
+          targetName: screenplay.name
+        });
+      }
+      toast.success(t(`collaboration.reviewStatus.toasts.${nextStatus}`));
+    } catch (err) {
+      console.error('Failed to update review status:', err);
+      toast.error(t('collaboration.reviewStatus.toasts.failed'));
+    } finally {
+      setUpdatingReviewStatus(false);
+    }
+  };
+
   // When rendering collaborators, ensure uniqueness by ID
   const uniqueCollaborators = Array.from(new Map(collaborators.map(c => [c.id, c])).values());
 
@@ -2114,6 +2220,90 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                       <option value="user">User</option>
                     </select>
                   </div>
+                </div>
+                <div
+                  className="review-status-panel"
+                  style={{
+                    margin: '0 0 12px',
+                    padding: 12,
+                    border: '1px solid #e2e8f0',
+                    borderRadius: 8,
+                    background: '#f8fafc'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'flex-start' }}>
+                    <div>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
+                        {t('collaboration.reviewStatus.title')}
+                      </div>
+                      <div
+                        style={{
+                          marginTop: 4,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          padding: '3px 10px',
+                          borderRadius: 999,
+                          fontSize: '0.82rem',
+                          fontWeight: 700,
+                          background: reviewStatus === 'approved' ? '#dcfce7' : reviewStatus === 'changes_requested' ? '#ffedd5' : reviewStatus === 'submitted' ? '#dbeafe' : '#f1f5f9',
+                          color: reviewStatus === 'approved' ? '#166534' : reviewStatus === 'changes_requested' ? '#9a3412' : reviewStatus === 'submitted' ? '#1e40af' : '#475569'
+                        }}
+                      >
+                        {t(`collaboration.reviewStatus.labels.${reviewStatus}`)}
+                      </div>
+                    </div>
+                  </div>
+                  <p style={{ margin: '8px 0 0', color: '#475569', fontSize: '0.85rem', lineHeight: 1.4 }}>
+                    {t(`collaboration.reviewStatus.descriptions.${reviewStatus}`)}
+                  </p>
+                  {(canUpdateReviewAsCreator || canUpdateReviewAsReviewer) && (
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
+                      {canUpdateReviewAsCreator && (reviewStatus === 'draft' || reviewStatus === 'changes_requested') && (
+                        <button
+                          type="button"
+                          className="btn-primary"
+                          disabled={updatingReviewStatus}
+                          onClick={() => handleReviewStatusChange('submitted')}
+                          style={{ padding: '0.35rem 0.75rem', fontSize: '0.82rem' }}
+                        >
+                          {t('collaboration.reviewStatus.actions.submit')}
+                        </button>
+                      )}
+                      {canUpdateReviewAsReviewer && reviewStatus === 'submitted' && (
+                        <>
+                          <button
+                            type="button"
+                            className="btn-secondary"
+                            disabled={updatingReviewStatus}
+                            onClick={() => handleReviewStatusChange('changes_requested')}
+                            style={{ padding: '0.35rem 0.75rem', fontSize: '0.82rem' }}
+                          >
+                            {t('collaboration.reviewStatus.actions.requestChanges')}
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-primary"
+                            disabled={updatingReviewStatus}
+                            onClick={() => handleReviewStatusChange('approved')}
+                            style={{ padding: '0.35rem 0.75rem', fontSize: '0.82rem' }}
+                          >
+                            {t('collaboration.reviewStatus.actions.approve')}
+                          </button>
+                        </>
+                      )}
+                      {canUpdateReviewAsCreator && reviewStatus !== 'draft' && (
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          disabled={updatingReviewStatus}
+                          onClick={() => handleReviewStatusChange('draft')}
+                          style={{ padding: '0.35rem 0.75rem', fontSize: '0.82rem' }}
+                        >
+                          {t('collaboration.reviewStatus.actions.returnToDraft')}
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="panel-content">

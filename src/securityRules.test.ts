@@ -59,8 +59,11 @@ describe('security rules guardrails', () => {
 
     expect(rules).toMatch(/function\s+isScreenplayContentUpdate/);
     expect(rules).toMatch(/function\s+isScreenplayAccessUpdate/);
+    expect(rules).toMatch(/function\s+isScreenplayReviewStatusUpdate/);
     expect(rules).toMatch(/affectedKeys\(\)\.hasOnly\(\[\s*'fountainSource'/);
     expect(rules).toMatch(/affectedKeys\(\)\.hasOnly\(\[\s*'teamMembers'/);
+    expect(rules).toMatch(/affectedKeys\(\)\.hasOnly\(\[\s*'reviewStatus'/);
+    expect(rules).toMatch(/newData\.reviewStatus\s+in\s+\['draft',\s+'submitted',\s+'changes_requested',\s+'approved'\]/);
     expect(rules).not.toMatch(/allow\s+update:\s+if\s+canEditScreenplayData\(resource\.data\)\s+&&/);
   });
 

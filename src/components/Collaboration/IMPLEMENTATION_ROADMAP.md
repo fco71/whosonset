@@ -13,6 +13,7 @@ The collaboration page should support a project from the first draft through tea
 - Invite before upload is optional, not mandatory.
 - Uploaded PDFs and in-browser Fountain screenplays share the same collaboration surface as much as possible.
 - Teachers can review, comment, tag, and resolve items without needing ownership of the project.
+- Review status is a screenplay-level workflow: Draft, Submitted for review, Changes requested, Approved.
 - Project/workspace creators can archive, restore, soft-delete, and permanently delete after a recovery window.
 
 ## Current Implementation
@@ -25,11 +26,17 @@ The collaboration page should support a project from the first draft through tea
 - Workspace archive/delete/recover controls exist for the creator/owner path.
 - Deletions use a recoverable soft-delete state before permanent deletion.
 - Workspace listing now uses a `workspaceMemberships` index so rules can keep workspace list reads locked down.
+- Workspace details are editable by the creator.
 - Invite controls are available from the workspace and screenplay upload area, and upload does not require inviting members first.
+- Workspace invitations use a pending Accept/Decline flow before membership and screenplay access are granted.
+- Screenplays have a first-class teacher review status workflow: Draft, Submitted for review, Changes requested, Approved.
 
 ## Implemented In This Pass
 
 - Made invite-before-upload explicitly optional in the UI copy.
+- Added workspace invitation consent through pending invitation docs and callable accept/decline handling.
+- Added creator-editable workspace details: name, description, type, and settings.
+- Added screenplay review status chips, list actions, viewer panel actions, activity feed verbs, and field-scoped Firestore rules.
 - Fixed missing owner role translations in English and Spanish.
 - Prevented the Fountain editor from overwriting a user's local edit when a delayed Firestore read returns.
 - Tightened Firestore rules for workspace reads, screenplay content edits, screenplay access edits, annotations, and membership indexing.
@@ -47,17 +54,19 @@ The collaboration page should support a project from the first draft through tea
 
 ### 1. Teacher Review Flow
 
-- Add a first-class "Teacher review" view filtered to open notes, teacher notes, unresolved tags, and replies.
-- Add status transitions for a screenplay:
-  - Draft
-  - Submitted for review
-  - Changes requested
-  - Approved
-- Store review status on the screenplay document and show it in the workspace screenplay list.
-- Add a review summary panel with counts by open notes, resolved notes, teacher notes, and student replies.
+- Status: implemented; live QA pending.
+- Verify with separate student and teacher accounts:
+  - Student submits a screenplay for review.
+  - Teacher/supervisor requests changes.
+  - Student returns to draft or submits again.
+  - Teacher/supervisor approves.
+- Follow-up polish:
+  - Add optional teacher note text to status transitions.
+  - Add a compact review summary panel with counts by open notes, resolved notes, teacher notes, and student replies.
 
 ### 2. Invite And Membership Flow
 
+- Status: partially complete for registered users.
 - Add a dedicated invite modal that can be opened from:
   - Empty workspace
   - Upload area
@@ -65,6 +74,7 @@ The collaboration page should support a project from the first draft through tea
   - PDF/Fountain viewer
   - Workspace settings
 - Support invitations by connected user and by email.
+- Registered-user invites create pending invitation docs and attach access when accepted.
 - For email invites, create pending invitation docs and attach them to the workspace/screenplay when accepted.
 - Keep role changes owner-only.
 - Add explicit messaging for "You can invite people later" on all creation/upload paths.
@@ -109,6 +119,9 @@ The collaboration page should support a project from the first draft through tea
 - Upload a PDF to that workspace.
 - Open the PDF and confirm it is readable.
 - Invite a teacher after upload.
+- Submit the screenplay for review.
+- Confirm the teacher can mark changes requested.
+- Confirm the teacher can approve the screenplay.
 - Confirm the teacher can see the workspace and screenplay.
 - Confirm the teacher can add a note/tag and resolve a note.
 - Confirm a viewer can read but cannot edit screenplay content.
@@ -124,4 +137,5 @@ The collaboration page should support a project from the first draft through tea
 
 - The current PDF viewer SCSS has accumulated duplicate legacy rules. The stability overrides are scoped, but a later cleanup should consolidate the file so the viewer is easier to maintain.
 - Email invitations need a trusted acceptance path before being treated as production-grade access control.
+- Teacher review status is being added now; release only after creator and supervisor transitions are verified.
 - The collaboration session presence model still writes active users as an array; that can produce stale entries and should eventually move to per-user presence documents.

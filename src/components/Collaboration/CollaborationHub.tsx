@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   CollaborationWorkspace,
+  ScreenplayReviewStatus,
   Task,
   WorkspaceMember,
   WorkspaceRole
@@ -18,7 +19,7 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 import { app, db, storage } from '../../firebase';
 import ScreenplayViewer from './ScreenplayViewer';
 import FountainEditor from './FountainEditor';
-import { logWorkspaceActivity } from '../../services/workspaceActivityService';
+import { logWorkspaceActivity, WorkspaceActivityVerb } from '../../services/workspaceActivityService';
 import { useTranslation } from 'react-i18next';
 
 const debugLog = (...args: unknown[]) => {
@@ -58,6 +59,10 @@ interface Screenplay {
   // docs; 'fountain' docs have no Storage file (url is empty) and store their text inline.
   format?: 'pdf' | 'fountain';
   fountainSource?: string;
+  reviewStatus?: ScreenplayReviewStatus;
+  reviewStatusUpdatedAt?: Date | { seconds: number; nanoseconds: number };
+  reviewStatusUpdatedBy?: string;
+  reviewStatusNote?: string;
 }
 
 // Screenplay Annotation interface
@@ -88,6 +93,10 @@ const INVITABLE_WORKSPACE_ROLES: Array<{
   { value: 'supervisor' },
   { value: 'viewer' }
 ];
+
+const REVIEW_STATUS_ORDER: ScreenplayReviewStatus[] = ['draft', 'submitted', 'changes_requested', 'approved'];
+const isScreenplayReviewStatus = (value: unknown): value is ScreenplayReviewStatus =>
+  typeof value === 'string' && REVIEW_STATUS_ORDER.includes(value as ScreenplayReviewStatus);
 
 // Error Boundary Component
 interface ErrorBoundaryProps {
@@ -260,6 +269,10 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     size: data.size,
     format: data.format === 'fountain' ? 'fountain' : 'pdf',
     fountainSource: typeof data.fountainSource === 'string' ? data.fountainSource : '',
+    reviewStatus: isScreenplayReviewStatus(data.reviewStatus) ? data.reviewStatus : 'draft',
+    reviewStatusUpdatedAt: data.reviewStatusUpdatedAt?.toDate ? data.reviewStatusUpdatedAt.toDate() : data.reviewStatusUpdatedAt,
+    reviewStatusUpdatedBy: typeof data.reviewStatusUpdatedBy === 'string' ? data.reviewStatusUpdatedBy : undefined,
+    reviewStatusNote: typeof data.reviewStatusNote === 'string' ? data.reviewStatusNote : '',
     uploadedAt: data.uploadedAt?.toDate ? data.uploadedAt.toDate() : data.uploadedAt,
     lastModified: data.lastModified?.toDate ? data.lastModified.toDate() : data.lastModified
   });
@@ -337,6 +350,18 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     if (screenplay.uploadedBy === currentUser.uid) return true;
     const workspace = screenplay.workspaceId ? getWorkspaceById(screenplay.workspaceId) : null;
     return workspace ? canEditWorkspaceContent(workspace) : false;
+  };
+
+  const canReviewScreenplay = (screenplay: Screenplay): boolean => {
+    if (!currentUser || !screenplay.workspaceId) return false;
+    const workspace = getWorkspaceById(screenplay.workspaceId);
+    return workspace ? getEffectiveRole(workspace) === 'supervisor' : false;
+  };
+
+  const updateLocalScreenplay = (screenplayId: string, updates: Partial<Screenplay>) => {
+    setUserScreenplays(prev => prev.map(item => item.id === screenplayId ? { ...item, ...updates } : item));
+    setUploadedScreenplay(prev => prev?.id === screenplayId ? { ...prev, ...updates } : prev);
+    setEditingFountain(prev => prev?.id === screenplayId ? { ...prev, ...updates } : prev);
   };
 
   const toDate = (value: any): Date | null => {
@@ -1164,6 +1189,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         workspaceId: uploadWorkspace?.id || null,
         projectId: projectId || uploadWorkspace?.projectId || null,
         size: file.size,
+        reviewStatus: 'draft',
         uploadedAt: now,
         lastModified: now
       };
@@ -1278,6 +1304,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         teamMembers: teamMemberIds,
         workspaceId: uploadWorkspace?.id || null,
         projectId: projectId || uploadWorkspace?.projectId || null,
+        reviewStatus: 'draft',
         uploadedAt: now,
         lastModified: now
       };
@@ -1458,6 +1485,72 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         console.error('Error deleting screenplay:', error);
         toast.error(t('collaboration.screenplaysTab.deleteFailed'));
       }
+    }
+  };
+
+  const getReviewStatus = (screenplay: Screenplay): ScreenplayReviewStatus =>
+    screenplay.reviewStatus || 'draft';
+
+  const getReviewActivityVerb = (status: ScreenplayReviewStatus): WorkspaceActivityVerb => {
+    switch (status) {
+      case 'submitted':
+        return 'review_submitted';
+      case 'changes_requested':
+        return 'review_changes_requested';
+      case 'approved':
+        return 'review_approved';
+      case 'draft':
+      default:
+        return 'review_returned_to_draft';
+    }
+  };
+
+  const handleReviewStatusChange = async (screenplay: Screenplay, nextStatus: ScreenplayReviewStatus) => {
+    if (!currentUser) {
+      toast.error('Please sign in to update review status.');
+      return;
+    }
+
+    const currentStatus = getReviewStatus(screenplay);
+    if (currentStatus === nextStatus) return;
+
+    const creatorAllowed = canEditScreenplay(screenplay) && (nextStatus === 'draft' || nextStatus === 'submitted');
+    const reviewerAllowed = canReviewScreenplay(screenplay) && (nextStatus === 'changes_requested' || nextStatus === 'approved');
+    if (!creatorAllowed && !reviewerAllowed) {
+      toast.error('You cannot change this screenplay review status.');
+      return;
+    }
+
+    const updates: Partial<Screenplay> = {
+      reviewStatus: nextStatus,
+      reviewStatusUpdatedAt: new Date(),
+      reviewStatusUpdatedBy: currentUser.uid,
+      reviewStatusNote: ''
+    };
+
+    try {
+      await updateDoc(doc(db, 'screenplays', screenplay.id), {
+        reviewStatus: nextStatus,
+        reviewStatusUpdatedAt: serverTimestamp(),
+        reviewStatusUpdatedBy: currentUser.uid,
+        reviewStatusNote: '',
+        lastModified: serverTimestamp()
+      });
+      updateLocalScreenplay(screenplay.id, updates);
+      if (screenplay.workspaceId) {
+        logWorkspaceActivity({
+          workspaceId: screenplay.workspaceId,
+          actorUid: currentUser.uid,
+          actorName: currentUser.displayName,
+          verb: getReviewActivityVerb(nextStatus),
+          targetId: screenplay.id,
+          targetName: screenplay.name
+        });
+      }
+      toast.success(t(`collaboration.reviewStatus.toasts.${nextStatus}`));
+    } catch (error) {
+      console.error('Error updating review status:', error);
+      toast.error(t('collaboration.reviewStatus.toasts.failed'));
     }
   };
 
@@ -2314,6 +2407,10 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         {screenplays.map(screenplay => {
           const openCount = unresolvedCountByScreenplay[screenplay.id] || 0;
           const teacherCount = unresolvedFromTeacherCountByScreenplay[screenplay.id] || 0;
+          const reviewStatus = getReviewStatus(screenplay);
+          const canSubmitReview = canEditScreenplay(screenplay) && (reviewStatus === 'draft' || reviewStatus === 'changes_requested');
+          const canReturnToDraft = canEditScreenplay(screenplay) && reviewStatus !== 'draft';
+          const canTeacherReview = canReviewScreenplay(screenplay) && reviewStatus === 'submitted';
           return (
             <li key={screenplay.id} style={{
               display: 'flex',
@@ -2327,6 +2424,23 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                 <span style={{ fontWeight: 600, color: '#222' }}>{screenplay.name}</span>
                 <span style={{ color: '#888', fontSize: '0.95em' }}>{screenplay.type}</span>
                 <span style={{ color: '#666', fontSize: '0.85em' }}>{getWorkspaceLabel(screenplay.workspaceId)}</span>
+                <span
+                  className={`review-status-chip review-status-chip--${reviewStatus}`}
+                  title={t(`collaboration.reviewStatus.descriptions.${reviewStatus}`)}
+                  aria-label={t(`collaboration.reviewStatus.labels.${reviewStatus}`)}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    padding: '2px 8px',
+                    borderRadius: 999,
+                    fontSize: '0.76em',
+                    fontWeight: 700,
+                    background: reviewStatus === 'approved' ? '#dcfce7' : reviewStatus === 'changes_requested' ? '#ffedd5' : reviewStatus === 'submitted' ? '#dbeafe' : '#f1f5f9',
+                    color: reviewStatus === 'approved' ? '#166534' : reviewStatus === 'changes_requested' ? '#9a3412' : reviewStatus === 'submitted' ? '#1e40af' : '#475569'
+                  }}
+                >
+                  {t(`collaboration.reviewStatus.labels.${reviewStatus}`)}
+                </span>
                 {openCount > 0 && (
                   <span
                     title={t('collaboration.badges.unresolvedTooltip', { count: openCount })}
@@ -2393,6 +2507,46 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                   </button>
                 )}
               </div>
+              {(canSubmitReview || canReturnToDraft || canTeacherReview) && (
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                  {canSubmitReview && (
+                    <button
+                      className="btn-primary"
+                      style={{ padding: '0.35rem 0.8rem', fontSize: '0.85em' }}
+                      onClick={() => handleReviewStatusChange(screenplay, 'submitted')}
+                    >
+                      {t('collaboration.reviewStatus.actions.submit')}
+                    </button>
+                  )}
+                  {canTeacherReview && (
+                    <>
+                      <button
+                        className="btn-secondary"
+                        style={{ padding: '0.35rem 0.8rem', fontSize: '0.85em' }}
+                        onClick={() => handleReviewStatusChange(screenplay, 'changes_requested')}
+                      >
+                        {t('collaboration.reviewStatus.actions.requestChanges')}
+                      </button>
+                      <button
+                        className="btn-primary"
+                        style={{ padding: '0.35rem 0.8rem', fontSize: '0.85em' }}
+                        onClick={() => handleReviewStatusChange(screenplay, 'approved')}
+                      >
+                        {t('collaboration.reviewStatus.actions.approve')}
+                      </button>
+                    </>
+                  )}
+                  {canReturnToDraft && (
+                    <button
+                      className="btn-secondary"
+                      style={{ padding: '0.35rem 0.8rem', fontSize: '0.85em' }}
+                      onClick={() => handleReviewStatusChange(screenplay, 'draft')}
+                    >
+                      {t('collaboration.reviewStatus.actions.returnToDraft')}
+                    </button>
+                  )}
+                </div>
+              )}
             </li>
           );
         })}
@@ -2644,7 +2798,8 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
               url: uploadedScreenplay.url,
               type: uploadedScreenplay.type,
               format: uploadedScreenplay.format,
-              fountainSource: uploadedScreenplay.fountainSource
+              fountainSource: uploadedScreenplay.fountainSource,
+              reviewStatus: uploadedScreenplay.reviewStatus
             }}
             projectId={projectId || 'default-project'}
             onClose={() => setShowScreenplayViewer(false)}
@@ -2673,7 +2828,8 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                         url: selectedScreenplay.url,
                         type: selectedScreenplay.type,
                         format: selectedScreenplay.format,
-                        fountainSource: selectedScreenplay.fountainSource
+                        fountainSource: selectedScreenplay.fountainSource,
+                        reviewStatus: selectedScreenplay.reviewStatus
                       }}
                       projectId={projectId || 'default-project'}
                       onClose={() => {

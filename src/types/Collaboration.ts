@@ -1,5 +1,6 @@
 export type WorkspaceRole = 'owner' | 'admin' | 'supervisor' | 'member' | 'viewer';
 export type WorkspaceStatus = 'active' | 'archived' | 'deleted';
+export type ScreenplayReviewStatus = 'draft' | 'submitted' | 'changes_requested' | 'approved';
 
 export interface CollaborationWorkspace {
   id: string;

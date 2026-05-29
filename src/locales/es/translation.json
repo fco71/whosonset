@@ -756,6 +756,36 @@
       "uploadFailed": "Error al subir guión"
     },
     "workspaceDeleteConfirm": "¿Estás seguro de que quieres eliminar este espacio de trabajo y todos sus datos? Esta acción no se puede deshacer.",
+    "reviewStatus": {
+      "title": "Revisión del profesor",
+      "labels": {
+        "draft": "Borrador",
+        "submitted": "Enviado para revisión",
+        "changes_requested": "Cambios solicitados",
+        "approved": "Aprobado"
+      },
+      "descriptions": {
+        "draft": "El guion todavía está en trabajo.",
+        "submitted": "El guion está esperando revisión del profesor.",
+        "changes_requested": "Un profesor solicitó cambios antes de aprobar.",
+        "approved": "Un profesor aprobó este guion."
+      },
+      "actions": {
+        "submit": "Enviar para revisión",
+        "requestChanges": "Solicitar cambios",
+        "approve": "Aprobar",
+        "returnToDraft": "Volver a borrador"
+      },
+      "toasts": {
+        "draft": "Guion devuelto a borrador.",
+        "submitted": "Guion enviado para revisión.",
+        "changes_requested": "Cambios solicitados.",
+        "approved": "Guion aprobado.",
+        "failed": "No se pudo actualizar el estado de revisión.",
+        "signIn": "Inicia sesión para actualizar el estado de revisión.",
+        "notAllowed": "No puedes cambiar el estado de revisión de este guion."
+      }
+    },
     "notifications": {
       "someone": "Alguien",
       "addedToWorkspace": {
@@ -776,6 +806,10 @@
         "screenplay_uploaded": "subió {{target}}",
         "screenplay_created": "empezó a escribir {{target}}",
         "screenplay_deleted": "eliminó {{target}}",
+        "review_submitted": "envió {{target}} para revisión",
+        "review_changes_requested": "solicitó cambios en {{target}}",
+        "review_approved": "aprobó {{target}}",
+        "review_returned_to_draft": "devolvió {{target}} a borrador",
         "member_added": "agregó a {{detail}}",
         "member_self_promoted": "ahora supervisa este espacio de trabajo",
         "annotation_added": "comentó en {{target}}",

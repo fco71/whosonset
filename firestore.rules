@@ -143,6 +143,29 @@ service cloud.firestore {
         ]);
     }
 
+    function isScreenplayReviewStatusUpdate(newData, oldData, screenplayId) {
+      return signedIn() &&
+        newData.diff(oldData).affectedKeys().hasOnly([
+          'reviewStatus',
+          'reviewStatusUpdatedAt',
+          'reviewStatusUpdatedBy',
+          'reviewStatusNote',
+          'lastModified'
+        ]) &&
+        newData.reviewStatus in ['draft', 'submitted', 'changes_requested', 'approved'] &&
+        newData.reviewStatusUpdatedBy == request.auth.uid &&
+        (
+          (
+            newData.reviewStatus in ['draft', 'submitted'] &&
+            canEditScreenplayData(oldData)
+          ) ||
+          (
+            newData.reviewStatus in ['changes_requested', 'approved'] &&
+            isScreenplaySupervisor(screenplayId, request.auth.uid)
+          )
+        );
+    }
+
     function canAccessScreenplay(screenplayId) {
       return signedIn() &&
         screenplayId is string &&
@@ -610,7 +633,8 @@ service cloud.firestore {
       allow update: if keepsScreenplayOwnership(request.resource.data, resource.data) &&
         (
           isScreenplayContentUpdate(request.resource.data, resource.data) ||
-          isScreenplayAccessUpdate(request.resource.data, resource.data)
+          isScreenplayAccessUpdate(request.resource.data, resource.data) ||
+          isScreenplayReviewStatusUpdate(request.resource.data, resource.data, screenplayId)
         );
       allow delete: if canDeleteScreenplayData(resource.data);
     }

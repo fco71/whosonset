@@ -16,8 +16,8 @@ Primary collaboration roadmap: [src/components/Collaboration/IMPLEMENTATION_ROAD
 - Firebase project: `my-film-jobs`
 - Firebase CLI / Console account: `iam@myfilmjobs.com`
 - Hosting sites: `myfilmjobs-com` and `my-film-jobs`
-- Production Hosting live channel observed on 2026-05-28 at 16:34:07 local time for `myfilmjobs-com`
-- Development Hosting live channel observed on 2026-05-28 at 16:34:07 local time for `my-film-jobs`
+- Production Hosting live channel observed on 2026-05-28 at 22:21:34 local time for `myfilmjobs-com`
+- Development Hosting live channel observed on 2026-05-28 at 22:21:34 local time for `my-film-jobs`
 
 Do not deploy Firebase Hosting, Firestore, Storage, Functions, indexes, or secrets from any other Google account. If `firebase login:list` shows another active account, switch back to `iam@myfilmjobs.com` before running deploy commands.
 
@@ -48,7 +48,7 @@ Make the collaboration page strong enough for student project creation and teach
 
 - A student or creator can create a workspace, upload a PDF, or start a Fountain screenplay in any order.
 - Inviting teachers, classmates, viewers, and collaborators is optional before upload and available later.
-- Teachers can review screenplays with notes, tags, replies, and resolved/open state.
+- Teachers can review screenplays with notes, tags, replies, resolved/open state, and a first-class review status.
 - Creators can archive, restore, soft-delete, and permanently delete collaboration workspaces.
 - Uploaded PDF review and in-browser Fountain writing should feel like one coherent workflow.
 
@@ -65,6 +65,9 @@ Make the collaboration page strong enough for student project creation and teach
 - Uploaded screenplay drag/drop has been removed; screenplay upload is through the explicit upload button.
 - PDF screenplay viewer renders readable white pages, fits modal width, and virtualizes visible pages.
 - Fountain editor/viewer exists with toolbar, autosave, page count, live preview, PDF export, and page numbers.
+- Screenplays have first-class review status: Draft, Submitted for review, Changes requested, Approved.
+- Creators/students can submit screenplays for review or return them to draft.
+- Teachers/supervisors can request changes or approve submitted screenplays.
 - Teachers can self-promote to supervisor when their profile is marked `isTeacher` or `profileType: 'teacher'`.
 - Supervisor and viewer roles are read-only for screenplay content; they can comment/annotate but cannot edit screenplay text.
 - Workspace soft-delete recovery window is 7 days.
@@ -85,12 +88,22 @@ Latest local verification on 2026-05-28:
 
 ## Current Priorities
 
-1. Add teacher review status workflow: Draft, Submitted for review, Changes requested, Approved.
+1. Live QA the teacher review status workflow across separate student and teacher accounts.
 2. Replace client-side all-profile member search with a safer indexed search or callable search endpoint.
 3. Upgrade Cloud Functions from Node.js 20 before Firebase decommission dates.
 4. Consolidate the large duplicated `ScreenplayViewer.scss` rules.
 5. Reduce the main bundle size.
 6. Run a mobile QA pass for the collaboration hub.
+
+## Completed In Current Pass: Teacher Review Status
+
+- Added screenplay-level `reviewStatus` values: `draft`, `submitted`, `changes_requested`, `approved`.
+- Creators/students can submit a screenplay for review.
+- Teachers/supervisors can mark a submitted screenplay as changes requested or approved.
+- Creators can move submitted, changes-requested, or approved work back to draft.
+- Status is visible in screenplay lists and the viewer collaboration panel.
+- Review metadata is stored on the screenplay document: updater, update timestamp, and note field.
+- Firestore rules keep review-status writes field-scoped.
 
 ## Collaboration Acceptance Path
 
@@ -103,17 +116,19 @@ Manual QA should cover:
 5. Student invites the teacher after upload; teacher accepts from notifications.
 6. Teacher sees the workspace and screenplay.
 7. Teacher self-promotes to supervisor.
-8. Teacher adds notes/tags and resolves one item.
-9. Student receives in-app notification and sees the review items.
-10. Creator archives and restores the workspace.
-11. Creator soft-deletes and restores the workspace.
-12. Creator soft-deletes and permanently deletes a test workspace.
-13. Non-owner does not see destructive workspace actions.
+8. Student submits a screenplay for teacher review.
+9. Teacher marks it changes requested, then later approved.
+10. Teacher adds notes/tags and resolves one item.
+11. Student receives in-app notification and sees the review items.
+12. Creator archives and restores the workspace.
+13. Creator soft-deletes and restores the workspace.
+14. Creator soft-deletes and permanently deletes a test workspace.
+15. Non-owner does not see destructive workspace actions.
 
 ## Known Risks
 
 - Member search currently scans all crew profiles client-side, which is acceptable for the current assignment but not a long-term production search design.
-- Teacher review status is not first-class yet.
+- Teacher review status needs live QA with separate student and teacher accounts before broader release confidence.
 - Cloud Functions currently deploy on Node.js 20, which Firebase warns is deprecated for future deployments.
 - The collaboration SCSS, especially `ScreenplayViewer.scss`, is too large and contains duplicated legacy rules.
 - The main Webpack entrypoint is over the recommended 1 MiB limit.
