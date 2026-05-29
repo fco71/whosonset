@@ -1327,6 +1327,18 @@
         "body": "Página {{page}}: \"{{excerpt}}\""
       }
     },
+    "bulkResolve": {
+      "button_one": "Marcar {{count}} atendida",
+      "button_other": "Marcar las {{count}} atendidas",
+      "tooltip_one": "Resolver {{count}} nota del profesor sin atender en este guion.",
+      "tooltip_other": "Resolver las {{count}} notas del profesor sin atender en este guion.",
+      "confirm_one": "¿Marcar {{count}} nota del profesor como atendida?",
+      "confirm_other": "¿Marcar las {{count}} notas del profesor como atendidas?",
+      "working": "Marcando…",
+      "success_one": "{{count}} nota del profesor marcada como atendida.",
+      "success_other": "{{count}} notas del profesor marcadas como atendidas.",
+      "failed": "No se pudieron marcar las notas como atendidas."
+    },
     "export": {
       "button": "Exportar informe (CSV)",
       "buttonShort": "Exportar",

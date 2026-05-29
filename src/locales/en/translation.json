@@ -1362,6 +1362,18 @@
         "body": "Page {{page}}: \"{{excerpt}}\""
       }
     },
+    "bulkResolve": {
+      "button_one": "Mark {{count}} addressed",
+      "button_other": "Mark all {{count}} addressed",
+      "tooltip_one": "Resolve {{count}} unresolved teacher note on this screenplay.",
+      "tooltip_other": "Resolve all {{count}} unresolved teacher notes on this screenplay.",
+      "confirm_one": "Mark {{count}} teacher note as addressed?",
+      "confirm_other": "Mark all {{count}} teacher notes as addressed?",
+      "working": "Marking…",
+      "success_one": "Marked {{count}} teacher note as addressed.",
+      "success_other": "Marked {{count}} teacher notes as addressed.",
+      "failed": "Could not mark teacher notes as addressed."
+    },
     "export": {
       "button": "Export report (CSV)",
       "buttonShort": "Export",

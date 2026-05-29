@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { collection, addDoc, query, where, orderBy, getDocs, onSnapshot, updateDoc, doc, deleteDoc, arrayUnion, arrayRemove, limit, getDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, query, where, orderBy, getDocs, onSnapshot, updateDoc, doc, deleteDoc, arrayUnion, arrayRemove, limit, getDoc, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
@@ -1358,6 +1358,66 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     }
   };
 
+  // Bulk-resolve every unresolved supervisor note on this screenplay. Designed for
+  // a student finishing a revision pass — clears the inbox in one shot, instead of
+  // clicking through 12 individual ✅ Mark as addressed buttons. Skips the user's
+  // own authored notes so a supervisor can't accidentally bulk-close their backlog.
+  const [bulkResolving, setBulkResolving] = useState(false);
+  const unresolvedSupervisorNotes = useMemo(() => {
+    if (!currentUser) return { annotations: [] as Annotation[], tags: [] as Tag[] };
+    const myUid = currentUser.uid;
+    return {
+      annotations: annotations.filter(a => a.supervisorAtAuthorTime === true && !a.resolved && a.userId !== myUid),
+      tags: tags.filter(t => t.supervisorAtAuthorTime === true && !t.resolved && t.userId !== myUid)
+    };
+  }, [annotations, tags, currentUser]);
+  const handleBulkResolveSupervisorNotes = async () => {
+    const { annotations: pendingAnn, tags: pendingTags } = unresolvedSupervisorNotes;
+    const total = pendingAnn.length + pendingTags.length;
+    if (total === 0 || bulkResolving) return;
+    if (!window.confirm(t('screenplay.bulkResolve.confirm', { count: total }))) return;
+    setBulkResolving(true);
+    // Optimistic flip on all selected ids so the UI clears immediately.
+    const annIds = new Set(pendingAnn.map(a => a.id));
+    const tagIds = new Set(pendingTags.map(t => t.id));
+    setAnnotations(prev => prev.map(a => annIds.has(a.id) ? { ...a, resolved: true } : a));
+    setTags(prev => prev.map(t => tagIds.has(t.id) ? { ...t, resolved: true } : t));
+    try {
+      // writeBatch caps at 500 operations; we batch in chunks of 400 to leave headroom.
+      const allOps: Array<{ collection: 'screenplayAnnotations' | 'screenplayTags'; id: string }> = [
+        ...pendingAnn.map(a => ({ collection: 'screenplayAnnotations' as const, id: a.id })),
+        ...pendingTags.map(t => ({ collection: 'screenplayTags' as const, id: t.id }))
+      ];
+      for (let i = 0; i < allOps.length; i += 400) {
+        const slice = allOps.slice(i, i + 400);
+        const batch = writeBatch(db);
+        slice.forEach(op => batch.update(doc(db, op.collection, op.id), { resolved: true }));
+        await batch.commit();
+      }
+      toast.success(t('screenplay.bulkResolve.success', { count: total }));
+      // One activity event for the whole batch, not one per note.
+      if (screenplayWorkspaceId && currentUser) {
+        logWorkspaceActivity({
+          workspaceId: screenplayWorkspaceId,
+          actorUid: currentUser.uid,
+          actorName: currentUser.displayName,
+          verb: 'supervisor_note_addressed',
+          targetId: screenplay.id,
+          targetName: screenplay.name,
+          detail: String(total)
+        });
+      }
+    } catch (err) {
+      console.error('Bulk resolve failed:', err);
+      toast.error(t('screenplay.bulkResolve.failed'));
+      // Roll back optimistic flip — let the snapshot listener restore reality.
+      setAnnotations(prev => prev.map(a => annIds.has(a.id) ? { ...a, resolved: false } : a));
+      setTags(prev => prev.map(t => tagIds.has(t.id) ? { ...t, resolved: false } : t));
+    } finally {
+      setBulkResolving(false);
+    }
+  };
+
   const deleteElement = async (elementId: string, type: 'annotation' | 'tag') => {
     try {
       const collectionName = type === 'annotation' ? 'screenplayAnnotations' : 'screenplayTags';
@@ -2644,26 +2704,56 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                       const teacherCount = annotations.filter(a => a.supervisorAtAuthorTime === true).length;
                       return (
                         <>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
                             <h4 style={{ margin: 0 }}>💬 {t('screenplay.annotations')} ({annotations.length})</h4>
-                            <button
-                              type="button"
-                              className="btn-secondary"
-                              onClick={exportTagReport}
-                              title={t('screenplay.export.button')}
-                              style={{
-                                padding: '4px 10px',
-                                fontSize: '0.78em',
-                                border: '1px solid #cbd5e1',
-                                background: '#ffffff',
-                                color: '#1e293b',
-                                borderRadius: 6,
-                                cursor: 'pointer',
-                                whiteSpace: 'nowrap'
-                              }}
-                            >
-                              ⬇ {t('screenplay.export.buttonShort')}
-                            </button>
+                            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                              {(() => {
+                                const bulkCount = unresolvedSupervisorNotes.annotations.length + unresolvedSupervisorNotes.tags.length;
+                                if (bulkCount === 0) return null;
+                                return (
+                                  <button
+                                    type="button"
+                                    className="btn-secondary"
+                                    onClick={handleBulkResolveSupervisorNotes}
+                                    disabled={bulkResolving}
+                                    title={t('screenplay.bulkResolve.tooltip', { count: bulkCount })}
+                                    style={{
+                                      padding: '4px 10px',
+                                      fontSize: '0.78em',
+                                      border: '1px solid #f59e0b',
+                                      background: '#fffbeb',
+                                      color: '#92400e',
+                                      borderRadius: 6,
+                                      cursor: bulkResolving ? 'wait' : 'pointer',
+                                      whiteSpace: 'nowrap',
+                                      fontWeight: 600
+                                    }}
+                                  >
+                                    {bulkResolving
+                                      ? `⏳ ${t('screenplay.bulkResolve.working')}`
+                                      : `🎓 ${t('screenplay.bulkResolve.button', { count: bulkCount })}`}
+                                  </button>
+                                );
+                              })()}
+                              <button
+                                type="button"
+                                className="btn-secondary"
+                                onClick={exportTagReport}
+                                title={t('screenplay.export.button')}
+                                style={{
+                                  padding: '4px 10px',
+                                  fontSize: '0.78em',
+                                  border: '1px solid #cbd5e1',
+                                  background: '#ffffff',
+                                  color: '#1e293b',
+                                  borderRadius: 6,
+                                  cursor: 'pointer',
+                                  whiteSpace: 'nowrap'
+                                }}
+                              >
+                                ⬇ {t('screenplay.export.buttonShort')}
+                              </button>
+                            </div>
                           </div>
                           <div className="annotations-filter-chips" style={{ display: 'flex', flexWrap: 'wrap', gap: 6, margin: '6px 0 10px' }}>
                             {([
