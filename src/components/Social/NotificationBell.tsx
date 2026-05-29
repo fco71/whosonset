@@ -146,7 +146,19 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ currentUserId, clas
     try {
       // Mark as read first
       await handleMarkAsRead(notification.id);
-      
+
+      // Prefer an explicit link set by the notification writer (collaboration,
+      // supervisor-comment, workspace-invite/accepted/declined all set link:'/collaboration').
+      // Without this the switch below falls through to '/social' for those types, which is
+      // the "jumped to the wrong page" behavior. Legacy social notifications have no link and
+      // still use the type-based routing.
+      const link = (notification as { link?: string }).link;
+      if (typeof link === 'string' && link) {
+        navigate(link);
+        setIsOpen(false);
+        return;
+      }
+
       // Navigate based on notification type
       switch (notification.type) {
         case 'follow_request':
