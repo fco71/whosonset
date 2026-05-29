@@ -2126,6 +2126,10 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                                     const isSingleLine = heightPx < 32;
                                     const verticalPad = isSingleLine ? 4 : 0;
                                     const markerOffset = isSingleLine ? -18 : -20;
+                                    // Supervisor tags use a deeper amber so they pop against regular tags
+                                    // without losing the 🏷️ glyph that distinguishes a tag from an annotation.
+                                    const tagBaseColor = tag.supervisorAtAuthorTime ? '180, 83, 9' : '245, 158, 11';
+                                    const tagPinColor = tag.supervisorAtAuthorTime ? '#b45309' : '#f59e0b';
                                     return (
                                       <React.Fragment key={`tag-${tag.id}`}>
                                         <div
@@ -2136,14 +2140,14 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                                             top: `calc(${tag.position.y * 100}% - ${verticalPad}px)`,
                                             width: `${tag.position.width * 100}%`,
                                             height: `calc(${overlayHeight} + ${verticalPad * 2}px)`,
-                                            border: isSingleLine ? '1px solid rgba(245, 158, 11, 0.45)' : '2px solid rgba(245, 158, 11, 0.7)',
+                                            border: isSingleLine ? `1px solid rgba(${tagBaseColor}, 0.45)` : `2px solid rgba(${tagBaseColor}, 0.7)`,
                                             borderRadius: isSingleLine ? 3 : 8,
                                             zIndex: 5,
                                             transition: 'all 0.15s ease',
                                             // Let text selection pass through. The marker (rendered below) is the click target.
                                             pointerEvents: 'none',
                                             background: 'none',
-                                            boxShadow: '0 2px 8px rgba(245, 158, 11, 0.08)'
+                                            boxShadow: `0 2px 8px rgba(${tagBaseColor}, 0.08)`
                                           }}
                                           data-element-id={tag.id}
                                           title={t('screenplay.marker.tag', { user: tag.userName, content: tag.content })}
@@ -2170,7 +2174,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                                             width: 22,
                                             height: 22,
                                             borderRadius: '50%',
-                                            background: '#f59e0b',
+                                            background: tagPinColor,
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
@@ -2791,7 +2795,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                     <h4>🏷️ {t('screenplay.tags')} ({tags.length})</h4>
                     <div className="tags-list">
                       {tags.map(tag => (
-                        <div key={tag.id} className={`tag-item ${tag.resolved ? 'resolved' : ''}`}>
+                        <div key={tag.id} className={`tag-item ${tag.resolved ? 'resolved' : ''} ${tag.supervisorAtAuthorTime ? 'from-supervisor' : ''}`}>
                           <div className="tag-header">
                             <div className="tag-author">
                               {tag.userAvatar ? (
@@ -2800,6 +2804,22 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                                 <div className="avatar-placeholder">{tag.userName.charAt(0)}</div>
                               )}
                               <span>{tag.userName}</span>
+                              {tag.supervisorAtAuthorTime && (
+                                <span
+                                  title={t('screenplay.supervisorBadge.tooltip')}
+                                  style={{
+                                    marginLeft: 6,
+                                    padding: '1px 6px',
+                                    borderRadius: 999,
+                                    fontSize: '0.7em',
+                                    fontWeight: 700,
+                                    background: '#fde68a',
+                                    color: '#92400e'
+                                  }}
+                                >
+                                  🎓 {t('screenplay.supervisorBadge.label')}
+                                </span>
+                              )}
                             </div>
                             <div className="tag-meta">
                               <span className="tag-time">{formatTimeAgo(toDate(tag.timestamp))}</span>

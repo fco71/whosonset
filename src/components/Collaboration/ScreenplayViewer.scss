@@ -560,16 +560,23 @@
           border-radius: 8px;
           padding: 16px;
           transition: all 0.2s ease;
-          
+
           &:hover {
             border-color: #cbd5e1;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
           }
-          
+
+          // Supervisor-authored notes get a left amber stripe so students
+          // can scan the panel and see teacher feedback at a glance.
+          &.from-supervisor {
+            border-left: 3px solid #f59e0b;
+            background: #fffbeb;
+          }
+
           &.resolved {
             opacity: 0.6;
             background: #f8fafc;
-            
+
             .annotation-content,
             .tag-content {
               text-decoration: line-through;

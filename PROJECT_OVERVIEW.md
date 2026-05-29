@@ -95,6 +95,22 @@ Latest local verification on 2026-05-28:
 5. Reduce the main bundle size.
 6. Run a mobile QA pass for the collaboration hub.
 
+## Supervisor-visual queue (2026-05-29, planned in order)
+
+State of supervisor differentiation today (audited 2026-05-29):
+- **Annotations**: marker color amber 🎓 vs red 💬, panel "🎓 Teacher" pill on author row, "From teacher" filter chip. `from-supervisor` className is **dead** (no SCSS).
+- **Tags**: NO visual differentiation — pin is always 🏷️ amber, panel shows no badge. `supervisorAtAuthorTime` IS stored on tag docs and exported in CSV, just not surfaced.
+- **Hub row "🎓 N" badge**: counts unresolved supervisor *annotations* only — not tags.
+
+Queue:
+1. **Supervisor-tag visual parity + dead-class fix** — bring tags up to annotation parity (different pin glyph/color for supervisor tags, "🎓 Teacher" pill in tag panel header, "From teacher" filter on tags list); wire the dead `from-supervisor` className to a left amber border-stripe on annotation cards; have the hub-row 🎓 badge count tags too.
+2. **A: Notification persistence sweep** — earlier user complaint that notifications didn't clear on click. Audit bell+center handlers, verify isRead/read writes succeed across all types.
+3. **B: Viewer mobile (deeper)** — stack PDF + side-panel on ≤768px (currently the panel pushes the PDF off-screen).
+4. **C: @-mention in annotations** — `@user` parsing → targeted notification.
+5. **D: Student-side Resolve / Acknowledge** — one-click "Mark as addressed" for supervisor annotations.
+6. **E: Per-student annotation export** — grading-oriented CSV (screenplay + teacher annotations + resolved status per student).
+7. **F: Activity feed pagination** — limit 50 + Load more, before a month-old class workspace grows unbounded.
+
 ## Completed In Current Pass: Teacher Review Status
 
 - Added screenplay-level `reviewStatus` values: `draft`, `submitted`, `changes_requested`, `approved`.

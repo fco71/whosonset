@@ -705,7 +705,10 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 
     const screenplayIds = userScreenplaysKey.split(',');
     const annotationsRef = collection(db, 'screenplayAnnotations');
-    const chunkAnnotations = new Map<number, Array<{ screenplayId?: string; resolved?: boolean; supervisorAtAuthorTime?: boolean }>>();
+    const tagsRef = collection(db, 'screenplayTags');
+    // Two collections feed both counts; key by `${collection}-${chunkIndex}`
+    // so a snapshot only replaces its own slice.
+    const chunkAnnotations = new Map<string, Array<{ screenplayId?: string; resolved?: boolean; supervisorAtAuthorTime?: boolean }>>();
 
     const recompute = () => {
       const open: Record<string, number> = {};
@@ -728,15 +731,23 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     for (let i = 0; i < screenplayIds.length; i += 10) {
       const chunkIndex = i;
       const chunk = screenplayIds.slice(i, i + 10);
-      const q = query(annotationsRef, where('screenplayId', 'in', chunk));
+      const annKey = `ann-${chunkIndex}`;
+      const tagKey = `tag-${chunkIndex}`;
       unsubs.push(onSnapshot(
-        q,
+        query(annotationsRef, where('screenplayId', 'in', chunk)),
         snapshot => {
-          const list = snapshot.docs.map(d => d.data() as { screenplayId?: string; resolved?: boolean; supervisorAtAuthorTime?: boolean });
-          chunkAnnotations.set(chunkIndex, list);
+          chunkAnnotations.set(annKey, snapshot.docs.map(d => d.data() as { screenplayId?: string; resolved?: boolean; supervisorAtAuthorTime?: boolean }));
           recompute();
         },
         err => console.error('Annotation count subscription error:', err)
+      ));
+      unsubs.push(onSnapshot(
+        query(tagsRef, where('screenplayId', 'in', chunk)),
+        snapshot => {
+          chunkAnnotations.set(tagKey, snapshot.docs.map(d => d.data() as { screenplayId?: string; resolved?: boolean; supervisorAtAuthorTime?: boolean }));
+          recompute();
+        },
+        err => console.error('Tag count subscription error:', err)
       ));
     }
 
