@@ -920,6 +920,148 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     }
   };
 
+  // -------- @-mention typeahead (K) --------
+  // While typing `@<partial>` in the annotation textarea or tag input we
+  // show a small dropdown of matching workspace members. Click/Enter/Tab
+  // inserts the canonical first name so extractMentionedUserIds(...) below
+  // will pick it up at send time. Escape dismisses.
+  type MentionInputKind = 'annotation' | 'tag';
+  const [mentionState, setMentionState] = useState<{
+    query: string;
+    start: number;        // index of the `@` in the input value
+    input: MentionInputKind;
+    activeIndex: number;
+  } | null>(null);
+
+  const mentionSuggestions = useMemo(() => {
+    if (!mentionState) return [] as typeof collaborators;
+    const q = mentionState.query.toLowerCase();
+    return collaborators
+      .filter(c => c?.id && c.id !== currentUser?.uid)
+      .filter(c => {
+        if (!q) return true;
+        const fullName = (c.name || '').toLowerCase();
+        const firstName = fullName.split(/\s+/)[0] || '';
+        const squashed = fullName.replace(/\s+/g, '');
+        const emailLocal = (c.email || '').toLowerCase().split('@')[0] || '';
+        return firstName.startsWith(q) || squashed.startsWith(q) || emailLocal.startsWith(q) || fullName.includes(q);
+      })
+      .slice(0, 6);
+  }, [mentionState, collaborators, currentUser]);
+
+  const updateMentionStateFromInput = (
+    inputKind: MentionInputKind,
+    value: string,
+    cursorPos: number
+  ) => {
+    const upToCursor = value.slice(0, cursorPos);
+    // Last `@` that's at start of value or preceded by whitespace, followed
+    // only by mention-allowed chars up to the cursor.
+    const atMatch = upToCursor.match(/(^|\s)@([A-Za-z0-9_.-]*)$/);
+    if (atMatch) {
+      const tokenStart = cursorPos - atMatch[2].length - 1;
+      setMentionState(prev => prev && prev.input === inputKind && prev.start === tokenStart
+        ? { ...prev, query: atMatch[2] } // preserve activeIndex while typing
+        : { query: atMatch[2], start: tokenStart, input: inputKind, activeIndex: 0 });
+    } else {
+      setMentionState(null);
+    }
+  };
+
+  const insertMentionSuggestion = (collaborator: typeof collaborators[number]) => {
+    if (!mentionState) return;
+    const name = (collaborator.name || '').split(/\s+/)[0] || (collaborator.email || '').split('@')[0] || 'user';
+    const target = mentionState.input;
+    const value = target === 'annotation' ? annotationInput : newTag;
+    const before = value.slice(0, mentionState.start);
+    const after = value.slice(mentionState.start + 1 + mentionState.query.length);
+    const spaced = after.startsWith(' ') ? after : ` ${after}`;
+    const next = `${before}@${name}${spaced}`;
+    if (target === 'annotation') setAnnotationInput(next);
+    else setNewTag(next);
+    setMentionState(null);
+  };
+
+  // Returns true if it handled the key (caller should NOT run its own
+  // Enter/Escape handlers). Returns false to let the input behave normally.
+  const handleMentionKeyDown = (e: React.KeyboardEvent): boolean => {
+    if (!mentionState || mentionSuggestions.length === 0) return false;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setMentionState(s => s && { ...s, activeIndex: Math.min(s.activeIndex + 1, mentionSuggestions.length - 1) });
+      return true;
+    }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setMentionState(s => s && { ...s, activeIndex: Math.max(s.activeIndex - 1, 0) });
+      return true;
+    }
+    if (e.key === 'Enter' || e.key === 'Tab') {
+      e.preventDefault();
+      insertMentionSuggestion(mentionSuggestions[mentionState.activeIndex]);
+      return true;
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      setMentionState(null);
+      return true;
+    }
+    return false;
+  };
+
+  // Small inline list rendered under the active input.
+  const renderMentionTypeahead = (forInput: MentionInputKind) => {
+    if (!mentionState || mentionState.input !== forInput || mentionSuggestions.length === 0) return null;
+    return (
+      <div
+        role="listbox"
+        style={{
+          border: '1px solid #cbd5e1',
+          borderRadius: 6,
+          background: '#ffffff',
+          maxHeight: 180,
+          overflowY: 'auto',
+          marginBottom: 8,
+          boxShadow: '0 4px 12px rgba(15, 23, 42, 0.08)'
+        }}
+      >
+        {mentionSuggestions.map((c, idx) => {
+          const active = idx === mentionState.activeIndex;
+          return (
+            <div
+              key={c.id}
+              role="option"
+              aria-selected={active}
+              onMouseDown={e => { e.preventDefault(); insertMentionSuggestion(c); }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '6px 10px',
+                background: active ? '#eff6ff' : 'transparent',
+                color: '#0f172a',
+                cursor: 'pointer',
+                fontSize: 13
+              }}
+            >
+              {c.avatar ? (
+                <img src={c.avatar} alt="" style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover' }} />
+              ) : (
+                <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#e2e8f0', color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700 }}>
+                  {(c.name || '?').charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                <strong style={{ fontWeight: 600 }}>{c.name || c.email || c.id}</strong>
+                {c.role && <span style={{ fontSize: 11, color: '#64748b' }}>{c.role}</span>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   // Detect @mentions in free-text. Matches `@token` where token is letters,
   // digits, underscore, dot, or hyphen — collaborators with multi-word names
   // can be reached by their first-name token, or by the squashed full name.
@@ -1470,7 +1612,8 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       setAnnotationInput('');
       setNewTag('');
       setPopupType(null);
-      
+      setMentionState(null);
+
       // Clear the text selection
       window.getSelection()?.removeAllRanges();
       
@@ -3153,22 +3296,34 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
               {popupType === 'annotation' ? t('screenplay.popup.addAnnotation') : popupType === 'tag' ? t('screenplay.popup.addTag') : t('screenplay.popup.addToSelection')}
             </div>
             {popupType === 'annotation' && (
-              <textarea
-                placeholder={t('screenplay.popup.enterAnnotation')}
-                value={annotationInput}
-                onChange={e => setAnnotationInput(e.target.value)}
-                rows={3}
-                style={{ width: '100%', marginBottom: 8, border: '1px solid #d1d5db', borderRadius: 6, padding: 8, fontSize: 13, resize: 'vertical', minHeight: 60, fontFamily: 'inherit' }}
-                autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && e.ctrlKey) {
-                    createAnnotation('annotation');
-                  } else if (e.key === 'Escape') {
-                    setPopupType(null);
-                    setAnnotationInput('');
-                  }
-                }}
-              />
+              <>
+                <textarea
+                  placeholder={t('screenplay.popup.enterAnnotation')}
+                  value={annotationInput}
+                  onChange={e => {
+                    setAnnotationInput(e.target.value);
+                    updateMentionStateFromInput('annotation', e.target.value, e.target.selectionStart ?? e.target.value.length);
+                  }}
+                  onSelect={e => {
+                    const target = e.currentTarget;
+                    updateMentionStateFromInput('annotation', target.value, target.selectionStart ?? target.value.length);
+                  }}
+                  rows={3}
+                  style={{ width: '100%', marginBottom: 8, border: '1px solid #d1d5db', borderRadius: 6, padding: 8, fontSize: 13, resize: 'vertical', minHeight: 60, fontFamily: 'inherit' }}
+                  autoFocus
+                  onKeyDown={(e) => {
+                    // Typeahead intercepts Enter/Tab/Arrow/Escape when open.
+                    if (handleMentionKeyDown(e)) return;
+                    if (e.key === 'Enter' && e.ctrlKey) {
+                      createAnnotation('annotation');
+                    } else if (e.key === 'Escape') {
+                      setPopupType(null);
+                      setAnnotationInput('');
+                    }
+                  }}
+                />
+                {renderMentionTypeahead('annotation')}
+              </>
             )}
             {popupType === 'tag' && (
               <>
@@ -3212,9 +3367,16 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                   type="text"
                   placeholder={t('screenplay.popup.enterTag')}
                   value={newTag}
-                  onChange={e => setNewTag(e.target.value)}
-                  style={{ 
-                    width: '100%', 
+                  onChange={e => {
+                    setNewTag(e.target.value);
+                    updateMentionStateFromInput('tag', e.target.value, e.target.selectionStart ?? e.target.value.length);
+                  }}
+                  onSelect={e => {
+                    const target = e.currentTarget;
+                    updateMentionStateFromInput('tag', target.value, target.selectionStart ?? target.value.length);
+                  }}
+                  style={{
+                    width: '100%',
                     marginBottom: '8px',
                     border: '1px solid #d1d5db',
                     borderRadius: '6px',
@@ -3224,6 +3386,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                   }}
                   autoFocus
                   onKeyDown={(e) => {
+                    if (handleMentionKeyDown(e)) return;
                     if (e.key === 'Enter') {
                       createAnnotation('tag');
                     } else if (e.key === 'Escape') {
@@ -3232,6 +3395,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                     }
                   }}
                 />
+                {renderMentionTypeahead('tag')}
               </>
             )}
             {!popupType && (
