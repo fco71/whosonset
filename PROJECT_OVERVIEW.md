@@ -111,6 +111,12 @@ Queue (all shipped 2026-05-29):
 6. ✅ **E: Per-student annotation export** — new "📊 Grading report" button in each workspace's screenplay section (visible only to canExportGradingReport = owner/supervisor). One CSV per workspace: Student | Screenplay | Type | Category | Page | Content | Author | From supervisor | Resolved | Timestamp, sorted Student→Screenplay→Page. Student names hydrated via crewProfiles. Per-screenplay export inside the viewer still works.
 7. ✅ **F: Activity feed pagination** — feed defaults to 25 events with a "Load more" CTA that bumps the live snapshot's limit by 25 each click. Switching workspaces resets the page size. Queries n+1 to know when to hide the CTA.
 
+## Teacher-loop closures (2026-05-29, follow-up round)
+
+- **G: Resolve/reopen → activity event.** When a non-supervisor toggles `resolved` on a supervisor-authored note, the workspace activity feed records `supervisor_note_addressed` / `supervisor_note_reopened`. Teacher's Recent activity pane now shows student progress.
+- **H: Bulk "Mark all teacher notes addressed".** Amber pill in the annotation panel header (visible only when ≥1 unresolved supervisor note exists) batch-resolves every unresolved supervisor annotation + tag on the screenplay. Uses `writeBatch` chunked at 400/op, optimistic flip, single activity event with `detail=N`.
+- **I: Tags panel "From teacher" filter.** Mirror of the annotations panel chips: Open / Mine / From teacher / All, with separate `tagStatusFilter` state so the two panels don't trample each other.
+
 ## Completed In Current Pass: Teacher Review Status
 
 - Added screenplay-level `reviewStatus` values: `draft`, `submitted`, `changes_requested`, `approved`.
