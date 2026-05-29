@@ -2433,6 +2433,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
               alignItems: 'center',
               justifyContent: 'space-between',
               gap: 16,
+              flexWrap: 'wrap',
               padding: '0.75rem 0',
               borderBottom: '1px solid #eee'
             }}>
@@ -2496,7 +2497,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                   </span>
                 )}
               </div>
-              <div style={{ display: 'flex', gap: 12 }}>
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                 {screenplay.format === 'fountain' && canEditScreenplay(screenplay) && (
                   <button
                     className="btn-primary"
