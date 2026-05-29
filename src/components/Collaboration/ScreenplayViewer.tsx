@@ -152,9 +152,12 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   const [screenplayWorkspaceId, setScreenplayWorkspaceId] = useState<string | null>(null);
   const [screenplayUploadedBy, setScreenplayUploadedBy] = useState<string | null>(null);
   const [reviewStatus, setReviewStatus] = useState<ScreenplayReviewStatus>(screenplay.reviewStatus || 'draft');
+  const [reviewStatusNote, setReviewStatusNote] = useState<string>('');
   const [canUpdateReviewAsCreator, setCanUpdateReviewAsCreator] = useState(false);
   const [canUpdateReviewAsReviewer, setCanUpdateReviewAsReviewer] = useState(false);
   const [updatingReviewStatus, setUpdatingReviewStatus] = useState(false);
+  const [requestChangesOpen, setRequestChangesOpen] = useState(false);
+  const [requestChangesDraft, setRequestChangesDraft] = useState('');
   const [fountainNote, setFountainNote] = useState('');
   const [addingFountainNote, setAddingFountainNote] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -592,6 +595,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       setScreenplayWorkspaceId(workspaceId);
       setScreenplayUploadedBy(uploadedBy);
       setReviewStatus(isScreenplayReviewStatus(data?.reviewStatus) ? data.reviewStatus : 'draft');
+      setReviewStatusNote(typeof data?.reviewStatusNote === 'string' ? data.reviewStatusNote : '');
 
       let creatorAllowed = Boolean(currentUser?.uid && uploadedBy === currentUser.uid);
       let reviewerAllowed = false;
@@ -1794,18 +1798,18 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   // submitted -> notify the workspace's supervisors (owner-assigned + self-elected).
   // returned_to_draft -> no notification (self-action by the creator).
   // Best-effort: never blocks the status change.
-  const notifyReviewStatusChange = async (nextStatus: ScreenplayReviewStatus) => {
+  const notifyReviewStatusChange = async (nextStatus: ScreenplayReviewStatus, note: string = '') => {
     if (!currentUser || !screenplayWorkspaceId) return;
     const actorName = currentUser.displayName || t('screenplay.notifications.fallbackAuthor');
     const screenplayName = screenplay.name || t('screenplay.notifications.fallbackScreenplay');
-    const baseDoc = (userId: string, type: string, key: string, params: Record<string, unknown>) => ({
+    const baseDoc = (userId: string, type: string, titleKey: string, bodyKey: string, params: Record<string, unknown>) => ({
       userId,
       type,
-      title: t(`screenplay.notifications.${key}.title`, params),
-      body: t(`screenplay.notifications.${key}.body`, params),
-      message: t(`screenplay.notifications.${key}.body`, params),
-      titleKey: `screenplay.notifications.${key}.title`,
-      bodyKey: `screenplay.notifications.${key}.body`,
+      title: t(titleKey, params),
+      body: t(bodyKey, params),
+      message: t(bodyKey, params),
+      titleKey,
+      bodyKey,
       i18nParams: params,
       isRead: false,
       read: false,
@@ -1821,11 +1825,15 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       if (nextStatus === 'approved' || nextStatus === 'changes_requested') {
         if (screenplayUploadedBy && screenplayUploadedBy !== currentUser.uid) {
           const key = nextStatus === 'approved' ? 'reviewApproved' : 'reviewChangesRequested';
+          const trimmedNote = note.trim();
+          const useNoteVariant = nextStatus === 'changes_requested' && trimmedNote.length > 0;
+          const bodyKeyName = useNoteVariant ? 'bodyWithNote' : 'body';
           await addDoc(collection(db, 'notifications'), baseDoc(
             screenplayUploadedBy,
             `review_${nextStatus}`,
-            key,
-            { reviewer: actorName, screenplay: screenplayName }
+            `screenplay.notifications.${key}.title`,
+            `screenplay.notifications.${key}.${bodyKeyName}`,
+            { reviewer: actorName, screenplay: screenplayName, note: trimmedNote }
           ));
         }
       } else if (nextStatus === 'submitted') {
@@ -1839,7 +1847,8 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         await Promise.all([...supervisorIds].map(uid => addDoc(collection(db, 'notifications'), baseDoc(
           uid,
           'review_submitted',
-          'reviewSubmitted',
+          'screenplay.notifications.reviewSubmitted.title',
+          'screenplay.notifications.reviewSubmitted.body',
           { author: actorName, screenplay: screenplayName }
         ))));
       }
@@ -1848,7 +1857,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     }
   };
 
-  const handleReviewStatusChange = async (nextStatus: ScreenplayReviewStatus) => {
+  const handleReviewStatusChange = async (nextStatus: ScreenplayReviewStatus, note: string = '') => {
     if (!currentUser) {
       toast.error(t('collaboration.reviewStatus.toasts.signIn'));
       return;
@@ -1862,16 +1871,22 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       return;
     }
 
+    // Keep the note only for changes_requested; every other transition clears it.
+    const trimmedNote = nextStatus === 'changes_requested' ? note.trim().slice(0, 1000) : '';
+
     setUpdatingReviewStatus(true);
     try {
       await updateDoc(doc(db, 'screenplays', screenplay.id), {
         reviewStatus: nextStatus,
         reviewStatusUpdatedAt: serverTimestamp(),
         reviewStatusUpdatedBy: currentUser.uid,
-        reviewStatusNote: '',
+        reviewStatusNote: trimmedNote,
         lastModified: serverTimestamp()
       });
       setReviewStatus(nextStatus);
+      setReviewStatusNote(trimmedNote);
+      setRequestChangesOpen(false);
+      setRequestChangesDraft('');
       if (screenplayWorkspaceId) {
         logWorkspaceActivity({
           workspaceId: screenplayWorkspaceId,
@@ -1883,7 +1898,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         });
       }
       // Notify the relevant party (best-effort — never blocks the status change).
-      notifyReviewStatusChange(nextStatus);
+      notifyReviewStatusChange(nextStatus, trimmedNote);
       toast.success(t(`collaboration.reviewStatus.toasts.${nextStatus}`));
     } catch (err) {
       console.error('Failed to update review status:', err);
@@ -2322,6 +2337,25 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                   <p style={{ margin: '8px 0 0', color: '#475569', fontSize: '0.85rem', lineHeight: 1.4 }}>
                     {t(`collaboration.reviewStatus.descriptions.${reviewStatus}`)}
                   </p>
+                  {reviewStatus === 'changes_requested' && reviewStatusNote.trim().length > 0 && (
+                    <div
+                      style={{
+                        marginTop: 8,
+                        padding: '8px 10px',
+                        background: '#fff7ed',
+                        border: '1px solid #fdba74',
+                        borderRadius: 6,
+                        fontSize: '0.85rem',
+                        color: '#7c2d12',
+                        whiteSpace: 'pre-wrap'
+                      }}
+                    >
+                      <div style={{ fontWeight: 700, fontSize: '0.72rem', textTransform: 'uppercase', marginBottom: 2, color: '#9a3412' }}>
+                        {t('collaboration.reviewStatus.noteLabel')}
+                      </div>
+                      {reviewStatusNote}
+                    </div>
+                  )}
                   {(canUpdateReviewAsCreator || canUpdateReviewAsReviewer) && (
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
                       {canUpdateReviewAsCreator && (reviewStatus === 'draft' || reviewStatus === 'changes_requested') && (
@@ -2341,7 +2375,10 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                             type="button"
                             className="btn-secondary"
                             disabled={updatingReviewStatus}
-                            onClick={() => handleReviewStatusChange('changes_requested')}
+                            onClick={() => {
+                              setRequestChangesOpen(prev => !prev);
+                              setRequestChangesDraft('');
+                            }}
                             style={{ padding: '0.35rem 0.75rem', fontSize: '0.82rem' }}
                           >
                             {t('collaboration.reviewStatus.actions.requestChanges')}
@@ -2368,6 +2405,55 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                           {t('collaboration.reviewStatus.actions.returnToDraft')}
                         </button>
                       )}
+                    </div>
+                  )}
+                  {canUpdateReviewAsReviewer && reviewStatus === 'submitted' && requestChangesOpen && (
+                    <div style={{ marginTop: 10, padding: 10, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 6 }}>
+                      <label
+                        htmlFor="review-changes-note"
+                        style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', marginBottom: 4 }}
+                      >
+                        {t('collaboration.reviewStatus.notePromptLabel')}
+                      </label>
+                      <textarea
+                        id="review-changes-note"
+                        value={requestChangesDraft}
+                        onChange={e => setRequestChangesDraft(e.target.value.slice(0, 1000))}
+                        placeholder={t('collaboration.reviewStatus.notePlaceholder')}
+                        rows={3}
+                        style={{
+                          width: '100%',
+                          padding: 8,
+                          border: '1px solid #cbd5e1',
+                          borderRadius: 4,
+                          fontSize: '0.85rem',
+                          fontFamily: 'inherit',
+                          resize: 'vertical'
+                        }}
+                      />
+                      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          disabled={updatingReviewStatus}
+                          onClick={() => {
+                            setRequestChangesOpen(false);
+                            setRequestChangesDraft('');
+                          }}
+                          style={{ padding: '0.3rem 0.7rem', fontSize: '0.8rem' }}
+                        >
+                          {t('collaboration.reviewStatus.cancel')}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-primary"
+                          disabled={updatingReviewStatus}
+                          onClick={() => handleReviewStatusChange('changes_requested', requestChangesDraft)}
+                          style={{ padding: '0.3rem 0.7rem', fontSize: '0.8rem' }}
+                        >
+                          {t('collaboration.reviewStatus.actions.sendChangesRequested')}
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>

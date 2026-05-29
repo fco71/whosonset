@@ -808,9 +808,14 @@
       "actions": {
         "submit": "Submit for review",
         "requestChanges": "Request changes",
+        "sendChangesRequested": "Send",
         "approve": "Approve",
         "returnToDraft": "Return to draft"
       },
+      "cancel": "Cancel",
+      "noteLabel": "Reviewer note",
+      "notePromptLabel": "Note to the writer (optional)",
+      "notePlaceholder": "Briefly explain what needs to change…",
       "toasts": {
         "draft": "Screenplay returned to draft.",
         "submitted": "Screenplay submitted for review.",
@@ -1306,7 +1311,8 @@
       },
       "reviewChangesRequested": {
         "title": "{{reviewer}} requested changes on {{screenplay}}",
-        "body": "Open it to see the review notes."
+        "body": "Open it to see the review notes.",
+        "bodyWithNote": "{{note}}"
       },
       "reviewApproved": {
         "title": "{{reviewer}} approved {{screenplay}}",

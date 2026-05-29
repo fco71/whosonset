@@ -773,9 +773,14 @@
       "actions": {
         "submit": "Enviar para revisión",
         "requestChanges": "Solicitar cambios",
+        "sendChangesRequested": "Enviar",
         "approve": "Aprobar",
         "returnToDraft": "Volver a borrador"
       },
+      "cancel": "Cancelar",
+      "noteLabel": "Nota del revisor",
+      "notePromptLabel": "Nota para el autor (opcional)",
+      "notePlaceholder": "Explica brevemente qué necesita cambiar…",
       "toasts": {
         "draft": "Guion devuelto a borrador.",
         "submitted": "Guion enviado para revisión.",
@@ -1271,7 +1276,8 @@
       },
       "reviewChangesRequested": {
         "title": "{{reviewer}} solicitó cambios en {{screenplay}}",
-        "body": "Ábrelo para ver las notas de revisión."
+        "body": "Ábrelo para ver las notas de revisión.",
+        "bodyWithNote": "{{note}}"
       },
       "reviewApproved": {
         "title": "{{reviewer}} aprobó {{screenplay}}",
