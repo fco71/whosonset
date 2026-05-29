@@ -83,6 +83,12 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ currentUserId, clas
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   const handleMarkAsRead = async (notificationId: string) => {
+    // Optimistic local update so the badge / blue dot clears instantly,
+    // without waiting for the Firestore snapshot round-trip. If the write
+    // fails, the snapshot will revert us on its next emission.
+    setNotifications(prev => prev.map(n => (
+      n.id === notificationId ? { ...n, isRead: true } : n
+    )));
     try {
       setLoading(true);
       await SocialService.markNotificationAsRead(notificationId);
@@ -94,6 +100,8 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ currentUserId, clas
   };
 
   const handleMarkAllAsRead = async () => {
+    // Optimistic clear of every unread row.
+    setNotifications(prev => prev.map(n => (n.isRead ? n : { ...n, isRead: true })));
     try {
       setLoading(true);
       const unreadNotifications = notifications.filter(n => !n.isRead);

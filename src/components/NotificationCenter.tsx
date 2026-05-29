@@ -232,12 +232,14 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
       const functions = getFunctions(app, 'us-central1');
       const respondToWorkspaceInvitation = httpsCallable(functions, 'respondToWorkspaceInvitation');
       await respondToWorkspaceInvitation({ invitationId, response });
+      // Single write — status + read flags in one updateDoc. The previous
+      // followup `await markAsRead(...)` was a redundant second write to the
+      // same fields and could race the optimistic state in useNotifications.
       await updateDoc(doc(db, 'notifications', notification.id), {
         status: response === 'accept' ? 'accepted' : 'declined',
         isRead: true,
         read: true,
       });
-      await markAsRead(notification.id);
       toast.success(response === 'accept' ? 'Workspace invitation accepted.' : 'Workspace invitation declined.');
     } catch (error) {
       console.error('[NotificationCenter] Failed to respond to workspace invitation:', error);
