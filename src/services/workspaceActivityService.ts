@@ -14,7 +14,9 @@ export type WorkspaceActivityVerb =
   | 'member_added'
   | 'member_self_promoted'
   | 'annotation_added'
-  | 'tag_added';
+  | 'tag_added'
+  | 'supervisor_note_addressed'
+  | 'supervisor_note_reopened';
 
 export interface WorkspaceActivityInput {
   workspaceId: string | null | undefined;

@@ -1329,6 +1329,23 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         ? (nextResolved ? 'annotationResolved' : 'annotationReopened')
         : (nextResolved ? 'tagResolved' : 'tagReopened');
       toast.success(t(`screenplay.toasts.${toastKey}`));
+      // Log to the workspace activity feed so the teacher's Recent activity
+      // pane reflects student progress. Only meaningful when the note is from
+      // a supervisor and the actor is not (i.e. it's a real "addressed" event).
+      if (
+        screenplayWorkspaceId && currentUser &&
+        (element as { supervisorAtAuthorTime?: boolean }).supervisorAtAuthorTime === true &&
+        (element as { userId?: string }).userId !== currentUser.uid
+      ) {
+        logWorkspaceActivity({
+          workspaceId: screenplayWorkspaceId,
+          actorUid: currentUser.uid,
+          actorName: currentUser.displayName,
+          verb: nextResolved ? 'supervisor_note_addressed' : 'supervisor_note_reopened',
+          targetId: screenplay.id,
+          targetName: screenplay.name
+        });
+      }
     } catch (error) {
       console.error(`Error toggling ${type}:`, error);
       toast.error(t('screenplay.toasts.updateFailed'));

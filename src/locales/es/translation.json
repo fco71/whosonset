@@ -857,7 +857,9 @@
         "member_added": "agregó a {{detail}}",
         "member_self_promoted": "ahora supervisa este espacio de trabajo",
         "annotation_added": "comentó en {{target}}",
-        "tag_added": "etiquetó {{target}}"
+        "tag_added": "etiquetó {{target}}",
+        "supervisor_note_addressed": "atendió una nota del profesor en {{target}}",
+        "supervisor_note_reopened": "reabrió una nota del profesor en {{target}}"
       }
     },
     "personalNoWorkspace": "Personal / sin espacio de trabajo",

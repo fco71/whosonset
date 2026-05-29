@@ -892,7 +892,9 @@
         "member_added": "added {{detail}}",
         "member_self_promoted": "is now supervising this workspace",
         "annotation_added": "commented on {{target}}",
-        "tag_added": "tagged {{target}}"
+        "tag_added": "tagged {{target}}",
+        "supervisor_note_addressed": "addressed a teacher note on {{target}}",
+        "supervisor_note_reopened": "reopened a teacher note on {{target}}"
       }
     },
     "personalNoWorkspace": "Personal / no workspace",
