@@ -1,6 +1,3 @@
-#!/bin/sh
-. "$(dirname "$0")/_/husky.sh"
-
 # Pre-commit hook to check for potential secrets
 echo "🔍 Checking for potential secrets..."
 
