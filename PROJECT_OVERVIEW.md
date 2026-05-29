@@ -133,6 +133,7 @@ Manual QA should cover:
 - The collaboration SCSS, especially `ScreenplayViewer.scss`, is too large and contains duplicated legacy rules.
 - The main Webpack entrypoint is over the recommended 1 MiB limit.
 - Cached alternate Firebase CLI accounts should be removed from developer machines to avoid accidental deploy confusion.
+- `.husky/pre-commit` uses the deprecated husky v9 bootstrap lines that will hard-fail at husky v10 (warning prints on every commit). ~2-line fix pending.
 - ~~Notifications render in the SENDER's locale.~~ **FIXED 2026-05-29** — see "Fixed in latest pass" below.
 - **Invitation Accept can fail with "Could not respond to invitation".** Wiring is correct; the usual cause is the `respondToWorkspaceInvitation` Cloud Function not being deployed (`firebase deploy --only functions:respondToWorkspaceInvitation`). The client now surfaces the real callable error in the toast so the cause is visible.
 
@@ -148,3 +149,26 @@ Manual QA should cover:
 
 - **Only the workspace/project creator can delete.** Workspace archive/soft-delete/permanent-delete all guard on `isWorkspaceCreator` in the UI and `ownerId == auth.uid` in firestore.rules; `projects` delete rule requires `createdBy == auth.uid`. A non-owner member cannot delete the workspace at either layer. (Screenplays: a member may delete only their OWN upload; deleting others' requires being the workspace creator. Open question for Francisco: restrict screenplay deletion to creator-only entirely?)
 - **Review status** (`draft`/`submitted`/`changes_requested`/`approved`): new screenplays default to `draft`; `approved` only results from a supervisor pressing Approve. Two screenplays differing = one was approved during testing, not a bug.
+
+## Shipped earlier this collaboration arc (recap — were dropped in a doc rewrite)
+
+These are live in code (committed); listed here so the doc stays complete:
+
+- **G5 workspace activity feed** — `workspaceActivity` collection (rules + composite index + guardrail test), `logWorkspaceActivity` service, emits on upload/create/delete/member-add/self-promote/annotation/tag, live "Recent activity" panel per selected workspace.
+- **Account-deletion cascade** — callable `cleanupUserWorkspaces` ([functions/src/cleanupUserWorkspaces.ts](functions/src/cleanupUserWorkspaces.ts)); AuthContext calls it on delete (client soft-delete fallback). Replaced the old `collection('workspaces') where createdBy` query that broke under `list:false`.
+- **7-day recovery window + permanent delete during the window** — `WORKSPACE_DELETE_RECOVERY_DAYS = 7`; a deleted workspace card shows Restore + "Delete permanently" (rule allows owner to hard-delete a `status=='deleted'` workspace at any time, not only after expiry). Membership cleanup on permanent delete is by constructed id (the `workspaceMemberships` list rule blocks querying by workspaceId).
+- **PDF export page numbers** — exported Fountain PDFs stamp top-right "N." (page 1 unnumbered).
+
+### Maintenance scripts (admin, run with `gcloud auth application-default login`)
+
+- [scripts/backfill-workspace-memberships.cjs](scripts/backfill-workspace-memberships.cjs) — audit/backfill `workspaceMemberships` for workspaces created before the memberships migration. Dry-run by default; `--apply` to write.
+- [scripts/cleanup-workspaces.cjs](scripts/cleanup-workspaces.cjs) — list/delete workspaces (test-data cleanup). `--owner <uid>` filters; `--ids a,b [--apply]`; `--with-screenplays` cascades. Dry-run by default.
+
+## Deploy backlog (committed, NOT yet live)
+
+Hosting CI auto-deploys client code on push; rules/indexes/functions are manual.
+
+- `git push` → ships all client fixes (member search, invite/undefined-email, notification routing + recipient-locale rendering, supervisor toggle clarity, PDF page numbers, editor column, activity feed UI, 7-day delete UI).
+- `firebase deploy --only firestore:rules,firestore:indexes` → during-window permanent delete rule, `workspaceActivity` collection rule + index.
+- `firebase deploy --only functions` → `respondToWorkspaceInvitation` (Accept/Decline — currently failing if undeployed), `cleanupUserWorkspaces` (account-deletion cascade), and the localized accept/decline notifier.
+- One-time: run the membership backfill audit; optionally `firebase firestore:indexes > firestore.indexes.json` to capture the 5 live indexes the last deploy flagged.
