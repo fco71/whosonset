@@ -133,3 +133,10 @@ Manual QA should cover:
 - The collaboration SCSS, especially `ScreenplayViewer.scss`, is too large and contains duplicated legacy rules.
 - The main Webpack entrypoint is over the recommended 1 MiB limit.
 - Cached alternate Firebase CLI accounts should be removed from developer machines to avoid accidental deploy confusion.
+- **Notifications render in the SENDER's locale.** Notification title/body are localized with `t()` at write-time and stored as strings, so a recipient sees them in whatever language the sender's app was in (e.g. a Spanish student's invite shows Spanish to an English teacher). Planned fix: store `titleKey`/`bodyKey` + params on the notification and render with `t()` at read-time in NotificationCenter (recipient locale), falling back to the stored string. Cross-cutting across all notification write sites + the cleanup/invite/supervisor/accept notifications.
+- **Invitation Accept can fail with "Could not respond to invitation".** Wiring is correct; the usual cause is the `respondToWorkspaceInvitation` Cloud Function not being deployed (`firebase deploy --only functions:respondToWorkspaceInvitation`). The client now surfaces the real callable error in the toast so the cause is visible.
+
+## Fixed in latest pass (2026-05-28, later)
+
+- Surfaced the real callable error on invitation Accept/Decline (was a generic toast) — [NotificationCenter.tsx](src/components/NotificationCenter.tsx).
+- Hid the redundant "Act as supervisor" button when the user is already an owner-assigned supervisor (`member.role === 'supervisor'` but not self-elected). New `canToggleSupervisor` in [CollaborationHub.tsx](src/components/Collaboration/CollaborationHub.tsx): self-elected → "Step down"; assigned-supervisor → chip only, no toggle; plain-member teacher → "Act as supervisor". Clarifies the "You: Supervisor (assigned at invite)" vs "(self)" distinction.

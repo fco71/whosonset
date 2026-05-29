@@ -499,6 +499,17 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     return getWorkspaceMemberIds(workspace).includes(currentUser.uid);
   };
 
+  // Whether to show the self-elect toggle at all. Eligible (teacher member, not owner,
+  // active) AND either already self-elected (so they can step down) or NOT already an
+  // owner-assigned supervisor — we don't offer "Act as supervisor" to someone the creator
+  // already made a supervisor (their role is the owner's to change, not self-toggled).
+  const canToggleSupervisor = (workspace: CollaborationWorkspace): boolean => {
+    if (!canSelfElectSupervisor(workspace)) return false;
+    if (isSelfElectedSupervisor(workspace)) return true;
+    const currentMember = workspace.members?.find(member => member.userId === currentUser?.uid);
+    return currentMember?.role !== 'supervisor';
+  };
+
   const toggleSelfElectedSupervisor = async (workspace: CollaborationWorkspace) => {
     if (!currentUser || !canSelfElectSupervisor(workspace) || toggleSupervisorPending) return;
     const enabling = !isSelfElectedSupervisor(workspace);
@@ -1803,7 +1814,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
               </div>
             </div>
 
-            {(getEffectiveRole(workspace) || canSelfElectSupervisor(workspace)) && (
+            {(getEffectiveRole(workspace) || canToggleSupervisor(workspace)) && (
               <div className="workspace-self-role" style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '4px 0 12px', flexWrap: 'wrap' }}>
                 {getEffectiveRole(workspace) && (
                   <span
@@ -1825,7 +1836,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                     {isSelfElectedSupervisor(workspace) ? ` ${t('collaboration.supervisor.selfTag')}` : ''}
                   </span>
                 )}
-                {canSelfElectSupervisor(workspace) && (
+                {canToggleSupervisor(workspace) && (
                   <button
                     type="button"
                     className="btn-text"

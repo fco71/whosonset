@@ -232,7 +232,12 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
       toast.success(response === 'accept' ? 'Workspace invitation accepted.' : 'Workspace invitation declined.');
     } catch (error) {
       console.error('[NotificationCenter] Failed to respond to workspace invitation:', error);
-      toast.error('Could not update the workspace invitation.');
+      // Surface the real cause. Firebase callable errors carry a code/message
+      // ('functions/not-found' or 'internal' usually means the function isn't deployed;
+      // HttpsError messages like "This invitation has already been handled" are actionable).
+      const detail = (error as { message?: string; code?: string } | null)?.message
+        || (error as { code?: string } | null)?.code;
+      toast.error(detail ? `Could not respond to invitation: ${detail}` : 'Could not update the workspace invitation.');
     } finally {
       setRespondingInvitationId(null);
     }
