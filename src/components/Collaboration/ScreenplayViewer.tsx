@@ -903,7 +903,11 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         timestamp: serverTimestamp(),
         senderId: currentUser.uid,
         senderName: authorName,
-        relatedId: screenplay.id,
+        // relatedId is the annotation/tag doc id (NOT the screenplay id) — this
+        // lines up with mention notifications so a single query can find every
+        // notification tied to a specific note when the student addresses it.
+        // The screenplay id stays in metadata for the click handler.
+        relatedId: params.refId,
         link: '/collaboration',
         metadata: {
           screenplayId: screenplay.id,
@@ -1475,11 +1479,10 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       // Log to the workspace activity feed so the teacher's Recent activity
       // pane reflects student progress. Only meaningful when the note is from
       // a supervisor and the actor is not (i.e. it's a real "addressed" event).
-      if (
-        screenplayWorkspaceId && currentUser &&
+      const isAddressingSupervisorNote =
         (element as { supervisorAtAuthorTime?: boolean }).supervisorAtAuthorTime === true &&
-        (element as { userId?: string }).userId !== currentUser.uid
-      ) {
+        (element as { userId?: string }).userId !== currentUser?.uid;
+      if (screenplayWorkspaceId && currentUser && isAddressingSupervisorNote) {
         logWorkspaceActivity({
           workspaceId: screenplayWorkspaceId,
           actorUid: currentUser.uid,
@@ -1488,6 +1491,12 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
           targetId: screenplay.id,
           targetName: screenplay.name
         });
+      }
+      // When the student MARKS a supervisor note addressed, clear their
+      // related in-app notifications. Reopening doesn't restore them
+      // (would re-mark-unread, which is more noise than signal).
+      if (isAddressingSupervisorNote && nextResolved) {
+        void markRelatedNotificationsRead([elementId]);
       }
     } catch (error) {
       console.error(`Error toggling ${type}:`, error);
@@ -1498,6 +1507,56 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       } else {
         setTags(prev => prev.map(t => t.id === elementId ? { ...t, resolved: !nextResolved } : t));
       }
+    }
+  };
+
+  // When the student addresses a supervisor note (single or bulk), the
+  // corresponding in-app notification(s) should clear from their bell —
+  // otherwise they'd see "Teacher commented on Scene 2" sitting unread
+  // even after they've resolved it.
+  //
+  // Single query strategy works because:
+  //   - supervisor_annotation / supervisor_tag notifications now store
+  //     relatedId = annotation/tag id (aligned with mention writes above).
+  //   - The top-level /notifications rule allows the owner to update.
+  //
+  // Best-effort: failures are console.error'd so a network blip never
+  // blocks the student from continuing their revision pass.
+  const markRelatedNotificationsRead = async (relatedIds: string[]) => {
+    if (!currentUser || relatedIds.length === 0) return;
+    const targetSet = new Set(relatedIds);
+    // Single userId-only query + client-side filter intentionally — adding
+    // an (userId, relatedId) composite index for this rare write path isn't
+    // worth a separate `firebase deploy --only firestore:indexes`. Student
+    // inboxes are bounded; teachers (who'd carry more notifications) don't
+    // hit this code path since they're the supervisors, not addressers.
+    try {
+      const snap = await getDocs(query(
+        collection(db, 'notifications'),
+        where('userId', '==', currentUser.uid)
+      ));
+      if (snap.empty) return;
+      const batch = writeBatch(db);
+      let touched = 0;
+      snap.docs.forEach(d => {
+        const data = d.data() as { isRead?: boolean; type?: string; relatedId?: string };
+        if (!data.relatedId || !targetSet.has(data.relatedId)) return;
+        // Only sweep note-typed notifications so an unrelated doc with a
+        // matching relatedId (unlikely but possible legacy data) isn't
+        // accidentally swept.
+        const isNoteType = typeof data.type === 'string' && (
+          data.type === 'supervisor_annotation' ||
+          data.type === 'supervisor_tag' ||
+          data.type === 'mention_annotation' ||
+          data.type === 'mention_tag'
+        );
+        if (data.isRead || !isNoteType) return;
+        batch.update(d.ref, { isRead: true, read: true });
+        touched += 1;
+      });
+      if (touched > 0) await batch.commit();
+    } catch (err) {
+      console.error('Failed to auto-mark related notifications read:', err);
     }
   };
 
@@ -1538,6 +1597,8 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         await batch.commit();
       }
       toast.success(t('screenplay.bulkResolve.success', { count: total }));
+      // Clear the related in-app notifications in one chunked sweep.
+      void markRelatedNotificationsRead([...annIds, ...tagIds]);
       // One activity event for the whole batch, not one per note.
       if (screenplayWorkspaceId && currentUser) {
         logWorkspaceActivity({
