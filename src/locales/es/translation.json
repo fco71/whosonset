@@ -1210,6 +1210,8 @@
       "delete": "Eliminar",
       "resolve": "Resolver",
       "reopen": "Reabrir",
+      "markAddressed": "Marcar como atendido",
+      "reopenAddressed": "Reabrir nota",
       "reply": "Responder"
     },
     "popup": {

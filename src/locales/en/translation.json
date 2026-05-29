@@ -1245,6 +1245,8 @@
       "delete": "Delete",
       "resolve": "Resolve",
       "reopen": "Reopen",
+      "markAddressed": "Mark as addressed",
+      "reopenAddressed": "Reopen note",
       "reply": "Reply"
     },
     "popup": {

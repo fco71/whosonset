@@ -2843,21 +2843,33 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                             >
                               📍 {t('screenplay.actions.goTo')}
                             </button>
-                            {!annotation.resolved ? (
-                              <button
-                                onClick={() => toggleElementResolved(annotation.id, 'annotation')}
-                                className="action-btn"
-                              >
-                                ✅ {t('screenplay.actions.resolve')}
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => toggleElementResolved(annotation.id, 'annotation')}
-                                className="action-btn"
-                              >
-                                🔄 {t('screenplay.actions.reopen')}
-                              </button>
-                            )}
+                            {(() => {
+                              // When a non-supervisor is acting on a supervisor's annotation,
+                              // the verb shifts from "resolve" to "mark as addressed" — the
+                              // student is acknowledging a teacher note, not closing their own.
+                              const isAddressingSupervisor =
+                                annotation.supervisorAtAuthorTime === true &&
+                                annotation.userId !== currentUser?.uid;
+                              return !annotation.resolved ? (
+                                <button
+                                  onClick={() => toggleElementResolved(annotation.id, 'annotation')}
+                                  className="action-btn"
+                                >
+                                  ✅ {isAddressingSupervisor
+                                    ? t('screenplay.actions.markAddressed')
+                                    : t('screenplay.actions.resolve')}
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => toggleElementResolved(annotation.id, 'annotation')}
+                                  className="action-btn"
+                                >
+                                  🔄 {isAddressingSupervisor
+                                    ? t('screenplay.actions.reopenAddressed')
+                                    : t('screenplay.actions.reopen')}
+                                </button>
+                              );
+                            })()}
                             <button 
                               onClick={(e) => { e.stopPropagation(); deleteElement(annotation.id, 'annotation'); }}
                               className="action-btn delete"
