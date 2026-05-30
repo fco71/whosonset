@@ -1266,6 +1266,11 @@
       "label": "supervisor",
       "tooltip": "Comentario realizado como supervisor"
     },
+    "history": {
+      "title": "Historial",
+      "someone": "Alguien",
+      "thisScreenplay": "este guion"
+    },
     "fountainNote": {
       "placeholder": "Agrega una nota sobre este guion… (Ctrl/⌘+Enter)",
       "add": "Agregar nota",

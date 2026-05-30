@@ -1301,6 +1301,11 @@
       "label": "supervisor",
       "tooltip": "Comment left while acting as supervisor"
     },
+    "history": {
+      "title": "History",
+      "someone": "Someone",
+      "thisScreenplay": "this screenplay"
+    },
     "fountainNote": {
       "placeholder": "Add a note on this screenplay… (Ctrl/⌘+Enter)",
       "add": "Add note",

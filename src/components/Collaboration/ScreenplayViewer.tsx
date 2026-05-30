@@ -154,6 +154,15 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   const [screenplayUploadedBy, setScreenplayUploadedBy] = useState<string | null>(null);
   const [reviewStatus, setReviewStatus] = useState<ScreenplayReviewStatus>(screenplay.reviewStatus || 'draft');
   const [reviewStatusNote, setReviewStatusNote] = useState<string>('');
+  // L — per-screenplay revision history (activity events scoped to this screenplay).
+  const [historyEvents, setHistoryEvents] = useState<Array<{
+    id: string;
+    actorName?: string | null;
+    verb: string;
+    detail?: string | null;
+    createdAt?: unknown;
+  }>>([]);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [canUpdateReviewAsCreator, setCanUpdateReviewAsCreator] = useState(false);
   const [canUpdateReviewAsReviewer, setCanUpdateReviewAsReviewer] = useState(false);
   const [updatingReviewStatus, setUpdatingReviewStatus] = useState(false);
@@ -662,6 +671,47 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
 
     return () => window.clearTimeout(timeoutId);
   }, [screenplay.url, isPdfDocument, useNativePdfFallback, numPages]);
+
+  // L — subscribe to this screenplay's activity events for the History panel.
+  // Queries by targetId only (single-field index, automatic — no composite
+  // index deploy needed) and sorts client-side, since per-screenplay event
+  // volume is small. Best-effort; an error just leaves History empty.
+  useEffect(() => {
+    if (!currentUser || !screenplay.id) {
+      setHistoryEvents([]);
+      return;
+    }
+    const historyQuery = query(
+      collection(db, 'workspaceActivity'),
+      where('targetId', '==', screenplay.id)
+    );
+    const unsubscribe = onSnapshot(
+      historyQuery,
+      snapshot => {
+        const rows = snapshot.docs.map(d => {
+          const data = d.data();
+          return {
+            id: d.id,
+            actorName: data.actorName ?? null,
+            verb: data.verb as string,
+            detail: data.detail ?? null,
+            createdAt: data.createdAt
+          };
+        });
+        rows.sort((a, b) => {
+          const at = toDate(a.createdAt)?.getTime() ?? 0;
+          const bt = toDate(b.createdAt)?.getTime() ?? 0;
+          return bt - at;
+        });
+        setHistoryEvents(rows);
+      },
+      err => {
+        console.error('Screenplay history subscription error:', err);
+        setHistoryEvents([]);
+      }
+    );
+    return () => unsubscribe();
+  }, [currentUser?.uid, screenplay.id]);
 
   const initializeSession = async () => {
     try {
@@ -2823,6 +2873,59 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                     </div>
                   )}
                 </div>
+
+                {/* L — Revision history (collapsible) */}
+                {historyEvents.length > 0 && (
+                  <div
+                    className="screenplay-history"
+                    style={{ margin: '0 0 12px', border: '1px solid #e2e8f0', borderRadius: 8, background: '#ffffff', overflow: 'hidden' }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setHistoryOpen(o => !o)}
+                      aria-expanded={historyOpen}
+                      style={{
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 8,
+                        padding: '10px 12px',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: '0.78rem',
+                        fontWeight: 700,
+                        color: '#475569',
+                        textTransform: 'uppercase'
+                      }}
+                    >
+                      <span>🕘 {t('screenplay.history.title')} ({historyEvents.length})</span>
+                      <span aria-hidden="true">{historyOpen ? '▾' : '▸'}</span>
+                    </button>
+                    {historyOpen && (
+                      <ul style={{ listStyle: 'none', margin: 0, padding: '0 12px 10px' }}>
+                        {historyEvents.map(ev => {
+                          const when = toDate(ev.createdAt);
+                          return (
+                            <li key={ev.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, padding: '5px 0', borderTop: '1px solid #f1f5f9', fontSize: '0.82rem' }}>
+                              <span style={{ color: '#334155', minWidth: 0 }}>
+                                <strong>{ev.actorName || t('screenplay.history.someone')}</strong>{' '}
+                                {t(`collaboration.activity.verbs.${ev.verb}`, {
+                                  target: screenplay.name || t('screenplay.history.thisScreenplay'),
+                                  detail: ev.detail || ''
+                                })}
+                              </span>
+                              <span style={{ color: '#94a3b8', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
+                                {when ? formatTimeAgo(when) : ''}
+                              </span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </div>
+                )}
 
                 <div className="panel-content">
                   {/* Active Users */}
