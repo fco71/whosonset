@@ -1326,6 +1326,8 @@
       "annotationReopened": "Annotation reopened.",
       "tagResolved": "Tag resolved.",
       "tagReopened": "Tag reopened.",
+      "replyAdded": "Reply added.",
+      "replyFailed": "Failed to add reply.",
       "updateFailed": "Failed to update."
     },
     "statusFilters": {

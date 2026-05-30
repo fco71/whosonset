@@ -74,6 +74,7 @@ interface Reply {
   userAvatar?: string;
   content: string;
   timestamp: Date | { seconds: number };
+  supervisorAtAuthorTime?: boolean;
 }
 
 interface Tag {
@@ -303,13 +304,17 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     if (!currentUser || !replyContent.trim()) return;
 
     try {
+      // Capture supervisor status at reply time so a teacher's reply can be
+      // distinguished from a peer's, same as annotations/tags.
+      const supervisorAtAuthorTime = await resolveSupervisorAtAuthorTime();
       const reply: Reply = {
         id: Date.now().toString(),
         userId: currentUser.uid,
         userName: currentUser.displayName || 'Anonymous',
         userAvatar: currentUser?.photoURL || undefined,
         content: replyContent.trim(),
-        timestamp: new Date()
+        timestamp: new Date(),
+        supervisorAtAuthorTime
       };
 
       // Update local state immediately for instant feedback
@@ -337,7 +342,8 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                     userName,
                     content,
                     timestamp,
-                    userAvatar: r.userAvatar || null
+                    userAvatar: r.userAvatar || null,
+                    supervisorAtAuthorTime: r.supervisorAtAuthorTime === true
                   };
                 })
             : [];
@@ -347,20 +353,20 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
             })
             .catch((error) => {
               console.error('[DEBUG] Error saving reply to Firestore:', error);
-              toast.error('Failed to save reply to server');
+              toast.error(t('screenplay.toasts.replyFailed'));
             });
         }
-        
+
         return updatedAnnotations;
       });
 
-      toast.success('Reply added successfully!');
+      toast.success(t('screenplay.toasts.replyAdded'));
       setNewReply(''); // Clear input after successful reply
       setReplyInput('');
       setReplyingTo(null);
     } catch (error) {
       console.error('Error adding reply:', error);
-      toast.error('Failed to add reply');
+      toast.error(t('screenplay.toasts.replyFailed'));
     }
   };
 
@@ -3186,7 +3192,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                           {annotation.replies && annotation.replies.length > 0 && (
                             <div className="replies-section compact">
                               {annotation.replies.map(reply => (
-                                <div key={reply.id} className="reply-item compact">
+                                <div key={reply.id} className={`reply-item compact ${reply.supervisorAtAuthorTime ? 'from-supervisor' : ''}`}>
                                   <div className="reply-header compact">
                                     {reply.userAvatar ? (
                                       <img src={reply.userAvatar} alt={reply.userName} className="reply-avatar compact" />
@@ -3194,6 +3200,22 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                                       <div className="avatar-placeholder compact">{reply.userName.charAt(0)}</div>
                                     )}
                                     <span className="reply-author compact">{reply.userName}</span>
+                                    {reply.supervisorAtAuthorTime && (
+                                      <span
+                                        title={t('screenplay.supervisorBadge.tooltip')}
+                                        style={{
+                                          marginLeft: 4,
+                                          padding: '0px 5px',
+                                          borderRadius: 999,
+                                          fontSize: '0.62rem',
+                                          fontWeight: 700,
+                                          background: '#fde68a',
+                                          color: '#92400e'
+                                        }}
+                                      >
+                                        🎓 {t('screenplay.supervisorBadge.label')}
+                                      </span>
+                                    )}
                                     <span className="reply-time compact">{formatTimeAgo(toDate(reply.timestamp))}</span>
                                   </div>
                                   <div className="reply-content compact">{reply.content}</div>
@@ -3237,7 +3259,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                                   className="reply-submit-btn compact"
                                   disabled={!replyInput.trim()}
                                 >
-                                  Reply
+                                  {t('screenplay.actions.reply')}
                                 </button>
                                 <button
                                   onClick={() => {
@@ -3246,7 +3268,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                                   }}
                                   className="reply-cancel-btn compact"
                                 >
-                                  Cancel
+                                  {t('screenplay.popup.cancel')}
                                 </button>
                               </div>
                             </div>

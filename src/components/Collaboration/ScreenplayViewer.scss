@@ -2182,6 +2182,16 @@
   background: #f0f4fa;
 }
 
+// Supervisor reply: amber stripe + tint, matching annotation/tag cards.
+// Placed after the :nth-child rules so it wins on equal specificity.
+.reply-item.compact.from-supervisor,
+.reply-item.compact.from-supervisor:nth-child(even),
+.reply-item.compact.from-supervisor:nth-child(odd) {
+  background: #fffbeb;
+  border-left: 3px solid #f59e0b;
+  padding-left: 13px;
+}
+
 .reply-header.compact {
   display: flex;
   align-items: center;

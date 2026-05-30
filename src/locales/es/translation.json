@@ -1291,6 +1291,8 @@
       "annotationReopened": "Anotación reabierta.",
       "tagResolved": "Etiqueta resuelta.",
       "tagReopened": "Etiqueta reabierta.",
+      "replyAdded": "Respuesta añadida.",
+      "replyFailed": "Error al añadir la respuesta.",
       "updateFailed": "Error al actualizar."
     },
     "statusFilters": {
