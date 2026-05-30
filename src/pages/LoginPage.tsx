@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { auth } from '../firebase';
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -21,14 +20,13 @@ const LoginPage: React.FC = () => {
       setError('');
       setLoading(true);
       await login(email, password);
-      
-      // Check if email is verified
-      const currentUser = auth.currentUser;
-      if (currentUser && !currentUser.emailVerified) {
-        navigate('/verify-email');
-      } else {
-        navigate(redirectPath, { replace: true });
-      }
+
+      // A successful sign-in always lands in the app. Email verification is a
+      // SIGNUP-flow concern (RegisterPage routes brand-new users to
+      // /verify-email). Returning users whose `emailVerified` flag is false —
+      // common for older accounts that predate verification — must NOT be shown
+      // the new-user "Account Created / we sent a link" screen on a normal login.
+      navigate(redirectPath, { replace: true });
     } catch (err: any) {
       console.error('Login error details:', err);
       if (err.code === 'auth/user-not-found') {
