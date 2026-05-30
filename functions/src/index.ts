@@ -134,6 +134,55 @@ db.settings({
   ignoreUndefinedProperties: true
 });
 
+// ---- Email anti-bombardment helpers --------------------------------------
+// Two guards keep transactional email from flooding a recipient (and from
+// blowing the Gmail SMTP free-tier daily cap during high-traffic moments like
+// a class assignment):
+//
+//   emailCategoryEnabled — honors the per-category opt-out the user docs
+//     already define under notificationPreferences.emailNotifications.
+//     (getUserData only nulls the address on the GLOBAL `general` flag, so
+//      per-category prefs like `chat` were previously ignored.)
+//
+//   emailCooldownActive — a per-key cooldown backed by a server-only
+//     `emailThrottle` collection (Admin SDK bypasses rules; no rules change
+//     needed). Collapses a burst — e.g. 20 chat messages in 2 minutes — into
+//     a single email, then stays quiet until the window elapses.
+
+type EmailCategory = 'general' | 'projects' | 'chat' | 'jobs';
+
+function emailCategoryEnabled(recipientData: any, category: EmailCategory): boolean {
+  const prefs = recipientData?.notificationPreferences?.emailNotifications;
+  // Unset → treated as opted-in (preserves prior behavior for users who never
+  // touched their notification settings). Only an explicit `false` opts out.
+  if (!prefs || typeof prefs !== 'object') return true;
+  return prefs[category] !== false;
+}
+
+/**
+ * Returns true if an email for `key` was sent within `cooldownMs` (i.e. the
+ * caller should SKIP sending). Otherwise records "now" and returns false.
+ * Best-effort: on any error it returns false so email still goes out.
+ */
+async function emailCooldownActive(key: string, cooldownMs: number): Promise<boolean> {
+  try {
+    const ref = db.collection('emailThrottle').doc(key);
+    const snap = await ref.get();
+    const now = Date.now();
+    if (snap.exists) {
+      const lastMs = (snap.data()?.lastSentAt?.toMillis?.() as number | undefined) ?? 0;
+      if (now - lastMs < cooldownMs) return true;
+    }
+    await ref.set({ lastSentAt: admin.firestore.FieldValue.serverTimestamp(), key }, { merge: true });
+    return false;
+  } catch (err) {
+    console.error('[emailCooldown] check failed (sending anyway):', err);
+    return false;
+  }
+}
+
+const THIRTY_MINUTES_MS = 30 * 60 * 1000;
+
 function escapeXml(input: string): string {
   return input
     .replace(/&/g, "&amp;")
@@ -1745,6 +1794,20 @@ export const notifyNewMessage = onDocumentCreated({
       return;
     }
     const recipientEmail = recipientData.email;
+
+    // Respect the recipient's per-category chat email preference.
+    if (!emailCategoryEnabled(recipientData, 'chat')) {
+      console.log(`[notifyNewMessage] Chat email disabled for recipient: ${receiverId}`);
+      return;
+    }
+
+    // Throttle: at most one chat email per conversation per recipient every
+    // 30 minutes. A back-and-forth burst collapses into a single nudge; the
+    // in-app notification still fires for every message.
+    if (await emailCooldownActive(`msg_${receiverId}_${conversationId}`, THIRTY_MINUTES_MS)) {
+      console.log(`[notifyNewMessage] Within cooldown, skipping email for: ${receiverId}/${conversationId}`);
+      return;
+    }
 
     // Get sender's data using helper function
     const senderData = await getUserData(senderId);
