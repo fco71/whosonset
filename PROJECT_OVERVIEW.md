@@ -131,6 +131,19 @@ Recommendation checks reviewed:
 6. Plan a separate `firebase-functions` package upgrade; deploy logs warn the current package is outdated and may have breaking changes when upgraded.
 7. Reduce long-term maintenance risk in `ScreenplayViewer.scss` and the large collaboration components after the assignment-critical flow is stable.
 
+## Security Review (2026-05-31)
+
+Holistic read of `firestore.rules` (832 lines) + `storage.rules` (104). Good baseline: both have a default-deny `if false` catch-all; reference data (countries/cities/jobDepartments/jobTitles) is read-only; the collaboration surface (workspaces, screenplays, annotations, tags, workspaceActivity, memberships, invitations) is properly scoped by ownership/membership.
+
+Findings, by priority — **none fixed inline** (tightening needs schema work + careful testing on a live DB; do NOT change without a focused, gated session):
+
+1. **TOP — over-broad project-management collections.** `tasks` (`if request.auth != null`) and `projectCrew, projectBudgets, projectTimelines, projectDocuments, projectMilestones, projectBudget, collaborativeTasks, breakdownElements` (all `read, write: if signedIn()`) let ANY authenticated user read/write/**delete** every doc in those collections. The rules file flags this as deliberate interim state ("still need project-member-level schema work"). Integrity risk is the real concern given the irrecoverable-data posture (a buggy/malicious client could wipe another project's budget/tasks). Fix requires a `projectId`/member field on the docs + membership checks in rules. `collaborativeTasks` is reachable from the Collaboration Tasks tab, so it's live attack surface for students. Schedule a focused hardening session.
+2. **Medium — broad reads of personal data.** `users/{userId}` is readable by any authenticated user (comment: "messaging compatibility"); `crewProfiles` is `read: if true` (fully public, including `contactInfo` email/phone, even for unpublished profiles). Likely intentional for a public directory, but worth a conscious decision on whether email/phone should be world-readable.
+3. **Low–medium — client-written notifications.** Top-level `notifications` `create` only requires `signedIn() && userId is string`, so any user can create a notification for any other user with arbitrary title/body/link — a spam/phishing vector. Hardening = move notification creation server-side (Cloud Functions).
+4. **Low — Storage `signedIn()` read scope.** `chat-uploads/voice-messages/chat-images/chat-audio` and `project-documents` allow read by any authenticated user who has the (unguessable, token-bearing) path, not strictly conversation/project members. Common Firebase tradeoff; acceptable with unguessable paths.
+
+Backup posture verified (read-only): PITR ENABLED, delete protection ENABLED, weekly Sunday backup schedule (~98-day retention), and 3 READY backups present (2026-05-17/24/31). **Not yet verified: an actual restore drill** — backups that have never been restored are unproven. Recommend a one-time restore into a throwaway database.
+
 ## Known Current Gaps
 
 - Login/Register/Verify-Email pages are now localized (en+es) via the `auth.*` namespace.
