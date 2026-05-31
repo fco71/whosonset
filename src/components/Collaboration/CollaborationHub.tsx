@@ -1538,22 +1538,23 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         annSnap.docs.forEach(d => allAnnotations.push(d.data() as RawNote));
         tagSnap.docs.forEach(d => allTags.push(d.data() as RawNote));
       }
-      // 2. Resolve student names: fetch crewProfile for each unique uploadedBy uid.
+      // 2. Resolve student names by crewProfile DOCUMENT ID (doc id == uid).
+      // crewProfiles created at signup omit the `uid` field on purpose, so a
+      // where('uid','in',...) query misses them and the Student column falls
+      // back to "Crew Member <last4>". A doc-id get is robust either way.
       const uploaderUids = Array.from(new Set(sectionScreenplays.map(s => s.uploadedBy).filter((u): u is string => Boolean(u))));
       const uidToName = new Map<string, string>();
-      const crewProfilesRef = collection(db, 'crewProfiles');
-      for (let i = 0; i < uploaderUids.length; i += 10) {
-        const chunk = uploaderUids.slice(i, i + 10);
+      await Promise.all(uploaderUids.map(async uid => {
         try {
-          const snap = await getDocs(query(crewProfilesRef, where('uid', 'in', chunk)));
-          snap.docs.forEach(d => {
-            const data: any = d.data();
-            uidToName.set(d.id, data.name || data.displayName || `Crew Member ${d.id.slice(-4)}`);
-          });
+          const snap = await getDoc(doc(db, 'crewProfiles', uid));
+          if (snap.exists()) {
+            const data: any = snap.data();
+            uidToName.set(uid, data.name || data.displayName || `Crew Member ${uid.slice(-4)}`);
+          }
         } catch {
-          // Ignore — fallback name handles missing profiles.
+          // Ignore — fallback name handles missing/unreadable profiles.
         }
-      }
+      }));
       // 3. Build rows. One per note, with Student + Screenplay columns prepended.
       const escapeCsv = (v: unknown): string => `"${(v === null || v === undefined ? '' : String(v)).replace(/"/g, '""')}"`;
       const headers = [
