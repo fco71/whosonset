@@ -73,6 +73,7 @@ Verified on 2026-05-31:
 - GitHub Actions run `26718637139` completed successfully for commit `de372e6a` and deployed production Hosting.
 - GitHub Actions run `26718698162` completed successfully for doc-only commit `93eabe34` and deployed production Hosting.
 - GitHub Actions run `26718760393` completed successfully for doc-only commit `8628cb8b` and deployed production Hosting.
+- GitHub Actions run `26719101266` completed successfully for commit `4a2c9b3a`; it deployed production Hosting with no Node.js 20 deprecation annotation and no checkout/submodule cleanup warning.
 - Firestore rules were also deployed directly with `firebase deploy --project my-film-jobs --only firestore:rules`.
 - Live `https://myfilmjobs.com/` references extracted CSS (`main.30bb8bb6.css` in the current live app shell at verification time) and split JS assets.
 - Live extracted CSS asset returns HTTP 200.
