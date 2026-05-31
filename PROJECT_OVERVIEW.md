@@ -68,8 +68,10 @@ Current guardrails:
 Verified on 2026-05-31:
 
 - `firebase login:list` active account: `iam@myfilmjobs.com`.
-- Latest pushed commit on `main`: `de372e6a docs: bump verified test count to 58 (password + notification unit tests)`.
+- For the absolute latest push/deploy status, run `git status -sb` and `gh run list --branch main --limit 3`.
+- Most recent product/test status commit verified in this review: `de372e6a docs: bump verified test count to 58 (password + notification unit tests)`.
 - GitHub Actions run `26718637139` completed successfully for commit `de372e6a` and deployed production Hosting.
+- GitHub Actions run `26718698162` completed successfully for doc-only commit `93eabe34` and deployed production Hosting.
 - Firestore rules were also deployed directly with `firebase deploy --project my-film-jobs --only firestore:rules`.
 - Live `https://myfilmjobs.com/` references extracted CSS (`main.30bb8bb6.css` in the current live app shell at verification time) and split JS assets.
 - Live extracted CSS asset returns HTTP 200.
