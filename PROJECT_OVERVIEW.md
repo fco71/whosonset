@@ -1,6 +1,6 @@
 ---
 title: WhosOnSet Project Overview
-last_reviewed: 2026-05-30
+last_reviewed: 2026-05-31
 status: current operating summary
 ---
 
@@ -9,6 +9,8 @@ status: current operating summary
 This file is the current operating overview for WhosOnSet / My Film Jobs. Older files under `docs/` are historical unless they explicitly say they were refreshed on or after 2026-05-30.
 
 Primary collaboration reference: [src/components/Collaboration/IMPLEMENTATION_ROADMAP.md](src/components/Collaboration/IMPLEMENTATION_ROADMAP.md)
+
+Handoff rule: after meaningful code, rules, deploy, QA, or product-state changes, update this file before ending the session so another agent can resume without reconstructing chat history. Do not store real passwords, API keys, app passwords, or other secrets in this tracked document.
 
 ## Production Targets
 
@@ -63,52 +65,62 @@ Current guardrails:
 
 ## Deployment Snapshot
 
-Verified on 2026-05-30:
+Verified on 2026-05-31:
 
 - `firebase login:list` active account: `iam@myfilmjobs.com`.
-- Production Hosting site `myfilmjobs-com` live release: 2026-05-30 13:15:43 America/Santo_Domingo, deployed by `github-action-whosonset@my-film-jobs.iam.gserviceaccount.com`.
-- Live `https://myfilmjobs.com/` references extracted CSS (`main.30bb8bb6.css`) and split JS assets.
+- Latest pushed commit on `main`: `00f3d635 fix collaboration QA permissions`.
+- GitHub Actions run `26706705026` completed successfully for commit `00f3d635` and deployed production Hosting.
+- Firestore rules were also deployed directly with `firebase deploy --project my-film-jobs --only firestore:rules`.
+- Live `https://myfilmjobs.com/` references extracted CSS (`main.30bb8bb6.css` in the current live app shell at verification time) and split JS assets.
 - Live extracted CSS asset returns HTTP 200.
 - Cloud Functions list shows `notifyNewMessage` active on v2 / `nodejs20`, updated 2026-05-30 13:28:28 America/Santo_Domingo.
 - Cloud Functions list includes the callable collaboration functions: `respondToWorkspaceInvitation`, `cleanupUserWorkspaces`, and `setWorkspaceSupervisorMode`.
+- GitHub Actions currently emits a Node.js 20 deprecation annotation; production deploy still succeeds.
 
 ## Verification Snapshot
 
-Local checks on 2026-05-30:
+Local checks on 2026-05-31:
 
-- `npx tsc --noEmit` passes.
-- `npm run test:run -- --run` passes: 41 tests.
-- `npm run build` passes. Entrypoint `main` is 907 KiB and the previous Webpack 1 MiB warning is gone.
-- `npm --prefix functions run build` passes.
+- `npm run test:run` passes: 43 tests.
+- `npm run build` passes. Entrypoint `main` is 907 KiB.
+- Firestore rules compile and deploy successfully.
 
-Code-level recommendation checks reviewed on 2026-05-30:
+Live production QA on 2026-05-31:
 
-- Login fix: confirmed in `LoginPage.tsx`; successful email/password login navigates to the app instead of `/verify-email`.
-- New signup path: confirmed in `RegisterPage.tsx`; new email/password signup still routes to `/verify-email`.
-- Language toggle: confirmed in `Navigation.tsx` + `i18n.ts`; EN/ES changes call the lazy-load wrapper before switching and preserve `?lang=`.
+- Existing unverified email/password login lands in the app, not `/verify-email`.
+- Home, Collaboration, and Screenplay Viewer load with CSS intact.
+- EN -> ES -> EN language toggle works without blank text or client errors.
+- Fresh email/password signup lands on the verification screen.
+- Student/teacher collaboration loop was exercised with disposable production accounts:
+  - Student account: `codex.qa.student.20260531-003504@example.com` / `Codex QA Student 2026-05-31`
+  - Teacher account: `codex.qa.teacher.20260531-003504@example.com` / `Codex QA Teacher 2026-05-31`
+  - Do not store their password in git. Reset in Firebase Auth or recreate accounts if another agent needs to reuse them.
+- Student created workspace `qDc2q2bNvq6GU6Aet8gD` and Fountain screenplay `mZZxdF6yX5vDAD2jv7lh`.
+- Teacher accepted invite, self-promoted to supervisor, added an annotation, added a tag, included an @mention, and requested changes with a review note.
+- Delete protection blocked teacher from deleting the student's screenplay.
+- Student can now mark the teacher annotation addressed; teacher annotation content edits by the student remain denied.
+- Workspace-scoped screenplay History query succeeds.
+- Browser smoke after deploy showed no Firestore permission errors in the console.
+- Mobile collaboration viewport smoke at 390px width showed no horizontal overflow.
+
+Recommendation checks reviewed:
+
+- Login fix: confirmed live and in `LoginPage.tsx`; successful email/password login navigates to the app instead of `/verify-email`.
+- New signup path: confirmed live and in `RegisterPage.tsx`; new email/password signup still routes to `/verify-email`.
+- Language toggle: confirmed live and in `Navigation.tsx` + `i18n.ts`; EN/ES changes call the lazy-load wrapper before switching and preserve `?lang=`.
 - Styling infrastructure: confirmed in Webpack config, local production build output, and live Hosting HTML/CSS responses.
-- @mention typeahead: confirmed in `ScreenplayViewer.tsx`; annotation/tag inputs match workspace members and support click, Enter, Tab, arrows, and Escape.
-- Notification read behavior: confirmed in `useNotifications`, `NotificationBell`, and `ScreenplayViewer`; clicking marks read, and acknowledging teacher notes marks related note/mention notifications read.
-- Delete protection: confirmed in `CollaborationHub.tsx` and `firestore.rules`; non-owner members cannot delete someone else's screenplay.
-
-Not verified from this environment:
-
-- Existing-account live login, because no test credentials were provided.
-- Fresh production signup, because creating a live account is a side effect that should be done intentionally.
-- Full two-account student/teacher assignment loop.
-- Visual browser checks for collaboration and screenplay viewer, because the in-app browser was unavailable in this session.
-- Phone/mobile layout on a real device.
-- Actual grading CSV contents from live data.
+- @mention typeahead: confirmed in data path and `ScreenplayViewer.tsx`; annotation/tag inputs match workspace members.
+- Notification read behavior: live data confirmed note/mention notifications can be cleared when notes are addressed.
+- Delete protection: confirmed live, in `CollaborationHub.tsx`, and in `firestore.rules`; non-owner members cannot delete someone else's screenplay.
 
 ## Recommended Next Steps
 
-1. Run the full two-account manual QA loop on production: student workspace creation, PDF/Fountain screenplay, teacher invite, annotation, tag, @mention, supervisor review note, student acknowledgement, activity/history confirmation, and grading CSV export.
-2. Do the Tier 1 live account checks with known test accounts: existing login routes into the app; new signup routes to verification; EN/ES switch has no blank text; home/collaboration/viewer styling looks intact.
-3. Run a real mobile screenplay-viewer check on a phone or narrow browser: PDF remains visible, side panel toggle works, and action buttons wrap cleanly.
-4. Add lightweight automated tests around the highest-risk logic: review-status transitions, mention matching, notification auto-clear, and delete/supervisor permission gating.
-5. Replace client-side all-profile member search with an indexed search or callable search endpoint before broader classroom-scale use.
-6. Upgrade Cloud Functions from Node.js 20 before Firebase removes/deprecates Node 20 deployment support.
-7. Reduce long-term maintenance risk in `ScreenplayViewer.scss` and the large collaboration components after the assignment-critical flow is verified.
+1. Manually verify the actual grading CSV download from the production UI and confirm the rows show student, teacher notes, resolved state, and review note as expected.
+2. Run a real phone check on a screenplay viewer, especially PDF mode: side panel toggle, visible document area, and action buttons.
+3. Add lightweight automated tests around review-status transitions, @mention matching, notification auto-clear, and supervisor/delete permission gating.
+4. Replace client-side all-profile member search with an indexed search or callable search endpoint before broader classroom-scale use.
+5. Upgrade GitHub Actions and Cloud Functions away from Node.js 20 before forced platform migration deadlines.
+6. Reduce long-term maintenance risk in `ScreenplayViewer.scss` and the large collaboration components after the assignment-critical flow is stable.
 
 ## Known Current Gaps
 
@@ -116,4 +128,5 @@ Not verified from this environment:
 - Most collaboration behavior is covered by manual QA rather than automated tests.
 - Cloud Functions currently run on Node.js 20.
 - Member search still scans all crew profiles client-side.
+- The supplemental screenplay `teamMembers` collection subscription was removed because Firestore denied that broad list query; current collaboration loading relies on `uploadedBy` and workspace-scoped screenplay queries.
 - Generated build artifacts such as `dist/`, `bundle-analysis.html`, and `.specstory/` should stay untracked.
