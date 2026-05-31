@@ -1901,24 +1901,25 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
           return;
         }
 
+        // Resolve collaborator profiles by crewProfile DOCUMENT ID (doc id ==
+        // uid). crewProfiles created at signup omit the `uid` field, so a
+        // where('uid','in',...) query misses them and names fall back to
+        // "Crew Member <last4>". Doc-id gets are correct regardless.
         const profiles: Array<{ id: string; name: string; email: string; avatar: string; role: string }> = [];
-        const crewProfilesRef = collection(db, 'crewProfiles');
         try {
-          for (let i = 0; i < uids.length; i += 10) {
-            const chunk = uids.slice(i, i + 10);
-            const q = query(crewProfilesRef, where('uid', 'in', chunk));
-            const snap = await getDocs(q);
-            snap.docs.forEach(d => {
-              const p: any = d.data();
-              profiles.push({
-                id: d.id,
-                name: p.name || p.displayName || `Crew Member ${d.id.slice(-4)}`,
-                email: p.email || '',
-                avatar: p.profileImageUrl || p.avatarUrl || '',
-                role: p.jobTitles?.[0]?.title || 'Crew Member'
-              });
-            });
-          }
+          const fetched = await Promise.all(uids.map(async uid => {
+            const d = await getDoc(doc(db, 'crewProfiles', uid));
+            if (!d.exists()) return null;
+            const p: any = d.data();
+            return {
+              id: uid,
+              name: p.name || p.displayName || `Crew Member ${uid.slice(-4)}`,
+              email: p.email || '',
+              avatar: p.profileImageUrl || p.avatarUrl || '',
+              role: p.jobTitles?.[0]?.title || 'Crew Member'
+            };
+          }));
+          fetched.forEach(p => { if (p) profiles.push(p); });
         } catch (err) {
           console.error('Failed to hydrate collaborator profiles:', err);
         }

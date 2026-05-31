@@ -1391,24 +1391,22 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         setTeamMembers([]);
         return;
       }
-      const crewProfilesRef = collection(db, 'crewProfiles');
-      const chunks = [];
-      for (let i = 0; i < memberIds.length; i += 10) {
-        chunks.push(memberIds.slice(i, i + 10));
-      }
-      let allMembers: any[] = [];
-      for (const chunk of chunks) {
-        const q = query(crewProfilesRef, where('uid', 'in', chunk));
-        const snap = await getDocs(q);
-        allMembers = allMembers.concat(snap.docs.map(doc => ({
-          id: doc.id,
-          name: doc.data().name || doc.data().displayName || `Crew Member ${doc.id.slice(-4)}`,
-          email: doc.data().email || '',
-          role: doc.data().jobTitles?.[0]?.title || 'Crew Member',
-          avatar: doc.data().profileImageUrl || doc.data().avatarUrl || '',
-          isOnline: doc.data().isOnline || false
-        })));
-      }
+      // Resolve member profiles by crewProfile DOCUMENT ID (doc id == uid).
+      // crewProfiles created at signup omit the `uid` field, so a
+      // where('uid','in',...) query misses them and names fall back to
+      // "Crew Member <last4>". Doc-id gets are correct regardless.
+      const allMembers = (await Promise.all(memberIds.map(async (uid: string) => {
+        const snap = await getDoc(doc(db, 'crewProfiles', uid));
+        const data: any = snap.exists() ? snap.data() : {};
+        return {
+          id: uid,
+          name: data.name || data.displayName || `Crew Member ${uid.slice(-4)}`,
+          email: data.email || '',
+          role: data.jobTitles?.[0]?.title || 'Crew Member',
+          avatar: data.profileImageUrl || data.avatarUrl || '',
+          isOnline: data.isOnline || false
+        };
+      })));
       setTeamMembers(allMembers);
     } catch (error) {
       console.error('Error loading team members:', error);
