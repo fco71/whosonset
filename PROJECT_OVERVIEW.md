@@ -81,7 +81,7 @@ Verified on 2026-05-31:
 
 Local checks on 2026-05-31:
 
-- `npm run test:run` passes: 43 tests.
+- `npm run test:run` passes: 58 tests (added password-policy + notification-helper unit tests on 2026-05-31).
 - `npm run build` passes. Entrypoint `main` is 907 KiB.
 - Firestore rules compile and deploy successfully.
 
