@@ -72,12 +72,13 @@ Verified on 2026-05-31:
 - Most recent product/test status commit verified in this review: `de372e6a docs: bump verified test count to 58 (password + notification unit tests)`.
 - GitHub Actions run `26718637139` completed successfully for commit `de372e6a` and deployed production Hosting.
 - GitHub Actions run `26718698162` completed successfully for doc-only commit `93eabe34` and deployed production Hosting.
+- GitHub Actions run `26718760393` completed successfully for doc-only commit `8628cb8b` and deployed production Hosting.
 - Firestore rules were also deployed directly with `firebase deploy --project my-film-jobs --only firestore:rules`.
 - Live `https://myfilmjobs.com/` references extracted CSS (`main.30bb8bb6.css` in the current live app shell at verification time) and split JS assets.
 - Live extracted CSS asset returns HTTP 200.
 - Cloud Functions list shows `notifyNewMessage` active on v2 / `nodejs20`, updated 2026-05-30 13:28:28 America/Santo_Domingo.
 - Cloud Functions list includes the callable collaboration functions: `respondToWorkspaceInvitation`, `cleanupUserWorkspaces`, and `setWorkspaceSupervisorMode`.
-- GitHub Actions currently emits a Node.js 20 deprecation annotation; production deploy still succeeds.
+- GitHub Actions workflow actions were upgraded to Node 24-compatible majors on 2026-05-31: `actions/checkout@v6`, `actions/setup-node@v6`, and `google-github-actions/auth@v3`.
 
 ## Verification Snapshot
 
@@ -121,7 +122,7 @@ Recommendation checks reviewed:
 2. Run a real phone check on a screenplay viewer, especially PDF mode: side panel toggle, visible document area, and action buttons.
 3. Add lightweight automated tests around review-status transitions, @mention matching, notification auto-clear, and supervisor/delete permission gating.
 4. Replace client-side all-profile member search with an indexed search or callable search endpoint before broader classroom-scale use.
-5. Upgrade GitHub Actions and Cloud Functions away from Node.js 20 before forced platform migration deadlines.
+5. Upgrade Cloud Functions away from Node.js 20 before forced platform migration deadlines.
 6. Reduce long-term maintenance risk in `ScreenplayViewer.scss` and the large collaboration components after the assignment-critical flow is stable.
 
 ## Known Current Gaps
