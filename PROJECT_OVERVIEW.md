@@ -79,7 +79,7 @@ Verified on 2026-05-31:
 - Live extracted CSS asset returns HTTP 200.
 - Cloud Functions list shows `notifyNewMessage` active on v2 / `nodejs20`, updated 2026-05-30 13:28:28 America/Santo_Domingo.
 - Cloud Functions list includes the callable collaboration functions: `respondToWorkspaceInvitation`, `cleanupUserWorkspaces`, and `setWorkspaceSupervisorMode`.
-- Cloud Functions runtime target has been changed in source to Node.js 22 (`functions/package.json`, `functions/firebase.json`). Local Firebase credentials were expired, so deployment is being handled through the manual GitHub Actions workflow `Deploy Firebase Functions`.
+- Cloud Functions runtime target has been changed in source to Node.js 22 (`functions/package.json`, `functions/firebase.json`). Local Firebase/gcloud credentials were expired, and GitHub Actions workflow run `26719283678` built successfully but could not deploy because `github-action-whosonset@my-film-jobs.iam.gserviceaccount.com` lacks `iam.serviceAccounts.ActAs` on `my-film-jobs@appspot.gserviceaccount.com`.
 - GitHub Actions workflow actions were upgraded to Node 24-compatible majors on 2026-05-31: `actions/checkout@v6`, `actions/setup-node@v6`, and `google-github-actions/auth@v3`.
 - Local `.claude/` worktrees are ignored and untracked so GitHub checkout cleanup does not treat them as malformed submodules.
 
@@ -125,15 +125,16 @@ Recommendation checks reviewed:
 2. Run a real phone check on a screenplay viewer, especially PDF mode: side panel toggle, visible document area, and action buttons.
 3. Add lightweight automated tests around review-status transitions, @mention matching, notification auto-clear, and supervisor/delete permission gating.
 4. Replace client-side all-profile member search with an indexed search or callable search endpoint before broader classroom-scale use.
-5. After the manual Functions workflow deploys Node.js 22, confirm `firebase functions:list` or Google Cloud Console shows `nodejs22` for all deployed functions.
-6. Reduce long-term maintenance risk in `ScreenplayViewer.scss` and the large collaboration components after the assignment-critical flow is stable.
+5. Finish the Cloud Functions Node.js 22 deploy by either granting `roles/iam.serviceAccountUser` to `github-action-whosonset@my-film-jobs.iam.gserviceaccount.com` on service account `my-film-jobs@appspot.gserviceaccount.com`, then rerunning the GitHub Actions workflow `Deploy Firebase Functions` on `main`; or by reauthenticating local CLI credentials with `firebase login --reauth` and rerunning `firebase deploy --project my-film-jobs --only functions`.
+6. After Functions deploy, confirm `firebase functions:list` or Google Cloud Console shows `nodejs22` for all deployed functions.
+7. Reduce long-term maintenance risk in `ScreenplayViewer.scss` and the large collaboration components after the assignment-critical flow is stable.
 
 ## Known Current Gaps
 
 - Login/Register/Verify-Email pages are now localized (en+es) via the `auth.*` namespace.
 - Password policy is intentionally minimal (early adoption): a single 6-character minimum (`MIN_PASSWORD_LENGTH` in `utilities/passwordValidation.ts`, matching Firebase's floor). No complexity rules; the strength meter + requirements checklist were removed from Register + Reset-Password. This is signup/reset-only — login never checks complexity, so no existing user is locked out. (This also retired the earlier password-strength localization sub-gap — those strings no longer exist.)
 - Most collaboration behavior is covered by manual QA rather than automated tests.
-- Cloud Functions production runtime is in transition from Node.js 20 to Node.js 22; source is updated, deployment/confirmation should be checked through the manual Functions workflow.
+- Cloud Functions production runtime is in transition from Node.js 20 to Node.js 22; source is updated, but deployment is blocked until the GitHub deploy service account gets `roles/iam.serviceAccountUser` on `my-film-jobs@appspot.gserviceaccount.com` or local Firebase CLI credentials are reauthenticated.
 - Member search still scans all crew profiles client-side.
 - The supplemental screenplay `teamMembers` collection subscription was removed because Firestore denied that broad list query; current collaboration loading relies on `uploadedBy` and workspace-scoped screenplay queries.
 - Generated build artifacts such as `dist/`, `bundle-analysis.html`, and `.specstory/` should stay untracked.
