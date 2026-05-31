@@ -124,7 +124,10 @@
       "termsPrivacy": "By signing in, you agree to our",
       "termsService": "Terms of Service",
       "privacyPolicy": "Privacy Policy",
-      "and": "and"
+      "and": "and",
+      "heading": "Sign in to your account",
+      "forgotPassword": "Forgot your password?",
+      "signUp": "Sign up"
     },
     "register": {
       "title": "Create your account",
@@ -146,7 +149,19 @@
       "createAccount": "Create Account",
       "haveAccount": "Already have an account?",
       "signInHere": "Sign in here",
-      "termsPrivacy": "By creating an account, you agree to our"
+      "termsPrivacy": "By creating an account, you agree to our",
+      "heading": "Join the Film Community",
+      "subheading": "Create your account and start connecting with industry professionals",
+      "passwordStrength": "Password strength:",
+      "passwordRequirementsLabel": "Password Requirements:",
+      "passwordsMatch": "Passwords match",
+      "creatingAccountLong": "Creating your account...",
+      "meetRequirements": "Please meet password requirements",
+      "signIn": "Sign in",
+      "benefitsTitle": "Join thousands of film professionals",
+      "benefit1": "Network with industry pros",
+      "benefit2": "Find exciting projects",
+      "benefit3": "Showcase your work"
     },
     "errors": {
       "emailPasswordRequired": "Please enter both email and password.",
@@ -166,7 +181,38 @@
       "invalidEmail": "Please enter a valid email address",
       "registrationError": "An error occurred during registration. Please try again.",
       "accountCreated": "Account created successfully! Redirecting...",
-      "loginRequired": "Please log in to save jobs"
+      "loginRequired": "Please log in to save jobs",
+      "userNotFound": "No account found with this email address",
+      "wrongPassword": "Incorrect password. Please try again.",
+      "userDisabled": "This account has been disabled. Please contact support.",
+      "googleNotEnabled": "Google sign-in is not enabled. Please contact support.",
+      "createAccountFailed": "Failed to create an account. Please try again.",
+      "meetRequirements": "Please meet all password requirements"
+    },
+    "legal": {
+      "privacy": "Privacy Policy",
+      "terms": "Terms of Service",
+      "contact": "Contact Us"
+    },
+    "verify": {
+      "title": "Account Created Successfully! 🎉",
+      "sentTo": "We've sent a verification link to {{email}}",
+      "welcome": "Welcome to My Film Jobs! Your account has been created successfully.",
+      "instructions": "To complete your registration, please verify your email address by clicking the link we just sent you.",
+      "checkInbox": "📧 Check your email inbox",
+      "step1": "Look for an email from My Film Jobs",
+      "step2": "Click the \"Verify Email\" button in the email",
+      "step3": "You'll be redirected to complete your profile",
+      "checking": "Checking...",
+      "verifiedContinue": "I've Verified My Email - Continue to Profile",
+      "sending": "Sending...",
+      "resend": "Resend Verification Email",
+      "backToSignIn": "Back to Sign In",
+      "spamHint": "Can't find the email? Check your spam folder or contact support",
+      "notYetVerified": "Email not yet verified. Please check your inbox and click the verification link.",
+      "sendFailed": "Failed to send verification email. Please try again.",
+      "resendFailed": "Failed to resend verification email. Please try again.",
+      "checkFailed": "Failed to check verification status. Please try again."
     }
   },
   "jobs": {

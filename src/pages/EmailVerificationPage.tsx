@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { Mail, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
 
@@ -9,6 +10,7 @@ const EmailVerificationPage: React.FC = () => {
   const [error, setError] = useState('');
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const { currentUser, sendEmailVerification, resendVerificationEmail } = useAuth();
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -38,7 +40,7 @@ const EmailVerificationPage: React.FC = () => {
       if (err.message.includes('already verified')) {
         navigate('/');
       } else {
-        setError('Failed to send verification email. Please try again.');
+        setError(t('auth.verify.sendFailed'));
       }
     } finally {
       setLoading(false);
@@ -52,7 +54,7 @@ const EmailVerificationPage: React.FC = () => {
       await resendVerificationEmail();
       setVerificationSent(true);
     } catch (err: any) {
-      setError('Failed to resend verification email. Please try again.');
+      setError(t('auth.verify.resendFailed'));
     } finally {
       setLoading(false);
     }
@@ -76,10 +78,10 @@ const EmailVerificationPage: React.FC = () => {
       if (currentUser.emailVerified) {
         navigate('/edit-profile');
       } else {
-        setError('Email not yet verified. Please check your inbox and click the verification link.');
+        setError(t('auth.verify.notYetVerified'));
       }
     } catch (err: any) {
-      setError('Failed to check verification status. Please try again.');
+      setError(t('auth.verify.checkFailed'));
     } finally {
       setLoading(false);
     }
@@ -114,10 +116,10 @@ const EmailVerificationPage: React.FC = () => {
             </div>
           </div>
           <h2 className="text-3xl font-bold text-gray-900 mb-2">
-            Account Created Successfully! 🎉
+            {t('auth.verify.title')}
           </h2>
           <p className="text-gray-600">
-            We've sent a verification link to <strong>{currentUser.email}</strong>
+            {t('auth.verify.sentTo', { email: currentUser.email })}
           </p>
         </div>
 
@@ -133,7 +135,7 @@ const EmailVerificationPage: React.FC = () => {
           {showSuccessMessage && (
             <div className="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg flex items-start" role="alert">
               <CheckCircle className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
-              <span className="text-sm">Welcome to My Film Jobs! Your account has been created successfully.</span>
+              <span className="text-sm">{t('auth.verify.welcome')}</span>
             </div>
           )}
 
@@ -141,14 +143,14 @@ const EmailVerificationPage: React.FC = () => {
             {/* Instructions */}
             <div className="text-center">
               <p className="text-sm text-gray-600 mb-4">
-                To complete your registration, please verify your email address by clicking the link we just sent you.
+                {t('auth.verify.instructions')}
               </p>
               <div className="bg-blue-50 rounded-lg p-4 text-sm text-blue-700">
-                <p className="font-medium mb-2">📧 Check your email inbox</p>
+                <p className="font-medium mb-2">{t('auth.verify.checkInbox')}</p>
                 <ul className="text-left space-y-1">
-                  <li>• Look for an email from My Film Jobs</li>
-                  <li>• Click the "Verify Email" button in the email</li>
-                  <li>• You'll be redirected to complete your profile</li>
+                  <li>• {t('auth.verify.step1')}</li>
+                  <li>• {t('auth.verify.step2')}</li>
+                  <li>• {t('auth.verify.step3')}</li>
                 </ul>
               </div>
             </div>
@@ -166,7 +168,7 @@ const EmailVerificationPage: React.FC = () => {
                 ) : (
                   <CheckCircle className="h-5 w-5" />
                 )}
-                <span>{loading ? 'Checking...' : "I've Verified My Email - Continue to Profile"}</span>
+                <span>{loading ? t('auth.verify.checking') : t('auth.verify.verifiedContinue')}</span>
               </button>
 
               <button
@@ -176,7 +178,7 @@ const EmailVerificationPage: React.FC = () => {
                 className="w-full bg-blue-100 text-blue-700 font-medium rounded-lg hover:bg-blue-200 transition-all duration-200 py-3 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Mail className="h-5 w-5" />
-                <span>{loading ? 'Sending...' : 'Resend Verification Email'}</span>
+                <span>{loading ? t('auth.verify.sending') : t('auth.verify.resend')}</span>
               </button>
             </div>
 
@@ -187,7 +189,7 @@ const EmailVerificationPage: React.FC = () => {
                 onClick={() => navigate('/login')}
                 className="text-sm text-gray-600 hover:text-gray-500 transition-colors"
               >
-                Back to Sign In
+                {t('auth.verify.backToSignIn')}
               </button>
             </div>
           </div>
@@ -196,7 +198,7 @@ const EmailVerificationPage: React.FC = () => {
         {/* Footer */}
         <div className="text-center">
           <p className="text-sm text-gray-600">
-            Can't find the email? Check your spam folder or contact support
+            {t('auth.verify.spamHint')}
           </p>
         </div>
       </div>

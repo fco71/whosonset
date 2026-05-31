@@ -121,7 +121,10 @@
       "termsPrivacy": "Al iniciar sesión, aceptas nuestros",
       "termsService": "Términos de Servicio",
       "privacyPolicy": "Política de Privacidad",
-      "and": "y"
+      "and": "y",
+      "heading": "Inicia sesión en tu cuenta",
+      "forgotPassword": "¿Olvidaste tu contraseña?",
+      "signUp": "Regístrate"
     },
     "register": {
       "title": "Crea tu cuenta",
@@ -143,7 +146,19 @@
       "createAccount": "Crear Cuenta",
       "haveAccount": "¿Ya tienes una cuenta?",
       "signInHere": "Inicia sesión aquí",
-      "termsPrivacy": "Al crear una cuenta, aceptas nuestros"
+      "termsPrivacy": "Al crear una cuenta, aceptas nuestros",
+      "heading": "Únete a la comunidad del cine",
+      "subheading": "Crea tu cuenta y empieza a conectar con profesionales de la industria",
+      "passwordStrength": "Seguridad de la contraseña:",
+      "passwordRequirementsLabel": "Requisitos de la contraseña:",
+      "passwordsMatch": "Las contraseñas coinciden",
+      "creatingAccountLong": "Creando tu cuenta...",
+      "meetRequirements": "Cumple los requisitos de la contraseña",
+      "signIn": "Inicia sesión",
+      "benefitsTitle": "Únete a miles de profesionales del cine",
+      "benefit1": "Conecta con profesionales de la industria",
+      "benefit2": "Encuentra proyectos interesantes",
+      "benefit3": "Muestra tu trabajo"
     },
     "errors": {
       "emailPasswordRequired": "Por favor ingresa tanto el correo como la contraseña.",
@@ -163,7 +178,38 @@
       "invalidEmail": "Por favor ingresa una dirección de correo válida",
       "registrationError": "Ocurrió un error durante el registro. Por favor intenta de nuevo.",
       "accountCreated": "¡Cuenta creada exitosamente! Redirigiendo...",
-      "loginRequired": "Por favor inicia sesión para guardar trabajos"
+      "loginRequired": "Por favor inicia sesión para guardar trabajos",
+      "userNotFound": "No se encontró ninguna cuenta con este correo",
+      "wrongPassword": "Contraseña incorrecta. Por favor intenta de nuevo.",
+      "userDisabled": "Esta cuenta ha sido deshabilitada. Por favor contacta a soporte.",
+      "googleNotEnabled": "El inicio de sesión con Google no está habilitado. Por favor contacta a soporte.",
+      "createAccountFailed": "No se pudo crear la cuenta. Por favor intenta de nuevo.",
+      "meetRequirements": "Cumple todos los requisitos de la contraseña"
+    },
+    "legal": {
+      "privacy": "Política de Privacidad",
+      "terms": "Términos de Servicio",
+      "contact": "Contáctanos"
+    },
+    "verify": {
+      "title": "¡Cuenta creada exitosamente! 🎉",
+      "sentTo": "Enviamos un enlace de verificación a {{email}}",
+      "welcome": "¡Bienvenido a My Film Jobs! Tu cuenta se creó exitosamente.",
+      "instructions": "Para completar tu registro, verifica tu correo haciendo clic en el enlace que acabamos de enviarte.",
+      "checkInbox": "📧 Revisa tu bandeja de entrada",
+      "step1": "Busca un correo de My Film Jobs",
+      "step2": "Haz clic en el botón \"Verificar correo\" del correo",
+      "step3": "Serás redirigido para completar tu perfil",
+      "checking": "Verificando...",
+      "verifiedContinue": "Ya verifiqué mi correo — Continuar al perfil",
+      "sending": "Enviando...",
+      "resend": "Reenviar correo de verificación",
+      "backToSignIn": "Volver a iniciar sesión",
+      "spamHint": "¿No encuentras el correo? Revisa tu carpeta de spam o contacta a soporte",
+      "notYetVerified": "El correo aún no está verificado. Revisa tu bandeja de entrada y haz clic en el enlace de verificación.",
+      "sendFailed": "No se pudo enviar el correo de verificación. Por favor intenta de nuevo.",
+      "resendFailed": "No se pudo reenviar el correo de verificación. Por favor intenta de nuevo.",
+      "checkFailed": "No se pudo verificar el estado. Por favor intenta de nuevo."
     }
   },
   "jobs": {

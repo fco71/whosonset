@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 
 const LoginPage: React.FC = () => {
@@ -8,6 +9,7 @@ const LoginPage: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login, loginWithGoogle } = useAuth();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const fromPath = (location.state as { from?: string } | null)?.from;
@@ -30,19 +32,19 @@ const LoginPage: React.FC = () => {
     } catch (err: any) {
       console.error('Login error details:', err);
       if (err.code === 'auth/user-not-found') {
-        setError('No account found with this email address');
+        setError(t('auth.errors.userNotFound'));
       } else if (err.code === 'auth/wrong-password') {
-        setError('Incorrect password. Please try again.');
+        setError(t('auth.errors.wrongPassword'));
       } else if (err.code === 'auth/too-many-requests') {
-        setError('Too many failed attempts. Please try again later.');
+        setError(t('auth.errors.tooManyRequests'));
       } else if (err.code === 'auth/invalid-email') {
-        setError('Invalid email address format.');
+        setError(t('auth.errors.invalidEmail'));
       } else if (err.code === 'auth/user-disabled') {
-        setError('This account has been disabled. Please contact support.');
+        setError(t('auth.errors.userDisabled'));
       } else if (err.code === 'auth/invalid-credential') {
-        setError('Invalid email or password. Please check your credentials and try again.');
+        setError(t('auth.errors.invalidCredentials'));
       } else {
-        setError(`Login failed: ${err.message || 'Please try again.'}`);
+        setError(t('auth.errors.loginError'));
       }
     }
     setLoading(false);
@@ -61,12 +63,12 @@ const LoginPage: React.FC = () => {
       console.error('Google sign-in error:', error);
       setError(
         error.code === 'auth/popup-closed-by-user'
-          ? 'Sign-in was cancelled. Please try again.'
+          ? t('auth.errors.popupClosed')
           : error.code === 'auth/popup-blocked'
-          ? 'Sign-in popup was blocked. Please allow popups and try again.'
+          ? t('auth.errors.popupBlocked')
           : error.message && error.message.includes('not enabled')
-          ? 'Google sign-in is not enabled. Please contact support.'
-          : 'Google sign-in failed. Please try again.'
+          ? t('auth.errors.googleNotEnabled')
+          : t('auth.errors.googleSignInError')
       );
     } finally {
       setLoading(false);
@@ -78,7 +80,7 @@ const LoginPage: React.FC = () => {
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Sign in to your account
+            {t('auth.login.heading')}
           </h2>
         </div>
         {error && (
@@ -101,7 +103,7 @@ const LoginPage: React.FC = () => {
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
             </svg>
-            <span>{loading ? 'Signing in...' : 'Continue with Google'}</span>
+            <span>{loading ? t('auth.login.signingIn') : t('auth.login.continueWithGoogle')}</span>
           </button>
         </div>
 
@@ -111,7 +113,7 @@ const LoginPage: React.FC = () => {
             <div className="w-full border-t border-gray-300" />
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-gray-50 text-gray-500">or</span>
+            <span className="px-2 bg-gray-50 text-gray-500">{t('auth.login.or')}</span>
           </div>
         </div>
 
@@ -119,7 +121,7 @@ const LoginPage: React.FC = () => {
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
               <label htmlFor="email-address" className="sr-only">
-                Email address
+                {t('auth.login.email')}
               </label>
               <input
                 id="email-address"
@@ -128,14 +130,14 @@ const LoginPage: React.FC = () => {
                 autoComplete="email"
                 required
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Email address"
+                placeholder={t('auth.login.email')}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
             <div>
               <label htmlFor="password" className="sr-only">
-                Password
+                {t('auth.login.password')}
               </label>
               <input
                 id="password"
@@ -144,7 +146,7 @@ const LoginPage: React.FC = () => {
                 autoComplete="current-password"
                 required
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Password"
+                placeholder={t('auth.login.password')}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
@@ -154,7 +156,7 @@ const LoginPage: React.FC = () => {
           <div className="flex items-center justify-between">
             <div className="text-sm">
               <Link to="/forgot-password" className="font-medium text-indigo-600 hover:text-indigo-500">
-                Forgot your password?
+                {t('auth.login.forgotPassword')}
               </Link>
             </div>
           </div>
@@ -165,14 +167,14 @@ const LoginPage: React.FC = () => {
               disabled={loading}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
             >
-              {loading ? 'Signing in...' : 'Sign in'}
+              {loading ? t('auth.login.signingIn') : t('auth.login.signIn')}
             </button>
           </div>
         </form>
         <div className="text-sm text-center">
-          Don't have an account?{' '}
+          {t('auth.login.noAccount')}{' '}
           <Link to="/register" className="font-medium text-indigo-600 hover:text-indigo-500">
-            Sign up
+            {t('auth.login.signUp')}
           </Link>
         </div>
         
@@ -180,13 +182,13 @@ const LoginPage: React.FC = () => {
         <div className="mt-8 text-center">
           <div className="flex justify-center space-x-6 text-xs text-gray-500">
             <Link to="/privacy-policy" className="hover:text-gray-700 transition-colors">
-              Privacy Policy
+              {t('auth.legal.privacy')}
             </Link>
             <Link to="/terms-of-service" className="hover:text-gray-700 transition-colors">
-              Terms of Service
+              {t('auth.legal.terms')}
             </Link>
             <Link to="/contact" className="hover:text-gray-700 transition-colors">
-              Contact Us
+              {t('auth.legal.contact')}
             </Link>
           </div>
         </div>
