@@ -79,6 +79,7 @@ Verified on 2026-05-31:
 - Cloud Functions list shows `notifyNewMessage` active on v2 / `nodejs20`, updated 2026-05-30 13:28:28 America/Santo_Domingo.
 - Cloud Functions list includes the callable collaboration functions: `respondToWorkspaceInvitation`, `cleanupUserWorkspaces`, and `setWorkspaceSupervisorMode`.
 - GitHub Actions workflow actions were upgraded to Node 24-compatible majors on 2026-05-31: `actions/checkout@v6`, `actions/setup-node@v6`, and `google-github-actions/auth@v3`.
+- Local `.claude/` worktrees are ignored and untracked so GitHub checkout cleanup does not treat them as malformed submodules.
 
 ## Verification Snapshot
 

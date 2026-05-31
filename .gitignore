@@ -11,6 +11,7 @@ firebase-debug.*.log*
 .firebase/
 
 # Local AI/editor history and generated reports
+.claude/
 .specstory/
 bundle-analysis.html
 
