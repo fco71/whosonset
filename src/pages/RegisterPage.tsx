@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Check, X } from 'lucide-react';
-import { validatePassword, getPasswordStrengthColor, getPasswordStrengthText, PASSWORD_REQUIREMENTS } from '../utilities/passwordValidation';
+import { validatePassword } from '../utilities/passwordValidation';
 
 const RegisterPage: React.FC = () => {
   const [firstName, setFirstName] = useState('');
@@ -16,7 +16,6 @@ const RegisterPage: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [passwordValidation, setPasswordValidation] = useState(validatePassword(''));
-  const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
   const [passwordsMatch, setPasswordsMatch] = useState(true);
   const { signup, loginWithGoogle } = useAuth();
   const { t } = useTranslation();
@@ -48,7 +47,7 @@ const RegisterPage: React.FC = () => {
     }
 
     if (!passwordValidation.isValid) {
-      return setError(t('auth.errors.meetRequirements'));
+      return setError(t('auth.errors.passwordLength'));
     }
 
     try {
@@ -251,8 +250,6 @@ const RegisterPage: React.FC = () => {
                   placeholder={t('auth.register.passwordPlaceholder')}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  onFocus={() => setShowPasswordRequirements(true)}
-                  onBlur={() => setShowPasswordRequirements(false)}
                 />
                 <button
                   type="button"
@@ -266,53 +263,9 @@ const RegisterPage: React.FC = () => {
                   )}
                 </button>
               </div>
-              
-              {/* Password Strength Indicator */}
-              {password && (
-                <div className="mt-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">{t('auth.register.passwordStrength')}</span>
-                    <span className={`font-medium ${getPasswordStrengthColor(passwordValidation.strength)}`}>
-                      {getPasswordStrengthText(passwordValidation.strength)}
-                    </span>
-                  </div>
-                  <div className="mt-1 w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className={`h-2 rounded-full transition-all duration-300 ${
-                        passwordValidation.strength === 'weak' ? 'bg-red-500' :
-                        passwordValidation.strength === 'medium' ? 'bg-yellow-500' :
-                        passwordValidation.strength === 'strong' ? 'bg-blue-500' :
-                        'bg-green-500'
-                      }`}
-                      style={{ width: `${passwordValidation.score}%` }}
-                    ></div>
-                  </div>
-                </div>
-              )}
-              
-              {/* Password Requirements */}
-              {showPasswordRequirements && password && (
-                <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">{t('auth.register.passwordRequirementsLabel')}</h4>
-                  <div className="space-y-1">
-                    {PASSWORD_REQUIREMENTS.map((requirement) => {
-                      const isMet = requirement.test(password);
-                      return (
-                        <div key={requirement.name} className="flex items-center text-sm">
-                          {isMet ? (
-                            <Check className="h-4 w-4 text-green-500 mr-2" />
-                          ) : (
-                            <X className="h-4 w-4 text-red-500 mr-2" />
-                          )}
-                          <span className={isMet ? 'text-green-700' : 'text-red-700'}>
-                            {requirement.message}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+
+              {/* Minimal helper — no complexity rules, just the length floor */}
+              <p className="mt-2 text-xs text-gray-500">{t('auth.register.passwordHelper')}</p>
             </div>
 
             {/* Confirm Password Field */}
@@ -384,7 +337,7 @@ const RegisterPage: React.FC = () => {
                 ) : !passwordsMatch ? (
                   <span>{t('auth.errors.passwordMatch')}</span>
                 ) : !passwordValidation.isValid ? (
-                  <span>{t('auth.register.meetRequirements')}</span>
+                  <span>{t('auth.errors.passwordLength')}</span>
                 ) : (
                   <>
                     <User className="h-4 w-4 mr-2" />

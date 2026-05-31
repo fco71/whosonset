@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Eye, EyeOff, Lock, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
-import { validatePassword, getPasswordStrengthColor, getPasswordStrengthText, PASSWORD_REQUIREMENTS } from '../utilities/passwordValidation';
+import { validatePassword } from '../utilities/passwordValidation';
 
 const ResetPasswordPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -14,7 +14,6 @@ const ResetPasswordPage: React.FC = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [passwordValidation, setPasswordValidation] = useState(validatePassword(''));
-  const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
   const [passwordsMatch, setPasswordsMatch] = useState(true);
   const [oobCode, setOobCode] = useState('');
   
@@ -64,7 +63,7 @@ const ResetPasswordPage: React.FC = () => {
     }
 
     if (!passwordValidation.isValid) {
-      setError('Password does not meet requirements');
+      setError('Password must be at least 6 characters');
       return;
     }
 
@@ -181,8 +180,6 @@ const ResetPasswordPage: React.FC = () => {
                     placeholder="Enter your new password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    onFocus={() => setShowPasswordRequirements(true)}
-                    onBlur={() => setShowPasswordRequirements(false)}
                   />
                   <button
                     type="button"
@@ -196,45 +193,9 @@ const ResetPasswordPage: React.FC = () => {
                     )}
                   </button>
                 </div>
-                
-                {/* Password Strength Indicator */}
-                {password && (
-                  <div className="mt-2">
-                    <div className="flex items-center space-x-2">
-                      <div className="flex-1 bg-gray-200 rounded-full h-2">
-                        <div
-                          className={`h-2 rounded-full transition-all duration-300 ${getPasswordStrengthColor(passwordValidation.strength)}`}
-                          style={{ width: `${passwordValidation.score}%` }}
-                        />
-                      </div>
-                      <span className={`text-xs font-medium ${getPasswordStrengthColor(passwordValidation.strength)}`}>
-                        {getPasswordStrengthText(passwordValidation.strength)}
-                      </span>
-                    </div>
-                  </div>
-                )}
 
-                {/* Password Requirements */}
-                {showPasswordRequirements && password && (
-                  <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                    <p className="text-xs font-medium text-gray-700 mb-2">Password Requirements:</p>
-                    <ul className="text-xs text-gray-600 space-y-1">
-                      {PASSWORD_REQUIREMENTS.map((requirement, index) => {
-                        const isMet = requirement.test(password);
-                        return (
-                          <li key={index} className={`flex items-center ${isMet ? 'text-green-600' : 'text-gray-500'}`}>
-                            {isMet ? (
-                              <CheckCircle className="h-3 w-3 mr-2 flex-shrink-0" />
-                            ) : (
-                              <div className="h-3 w-3 mr-2 flex-shrink-0 rounded-full border border-gray-300" />
-                            )}
-                            {requirement.message}
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
-                )}
+                {/* Minimal helper — no complexity rules, just the length floor */}
+                <p className="mt-2 text-xs text-gray-500">Must be at least 6 characters</p>
               </div>
 
               {/* Confirm Password Field */}

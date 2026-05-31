@@ -11,69 +11,38 @@ export interface PasswordRequirement {
   message: string;
 }
 
+// Early-adoption password policy: a single minimum-length rule that mirrors
+// Firebase Auth's own hard floor (6 characters). Deliberately NO complexity
+// requirements (uppercase/number/symbol) — those deter sign-ups at this stage,
+// and this gate only ever applies to CREATING or RESETTING a password, never
+// to logging in, so existing users with older/simpler passwords are unaffected.
+export const MIN_PASSWORD_LENGTH = 6;
+
 export const PASSWORD_REQUIREMENTS: PasswordRequirement[] = [
   {
     name: 'length',
-    test: (password: string) => password.length >= 8,
-    message: 'At least 8 characters'
-  },
-  {
-    name: 'uppercase',
-    test: (password: string) => /[A-Z]/.test(password),
-    message: 'At least one uppercase letter'
-  },
-  {
-    name: 'lowercase',
-    test: (password: string) => /[a-z]/.test(password),
-    message: 'At least one lowercase letter'
-  },
-  {
-    name: 'number',
-    test: (password: string) => /\d/.test(password),
-    message: 'At least one number'
-  },
-  {
-    name: 'special',
-    test: (password: string) => /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
-    message: 'At least one special character (!@#$%^&*...)'
+    test: (password: string) => password.length >= MIN_PASSWORD_LENGTH,
+    message: `At least ${MIN_PASSWORD_LENGTH} characters`
   }
 ];
 
 export const validatePassword = (password: string): PasswordValidationResult => {
   const errors: string[] = [];
-  let score = 0;
-  
-  // Check each requirement
   PASSWORD_REQUIREMENTS.forEach(requirement => {
-    if (requirement.test(password)) {
-      score += 20; // Each requirement adds 20 points
-    } else {
+    if (!requirement.test(password)) {
       errors.push(requirement.message);
     }
   });
-  
-  // Additional scoring based on length and complexity
-  if (password.length >= 12) score += 10;
-  if (password.length >= 16) score += 10;
-  if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?].*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
-    score += 10; // Multiple special characters
-  }
-  if (/\d.*\d/.test(password)) {
-    score += 10; // Multiple numbers
-  }
-  
-  // Determine strength
-  let strength: 'weak' | 'medium' | 'strong' | 'very-strong';
-  if (score < 60) strength = 'weak';
-  else if (score < 80) strength = 'medium';
-  else if (score < 100) strength = 'strong';
-  else strength = 'very-strong';
-  
+
+  const isValid = errors.length === 0;
+  // Strength/score are retained for interface compatibility but are no longer
+  // surfaced in the UI (the strength meter + checklist were removed). Report a
+  // neutral pass/fail so any future consumer isn't misled.
   return {
-    isValid: errors.length === 0,
+    isValid,
     errors,
-    strength,
-    score: Math.min(score, 100)
+    strength: isValid ? 'strong' : 'weak',
+    score: isValid ? 100 : 0
   };
 };
 
