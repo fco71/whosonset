@@ -679,16 +679,16 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   }, [screenplay.url, isPdfDocument, useNativePdfFallback, numPages]);
 
   // L — subscribe to this screenplay's activity events for the History panel.
-  // Queries by targetId only (single-field index, automatic — no composite
-  // index deploy needed) and sorts client-side, since per-screenplay event
-  // volume is small. Best-effort; an error just leaves History empty.
+  // The activity rules are workspace-scoped, so the query includes workspaceId
+  // as well as targetId. Results are still sorted client-side; event volume is small.
   useEffect(() => {
-    if (!currentUser || !screenplay.id) {
+    if (!currentUser || !screenplay.id || !screenplayWorkspaceId) {
       setHistoryEvents([]);
       return;
     }
     const historyQuery = query(
       collection(db, 'workspaceActivity'),
+      where('workspaceId', '==', screenplayWorkspaceId),
       where('targetId', '==', screenplay.id)
     );
     const unsubscribe = onSnapshot(
@@ -717,7 +717,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       }
     );
     return () => unsubscribe();
-  }, [currentUser?.uid, screenplay.id]);
+  }, [currentUser?.uid, screenplay.id, screenplayWorkspaceId]);
 
   const initializeSession = async () => {
     try {

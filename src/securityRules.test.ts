@@ -60,6 +60,10 @@ describe('security rules guardrails', () => {
     expect(rules).toMatch(/function\s+isScreenplayContentUpdate/);
     expect(rules).toMatch(/function\s+isScreenplayAccessUpdate/);
     expect(rules).toMatch(/function\s+isScreenplayReviewStatusUpdate/);
+    expect(rules).toMatch(/function\s+isScreenplayTeamMemberData/);
+    expect(rules).toMatch(/request\.auth\.uid\s+in\s+data\.teamMembers/);
+    expect(rules).toMatch(/allow\s+get:\s+if\s+isScreenplayMemberData\(resource\.data\)/);
+    expect(rules).toMatch(/allow\s+list:\s+if\s+isScreenplayTeamMemberData\(resource\.data\)/);
     expect(rules).toMatch(/affectedKeys\(\)\.hasOnly\(\[\s*'fountainSource'/);
     expect(rules).toMatch(/affectedKeys\(\)\.hasOnly\(\[\s*'teamMembers'/);
     expect(rules).toMatch(/affectedKeys\(\)\.hasOnly\(\[\s*'reviewStatus'/);
@@ -72,10 +76,21 @@ describe('security rules guardrails', () => {
     const annotationRules = rules.match(/match\s+\/screenplayAnnotations\/\{annotationId\}\s+\{[\s\S]*?\n\s+\}\n\n\s+match\s+\/screenplayTags/)?.[0] || '';
 
     expect(rules).toMatch(/function\s+canModerateAnnotationData/);
+    expect(rules).toMatch(/function\s+canResolveAnnotationData/);
     expect(rules).toMatch(/function\s+isAnnotationResolveUpdate/);
+    expect(rules).toMatch(/canResolveAnnotationData\(oldData\)\s+&&\s+newData\.diff\(oldData\)\.affectedKeys\(\)\.hasOnly\(\['resolved'\]\)/);
+    expect(rules).toMatch(/data\.get\('supervisorAtAuthorTime',\s+false\)\s+==\s+true\s+&&\s+isScreenplayManager\(data\.screenplayId,\s+request\.auth\.uid\)/);
     expect(annotationRules).toMatch(/allow\s+update:\s+if\s+keepsAnnotationIdentity/);
     expect(annotationRules).toMatch(/allow\s+delete:\s+if\s+canModerateAnnotationData\(resource\.data\)/);
     expect(annotationRules).not.toMatch(/allow\s+update,\s+delete:\s+if\s+signedIn\(\)\s+&&\s+canAccessScreenplay/);
+  });
+
+  it('keeps screenplay history queries aligned with workspace-scoped activity rules', () => {
+    const viewer = readRepoFile('src/components/Collaboration/ScreenplayViewer.tsx');
+
+    expect(viewer).toMatch(/where\('workspaceId',\s*'==',\s*screenplayWorkspaceId\)/);
+    expect(viewer).toMatch(/where\('targetId',\s*'==',\s*screenplay\.id\)/);
+    expect(viewer).toMatch(/currentUser\?\.uid,\s*screenplay\.id,\s*screenplayWorkspaceId/);
   });
 
   it('keeps known credential-shaped values out of tracked documentation', () => {

@@ -36,12 +36,21 @@ service cloud.firestore {
         uid in data.memberIds;
     }
 
+    function isScreenplayOwnerData(data) {
+      return signedIn() &&
+        data.uploadedBy == request.auth.uid;
+    }
+
+    function isScreenplayTeamMemberData(data) {
+      return signedIn() &&
+        data.teamMembers is list &&
+        request.auth.uid in data.teamMembers;
+    }
+
     function isScreenplayMemberData(data) {
-      return signedIn() && (
-        data.uploadedBy == request.auth.uid ||
-        (data.teamMembers is list && data.teamMembers.hasAny([request.auth.uid])) ||
-        canAccessWorkspace(data.workspaceId)
-      );
+      return isScreenplayOwnerData(data) ||
+        isScreenplayTeamMemberData(data) ||
+        canAccessWorkspace(data.workspaceId);
     }
 
     function canAccessWorkspace(workspaceId) {
@@ -220,13 +229,22 @@ service cloud.firestore {
         );
     }
 
+    function canResolveAnnotationData(data) {
+      return canModerateAnnotationData(data) ||
+        (
+          canAccessScreenplay(data.screenplayId) &&
+          data.get('supervisorAtAuthorTime', false) == true &&
+          isScreenplayManager(data.screenplayId, request.auth.uid)
+        );
+    }
+
     function isAnnotationReplyUpdate(newData, oldData) {
       return canAccessScreenplay(oldData.screenplayId) &&
         newData.diff(oldData).affectedKeys().hasOnly(['replies']);
     }
 
     function isAnnotationResolveUpdate(newData, oldData) {
-      return canModerateAnnotationData(oldData) &&
+      return canResolveAnnotationData(oldData) &&
         newData.diff(oldData).affectedKeys().hasOnly(['resolved']);
     }
 
@@ -627,7 +645,10 @@ service cloud.firestore {
     }
 
     match /screenplays/{screenplayId} {
-      allow read: if isScreenplayMemberData(resource.data);
+      allow get: if isScreenplayMemberData(resource.data);
+      allow list: if isScreenplayOwnerData(resource.data);
+      allow list: if isScreenplayTeamMemberData(resource.data);
+      allow list: if canAccessWorkspace(resource.data.workspaceId);
       allow create: if request.resource.data.uploadedBy == request.auth.uid &&
         canEditScreenplayData(request.resource.data);
       allow update: if keepsScreenplayOwnership(request.resource.data, resource.data) &&
