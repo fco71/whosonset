@@ -119,6 +119,7 @@ Recommendation checks reviewed:
 - @mention typeahead: confirmed in data path and `ScreenplayViewer.tsx`; annotation/tag inputs match workspace members.
 - Notification read behavior: live data confirmed note/mention notifications can be cleared when notes are addressed.
 - Delete protection: confirmed live, in `CollaborationHub.tsx`, and in `firestore.rules`; non-owner members cannot delete someone else's screenplay.
+- Functions-backed paths spot-check via production logs (2026-05-31): all four healthy on `nodejs22`. `curateDailyBlogPosts` ran on schedule ("Stored 3 curated posts" at 07:41 UTC, correctly "Daily quota already reached" at 15:41). `respondToWorkspaceInvitation` shows callable verifications passing (auth VALID). `notifyNewMessage` is ACTIVE with SMTP_USER/SMTP_PASS/EMAIL_FROM secrets still bound after the redeploy (no recent sends in window). `setWorkspaceSupervisorMode` has no runtime errors. The ONLY error-severity entries were a transient deploy-time IAM failure at 17:37 UTC (`github-action-whosonset` missing `iam.serviceaccounts.actAs` on the compute SA) — already resolved by granting `roles/iam.serviceAccountUser`; the 17:40 redeploy succeeded. No function RUNTIME errors found.
 
 ## Recommended Next Steps
 
@@ -126,7 +127,7 @@ Recommendation checks reviewed:
 2. Run a real phone check on a screenplay viewer, especially PDF mode: side panel toggle, visible document area, and action buttons.
 3. Add lightweight automated tests around review-status transitions, @mention matching, notification auto-clear, and supervisor/delete permission gating.
 4. Replace client-side all-profile member search with an indexed search or callable search endpoint before broader classroom-scale use.
-5. Spot-check production Functions-backed paths after the Node.js 22 deploy: invitation accept/decline, supervisor mode toggle, chat/email notification path, and the scheduled blog curation path if that feature is still in use.
+5. ~~Spot-check production Functions-backed paths after the Node.js 22 deploy~~ — DONE 2026-05-31 (see "Recommendation checks reviewed": all four functions healthy on nodejs22; only a transient, already-resolved deploy-time IAM error in logs).
 6. Plan a separate `firebase-functions` package upgrade; deploy logs warn the current package is outdated and may have breaking changes when upgraded.
 7. Reduce long-term maintenance risk in `ScreenplayViewer.scss` and the large collaboration components after the assignment-critical flow is stable.
 
