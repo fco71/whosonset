@@ -1,0 +1,46 @@
+name: Deploy Firebase Functions
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: deploy-functions
+  cancel-in-progress: false
+
+jobs:
+  deploy_functions:
+    name: Deploy Firebase Functions
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install root dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Install functions dependencies
+        run: npm --prefix functions ci --no-audit --no-fund
+
+      - name: Build functions
+        run: npm --prefix functions run build
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: projects/403346239424/locations/global/workloadIdentityPools/github-actions/providers/github
+          service_account: github-action-whosonset@my-film-jobs.iam.gserviceaccount.com
+
+      - name: Deploy Firebase Functions
+        run: npx firebase deploy --only functions --project my-film-jobs --non-interactive
