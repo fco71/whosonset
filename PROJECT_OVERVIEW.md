@@ -124,7 +124,7 @@ Recommendation checks reviewed:
 
 ## Known Current Gaps
 
-- Login/Register pages are still mostly English even when Spanish mode is selected.
+- Login/Register/Verify-Email pages are now localized (en+es) via the `auth.*` namespace. Remaining sub-gap: password STRENGTH labels and per-requirement messages still render English because they come from `utilities/passwordValidation.ts` as raw strings, not i18n keys — needs a small util refactor to localize.
 - Most collaboration behavior is covered by manual QA rather than automated tests.
 - Cloud Functions currently run on Node.js 20.
 - Member search still scans all crew profiles client-side.
