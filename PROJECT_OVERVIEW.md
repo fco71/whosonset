@@ -124,7 +124,8 @@ Recommendation checks reviewed:
 
 ## Known Current Gaps
 
-- Login/Register/Verify-Email pages are now localized (en+es) via the `auth.*` namespace. Remaining sub-gap: password STRENGTH labels and per-requirement messages still render English because they come from `utilities/passwordValidation.ts` as raw strings, not i18n keys — needs a small util refactor to localize.
+- Login/Register/Verify-Email pages are now localized (en+es) via the `auth.*` namespace.
+- Password policy is intentionally minimal (early adoption): a single 6-character minimum (`MIN_PASSWORD_LENGTH` in `utilities/passwordValidation.ts`, matching Firebase's floor). No complexity rules; the strength meter + requirements checklist were removed from Register + Reset-Password. This is signup/reset-only — login never checks complexity, so no existing user is locked out. (This also retired the earlier password-strength localization sub-gap — those strings no longer exist.)
 - Most collaboration behavior is covered by manual QA rather than automated tests.
 - Cloud Functions currently run on Node.js 20.
 - Member search still scans all crew profiles client-side.
