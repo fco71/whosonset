@@ -21,7 +21,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children, 
   redirectTo = '/login' 
 }) => {
-  const { currentUser, loading } = useAuth();
+  const { currentUser, loading, requiresEmailVerification } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -30,6 +30,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   if (!currentUser) {
     return <Navigate to={redirectTo} state={{ from: getFullPath(location) }} replace />;
+  }
+
+  if (requiresEmailVerification && location.pathname !== '/verify-email') {
+    return <Navigate to="/verify-email" state={{ from: getFullPath(location) }} replace />;
   }
 
   return <>{children}</>;
@@ -44,13 +48,17 @@ export const PublicRoute: React.FC<PublicRouteProps> = ({
   children, 
   redirectTo = '/' 
 }) => {
-  const { currentUser, loading } = useAuth();
+  const { currentUser, loading, requiresEmailVerification } = useAuth();
 
   if (loading) {
     return <AuthRouteLoadingFallback />;
   }
   
   if (currentUser) {
+    if (requiresEmailVerification) {
+      return <Navigate to="/verify-email" replace />;
+    }
+
     return <Navigate to={redirectTo} replace />;
   }
   

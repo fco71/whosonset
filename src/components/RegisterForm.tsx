@@ -162,7 +162,7 @@ const RegisterForm: React.FC = () => {
       // Note: This will need to be updated after the user is created
       // For now, we'll redirect and let them update their profile
       console.log('User registered successfully!');
-      navigate('/edit-profile'); // Optional: redirect to their new profile page
+      navigate('/verify-email');
 
     } catch (err: any) {
       console.error('Error registering user:', err);

@@ -23,11 +23,9 @@ const LoginPage: React.FC = () => {
       setLoading(true);
       await login(email, password);
 
-      // A successful sign-in always lands in the app. Email verification is a
-      // SIGNUP-flow concern (RegisterPage routes brand-new users to
-      // /verify-email). Returning users whose `emailVerified` flag is false —
-      // common for older accounts that predate verification — must NOT be shown
-      // the new-user "Account Created / we sent a link" screen on a normal login.
+      // A successful sign-in can request the intended path. The app-level auth
+      // gate redirects accounts marked `emailVerificationRequired` back to
+      // /verify-email until Firebase reports `emailVerified`.
       navigate(redirectPath, { replace: true });
     } catch (err: any) {
       console.error('Login error details:', err);

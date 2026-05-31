@@ -18,11 +18,13 @@ import {
   confirmPasswordReset
 } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp, getDoc, writeBatch, collection, query, where, getDocs } from 'firebase/firestore';
+import { shouldRequireEmailVerification } from '../utilities/emailVerification';
 
 interface AuthContextType {
   currentUser: User | null;
   loading: boolean;
   userProfile: any | null;
+  requiresEmailVerification: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, firstName?: string, lastName?: string) => Promise<void>;
   loginWithGoogle: () => Promise<{ isNewUser: boolean }>;
@@ -58,6 +60,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [userProfile, setUserProfile] = useState<any | null>(null);
+  const [requiresEmailVerification, setRequiresEmailVerification] = useState(false);
 
   // Add debugging
   console.log('[AuthProvider] Initializing...');
@@ -225,6 +228,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         otherInfo: '',
         availability: 'available',
         isPublished: true,
+        emailVerificationRequired: true,
+        emailVerificationRequiredAt: serverTimestamp(),
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       };
@@ -232,6 +237,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('[AuthContext] Creating crewProfiles document with data:', crewProfileData);
       
       await setDoc(doc(db, 'crewProfiles', user.uid), crewProfileData);
+      setUserProfile({
+        id: user.uid,
+        ...crewProfileData,
+        displayName,
+        photoURL: user.photoURL,
+        role: 'crew_member',
+        department: 'production',
+        experience: 'intermediate'
+      });
+      setRequiresEmailVerification(shouldRequireEmailVerification(user, crewProfileData));
       
       console.log('[AuthContext] crewProfiles document created successfully');
       
@@ -1057,26 +1072,39 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       console.log('[AuthProvider] Setting up auth state listener...');
       
-      const unsubscribe = auth.onAuthStateChanged((user) => {
+      const unsubscribe = auth.onAuthStateChanged(async (user) => {
         try {
           console.log('[AuthProvider] Auth state changed:', user ? 'User logged in' : 'No user');
+          setLoading(true);
           setCurrentUser(user);
-          setLoading(false);
           
-          // Mock user profile for analytics
           if (user) {
-            setUserProfile({
+            let crewProfileData: any = null;
+            try {
+              const crewProfileDoc = await getDoc(doc(db, 'crewProfiles', user.uid));
+              crewProfileData = crewProfileDoc.exists() ? crewProfileDoc.data() : null;
+            } catch (profileError) {
+              console.error('[AuthProvider] Error loading crew profile:', profileError);
+            }
+
+            const resolvedProfile = {
+              ...(crewProfileData || {}),
               id: user.uid,
               email: user.email,
-              displayName: user.displayName || 'User',
+              displayName: user.displayName || crewProfileData?.name || 'User',
               photoURL: user.photoURL,
-              role: 'crew_member', // Mock role
-              department: 'production', // Mock department
-              experience: 'intermediate', // Mock experience level
-            });
+              role: crewProfileData?.profileType || 'crew_member',
+              department: crewProfileData?.jobTitles?.[0]?.department || 'production',
+              experience: crewProfileData?.experience || 'intermediate',
+            };
+
+            setUserProfile(resolvedProfile);
+            setRequiresEmailVerification(shouldRequireEmailVerification(user, crewProfileData));
           } else {
             setUserProfile(null);
+            setRequiresEmailVerification(false);
           }
+          setLoading(false);
         } catch (error) {
           console.error('[AuthProvider] Error in auth state change handler:', error);
           setLoading(false);
@@ -1094,6 +1122,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     currentUser,
     loading,
     userProfile,
+    requiresEmailVerification,
     login,
     signup,
     loginWithGoogle,
@@ -1110,4 +1139,4 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       {children}
     </AuthContext.Provider>
   );
-}; 
+};

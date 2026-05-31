@@ -9,7 +9,7 @@ const EmailVerificationPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
-  const { currentUser, sendEmailVerification, resendVerificationEmail } = useAuth();
+  const { currentUser, sendEmailVerification, resendVerificationEmail, logout } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
 
@@ -85,6 +85,11 @@ const EmailVerificationPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleBackToSignIn = async () => {
+    await logout();
+    navigate('/login');
   };
 
   if (!currentUser) {
@@ -186,7 +191,7 @@ const EmailVerificationPage: React.FC = () => {
             <div className="text-center">
               <button
                 type="button"
-                onClick={() => navigate('/login')}
+                onClick={handleBackToSignIn}
                 className="text-sm text-gray-600 hover:text-gray-500 transition-colors"
               >
                 {t('auth.verify.backToSignIn')}
@@ -206,4 +211,4 @@ const EmailVerificationPage: React.FC = () => {
   );
 };
 
-export default EmailVerificationPage; 
+export default EmailVerificationPage;

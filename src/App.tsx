@@ -1,5 +1,5 @@
 import React, { Suspense, useEffect } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from './theme/ThemeProvider';
 import { useAuth } from './contexts/AuthContext';
@@ -101,7 +101,7 @@ function buildGlobalSiteStructuredData(): Record<string, unknown> {
 }
 
 function AppContent() {
-  const { currentUser, logout } = useAuth();
+  const { currentUser, logout, requiresEmailVerification } = useAuth();
   const { i18n } = useTranslation();
   const location = useLocation();
   
@@ -152,6 +152,10 @@ function AppContent() {
       console.error('Error signing out:', error);
     }
   };
+
+  if (requiresEmailVerification && location.pathname !== '/verify-email') {
+    return <Navigate to="/verify-email" state={{ from: `${location.pathname}${location.search}${location.hash}` }} replace />;
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground" style={{ fontFamily: 'Inter, sans-serif' }}>

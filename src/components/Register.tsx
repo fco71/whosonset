@@ -77,7 +77,7 @@ const Register: React.FC = () => {
       console.log('[Register] Signup completed successfully');
       setSuccess(t('auth.errors.accountCreated'));
       setTimeout(() => {
-        navigate('/');
+        navigate('/verify-email');
       }, 1500);
     } catch (error: any) {
       console.error('[Register] Registration error:', error);
