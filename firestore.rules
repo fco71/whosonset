@@ -44,7 +44,7 @@ service cloud.firestore {
     function isScreenplayTeamMemberData(data) {
       return signedIn() &&
         data.teamMembers is list &&
-        request.auth.uid in data.teamMembers;
+        data.teamMembers.hasAny([request.auth.uid]);
     }
 
     function isScreenplayMemberData(data) {

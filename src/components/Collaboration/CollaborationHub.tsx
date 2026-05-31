@@ -672,11 +672,6 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       handleSnapshot('uploadedBy'),
       handleError('uploadedBy')
     ));
-    unsubscribes.push(onSnapshot(
-      query(screenplaysRef, where('teamMembers', 'array-contains', currentUser.uid)),
-      handleSnapshot('teamMembers'),
-      handleError('teamMembers')
-    ));
 
     const ids = accessibleWorkspaceIdsKey ? accessibleWorkspaceIdsKey.split(',') : [];
     for (let i = 0; i < ids.length; i += 10) {

@@ -61,7 +61,7 @@ describe('security rules guardrails', () => {
     expect(rules).toMatch(/function\s+isScreenplayAccessUpdate/);
     expect(rules).toMatch(/function\s+isScreenplayReviewStatusUpdate/);
     expect(rules).toMatch(/function\s+isScreenplayTeamMemberData/);
-    expect(rules).toMatch(/request\.auth\.uid\s+in\s+data\.teamMembers/);
+    expect(rules).toMatch(/data\.teamMembers\.hasAny\(\[request\.auth\.uid\]\)/);
     expect(rules).toMatch(/allow\s+get:\s+if\s+isScreenplayMemberData\(resource\.data\)/);
     expect(rules).toMatch(/allow\s+list:\s+if\s+isScreenplayTeamMemberData\(resource\.data\)/);
     expect(rules).toMatch(/affectedKeys\(\)\.hasOnly\(\[\s*'fountainSource'/);
@@ -91,6 +91,12 @@ describe('security rules guardrails', () => {
     expect(viewer).toMatch(/where\('workspaceId',\s*'==',\s*screenplayWorkspaceId\)/);
     expect(viewer).toMatch(/where\('targetId',\s*'==',\s*screenplay\.id\)/);
     expect(viewer).toMatch(/currentUser\?\.uid,\s*screenplay\.id,\s*screenplayWorkspaceId/);
+  });
+
+  it('does not run the denied screenplay teamMembers collection query', () => {
+    const hub = readRepoFile('src/components/Collaboration/CollaborationHub.tsx');
+
+    expect(hub).not.toMatch(/where\('teamMembers',\s*'array-contains'/);
   });
 
   it('keeps known credential-shaped values out of tracked documentation', () => {
