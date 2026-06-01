@@ -1,6 +1,6 @@
 ---
 title: WhosOnSet Project Overview
-last_reviewed: 2026-05-31
+last_reviewed: 2026-06-01
 status: current operating summary
 ---
 
@@ -57,31 +57,36 @@ Current guardrails:
 - Teacher-authored annotations/tags are visually differentiated, filterable, and addressable by the screenplay manager/student.
 - Students can mark individual teacher notes or all teacher notes addressed. This writes workspace activity and auto-marks matching note/mention notifications read.
 - Workspace Recent activity and screenplay History show review progress.
-- Supervisors and owners can export a workspace-level grading CSV.
+- Supervisors and owners can export a workspace-level grading CSV with student, screenplay, review status, review note, annotation/tag details, author, supervisor flag, resolved state, and timestamp.
 - Screenplay deletion is gated to the screenplay uploader or workspace owner in both UI and Firestore rules.
 - Screenplay tag updates/deletes now follow the same moderation model as annotations: ordinary participants cannot close/delete someone else's tag; managers can address supervisor notes; supervisors can moderate review notes.
 - Chat email notifications honor the chat email preference and are throttled to one email per recipient/conversation every 30 minutes. In-app notifications still update per message.
 
 ## Latest Verification
 
-Local checks on 2026-05-31:
+Local checks on 2026-06-01:
 
 - `npm run test:run` passes: 71 tests across 8 files.
-- `npm run build` passes. Latest build emitted `main.b5ac00a7.js`, `717.0312b616.chunk.js`, and `717.c99762f6.css`.
-- `firebase login:list` active account: `iam@myfilmjobs.com`.
+- `npm run build` passes. Latest build emitted `main.5bf19c76.js`, `717.c915344d.chunk.js`, `4866.e735b3c1.chunk.js`, and `runtime.d49b7efb.js`.
 - `firebase deploy --project my-film-jobs --only firestore:rules` succeeded after the screenplay-tag rules hardening.
-- Commit `d2a13b45` (`Harden screenplay tag moderation`) was pushed to `main`; GitHub Actions run `26730813074` completed successfully and deployed production Hosting.
+- Commit `0a461f79` (`Include review notes in grading export`) was pushed to `main`; GitHub Actions run `26760811755` completed successfully and deployed production Hosting.
 
-Live production QA on 2026-05-31:
+Live production QA on 2026-06-01:
 
-- Auth sanity: fresh email/password signup is forced to `/verify-email`; direct `/` access redirects back while unverified; verified email/password login enters the app; Google sign-in button remains visible.
-- Disposable auth QA accounts used during the latest checks were disabled or deleted after testing:
-  - `codex.auth.1780276428623@example.com`
-  - `codex.auth.full.1780276984832@example.com`
-  - `codex.mobile.1780277652796@example.com`
-- Mobile screenplay viewer smoke at 390px width passed against production: Fountain text rendered, the collaboration panel defaulted collapsed, the panel did not overlap the document, and there was no horizontal overflow. Temporary workspace/screenplay data for this check was cleaned up.
-- Home, Collaboration, and Screenplay Viewer previously loaded with CSS intact after the production CSS extraction change.
-- EN -> ES -> EN language toggle previously worked without blank text or client errors.
+- Auth sanity remains verified from the latest production pass: fresh email/password signup is forced to `/verify-email`; direct `/` access redirects back while unverified; verified email/password login enters the app; Google sign-in button remains visible.
+- Home, Collaboration, and Screenplay Viewer loaded with CSS intact after the production CSS extraction change.
+- EN -> ES -> EN language toggle worked without blank text or client errors.
+- Production grading CSV export passed after `0a461f79`: the downloaded CSV included the student, screenplay, annotation, tag, teacher author, resolved `Yes` and `No` states, `Review status`, `Review note`, `Changes requested`, and the teacher review note text.
+- Mobile PDF screenplay viewer smoke passed at 390px width against production: the PDF canvas rendered, the collaboration side panel defaulted collapsed, the panel did not cover the document, there was no horizontal overflow, and no console errors were observed.
+- Successful disposable CSV/PDF QA data was cleaned up after testing:
+  - `codex.csv.teacher.1780323486990@example.com`
+  - `codex.csv.student.1780323486990@example.com`
+  - `codex.csv.teacher.1780323846411@example.com`
+  - `codex.csv.student.1780323846411@example.com`
+- Two public `crewProfiles` from an earlier failed CSV attempt still need admin cleanup because the auth users no longer sign in and local `gcloud` reauth is currently required:
+  - `codex.csv.teacher.1780323197646@example.com` / `crewProfiles/RDRa6IhS76dWBXQKIHWS5TiOO7s1`
+  - `codex.csv.student.1780323197646@example.com` / `crewProfiles/w3yLq0lNmCeCrYbw37RqhfFHPxk2`
+- No public `crewProfiles` remained for the later failed attempt `1780323332157`; any related workspace cleanup requires admin credentials because workspace documents are not publicly readable.
 
 Last full student/teacher collaboration QA:
 
@@ -92,20 +97,20 @@ Last full student/teacher collaboration QA:
 - Covered: workspace creation, invite accept, teacher self-promotion, annotation, tag, @mention, request-changes note, student address flow, delete protection, activity/history, and grading report path.
 - Do not store their password in git. Reset in Firebase Auth or recreate accounts if another agent needs to reuse them.
 
-Deployment status before this session:
+Deployment status:
 
-- GitHub Actions Hosting deploy for commit `662dd199` succeeded and deployed the verification gate.
+- GitHub Actions Hosting deploy for commit `0a461f79` succeeded and deployed the grading CSV review-note fix.
 - GitHub Actions Functions deploy run `26719755692` succeeded from commit `86b576a4`.
 - All 18 Gen 2 Cloud Functions were confirmed `ACTIVE` on `nodejs22`.
 - GitHub workflow actions were upgraded to Node 24-compatible majors: `actions/checkout@v6`, `actions/setup-node@v6`, and `google-github-actions/auth@v3`.
 
 ## Recommended Next Steps
 
-1. Manually verify the production grading CSV download from the UI and confirm rows show student, teacher notes, resolved state, and review note as expected.
-2. Run a real-phone PDF screenplay viewer check: side panel toggle, visible document area, and action buttons.
-3. Harden the broad project-management Firestore rules in a focused session. Current risky collections include `tasks`, `projectCrew`, `projectBudgets`, `projectTimelines`, `projectDocuments`, `projectMilestones`, `projectBudget`, `collaborativeTasks`, and `breakdownElements`.
-4. Move arbitrary client-created top-level notifications toward server-side creation to reduce spam/phishing risk.
-5. Replace client-side all-profile member search with an indexed search or callable search endpoint before larger classroom use.
+1. Reauth Firebase/gcloud admin credentials, delete the two orphaned `codex.csv.*.1780323197646@example.com` public `crewProfiles`, and check whether failed attempt `codex_csv_ws_1780323332157` left any workspace document to remove.
+2. Harden the broad project-management Firestore rules in a focused session. Current risky collections include `tasks`, `projectCrew`, `projectBudgets`, `projectTimelines`, `projectDocuments`, `projectMilestones`, `projectBudget`, `collaborativeTasks`, and `breakdownElements`.
+3. Move arbitrary client-created top-level notifications toward server-side creation to reduce spam/phishing risk.
+4. Replace client-side all-profile member search with an indexed search or callable search endpoint before larger classroom use.
+5. Add lightweight automated tests around review-status transitions, @mention matching, supervisor permission gating, and grading CSV row generation.
 6. Plan a separate `firebase-functions` package upgrade; deploy logs warn the current package is outdated and may have breaking changes when upgraded.
 7. Reduce long-term maintenance risk in `ScreenplayViewer.scss` and the large collaboration components after the assignment-critical flow is stable.
 
@@ -115,4 +120,5 @@ Deployment status before this session:
 - Member search still scans all crew profiles client-side.
 - The supplemental screenplay `teamMembers` collection subscription was removed because Firestore denied that broad list query; current collaboration loading relies on `uploadedBy` and workspace-scoped screenplay queries.
 - Public `crewProfiles` reads and authenticated `users/{userId}` reads are intentional current behavior but should be reviewed before broader launch if contact info needs tighter privacy.
+- Local `gcloud auth print-access-token` currently fails with a reauth error, and `firebase projects:list` fails despite `firebase login:list` showing `iam@myfilmjobs.com`; run `gcloud auth login` or `firebase login --reauth` before admin cleanup/deploy work that needs fresh credentials.
 - A restore drill has not been performed against Firestore backups. Backups are configured, but a restore into a throwaway database would prove the process.
