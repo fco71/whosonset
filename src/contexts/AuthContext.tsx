@@ -187,10 +187,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       console.log('[AuthContext] Firebase Auth user created with UID:', user.uid);
       
-      // Send email verification
-      await sendEmailVerification(user);
-      console.log('[AuthContext] Email verification sent');
-      
       // Create display name from first/last name or email fallback
       const displayName = (firstName && lastName) 
         ? `${firstName} ${lastName}`
@@ -275,6 +271,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await setDoc(doc(db, 'UserCollections', user.uid), userCollectionsData);
       
       console.log('[AuthContext] UserCollections document created successfully');
+
+      try {
+        await sendEmailVerification(user);
+        console.log('[AuthContext] Email verification sent');
+      } catch (verificationError) {
+        console.warn('[AuthContext] Initial verification email failed; user can resend from /verify-email:', verificationError);
+      }
+
       console.log('[AuthContext] User created successfully with crewProfiles document only');
       
     } catch (error) {
