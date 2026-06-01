@@ -12,6 +12,16 @@ import EmailNotificationService from '../../services/emailNotificationService';
 import { logWorkspaceActivity, WorkspaceActivityVerb } from '../../services/workspaceActivityService';
 import FountainViewer from './FountainViewer';
 import type { ScreenplayReviewStatus, WorkspaceMember } from '../../types/Collaboration';
+import {
+  applyMentionSuggestion,
+  extractMentionedUserIds as extractMentionedUserIdsFromText,
+  filterMentionSuggestions,
+  getMentionQueryAtCursor
+} from '../../utilities/mentions';
+import {
+  canModerateScreenplayElement,
+  canResolveScreenplayElement
+} from '../../utilities/screenplayElementPermissions';
 
 const debugLog = (...args: unknown[]) => {
   if (process.env.NODE_ENV !== 'production') {
@@ -164,6 +174,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     createdAt?: unknown;
   }>>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [canManageScreenplay, setCanManageScreenplay] = useState(false);
   const [canUpdateReviewAsCreator, setCanUpdateReviewAsCreator] = useState(false);
   const [canUpdateReviewAsReviewer, setCanUpdateReviewAsReviewer] = useState(false);
   const [updatingReviewStatus, setUpdatingReviewStatus] = useState(false);
@@ -599,6 +610,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     setScreenplayWorkspaceId(null);
     setScreenplayUploadedBy(null);
     setReviewStatus(screenplay.reviewStatus || 'draft');
+    setCanManageScreenplay(false);
     setCanUpdateReviewAsCreator(false);
     setCanUpdateReviewAsReviewer(false);
     if (!screenplay.url || typeof screenplay.url !== 'string' || screenplay.url.trim() === '') {
@@ -618,7 +630,8 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       setReviewStatus(isScreenplayReviewStatus(data?.reviewStatus) ? data.reviewStatus : 'draft');
       setReviewStatusNote(typeof data?.reviewStatusNote === 'string' ? data.reviewStatusNote : '');
 
-      let creatorAllowed = Boolean(currentUser?.uid && uploadedBy === currentUser.uid);
+      let managerAllowed = Boolean(currentUser?.uid && uploadedBy === currentUser.uid);
+      let creatorAllowed = managerAllowed;
       let reviewerAllowed = false;
 
       if (currentUser?.uid && workspaceId) {
@@ -635,11 +648,13 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
             const supervisorIds = Array.isArray(workspace.supervisorIds) ? workspace.supervisorIds : [];
             const viewerIds = Array.isArray(workspace.viewerIds) ? workspace.viewerIds : [];
             const selfElectedSupervisors = Array.isArray(workspace.selfElectedSupervisors) ? workspace.selfElectedSupervisors : [];
+            const isWorkspaceOwner = workspace.ownerId === currentUser.uid;
             const isSupervisor = member?.role === 'supervisor' ||
               supervisorIds.includes(currentUser.uid) ||
               selfElectedSupervisors.includes(currentUser.uid);
             const isViewer = member?.role === 'viewer' || viewerIds.includes(currentUser.uid);
             const isReadOnly = isSupervisor || isViewer;
+            managerAllowed = managerAllowed || isWorkspaceOwner;
             creatorAllowed = creatorAllowed ||
               ((workspace.status || 'active') === 'active' && memberIds.includes(currentUser.uid) && !isReadOnly);
             reviewerAllowed = isSupervisor;
@@ -650,6 +665,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       }
 
       if (!cancelled) {
+        setCanManageScreenplay(managerAllowed);
         setCanUpdateReviewAsCreator(creatorAllowed);
         setCanUpdateReviewAsReviewer(reviewerAllowed);
       }
@@ -995,18 +1011,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
 
   const mentionSuggestions = useMemo(() => {
     if (!mentionState) return [] as typeof collaborators;
-    const q = mentionState.query.toLowerCase();
-    return collaborators
-      .filter(c => c?.id && c.id !== currentUser?.uid)
-      .filter(c => {
-        if (!q) return true;
-        const fullName = (c.name || '').toLowerCase();
-        const firstName = fullName.split(/\s+/)[0] || '';
-        const squashed = fullName.replace(/\s+/g, '');
-        const emailLocal = (c.email || '').toLowerCase().split('@')[0] || '';
-        return firstName.startsWith(q) || squashed.startsWith(q) || emailLocal.startsWith(q) || fullName.includes(q);
-      })
-      .slice(0, 6);
+    return filterMentionSuggestions(collaborators, mentionState.query, currentUser?.uid) as typeof collaborators;
   }, [mentionState, collaborators, currentUser]);
 
   const updateMentionStateFromInput = (
@@ -1014,15 +1019,11 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     value: string,
     cursorPos: number
   ) => {
-    const upToCursor = value.slice(0, cursorPos);
-    // Last `@` that's at start of value or preceded by whitespace, followed
-    // only by mention-allowed chars up to the cursor.
-    const atMatch = upToCursor.match(/(^|\s)@([A-Za-z0-9_.-]*)$/);
-    if (atMatch) {
-      const tokenStart = cursorPos - atMatch[2].length - 1;
-      setMentionState(prev => prev && prev.input === inputKind && prev.start === tokenStart
-        ? { ...prev, query: atMatch[2] } // preserve activeIndex while typing
-        : { query: atMatch[2], start: tokenStart, input: inputKind, activeIndex: 0 });
+    const mentionQuery = getMentionQueryAtCursor(value, cursorPos);
+    if (mentionQuery) {
+      setMentionState(prev => prev && prev.input === inputKind && prev.start === mentionQuery.start
+        ? { ...prev, query: mentionQuery.query } // preserve activeIndex while typing
+        : { ...mentionQuery, input: inputKind, activeIndex: 0 });
     } else {
       setMentionState(null);
     }
@@ -1030,13 +1031,9 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
 
   const insertMentionSuggestion = (collaborator: typeof collaborators[number]) => {
     if (!mentionState) return;
-    const name = (collaborator.name || '').split(/\s+/)[0] || (collaborator.email || '').split('@')[0] || 'user';
     const target = mentionState.input;
     const value = target === 'annotation' ? annotationInput : newTag;
-    const before = value.slice(0, mentionState.start);
-    const after = value.slice(mentionState.start + 1 + mentionState.query.length);
-    const spaced = after.startsWith(' ') ? after : ` ${after}`;
-    const next = `${before}@${name}${spaced}`;
+    const next = applyMentionSuggestion(value, mentionState, collaborator);
     if (target === 'annotation') setAnnotationInput(next);
     else setNewTag(next);
     setMentionState(null);
@@ -1127,29 +1124,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   // can be reached by their first-name token, or by the squashed full name.
   // Returns deduped matching collaborator ids (excluding the current user).
   const extractMentionedUserIds = (text: string): string[] => {
-    if (!text || !collaborators.length) return [];
-    const mentionPattern = /@([A-Za-z0-9_.-]{2,})/g;
-    const tokens = new Set<string>();
-    let match: RegExpExecArray | null;
-    while ((match = mentionPattern.exec(text)) !== null) {
-      tokens.add(match[1].toLowerCase());
-    }
-    if (tokens.size === 0) return [];
-    const ids = new Set<string>();
-    for (const c of collaborators) {
-      if (!c?.id || c.id === currentUser?.uid) continue;
-      const fullName = (c.name || '').toLowerCase();
-      const firstName = fullName.split(/\s+/)[0] || '';
-      const squashed = fullName.replace(/\s+/g, '');
-      const emailLocal = (c.email || '').toLowerCase().split('@')[0] || '';
-      for (const tok of tokens) {
-        if (tok === firstName || tok === squashed || tok === emailLocal) {
-          ids.add(c.id);
-          break;
-        }
-      }
-    }
-    return [...ids];
+    return extractMentionedUserIdsFromText(text, collaborators, currentUser?.uid);
   };
 
   // Best-effort: write a "you were @mentioned" notification per target.
@@ -1192,6 +1167,20 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       console.error('Failed to write @mention notification:', err);
     }
   };
+
+  const screenplayElementActorAccess = useMemo(() => ({
+    currentUserId: currentUser?.uid,
+    canManageScreenplay,
+    isScreenplaySupervisor: canUpdateReviewAsReviewer
+  }), [currentUser?.uid, canManageScreenplay, canUpdateReviewAsReviewer]);
+
+  const canResolveElement = useCallback((element: Annotation | Tag): boolean =>
+    canResolveScreenplayElement(element, screenplayElementActorAccess),
+  [screenplayElementActorAccess]);
+
+  const canModerateElement = useCallback((element: Annotation | Tag): boolean =>
+    canModerateScreenplayElement(element, screenplayElementActorAccess),
+  [screenplayElementActorAccess]);
 
   const addAnnotation = async (position: { x: number; y: number; width: number; height: number }, pageNumber: number, annotation: string) => {
     if (!annotation.trim()) return;
@@ -1518,6 +1507,10 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       ? annotations.find(c => c.id === elementId)
       : tags.find(t => t.id === elementId);
     if (!element) return;
+    if (!canResolveElement(element)) {
+      toast.error(t('screenplay.toasts.updateFailed'));
+      return;
+    }
     const nextResolved = !element.resolved;
     // Optimistic update so the user sees the state flip instantly, without waiting for
     // the onSnapshot round-trip. If the write fails we roll back below.
@@ -1625,10 +1618,10 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     if (!currentUser) return { annotations: [] as Annotation[], tags: [] as Tag[] };
     const myUid = currentUser.uid;
     return {
-      annotations: annotations.filter(a => a.supervisorAtAuthorTime === true && !a.resolved && a.userId !== myUid),
-      tags: tags.filter(t => t.supervisorAtAuthorTime === true && !t.resolved && t.userId !== myUid)
+      annotations: annotations.filter(a => a.supervisorAtAuthorTime === true && !a.resolved && a.userId !== myUid && canResolveElement(a)),
+      tags: tags.filter(t => t.supervisorAtAuthorTime === true && !t.resolved && t.userId !== myUid && canResolveElement(t))
     };
-  }, [annotations, tags, currentUser]);
+  }, [annotations, tags, currentUser, canResolveElement]);
   const handleBulkResolveSupervisorNotes = async () => {
     const { annotations: pendingAnn, tags: pendingTags } = unresolvedSupervisorNotes;
     const total = pendingAnn.length + pendingTags.length;
@@ -1681,6 +1674,13 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   const deleteElement = async (elementId: string, type: 'annotation' | 'tag') => {
     try {
       const collectionName = type === 'annotation' ? 'screenplayAnnotations' : 'screenplayTags';
+      const element = type === 'annotation'
+        ? annotations.find(item => item.id === elementId)
+        : tags.find(item => item.id === elementId);
+      if (!element || !canModerateElement(element)) {
+        toast.error(`Failed to delete ${type}`);
+        return;
+      }
       await deleteDoc(doc(db, collectionName, elementId));
       toast.success(`${type === 'annotation' ? 'Annotation' : 'Tag'} deleted successfully!`);
     } catch (error) {
@@ -3288,6 +3288,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                               const isAddressingSupervisor =
                                 annotation.supervisorAtAuthorTime === true &&
                                 annotation.userId !== currentUser?.uid;
+                              if (!canResolveElement(annotation)) return null;
                               return !annotation.resolved ? (
                                 <button
                                   onClick={() => toggleElementResolved(annotation.id, 'annotation')}
@@ -3308,12 +3309,14 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                                 </button>
                               );
                             })()}
-                            <button 
-                              onClick={(e) => { e.stopPropagation(); deleteElement(annotation.id, 'annotation'); }}
-                              className="action-btn delete"
-                            >
-                              🗑️ {t('screenplay.actions.delete')}
-                            </button>
+                            {canModerateElement(annotation) && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); deleteElement(annotation.id, 'annotation'); }}
+                                className="action-btn delete"
+                              >
+                                🗑️ {t('screenplay.actions.delete')}
+                              </button>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -3417,18 +3420,22 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                             >
                               📍 {t('screenplay.actions.goTo')}
                             </button>
-                            <button 
-                              onClick={(e) => { e.stopPropagation(); toggleElementResolved(tag.id, 'tag'); }}
-                              className={`action-btn ${tag.resolved ? 'resolved' : ''}`}
-                            >
-                              {tag.resolved ? `🔄 ${t('screenplay.actions.reopen')}` : `✅ ${t('screenplay.actions.resolve')}`}
-                            </button>
-                            <button 
-                              onClick={(e) => { e.stopPropagation(); deleteElement(tag.id, 'tag'); }}
-                              className="action-btn delete"
-                            >
-                              🗑️ {t('screenplay.actions.delete')}
-                            </button>
+                            {canResolveElement(tag) && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); toggleElementResolved(tag.id, 'tag'); }}
+                                className={`action-btn ${tag.resolved ? 'resolved' : ''}`}
+                              >
+                                {tag.resolved ? `🔄 ${t('screenplay.actions.reopen')}` : `✅ ${t('screenplay.actions.resolve')}`}
+                              </button>
+                            )}
+                            {canModerateElement(tag) && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); deleteElement(tag.id, 'tag'); }}
+                                className="action-btn delete"
+                              >
+                                🗑️ {t('screenplay.actions.delete')}
+                              </button>
+                            )}
                           </div>
                         </div>
                       ))}

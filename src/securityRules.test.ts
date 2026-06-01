@@ -85,6 +85,16 @@ describe('security rules guardrails', () => {
     expect(annotationRules).not.toMatch(/allow\s+update,\s+delete:\s+if\s+signedIn\(\)\s+&&\s+canAccessScreenplay/);
   });
 
+  it('keeps screenplay tags aligned with annotation moderation rules', () => {
+    const rules = readRepoFile('firestore.rules');
+    const tagRules = rules.match(/match\s+\/screenplayTags\/\{tagId\}\s+\{[\s\S]*?\n\s+\}\n\n\s+match\s+\/screenplaySessions/)?.[0] || '';
+
+    expect(tagRules).toMatch(/allow\s+update:\s+if\s+keepsAnnotationIdentity/);
+    expect(tagRules).toMatch(/isAnnotationResolveUpdate\(request\.resource\.data,\s+resource\.data\)/);
+    expect(tagRules).toMatch(/allow\s+delete:\s+if\s+canModerateAnnotationData\(resource\.data\)/);
+    expect(tagRules).not.toMatch(/allow\s+update,\s+delete:\s+if\s+signedIn\(\)\s+&&\s+canAccessScreenplay/);
+  });
+
   it('keeps screenplay history queries aligned with workspace-scoped activity rules', () => {
     const viewer = readRepoFile('src/components/Collaboration/ScreenplayViewer.tsx');
 

@@ -678,8 +678,9 @@ service cloud.firestore {
       allow create: if signedIn() &&
         request.resource.data.userId == request.auth.uid &&
         canAccessScreenplay(request.resource.data.screenplayId);
-      allow update, delete: if signedIn() &&
-        canAccessScreenplay(resource.data.screenplayId);
+      allow update: if keepsAnnotationIdentity(request.resource.data, resource.data) &&
+        isAnnotationResolveUpdate(request.resource.data, resource.data);
+      allow delete: if canModerateAnnotationData(resource.data);
     }
 
     match /screenplaySessions/{sessionId} {
