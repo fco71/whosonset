@@ -70,6 +70,7 @@ Local checks on 2026-05-31:
 - `npm run build` passes. Latest build emitted `main.b5ac00a7.js`, `717.0312b616.chunk.js`, and `717.c99762f6.css`.
 - `firebase login:list` active account: `iam@myfilmjobs.com`.
 - `firebase deploy --project my-film-jobs --only firestore:rules` succeeded after the screenplay-tag rules hardening.
+- Commit `d2a13b45` (`Harden screenplay tag moderation`) was pushed to `main`; GitHub Actions run `26730813074` completed successfully and deployed production Hosting.
 
 Live production QA on 2026-05-31:
 
@@ -100,14 +101,13 @@ Deployment status before this session:
 
 ## Recommended Next Steps
 
-1. Push this session's code/doc changes and verify the GitHub Actions run completes.
-2. Manually verify the production grading CSV download from the UI and confirm rows show student, teacher notes, resolved state, and review note as expected.
-3. Run a real-phone PDF screenplay viewer check: side panel toggle, visible document area, and action buttons.
-4. Harden the broad project-management Firestore rules in a focused session. Current risky collections include `tasks`, `projectCrew`, `projectBudgets`, `projectTimelines`, `projectDocuments`, `projectMilestones`, `projectBudget`, `collaborativeTasks`, and `breakdownElements`.
-5. Move arbitrary client-created top-level notifications toward server-side creation to reduce spam/phishing risk.
-6. Replace client-side all-profile member search with an indexed search or callable search endpoint before larger classroom use.
-7. Plan a separate `firebase-functions` package upgrade; deploy logs warn the current package is outdated and may have breaking changes when upgraded.
-8. Reduce long-term maintenance risk in `ScreenplayViewer.scss` and the large collaboration components after the assignment-critical flow is stable.
+1. Manually verify the production grading CSV download from the UI and confirm rows show student, teacher notes, resolved state, and review note as expected.
+2. Run a real-phone PDF screenplay viewer check: side panel toggle, visible document area, and action buttons.
+3. Harden the broad project-management Firestore rules in a focused session. Current risky collections include `tasks`, `projectCrew`, `projectBudgets`, `projectTimelines`, `projectDocuments`, `projectMilestones`, `projectBudget`, `collaborativeTasks`, and `breakdownElements`.
+4. Move arbitrary client-created top-level notifications toward server-side creation to reduce spam/phishing risk.
+5. Replace client-side all-profile member search with an indexed search or callable search endpoint before larger classroom use.
+6. Plan a separate `firebase-functions` package upgrade; deploy logs warn the current package is outdated and may have breaking changes when upgraded.
+7. Reduce long-term maintenance risk in `ScreenplayViewer.scss` and the large collaboration components after the assignment-critical flow is stable.
 
 ## Known Gaps
 
