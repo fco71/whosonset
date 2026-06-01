@@ -137,6 +137,13 @@ class CollaborationErrorBoundary extends React.Component<ErrorBoundaryProps, Err
   }
 }
 
+// Screenplay/document upload size cap. Kept equal to the Storage rule's
+// `isDocumentUpload` limit (25MB) so the client rejects oversized files with a
+// clear message instead of letting them fail later with an opaque Storage
+// permission error. Raise BOTH this and storage.rules together if needed.
+const MAX_UPLOAD_MB = 25;
+const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
+
 const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const { t } = useTranslation();
   const { currentUser } = useAuth();
@@ -165,7 +172,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       requireApproval: true,
       autoArchive: false,
       retentionDays: 365,
-      maxFileSize: 100 * 1024 * 1024,
+      maxFileSize: MAX_UPLOAD_BYTES,
       allowedFileTypes: ['pdf', 'doc', 'docx', 'txt', 'jpg', 'png']
     }
   });
@@ -1065,7 +1072,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
           requireApproval: true,
           autoArchive: false,
           retentionDays: 365,
-          maxFileSize: 100 * 1024 * 1024,
+          maxFileSize: MAX_UPLOAD_BYTES,
           allowedFileTypes: ['pdf', 'doc', 'docx', 'txt', 'jpg', 'png']
         }
       });
@@ -1201,6 +1208,12 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     }
     if (uploadWorkspace && !canEditWorkspaceContent(uploadWorkspace)) {
       toast.error('Your role in this workspace can view and comment, but cannot upload screenplays.');
+      return null;
+    }
+    // Reject oversized files up front with a clear message — otherwise the
+    // upload reaches Storage and fails with an opaque permission error.
+    if (file.size > MAX_UPLOAD_BYTES) {
+      toast.error(t('collaboration.screenplaysTab.fileTooLarge', { name: file.name, max: MAX_UPLOAD_MB }));
       return null;
     }
 
@@ -2167,7 +2180,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                     requireApproval: true,
                     autoArchive: false,
                     retentionDays: 365,
-                    maxFileSize: 100 * 1024 * 1024,
+                    maxFileSize: MAX_UPLOAD_BYTES,
                     allowedFileTypes: ['pdf', 'doc', 'docx', 'txt', 'jpg', 'png']
                   }
                 });
@@ -2526,7 +2539,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                   value={Math.round(workspaceSettings.maxFileSize / (1024 * 1024))}
                   onChange={(e) => setWorkspaceSettings(prev => ({
                     ...prev,
-                    maxFileSize: (parseInt(e.target.value) || 100) * 1024 * 1024
+                    maxFileSize: (parseInt(e.target.value) || MAX_UPLOAD_MB) * 1024 * 1024
                   }))}
                   className="form-input"
                   min="1"

@@ -834,6 +834,7 @@
       "deleteSuccess": "Screenplay deleted successfully",
       "deleteFailed": "Failed to delete screenplay",
       "deleteNotAllowed": "Only the screenplay uploader or workspace creator can delete this screenplay.",
+      "fileTooLarge": "\"{{name}}\" is too large. Maximum file size is {{max}} MB.",
       "uploadSuccess": "uploaded successfully!",
       "uploadFailed": "Failed to upload screenplay"
     },

@@ -799,6 +799,7 @@
       "deleteSuccess": "Guión eliminado exitosamente",
       "deleteFailed": "Error al eliminar guión",
       "deleteNotAllowed": "Solo quien subió el guion o el creador del espacio de trabajo puede eliminarlo.",
+      "fileTooLarge": "\"{{name}}\" es demasiado grande. El tamaño máximo es {{max}} MB.",
       "uploadSuccess": "subido exitosamente!",
       "uploadFailed": "Error al subir guión"
     },
