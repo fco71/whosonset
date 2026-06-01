@@ -71,7 +71,7 @@ Local checks on 2026-06-01:
 - `npm run build` passes. Latest build emitted `main.5bf19c76.js`, `4381.502476a9.chunk.js`, `4287.91b132f0.chunk.js`, `4649.5fc1a464.chunk.js`, `6025.aafa9326.chunk.js`, and `runtime.9403c756.js`.
 - Firebase CLI and `gcloud` are both authenticated as `iam@myfilmjobs.com`; `gcloud` project is `my-film-jobs`.
 - `firebase deploy --project my-film-jobs --only firestore:rules` succeeded after project-management rule hardening. The rules dry run also compiled successfully before deploy.
-- Commit `0a461f79` (`Include review notes in grading export`) was pushed to `main`; GitHub Actions run `26760811755` completed successfully and deployed production Hosting.
+- Commit `56866a2b` (`Harden project management Firestore rules`) was pushed to `main`; GitHub Actions run `26768768291` completed successfully and deployed production Hosting.
 
 Live production QA on 2026-06-01:
 
@@ -105,7 +105,7 @@ Last full student/teacher collaboration QA:
 
 Deployment status:
 
-- GitHub Actions Hosting deploy for commit `0a461f79` succeeded and deployed the grading CSV review-note fix.
+- GitHub Actions Hosting deploy for commit `56866a2b` succeeded and deployed the project-management rule hardening companion code.
 - Firestore rules were deployed directly from local after project-management access hardening.
 - GitHub Actions Functions deploy run `26719755692` succeeded from commit `86b576a4`.
 - All 18 Gen 2 Cloud Functions were confirmed `ACTIVE` on `nodejs22`.
