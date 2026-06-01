@@ -113,7 +113,7 @@ Deployment status:
 
 ## Recommended Next Steps
 
-1. Move arbitrary client-created top-level notifications toward server-side creation to reduce spam/phishing risk.
+1. Notification hardening — **Phase 1 DONE 2026-06-01** (`a866d50c`, deployed via `firebase deploy --only firestore:rules`): the top-level `/notifications` create rule now requires `link` to be absent/empty/internal-relative (`^/([^/].*)?$`, <500 chars — blocks `javascript:`, `http(s)://`, `//host` phishing links) plus title<300 / body<2000 caps; `securityRules.test.ts` guards it. Client creation still allowed (audit showed writes are inconsistent — social uses `relatedUserId`, job/interview set no `senderId` — so `senderId`-based rules were NOT viable). All current writes verified compliant (links internal/absent/empty; `socialService.ts:428` uses `actionUrl || ''`, hence the empty-string allowance). **Phase 2 (deferred, post-assignment):** normalize the notification write schema (consistent `senderId`), move creation server-side one event type at a time (invitation, follow, chat, applicationMessages, interview, annotations/tags/mentions, review-status/collaborator-add), then flip to `create: if false`. Write sites: jobApplicationService, messagingService, socialService(.v2), CollaborationHub, ScreenplayViewer, InterviewScheduler.
 2. Replace client-side all-profile member search with an indexed search or callable search endpoint before larger classroom use.
 3. Add lightweight automated tests around review-status transitions, @mention matching, supervisor permission gating, and grading CSV row generation.
 4. Plan a separate `firebase-functions` package upgrade; deploy logs warn the current package is outdated and may have breaking changes when upgraded.
