@@ -117,7 +117,7 @@ Deployment status:
 2. Replace client-side all-profile member search with an indexed search or callable search endpoint before larger classroom use.
 3. Add lightweight automated tests around review-status transitions, @mention matching, supervisor permission gating, and grading CSV row generation.
 4. Plan a separate `firebase-functions` package upgrade; deploy logs warn the current package is outdated and may have breaking changes when upgraded.
-5. Lower the screenplay/project-document upload cap and warning copy before broader classroom use. `CollaborationHub` still defaults workspace `maxFileSize` to `100MB`, while Storage document uploads are capped at `25MB`; both are higher than needed for screenplays.
+5. ~~Lower the screenplay/project-document upload cap~~ — DONE 2026-06-01 (`b3e83fb9`). `CollaborationHub` now uses `MAX_UPLOAD_BYTES` (25MB, = the Storage `isDocumentUpload` cap) for all default `maxFileSize` values, and `uploadSingleScreenplay` rejects oversized files up front with a localized `fileTooLarge` toast instead of letting them fail opaquely at Storage. Hosting-only (no rules change). Lower both `MAX_UPLOAD_MB` and storage.rules together if a tighter cap (e.g. 10MB) is later wanted.
 6. Reduce long-term maintenance risk in `ScreenplayViewer.scss` and the large collaboration components after the assignment-critical flow is stable.
 
 ## Known Gaps
