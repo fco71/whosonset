@@ -583,7 +583,21 @@ service cloud.firestore {
 
     match /notifications/{notificationId} {
       allow read, update, delete: if ownsUserId(resource.data);
-      allow create: if signedIn() && request.resource.data.userId is string;
+      // Client creation is still allowed (the app writes notifications
+      // cross-user), but hardened against the phishing/spam vector: `link`
+      // must be absent or an internal relative path — blocking javascript:,
+      // http(s):// and protocol-relative //host links — and title/body carry
+      // sane length caps. Full server-side creation (create: if false) is a
+      // planned follow-up once the notification write schema is normalized.
+      allow create: if signedIn()
+        && request.resource.data.userId is string
+        && (!('link' in request.resource.data)
+            || request.resource.data.link == ''
+            || (request.resource.data.link is string
+                && request.resource.data.link.size() < 500
+                && request.resource.data.link.matches('^/([^/].*)?$')))
+        && (!('title' in request.resource.data) || request.resource.data.title.size() < 300)
+        && (!('body' in request.resource.data) || request.resource.data.body.size() < 2000);
     }
 
     match /workspaceInvitations/{invitationId} {

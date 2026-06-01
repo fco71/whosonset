@@ -44,6 +44,24 @@ describe('security rules guardrails', () => {
     expect(activityRules).toMatch(/allow\s+delete:\s+if\s+signedIn\(\)\s+&&\s+isWorkspaceOwner/);
   });
 
+  it('constrains top-level notification creation to internal links + capped payloads', () => {
+    const rules = readRepoFile('firestore.rules');
+    // The top-level /notifications block is the one whose first allow line is
+    // `read, update, delete: if ownsUserId(...)` (the users/ + crewProfiles/
+    // subcollection notification blocks start with `allow read:` instead).
+    const notifRules = rules.match(/match\s+\/notifications\/\{notificationId\}\s+\{\s*\n\s*allow read, update, delete: if ownsUserId\(resource\.data\);[\s\S]*?\n\s+\}/)?.[0] || '';
+
+    expect(notifRules).toMatch(/allow\s+create:\s+if\s+signedIn\(\)/);
+    // link must be absent or an internal relative path (blocks external/phishing URLs)
+    expect(notifRules).toMatch(/request\.resource\.data\.link\.matches\(/);
+    expect(notifRules).toMatch(/request\.resource\.data\.link\.size\(\)\s*<\s*500/);
+    // payload length caps
+    expect(notifRules).toMatch(/title\.size\(\)\s*<\s*300/);
+    expect(notifRules).toMatch(/body\.size\(\)\s*<\s*2000/);
+    // must NOT regress to the old unconstrained create
+    expect(notifRules).not.toMatch(/allow\s+create:\s+if\s+signedIn\(\)\s+&&\s+request\.resource\.data\.userId\s+is\s+string;/);
+  });
+
   it('keeps project-management collections scoped to project access instead of any signed-in user', () => {
     const rules = readRepoFile('firestore.rules');
     const projectScopedCollections = [
