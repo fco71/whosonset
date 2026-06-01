@@ -83,10 +83,14 @@ Live production QA on 2026-06-01:
   - `codex.csv.student.1780323486990@example.com`
   - `codex.csv.teacher.1780323846411@example.com`
   - `codex.csv.student.1780323846411@example.com`
-- Two public `crewProfiles` from an earlier failed CSV attempt still need admin cleanup because the auth users no longer sign in and local `gcloud` reauth is currently required:
-  - `codex.csv.teacher.1780323197646@example.com` / `crewProfiles/RDRa6IhS76dWBXQKIHWS5TiOO7s1`
-  - `codex.csv.student.1780323197646@example.com` / `crewProfiles/w3yLq0lNmCeCrYbw37RqhfFHPxk2`
-- No public `crewProfiles` remained for the later failed attempt `1780323332157`; any related workspace cleanup requires admin credentials because workspace documents are not publicly readable.
+- After Firebase CLI reauth, the earlier failed CSV attempt cleanup was completed by deleting the two orphan public `crewProfiles`, the two known first-run `workspaceMemberships`, and the two exact failed-test workspace IDs:
+  - `crewProfiles/RDRa6IhS76dWBXQKIHWS5TiOO7s1`
+  - `crewProfiles/w3yLq0lNmCeCrYbw37RqhfFHPxk2`
+  - `workspaceMemberships/codex_csv_ws_1780323197646_RDRa6IhS76dWBXQKIHWS5TiOO7s1`
+  - `workspaceMemberships/codex_csv_ws_1780323197646_w3yLq0lNmCeCrYbw37RqhfFHPxk2`
+  - `workspaces/codex_csv_ws_1780323197646`
+  - `workspaces/codex_csv_ws_1780323332157`
+- Public `crewProfiles` queries now return no matches for the `codex.csv.*.1780323197646@example.com` and `codex.csv.*.1780323332157@example.com` disposable accounts.
 
 Last full student/teacher collaboration QA:
 
@@ -106,13 +110,12 @@ Deployment status:
 
 ## Recommended Next Steps
 
-1. Reauth Firebase/gcloud admin credentials, delete the two orphaned `codex.csv.*.1780323197646@example.com` public `crewProfiles`, and check whether failed attempt `codex_csv_ws_1780323332157` left any workspace document to remove.
-2. Harden the broad project-management Firestore rules in a focused session. Current risky collections include `tasks`, `projectCrew`, `projectBudgets`, `projectTimelines`, `projectDocuments`, `projectMilestones`, `projectBudget`, `collaborativeTasks`, and `breakdownElements`.
-3. Move arbitrary client-created top-level notifications toward server-side creation to reduce spam/phishing risk.
-4. Replace client-side all-profile member search with an indexed search or callable search endpoint before larger classroom use.
-5. Add lightweight automated tests around review-status transitions, @mention matching, supervisor permission gating, and grading CSV row generation.
-6. Plan a separate `firebase-functions` package upgrade; deploy logs warn the current package is outdated and may have breaking changes when upgraded.
-7. Reduce long-term maintenance risk in `ScreenplayViewer.scss` and the large collaboration components after the assignment-critical flow is stable.
+1. Harden the broad project-management Firestore rules in a focused session. Current risky collections include `tasks`, `projectCrew`, `projectBudgets`, `projectTimelines`, `projectDocuments`, `projectMilestones`, `projectBudget`, `collaborativeTasks`, and `breakdownElements`.
+2. Move arbitrary client-created top-level notifications toward server-side creation to reduce spam/phishing risk.
+3. Replace client-side all-profile member search with an indexed search or callable search endpoint before larger classroom use.
+4. Add lightweight automated tests around review-status transitions, @mention matching, supervisor permission gating, and grading CSV row generation.
+5. Plan a separate `firebase-functions` package upgrade; deploy logs warn the current package is outdated and may have breaking changes when upgraded.
+6. Reduce long-term maintenance risk in `ScreenplayViewer.scss` and the large collaboration components after the assignment-critical flow is stable.
 
 ## Known Gaps
 
@@ -120,5 +123,5 @@ Deployment status:
 - Member search still scans all crew profiles client-side.
 - The supplemental screenplay `teamMembers` collection subscription was removed because Firestore denied that broad list query; current collaboration loading relies on `uploadedBy` and workspace-scoped screenplay queries.
 - Public `crewProfiles` reads and authenticated `users/{userId}` reads are intentional current behavior but should be reviewed before broader launch if contact info needs tighter privacy.
-- Local `gcloud auth print-access-token` currently fails with a reauth error, and `firebase projects:list` fails despite `firebase login:list` showing `iam@myfilmjobs.com`; run `gcloud auth login` or `firebase login --reauth` before admin cleanup/deploy work that needs fresh credentials.
+- Firebase CLI is reauthed as `iam@myfilmjobs.com`; local `gcloud auth print-access-token` still fails with a reauth error, so run `gcloud auth login` before work that specifically depends on `gcloud`.
 - A restore drill has not been performed against Firestore backups. Backups are configured, but a restore into a throwaway database would prove the process.
