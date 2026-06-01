@@ -822,6 +822,8 @@
       "columns": {
         "student": "Estudiante",
         "screenplay": "Guion",
+        "reviewStatus": "Estado de revisión",
+        "reviewNote": "Nota de revisión",
         "type": "Tipo",
         "category": "Categoría",
         "page": "Página",

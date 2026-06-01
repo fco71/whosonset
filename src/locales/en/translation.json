@@ -857,6 +857,8 @@
       "columns": {
         "student": "Student",
         "screenplay": "Screenplay",
+        "reviewStatus": "Review status",
+        "reviewNote": "Review note",
         "type": "Type",
         "category": "Category",
         "page": "Page",

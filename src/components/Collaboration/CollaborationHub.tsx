@@ -1558,6 +1558,8 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       const headers = [
         t('collaboration.gradingReport.columns.student'),
         t('collaboration.gradingReport.columns.screenplay'),
+        t('collaboration.gradingReport.columns.reviewStatus'),
+        t('collaboration.gradingReport.columns.reviewNote'),
         t('collaboration.gradingReport.columns.type'),
         t('collaboration.gradingReport.columns.category'),
         t('collaboration.gradingReport.columns.page'),
@@ -1577,14 +1579,17 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
           return isNaN(d.getTime()) ? '' : d.toISOString();
         } catch { return ''; }
       };
-      type Row = { student: string; screenplay: string; type: string; category: string; page: number; content: string; author: string; supervisor: string; resolved: string; timestamp: string };
+      type Row = { student: string; screenplay: string; reviewStatus: string; reviewNote: string; type: string; category: string; page: number; content: string; author: string; supervisor: string; resolved: string; timestamp: string };
       const rowsFromNotes = (notes: RawNote[], type: string, category: (note: RawNote) => string, content: (note: RawNote) => string): Row[] =>
         notes.map(n => {
           const sp = n.screenplayId ? screenplayById.get(n.screenplayId) : undefined;
           const student = sp?.uploadedBy ? (uidToName.get(sp.uploadedBy) || `Crew Member ${sp.uploadedBy.slice(-4)}`) : '';
+          const reviewStatus = sp?.reviewStatus ? t(`collaboration.reviewStatus.labels.${sp.reviewStatus}`) : '';
           return {
             student,
             screenplay: sp?.name || '',
+            reviewStatus,
+            reviewNote: sp?.reviewStatusNote || '',
             type,
             category: category(n),
             page: n.pageNumber ?? 0,
@@ -1600,7 +1605,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         ...rowsFromNotes(allTags, t('collaboration.gradingReport.types.tag'), n => n.tagType ? t(`screenplay.categories.${n.tagType}`, { defaultValue: n.tagType }) : '', n => n.content || '')
       ];
       allRows.sort((a, b) => a.student.localeCompare(b.student) || a.screenplay.localeCompare(b.screenplay) || a.page - b.page || a.timestamp.localeCompare(b.timestamp));
-      const csv = '﻿' + [headers, ...allRows.map(r => [r.student, r.screenplay, r.type, r.category, r.page, r.content, r.author, r.supervisor, r.resolved, r.timestamp].map(escapeCsv).join(','))].join('\r\n');
+      const csv = '﻿' + [headers, ...allRows.map(r => [r.student, r.screenplay, r.reviewStatus, r.reviewNote, r.type, r.category, r.page, r.content, r.author, r.supervisor, r.resolved, r.timestamp].map(escapeCsv).join(','))].join('\r\n');
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const date = new Date().toISOString().slice(0, 10);
