@@ -60,6 +60,7 @@ export class ProjectCrewService {
 
       await updateDoc(projectRef, {
         crewMembers: arrayUnion(newCrewMember),
+        crewMemberIds: arrayUnion(crewMember.userId),
         lastUpdated: serverTimestamp(),
         updateCount: (projectData.updateCount || 0) + 1
       });
@@ -118,6 +119,7 @@ export class ProjectCrewService {
 
       await updateDoc(projectRef, {
         crewMembers: updatedCrew,
+        crewMemberIds: arrayRemove(userId),
         lastUpdated: serverTimestamp(),
         updateCount: (projectData.updateCount || 0) + 1
       });

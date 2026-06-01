@@ -44,6 +44,36 @@ describe('security rules guardrails', () => {
     expect(activityRules).toMatch(/allow\s+delete:\s+if\s+signedIn\(\)\s+&&\s+isWorkspaceOwner/);
   });
 
+  it('keeps project-management collections scoped to project access instead of any signed-in user', () => {
+    const rules = readRepoFile('firestore.rules');
+    const projectScopedCollections = [
+      'tasks',
+      'projectCrew',
+      'projectBudgets',
+      'projectTimelines',
+      'projectDocuments',
+      'projectMilestones',
+      'projectBudget',
+      'collaborativeTasks',
+      'breakdownElements',
+    ];
+
+    expect(rules).toMatch(/function\s+isProjectParticipantData/);
+    expect(rules).toMatch(/function\s+canAccessProject/);
+    expect(rules).toMatch(/function\s+canAccessProjectScopedData/);
+    expect(rules).toMatch(/data\.crewMemberIds\s+is\s+list/);
+    expect(rules).toMatch(/data\.createdBy\s+==\s+request\.auth\.uid/);
+
+    projectScopedCollections.forEach(collectionName => {
+      const collectionRules = rules.match(new RegExp(`match\\s+\\/${collectionName}\\/\\{[^}]+\\}\\s+\\{[\\s\\S]*?\\n\\s+\\}`))?.[0] || '';
+
+      expect(collectionRules).toMatch(/canAccessProjectScopedData\(resource\.data\)/);
+      expect(collectionRules).toMatch(/canAccessProjectScopedData\(request\.resource\.data\)/);
+      expect(collectionRules).not.toMatch(/allow\s+read,\s+write:\s+if\s+signedIn\(\)/);
+      expect(collectionRules).not.toMatch(/allow\s+read,\s+write:\s+if\s+request\.auth\s*!=\s*null/);
+    });
+  });
+
   it('keeps workspace invitation responses on the callable/Admin SDK path', () => {
     const rules = readRepoFile('firestore.rules');
     const invitationRules = rules.match(/match\s+\/workspaceInvitations\/\{invitationId\}\s+\{[\s\S]*?\n\s+\}/)?.[0] || '';

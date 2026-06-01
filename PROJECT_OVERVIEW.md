@@ -61,15 +61,16 @@ Current guardrails:
 - Screenplay deletion is gated to the screenplay uploader or workspace owner in both UI and Firestore rules.
 - Screenplay tag updates/deletes now follow the same moderation model as annotations: ordinary participants cannot close/delete someone else's tag; managers can address supervisor notes; supervisors can moderate review notes.
 - Chat email notifications honor the chat email preference and are throttled to one email per recipient/conversation every 30 minutes. In-app notifications still update per message.
+- Project-management collections (`tasks`, project crew/budget/timeline/document/milestone records, collaborative tasks, and breakdown elements) are now project-scoped in Firestore rules instead of readable/writable by any authenticated user. New legacy `Projects` records keep a `crewMemberIds` access list for rule checks.
 
 ## Latest Verification
 
 Local checks on 2026-06-01:
 
-- `npm run test:run` passes: 71 tests across 8 files.
-- `npm run build` passes. Latest build emitted `main.5bf19c76.js`, `717.c915344d.chunk.js`, `4866.e735b3c1.chunk.js`, and `runtime.d49b7efb.js`.
+- `npm run test:run` passes: 72 tests across 8 files.
+- `npm run build` passes. Latest build emitted `main.5bf19c76.js`, `4381.502476a9.chunk.js`, `4287.91b132f0.chunk.js`, `4649.5fc1a464.chunk.js`, `6025.aafa9326.chunk.js`, and `runtime.9403c756.js`.
 - Firebase CLI and `gcloud` are both authenticated as `iam@myfilmjobs.com`; `gcloud` project is `my-film-jobs`.
-- `firebase deploy --project my-film-jobs --only firestore:rules` succeeded after the screenplay-tag rules hardening.
+- `firebase deploy --project my-film-jobs --only firestore:rules` succeeded after project-management rule hardening. The rules dry run also compiled successfully before deploy.
 - Commit `0a461f79` (`Include review notes in grading export`) was pushed to `main`; GitHub Actions run `26760811755` completed successfully and deployed production Hosting.
 
 Live production QA on 2026-06-01:
@@ -105,17 +106,18 @@ Last full student/teacher collaboration QA:
 Deployment status:
 
 - GitHub Actions Hosting deploy for commit `0a461f79` succeeded and deployed the grading CSV review-note fix.
+- Firestore rules were deployed directly from local after project-management access hardening.
 - GitHub Actions Functions deploy run `26719755692` succeeded from commit `86b576a4`.
 - All 18 Gen 2 Cloud Functions were confirmed `ACTIVE` on `nodejs22`.
 - GitHub workflow actions were upgraded to Node 24-compatible majors: `actions/checkout@v6`, `actions/setup-node@v6`, and `google-github-actions/auth@v3`.
 
 ## Recommended Next Steps
 
-1. Harden the broad project-management Firestore rules in a focused session. Current risky collections include `tasks`, `projectCrew`, `projectBudgets`, `projectTimelines`, `projectDocuments`, `projectMilestones`, `projectBudget`, `collaborativeTasks`, and `breakdownElements`.
-2. Move arbitrary client-created top-level notifications toward server-side creation to reduce spam/phishing risk.
-3. Replace client-side all-profile member search with an indexed search or callable search endpoint before larger classroom use.
-4. Add lightweight automated tests around review-status transitions, @mention matching, supervisor permission gating, and grading CSV row generation.
-5. Plan a separate `firebase-functions` package upgrade; deploy logs warn the current package is outdated and may have breaking changes when upgraded.
+1. Move arbitrary client-created top-level notifications toward server-side creation to reduce spam/phishing risk.
+2. Replace client-side all-profile member search with an indexed search or callable search endpoint before larger classroom use.
+3. Add lightweight automated tests around review-status transitions, @mention matching, supervisor permission gating, and grading CSV row generation.
+4. Plan a separate `firebase-functions` package upgrade; deploy logs warn the current package is outdated and may have breaking changes when upgraded.
+5. Lower the screenplay/project-document upload cap and warning copy before broader classroom use. `CollaborationHub` still defaults workspace `maxFileSize` to `100MB`, while Storage document uploads are capped at `25MB`; both are higher than needed for screenplays.
 6. Reduce long-term maintenance risk in `ScreenplayViewer.scss` and the large collaboration components after the assignment-critical flow is stable.
 
 ## Known Gaps

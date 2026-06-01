@@ -99,6 +99,79 @@ service cloud.firestore {
         get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.ownerId == uid;
     }
 
+    function isProjectParticipantData(data, uid) {
+      return signedIn() && (
+        data.createdBy == uid ||
+        data.ownerId == uid ||
+        data.owner_uid == uid ||
+        (
+          data.memberIds is list &&
+          data.memberIds.hasAny([uid])
+        ) ||
+        (
+          data.crewMemberIds is list &&
+          data.crewMemberIds.hasAny([uid])
+        ) ||
+        (
+          data.allowedViewers is list &&
+          data.allowedViewers.hasAny([uid])
+        ) ||
+        (
+          data.editorIds is list &&
+          data.editorIds.hasAny([uid])
+        )
+      );
+    }
+
+    function isLowercaseProjectParticipant(projectId, uid) {
+      return projectId is string &&
+        exists(/databases/$(database)/documents/projects/$(projectId)) &&
+        isProjectParticipantData(
+          get(/databases/$(database)/documents/projects/$(projectId)).data,
+          uid
+        );
+    }
+
+    function isLegacyProjectParticipant(projectId, uid) {
+      return projectId is string &&
+        exists(/databases/$(database)/documents/Projects/$(projectId)) &&
+        isProjectParticipantData(
+          get(/databases/$(database)/documents/Projects/$(projectId)).data,
+          uid
+        );
+    }
+
+    function canAccessProject(projectId) {
+      return signedIn() &&
+        projectId is string &&
+        (
+          isLowercaseProjectParticipant(projectId, request.auth.uid) ||
+          isLegacyProjectParticipant(projectId, request.auth.uid)
+        );
+    }
+
+    function ownsProjectScopedRecord(data) {
+      return signedIn() && (
+        data.createdBy == request.auth.uid ||
+        data.addedBy == request.auth.uid ||
+        data.uploadedBy == request.auth.uid ||
+        data.userId == request.auth.uid ||
+        data.crewMemberId == request.auth.uid ||
+        data.assignedTo == request.auth.uid
+      );
+    }
+
+    function canAccessProjectScopedData(data) {
+      return signedIn() &&
+        (
+          (
+            data.projectId is string &&
+            canAccessProject(data.projectId)
+          ) ||
+          ownsProjectScopedRecord(data)
+        );
+    }
+
     function canEditScreenplayData(data) {
       return isScreenplayMemberData(data) &&
         !isWorkspaceReadOnlyParticipant(data.workspaceId, request.auth.uid);
@@ -457,9 +530,10 @@ service cloud.firestore {
       }
     }
 
-    // Tasks - only authenticated users can read/write
+    // Project-scoped tasks. The caller must have access to the owning project.
     match /tasks/{taskId} {
-      allow read, write: if request.auth != null;
+      allow read, update, delete: if canAccessProjectScopedData(resource.data);
+      allow create: if canAccessProjectScopedData(request.resource.data);
     }
 
     // Public reference data. Client writes are intentionally blocked.
@@ -588,30 +662,35 @@ service cloud.firestore {
       allow create: if signedIn() && request.resource.data.userId is string;
     }
 
-    // Project-management collections still need project-member-level schema work;
-    // this explicit allow list removes the repo-wide wildcard while preserving current flows.
+    // Project-management collections are scoped to the owning project.
     match /projectCrew/{docId} {
-      allow read, write: if signedIn();
+      allow read, update, delete: if canAccessProjectScopedData(resource.data);
+      allow create: if canAccessProjectScopedData(request.resource.data);
     }
 
     match /projectBudgets/{docId} {
-      allow read, write: if signedIn();
+      allow read, update, delete: if canAccessProjectScopedData(resource.data);
+      allow create: if canAccessProjectScopedData(request.resource.data);
     }
 
     match /projectTimelines/{docId} {
-      allow read, write: if signedIn();
+      allow read, update, delete: if canAccessProjectScopedData(resource.data);
+      allow create: if canAccessProjectScopedData(request.resource.data);
     }
 
     match /projectDocuments/{docId} {
-      allow read, write: if signedIn();
+      allow read, update, delete: if canAccessProjectScopedData(resource.data);
+      allow create: if canAccessProjectScopedData(request.resource.data);
     }
 
     match /projectMilestones/{docId} {
-      allow read, write: if signedIn();
+      allow read, update, delete: if canAccessProjectScopedData(resource.data);
+      allow create: if canAccessProjectScopedData(request.resource.data);
     }
 
     match /projectBudget/{docId} {
-      allow read, write: if signedIn();
+      allow read, update, delete: if canAccessProjectScopedData(resource.data);
+      allow create: if canAccessProjectScopedData(request.resource.data);
     }
 
     match /crewAvailability/{docId} {
@@ -621,11 +700,13 @@ service cloud.firestore {
     }
 
     match /collaborativeTasks/{taskId} {
-      allow read, write: if signedIn();
+      allow read, update, delete: if canAccessProjectScopedData(resource.data);
+      allow create: if canAccessProjectScopedData(request.resource.data);
     }
 
     match /breakdownElements/{elementId} {
-      allow read, write: if signedIn();
+      allow read, update, delete: if canAccessProjectScopedData(resource.data);
+      allow create: if canAccessProjectScopedData(request.resource.data);
     }
 
     match /applicationMessages/{messageId} {

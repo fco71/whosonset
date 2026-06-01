@@ -55,13 +55,18 @@ const ProjectBudgetView: React.FC<ProjectBudgetViewProps> = ({
         spentBudget: budget?.spentBudget || 0,
         currency: formData.currency,
         categories: formData.categories,
-        lastUpdated: new Date()
+        lastUpdated: new Date(),
+        updatedBy: currentUser.uid
       };
 
       if (budget) {
         await updateDoc(doc(db, 'projectBudget', budget.id), budgetData);
       } else {
-        await addDoc(collection(db, 'projectBudget'), budgetData);
+        await addDoc(collection(db, 'projectBudget'), {
+          ...budgetData,
+          createdBy: currentUser.uid,
+          createdAt: new Date()
+        });
       }
 
       setIsEditingBudget(false);

@@ -84,13 +84,17 @@ const ScreenplayBreakdown: React.FC<ScreenplayBreakdownProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!auth.currentUser) {
+      toast.error('You must be logged in to save breakdown elements');
+      return;
+    }
     
     try {
       const elementData = {
         ...formData,
         documentId: document?.id || null,
         projectId: projectId || 'default-project',
-        createdAt: new Date(),
+        updatedBy: auth.currentUser.uid,
         updatedAt: new Date()
       };
 
@@ -103,7 +107,11 @@ const ScreenplayBreakdown: React.FC<ScreenplayBreakdownProps> = ({
         toast.success('Element updated successfully!');
       } else {
         // Add new element
-        await addDoc(collection(db, 'breakdownElements'), elementData);
+        await addDoc(collection(db, 'breakdownElements'), {
+          ...elementData,
+          createdBy: auth.currentUser.uid,
+          createdAt: new Date()
+        });
         toast.success('Element added successfully!');
       }
 
