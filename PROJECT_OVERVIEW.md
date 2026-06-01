@@ -120,6 +120,52 @@ Deployment status:
 5. ~~Lower the screenplay/project-document upload cap~~ — DONE 2026-06-01 (`b3e83fb9`). `CollaborationHub` now uses `MAX_UPLOAD_BYTES` (25MB, = the Storage `isDocumentUpload` cap) for all default `maxFileSize` values, and `uploadSingleScreenplay` rejects oversized files up front with a localized `fileTooLarge` toast instead of letting them fail opaquely at Storage. Hosting-only (no rules change). Lower both `MAX_UPLOAD_MB` and storage.rules together if a tighter cap (e.g. 10MB) is later wanted.
 6. Reduce long-term maintenance risk in `ScreenplayViewer.scss` and the large collaboration components after the assignment-critical flow is stable.
 
+## Deferred Plan — Phase 2: server-side notification creation
+
+Goal: make notifications creatable only by Cloud Functions, ending at the rule
+`match /notifications/{notificationId} { allow create: if false; ... }`. This
+fully closes the spam/impersonation vectors (Phase 1, shipped, only blocked
+external/phishing links + capped payloads). Big, multi-session, deploy-sensitive
+— do it post-assignment, one event type at a time, never mid-assignment.
+
+Prerequisite — normalize the notification write schema. Writes are inconsistent
+today (social uses `relatedUserId`; job/interview set no `senderId`; collaboration
+sets `senderId` + `titleKey`/`bodyKey`/`i18nParams`). Define ONE canonical
+notification-doc builder used by every trigger: `{ userId (recipient), type,
+senderId, senderName, titleKey, bodyKey, i18nParams, title/body/message
+(fallback), link (internal), relatedId, metadata, isRead:false, read:false,
+createdAt, timestamp }`. Helps: the recipient-locale design stores keys+params and
+renders at read-time, so triggers do NOT need i18n/`t()` on the server.
+
+Per-event-type loop (repeat for each, verifying before the next):
+1. Add/extend a Cloud Function trigger that writes the canonical doc (Admin SDK).
+2. `npm --prefix functions run build`; deploy functions.
+3. Verify the trigger fires in prod (logs + recipient actually gets the in-app notif).
+4. Remove the client-side write for that event; `npm run build`; push (hosting).
+5. Confirm no duplicates and no gaps before moving on.
+
+Sequencing note: deploy the trigger BEFORE removing the client write (a brief
+duplicate is more tolerable than a missed notification). Flip the rule to
+`create: if false` only after EVERY type below is migrated + verified, then update
+the `securityRules.test.ts` guard (it currently asserts the Phase 1 link/cap
+constraints).
+
+Event inventory (client write site → server trigger status):
+- Chat message — `messagingService.ts:711` → `notifyNewMessage` exists (email); extend to also write in-app.
+- Follow request/accepted — `socialService.ts` (~79, ~187), `socialService.v2.ts` (~103, ~139) → `notifyFollowRequest` exists (email); extend.
+- Job application message/status — `jobApplicationService.ts` (~391, ~420, ~441) → `notifyJobApplication*` exist; extend.
+- Legacy `applicationMessages` (top-level) — confirm/cover if still in use.
+- Workspace invitation created — `CollaborationHub.tsx:441` → no trigger; add one on `workspaceInvitations` create. (Accept/decline already server-side in `workspaceInvitations.ts`.)
+- Interview scheduled — `InterviewScheduler.tsx:166` → no trigger; add one.
+- Supervisor annotations/tags + @mentions — `ScreenplayViewer.tsx` (~961 supervisor comment, ~1147 mention) → no trigger; add on `screenplayAnnotations`/`screenplayTags` create.
+- Review-status change / collaborator add — `ScreenplayViewer.tsx` (~2115, ~2240 baseDoc, ~2266) → no trigger; add.
+
+Risks: silent gaps (miss a trigger → that notif type stops), duplicate window
+(trigger live before client write removed), shape drift (off-shape doc → blank
+in-app render), deploy coordination (functions + hosting deploy separately).
+`socialService.ts:428` writes `link: actionUrl || ''` — keep the empty-string
+case working.
+
 ## Known Gaps
 
 - Most collaboration behavior is still covered by manual QA rather than automated integration tests.
