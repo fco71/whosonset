@@ -68,6 +68,7 @@ Local checks on 2026-06-01:
 
 - `npm run test:run` passes: 71 tests across 8 files.
 - `npm run build` passes. Latest build emitted `main.5bf19c76.js`, `717.c915344d.chunk.js`, `4866.e735b3c1.chunk.js`, and `runtime.d49b7efb.js`.
+- Firebase CLI and `gcloud` are both authenticated as `iam@myfilmjobs.com`; `gcloud` project is `my-film-jobs`.
 - `firebase deploy --project my-film-jobs --only firestore:rules` succeeded after the screenplay-tag rules hardening.
 - Commit `0a461f79` (`Include review notes in grading export`) was pushed to `main`; GitHub Actions run `26760811755` completed successfully and deployed production Hosting.
 
@@ -123,5 +124,4 @@ Deployment status:
 - Member search still scans all crew profiles client-side.
 - The supplemental screenplay `teamMembers` collection subscription was removed because Firestore denied that broad list query; current collaboration loading relies on `uploadedBy` and workspace-scoped screenplay queries.
 - Public `crewProfiles` reads and authenticated `users/{userId}` reads are intentional current behavior but should be reviewed before broader launch if contact info needs tighter privacy.
-- Firebase CLI is reauthed as `iam@myfilmjobs.com`; local `gcloud auth print-access-token` still fails with a reauth error, so run `gcloud auth login` before work that specifically depends on `gcloud`.
 - A restore drill has not been performed against Firestore backups. Backups are configured, but a restore into a throwaway database would prove the process.
