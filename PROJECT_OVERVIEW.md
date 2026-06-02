@@ -111,6 +111,16 @@ Deployment status:
 - All 18 Gen 2 Cloud Functions were confirmed `ACTIVE` on `nodejs22`.
 - GitHub workflow actions were upgraded to Node 24-compatible majors: `actions/checkout@v6`, `actions/setup-node@v6`, and `google-github-actions/auth@v3`.
 
+Auth-deletion cleanup trigger (2026-06-02) — DEPLOYED to production (`onAuthUserDeleted(us-central1)`, Node.js 22 **1st Gen**, `✔ Successful create operation`; surgical `firebase deploy --only functions:onAuthUserDeleted` from `iam@myfilmjobs.com` after a `firebase login --reauth`):
+
+- New module `functions/src/onAuthUserDeleted.ts`, exported from `functions/src/index.ts`. A **1st-gen** `functions.auth.user().onDelete` trigger (`firebase-functions/v1`; coexists with the Gen 2 functions). Fires on EVERY auth deletion path — Console, Admin SDK, and in-app self-delete — which is the durable fix for the "deleted-in-Auth user still shows in Crew" problem (Console deletes bypass the client cleanup; no auth trigger existed before).
+- Purpose: when an Auth user is deleted, remove their web-app footprint so they stop appearing (e.g. the Crew directory backed by `crewProfiles`).
+- DELIBERATELY CONSERVATIVE scope (runs automatically, no human confirming at delete-time). DELETES only unambiguously-personal data: `crewProfiles/{uid}` (the directory profile — core ask), `UserCollections/{uid}`, `users/{uid}` (+ its `notifications`/`savedJobs`/`favoriteApplicants` subcollections), `userPreferences/{uid}`, `emailTracking/{uid}`, the user's own `workspaceMemberships` docs, the user's own top-level `notifications`, and strips the uid from member arrays of workspaces they were a MEMBER of.
+- PRESERVES shared/collaborative data: workspaces the deleted user OWNS (e.g. a teacher's workspace full of student screenplays) and all screenplays/annotations are LEFT IN PLACE; the trigger logs a warning with the owned workspace IDs for manual review instead of deleting them. This is intentionally more conservative than the in-app self-delete (`cleanupUserWorkspaces`, which hard-deletes owned workspaces) because that path is user-initiated with consent and this one is admin/console-initiated.
+- Idempotent + best-effort (missing docs swallowed). `npm --prefix functions run build` passes; `lib/onAuthUserDeleted.js` emitted.
+- DEPLOYED 2026-06-02 (see header above). Post-deploy verification still TODO: delete a DISPOSABLE test Auth account and confirm its `crewProfiles` doc disappears from Crew (do NOT test with a real account — the cleanup is a hard delete and irreversible). Check Cloud Functions logs for the `[onAuthUserDeleted] uid=... cleanup summary` line and any `owned ... workspace(s) ... PRESERVED` warning.
+- Note (pre-existing, not from this change): the deploy surfaced a `functions.config()` / Cloud Runtime Config DEPRECATION NOTICE — those APIs shut down March 2026 and any function still relying on `functions.config()` will fail to deploy after that. Fold into the deferred `firebase-functions` upgrade work (migrate to the `params` package; `firebase functions:config:export` assists).
+
 ## Recommended Next Steps
 
 1. Notification hardening — **Phase 1 DONE 2026-06-01** (`a866d50c`, deployed via `firebase deploy --only firestore:rules`): the top-level `/notifications` create rule now requires `link` to be absent/empty/internal-relative (`^/([^/].*)?$`, <500 chars — blocks `javascript:`, `http(s)://`, `//host` phishing links) plus title<300 / body<2000 caps; `securityRules.test.ts` guards it. Client creation still allowed (audit showed writes are inconsistent — social uses `relatedUserId`, job/interview set no `senderId` — so `senderId`-based rules were NOT viable). All current writes verified compliant (links internal/absent/empty; `socialService.ts:428` uses `actionUrl || ''`, hence the empty-string allowance). **Phase 2 (deferred, post-assignment):** normalize the notification write schema (consistent `senderId`), move creation server-side one event type at a time (invitation, follow, chat, applicationMessages, interview, annotations/tags/mentions, review-status/collaborator-add), then flip to `create: if false`. Write sites: jobApplicationService, messagingService, socialService(.v2), CollaborationHub, ScreenplayViewer, InterviewScheduler.
@@ -120,51 +130,107 @@ Deployment status:
 5. ~~Lower the screenplay/project-document upload cap~~ — DONE 2026-06-01 (`b3e83fb9`). `CollaborationHub` now uses `MAX_UPLOAD_BYTES` (25MB, = the Storage `isDocumentUpload` cap) for all default `maxFileSize` values, and `uploadSingleScreenplay` rejects oversized files up front with a localized `fileTooLarge` toast instead of letting them fail opaquely at Storage. Hosting-only (no rules change). Lower both `MAX_UPLOAD_MB` and storage.rules together if a tighter cap (e.g. 10MB) is later wanted.
 6. Reduce long-term maintenance risk in `ScreenplayViewer.scss` and the large collaboration components after the assignment-critical flow is stable.
 
-## Deferred Plan — Phase 2: server-side notification creation
+## Deferred Plan - Phase 2: Server-Side Notification Creation
 
-Goal: make notifications creatable only by Cloud Functions, ending at the rule
-`match /notifications/{notificationId} { allow create: if false; ... }`. This
-fully closes the spam/impersonation vectors (Phase 1, shipped, only blocked
-external/phishing links + capped payloads). Big, multi-session, deploy-sensitive
-— do it post-assignment, one event type at a time, never mid-assignment.
+Goal and end rule: make top-level notifications creatable only by Cloud Functions
+using the Admin SDK, ending at this rule:
 
-Prerequisite — normalize the notification write schema. Writes are inconsistent
-today (social uses `relatedUserId`; job/interview set no `senderId`; collaboration
-sets `senderId` + `titleKey`/`bodyKey`/`i18nParams`). Define ONE canonical
-notification-doc builder used by every trigger: `{ userId (recipient), type,
-senderId, senderName, titleKey, bodyKey, i18nParams, title/body/message
-(fallback), link (internal), relatedId, metadata, isRead:false, read:false,
-createdAt, timestamp }`. Helps: the recipient-locale design stores keys+params and
-renders at read-time, so triggers do NOT need i18n/`t()` on the server.
+```rules
+match /notifications/{notificationId} {
+  allow read, update, delete: if ownsUserId(resource.data);
+  allow create: if false;
+}
+```
 
-Per-event-type loop (repeat for each, verifying before the next):
-1. Add/extend a Cloud Function trigger that writes the canonical doc (Admin SDK).
-2. `npm --prefix functions run build`; deploy functions.
-3. Verify the trigger fires in prod (logs + recipient actually gets the in-app notif).
-4. Remove the client-side write for that event; `npm run build`; push (hosting).
-5. Confirm no duplicates and no gaps before moving on.
+This is the complete fix because clients can no longer create arbitrary
+notification documents at all. Phase 1 reduced damage by blocking external links
+and oversized payloads, but a signed-in client can still create spam or
+impersonation-shaped notifications for any `userId`. `create: if false` closes
+that vector; server triggers still work because the Admin SDK bypasses rules.
 
-Sequencing note: deploy the trigger BEFORE removing the client write (a brief
-duplicate is more tolerable than a missed notification). Flip the rule to
-`create: if false` only after EVERY type below is migrated + verified, then update
-the `securityRules.test.ts` guard (it currently asserts the Phase 1 link/cap
-constraints).
+Prerequisite: normalize notification writes through one canonical doc builder
+before migrating event types. Current client writes have schema drift: social uses
+`relatedUserId`; job/interview writes often omit `senderId`; collaboration writes
+`senderId`, `senderName`, `titleKey`, `bodyKey`, and `i18nParams`. The builder
+should own the exact shape:
 
-Event inventory (client write site → server trigger status):
-- Chat message — `messagingService.ts:711` → `notifyNewMessage` exists (email); extend to also write in-app.
-- Follow request/accepted — `socialService.ts` (~79, ~187), `socialService.v2.ts` (~103, ~139) → `notifyFollowRequest` exists (email); extend.
-- Job application message/status — `jobApplicationService.ts` (~391, ~420, ~441) → `notifyJobApplication*` exist; extend.
-- Legacy `applicationMessages` (top-level) — confirm/cover if still in use.
-- Workspace invitation created — `CollaborationHub.tsx:441` → no trigger; add one on `workspaceInvitations` create. (Accept/decline already server-side in `workspaceInvitations.ts`.)
-- Interview scheduled — `InterviewScheduler.tsx:166` → no trigger; add one.
-- Supervisor annotations/tags + @mentions — `ScreenplayViewer.tsx` (~961 supervisor comment, ~1147 mention) → no trigger; add on `screenplayAnnotations`/`screenplayTags` create.
-- Review-status change / collaborator add — `ScreenplayViewer.tsx` (~2115, ~2240 baseDoc, ~2266) → no trigger; add.
+```ts
+{
+  userId,              // recipient uid
+  type,
+  title, body, message, // English fallback strings; message mirrors body
+  titleKey, bodyKey, i18nParams,
+  link, actionUrl,    // internal-relative only; actionUrl mirrors link
+  relatedId,
+  applicationId, relatedApplicationId,
+  senderId, senderName,
+  status,
+  metadata,
+  isRead: false,
+  read: false,
+  createdAt,
+  timestamp
+}
+```
 
-Risks: silent gaps (miss a trigger → that notif type stops), duplicate window
-(trigger live before client write removed), shape drift (off-shape doc → blank
-in-app render), deploy coordination (functions + hosting deploy separately).
-`socialService.ts:428` writes `link: actionUrl || ''` — keep the empty-string
-case working.
+The keys+params/render-at-read design means triggers do not need server-side
+i18n. Functions should write `titleKey`, `bodyKey`, `i18nParams`, plus English
+fallback `title/body/message`; the recipient's client renders the final localized
+text when the notification is read.
+
+Per-event-type migration loop, repeated one notification type at a time:
+
+1. Add or extend the Cloud Function trigger to write through the canonical
+   builder. Keep the current client write in place for now.
+2. Run `npm --prefix functions run build`, then deploy only the affected
+   function(s).
+3. Verify in production with logs plus the recipient's bell/inbox. Check the
+   document shape, link, `read/isRead`, fallback text, and localized rendering.
+4. Remove the client-side write for that event, run `npm run build`, push/deploy
+   Hosting if frontend code changed.
+5. Re-test that event for duplicates and missed notifications, then update this
+   overview before moving to the next type.
+
+Sequencing rule: deploy the trigger before removing the client write. A brief
+duplicate-notification window is safer than a missed notification. Flip
+`allow create` to `false` only after every event type below is migrated and
+verified. Then update `src/securityRules.test.ts` from the Phase 1 link/cap guard
+to an explicit `allow create: if false` guard.
+
+Event inventory:
+
+| Event | Client write refs | Server trigger status | Migration action |
+| --- | --- | --- | --- |
+| Chat message | `src/services/messagingService.ts:711` | `functions/src/index.ts:1768` `notifyNewMessage` exists for email only | Extend it to write in-app before email preference/cooldown early returns. |
+| Legacy follow request | `src/services/socialService.ts:78`, helper writes at `src/services/socialService.ts:422` | `functions/src/index.ts:1718` `notifyFollowRequest` exists for email only | Extend create trigger to write in-app to `toUserId`. |
+| Legacy follow accepted | `src/services/socialService.ts:186`, helper writes at `src/services/socialService.ts:422` | No accepted-update trigger | Add `followRequests/{requestId}` update trigger for `status: accepted`. |
+| v2 follow request | `src/services/socialService.v2.ts:102`, helper writes at `src/services/socialService.v2.ts:429` | No `follows` create trigger | Add `follows/{followId}` create trigger for pending requests. |
+| v2 follow accepted | `src/services/socialService.v2.ts:138`, helper writes at `src/services/socialService.v2.ts:429` | No `follows` accepted-update trigger | Add `follows/{followId}` update trigger for accepted requests. |
+| Social collaboration request | `src/services/socialService.ts:952` | No trigger and no durable request collection confirmed | Confirm whether this path is still used. If used, migrate to a real request doc + trigger/callable; if unused, remove or disable. |
+| Job application created/self-confirmation | `src/services/jobApplicationService.ts:397` | `functions/src/index.ts:1201` notifies job poster, not applicant self-confirmation | Decide whether applicant self-confirmation is still needed; if yes, add it to the create trigger. |
+| Job application status | `src/services/jobApplicationService.ts:426` | `functions/src/index.ts:1240` already writes in-app for status changes | Remove stale client helper path after verifying current call sites use the trigger. |
+| Job application message | `src/services/jobApplicationService.ts:447` | `functions/src/index.ts:1283` covers `jobApplications/{applicationId}/messages`, not top-level `applicationMessages` | Either add top-level `applicationMessages/{messageId}` trigger or migrate the service to the subcollection path. |
+| Workspace invitation created | `src/components/Collaboration/CollaborationHub.tsx:434`, `src/components/Collaboration/CollaborationHub.tsx:450` | `functions/src/workspaceInvitations.ts:74` handles accept/decline only | Add `workspaceInvitations/{invitationId}` create trigger for invitee notification. |
+| Interview scheduled | `src/components/JobSearch/InterviewScheduler.tsx:166` | No trigger | Add `interviews/{interviewId}` create trigger. |
+| Supervisor annotation/tag | `src/components/Collaboration/ScreenplayViewer.tsx:961` | No trigger | Add `screenplayAnnotations/{annotationId}` and `screenplayTags/{tagId}` create triggers using `supervisorAtAuthorTime` and screenplay `uploadedBy`. |
+| Annotation/tag @mentions | `src/components/Collaboration/ScreenplayViewer.tsx:1147` | No trigger | Reuse the annotation/tag create triggers to parse mentions and notify matching collaborators. |
+| Collaborator added | `src/components/Collaboration/ScreenplayViewer.tsx:2115` | No trigger | Add `screenplays/{screenplayId}` update trigger comparing `teamMembers` before/after. |
+| Review status changed | `src/components/Collaboration/ScreenplayViewer.tsx:2250`, `src/components/Collaboration/ScreenplayViewer.tsx:2266` | No trigger | Add `screenplays/{screenplayId}` update trigger comparing `reviewStatus`. |
+| Manual social test notification | `src/components/Social/SocialTestPage.tsx:113` via `SocialService.createNotification` | No trigger | Remove this manual create path or replace it with a safe test of normal flows. |
+
+Risks and gotchas:
+
+- Silent gaps: if a client write is removed before the matching trigger is live,
+  that notification type stops. Use logs plus recipient UI checks for every type.
+- Duplicate window: trigger-before-client-removal can briefly produce duplicates.
+  This is acceptable while migrating; verify and remove the client write quickly.
+- Shape drift: off-shape docs can render blank or fail filters. The canonical
+  builder and a test guard should lock the field list and defaults.
+- Deploy coordination: Functions and Hosting deploy separately; deploy functions
+  first, then frontend removal, then rules.
+- `src/services/socialService.ts:428` currently writes `link: actionUrl || ''`.
+  Keep the empty-string case working until that helper is removed, because Phase 1
+  rules intentionally allowed empty links for this path.
 
 ## Known Gaps
 
