@@ -49,6 +49,12 @@ interface RegisteredTeacher {
 }
 
 type SaveStatus = 'idle' | 'dirty' | 'saving' | 'saved' | 'error';
+type SaveProfileOptions = {
+  silent?: boolean;
+  formOverride?: CrewProfileFormData;
+  publishedOverride?: boolean;
+};
+type SaveProfileFn = (options?: SaveProfileOptions) => Promise<boolean>;
 
 const fieldInputClassName = 'mfj-vv-field';
 const compactFieldInputClassName = 'mfj-vv-field mfj-vv-field-compact';
@@ -143,6 +149,7 @@ const EditCrewProfile: React.FC = () => {
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savingRef = useRef(false);
   const pendingAutoSaveRef = useRef(false);
+  const saveProfileRef = useRef<SaveProfileFn | null>(null);
 
   const getSaveSnapshot = (formData: CrewProfileFormData, published: boolean) =>
     JSON.stringify({ formData, published });
@@ -507,6 +514,7 @@ const EditCrewProfile: React.FC = () => {
     }
 
     const file = e.target.files[0];
+    const previousProfileImageUrl = latestFormRef.current.profileImageUrl || '';
     console.log('[ProfileImage] Selected file:', { 
       name: file.name, 
       type: file.type, 
@@ -520,6 +528,11 @@ const EditCrewProfile: React.FC = () => {
     try {
       // Set the blob URL for immediate preview
       setForm(f => ({ ...f, profileImageUrl: blobUrl }));
+      setSaveStatus('saving');
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+        autoSaveTimerRef.current = null;
+      }
       
       // Upload to Firebase Storage
       const storageRef = ref(storage, `profileImages/${user.uid}/${Date.now()}_${file.name}`);
@@ -549,9 +562,26 @@ const EditCrewProfile: React.FC = () => {
         // Clear the error after 5 seconds
         setTimeout(() => setError(''), 5000);
       }
-      
-      // Update the form with the persistent URL
-      setForm(f => ({ ...f, profileImageUrl: downloadUrl }));
+
+      const nextForm = { ...latestFormRef.current, profileImageUrl: downloadUrl };
+      const nextSnapshot = getSaveSnapshot(nextForm, latestPublishedRef.current);
+      latestFormRef.current = nextForm;
+      latestSnapshotRef.current = nextSnapshot;
+      setForm(nextForm);
+
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+        autoSaveTimerRef.current = null;
+      }
+
+      const didSaveImage = await saveProfileRef.current?.({
+        silent: true,
+        formOverride: nextForm
+      });
+
+      if (didSaveImage === false && !savingRef.current) {
+        setMessage(t('resume.builder.saveError'));
+      }
       
       // Revoke the temporary blob URL
       URL.revokeObjectURL(blobUrl);
@@ -560,7 +590,10 @@ const EditCrewProfile: React.FC = () => {
     } catch (error) {
       console.error('[ProfileImage] Error uploading image:', error);
       // Revert to the previous image URL if there was an error
-      setForm(f => ({ ...f, profileImageUrl: '' }));
+      const revertedForm = { ...latestFormRef.current, profileImageUrl: previousProfileImageUrl };
+      latestFormRef.current = revertedForm;
+      latestSnapshotRef.current = getSaveSnapshot(revertedForm, latestPublishedRef.current);
+      setForm(revertedForm);
       
       // Revoke the blob URL on error
       URL.revokeObjectURL(blobUrl);
@@ -841,20 +874,36 @@ const EditCrewProfile: React.FC = () => {
     return obj;
   };
 
-  const saveProfile = useCallback(async (options: { silent?: boolean } = {}) => {
+  const saveProfile = useCallback(async (options: SaveProfileOptions = {}) => {
     if (!user) {
       console.log("DEBUG: No user found, cannot save");
       return false;
     }
 
     if (savingRef.current) {
+      if (options.formOverride) {
+        latestFormRef.current = options.formOverride;
+        latestSnapshotRef.current = getSaveSnapshot(
+          options.formOverride,
+          options.publishedOverride ?? latestPublishedRef.current
+        );
+      }
+      if (options.publishedOverride !== undefined) {
+        latestPublishedRef.current = options.publishedOverride;
+      }
       pendingAutoSaveRef.current = true;
       return false;
     }
 
-    const formToSave = latestFormRef.current;
-    const publishedToSave = latestPublishedRef.current;
+    const formToSave = options.formOverride ?? latestFormRef.current;
+    const publishedToSave = options.publishedOverride ?? latestPublishedRef.current;
     const snapshotToSave = getSaveSnapshot(formToSave, publishedToSave);
+
+    if (formToSave.profileImageUrl?.startsWith('blob:')) {
+      pendingAutoSaveRef.current = true;
+      setSaveStatus('saving');
+      return false;
+    }
 
     console.log("DEBUG: Starting save process for user:", user.uid);
     console.log("DEBUG: Form data to save:", formToSave);
@@ -868,11 +917,11 @@ const EditCrewProfile: React.FC = () => {
 
       // Always ensure name and profileImageUrl are set
       const safeName = formToSave.name && formToSave.name.trim() !== '' ? formToSave.name : 'Unknown Crew';
-              let safeProfileImageUrl = formToSave.profileImageUrl && formToSave.profileImageUrl.trim() !== '' ? formToSave.profileImageUrl : '/bust-avatar.svg';
+      let safeProfileImageUrl = formToSave.profileImageUrl && formToSave.profileImageUrl.trim() !== '' ? formToSave.profileImageUrl : '/bust-avatar.svg';
       // Prevent saving blob: URLs
       if (safeProfileImageUrl.startsWith('blob:')) {
         // If the current image is a blob, fallback to previous or default
-                    safeProfileImageUrl = '/bust-avatar.svg';
+        safeProfileImageUrl = '/bust-avatar.svg';
       }
 
       // Ensure email is included in the saved data
@@ -975,10 +1024,23 @@ const EditCrewProfile: React.FC = () => {
   }, [registeredTeachers, t, user]);
 
   useEffect(() => {
+    saveProfileRef.current = saveProfile;
+  }, [saveProfile]);
+
+  useEffect(() => {
     if (!profileLoaded || !user) return;
 
     const currentSnapshot = getSaveSnapshot(form, isPublished);
     latestSnapshotRef.current = currentSnapshot;
+
+    if (form.profileImageUrl?.startsWith('blob:')) {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+        autoSaveTimerRef.current = null;
+      }
+      setSaveStatus('saving');
+      return;
+    }
 
     if (currentSnapshot === lastSavedSnapshotRef.current) {
       if (saveStatus === 'dirty') {
@@ -1938,11 +2000,6 @@ const EditCrewProfile: React.FC = () => {
                           {t('resume.builder.photoConflictDescription', { users: photoConflict.conflictUsers.join(', ') })}
                         </div>
                       )}
-                      
-                      <div className="mfj-vv-card mfj-vv-card-accent mt-2 text-xs text-cyan-800">
-                        <strong>{t('resume.builder.reminderTitle')}</strong>{' '}
-                        {t('resume.builder.profileImageSaveReminder')}
-                      </div>
                     </div>
                   )}
                 </div>
