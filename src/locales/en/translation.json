@@ -921,38 +921,38 @@
       }
     },
     "reviewStatus": {
-      "title": "Teacher review",
+      "title": "Feedback",
       "labels": {
         "draft": "Draft",
-        "submitted": "Submitted for review",
-        "changes_requested": "Changes requested",
-        "approved": "Approved"
+        "submitted": "Shared for feedback",
+        "changes_requested": "Revision notes left",
+        "approved": "Feedback complete"
       },
       "descriptions": {
         "draft": "The screenplay is still being worked on.",
-        "submitted": "The screenplay is waiting for teacher review.",
-        "changes_requested": "A teacher requested changes before approval.",
-        "approved": "A teacher approved this screenplay."
+        "submitted": "The screenplay is shared with supervisors for feedback.",
+        "changes_requested": "A supervisor left revision notes to address.",
+        "approved": "A supervisor finished giving feedback on this version. This is not a grade or endorsement."
       },
       "actions": {
-        "submit": "Submit for review",
-        "requestChanges": "Request changes",
+        "submit": "Share for feedback",
+        "requestChanges": "Leave revision notes",
         "sendChangesRequested": "Send",
-        "approve": "Approve",
+        "approve": "Mark feedback complete",
         "returnToDraft": "Return to draft"
       },
       "cancel": "Cancel",
-      "noteLabel": "Reviewer note",
+      "noteLabel": "Supervisor note",
       "notePromptLabel": "Note to the writer (optional)",
       "notePlaceholder": "Briefly explain what needs to change…",
       "toasts": {
         "draft": "Screenplay returned to draft.",
-        "submitted": "Screenplay submitted for review.",
-        "changes_requested": "Changes requested.",
-        "approved": "Screenplay approved.",
-        "failed": "Could not update review status.",
-        "signIn": "Please sign in to update review status.",
-        "notAllowed": "You cannot change this screenplay review status."
+        "submitted": "Screenplay shared for feedback.",
+        "changes_requested": "Revision notes sent.",
+        "approved": "Feedback marked complete.",
+        "failed": "Could not update feedback status.",
+        "signIn": "Please sign in to update feedback status.",
+        "notAllowed": "You cannot change this screenplay's feedback status."
       }
     },
     "notifications": {
@@ -984,9 +984,9 @@
         "screenplay_uploaded": "uploaded {{target}}",
         "screenplay_created": "started writing {{target}}",
         "screenplay_deleted": "deleted {{target}}",
-        "review_submitted": "submitted {{target}} for review",
-        "review_changes_requested": "requested changes on {{target}}",
-        "review_approved": "approved {{target}}",
+        "review_submitted": "shared {{target}} for feedback",
+        "review_changes_requested": "left revision notes on {{target}}",
+        "review_approved": "marked feedback complete on {{target}}",
         "review_returned_to_draft": "returned {{target}} to draft",
         "member_added": "added {{detail}}",
         "member_self_promoted": "is now supervising this workspace",
@@ -1447,17 +1447,17 @@
         "body": "Page {{page}}: \"{{excerpt}}\""
       },
       "reviewSubmitted": {
-        "title": "{{author}} submitted {{screenplay}} for review",
-        "body": "Open it to review and leave notes."
+        "title": "{{author}} shared {{screenplay}} for feedback",
+        "body": "Open it to read and leave notes."
       },
       "reviewChangesRequested": {
-        "title": "{{reviewer}} requested changes on {{screenplay}}",
-        "body": "Open it to see the review notes.",
+        "title": "{{reviewer}} left revision notes on {{screenplay}}",
+        "body": "Open it to see the notes.",
         "bodyWithNote": "{{note}}"
       },
       "reviewApproved": {
-        "title": "{{reviewer}} approved {{screenplay}}",
-        "body": "Your screenplay was approved."
+        "title": "{{reviewer}} finished feedback on {{screenplay}}",
+        "body": "Feedback on your screenplay is complete."
       },
       "mentionAnnotation": {
         "title": "{{author}} mentioned you on {{screenplay}}",

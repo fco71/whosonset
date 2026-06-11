@@ -886,38 +886,38 @@
       }
     },
     "reviewStatus": {
-      "title": "Revisión del profesor",
+      "title": "Retroalimentación",
       "labels": {
         "draft": "Borrador",
-        "submitted": "Enviado para revisión",
-        "changes_requested": "Cambios solicitados",
-        "approved": "Aprobado"
+        "submitted": "Compartido para retroalimentación",
+        "changes_requested": "Notas de revisión",
+        "approved": "Retroalimentación completa"
       },
       "descriptions": {
         "draft": "El guion todavía está en trabajo.",
-        "submitted": "El guion está esperando revisión del profesor.",
-        "changes_requested": "Un profesor solicitó cambios antes de aprobar.",
-        "approved": "Un profesor aprobó este guion."
+        "submitted": "El guion está compartido con los supervisores para recibir retroalimentación.",
+        "changes_requested": "Un supervisor dejó notas de revisión por atender.",
+        "approved": "Un supervisor terminó de dar retroalimentación sobre esta versión. No es una calificación ni un aval."
       },
       "actions": {
-        "submit": "Enviar para revisión",
-        "requestChanges": "Solicitar cambios",
+        "submit": "Compartir para retroalimentación",
+        "requestChanges": "Dejar notas de revisión",
         "sendChangesRequested": "Enviar",
-        "approve": "Aprobar",
+        "approve": "Marcar retroalimentación completa",
         "returnToDraft": "Volver a borrador"
       },
       "cancel": "Cancelar",
-      "noteLabel": "Nota del revisor",
+      "noteLabel": "Nota del supervisor",
       "notePromptLabel": "Nota para el autor (opcional)",
       "notePlaceholder": "Explica brevemente qué necesita cambiar…",
       "toasts": {
         "draft": "Guion devuelto a borrador.",
-        "submitted": "Guion enviado para revisión.",
-        "changes_requested": "Cambios solicitados.",
-        "approved": "Guion aprobado.",
-        "failed": "No se pudo actualizar el estado de revisión.",
-        "signIn": "Inicia sesión para actualizar el estado de revisión.",
-        "notAllowed": "No puedes cambiar el estado de revisión de este guion."
+        "submitted": "Guion compartido para retroalimentación.",
+        "changes_requested": "Notas de revisión enviadas.",
+        "approved": "Retroalimentación marcada como completa.",
+        "failed": "No se pudo actualizar el estado de retroalimentación.",
+        "signIn": "Inicia sesión para actualizar el estado de retroalimentación.",
+        "notAllowed": "No puedes cambiar el estado de retroalimentación de este guion."
       }
     },
     "notifications": {
@@ -949,9 +949,9 @@
         "screenplay_uploaded": "subió {{target}}",
         "screenplay_created": "empezó a escribir {{target}}",
         "screenplay_deleted": "eliminó {{target}}",
-        "review_submitted": "envió {{target}} para revisión",
-        "review_changes_requested": "solicitó cambios en {{target}}",
-        "review_approved": "aprobó {{target}}",
+        "review_submitted": "compartió {{target}} para retroalimentación",
+        "review_changes_requested": "dejó notas de revisión en {{target}}",
+        "review_approved": "marcó la retroalimentación completa en {{target}}",
         "review_returned_to_draft": "devolvió {{target}} a borrador",
         "member_added": "agregó a {{detail}}",
         "member_self_promoted": "ahora supervisa este espacio de trabajo",
@@ -1412,17 +1412,17 @@
         "body": "Página {{page}}: \"{{excerpt}}\""
       },
       "reviewSubmitted": {
-        "title": "{{author}} envió {{screenplay}} para revisión",
-        "body": "Ábrelo para revisar y dejar notas."
+        "title": "{{author}} compartió {{screenplay}} para retroalimentación",
+        "body": "Ábrelo para leer y dejar notas."
       },
       "reviewChangesRequested": {
-        "title": "{{reviewer}} solicitó cambios en {{screenplay}}",
-        "body": "Ábrelo para ver las notas de revisión.",
+        "title": "{{reviewer}} dejó notas de revisión en {{screenplay}}",
+        "body": "Ábrelo para ver las notas.",
         "bodyWithNote": "{{note}}"
       },
       "reviewApproved": {
-        "title": "{{reviewer}} aprobó {{screenplay}}",
-        "body": "Tu guion fue aprobado."
+        "title": "{{reviewer}} terminó la retroalimentación de {{screenplay}}",
+        "body": "La retroalimentación de tu guion está completa."
       },
       "mentionAnnotation": {
         "title": "{{author}} te mencionó en {{screenplay}}",
