@@ -71,7 +71,8 @@ Local checks on 2026-06-11 (group-centric collaboration restructure):
 
 - `npx tsc --noEmit` clean; `npx webpack --mode production` compiled successfully.
 - `npx vitest run` passes: 77 tests across 8 files.
-- Dev server: `/collaboration` and `/collaboration/:id` resolve and redirect to `/login` when signed out; no console errors. Authenticated click-through (open group, upload inside group, review queue) still needs a real teacher/student login — not yet QA'd.
+- Dev server: `/collaboration` and `/collaboration/:id` resolve and redirect to `/login` when signed out; no console errors.
+- Deployed to the development hosting site (`npm run deploy:dev`, https://my-film-jobs.web.app) on 2026-06-11; Francisco click-tested the group-centric flows there against live data and approved, then pushed the change to `main` himself (commit `a8c5ce9a`). The production Actions deploy succeeded (run 27357596727) and https://myfilmjobs.com now serves the group-centric collaboration UI.
 
 Local checks on 2026-06-01:
 
