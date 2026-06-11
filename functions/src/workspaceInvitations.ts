@@ -64,7 +64,9 @@ async function notifyInviter(
     isRead: false,
     read: false,
     relatedId: workspaceId,
-    link: "/collaboration",
+    // On accept, land the inviter directly on the group's page (they're a member,
+    // so it's readable). Declines go to the hub — there's nothing to open.
+    link: accepted ? `/collaboration/${workspaceId}` : "/collaboration",
     metadata: { workspaceId },
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
     timestamp: admin.firestore.FieldValue.serverTimestamp()
