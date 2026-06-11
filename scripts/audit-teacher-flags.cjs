@@ -27,7 +27,35 @@
 
 const admin = require('firebase-admin');
 
-admin.initializeApp({ projectId: process.env.GCLOUD_PROJECT || 'my-film-jobs' });
+const PROJECT = process.env.GCLOUD_PROJECT || 'my-film-jobs';
+
+// Print BEFORE any async work so a hung/credential-less run is never silent.
+// (A previous run reportedly produced no output; the most likely cause was the
+// Firestore reads below hanging on missing/unauthorized ADC while firebase-admin
+// retried quietly. This banner + the watchdog below make that diagnosable.)
+console.log(`[audit-teacher-flags] starting against project "${PROJECT}"`);
+console.log(
+  `[audit-teacher-flags] auth: ${
+    process.env.GOOGLE_APPLICATION_CREDENTIALS
+      ? 'GOOGLE_APPLICATION_CREDENTIALS=' + process.env.GOOGLE_APPLICATION_CREDENTIALS
+      : 'application-default credentials (gcloud auth application-default login)'
+  }`
+);
+
+// Watchdog: if the run makes no progress (e.g. credentials can read nothing and
+// the client keeps retrying), fail loudly instead of hanging with no output.
+const WATCHDOG_MS = Number(process.env.AUDIT_TIMEOUT_MS || 30000);
+const watchdog = setTimeout(() => {
+  console.error(
+    `\n[audit-teacher-flags] No result after ${WATCHDOG_MS}ms — likely an auth/connectivity problem.\n` +
+      '  Fix: run `gcloud auth application-default login` (account with Firestore read access\n' +
+      '  on my-film-jobs), or set GOOGLE_APPLICATION_CREDENTIALS to a service-account key, then retry.'
+  );
+  process.exit(1);
+}, WATCHDOG_MS);
+watchdog.unref();
+
+admin.initializeApp({ projectId: PROJECT });
 const db = admin.firestore();
 
 const label = (d) =>
@@ -76,9 +104,11 @@ async function main() {
   console.log(
     `\nDone. ${escalations} ungranted supervisor election(s). This script is read-only; nothing was changed.\n`
   );
+  clearTimeout(watchdog);
 }
 
 main().catch((err) => {
-  console.error('Audit failed:', err);
+  clearTimeout(watchdog);
+  console.error('Audit failed:', err && (err.stack || err.message || err));
   process.exit(1);
 });

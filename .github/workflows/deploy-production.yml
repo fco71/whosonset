@@ -73,6 +73,14 @@ jobs:
             echo "REACT_APP_FIREBASE_MEASUREMENT_ID=${REACT_APP_FIREBASE_MEASUREMENT_ID}"
           } > .env
 
+      # Gate the deploy on the same checks run locally. The 2026-06-10 outage
+      # shipped through a pipeline with no typecheck and no tests.
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Run unit tests
+        run: npm run test:run
+
       - name: Build production bundle
         run: npm run build
         env:
@@ -109,10 +117,68 @@ jobs:
       - name: Deploy to Firebase Hosting (production target)
         run: npx firebase deploy --only hosting:production --project my-film-jobs --non-interactive
 
-      - name: Smoke-test the live site
+      # Post-deploy release integrity. This step FAILS the run (the old smoke
+      # test only warned, and went green during the 2026-06-10 missing-chunk
+      # outage). Two guarantees:
+      #   1) Live index.html references the exact main bundle just built
+      #      (catches stale/mixed releases on both hostnames).
+      #   2) Every JS/CSS file in dist/ is served live with a non-HTML
+      #      content-type. Firebase's SPA rewrite serves index.html with
+      #      HTTP 200 for MISSING files, so status alone proves nothing —
+      #      an HTML content-type on a .js path means the chunk is gone.
+      - name: Verify deployed release integrity
         run: |
-          echo "Waiting 10s for CDN to refresh..."
-          sleep 10
+          set -euo pipefail
+          main_local=$(grep -oE 'main\.[a-f0-9]+\.js' dist/index.html | head -n1)
+          if [ -z "$main_local" ]; then
+            echo "::error::No main.*.js reference found in local dist/index.html"
+            exit 1
+          fi
+          echo "Expecting live index.html to reference: $main_local"
+
+          for host in "https://myfilmjobs-com.web.app" "https://myfilmjobs.com"; do
+            ok=0
+            for attempt in $(seq 1 10); do
+              live=$(curl -sS "$host/index.html?cb=$(date +%s)" || true)
+              if printf '%s' "$live" | grep -qF "$main_local"; then
+                echo "$host is serving the new release (attempt $attempt)."
+                ok=1
+                break
+              fi
+              echo "$host not serving the new release yet (attempt $attempt/10); retrying in 10s..."
+              sleep 10
+            done
+            if [ "$ok" != "1" ]; then
+              echo "::error::$host never served an index.html referencing $main_local — stale or mixed release"
+              exit 1
+            fi
+          done
+
+          fail=0
+          count=0
+          while IFS= read -r f; do
+            rel="${f#dist/}"
+            count=$((count + 1))
+            resp=$(curl -sS -o /dev/null -w '%{http_code} %{content_type}' "https://myfilmjobs.com/$rel")
+            code="${resp%% *}"
+            ctype="${resp#* }"
+            if [ "$code" != "200" ]; then
+              echo "::error::/$rel returned HTTP $code"
+              fail=1
+            fi
+            case "$ctype" in
+              text/html*)
+                echo "::error::/$rel was served as HTML — the file is missing from the release and the SPA rewrite masked it"
+                fail=1
+                ;;
+            esac
+          done < <(find dist -type f \( -name '*.js' -o -name '*.css' \) | sort)
+          echo "Checked $count built assets against https://myfilmjobs.com"
+          exit "$fail"
+
+      - name: Smoke-test healthz
+        run: |
+          set -euo pipefail
           for url in \
             "https://myfilmjobs.com/healthz.json" \
             "https://myfilmjobs-com.web.app/healthz.json"; do
@@ -122,6 +188,7 @@ jobs:
             echo "  HTTP $code"
             cat /tmp/body
             if [ "$code" != "200" ]; then
-              echo "::warning::$url returned HTTP $code"
+              echo "::error::$url returned HTTP $code"
+              exit 1
             fi
           done

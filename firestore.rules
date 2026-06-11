@@ -244,6 +244,13 @@ service cloud.firestore {
           (
             newData.reviewStatus in ['changes_requested', 'approved'] &&
             isScreenplaySupervisor(screenplayId, request.auth.uid)
+          ) ||
+          (
+            // Supervisor "Reopen feedback" undo: only from a feedback-finished
+            // state back to submitted. Supervisors still cannot set draft.
+            newData.reviewStatus == 'submitted' &&
+            oldData.reviewStatus in ['changes_requested', 'approved'] &&
+            isScreenplaySupervisor(screenplayId, request.auth.uid)
           )
         );
     }
@@ -921,10 +928,23 @@ service cloud.firestore {
           request.auth.uid == request.resource.data.senderId &&
           isConversationParticipant(get(/databases/$(database)/documents/conversations/$(conversationId)).data);
         
-        // Allow update for reactions, read receipts, and message deletion if user is a participant in the conversation
+        // Participants may update messages, but content-bearing fields are
+        // sender-only. Non-senders are limited to reactions, read receipts,
+        // and hiding the message on their side (delete-for-me). Without the
+        // split, any participant could rewrite the other person's messages.
         allow update: if isConversationParticipant(get(/databases/$(database)/documents/conversations/$(conversationId)).data) &&
-          // Only allow updating specific fields
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions', 'isRead', 'readAt', 'status', 'content', 'fileUrl', 'messageType', 'deletedAt', 'deletedForReceiver']);
+          (
+            (
+              // Sender: edits and delete-for-everyone placeholder rewrites.
+              resource.data.get('senderId', '') == request.auth.uid &&
+              request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions', 'isRead', 'readAt', 'status', 'content', 'fileUrl', 'messageType', 'deletedAt', 'deletedForReceiver'])
+            ) ||
+            (
+              // Non-sender: receipts, reactions, delete-for-me only.
+              resource.data.get('senderId', '') != request.auth.uid &&
+              request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions', 'isRead', 'readAt', 'status', 'deletedAt', 'deletedForReceiver'])
+            )
+          );
         
         // Allow delete if user is the message sender
         allow delete: if request.auth != null && 

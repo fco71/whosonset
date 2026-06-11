@@ -1,20 +1,19 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 
-async function isTeacherProfile(db: admin.firestore.Firestore, uid: string): Promise<boolean> {
-  const directProfile = await db.collection("crewProfiles").doc(uid).get();
-  if (directProfile.exists) {
-    const data = directProfile.data() || {};
-    if (data.isTeacher === true || data.profileType === "teacher") {
-      return true;
-    }
-  }
-
-  const uidProfiles = await db.collection("crewProfiles").where("uid", "==", uid).limit(3).get();
-  return uidProfiles.docs.some((profile) => {
-    const data = profile.data();
-    return data.isTeacher === true || data.profileType === "teacher";
-  });
+// SECURITY: teacher privilege is granted ONLY via an admin-written
+// teacherRoles/{uid} doc (scripts/grant-teacher-role.cjs) — the same source of
+// truth as isVerifiedTeacher() in firestore.rules. This callable runs with the
+// Admin SDK, which BYPASSES Firestore rules, so it must enforce the check
+// itself. The previous implementation read crewProfiles.isTeacher / profileType,
+// which are USER-WRITABLE profile fields: any student could self-label as a
+// teacher and then call this function to self-elect as workspace supervisor,
+// completely bypassing the 2026-06-11 rules/client hardening (which only covered
+// direct writes the client no longer makes). Never gate privilege on
+// crewProfiles fields again.
+async function isVerifiedTeacher(db: admin.firestore.Firestore, uid: string): Promise<boolean> {
+  const grant = await db.collection("teacherRoles").doc(uid).get();
+  return grant.exists;
 }
 
 function isWorkspaceMember(workspace: admin.firestore.DocumentData, uid: string): boolean {
@@ -52,8 +51,8 @@ export const setWorkspaceSupervisorMode = onCall({ region: "us-central1" }, asyn
     throw new HttpsError("permission-denied", "Only workspace members can change supervisor mode.");
   }
 
-  if (!await isTeacherProfile(db, uid)) {
-    throw new HttpsError("permission-denied", "Only teacher profiles can change supervisor mode.");
+  if (!await isVerifiedTeacher(db, uid)) {
+    throw new HttpsError("permission-denied", "Only verified teachers can change supervisor mode.");
   }
 
   await workspaceRef.update({

@@ -10,6 +10,7 @@ export type WorkspaceActivityVerb =
   | 'review_submitted'
   | 'review_changes_requested'
   | 'review_approved'
+  | 'review_reopened'
   | 'review_returned_to_draft'
   | 'member_added'
   | 'member_self_promoted'

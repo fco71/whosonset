@@ -939,6 +939,7 @@
         "requestChanges": "Leave revision notes",
         "sendChangesRequested": "Send",
         "approve": "Mark feedback complete",
+        "reopen": "Reopen feedback",
         "returnToDraft": "Return to draft"
       },
       "cancel": "Cancel",
@@ -950,6 +951,7 @@
         "submitted": "Screenplay shared for feedback.",
         "changes_requested": "Revision notes sent.",
         "approved": "Feedback marked complete.",
+        "reopened": "Feedback reopened.",
         "failed": "Could not update feedback status.",
         "signIn": "Please sign in to update feedback status.",
         "notAllowed": "You cannot change this screenplay's feedback status."
@@ -987,6 +989,7 @@
         "review_submitted": "shared {{target}} for feedback",
         "review_changes_requested": "left revision notes on {{target}}",
         "review_approved": "marked feedback complete on {{target}}",
+        "review_reopened": "reopened feedback on {{target}}",
         "review_returned_to_draft": "returned {{target}} to draft",
         "member_added": "added {{detail}}",
         "member_self_promoted": "is now supervising this workspace",
@@ -1458,6 +1461,10 @@
       "reviewApproved": {
         "title": "{{reviewer}} finished feedback on {{screenplay}}",
         "body": "Feedback on your screenplay is complete."
+      },
+      "reviewReopened": {
+        "title": "{{reviewer}} reopened feedback on {{screenplay}}",
+        "body": "Your screenplay is shared for feedback again."
       },
       "mentionAnnotation": {
         "title": "{{author}} mentioned you on {{screenplay}}",

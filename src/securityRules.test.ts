@@ -119,6 +119,46 @@ describe('security rules guardrails', () => {
     expect(rules).not.toMatch(/allow\s+update:\s+if\s+canEditScreenplayData\(resource\.data\)\s+&&/);
   });
 
+  it('gates the supervisor-mode callable on teacherRoles, not user-writable profile fields', () => {
+    // The client self-elects supervisor through the setWorkspaceSupervisorMode
+    // callable, which runs with the Admin SDK and BYPASSES Firestore rules — so
+    // the firestore.rules isVerifiedTeacher() hardening does NOT protect this
+    // path. The callable must enforce teacherRoles/{uid} itself. Regressing it to
+    // crewProfiles.isTeacher / profileType (user-writable) reopens supervisor
+    // self-election for any student. See PROJECT_OVERVIEW.md (2026-06-11 finding).
+    const fn = readRepoFile('functions/src/workspaceSupervisors.ts');
+
+    expect(fn).toMatch(/collection\(["']teacherRoles["']\)\.doc\(uid\)/);
+    expect(fn).toMatch(/isVerifiedTeacher\(/);
+    // Must NOT gate the privilege on user-writable profile fields.
+    expect(fn).not.toMatch(/data\.isTeacher\s*===\s*true/);
+    expect(fn).not.toMatch(/data\.profileType\s*===\s*["']teacher["']/);
+  });
+
+  it('blocks non-senders from rewriting conversation message content', () => {
+    const rules = readRepoFile('firestore.rules');
+    const convoRules = rules.match(/match\s+\/conversations\/\{conversationId\}\s+\{[\s\S]*?\n\s{4}\}\n/)?.[0] || '';
+
+    // Content-bearing fields must only appear in a sender-gated branch.
+    expect(convoRules).toMatch(/senderId',\s+''\)\s+==\s+request\.auth\.uid\s+&&\s*\n\s*request\.resource\.data\.diff\(resource\.data\)\.affectedKeys\(\)\.hasOnly\(\['reactions',\s+'isRead',\s+'readAt',\s+'status',\s+'content',\s+'fileUrl',\s+'messageType',\s+'deletedAt',\s+'deletedForReceiver'\]\)/);
+    // Non-sender branch must not include content/fileUrl/messageType.
+    expect(convoRules).toMatch(/senderId',\s+''\)\s+!=\s+request\.auth\.uid\s+&&\s*\n\s*request\.resource\.data\.diff\(resource\.data\)\.affectedKeys\(\)\.hasOnly\(\['reactions',\s+'isRead',\s+'readAt',\s+'status',\s+'deletedAt',\s+'deletedForReceiver'\]\)/);
+    // The old single participant-wide field list (content editable by anyone) must be gone.
+    expect(convoRules).not.toMatch(/isConversationParticipant\([^\n]*\)\s+&&\s*\n\s*(\/\/[^\n]*\n\s*)?request\.resource\.data\.diff\(resource\.data\)\.affectedKeys\(\)\.hasOnly\(\[[^\]]*'content'/);
+  });
+
+  it('allows supervisors to reopen feedback but only back to submitted', () => {
+    const rules = readRepoFile('firestore.rules');
+    const reviewFn = rules.match(/function\s+isScreenplayReviewStatusUpdate[\s\S]*?\n\s+\}\n/)?.[0] || '';
+
+    // Reopen branch: submitted only, from a feedback-finished state, supervisor-gated.
+    expect(reviewFn).toMatch(/newData\.reviewStatus\s+==\s+'submitted'\s+&&\s*\n\s*oldData\.reviewStatus\s+in\s+\['changes_requested',\s+'approved'\]\s+&&\s*\n\s*isScreenplaySupervisor\(screenplayId,\s+request\.auth\.uid\)/);
+    // Supervisors must NOT gain a path to 'draft': every branch that can produce
+    // 'draft' must remain creator-gated via canEditScreenplayData.
+    expect(reviewFn).toMatch(/newData\.reviewStatus\s+in\s+\['draft',\s+'submitted'\]\s+&&\s*\n\s*canEditScreenplayData\(oldData\)/);
+    expect(reviewFn).not.toMatch(/'draft'[^\n]*\n[^\n]*isScreenplaySupervisor/);
+  });
+
   it('keeps supervisor annotations protected from broad participant updates', () => {
     const rules = readRepoFile('firestore.rules');
     const annotationRules = rules.match(/match\s+\/screenplayAnnotations\/\{annotationId\}\s+\{[\s\S]*?\n\s+\}\n\n\s+match\s+\/screenplayTags/)?.[0] || '';

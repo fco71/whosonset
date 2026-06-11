@@ -2215,9 +2215,10 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   // Close the review loop with notifications (recipient-locale via titleKey/bodyKey).
   // approved / changes_requested -> notify the screenplay author.
   // submitted -> notify the workspace's supervisors (owner-assigned + self-elected).
+  // supervisor reopen (-> submitted) -> notify the screenplay author instead.
   // returned_to_draft -> no notification (self-action by the creator).
   // Best-effort: never blocks the status change.
-  const notifyReviewStatusChange = async (nextStatus: ScreenplayReviewStatus, note: string = '') => {
+  const notifyReviewStatusChange = async (nextStatus: ScreenplayReviewStatus, note: string = '', isReopen: boolean = false) => {
     if (!currentUser || !screenplayWorkspaceId) return;
     const actorName = currentUser.displayName || t('screenplay.notifications.fallbackAuthor');
     const screenplayName = screenplay.name || t('screenplay.notifications.fallbackScreenplay');
@@ -2255,6 +2256,18 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
             { reviewer: actorName, screenplay: screenplayName, note: trimmedNote }
           ));
         }
+      } else if (nextStatus === 'submitted' && isReopen) {
+        // Supervisor reopened feedback: tell the author their screenplay is
+        // back in the feedback queue (not the supervisors — one of them did it).
+        if (screenplayUploadedBy && screenplayUploadedBy !== currentUser.uid) {
+          await addDoc(collection(db, 'notifications'), baseDoc(
+            screenplayUploadedBy,
+            'review_reopened',
+            'screenplay.notifications.reviewReopened.title',
+            'screenplay.notifications.reviewReopened.body',
+            { reviewer: actorName, screenplay: screenplayName }
+          ));
+        }
       } else if (nextStatus === 'submitted') {
         const wsSnap = await getDoc(doc(db, 'workspaces', screenplayWorkspaceId));
         const data = wsSnap.exists() ? wsSnap.data() : {};
@@ -2276,16 +2289,20 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     }
   };
 
-  const handleReviewStatusChange = async (nextStatus: ScreenplayReviewStatus, note: string = '') => {
+  const handleReviewStatusChange = async (nextStatus: ScreenplayReviewStatus, note: string = '', isReopen: boolean = false) => {
     if (!currentUser) {
       toast.error(t('collaboration.reviewStatus.toasts.signIn'));
       return;
     }
     if (reviewStatus === nextStatus || updatingReviewStatus) return;
 
-    const creatorAllowed = canUpdateReviewAsCreator && (nextStatus === 'draft' || nextStatus === 'submitted');
+    const creatorAllowed = !isReopen && canUpdateReviewAsCreator && (nextStatus === 'draft' || nextStatus === 'submitted');
     const reviewerAllowed = canUpdateReviewAsReviewer && (nextStatus === 'changes_requested' || nextStatus === 'approved');
-    if (!creatorAllowed && !reviewerAllowed) {
+    // Supervisor undo: reopen feedback only from a feedback-finished state back to submitted.
+    // Mirrors the isScreenplayReviewStatusUpdate reopen branch in firestore.rules.
+    const reopenAllowed = isReopen && canUpdateReviewAsReviewer && nextStatus === 'submitted' &&
+      (reviewStatus === 'changes_requested' || reviewStatus === 'approved');
+    if (!creatorAllowed && !reviewerAllowed && !reopenAllowed) {
       toast.error(t('collaboration.reviewStatus.toasts.notAllowed'));
       return;
     }
@@ -2311,14 +2328,14 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
           workspaceId: screenplayWorkspaceId,
           actorUid: currentUser.uid,
           actorName: currentUser.displayName,
-          verb: getReviewActivityVerb(nextStatus),
+          verb: isReopen ? 'review_reopened' : getReviewActivityVerb(nextStatus),
           targetId: screenplay.id,
           targetName: screenplay.name
         });
       }
       // Notify the relevant party (best-effort — never blocks the status change).
-      notifyReviewStatusChange(nextStatus, trimmedNote);
-      toast.success(t(`collaboration.reviewStatus.toasts.${nextStatus}`));
+      notifyReviewStatusChange(nextStatus, trimmedNote, isReopen);
+      toast.success(t(`collaboration.reviewStatus.toasts.${isReopen ? 'reopened' : nextStatus}`));
     } catch (err) {
       console.error('Failed to update review status:', err);
       toast.error(t('collaboration.reviewStatus.toasts.failed'));
@@ -2816,6 +2833,17 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                             {t('collaboration.reviewStatus.actions.approve')}
                           </button>
                         </>
+                      )}
+                      {canUpdateReviewAsReviewer && (reviewStatus === 'changes_requested' || reviewStatus === 'approved') && (
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          disabled={updatingReviewStatus}
+                          onClick={() => handleReviewStatusChange('submitted', '', true)}
+                          style={{ padding: '0.35rem 0.75rem', fontSize: '0.82rem' }}
+                        >
+                          {t('collaboration.reviewStatus.actions.reopen')}
+                        </button>
                       )}
                       {canUpdateReviewAsCreator && reviewStatus !== 'draft' && (
                         <button

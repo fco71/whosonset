@@ -904,6 +904,7 @@
         "requestChanges": "Dejar notas de revisión",
         "sendChangesRequested": "Enviar",
         "approve": "Marcar retroalimentación completa",
+        "reopen": "Reabrir retroalimentación",
         "returnToDraft": "Volver a borrador"
       },
       "cancel": "Cancelar",
@@ -915,6 +916,7 @@
         "submitted": "Guion compartido para retroalimentación.",
         "changes_requested": "Notas de revisión enviadas.",
         "approved": "Retroalimentación marcada como completa.",
+        "reopened": "Retroalimentación reabierta.",
         "failed": "No se pudo actualizar el estado de retroalimentación.",
         "signIn": "Inicia sesión para actualizar el estado de retroalimentación.",
         "notAllowed": "No puedes cambiar el estado de retroalimentación de este guion."
@@ -952,6 +954,7 @@
         "review_submitted": "compartió {{target}} para retroalimentación",
         "review_changes_requested": "dejó notas de revisión en {{target}}",
         "review_approved": "marcó la retroalimentación completa en {{target}}",
+        "review_reopened": "reabrió la retroalimentación de {{target}}",
         "review_returned_to_draft": "devolvió {{target}} a borrador",
         "member_added": "agregó a {{detail}}",
         "member_self_promoted": "ahora supervisa este espacio de trabajo",
@@ -1423,6 +1426,10 @@
       "reviewApproved": {
         "title": "{{reviewer}} terminó la retroalimentación de {{screenplay}}",
         "body": "La retroalimentación de tu guion está completa."
+      },
+      "reviewReopened": {
+        "title": "{{reviewer}} reabrió la retroalimentación de {{screenplay}}",
+        "body": "Tu guion está compartido para retroalimentación de nuevo."
       },
       "mentionAnnotation": {
         "title": "{{author}} te mencionó en {{screenplay}}",

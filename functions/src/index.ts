@@ -15,6 +15,19 @@ export { onAuthUserDeleted } from "./onAuthUserDeleted";
 export { respondToWorkspaceInvitation } from "./workspaceInvitations";
 export { setWorkspaceSupervisorMode } from "./workspaceSupervisors";
 
+// Escape user-supplied values before interpolating them into HTML email bodies.
+// emailSend builds its HTML with template literals (not Handlebars placeholders),
+// so the auto-escaping in EmailService never sees these values. Without this any
+// authenticated caller could inject markup/links into the email a recipient sees.
+function escapeHtml(value: unknown): string {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 // Helper function to get user data from crewProfiles first, then users
 async function getUserData(userId: string) {
   try {
@@ -1642,17 +1655,22 @@ export const emailSend = onRequest({
     process.env.SMTP_PASS = smtpPass.value();
     process.env.EMAIL_FROM = emailFrom.value();
 
-    // Create email template
+    // Create email template. User-supplied values are HTML-escaped for the HTML
+    // part; the text part is plain text and needs no escaping. The <h3> subject
+    // line uses the raw subject (Handlebars compile in EmailService is a no-op
+    // here because there are no {{ }} placeholders left in this string).
+    const safeSenderName = escapeHtml(senderName || 'My Film Jobs');
+    const safeMessageHtml = escapeHtml(message).replace(/\n/g, '<br>');
     const emailTemplate = {
       subject: subject || `New message from ${senderName || 'My Film Jobs'}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #2563eb;">My Film Jobs</h2>
           <p>Hello,</p>
-          <p>You have received a new message from <strong>${senderName || 'My Film Jobs'}</strong>.</p>
+          <p>You have received a new message from <strong>${safeSenderName}</strong>.</p>
           <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
             <h3>Message:</h3>
-            <p>${message}</p>
+            <p>${safeMessageHtml}</p>
           </div>
           <p style="margin-top: 30px; font-size: 14px; color: #6b7280;">
             Best regards,<br>
