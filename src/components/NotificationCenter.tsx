@@ -228,7 +228,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
 
     const invitationId = getMetadataString(notification, 'invitationId');
     if (!invitationId) {
-      toast.error('Invitation details are missing.');
+      toast.error(t('notifications.invitationMissing', 'Invitation details are missing.'));
       return;
     }
 
@@ -245,7 +245,9 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
         isRead: true,
         read: true,
       });
-      toast.success(response === 'accept' ? 'Invitation accepted — opening the group.' : 'Group invitation declined.');
+      toast.success(response === 'accept'
+        ? t('notifications.invitationAccepted', 'Invitation accepted — opening the group.')
+        : t('notifications.invitationDeclined', 'Group invitation declined.'));
       if (response === 'accept') {
         // Membership is in place once the callable returns, so the group page is
         // readable now. Land the new member directly in their group.
@@ -262,7 +264,9 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
       // HttpsError messages like "This invitation has already been handled" are actionable).
       const detail = (error as { message?: string; code?: string } | null)?.message
         || (error as { code?: string } | null)?.code;
-      toast.error(detail ? `Could not respond to invitation: ${detail}` : 'Could not update the group invitation.');
+      toast.error(detail
+        ? t('notifications.invitationRespondFailed', { detail, defaultValue: 'Could not respond to invitation: {{detail}}' })
+        : t('notifications.invitationUpdateFailed', 'Could not update the group invitation.'));
     } finally {
       setRespondingInvitationId(null);
     }

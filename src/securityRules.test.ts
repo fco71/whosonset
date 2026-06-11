@@ -64,7 +64,10 @@ describe('security rules guardrails', () => {
     expect(assignmentRules).toMatch(/request\.resource\.data\.createdBy\s+==\s+request\.auth\.uid/);
     expect(assignmentRules).toMatch(/isWorkspaceOwner\(request\.resource\.data\.workspaceId, request\.auth\.uid\)/);
     expect(assignmentRules).toMatch(/isEffectiveWorkspaceSupervisor\(request\.resource\.data\.workspaceId, request\.auth\.uid\)/);
-    expect(assignmentRules).toMatch(/allow\s+update:\s+if\s+false;/);
+    // Edits are creator-only and limited to the text fields; workspaceId/createdBy
+    // must stay immutable so an assignment can't be moved or reowned.
+    expect(assignmentRules).toMatch(/allow\s+update:\s+if\s+signedIn\(\)\s+&&\s+resource\.data\.createdBy\s+==\s+request\.auth\.uid/);
+    expect(assignmentRules).toMatch(/affectedKeys\(\)\.hasOnly\(\['title',\s*'description',\s*'updatedAt'\]\)/);
     // Plain members must not be able to author assignments.
     expect(assignmentRules).not.toMatch(/allow\s+create:\s+if\s+signedIn\(\);/);
   });

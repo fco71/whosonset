@@ -85,7 +85,12 @@
     "unread": "Unread",
     "read": "Read",
     "noResults": "No notifications match your criteria",
-    "empty": "No notifications yet"
+    "empty": "No notifications yet",
+    "invitationAccepted": "Invitation accepted — opening the group.",
+    "invitationDeclined": "Group invitation declined.",
+    "invitationMissing": "Invitation details are missing.",
+    "invitationRespondFailed": "Could not respond to invitation: {{detail}}",
+    "invitationUpdateFailed": "Could not update the group invitation."
   },
   "home": {
     "loading": "Loading...",
@@ -857,7 +862,13 @@
       "createWorkspace": "Create group",
       "searching": "Searching...",
       "noFriendsFound": "No friends found.",
-      "startTyping": "Start typing to search for users"
+      "startTyping": "Start typing to search for users",
+      "nameRequired": "Please enter a group name.",
+      "createFailed": "Failed to create the group. Please try again.",
+      "createdWithInvites_one": "Group \"{{name}}\" created and {{count}} invitation sent.",
+      "createdWithInvites_other": "Group \"{{name}}\" created and {{count}} invitations sent.",
+      "createdSuccess": "Group \"{{name}}\" created successfully!",
+      "inviteRoles": "Invite roles"
     },
     "workspaceSettings": {
       "title": "Group Settings",
@@ -866,10 +877,17 @@
       "workspaceName": "Group name",
       "description": "Description",
       "workspaceType": "Group type",
-      "saveSettings": "Save changes"
+      "saveSettings": "Save changes",
+      "onlyCreatorCanUpdate": "Only the group creator can update settings.",
+      "nameRequired": "Group name is required.",
+      "updateSuccess": "Group updated successfully!",
+      "updateFailed": "Failed to update the group."
     },
     "addMemberModal": {
-      "title": "Add Member to Group"
+      "title": "Add Member to Group",
+      "titleFor": "Add members to {{name}}",
+      "roleLabel": "Group role",
+      "currentMembers": "Current members"
     },
     "tasksTab": {
       "title": "Tasks",
@@ -1088,7 +1106,18 @@
       "searching": "Searching…",
       "sending": "Sending…",
       "sendInvitations": "Send invitations",
-      "fountainScopeHint": "This screenplay will belong to {{workspace}} and its members will have access."
+      "fountainScopeHint": "This screenplay will belong to {{workspace}} and its members will have access.",
+      "yourClasses": "Your classes",
+      "yourClassesHint": "Tick a class to put this group in it.",
+      "addedToClass": "Group added to {{class}}.",
+      "removedFromClass": "Group removed from {{class}}.",
+      "addMemberToClassTitle": "Add this student to a class roster",
+      "addMemberToClassTitle2": "Add {{name}} to a class",
+      "classSelectLabel": "Class",
+      "addMemberToClassHint": "They'll appear on that class's roster as an individual — useful when their group belongs to a different class.",
+      "alreadyViaGroup": "Already in {{class}} through this group.",
+      "alreadyOnRoster": "Already on the roster of {{class}}.",
+      "memberAddedToClass": "{{name}} added to {{class}}."
     },
     "assignments": {
       "title": "Assignments",
@@ -1115,7 +1144,11 @@
       "noneOption": "No assignment",
       "alsoPostTo": "Also post this assignment to:",
       "selectAll": "Select all",
-      "selectNone": "Clear selection"
+      "selectNone": "Clear selection",
+      "edit": "Edit",
+      "saving": "Saving…",
+      "updated": "Assignment updated.",
+      "updateFailed": "Failed to update the assignment."
     },
     "classes": {
       "tabTitle": "My classes",
@@ -1173,7 +1206,43 @@
       "checklistProgress": "{{done}}/{{total}} done",
       "checklistEmpty": "Notes to self for this class — e.g. \"grade treatments\", \"collect release forms\".",
       "checklistPlaceholder": "Add an item…",
-      "addItem": "Add"
+      "addItem": "Add",
+      "showWork": "show work",
+      "hideWork": "hide work"
+    },
+    "loadError": "Failed to load your groups.",
+    "generatingReport": "Generating screenplay breakdown report…",
+    "auth": {
+      "signInCreateGroup": "Please sign in to create a group.",
+      "signInUpload": "Please sign in to upload screenplays.",
+      "signInWrite": "Please sign in to start writing.",
+      "signInReview": "Please sign in to update review status."
+    },
+    "groupLifecycle": {
+      "archived": "Archived {{name}}.",
+      "archiveFailed": "Failed to archive the group.",
+      "restored": "Restored {{name}}.",
+      "restoreFailed": "Failed to restore the group.",
+      "deleteConfirm": "Delete this group? It can be restored for 30 days.",
+      "movedToDeleted": "{{name}} moved to recently deleted.",
+      "deleteFailed": "Failed to delete the group.",
+      "mustDeleteFirst": "Move the group to the deleted state first.",
+      "permanentDeleteConfirm": "Permanently delete this group? This cannot be undone.",
+      "permanentlyDeleted": "{{name}} permanently deleted.",
+      "permanentDeleteFailed": "Failed to permanently delete the group.",
+      "recoveryEnded": "Recovery period ended",
+      "autoDeletesAfter_one": "Auto-deletes after {{count}} day",
+      "autoDeletesAfter_other": "Auto-deletes after {{count}} days",
+      "statusArchived": "Archived",
+      "statusDeleted": "Recently deleted"
+    },
+    "cardActions": {
+      "invite": "Invite",
+      "archive": "Archive",
+      "restore": "Restore",
+      "deletePermanently": "Delete permanently",
+      "settings": "Settings",
+      "deleteGroup": "Delete group"
     }
   },
   "tasks": {

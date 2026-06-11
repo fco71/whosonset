@@ -29,7 +29,8 @@ import {
   setScreenplayReviewStatus,
   uploadScreenplayFile
 } from '../../services/screenplayService';
-import { createAssignments, deleteAssignment } from '../../services/assignmentService';
+import { createAssignments, deleteAssignment, updateAssignment } from '../../services/assignmentService';
+import { newLocalId, normalizeTeacherClass, TeacherClass, updateTeacherClass } from '../../services/classService';
 import * as access from './workspaceAccess';
 import { Screenplay, MAX_UPLOAD_BYTES, MAX_UPLOAD_MB } from './workspaceAccess';
 import ScreenplayList from './ScreenplayList';
@@ -76,6 +77,13 @@ const WorkspaceDetailPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [isTeacher, setIsTeacher] = useState(false);
+  // The teacher's classes, for "send this group / this student into a class"
+  // controls right where the membership is visible (instead of recalling names
+  // back on the class page). Empty for students.
+  const [teacherClasses, setTeacherClasses] = useState<TeacherClass[]>([]);
+  const [classTogglePending, setClassTogglePending] = useState<string | null>(null);
+  const [addingMemberToClass, setAddingMemberToClass] = useState<{ uid: string; name: string } | null>(null);
+  const [targetClassId, setTargetClassId] = useState('');
   const [screenplays, setScreenplays] = useState<Screenplay[]>([]);
   const [memberProfiles, setMemberProfiles] = useState<MemberProfile[]>([]);
   const [unresolvedCounts, setUnresolvedCounts] = useState<Record<string, number>>({});
@@ -96,6 +104,11 @@ const WorkspaceDetailPage: React.FC = () => {
   // (feeds the cross-post picker). null = not fetched yet.
   const [otherSupervisedGroups, setOtherSupervisedGroups] = useState<CollaborationWorkspace[] | null>(null);
   const [creatingAssignment, setCreatingAssignment] = useState(false);
+  // Inline edit of one assignment's text (creator-only; rules enforce too).
+  const [editingAssignmentId, setEditingAssignmentId] = useState<string | null>(null);
+  const [editAssignmentTitle, setEditAssignmentTitle] = useState('');
+  const [editAssignmentDescription, setEditAssignmentDescription] = useState('');
+  const [savingAssignmentEdit, setSavingAssignmentEdit] = useState(false);
   // ''= no assignment; applies to the next upload / start-writing action.
   const [uploadAssignmentId, setUploadAssignmentId] = useState('');
 
@@ -176,6 +189,25 @@ const WorkspaceDetailPage: React.FC = () => {
       cancelled = true;
     };
   }, [uid]);
+
+  // The teacher's classes (owner-scoped; students simply get an empty list and
+  // never see the class controls).
+  useEffect(() => {
+    if (!uid || !isTeacher) {
+      setTeacherClasses([]);
+      return;
+    }
+    const unsubscribe = onSnapshot(
+      query(collection(db, 'teacherClasses'), where('ownerId', '==', uid)),
+      snapshot => {
+        const items = snapshot.docs.map(d => normalizeTeacherClass(d.id, d.data()));
+        items.sort((a, b) => a.name.localeCompare(b.name));
+        setTeacherClasses(items);
+      },
+      err => console.error('Error subscribing to classes:', err)
+    );
+    return () => unsubscribe();
+  }, [uid, isTeacher]);
 
   // This group's screenplays.
   useEffect(() => {
@@ -561,6 +593,29 @@ const WorkspaceDetailPage: React.FC = () => {
     }
   };
 
+  const handleSaveAssignmentEdit = async () => {
+    if (!editingAssignmentId) return;
+    const title = editAssignmentTitle.trim();
+    if (!title) {
+      toast.error(t('collaboration.assignments.titleRequired'));
+      return;
+    }
+    setSavingAssignmentEdit(true);
+    try {
+      await updateAssignment(editingAssignmentId, {
+        title,
+        description: editAssignmentDescription.trim()
+      });
+      toast.success(t('collaboration.assignments.updated'));
+      setEditingAssignmentId(null);
+    } catch (err) {
+      console.error('Failed to update assignment:', err);
+      toast.error(t('collaboration.assignments.updateFailed'));
+    } finally {
+      setSavingAssignmentEdit(false);
+    }
+  };
+
   const handleDeleteAssignment = async (assignment: access.WorkspaceAssignment) => {
     if (!currentUser || !access.canDeleteAssignment(assignment, workspace, uid)) return;
     if (!window.confirm(t('collaboration.assignments.deleteConfirm'))) return;
@@ -570,6 +625,64 @@ const WorkspaceDetailPage: React.FC = () => {
     } catch (err) {
       console.error('Failed to delete assignment:', err);
       toast.error(t('collaboration.assignments.deleteFailed'));
+    }
+  };
+
+  // Toggle THIS group's membership in one of the teacher's classes, from the
+  // group page where the members are visible.
+  const handleToggleGroupInClass = async (teacherClass: TeacherClass) => {
+    if (!workspace || classTogglePending) return;
+    const isInClass = teacherClass.workspaceIds.includes(workspace.id);
+    setClassTogglePending(teacherClass.id);
+    try {
+      await updateTeacherClass(teacherClass.id, {
+        workspaceIds: isInClass
+          ? teacherClass.workspaceIds.filter(id => id !== workspace.id)
+          : [...teacherClass.workspaceIds, workspace.id]
+      });
+      toast.success(isInClass
+        ? t('collaboration.groupPage.removedFromClass', { class: teacherClass.name })
+        : t('collaboration.groupPage.addedToClass', { class: teacherClass.name }));
+    } catch (err) {
+      console.error('Failed to toggle class membership:', err);
+      toast.error(t('collaboration.classes.updateFailed'));
+    } finally {
+      setClassTogglePending(null);
+    }
+  };
+
+  // Add one member to a class roster as a uid-linked entry. If the class already
+  // contains this group, the student is on the roster automatically — say so
+  // instead of duplicating.
+  const handleAddMemberToClass = async () => {
+    if (!addingMemberToClass || !targetClassId) return;
+    const teacherClass = teacherClasses.find(item => item.id === targetClassId);
+    if (!teacherClass) return;
+    if (workspace && teacherClass.workspaceIds.includes(workspace.id)) {
+      toast(t('collaboration.groupPage.alreadyViaGroup', { class: teacherClass.name }));
+      setAddingMemberToClass(null);
+      return;
+    }
+    if ((teacherClass.manualStudents || []).some(student => student.uid === addingMemberToClass.uid)) {
+      toast(t('collaboration.groupPage.alreadyOnRoster', { class: teacherClass.name }));
+      setAddingMemberToClass(null);
+      return;
+    }
+    try {
+      await updateTeacherClass(teacherClass.id, {
+        manualStudents: [
+          ...(teacherClass.manualStudents || []),
+          { id: newLocalId('manual'), name: addingMemberToClass.name, uid: addingMemberToClass.uid }
+        ]
+      });
+      toast.success(t('collaboration.groupPage.memberAddedToClass', {
+        name: addingMemberToClass.name,
+        class: teacherClass.name
+      }));
+      setAddingMemberToClass(null);
+    } catch (err) {
+      console.error('Failed to add member to class:', err);
+      toast.error(t('collaboration.classes.updateFailed'));
     }
   };
 
@@ -870,6 +983,53 @@ const WorkspaceDetailPage: React.FC = () => {
                   const turnedIn = tagged.filter(s =>
                     ['submitted', 'approved'].includes(access.getReviewStatus(s))
                   ).length;
+                  if (editingAssignmentId === assignment.id) {
+                    return (
+                      <li key={assignment.id} className="assignment-row">
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <div className="form-group" style={{ marginBottom: 8 }}>
+                            <input
+                              type="text"
+                              className="form-input"
+                              value={editAssignmentTitle}
+                              autoFocus
+                              maxLength={200}
+                              onChange={e => setEditAssignmentTitle(e.target.value)}
+                            />
+                          </div>
+                          <div className="form-group" style={{ marginBottom: 8 }}>
+                            <textarea
+                              className="form-input"
+                              rows={2}
+                              maxLength={2000}
+                              placeholder={t('collaboration.assignments.descriptionLabel')}
+                              value={editAssignmentDescription}
+                              onChange={e => setEditAssignmentDescription(e.target.value)}
+                            />
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                            <button
+                              type="button"
+                              className="btn-secondary"
+                              style={{ padding: '0.3rem 0.8rem', fontSize: '0.85em' }}
+                              onClick={() => setEditingAssignmentId(null)}
+                            >
+                              {t('collaboration.createWorkspaceModal.cancel')}
+                            </button>
+                            <button
+                              type="button"
+                              className="btn-primary"
+                              style={{ padding: '0.3rem 0.8rem', fontSize: '0.85em' }}
+                              disabled={savingAssignmentEdit || !editAssignmentTitle.trim()}
+                              onClick={handleSaveAssignmentEdit}
+                            >
+                              {savingAssignmentEdit ? t('collaboration.assignments.saving') : t('collaboration.classes.save')}
+                            </button>
+                          </div>
+                        </div>
+                      </li>
+                    );
+                  }
                   return (
                     <li key={assignment.id} className="assignment-row">
                       <div style={{ minWidth: 0, flex: 1 }}>
@@ -891,16 +1051,32 @@ const WorkspaceDetailPage: React.FC = () => {
                           )}
                         </div>
                       </div>
-                      {access.canDeleteAssignment(assignment, workspace, uid) && (
-                        <button
-                          type="button"
-                          className="btn-danger"
-                          style={{ padding: '0.3rem 0.8rem', fontSize: '0.85em', flexShrink: 0 }}
-                          onClick={() => handleDeleteAssignment(assignment)}
-                        >
-                          {t('collaboration.delete')}
-                        </button>
-                      )}
+                      <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                        {assignment.createdBy === uid && (
+                          <button
+                            type="button"
+                            className="btn-secondary"
+                            style={{ padding: '0.3rem 0.8rem', fontSize: '0.85em' }}
+                            onClick={() => {
+                              setEditingAssignmentId(assignment.id);
+                              setEditAssignmentTitle(assignment.title);
+                              setEditAssignmentDescription(assignment.description);
+                            }}
+                          >
+                            {t('collaboration.assignments.edit')}
+                          </button>
+                        )}
+                        {access.canDeleteAssignment(assignment, workspace, uid) && (
+                          <button
+                            type="button"
+                            className="btn-danger"
+                            style={{ padding: '0.3rem 0.8rem', fontSize: '0.85em' }}
+                            onClick={() => handleDeleteAssignment(assignment)}
+                          >
+                            {t('collaboration.delete')}
+                          </button>
+                        )}
+                      </div>
                     </li>
                   );
                 })}
@@ -1026,6 +1202,25 @@ const WorkspaceDetailPage: React.FC = () => {
         </div>
 
         <aside>
+          {isTeacher && teacherClasses.length > 0 && (
+            <section className="group-section">
+              <h2>🏫 {t('collaboration.groupPage.yourClasses')}</h2>
+              <p className="group-empty" style={{ marginTop: 0 }}>
+                {t('collaboration.groupPage.yourClassesHint')}
+              </p>
+              {teacherClasses.map(teacherClass => (
+                <label key={teacherClass.id} className="assignment-target-option" style={{ padding: '5px 0' }}>
+                  <input
+                    type="checkbox"
+                    disabled={classTogglePending === teacherClass.id}
+                    checked={workspace ? teacherClass.workspaceIds.includes(workspace.id) : false}
+                    onChange={() => handleToggleGroupInClass(teacherClass)}
+                  />
+                  {teacherClass.name}
+                </label>
+              ))}
+            </section>
+          )}
           <section className="group-section">
             <h2>{t('collaboration.groupPage.membersTitle', { count: memberProfiles.length })}</h2>
             {memberProfiles.length === 0 ? (
@@ -1039,8 +1234,23 @@ const WorkspaceDetailPage: React.FC = () => {
                       : (member.name || '?').charAt(0).toUpperCase()}
                   </span>
                   <span className="member-name" title={member.email || member.name}>{member.name}</span>
-                  <span className={`member-role ${member.role}`}>
-                    {t(`collaboration.roles.${member.role}`, { defaultValue: member.role })}
+                  <span style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
+                    <span className={`member-role ${member.role}`} style={{ marginLeft: 0 }}>
+                      {t(`collaboration.roles.${member.role}`, { defaultValue: member.role })}
+                    </span>
+                    {isTeacher && teacherClasses.length > 0 && member.id !== uid && (
+                      <button
+                        type="button"
+                        className="btn-text-link"
+                        title={t('collaboration.groupPage.addMemberToClassTitle')}
+                        onClick={() => {
+                          setTargetClassId(teacherClasses[0]?.id || '');
+                          setAddingMemberToClass({ uid: member.id, name: member.name });
+                        }}
+                      >
+                        + {t('collaboration.classes.tabTitle')}
+                      </button>
+                    )}
                   </span>
                 </div>
               ))
@@ -1201,6 +1411,51 @@ const WorkspaceDetailPage: React.FC = () => {
                 onClick={handleSendInvites}
               >
                 {isSendingInvites ? t('collaboration.groupPage.sending') : t('collaboration.groupPage.sendInvitations')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add a member to a class roster (teacher-only) */}
+      {addingMemberToClass && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>{t('collaboration.groupPage.addMemberToClassTitle2', { name: addingMemberToClass.name })}</h3>
+              <button
+                className="close-btn"
+                aria-label={t('fountain.close')}
+                onClick={() => setAddingMemberToClass(null)}
+              >×</button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label>{t('collaboration.groupPage.classSelectLabel')}</label>
+                <select
+                  className="form-input"
+                  value={targetClassId}
+                  onChange={e => setTargetClassId(e.target.value)}
+                >
+                  {teacherClasses.map(teacherClass => (
+                    <option key={teacherClass.id} value={teacherClass.id}>{teacherClass.name}</option>
+                  ))}
+                </select>
+              </div>
+              <p className="group-empty" style={{ margin: 0 }}>
+                {t('collaboration.groupPage.addMemberToClassHint')}
+              </p>
+            </div>
+            <div className="modal-footer">
+              <button className="btn-secondary" onClick={() => setAddingMemberToClass(null)}>
+                {t('collaboration.createWorkspaceModal.cancel')}
+              </button>
+              <button
+                className="btn-primary"
+                disabled={!targetClassId}
+                onClick={handleAddMemberToClass}
+              >
+                {t('collaboration.classes.addStudent')}
               </button>
             </div>
           </div>

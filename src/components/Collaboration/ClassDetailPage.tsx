@@ -25,6 +25,9 @@ import {
   updateTeacherClass
 } from '../../services/classService';
 import { createAssignments } from '../../services/assignmentService';
+import { Screenplay, WorkspaceAssignment } from './workspaceAccess';
+import ScreenplayViewer from './ScreenplayViewer';
+import { fetchAllCrewProfiles } from './crewSearch';
 import './CollaborationHub.scss';
 import './WorkspaceDetailPage.scss';
 
@@ -40,11 +43,12 @@ interface GroupStats {
 }
 
 interface RosterEntry {
-  key: string;            // uid for derived students, manual id otherwise
+  key: string;            // uid when known (derived or linked), manual id otherwise
   name: string;
   avatar?: string;
   groupNames: string[];   // empty for manual students
   manual: boolean;
+  manualId?: string;      // set for manual entries; needed to remove them
 }
 
 const ClassDetailPage: React.FC = () => {
@@ -60,6 +64,12 @@ const ClassDetailPage: React.FC = () => {
 
   const [groupStats, setGroupStats] = useState<GroupStats[]>([]);
   const [roster, setRoster] = useState<RosterEntry[]>([]);
+  // All screenplays + assignments across the class's groups, for the per-student
+  // work view and assignment chips.
+  const [classScreenplays, setClassScreenplays] = useState<Screenplay[]>([]);
+  const [classAssignments, setClassAssignments] = useState<WorkspaceAssignment[]>([]);
+  const [expandedStudentKey, setExpandedStudentKey] = useState<string | null>(null);
+  const [viewingScreenplay, setViewingScreenplay] = useState<Screenplay | null>(null);
   const [loadingGroups, setLoadingGroups] = useState(false);
   const [reloadNonce, setReloadNonce] = useState(0);
 
@@ -67,6 +77,8 @@ const ClassDetailPage: React.FC = () => {
   const [nameDraft, setNameDraft] = useState('');
   const [showGroupPicker, setShowGroupPicker] = useState(false);
   const [availableGroups, setAvailableGroups] = useState<CollaborationWorkspace[] | null>(null);
+  // Short member-name preview per pickable group, so choosing doesn't require recall.
+  const [availableGroupMembers, setAvailableGroupMembers] = useState<Record<string, string>>({});
   const [pickedGroupIds, setPickedGroupIds] = useState<Record<string, boolean>>({});
   const [showAssignmentForm, setShowAssignmentForm] = useState(false);
   const [assignmentTitle, setAssignmentTitle] = useState('');
@@ -117,7 +129,7 @@ const ClassDetailPage: React.FC = () => {
   // ---- Groups + roster (one-shot, with manual refresh) ----------------------
 
   const workspaceIdsKey = (teacherClass?.workspaceIds || []).slice().sort().join(',');
-  const manualStudentsKey = (teacherClass?.manualStudents || []).map(s => `${s.id}:${s.name}`).join(',');
+  const manualStudentsKey = (teacherClass?.manualStudents || []).map(s => `${s.id}:${s.uid || ''}:${s.name}`).join(',');
 
   useEffect(() => {
     if (!uid || !teacherClass) {
@@ -142,19 +154,29 @@ const ClassDetailPage: React.FC = () => {
           .filter((snap): snap is NonNullable<typeof snap> => Boolean(snap && snap.exists()))
           .map(snap => access.normalizeWorkspace(snap.id, snap.data()!));
 
-        // Screenplay rollups per group (chunked by Firestore `in` limit).
+        // Screenplays + assignments across the class (chunked by Firestore `in`
+        // limit). The full screenplay list feeds the per-student work view.
         const counts: Record<string, { total: number; submitted: number }> = {};
+        const allScreenplays: Screenplay[] = [];
+        const allAssignments: WorkspaceAssignment[] = [];
         const ids = workspaces.map(w => w.id);
         for (let i = 0; i < ids.length; i += 10) {
           const chunk = ids.slice(i, i + 10);
-          const snap = await getDocs(query(collection(db, 'screenplays'), where('workspaceId', 'in', chunk)));
-          snap.docs.forEach(d => {
+          const [screenplaySnap, assignmentSnap] = await Promise.all([
+            getDocs(query(collection(db, 'screenplays'), where('workspaceId', 'in', chunk))),
+            getDocs(query(collection(db, 'workspaceAssignments'), where('workspaceId', 'in', chunk)))
+          ]);
+          screenplaySnap.docs.forEach(d => {
             const data = access.normalizeScreenplay(d.id, d.data());
             if (!data.workspaceId) return;
+            allScreenplays.push(data);
             const entry = counts[data.workspaceId] || { total: 0, submitted: 0 };
             entry.total += 1;
             if (access.getReviewStatus(data) === 'submitted') entry.submitted += 1;
             counts[data.workspaceId] = entry;
+          });
+          assignmentSnap.docs.forEach(d => {
+            allAssignments.push(access.normalizeAssignment(d.id, d.data()));
           });
         }
 
@@ -187,12 +209,28 @@ const ClassDetailPage: React.FC = () => {
             return { key: studentUid, name, avatar, groupNames, manual: false };
           })
         );
-        const manual: RosterEntry[] = (teacherClass.manualStudents || []).map(student => ({
-          key: student.id,
-          name: student.name,
-          groupNames: [],
-          manual: true
-        }));
+        const manual: RosterEntry[] = await Promise.all(
+          (teacherClass.manualStudents || [])
+            .filter(student => !(student.uid && groupNamesByUid.has(student.uid)))
+            .map(async student => {
+              if (!student.uid) {
+                return { key: student.id, name: student.name, groupNames: [], manual: true, manualId: student.id } as RosterEntry;
+              }
+              let name = student.name;
+              let avatar = '';
+              try {
+                const snap = await getDoc(doc(db, 'crewProfiles', student.uid));
+                if (snap.exists()) {
+                  const data: any = snap.data();
+                  name = data.name || data.displayName || name;
+                  avatar = data.profileImageUrl || data.avatarUrl || '';
+                }
+              } catch {
+                // Stored name is fine.
+              }
+              return { key: student.uid, name, avatar, groupNames: [], manual: true, manualId: student.id } as RosterEntry;
+            })
+        );
         const fullRoster = [...derived, ...manual].sort((a, b) => a.name.localeCompare(b.name));
 
         if (cancelled) return;
@@ -204,6 +242,12 @@ const ClassDetailPage: React.FC = () => {
           }))
           .sort((a, b) => a.workspace.name.localeCompare(b.workspace.name)));
         setRoster(fullRoster);
+        // Most recently touched first, so the work view leads with fresh hand-ins.
+        allScreenplays.sort((a, b) =>
+          (access.toDate(b.lastModified)?.getTime() || 0) - (access.toDate(a.lastModified)?.getTime() || 0)
+        );
+        setClassScreenplays(allScreenplays);
+        setClassAssignments(allAssignments);
       } catch (err) {
         console.error('Failed to load class groups:', err);
       } finally {
@@ -268,6 +312,21 @@ const ClassDetailPage: React.FC = () => {
         .map(snap => access.normalizeWorkspace(snap.id, snap.data()))
         .filter(group => (group.status || 'active') === 'active')
         .sort((a, b) => a.name.localeCompare(b.name));
+      // Member-name previews via the cached crewProfiles fetch (one query, 30s TTL).
+      try {
+        const profiles = await fetchAllCrewProfiles();
+        const nameByUid = new Map(profiles.map(profile => [profile.id, profile.name]));
+        const preview: Record<string, string> = {};
+        groups.forEach(group => {
+          const names = access.getWorkspaceMemberIds(group)
+            .filter(memberUid => memberUid !== uid)
+            .map(memberUid => nameByUid.get(memberUid) || `Crew Member ${memberUid.slice(-4)}`);
+          preview[group.id] = names.slice(0, 4).join(', ') + (names.length > 4 ? ` +${names.length - 4}` : '');
+        });
+        setAvailableGroupMembers(preview);
+      } catch {
+        // Previews are a convenience; the picker still works without them.
+      }
       setAvailableGroups(groups);
     } catch (err) {
       console.error('Failed to load groups for picker:', err);
@@ -346,12 +405,12 @@ const ClassDetailPage: React.FC = () => {
     setNewStudentName('');
   };
 
-  const handleRemoveManualStudent = async (studentId: string) => {
+  const handleRemoveManualStudent = async (manualId: string, tickKey: string) => {
     if (!teacherClass) return;
     const nextChecks = { ...(teacherClass.studentChecks || {}) };
-    delete nextChecks[studentId];
+    delete nextChecks[tickKey];
     await persist({
-      manualStudents: (teacherClass.manualStudents || []).filter(s => s.id !== studentId),
+      manualStudents: (teacherClass.manualStudents || []).filter(s => s.id !== manualId),
       studentChecks: nextChecks
     }, 'collaboration.classes.updateFailed');
   };
@@ -428,6 +487,25 @@ const ClassDetailPage: React.FC = () => {
   const unassignedGroups = (availableGroups || []).filter(
     group => !(teacherClass.workspaceIds || []).includes(group.id)
   );
+  const workspaceNameById = new Map(groupStats.map(stats => [stats.workspace.id, stats.workspace.name]));
+  const assignmentTitleById = new Map(classAssignments.map(assignment => [assignment.id, assignment.title]));
+  const worksByStudent = new Map<string, Screenplay[]>();
+  classScreenplays.forEach(screenplay => {
+    if (!screenplay.uploadedBy) return;
+    const list = worksByStudent.get(screenplay.uploadedBy) || [];
+    list.push(screenplay);
+    worksByStudent.set(screenplay.uploadedBy, list);
+  });
+  const reviewChipStyle = (status: string): React.CSSProperties => ({
+    display: 'inline-flex',
+    alignItems: 'center',
+    padding: '2px 8px',
+    borderRadius: 999,
+    fontSize: '0.76em',
+    fontWeight: 700,
+    background: status === 'approved' ? '#dcfce7' : status === 'changes_requested' ? '#ffedd5' : status === 'submitted' ? '#dbeafe' : '#f1f5f9',
+    color: status === 'approved' ? '#166534' : status === 'changes_requested' ? '#9a3412' : status === 'submitted' ? '#1e40af' : '#475569'
+  });
 
   return (
     <div className="workspace-detail-page">
@@ -574,13 +652,21 @@ const ClassDetailPage: React.FC = () => {
                       <span>{t('collaboration.classes.pickGroups')}</span>
                     </div>
                     {unassignedGroups.map(group => (
-                      <label key={group.id} className="assignment-target-option">
+                      <label key={group.id} className="assignment-target-option" style={{ alignItems: 'flex-start' }}>
                         <input
                           type="checkbox"
+                          style={{ marginTop: 4 }}
                           checked={Boolean(pickedGroupIds[group.id])}
                           onChange={e => setPickedGroupIds(prev => ({ ...prev, [group.id]: e.target.checked }))}
                         />
-                        {group.name}
+                        <span style={{ minWidth: 0 }}>
+                          {group.name}
+                          {availableGroupMembers[group.id] && (
+                            <span style={{ display: 'block', color: '#94a3b8', fontSize: '0.82em' }}>
+                              {availableGroupMembers[group.id]}
+                            </span>
+                          )}
+                        </span>
                       </label>
                     ))}
                   </div>
@@ -671,40 +757,100 @@ const ClassDetailPage: React.FC = () => {
             {roster.length === 0 ? (
               <p className="group-empty">{t('collaboration.classes.rosterEmpty')}</p>
             ) : (
-              roster.map(entry => (
-                <div className="member-row" key={entry.key}>
-                  <input
-                    type="checkbox"
-                    checked={Boolean(ticks[entry.key])}
-                    onChange={() => handleToggleStudent(entry.key)}
-                    aria-label={t('collaboration.classes.tickStudent', { name: entry.name })}
-                  />
-                  <span className="member-avatar">
-                    {entry.avatar ? <img src={entry.avatar} alt="" /> : (entry.name || '?').charAt(0).toUpperCase()}
-                  </span>
-                  <span className="member-name">{entry.name}</span>
-                  <span style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                    {entry.groupNames.length > 0 ? (
-                      entry.groupNames.map(name => (
-                        <span key={name} className="member-role">{name}</span>
-                      ))
-                    ) : (
-                      <span className="member-role" style={{ background: '#fef9c3', color: '#854d0e' }}>
-                        {t('collaboration.classes.noGroup')}
+              roster.map(entry => {
+                const works = worksByStudent.get(entry.key) || [];
+                const turnedIn = works.filter(s =>
+                  ['submitted', 'approved'].includes(access.getReviewStatus(s))
+                ).length;
+                const expanded = expandedStudentKey === entry.key;
+                return (
+                  <React.Fragment key={entry.key}>
+                    <div className="member-row">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(ticks[entry.key])}
+                        onChange={() => handleToggleStudent(entry.key)}
+                        aria-label={t('collaboration.classes.tickStudent', { name: entry.name })}
+                      />
+                      <span className="member-avatar">
+                        {entry.avatar ? <img src={entry.avatar} alt="" /> : (entry.name || '?').charAt(0).toUpperCase()}
                       </span>
+                      <span className="member-name">{entry.name}</span>
+                      <span style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                        {works.length > 0 && (
+                          <>
+                            <span className="assignment-chip">{t('collaboration.assignments.works', { count: works.length })}</span>
+                            {turnedIn > 0 && (
+                              <span className="assignment-chip turned-in">{t('collaboration.assignments.turnedIn', { count: turnedIn })}</span>
+                            )}
+                          </>
+                        )}
+                        {entry.groupNames.length > 0 ? (
+                          entry.groupNames.map(name => (
+                            <span key={name} className="member-role">{name}</span>
+                          ))
+                        ) : (
+                          <span className="member-role" style={{ background: '#fef9c3', color: '#854d0e' }}>
+                            {t('collaboration.classes.noGroup')}
+                          </span>
+                        )}
+                        {works.length > 0 && (
+                          <button
+                            type="button"
+                            className="btn-text-link"
+                            onClick={() => setExpandedStudentKey(expanded ? null : entry.key)}
+                          >
+                            {expanded ? t('collaboration.classes.hideWork') : t('collaboration.classes.showWork')}
+                          </button>
+                        )}
+                        {entry.manual && (
+                          <button
+                            type="button"
+                            className="btn-text-link"
+                            onClick={() => handleRemoveManualStudent(entry.manualId || entry.key, entry.key)}
+                          >
+                            {t('collaboration.classes.removeStudent')}
+                          </button>
+                        )}
+                      </span>
+                    </div>
+                    {expanded && (
+                      <div className="student-work-panel">
+                        {works.map(screenplay => {
+                          const status = access.getReviewStatus(screenplay);
+                          const assignmentTitle = screenplay.assignmentId
+                            ? assignmentTitleById.get(screenplay.assignmentId)
+                            : null;
+                          return (
+                            <div key={screenplay.id} className="student-work-row">
+                              <span style={{ fontWeight: 600, color: '#1e293b', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {screenplay.name}
+                              </span>
+                              <span style={{ color: '#94a3b8', fontSize: '0.85em', whiteSpace: 'nowrap' }}>
+                                {workspaceNameById.get(screenplay.workspaceId || '') || ''}
+                              </span>
+                              <span style={reviewChipStyle(status)}>
+                                {t(`collaboration.reviewStatus.labels.${status}`)}
+                              </span>
+                              {assignmentTitle && (
+                                <span className="assignment-chip">📋 {assignmentTitle}</span>
+                              )}
+                              <button
+                                type="button"
+                                className="btn-secondary"
+                                style={{ padding: '0.2rem 0.7rem', fontSize: '0.82em', marginLeft: 'auto' }}
+                                onClick={() => setViewingScreenplay(screenplay)}
+                              >
+                                {t('collaboration.view')}
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
                     )}
-                    {entry.manual && (
-                      <button
-                        type="button"
-                        className="btn-text-link"
-                        onClick={() => handleRemoveManualStudent(entry.key)}
-                      >
-                        {t('collaboration.classes.removeStudent')}
-                      </button>
-                    )}
-                  </span>
-                </div>
-              ))
+                  </React.Fragment>
+                );
+              })
             )}
             <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
               <input
@@ -788,6 +934,36 @@ const ClassDetailPage: React.FC = () => {
           </section>
         </aside>
       </div>
+
+      {/* Screenplay viewer (teacher reading a student's work from the roster) */}
+      {viewingScreenplay && (
+        <div
+          className="screenplay-modal-overlay"
+          onScroll={e => e.stopPropagation()}
+          onWheel={e => e.stopPropagation()}
+        >
+          <div className="screenplay-modal">
+            <div className="modal-content">
+              <ScreenplayViewer
+                screenplay={{
+                  id: viewingScreenplay.id,
+                  name: viewingScreenplay.name,
+                  url: viewingScreenplay.url,
+                  type: viewingScreenplay.type,
+                  format: viewingScreenplay.format,
+                  fountainSource: viewingScreenplay.fountainSource,
+                  reviewStatus: viewingScreenplay.reviewStatus
+                }}
+                projectId={
+                  groupStats.find(stats => stats.workspace.id === viewingScreenplay.workspaceId)?.workspace.projectId
+                  || 'default-project'
+                }
+                onClose={() => setViewingScreenplay(null)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

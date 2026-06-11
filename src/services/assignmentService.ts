@@ -3,6 +3,7 @@ import {
   deleteDoc,
   doc,
   serverTimestamp,
+  updateDoc,
   writeBatch
 } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -64,6 +65,22 @@ export async function createAssignments(params: {
     });
   });
   return created;
+}
+
+/**
+ * Edit an assignment's text. Creator-only (firestore.rules also enforces this and
+ * keeps workspaceId/createdBy immutable). Edits the ONE doc — a cross-posted
+ * assignment is a separate doc per group, so other groups' copies are untouched.
+ */
+export async function updateAssignment(
+  assignmentId: string,
+  updates: { title: string; description: string }
+): Promise<void> {
+  await updateDoc(doc(db, 'workspaceAssignments', assignmentId), {
+    title: updates.title,
+    description: updates.description,
+    updatedAt: serverTimestamp()
+  });
 }
 
 export async function deleteAssignment(assignment: WorkspaceAssignment, actor: ActorInfo): Promise<void> {

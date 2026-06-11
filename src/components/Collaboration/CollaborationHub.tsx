@@ -390,7 +390,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       },
       err => {
         console.error('Error subscribing to workspaces:', err);
-        setError('Failed to load workspaces');
+        setError(t('collaboration.loadError'));
         setLoading(false);
       }
     );
@@ -665,7 +665,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       const invitedCount = await createWorkspaceInvitations(workspace, users, () => role);
 
       if (invitedCount === 0) {
-        toast.error('Those users are already in this group or could not be invited.');
+        toast.error(t('collaboration.groupPage.alreadyInvited'));
         return;
       }
 
@@ -685,10 +685,10 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       setPendingMemberRole('member');
       setUserSearchQuery('');
       setUserSearchResults([]);
-      toast.success(`Sent ${invitedCount} invitation${invitedCount === 1 ? '' : 's'} for ${workspace.name}.`);
+      toast.success(t('collaboration.groupPage.invitationsSent', { count: invitedCount, workspace: workspace.name }));
     } catch (error) {
       console.error('Error inviting users to workspace:', error);
-      toast.error('Failed to send invitations. Please try again.');
+      toast.error(t('collaboration.groupPage.invitationsFailed'));
     } finally {
       setIsAddingMembers(false);
     }
@@ -698,7 +698,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const handleCreateWorkspaceStep = () => {
     if (workspaceCreationStep === 'details') {
       if (!newWorkspaceData.name.trim()) {
-        toast.error('Please enter a group name');
+        toast.error(t('collaboration.createWorkspaceModal.nameRequired'));
         return;
       }
       setWorkspaceCreationStep('members');
@@ -711,7 +711,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 
   const handleCreateWorkspace = async () => {
     if (!currentUser) {
-      toast.error('Please sign in to create a group.');
+      toast.error(t('collaboration.auth.signInCreateGroup'));
       return;
     }
 
@@ -788,11 +788,11 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       setWorkspaceCreationStep('details');
       setShowCreateWorkspaceModal(false);
       toast.success(invitedCount > 0
-        ? `Group "${newWorkspaceData.name.trim()}" created and ${invitedCount} invitation${invitedCount === 1 ? '' : 's'} sent.`
-        : `Group "${newWorkspaceData.name.trim()}" created successfully!`);
+        ? t('collaboration.createWorkspaceModal.createdWithInvites', { name: newWorkspaceData.name.trim(), count: invitedCount })
+        : t('collaboration.createWorkspaceModal.createdSuccess', { name: newWorkspaceData.name.trim() }));
     } catch (error) {
       console.error('Error in handleCreateWorkspace:', error);
-      toast.error('Failed to create the group. Please try again.');
+      toast.error(t('collaboration.createWorkspaceModal.createFailed'));
     }
   };
 
@@ -823,13 +823,13 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     if (!selectedWorkspace) return;
 
     if (!canManageWorkspace(selectedWorkspace)) {
-      toast.error('Only the group creator can update settings.');
+      toast.error(t('collaboration.workspaceSettings.onlyCreatorCanUpdate'));
       return;
     }
 
     const nextName = workspaceDetails.name.trim();
     if (!nextName) {
-      toast.error('Group name is required.');
+      toast.error(t('collaboration.workspaceSettings.nameRequired'));
       return;
     }
 
@@ -854,10 +854,10 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       };
       updateWorkspaceState(updatedWorkspace);
       setShowSettingsModal(false);
-      toast.success('Group updated successfully!');
+      toast.success(t('collaboration.workspaceSettings.updateSuccess'));
     } catch (error) {
       console.error('Error updating workspace settings:', error);
-      toast.error('Failed to update the group.');
+      toast.error(t('collaboration.workspaceSettings.updateFailed'));
     }
   };
 
@@ -894,7 +894,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   // sequentially, shows a progress counter, and rolls up a per-batch toast at the end.
   const handleMultiUpload = async (rawFiles: FileList | File[]) => {
     if (!currentUser) {
-      toast.error('Please sign in to upload screenplays.');
+      toast.error(t('collaboration.auth.signInUpload'));
       return;
     }
     const files = Array.from(rawFiles);
@@ -903,7 +903,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     const validFiles = files.filter(isAcceptedScreenplayFile);
     const rejectedCount = files.length - validFiles.length;
     if (rejectedCount > 0) {
-      toast(`${rejectedCount} file${rejectedCount === 1 ? '' : 's'} ignored — only PDF, DOC, DOCX, and TXT are supported.`);
+      toast(t('collaboration.groupPage.filesIgnored', { count: rejectedCount }));
     }
     // Reject oversized files up front with a clear message — otherwise the
     // upload reaches Storage and fails with an opaque permission error.
@@ -944,9 +944,9 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     if (successCount > 0 && failureCount === 0) {
       toast.success(successCount === 1
         ? `${sizedFiles[0].name} ${t('collaboration.screenplaysTab.uploadSuccess')}`
-        : `${successCount} screenplays uploaded.`);
+        : t('collaboration.groupPage.uploadedMany', { count: successCount }));
     } else if (successCount > 0 && failureCount > 0) {
-      toast(`Uploaded ${successCount} of ${sizedFiles.length}. ${failureCount} failed.`);
+      toast(t('collaboration.groupPage.uploadedPartial', { success: successCount, total: sizedFiles.length }));
     } else if (failureCount > 0) {
       toast.error(t('collaboration.screenplaysTab.uploadFailed'));
     }
@@ -956,7 +956,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   // group). Group writing starts from the group's page so collaborators inherit access.
   const handleCreateFountainScreenplay = async () => {
     if (!currentUser) {
-      toast.error('Please sign in to start writing.');
+      toast.error(t('collaboration.auth.signInWrite'));
       return;
     }
     const title = newFountainTitle.trim();
@@ -999,7 +999,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     setActiveTab('screenplays');
     // You can add additional logic here to generate a comprehensive report
     // For now, we'll just show a toast notification
-    toast.success('Generating screenplay breakdown report...');
+    toast.success(t('collaboration.generatingReport'));
 
     // In a real implementation, you might want to:
     // 1. Collect all annotations and tags
@@ -1030,7 +1030,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 
   const handleReviewStatusChange = async (screenplay: Screenplay, nextStatus: ScreenplayReviewStatus) => {
     if (!currentUser) {
-      toast.error('Please sign in to update review status.');
+      toast.error(t('collaboration.auth.signInReview'));
       return;
     }
 
@@ -1040,7 +1040,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     const creatorAllowed = canEditScreenplay(screenplay) && (nextStatus === 'draft' || nextStatus === 'submitted');
     const reviewerAllowed = canReviewScreenplay(screenplay) && (nextStatus === 'changes_requested' || nextStatus === 'approved');
     if (!creatorAllowed && !reviewerAllowed) {
-      toast.error('You cannot change this screenplay review status.');
+      toast.error(t('collaboration.groupPage.reviewNotAllowed'));
       return;
     }
 
@@ -1088,10 +1088,10 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         },
         workspace.members
       );
-      toast.success(`Archived ${workspace.name}.`);
+      toast.success(t('collaboration.groupLifecycle.archived', { name: workspace.name }));
     } catch (error) {
       console.error('Error archiving workspace:', error);
-      toast.error('Failed to archive the group.');
+      toast.error(t('collaboration.groupLifecycle.archiveFailed'));
     }
   };
 
@@ -1118,10 +1118,10 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       updateWorkspaceState(updatedWorkspace);
       setSelectedWorkspace(updatedWorkspace);
       await writeWorkspaceMemberships(updatedWorkspace, workspace.members);
-      toast.success(`Restored ${workspace.name}.`);
+      toast.success(t('collaboration.groupLifecycle.restored', { name: workspace.name }));
     } catch (error) {
       console.error('Error restoring workspace:', error);
-      toast.error('Failed to restore the group.');
+      toast.error(t('collaboration.groupLifecycle.restoreFailed'));
     }
   };
 
@@ -1130,7 +1130,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     const workspace = getWorkspaceById(workspaceId);
     if (!workspace || !isWorkspaceCreator(workspace)) return;
 
-    if (window.confirm('Delete this group? It can be restored for 30 days.')) {
+    if (window.confirm(t('collaboration.groupLifecycle.deleteConfirm'))) {
       try {
         const deleteRecoverableUntil = getDeleteRecoveryDate();
         await updateDoc(doc(db, 'workspaces', workspaceId), {
@@ -1151,10 +1151,10 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
           setSelectedWorkspace(updatedWorkspace);
         }
         await writeWorkspaceMemberships(updatedWorkspace, workspace.members);
-        toast.success(`${workspace.name} moved to recently deleted.`);
+        toast.success(t('collaboration.groupLifecycle.movedToDeleted', { name: workspace.name }));
       } catch (error) {
         console.error('Error deleting workspace:', error);
-        toast.error('Failed to delete the group.');
+        toast.error(t('collaboration.groupLifecycle.deleteFailed'));
       }
     }
   };
@@ -1167,11 +1167,11 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     // recovery window — no need to wait it out. (Firestore rule allows owner delete when
     // status == 'deleted'.)
     if (workspace.status !== 'deleted') {
-      toast.error('Move the group to the deleted state first.');
+      toast.error(t('collaboration.groupLifecycle.mustDeleteFirst'));
       return;
     }
 
-    if (window.confirm('Permanently delete this group? This cannot be undone.')) {
+    if (window.confirm(t('collaboration.groupLifecycle.permanentDeleteConfirm'))) {
       try {
         // Best-effort membership cleanup, by CONSTRUCTED doc id — NOT a query.
         // Querying workspaceMemberships by workspaceId is denied (the list rule only permits
@@ -1198,10 +1198,10 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         if (selectedWorkspace?.id === workspaceId) {
           setSelectedWorkspace(null);
         }
-        toast.success(`${workspace.name} permanently deleted.`);
+        toast.success(t('collaboration.groupLifecycle.permanentlyDeleted', { name: workspace.name }));
       } catch (error) {
         console.error('Error permanently deleting workspace:', error);
-        toast.error('Failed to permanently delete the group.');
+        toast.error(t('collaboration.groupLifecycle.permanentDeleteFailed'));
       }
     }
   };
@@ -1250,8 +1250,8 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 	            {canManageWorkspace(workspace) && workspace.status !== 'deleted' && (
 	              <button
 	                className="workspace-settings-gear"
-	                title="Settings"
-	                aria-label="Settings"
+	                title={t('collaboration.cardActions.settings')}
+	                aria-label={t('collaboration.cardActions.settings')}
 	                onClick={e => { e.stopPropagation(); handleWorkspaceSettings(workspace.id); }}
 	                style={{ position: 'absolute', top: 16, right: isWorkspaceCreator(workspace) ? 48 : 16, background: 'none', border: 'none', padding: 0, cursor: 'pointer', zIndex: 2 }}
 	              >
@@ -1265,8 +1265,8 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 	            {isWorkspaceCreator(workspace) && workspace.status !== 'deleted' && (
 	              <button
 	                className="workspace-delete-btn"
-	                title="Delete group"
-	                aria-label="Delete group"
+	                title={t('collaboration.cardActions.deleteGroup')}
+	                aria-label={t('collaboration.cardActions.deleteGroup')}
 	                onClick={e => { e.stopPropagation(); handleDeleteWorkspace(workspace.id); }}
 	                style={{ position: 'absolute', top: 16, right: 16, background: 'none', border: 'none', padding: 0, cursor: 'pointer', zIndex: 2 }}
 	              >
@@ -1291,7 +1291,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 	                  <h3 className="workspace-title" style={{ color: '#1a1a1a', fontWeight: 600 }}>{workspace.name}</h3>
 	                  <span className={`workspace-type ${workspace.type}`} style={{ color: '#666', background: '#f0f0f0' }}>{workspace.type}</span>
 	                  {workspace.status && workspace.status !== 'active' && (
-	                    <span className={`workspace-status ${workspace.status}`}>{workspace.status === 'deleted' ? 'Recently deleted' : 'Archived'}</span>
+	                    <span className={`workspace-status ${workspace.status}`}>{workspace.status === 'deleted' ? t('collaboration.groupLifecycle.statusDeleted') : t('collaboration.groupLifecycle.statusArchived')}</span>
 	                  )}
 	                </div>
               </div>
@@ -1414,7 +1414,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 	                    <line x1="20" y1="8" x2="20" y2="14"/>
 	                    <line x1="23" y1="11" x2="17" y2="11"/>
 	                  </svg>
-	                  Invite
+	                  {t('collaboration.cardActions.invite')}
 	                </button>
 	              )}
 	              {isWorkspaceCreator(workspace) && (workspace.status || 'active') === 'active' && (
@@ -1425,7 +1425,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 	                    handleArchiveWorkspace(workspace.id);
 	                  }}
 	                >
-	                  Archive
+	                  {t('collaboration.cardActions.archive')}
 	                </button>
 	              )}
 	              {isWorkspaceCreator(workspace) && workspace.status === 'archived' && (
@@ -1436,7 +1436,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 	                    handleRestoreWorkspace(workspace.id);
 	                  }}
 	                >
-	                  Restore
+	                  {t('collaboration.cardActions.restore')}
 	                </button>
 	              )}
 	              {isWorkspaceCreator(workspace) && workspace.status === 'deleted' && (
@@ -1448,7 +1448,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 	                      handleRestoreWorkspace(workspace.id);
 	                    }}
 	                  >
-	                    Restore
+	                    {t('collaboration.cardActions.restore')}
 	                  </button>
 	                  <button
 	                    className="btn-danger"
@@ -1457,12 +1457,12 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 	                      handlePermanentDeleteWorkspace(workspace.id);
 	                    }}
 	                  >
-	                    Delete permanently
+	                    {t('collaboration.cardActions.deletePermanently')}
 	                  </button>
 	                  <span className="workspace-recovery-note">
 	                    {isDeleteRecoveryExpired(workspace)
-	                      ? 'Recovery period ended'
-	                      : `Auto-deletes after ${WORKSPACE_DELETE_RECOVERY_DAYS} days`}
+	                      ? t('collaboration.groupLifecycle.recoveryEnded')
+	                      : t('collaboration.groupLifecycle.autoDeletesAfter', { count: WORKSPACE_DELETE_RECOVERY_DAYS })}
 	                  </span>
 	                </>
 	              )}
@@ -1562,7 +1562,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 	                    />
 	                    {newWorkspaceData.selectedMembers.length > 0 && (
 	                      <div className="selected-members">
-	                        <h5>Invite roles</h5>
+	                        <h5>{t('collaboration.createWorkspaceModal.inviteRoles')}</h5>
 	                        {newWorkspaceData.selectedMembers.map(member => (
 	                          <div className="selected-member" key={member.id}>
 	                            <div>
@@ -1674,7 +1674,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 	        <div className="modal-overlay">
 	          <div className="modal-content">
 	            <div className="modal-header">
-	              <h3>Add members to {selectedWorkspace?.name || 'the group'}</h3>
+	              <h3>{t('collaboration.addMemberModal.titleFor', { name: selectedWorkspace?.name ?? '' })}</h3>
 	              <button onClick={() => {
 	                setShowAddMemberModal(false);
 	                setPendingMembersToAdd([]);
@@ -1685,7 +1685,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 	            </div>
 	            <div className="modal-body">
 	              <div className="form-group">
-	                <label>Search Users</label>
+	                <label>{t('collaboration.createWorkspaceModal.searchUsers')}</label>
 	                <UserAutocomplete
 	                  value={pendingMembersToAdd}
 	                  onChange={(users: UserAutocompleteOption[]) => {
@@ -1695,15 +1695,15 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 	                  onSearch={handleUserSearchChange}
 	                  options={userSearchResults}
 	                  loading={isSearchingUsers}
-	                  placeholder="Search by name, email, or role..."
+	                  placeholder={t('collaboration.createWorkspaceModal.searchPlaceholder')}
 	                />
                 {/* Live feedback for search */}
-                {isSearchingUsers && <div className="searching-indicator">Searching...</div>}
-	                {!isSearchingUsers && userSearchQuery.trim() && userSearchResults.length === 0 && <div className="searching-indicator">No friends found.</div>}
-	                {!isSearchingUsers && !userSearchQuery.trim() && <div className="searching-indicator">Start typing to search for users</div>}
+                {isSearchingUsers && <div className="searching-indicator">{t('collaboration.createWorkspaceModal.searching')}</div>}
+	                {!isSearchingUsers && userSearchQuery.trim() && userSearchResults.length === 0 && <div className="searching-indicator">{t('collaboration.createWorkspaceModal.noFriendsFound')}</div>}
+	                {!isSearchingUsers && !userSearchQuery.trim() && <div className="searching-indicator">{t('collaboration.createWorkspaceModal.startTyping')}</div>}
 	              </div>
 	              <div className="form-group">
-	                <label>Group role</label>
+	                <label>{t('collaboration.addMemberModal.roleLabel')}</label>
 	                <select
 	                  className="form-input"
 	                  value={pendingMemberRole}
@@ -1718,7 +1718,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 	              </div>
 	              {selectedWorkspace && selectedWorkspace.members.length > 0 && (
 	                <div className="selected-members">
-	                  <h5>Current members</h5>
+	                  <h5>{t('collaboration.addMemberModal.currentMembers')}</h5>
 	                  {selectedWorkspace.members.map(member => (
 	                    <div className="selected-member" key={member.userId}>
 	                      <div>
@@ -1739,14 +1739,14 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 	                  setPendingMemberRole('member');
 	                }}
 	              >
-	                Cancel
+	                {t('collaboration.createWorkspaceModal.cancel')}
 	              </button>
 	              <button
 	                className="btn-primary"
 	                disabled={isAddingMembers || pendingMembersToAdd.length === 0 || !selectedWorkspace}
 	                onClick={() => inviteUsersToWorkspace(pendingMembersToAdd, pendingMemberRole)}
 	              >
-	                {isAddingMembers ? 'Sending...' : 'Send invitations'}
+	                {isAddingMembers ? t('collaboration.groupPage.sending') : t('collaboration.groupPage.sendInvitations')}
 	              </button>
 	            </div>
 	          </div>
@@ -1809,7 +1809,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                     checked={workspaceSettings.allowGuestAccess}
                     onChange={(e) => setWorkspaceSettings(prev => ({ ...prev, allowGuestAccess: e.target.checked }))}
                   />
-                  Allow Guest Access
+                  {t('collaboration.createWorkspaceModal.allowGuestAccess')}
                 </label>
               </div>
               <div className="form-group">
@@ -1819,7 +1819,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                     checked={workspaceSettings.requireApproval}
                     onChange={(e) => setWorkspaceSettings(prev => ({ ...prev, requireApproval: e.target.checked }))}
                   />
-                  Require Approval for New Members
+                  {t('collaboration.createWorkspaceModal.requireApproval')}
                 </label>
               </div>
               <div className="form-group">
@@ -1829,11 +1829,11 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                     checked={workspaceSettings.autoArchive}
                     onChange={(e) => setWorkspaceSettings(prev => ({ ...prev, autoArchive: e.target.checked }))}
                   />
-                  Auto-archive Inactive Content
+                  {t('collaboration.createWorkspaceModal.autoArchive')}
                 </label>
               </div>
               <div className="form-group">
-                <label>Retention Period (days)</label>
+                <label>{t('collaboration.createWorkspaceModal.retentionPeriod')}</label>
                 <input
                   type="number"
                   value={workspaceSettings.retentionDays}
@@ -1844,7 +1844,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                 />
               </div>
               <div className="form-group">
-                <label>Max File Size (MB)</label>
+                <label>{t('collaboration.createWorkspaceModal.maxFileSize')}</label>
                 <input
                   type="number"
                   value={Math.round(workspaceSettings.maxFileSize / (1024 * 1024))}
@@ -1859,7 +1859,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
               </div>
             </div>
             <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', padding: '1.5rem 2rem 1rem 2rem' }}>
-              <button className="btn-secondary" onClick={() => setShowSettingsModal(false)}>Cancel</button>
+              <button className="btn-secondary" onClick={() => setShowSettingsModal(false)}>{t('collaboration.createWorkspaceModal.cancel')}</button>
               <button
                 className="btn-primary"
                 onClick={handleUpdateWorkspaceSettings}
@@ -2133,7 +2133,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   if (loading) {
     return (
       <div className="collaboration-hub loading">
-        <div className="loading-spinner">Loading...</div>
+        <div className="loading-spinner">{t('collaboration.loading')}</div>
       </div>
     );
   }

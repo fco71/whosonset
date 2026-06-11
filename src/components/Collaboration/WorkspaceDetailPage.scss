@@ -310,20 +310,41 @@
       flex-wrap: wrap;
       margin-top: 6px;
     }
+  }
 
-    .assignment-chip {
-      display: inline-flex;
+  // Used inside assignment rows AND the class roster / student work view.
+  .assignment-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 0.78em;
+    font-weight: 600;
+    background: #f1f5f9;
+    color: #475569;
+
+    &.turned-in {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+  }
+
+  .student-work-panel {
+    margin: 0 0 6px 38px;
+    padding: 6px 12px;
+    background: #f8fafc;
+    border-radius: 8px;
+
+    .student-work-row {
+      display: flex;
       align-items: center;
-      padding: 2px 10px;
-      border-radius: 999px;
-      font-size: 0.78em;
-      font-weight: 600;
-      background: #f1f5f9;
-      color: #475569;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 6px 0;
+      border-bottom: 1px solid #eef2f7;
 
-      &.turned-in {
-        background: #dbeafe;
-        color: #1e40af;
+      &:last-child {
+        border-bottom: none;
       }
     }
   }

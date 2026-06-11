@@ -82,7 +82,12 @@
     "unread": "No leídas",
     "read": "Leídas",
     "noResults": "No hay notificaciones que coincidan con tu búsqueda",
-    "empty": "Aún no hay notificaciones"
+    "empty": "Aún no hay notificaciones",
+    "invitationAccepted": "Invitación aceptada — abriendo el grupo.",
+    "invitationDeclined": "Invitación al grupo rechazada.",
+    "invitationMissing": "Faltan los datos de la invitación.",
+    "invitationRespondFailed": "No se pudo responder a la invitación: {{detail}}",
+    "invitationUpdateFailed": "No se pudo actualizar la invitación al grupo."
   },
   "home": {
     "loading": "Cargando...",
@@ -822,7 +827,13 @@
       "createWorkspace": "Crear grupo",
       "searching": "Buscando...",
       "noFriendsFound": "No se encontraron amigos.",
-      "startTyping": "Comience a escribir para buscar usuarios"
+      "startTyping": "Comience a escribir para buscar usuarios",
+      "nameRequired": "Escribe un nombre para el grupo.",
+      "createFailed": "No se pudo crear el grupo. Inténtalo de nuevo.",
+      "createdWithInvites_one": "Grupo \"{{name}}\" creado y {{count}} invitación enviada.",
+      "createdWithInvites_other": "Grupo \"{{name}}\" creado y {{count}} invitaciones enviadas.",
+      "createdSuccess": "¡Grupo \"{{name}}\" creado!",
+      "inviteRoles": "Roles de invitación"
     },
     "workspaceSettings": {
       "title": "Configuración del grupo",
@@ -831,10 +842,17 @@
       "workspaceName": "Nombre del grupo",
       "description": "Descripción",
       "workspaceType": "Tipo de grupo",
-      "saveSettings": "Guardar cambios"
+      "saveSettings": "Guardar cambios",
+      "onlyCreatorCanUpdate": "Solo quien creó el grupo puede cambiar la configuración.",
+      "nameRequired": "El nombre del grupo es obligatorio.",
+      "updateSuccess": "¡Grupo actualizado!",
+      "updateFailed": "No se pudo actualizar el grupo."
     },
     "addMemberModal": {
-      "title": "Añadir integrante al grupo"
+      "title": "Añadir integrante al grupo",
+      "titleFor": "Añadir integrantes a {{name}}",
+      "roleLabel": "Rol en el grupo",
+      "currentMembers": "Integrantes actuales"
     },
     "tasksTab": {
       "title": "Tareas",
@@ -1053,7 +1071,18 @@
       "searching": "Buscando…",
       "sending": "Enviando…",
       "sendInvitations": "Enviar invitaciones",
-      "fountainScopeHint": "Este guion pertenecerá a {{workspace}} y sus integrantes tendrán acceso."
+      "fountainScopeHint": "Este guion pertenecerá a {{workspace}} y sus integrantes tendrán acceso.",
+      "yourClasses": "Tus clases",
+      "yourClassesHint": "Marca una clase para incluir este grupo en ella.",
+      "addedToClass": "Grupo añadido a {{class}}.",
+      "removedFromClass": "Grupo quitado de {{class}}.",
+      "addMemberToClassTitle": "Añadir este estudiante a una clase",
+      "addMemberToClassTitle2": "Añadir a {{name}} a una clase",
+      "classSelectLabel": "Clase",
+      "addMemberToClassHint": "Aparecerá en la lista de esa clase como individuo — útil cuando su grupo pertenece a otra clase.",
+      "alreadyViaGroup": "Ya está en {{class}} a través de este grupo.",
+      "alreadyOnRoster": "Ya está en la lista de {{class}}.",
+      "memberAddedToClass": "{{name}} añadido a {{class}}."
     },
     "assignments": {
       "title": "Tareas",
@@ -1080,7 +1109,11 @@
       "noneOption": "Sin tarea",
       "alsoPostTo": "Publicar esta tarea también en:",
       "selectAll": "Seleccionar todos",
-      "selectNone": "Quitar selección"
+      "selectNone": "Quitar selección",
+      "edit": "Editar",
+      "saving": "Guardando…",
+      "updated": "Tarea actualizada.",
+      "updateFailed": "No se pudo actualizar la tarea."
     },
     "classes": {
       "tabTitle": "Mis clases",
@@ -1138,7 +1171,43 @@
       "checklistProgress": "{{done}}/{{total}} listos",
       "checklistEmpty": "Notas para ti sobre esta clase — p. ej. \"revisar tratamientos\", \"recoger autorizaciones\".",
       "checklistPlaceholder": "Añadir un pendiente…",
-      "addItem": "Añadir"
+      "addItem": "Añadir",
+      "showWork": "ver trabajos",
+      "hideWork": "ocultar trabajos"
+    },
+    "loadError": "No se pudieron cargar tus grupos.",
+    "generatingReport": "Generando el reporte de desglose del guion…",
+    "auth": {
+      "signInCreateGroup": "Inicia sesión para crear un grupo.",
+      "signInUpload": "Inicia sesión para subir guiones.",
+      "signInWrite": "Inicia sesión para empezar a escribir.",
+      "signInReview": "Inicia sesión para actualizar el estado de revisión."
+    },
+    "groupLifecycle": {
+      "archived": "{{name}} archivado.",
+      "archiveFailed": "No se pudo archivar el grupo.",
+      "restored": "{{name}} restaurado.",
+      "restoreFailed": "No se pudo restaurar el grupo.",
+      "deleteConfirm": "¿Eliminar este grupo? Podrá restaurarse durante 30 días.",
+      "movedToDeleted": "{{name}} se movió a eliminados recientemente.",
+      "deleteFailed": "No se pudo eliminar el grupo.",
+      "mustDeleteFirst": "Primero mueve el grupo al estado eliminado.",
+      "permanentDeleteConfirm": "¿Eliminar este grupo de forma permanente? Esto no se puede deshacer.",
+      "permanentlyDeleted": "{{name}} eliminado permanentemente.",
+      "permanentDeleteFailed": "No se pudo eliminar el grupo de forma permanente.",
+      "recoveryEnded": "El periodo de recuperación terminó",
+      "autoDeletesAfter_one": "Se elimina automáticamente en {{count}} día",
+      "autoDeletesAfter_other": "Se elimina automáticamente en {{count}} días",
+      "statusArchived": "Archivado",
+      "statusDeleted": "Eliminado recientemente"
+    },
+    "cardActions": {
+      "invite": "Invitar",
+      "archive": "Archivar",
+      "restore": "Restaurar",
+      "deletePermanently": "Eliminar permanentemente",
+      "settings": "Configuración",
+      "deleteGroup": "Eliminar grupo"
     }
   },
   "tasks": {

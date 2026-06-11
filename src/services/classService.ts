@@ -15,6 +15,8 @@ import { db } from '../firebase';
 export interface ManualStudent {
   id: string;     // local key, manual-<random>
   name: string;
+  /** Set when the entry was added from a real member row (links profile + work). */
+  uid?: string | null;
 }
 
 export interface ClassChecklistItem {

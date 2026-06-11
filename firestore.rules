@@ -865,7 +865,14 @@ service cloud.firestore {
           isWorkspaceOwner(request.resource.data.workspaceId, request.auth.uid) ||
           isEffectiveWorkspaceSupervisor(request.resource.data.workspaceId, request.auth.uid)
         );
-      allow update: if false;
+      // Only the creator may edit, and only the text fields — workspaceId and
+      // createdBy stay immutable so an assignment can never be moved or reowned.
+      allow update: if signedIn() &&
+        resource.data.createdBy == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['title', 'description', 'updatedAt']) &&
+        request.resource.data.title is string &&
+        request.resource.data.title.size() > 0 &&
+        request.resource.data.title.size() <= 200;
       allow delete: if signedIn() && (
         resource.data.createdBy == request.auth.uid ||
         isWorkspaceOwner(resource.data.workspaceId, request.auth.uid)
