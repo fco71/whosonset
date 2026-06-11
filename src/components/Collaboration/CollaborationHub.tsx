@@ -826,10 +826,12 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     let cancelled = false;
     (async () => {
       try {
-        const snap = await getDoc(doc(db, 'crewProfiles', currentUser.uid));
-        if (cancelled || !snap.exists()) return;
-        const data = snap.data();
-        setIsTeacher(data?.isTeacher === true || data?.profileType === 'teacher');
+        // Privilege source of truth: admin-granted teacherRoles/{uid} doc.
+        // crewProfiles.isTeacher / profileType are user-writable display fields and
+        // must NOT gate teacher actions (students could set them on themselves).
+        const snap = await getDoc(doc(db, 'teacherRoles', currentUser.uid));
+        if (cancelled) return;
+        setIsTeacher(snap.exists());
       } catch (err) {
         console.error('Failed to load teacher flag:', err);
       }

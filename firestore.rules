@@ -321,12 +321,15 @@ service cloud.firestore {
         newData.diff(oldData).affectedKeys().hasOnly(['resolved']);
     }
 
-    function profileIsTeacher(uid) {
-      return exists(/databases/$(database)/documents/crewProfiles/$(uid)) &&
-        (
-          get(/databases/$(database)/documents/crewProfiles/$(uid)).data.isTeacher == true ||
-          get(/databases/$(database)/documents/crewProfiles/$(uid)).data.profileType == 'teacher'
-        );
+    // SECURITY: teacher privilege is granted ONLY via the Admin SDK writing a
+    // teacherRoles/{uid} doc (scripts/grant-teacher-role.cjs). The previous check
+    // read crewProfiles.isTeacher / profileType, which are USER-WRITABLE profile
+    // fields — any student could set them on their own profile and self-elect as
+    // workspace supervisor (grading CSV access, teacher-styled notes). Those
+    // crewProfiles fields are now cosmetic/display-only; never gate privileges
+    // on them again.
+    function isVerifiedTeacher(uid) {
+      return exists(/databases/$(database)/documents/teacherRoles/$(uid));
     }
 
     function isSelfSupervisorToggle(workspaceData, requestData, uid) {
@@ -334,7 +337,7 @@ service cloud.firestore {
         workspaceData.memberIds is list &&
         workspaceData.memberIds.hasAny([uid]) &&
         workspaceData.ownerId != uid &&
-        profileIsTeacher(uid) &&
+        isVerifiedTeacher(uid) &&
         requestData.diff(workspaceData).affectedKeys().hasOnly(['selfElectedSupervisors', 'updatedAt']) &&
         requestData.selfElectedSupervisors is list &&
         (
@@ -353,6 +356,15 @@ service cloud.firestore {
             requestData.selfElectedSupervisors.size() == workspaceData.get('selfElectedSupervisors', []).size() - 1
           )
         );
+    }
+
+    // Teacher role grants - the privilege source of truth for isVerifiedTeacher().
+    // Existence of teacherRoles/{uid} == admin-verified teacher. Writable ONLY via
+    // the Admin SDK (scripts/grant-teacher-role.cjs); clients may read their own
+    // doc so the UI can show/hide teacher actions.
+    match /teacherRoles/{userId} {
+      allow read: if signedIn() && request.auth.uid == userId;
+      allow write: if false;
     }
 
     // User collections - users can only access their own collections

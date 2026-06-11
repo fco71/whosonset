@@ -157,6 +157,29 @@ describe('security rules guardrails', () => {
     expect(hub).not.toMatch(/where\('teamMembers',\s*'array-contains'/);
   });
 
+  it('keeps supervisor self-election gated by admin-granted teacherRoles, not user-writable profile fields', () => {
+    const rules = readRepoFile('firestore.rules');
+    const hub = readRepoFile('src/components/Collaboration/CollaborationHub.tsx');
+
+    // The privilege function must read teacherRoles/{uid}, which only the Admin SDK can write.
+    expect(rules).toMatch(/function\s+isVerifiedTeacher\(uid\)\s*\{\s*\n\s*return\s+exists\(\/databases\/\$\(database\)\/documents\/teacherRoles\/\$\(uid\)\);/);
+    expect(rules).toMatch(/isVerifiedTeacher\(uid\)\s+&&/);
+
+    // teacherRoles must stay client-write-locked and self-read-only.
+    const teacherRoleRules = rules.match(/match\s+\/teacherRoles\/\{userId\}\s+\{[\s\S]*?\n\s+\}/)?.[0] || '';
+    expect(teacherRoleRules).toMatch(/allow\s+read:\s+if\s+signedIn\(\)\s+&&\s+request\.auth\.uid\s+==\s+userId;/);
+    expect(teacherRoleRules).toMatch(/allow\s+write:\s+if\s+false;/);
+
+    // Must NOT regress to gating privileges on user-writable crewProfiles fields.
+    expect(rules).not.toMatch(/crewProfiles\/\$\(uid\)\)\.data\.isTeacher/);
+    expect(rules).not.toMatch(/crewProfiles\/\$\(uid\)\)\.data\.profileType/);
+    expect(rules).not.toMatch(/function\s+profileIsTeacher/);
+
+    // The client teacher-action gate must read teacherRoles, not crewProfiles flags.
+    expect(hub).toMatch(/getDoc\(doc\(db,\s*'teacherRoles',\s*currentUser\.uid\)\)/);
+    expect(hub).not.toMatch(/data\?\.isTeacher\s*===\s*true\s*\|\|\s*data\?\.profileType\s*===\s*'teacher'/);
+  });
+
   it('keeps known credential-shaped values out of tracked documentation', () => {
     const docs = [
       readRepoFile('PROJECT_OVERVIEW.md'),
