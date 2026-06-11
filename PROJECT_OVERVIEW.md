@@ -45,6 +45,8 @@ Current guardrails:
 
 ## Current Product State
 
+- Collaboration is group-centric (2026-06-11): `/collaboration` lists the user's groups (workspaces) plus a personal "My screenplays" tab and a supervisor review queue; each group has its own page at `/collaboration/:workspaceId` (`WorkspaceDetailPage`) with the group's screenplays, upload/start-writing, members, activity feed, invite (owner), supervisor self-toggle, and the grading CSV export. The old workspace-card "Open" button used to only show a fake "Successfully joined workspace" toast; it now navigates to the group page. Group uploads happen on the group page; the hub upload is personal-only. Visible nav/tab strings say "Groups"/"Grupos"; deeper strings (settings modal, invitation notifications) still say "workspace". No Firestore schema or rules changes — purely client navigation/IA.
+- Shared collaboration modules: `workspaceAccess.ts` (pure role/capability helpers + normalizers, mirrors firestore.rules), `screenplayService.ts` (upload/fountain-create/delete/review-status/invitations/grading-CSV Firestore writes), `ScreenplayList.tsx` (row UI), `crewSearch.ts` (cached crewProfiles search). `CollaborationHub.tsx` and `WorkspaceDetailPage.tsx` both consume these; role semantics must be changed in `workspaceAccess.ts` only.
 - Email/password signup requires verification for new accounts. New profiles get `emailVerificationRequired: true`, land on `/verify-email`, and cannot enter the app until Firebase reports `emailVerified`.
 - Existing unmarked accounts and Google sign-in users can still enter normally.
 - Login/Register/Verify Email pages are localized in EN/ES.
@@ -64,6 +66,12 @@ Current guardrails:
 - Project-management collections (`tasks`, project crew/budget/timeline/document/milestone records, collaborative tasks, and breakdown elements) are now project-scoped in Firestore rules instead of readable/writable by any authenticated user. New legacy `Projects` records keep a `crewMemberIds` access list for rule checks.
 
 ## Latest Verification
+
+Local checks on 2026-06-11 (group-centric collaboration restructure):
+
+- `npx tsc --noEmit` clean; `npx webpack --mode production` compiled successfully.
+- `npx vitest run` passes: 77 tests across 8 files.
+- Dev server: `/collaboration` and `/collaboration/:id` resolve and redirect to `/login` when signed out; no console errors. Authenticated click-through (open group, upload inside group, review queue) still needs a real teacher/student login — not yet QA'd.
 
 Local checks on 2026-06-01:
 

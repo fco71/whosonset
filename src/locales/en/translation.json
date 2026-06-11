@@ -812,7 +812,7 @@
   "collaboration": {
     "title": "Collaboration Hub",
     "subtitle": "Work together on projects, tasks, and creative content",
-    "workspaces": "Workspaces",
+    "workspaces": "Groups",
     "tasks": "Tasks",
     "screenplays": "Screenplays",
     "loading": "Loading...",
@@ -827,8 +827,8 @@
     "view": "View",
     "delete": "Delete",
     "workspacesTab": {
-      "title": "Workspaces",
-      "createWorkspace": "Create Workspace"
+      "title": "Your groups",
+      "createWorkspace": "Create group"
     },
     "workspaceTypes": {
       "project": "Project",
@@ -836,7 +836,7 @@
       "general": "General"
     },
     "createWorkspaceModal": {
-      "title": "Create New Workspace",
+      "title": "Create a group",
       "step1": "Step 1: Workspace Details",
       "step2": "Step 2: Add Members",
       "step3": "Step 3: Workspace Settings",
@@ -1039,6 +1039,54 @@
       "unresolvedTooltip_other": "{{count}} unresolved notes",
       "unresolvedSupervisorTooltip_one": "{{count}} unresolved note from a supervisor",
       "unresolvedSupervisorTooltip_other": "{{count}} unresolved notes from a supervisor"
+    },
+    "openGroup": "Open",
+    "groupCard": {
+      "awaitingReview_one": "{{count}} awaiting review",
+      "awaitingReview_other": "{{count}} awaiting review",
+      "awaitingReviewTooltip": "Screenplays submitted for your review"
+    },
+    "myScreenplays": {
+      "title": "My screenplays",
+      "subtitle": "Your personal screenplays and, if you supervise groups, work submitted for review",
+      "groupHint": "Uploads here are personal. To add a screenplay to a group, open the group from the Groups tab and upload there.",
+      "fountainPersonalHint": "This screenplay will be personal. To write with your group, start from the group's page."
+    },
+    "reviewQueue": {
+      "title": "Review queue",
+      "subtitle": "Submitted screenplays from every group you supervise",
+      "empty": "Nothing waiting for your review right now."
+    },
+    "groupPage": {
+      "back": "All groups",
+      "loading": "Loading group…",
+      "notFoundTitle": "Group not found",
+      "notFoundBody": "This group doesn't exist or you don't have access to it.",
+      "inviteMembers": "Invite members",
+      "membersTitle_one": "Members ({{count}})",
+      "membersTitle_other": "Members ({{count}})",
+      "noMembers": "No members yet.",
+      "screenplaysTitle": "Screenplays",
+      "noScreenplays": "No screenplays in this group yet — upload one or start writing.",
+      "archivedNotice": "This group is archived — content is read-only until the owner restores it.",
+      "deletedNotice": "This group is in recently deleted and will be removed permanently soon.",
+      "readOnlyUpload": "Your role in this group can view and comment, but not add screenplays.",
+      "filesIgnored_one": "{{count}} file ignored — only PDF, DOC, DOCX, and TXT are supported.",
+      "filesIgnored_other": "{{count}} files ignored — only PDF, DOC, DOCX, and TXT are supported.",
+      "uploadedMany_one": "{{count}} screenplay uploaded.",
+      "uploadedMany_other": "{{count}} screenplays uploaded.",
+      "uploadedPartial": "Uploaded {{success}} of {{total}}. The rest failed.",
+      "reviewNotAllowed": "You cannot change this screenplay's review status.",
+      "alreadyInvited": "Those users are already in this group or have pending invitations.",
+      "invitationsSent_one": "Sent {{count}} invitation for {{workspace}}.",
+      "invitationsSent_other": "Sent {{count}} invitations for {{workspace}}.",
+      "invitationsFailed": "Failed to send invitations. Please try again.",
+      "inviteModalTitle": "Invite members to {{workspace}}",
+      "inviteRoleLabel": "Group role",
+      "searching": "Searching…",
+      "sending": "Sending…",
+      "sendInvitations": "Send invitations",
+      "fountainScopeHint": "This screenplay will belong to {{workspace}} and its members will have access."
     }
   },
   "tasks": {

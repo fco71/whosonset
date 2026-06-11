@@ -777,7 +777,7 @@
   "collaboration": {
     "title": "Centro de Colaboración",
     "subtitle": "Trabaja en conjunto en proyectos, tareas y contenido creativo",
-    "workspaces": "Espacios de Trabajo",
+    "workspaces": "Grupos",
     "tasks": "Tareas",
     "screenplays": "Guiones",
     "loading": "Cargando...",
@@ -792,8 +792,8 @@
     "view": "Ver",
     "delete": "Eliminar",
     "workspacesTab": {
-      "title": "Espacios de Trabajo",
-      "createWorkspace": "Crear Espacio de Trabajo"
+      "title": "Tus grupos",
+      "createWorkspace": "Crear grupo"
     },
     "workspaceTypes": {
       "project": "Proyecto",
@@ -801,7 +801,7 @@
       "general": "General"
     },
     "createWorkspaceModal": {
-      "title": "Crear Nuevo Espacio de Trabajo",
+      "title": "Crear un grupo",
       "step1": "Paso 1: Detalles del Espacio de Trabajo",
       "step2": "Paso 2: Agregar Miembros",
       "step3": "Paso 3: Configuración del Espacio de Trabajo",
@@ -1004,6 +1004,54 @@
       "unresolvedTooltip_other": "{{count}} notas sin resolver",
       "unresolvedSupervisorTooltip_one": "{{count}} nota sin resolver de un supervisor",
       "unresolvedSupervisorTooltip_other": "{{count}} notas sin resolver de un supervisor"
+    },
+    "openGroup": "Abrir",
+    "groupCard": {
+      "awaitingReview_one": "{{count}} por revisar",
+      "awaitingReview_other": "{{count}} por revisar",
+      "awaitingReviewTooltip": "Guiones entregados para tu revisión"
+    },
+    "myScreenplays": {
+      "title": "Mis guiones",
+      "subtitle": "Tus guiones personales y, si supervisas grupos, las entregas por revisar",
+      "groupHint": "Lo que subas aquí es personal. Para añadir un guion a un grupo, abre el grupo desde la pestaña Grupos y súbelo ahí.",
+      "fountainPersonalHint": "Este guion será personal. Para escribir con tu grupo, empieza desde la página del grupo."
+    },
+    "reviewQueue": {
+      "title": "Cola de revisión",
+      "subtitle": "Guiones entregados de todos los grupos que supervisas",
+      "empty": "No hay nada esperando tu revisión por ahora."
+    },
+    "groupPage": {
+      "back": "Todos los grupos",
+      "loading": "Cargando grupo…",
+      "notFoundTitle": "Grupo no encontrado",
+      "notFoundBody": "Este grupo no existe o no tienes acceso.",
+      "inviteMembers": "Invitar integrantes",
+      "membersTitle_one": "Integrantes ({{count}})",
+      "membersTitle_other": "Integrantes ({{count}})",
+      "noMembers": "Aún no hay integrantes.",
+      "screenplaysTitle": "Guiones",
+      "noScreenplays": "Este grupo aún no tiene guiones — sube uno o empieza a escribir.",
+      "archivedNotice": "Este grupo está archivado — el contenido es de solo lectura hasta que el dueño lo restaure.",
+      "deletedNotice": "Este grupo está en eliminados recientemente y pronto se borrará de forma permanente.",
+      "readOnlyUpload": "Tu rol en este grupo permite ver y comentar, pero no añadir guiones.",
+      "filesIgnored_one": "{{count}} archivo ignorado — solo se admiten PDF, DOC, DOCX y TXT.",
+      "filesIgnored_other": "{{count}} archivos ignorados — solo se admiten PDF, DOC, DOCX y TXT.",
+      "uploadedMany_one": "{{count}} guion subido.",
+      "uploadedMany_other": "{{count}} guiones subidos.",
+      "uploadedPartial": "Se subieron {{success}} de {{total}}. El resto falló.",
+      "reviewNotAllowed": "No puedes cambiar el estado de revisión de este guion.",
+      "alreadyInvited": "Esas personas ya están en este grupo o tienen invitaciones pendientes.",
+      "invitationsSent_one": "Se envió {{count}} invitación para {{workspace}}.",
+      "invitationsSent_other": "Se enviaron {{count}} invitaciones para {{workspace}}.",
+      "invitationsFailed": "No se pudieron enviar las invitaciones. Inténtalo de nuevo.",
+      "inviteModalTitle": "Invitar integrantes a {{workspace}}",
+      "inviteRoleLabel": "Rol en el grupo",
+      "searching": "Buscando…",
+      "sending": "Enviando…",
+      "sendInvitations": "Enviar invitaciones",
+      "fountainScopeHint": "Este guion pertenecerá a {{workspace}} y sus integrantes tendrán acceso."
     }
   },
   "tasks": {

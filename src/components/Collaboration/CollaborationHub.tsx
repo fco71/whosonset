@@ -1,25 +1,34 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   CollaborationWorkspace,
   ScreenplayReviewStatus,
-  Task,
   WorkspaceMember,
   WorkspaceRole
 } from '../../types/Collaboration';
 import CollaborativeTasksHub from '../CollaborativeTasks/CollaborativeTasksHub';
-import ScreenplayBreakdown from '../ScreenplayBreakdown';
-import BreakdownReports from '../BreakdownReports';
 import './CollaborationHub.scss';
 import UserAutocomplete, { UserAutocompleteOption } from './UserAutocomplete';
 import { toast } from 'react-hot-toast';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { collection, addDoc, query, where, orderBy, limit, getDocs, getDoc, onSnapshot, updateDoc, doc, deleteDoc, serverTimestamp, Timestamp, QuerySnapshot, Unsubscribe, writeBatch } from 'firebase/firestore';
+import { collection, addDoc, query, where, getDocs, getDoc, onSnapshot, updateDoc, doc, deleteDoc, serverTimestamp, Timestamp, QuerySnapshot, Unsubscribe, writeBatch } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { app, db, storage } from '../../firebase';
+import { app, db } from '../../firebase';
 import ScreenplayViewer from './ScreenplayViewer';
 import FountainEditor from './FountainEditor';
-import { logWorkspaceActivity, WorkspaceActivityVerb } from '../../services/workspaceActivityService';
+import { logWorkspaceActivity } from '../../services/workspaceActivityService';
+import {
+  createFountainScreenplay,
+  createWorkspaceInvitations as createWorkspaceInvitationsService,
+  deleteScreenplayDoc,
+  isAcceptedScreenplayFile,
+  setScreenplayReviewStatus,
+  uploadScreenplayFile
+} from '../../services/screenplayService';
+import * as access from './workspaceAccess';
+import { MAX_UPLOAD_BYTES, MAX_UPLOAD_MB, Screenplay } from './workspaceAccess';
+import ScreenplayList from './ScreenplayList';
+import { searchCrewProfiles } from './crewSearch';
 import { useTranslation } from 'react-i18next';
 
 const debugLog = (...args: unknown[]) => {
@@ -42,40 +51,8 @@ interface UserSearchResult {
   company?: string;
 }
 
-// Screenplay interface
-interface Screenplay {
-  id: string;
-  name: string;
-  type: string;
-  url: string;
-  uploadedBy?: string;
-  teamMembers?: string[];
-  workspaceId?: string | null;
-  projectId?: string | null;
-  uploadedAt?: Date | { seconds: number; nanoseconds: number };
-  lastModified?: Date | { seconds: number; nanoseconds: number };
-  size?: number;
-  // Fountain (in-browser writing) support. format defaults to 'pdf' for legacy/uploaded
-  // docs; 'fountain' docs have no Storage file (url is empty) and store their text inline.
-  format?: 'pdf' | 'fountain';
-  fountainSource?: string;
-  reviewStatus?: ScreenplayReviewStatus;
-  reviewStatusUpdatedAt?: Date | { seconds: number; nanoseconds: number };
-  reviewStatusUpdatedBy?: string;
-  reviewStatusNote?: string;
-}
-
-// Screenplay Annotation interface
-interface ScreenplayAnnotation {
-  id: string;
-  userId: string;
-  userName: string;
-  annotation: string;
-  timestamp: Date;
-  page?: string;
-  scene?: string;
-  screenplayId?: string;
-}
+// Screenplay type + capability helpers live in ./workspaceAccess (shared with
+// WorkspaceDetailPage, the single-group page this hub links to).
 
 // Workspace creation step
 type WorkspaceCreationStep = 'details' | 'members' | 'settings';
@@ -93,10 +70,6 @@ const INVITABLE_WORKSPACE_ROLES: Array<{
   { value: 'supervisor' },
   { value: 'viewer' }
 ];
-
-const REVIEW_STATUS_ORDER: ScreenplayReviewStatus[] = ['draft', 'submitted', 'changes_requested', 'approved'];
-const isScreenplayReviewStatus = (value: unknown): value is ScreenplayReviewStatus =>
-  typeof value === 'string' && REVIEW_STATUS_ORDER.includes(value as ScreenplayReviewStatus);
 
 // Error Boundary Component
 interface ErrorBoundaryProps {
@@ -137,16 +110,10 @@ class CollaborationErrorBoundary extends React.Component<ErrorBoundaryProps, Err
   }
 }
 
-// Screenplay/document upload size cap. Kept equal to the Storage rule's
-// `isDocumentUpload` limit (25MB) so the client rejects oversized files with a
-// clear message instead of letting them fail later with an opaque Storage
-// permission error. Raise BOTH this and storage.rules together if needed.
-const MAX_UPLOAD_MB = 25;
-const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
-
 const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const { t } = useTranslation();
   const { currentUser } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabType>('workspaces');
   const [workspaces, setWorkspaces] = useState<CollaborationWorkspace[]>([]);
   const [selectedWorkspace, setSelectedWorkspace] = useState<CollaborationWorkspace | null>(null);
@@ -156,7 +123,6 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   // Video call functionality will be added in a future update
-  const [showScreenplayViewer, setShowScreenplayViewer] = useState(false);
   const [showScreenplayModal, setShowScreenplayModal] = useState(false);
 
   // Workspace creation state
@@ -193,24 +159,10 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     type: 'project' as CollaborationWorkspace['type']
   });
 
-  // Screenplay upload state
+  // Screenplay upload state (personal uploads only — group uploads happen on the
+  // group's own page at /collaboration/:workspaceId)
   const [uploadingScreenplay, setUploadingScreenplay] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
-  const [uploadedScreenplay, setUploadedScreenplay] = useState<Screenplay | null>(null);
-  const [uploadWorkspaceId, setUploadWorkspaceId] = useState('');
-
-  // Screenplay collaboration state
-  const [screenplayAnnotations, setScreenplayAnnotations] = useState<ScreenplayAnnotation[]>([]);
-  const [newAnnotation, setNewAnnotation] = useState('');
-
-  const [teamMembers, setTeamMembers] = useState<{
-    id: string;
-    name: string;
-    email: string;
-    role: string;
-    avatar?: string;
-    isOnline?: boolean;
-  }[]>([]);
 
   const [userScreenplays, setUserScreenplays] = useState<Screenplay[]>([]);
   const [showStartWritingModal, setShowStartWritingModal] = useState(false);
@@ -222,161 +174,40 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const [selectedScreenplayId, setSelectedScreenplayId] = useState<string | null>(null);
 
   const [approvedContacts, setApprovedContacts] = useState<string[]>([]);
-  // Short-lived cache of all crew profiles for the member search (avoids re-fetching the
-  // whole collection on every keystroke). 30s TTL so newly-created classmates still appear.
-  const crewProfilesCacheRef = useRef<{ at: number; data: UserSearchResult[] } | null>(null);
-  const [activityEvents, setActivityEvents] = useState<Array<{
-    id: string;
-    actorName?: string;
-    verb: string;
-    targetName?: string | null;
-    detail?: string | null;
-    createdAt?: any;
-  }>>([]);
   const [isTeacher, setIsTeacher] = useState(false);
   const [toggleSupervisorPending, setToggleSupervisorPending] = useState(false);
 
-  const getWorkspaceMemberIds = (workspace: CollaborationWorkspace): string[] => {
-    const ids = workspace.memberIds?.length
-      ? workspace.memberIds
-      : workspace.members?.map(member => member.userId) || [];
-    return Array.from(new Set(ids.filter(Boolean)));
-  };
+  // Capability + normalization helpers are shared with WorkspaceDetailPage via
+  // ./workspaceAccess; these thin wrappers just bind the current user.
+  const getWorkspaceMemberIds = access.getWorkspaceMemberIds;
+  const getWorkspaceSupervisorIds = access.getWorkspaceSupervisorIds;
+  const getWorkspaceViewerIds = access.getWorkspaceViewerIds;
+  const getPermissionsForRole = access.getPermissionsForRole;
+  const normalizeScreenplay = access.normalizeScreenplay;
+  const normalizeWorkspace = access.normalizeWorkspace;
+  const toDate = access.toDate;
 
-  const getWorkspaceSupervisorIds = (members: WorkspaceMember[]): string[] =>
-    members.filter(member => member.role === 'supervisor').map(member => member.userId);
+  const isWorkspaceCreator = (workspace: CollaborationWorkspace): boolean =>
+    access.isWorkspaceCreator(workspace, currentUser?.uid);
 
-  const getWorkspaceViewerIds = (members: WorkspaceMember[]): string[] =>
-    members.filter(member => member.role === 'viewer').map(member => member.userId);
+  const canManageWorkspace = (workspace: CollaborationWorkspace): boolean =>
+    access.canManageWorkspace(workspace, currentUser?.uid);
 
-  const getPermissionsForRole = (role: WorkspaceRole): string[] => {
-    switch (role) {
-      case 'owner':
-      case 'admin':
-        return ['read', 'write', 'comment', 'manage'];
-      case 'supervisor':
-        return ['read', 'comment', 'annotate'];
-      case 'viewer':
-        return ['read'];
-      case 'member':
-      default:
-        return ['read', 'write', 'comment'];
-    }
-  };
+  const canEditWorkspaceContent = (workspace: CollaborationWorkspace): boolean =>
+    access.canEditWorkspaceContent(workspace, currentUser?.uid);
 
-  const normalizeScreenplay = (screenplayId: string, data: any): Screenplay => ({
-    id: screenplayId,
-    name: data.name || 'Untitled Screenplay',
-    type: data.type || 'pdf',
-    url: data.url || '',
-    uploadedBy: data.uploadedBy,
-    teamMembers: data.teamMembers || [],
-    workspaceId: data.workspaceId || null,
-    projectId: data.projectId || null,
-    size: data.size,
-    format: data.format === 'fountain' ? 'fountain' : 'pdf',
-    fountainSource: typeof data.fountainSource === 'string' ? data.fountainSource : '',
-    reviewStatus: isScreenplayReviewStatus(data.reviewStatus) ? data.reviewStatus : 'draft',
-    reviewStatusUpdatedAt: data.reviewStatusUpdatedAt?.toDate ? data.reviewStatusUpdatedAt.toDate() : data.reviewStatusUpdatedAt,
-    reviewStatusUpdatedBy: typeof data.reviewStatusUpdatedBy === 'string' ? data.reviewStatusUpdatedBy : undefined,
-    reviewStatusNote: typeof data.reviewStatusNote === 'string' ? data.reviewStatusNote : '',
-    uploadedAt: data.uploadedAt?.toDate ? data.uploadedAt.toDate() : data.uploadedAt,
-    lastModified: data.lastModified?.toDate ? data.lastModified.toDate() : data.lastModified
-  });
+  const canDeleteScreenplay = (screenplay: Screenplay): boolean =>
+    access.canDeleteScreenplay(screenplay, currentUser?.uid, getWorkspaceById);
 
-  const normalizeWorkspace = (workspaceId: string, data: any): CollaborationWorkspace => {
-    const members = (data.members || []) as WorkspaceMember[];
-    const rawMemberIds: string[] = data.memberIds?.length ? data.memberIds : members.map(member => member.userId);
-    const memberIds = Array.from(new Set(rawMemberIds.filter(Boolean)));
+  const canEditScreenplay = (screenplay: Screenplay): boolean =>
+    access.canEditScreenplay(screenplay, currentUser?.uid, getWorkspaceById);
 
-    return {
-      id: workspaceId,
-      projectId: data.projectId ?? null,
-      ownerId: data.ownerId,
-      name: data.name || 'Untitled Workspace',
-      description: data.description || '',
-      type: data.type || 'project',
-      members,
-      memberIds,
-      supervisorIds: data.supervisorIds || getWorkspaceSupervisorIds(members),
-      viewerIds: data.viewerIds || getWorkspaceViewerIds(members),
-      selfElectedSupervisors: data.selfElectedSupervisors || [],
-      status: data.status || 'active',
-      archivedAt: data.archivedAt || null,
-      deletedAt: data.deletedAt || null,
-      deleteRecoverableUntil: data.deleteRecoverableUntil || null,
-      channels: data.channels,
-      documents: data.documents,
-      whiteboards: data.whiteboards,
-      createdAt: data.createdAt,
-      updatedAt: data.updatedAt,
-      settings: data.settings || newWorkspaceData.settings
-    };
-  };
-
-  const isWorkspaceCreator = (workspace: CollaborationWorkspace): boolean => {
-    if (!currentUser) return false;
-    if (workspace.ownerId) return workspace.ownerId === currentUser.uid;
-    return workspace.members?.some(member => member.userId === currentUser.uid && member.role === 'owner') || false;
-  };
-
-  const canManageWorkspace = (workspace: CollaborationWorkspace): boolean => {
-    return isWorkspaceCreator(workspace);
-  };
-
-  const isWorkspaceReadOnlyParticipant = (workspace: CollaborationWorkspace): boolean => {
-    if (!currentUser) return true;
-    const currentMember = workspace.members?.find(member => member.userId === currentUser.uid);
-    return (
-      currentMember?.role === 'supervisor' ||
-      currentMember?.role === 'viewer' ||
-      workspace.supervisorIds?.includes(currentUser.uid) ||
-      workspace.viewerIds?.includes(currentUser.uid) ||
-      workspace.selfElectedSupervisors?.includes(currentUser.uid)
-    ) || false;
-  };
-
-  const canEditWorkspaceContent = (workspace: CollaborationWorkspace): boolean => {
-    if (!currentUser || (workspace.status || 'active') !== 'active') return false;
-    return getWorkspaceMemberIds(workspace).includes(currentUser.uid) && !isWorkspaceReadOnlyParticipant(workspace);
-  };
-
-  const canDeleteScreenplay = (screenplay: Screenplay): boolean => {
-    if (!currentUser) return false;
-    if (screenplay.uploadedBy === currentUser.uid) return true;
-    const workspace = screenplay.workspaceId ? getWorkspaceById(screenplay.workspaceId) : null;
-    return workspace ? isWorkspaceCreator(workspace) && !isWorkspaceReadOnlyParticipant(workspace) : false;
-  };
-
-  // Whether the current user may edit a screenplay's content (Fountain source).
-  // The uploader can always edit their own; otherwise they must be a non-read-only
-  // member of the screenplay's workspace. Mirrors the Firestore rule that blocks
-  // supervisors from mutating screenplay docs.
-  const canEditScreenplay = (screenplay: Screenplay): boolean => {
-    if (!currentUser) return false;
-    if (screenplay.uploadedBy === currentUser.uid) return true;
-    const workspace = screenplay.workspaceId ? getWorkspaceById(screenplay.workspaceId) : null;
-    return workspace ? canEditWorkspaceContent(workspace) : false;
-  };
-
-  const canReviewScreenplay = (screenplay: Screenplay): boolean => {
-    if (!currentUser || !screenplay.workspaceId) return false;
-    const workspace = getWorkspaceById(screenplay.workspaceId);
-    return workspace ? getEffectiveRole(workspace) === 'supervisor' : false;
-  };
+  const canReviewScreenplay = (screenplay: Screenplay): boolean =>
+    access.canReviewScreenplay(screenplay, currentUser?.uid, getWorkspaceById);
 
   const updateLocalScreenplay = (screenplayId: string, updates: Partial<Screenplay>) => {
     setUserScreenplays(prev => prev.map(item => item.id === screenplayId ? { ...item, ...updates } : item));
-    setUploadedScreenplay(prev => prev?.id === screenplayId ? { ...prev, ...updates } : prev);
     setEditingFountain(prev => prev?.id === screenplayId ? { ...prev, ...updates } : prev);
-  };
-
-  const toDate = (value: any): Date | null => {
-    if (!value) return null;
-    if (value instanceof Date) return value;
-    if (typeof value.toDate === 'function') return value.toDate();
-    if (typeof value.seconds === 'number') return new Date(value.seconds * 1000);
-    return null;
   };
 
   const isDeleteRecoveryExpired = (workspace: CollaborationWorkspace): boolean => {
@@ -391,7 +222,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     return getWorkspaceById(workspaceId)?.name || 'Workspace';
   };
 
-  const workspaceMembershipId = (workspaceId: string, userId: string) => `${workspaceId}_${userId}`;
+  const workspaceMembershipId = access.workspaceMembershipId;
 
   const writeWorkspaceMemberships = async (workspace: CollaborationWorkspace, members: WorkspaceMember[]) => {
     const validMembers = members.filter(member => member.userId);
@@ -418,73 +249,14 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     getRole: (user: UserAutocompleteOption) => Extract<WorkspaceRole, 'member' | 'supervisor' | 'viewer'>
   ) => {
     if (!currentUser || users.length === 0) return 0;
-
-    const existingMemberIds = new Set(getWorkspaceMemberIds(workspace));
-    const invitees = users.filter(user => user.id && !existingMemberIds.has(user.id));
-    if (invitees.length === 0) return 0;
-
-    const inviterName = currentUser.displayName || t('collaboration.notifications.someone');
-
-    const sentInvites = await Promise.all(invitees.map(async user => {
-      const existingPendingInvite = await getDocs(query(
-        collection(db, 'workspaceInvitations'),
-        where('workspaceId', '==', workspace.id),
-        where('inviteeId', '==', user.id),
-        where('status', '==', 'pending'),
-        limit(1)
-      ));
-      if (!existingPendingInvite.empty) return false;
-
-      const role = getRole(user);
-      const batch = writeBatch(db);
-      const invitationRef = doc(collection(db, 'workspaceInvitations'));
-      const notificationRef = doc(collection(db, 'notifications'));
-
-      batch.set(invitationRef, {
-        workspaceId: workspace.id,
-        workspaceName: workspace.name,
-        inviterId: currentUser.uid,
-        inviterName,
-        inviteeId: user.id,
-        inviteeName: user.name || user.email || 'Collaborator',
-        inviteeEmail: user.email || '',
-        role,
-        status: 'pending',
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      });
-
-      batch.set(notificationRef, {
-        userId: user.id,
-        type: 'workspace_invitation',
-        // Stored title/body are a fallback (sender locale); titleKey/bodyKey/i18nParams let
-        // the recipient's client render in their own language.
-        title: t('collaboration.notifications.invitedToWorkspace.title', { inviter: inviterName, workspace: workspace.name }),
-        body: t('collaboration.notifications.invitedToWorkspace.body', { role: t(`collaboration.roles.${role}`), workspace: workspace.name }),
-        message: t('collaboration.notifications.invitedToWorkspace.body', { role: t(`collaboration.roles.${role}`), workspace: workspace.name }),
-        titleKey: 'collaboration.notifications.invitedToWorkspace.title',
-        bodyKey: 'collaboration.notifications.invitedToWorkspace.body',
-        i18nParams: { inviter: inviterName, workspace: workspace.name, roleKey: `collaboration.roles.${role}` },
-        isRead: false,
-        read: false,
-        createdAt: serverTimestamp(),
-        timestamp: serverTimestamp(),
-        senderId: currentUser.uid,
-        senderName: inviterName,
-        relatedId: workspace.id,
-        link: '/collaboration',
-        metadata: {
-          invitationId: invitationRef.id,
-          workspaceId: workspace.id,
-          role
-        }
-      });
-
-      await batch.commit();
-      return true;
-    }));
-
-    return sentInvites.filter(Boolean).length;
+    const roleById = new Map(users.map(user => [user.id, getRole(user)]));
+    return createWorkspaceInvitationsService({
+      workspace,
+      users,
+      getRole: user => roleById.get(user.id) || 'member',
+      actor: { uid: currentUser.uid, displayName: currentUser.displayName },
+      t
+    });
   };
 
   const updateWorkspaceState = (workspace: CollaborationWorkspace) => {
@@ -492,35 +264,17 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     setSelectedWorkspace(prev => prev?.id === workspace.id ? workspace : prev);
   };
 
-  const isSelfElectedSupervisor = (workspace: CollaborationWorkspace): boolean => {
-    if (!currentUser) return false;
-    return workspace.selfElectedSupervisors?.includes(currentUser.uid) || false;
-  };
+  const isSelfElectedSupervisor = (workspace: CollaborationWorkspace): boolean =>
+    access.isSelfElectedSupervisor(workspace, currentUser?.uid);
 
-  const getEffectiveRole = (workspace: CollaborationWorkspace): WorkspaceRole | null => {
-    if (!currentUser) return null;
-    if (isSelfElectedSupervisor(workspace)) return 'supervisor';
-    const currentMember = workspace.members?.find(member => member.userId === currentUser.uid);
-    return currentMember?.role ?? null;
-  };
+  const getEffectiveRole = (workspace: CollaborationWorkspace): WorkspaceRole | null =>
+    access.getEffectiveRole(workspace, currentUser?.uid);
 
-  const canSelfElectSupervisor = (workspace: CollaborationWorkspace): boolean => {
-    if (!currentUser || !isTeacher) return false;
-    if ((workspace.status || 'active') !== 'active') return false;
-    if (workspace.ownerId === currentUser.uid) return false;
-    return getWorkspaceMemberIds(workspace).includes(currentUser.uid);
-  };
+  const canSelfElectSupervisor = (workspace: CollaborationWorkspace): boolean =>
+    access.canSelfElectSupervisor(workspace, currentUser?.uid, isTeacher);
 
-  // Whether to show the self-elect toggle at all. Eligible (teacher member, not owner,
-  // active) AND either already self-elected (so they can step down) or NOT already an
-  // owner-assigned supervisor — we don't offer "Act as supervisor" to someone the creator
-  // already made a supervisor (their role is the owner's to change, not self-toggled).
-  const canToggleSupervisor = (workspace: CollaborationWorkspace): boolean => {
-    if (!canSelfElectSupervisor(workspace)) return false;
-    if (isSelfElectedSupervisor(workspace)) return true;
-    const currentMember = workspace.members?.find(member => member.userId === currentUser?.uid);
-    return currentMember?.role !== 'supervisor';
-  };
+  const canToggleSupervisor = (workspace: CollaborationWorkspace): boolean =>
+    access.canToggleSupervisor(workspace, currentUser?.uid, isTeacher);
 
   const toggleSelfElectedSupervisor = async (workspace: CollaborationWorkspace) => {
     if (!currentUser || !canSelfElectSupervisor(workspace) || toggleSupervisorPending) return;
@@ -758,65 +512,8 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     };
   }, [currentUser, userScreenplaysKey]);
 
-  useEffect(() => {
-    loadTeamMembers();
-  }, [selectedWorkspace?.id]);
-
-  // G5 — live "Recent activity" feed for the selected workspace, paginated.
-  // The page grows in 25-event chunks via the "Load more" CTA; switching
-  // workspaces resets the page so we don't carry an unbounded snapshot across.
-  const ACTIVITY_PAGE_SIZE = 25;
-  const [activityLimit, setActivityLimit] = useState(ACTIVITY_PAGE_SIZE);
-  const [activityHasMore, setActivityHasMore] = useState(false);
-  // Reset pagination whenever the selected workspace changes.
-  useEffect(() => { setActivityLimit(ACTIVITY_PAGE_SIZE); }, [selectedWorkspace?.id]);
-  useEffect(() => {
-    const workspaceId = selectedWorkspace?.id;
-    if (!currentUser || !workspaceId) {
-      setActivityEvents([]);
-      setActivityHasMore(false);
-      return;
-    }
-    // Fetch one beyond the displayed window so we know whether there's a next
-    // page without having to make a second query. We slice the extra off
-    // before handing it to state.
-    const activityQuery = query(
-      collection(db, 'workspaceActivity'),
-      where('workspaceId', '==', workspaceId),
-      orderBy('createdAt', 'desc'),
-      limit(activityLimit + 1)
-    );
-    const unsubscribe = onSnapshot(
-      activityQuery,
-      snapshot => {
-        const all = snapshot.docs.map(d => {
-          const data = d.data();
-          return {
-            id: d.id,
-            actorName: data.actorName,
-            verb: data.verb,
-            targetName: data.targetName ?? null,
-            detail: data.detail ?? null,
-            createdAt: data.createdAt
-          };
-        });
-        setActivityHasMore(all.length > activityLimit);
-        setActivityEvents(all.slice(0, activityLimit));
-      },
-      err => {
-        console.error('Activity feed subscription error:', err);
-        setActivityEvents([]);
-        setActivityHasMore(false);
-      }
-    );
-    return () => unsubscribe();
-  }, [currentUser, selectedWorkspace?.id, activityLimit]);
-
-  useEffect(() => {
-    if (selectedWorkspace && (selectedWorkspace.status || 'active') === 'active') {
-      setUploadWorkspaceId(selectedWorkspace.id);
-    }
-  }, [selectedWorkspace?.id, selectedWorkspace?.status]);
+  // The per-group activity feed and member profiles moved to WorkspaceDetailPage
+  // (/collaboration/:workspaceId) — the hub only lists groups now.
 
   useEffect(() => {
     if (!currentUser) {
@@ -869,7 +566,8 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     fetchApprovedContacts();
   }, [currentUser]);
 
-  // User search functionality
+  // User search for the invite/create modals — shared with WorkspaceDetailPage
+  // via ./crewSearch (module-level 30s cache of crewProfiles).
   const searchUsers = async (queryStr: string) => {
     if (!queryStr.trim()) {
       setUserSearchResults([]);
@@ -878,48 +576,10 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     setIsSearchingUsers(true);
     // Do NOT clear userSearchResults here; keep previous results while loading
     try {
-      // Search ALL crew profiles, not just the user's approved contacts.
-      // The collaboration assignment requires students to add arbitrary classmates and the
-      // teacher — people they are NOT necessarily connected to. crewProfiles is public-read,
-      // so this is allowed. Approved contacts are ranked first as a convenience. Results are
-      // cached briefly (30s) so typing doesn't re-fetch the whole collection on every key.
-      const now = Date.now();
-      const cache = crewProfilesCacheRef.current;
-      let allResults: UserSearchResult[];
-      if (cache && now - cache.at < 30000) {
-        allResults = cache.data;
-      } else {
-        const snap = await getDocs(collection(db, 'crewProfiles'));
-        allResults = snap.docs.map(doc => ({
-          id: doc.id,
-          name: doc.data().name || doc.data().displayName || `Crew Member ${doc.id.slice(-4)}`,
-          email: doc.data().email || '',
-          avatar: doc.data().profileImageUrl || doc.data().avatarUrl || '',
-          role: doc.data().jobTitles?.[0]?.title || 'Crew Member',
-          company: doc.data().company || ''
-        }));
-        crewProfilesCacheRef.current = { at: now, data: allResults };
-        if (allResults.length === 0) {
-          console.warn('[CollabModal] No crew profiles found in Firestore crewProfiles collection.');
-        }
-      }
-
-      const needle = queryStr.toLowerCase();
-      const filtered = allResults
-        .filter(user => user.id !== currentUser?.uid) // can't add yourself
-        .filter(user =>
-          (user.name || '').toLowerCase().includes(needle) ||
-          (user.email || '').toLowerCase().includes(needle) ||
-          (user.role || '').toLowerCase().includes(needle) ||
-          (user.company || '').toLowerCase().includes(needle)
-        )
-        .sort((a, b) => {
-          // Approved contacts first, then alphabetical.
-          const aContact = approvedContacts.includes(a.id) ? 0 : 1;
-          const bContact = approvedContacts.includes(b.id) ? 0 : 1;
-          if (aContact !== bContact) return aContact - bContact;
-          return (a.name || '').localeCompare(b.name || '');
-        });
+      const filtered = await searchCrewProfiles(queryStr, {
+        excludeUid: currentUser?.uid,
+        approvedContacts
+      });
       debugLog('[CollabModal] Filtered users after search:', filtered.length, filtered.map(u => u.name));
       setUserSearchResults(filtered);
     } catch (error) {
@@ -1060,7 +720,6 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 
       setWorkspaces(prev => [...prev, newWorkspace]);
       setSelectedWorkspace(newWorkspace);
-      setUploadWorkspaceId(newWorkspace.id);
 
       // Reset form
       setNewWorkspaceData({
@@ -1156,18 +815,10 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 
   // Video call functionality will be added in a future update
 
-  // Handle joining a workspace
-  const handleJoinWorkspace = (workspaceId: string) => {
-    try {
-      debugLog('Join workspace clicked:', workspaceId);
-      const workspace = workspaces.find(ws => ws.id === workspaceId);
-      if (workspace) {
-        setSelectedWorkspace(workspace);
-        toast.success(`Successfully joined workspace: ${workspace.name}`);
-      }
-    } catch (error) {
-      console.error('Error in handleJoinWorkspace:', error);
-    }
+  // "Open" on a group card = go to the group's own page. (This used to only set
+  // local selected-state and show a misleading "Successfully joined" toast.)
+  const handleOpenWorkspace = (workspaceId: string) => {
+    navigate(`/collaboration/${workspaceId}`);
   };
 
   // Handle workspace settings
@@ -1190,80 +841,8 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     }
   };
 
-  // Accepted screenplay file extensions for the button-driven upload flow.
-  const SCREENPLAY_FILE_EXTENSIONS = ['.pdf', '.doc', '.docx', '.txt'] as const;
-  const isAcceptedScreenplayFile = (file: File): boolean => {
-    const lower = file.name.toLowerCase();
-    return SCREENPLAY_FILE_EXTENSIONS.some(ext => lower.endsWith(ext));
-  };
-
-  // Per-file upload — Storage + Firestore write. Returns the created screenplay or
-  // null on failure (so the multi-file loop can keep going after a single bad file).
-  const uploadSingleScreenplay = async (file: File): Promise<Screenplay | null> => {
-    if (!currentUser) return null;
-    const uploadWorkspace = uploadWorkspaceId
-      ? workspaces.find(workspace => workspace.id === uploadWorkspaceId && (workspace.status || 'active') === 'active') || null
-      : null;
-    if (uploadWorkspaceId && !uploadWorkspace) {
-      toast.error('Choose an active workspace before uploading.');
-      return null;
-    }
-    if (uploadWorkspace && !canEditWorkspaceContent(uploadWorkspace)) {
-      toast.error('Your role in this workspace can view and comment, but cannot upload screenplays.');
-      return null;
-    }
-    // Reject oversized files up front with a clear message — otherwise the
-    // upload reaches Storage and fails with an opaque permission error.
-    if (file.size > MAX_UPLOAD_BYTES) {
-      toast.error(t('collaboration.screenplaysTab.fileTooLarge', { name: file.name, max: MAX_UPLOAD_MB }));
-      return null;
-    }
-
-    try {
-      const storageRef = ref(storage, `screenplays/${currentUser.uid}/${Date.now()}_${file.name}`);
-      const snapshot = await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(snapshot.ref);
-
-      const workspaceMemberIds = uploadWorkspace ? getWorkspaceMemberIds(uploadWorkspace) : [];
-      const teamMemberIds = Array.from(new Set([
-        currentUser.uid,
-        ...workspaceMemberIds
-      ]));
-
-      const now = new Date();
-      const screenplayData: Omit<Screenplay, 'id'> = {
-        name: file.name,
-        type: file.type || 'application/octet-stream',
-        url: downloadURL,
-        uploadedBy: currentUser.uid,
-        teamMembers: teamMemberIds,
-        workspaceId: uploadWorkspace?.id || null,
-        projectId: projectId || uploadWorkspace?.projectId || null,
-        size: file.size,
-        reviewStatus: 'draft',
-        uploadedAt: now,
-        lastModified: now
-      };
-
-      const docRef = await addDoc(collection(db, 'screenplays'), screenplayData);
-      if (uploadWorkspace?.id) {
-        logWorkspaceActivity({
-          workspaceId: uploadWorkspace.id,
-          actorUid: currentUser.uid,
-          actorName: currentUser.displayName,
-          verb: 'screenplay_uploaded',
-          targetId: docRef.id,
-          targetName: file.name
-        });
-      }
-      return { ...screenplayData, id: docRef.id };
-    } catch (err) {
-      console.error(`Failed to upload ${file.name}:`, err);
-      return null;
-    }
-  };
-
-  // Multi-file upload from the upload button. Filters unsupported file types, uploads
+  // Multi-file PERSONAL upload (no group). Group uploads happen on the group's own
+  // page, where the workspace is implicit. Filters unsupported file types, uploads
   // sequentially, shows a progress counter, and rolls up a per-batch toast at the end.
   const handleMultiUpload = async (rawFiles: FileList | File[]) => {
     if (!currentUser) {
@@ -1278,49 +857,55 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     if (rejectedCount > 0) {
       toast(`${rejectedCount} file${rejectedCount === 1 ? '' : 's'} ignored — only PDF, DOC, DOCX, and TXT are supported.`);
     }
-    if (validFiles.length === 0) return;
+    // Reject oversized files up front with a clear message — otherwise the
+    // upload reaches Storage and fails with an opaque permission error.
+    const sizedFiles = validFiles.filter(file => {
+      if (file.size > MAX_UPLOAD_BYTES) {
+        toast.error(t('collaboration.screenplaysTab.fileTooLarge', { name: file.name, max: MAX_UPLOAD_MB }));
+        return false;
+      }
+      return true;
+    });
+    if (sizedFiles.length === 0) return;
 
     setUploadingScreenplay(true);
-    setUploadProgress({ current: 0, total: validFiles.length });
+    setUploadProgress({ current: 0, total: sizedFiles.length });
 
     let successCount = 0;
     let failureCount = 0;
-    let lastSuccess: Screenplay | null = null;
 
-    for (let i = 0; i < validFiles.length; i++) {
-      setUploadProgress({ current: i + 1, total: validFiles.length });
-      const file = validFiles[i];
-      const uploaded = await uploadSingleScreenplay(file);
-      if (uploaded) {
+    for (let i = 0; i < sizedFiles.length; i++) {
+      setUploadProgress({ current: i + 1, total: sizedFiles.length });
+      try {
+        await uploadScreenplayFile({
+          file: sizedFiles[i],
+          actor: { uid: currentUser.uid, displayName: currentUser.displayName },
+          workspace: null,
+          projectId
+        });
         successCount++;
-        lastSuccess = uploaded;
-      } else {
+      } catch (err) {
+        console.error(`Failed to upload ${sizedFiles[i].name}:`, err);
         failureCount++;
       }
     }
 
-    if (lastSuccess) {
-      setUploadedScreenplay(lastSuccess);
-    }
     setUploadingScreenplay(false);
     setUploadProgress(null);
 
     if (successCount > 0 && failureCount === 0) {
       toast.success(successCount === 1
-        ? `${validFiles[0].name} ${t('collaboration.screenplaysTab.uploadSuccess')}`
+        ? `${sizedFiles[0].name} ${t('collaboration.screenplaysTab.uploadSuccess')}`
         : `${successCount} screenplays uploaded.`);
     } else if (successCount > 0 && failureCount > 0) {
-      toast(`Uploaded ${successCount} of ${validFiles.length}. ${failureCount} failed.`);
+      toast(`Uploaded ${successCount} of ${sizedFiles.length}. ${failureCount} failed.`);
     } else if (failureCount > 0) {
       toast.error(t('collaboration.screenplaysTab.uploadFailed'));
     }
-
-    loadTeamMembers();
   };
 
-  // B2 — create a new in-browser Fountain screenplay (no file upload). Seeds the doc with
-  // format: 'fountain' + an empty source, scoped to the selected workspace so collaborators
-  // inherit access, then opens the editor on it.
+  // B2 — create a new PERSONAL in-browser Fountain screenplay (no file upload, no
+  // group). Group writing starts from the group's page so collaborators inherit access.
   const handleCreateFountainScreenplay = async () => {
     if (!currentUser) {
       toast.error('Please sign in to start writing.');
@@ -1332,47 +917,14 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       return;
     }
 
-    const uploadWorkspace = uploadWorkspaceId
-      ? workspaces.find(workspace => workspace.id === uploadWorkspaceId && (workspace.status || 'active') === 'active') || null
-      : null;
-    if (uploadWorkspace && !canEditWorkspaceContent(uploadWorkspace)) {
-      toast.error('Your role in this workspace can view and comment, but cannot create screenplays.');
-      return;
-    }
-
     setCreatingFountain(true);
     try {
-      const workspaceMemberIds = uploadWorkspace ? getWorkspaceMemberIds(uploadWorkspace) : [];
-      const teamMemberIds = Array.from(new Set([currentUser.uid, ...workspaceMemberIds]));
-      const now = new Date();
-      const screenplayData: Omit<Screenplay, 'id'> = {
-        name: title,
-        type: 'fountain',
-        url: '',
-        format: 'fountain',
-        fountainSource: '',
-        uploadedBy: currentUser.uid,
-        teamMembers: teamMemberIds,
-        workspaceId: uploadWorkspace?.id || null,
-        projectId: projectId || uploadWorkspace?.projectId || null,
-        reviewStatus: 'draft',
-        uploadedAt: now,
-        lastModified: now
-      };
-      const docRef = await addDoc(collection(db, 'screenplays'), screenplayData);
-      const created: Screenplay = { ...screenplayData, id: docRef.id };
-
-      if (uploadWorkspace?.id) {
-        logWorkspaceActivity({
-          workspaceId: uploadWorkspace.id,
-          actorUid: currentUser.uid,
-          actorName: currentUser.displayName,
-          verb: 'screenplay_created',
-          targetId: created.id,
-          targetName: title
-        });
-      }
-
+      const created = await createFountainScreenplay({
+        title,
+        actor: { uid: currentUser.uid, displayName: currentUser.displayName },
+        workspace: null,
+        projectId
+      });
       setShowStartWritingModal(false);
       setNewFountainTitle('');
       setEditingFountain(created);
@@ -1394,102 +946,6 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     e.target.value = '';
   };
 
-  const loadTeamMembers = async () => {
-    try {
-      if (!selectedWorkspace) {
-        setTeamMembers([]);
-        return;
-      }
-      // Load real team members from Firestore crewProfiles collection
-      const memberIds = selectedWorkspace.members?.map(m => m.userId) || [];
-      if (memberIds.length === 0) {
-        setTeamMembers([]);
-        return;
-      }
-      // Resolve member profiles by crewProfile DOCUMENT ID (doc id == uid).
-      // crewProfiles created at signup omit the `uid` field, so a
-      // where('uid','in',...) query misses them and names fall back to
-      // "Crew Member <last4>". Doc-id gets are correct regardless.
-      const allMembers = (await Promise.all(memberIds.map(async (uid: string) => {
-        const snap = await getDoc(doc(db, 'crewProfiles', uid));
-        const data: any = snap.exists() ? snap.data() : {};
-        return {
-          id: uid,
-          name: data.name || data.displayName || `Crew Member ${uid.slice(-4)}`,
-          email: data.email || '',
-          role: data.jobTitles?.[0]?.title || 'Crew Member',
-          avatar: data.profileImageUrl || data.avatarUrl || '',
-          isOnline: data.isOnline || false
-        };
-      })));
-      setTeamMembers(allMembers);
-    } catch (error) {
-      console.error('Error loading team members:', error);
-      setTeamMembers([]);
-    }
-  };
-
-  // Add annotation to screenplay (reference version)
-  const addAnnotation = async () => {
-    if (!newAnnotation.trim() || !uploadedScreenplay) return;
-    try {
-      const annotationData = {
-        screenplayId: uploadedScreenplay.id,
-        userId: currentUser?.uid || 'unknown',
-        userName: currentUser?.displayName || 'Anonymous',
-        annotation: newAnnotation.trim(),
-        timestamp: new Date(),
-        projectId: projectId || 'default-project'
-      };
-      await addDoc(collection(db, 'screenplayAnnotations'), annotationData);
-      setScreenplayAnnotations(prev => [...prev, {
-        id: Date.now().toString(),
-        userId: currentUser?.uid || 'unknown',
-        userName: currentUser?.displayName || 'Anonymous',
-        annotation: newAnnotation.trim(),
-        timestamp: new Date()
-      }]);
-      setNewAnnotation('');
-      setShowScreenplayViewer(true);
-      toast.success('Annotation added successfully!');
-    } catch (error) {
-      console.error('Error adding annotation:', error);
-      toast.error('Failed to add annotation');
-    }
-  };
-
-  // Load screenplay annotations (reference version)
-  const loadAnnotations = async () => {
-    if (!uploadedScreenplay) return;
-    try {
-      const q = query(
-        collection(db, 'screenplayAnnotations'),
-        where('screenplayId', '==', uploadedScreenplay.id),
-        orderBy('timestamp', 'desc')
-      );
-      const querySnapshot = await getDocs(q);
-      const annotations = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as any[];
-      setScreenplayAnnotations(annotations);
-    } catch (error) {
-      console.error('Error loading annotations:', error);
-    }
-  };
-
-  const formatTimeAgo = (date: Date) => {
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(diff / 3600000);
-    const days = Math.floor(diff / 86400000);
-
-    if (minutes < 60) return `${minutes}m ago`;
-    if (hours < 24) return `${hours}h ago`;
-    return `${days}d ago`;
-  };
-
   const handleGenerateReport = () => {
     // Navigate to the breakdown reports component
     setActiveTab('screenplays');
@@ -1504,187 +960,23 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     // 4. Add analytics and insights
   };
 
-  // No-op: upload is handled by handleScreenplayUpload
-  function handleUploadScreenplay() {
-    // Upload is handled by handleScreenplayUpload via file input
-  }
+  // Grading exports live on the group page now (/collaboration/:workspaceId),
+  // next to the screenplays they cover.
 
-  // Workspace-level grading export: one CSV per workspace that combines every
-  // student's screenplay + the supervisor + peer notes left on each. Used by
-  // teachers at grading time so they don't have to walk into each screenplay
-  // and export individually. Visible only to workspace owners / supervisors.
-  const [exportingGradingReportFor, setExportingGradingReportFor] = useState<string | null>(null);
-  const canExportGradingReport = (workspace: CollaborationWorkspace | null | undefined): boolean => {
-    if (!currentUser || !workspace) return false;
-    if (isWorkspaceCreator(workspace)) return true;
-    if (workspace.supervisorIds?.includes(currentUser.uid)) return true;
-    if (workspace.selfElectedSupervisors?.includes(currentUser.uid)) return true;
-    return false;
-  };
-  const handleExportGradingReport = async (workspaceId: string) => {
-    const workspace = getWorkspaceById(workspaceId);
-    if (!workspace || !canExportGradingReport(workspace)) {
-      toast.error(t('collaboration.gradingReport.notAllowed'));
-      return;
-    }
-    const sectionScreenplays = (screenplaysByWorkspaceForExport(workspaceId) || []);
-    if (!sectionScreenplays.length) {
-      toast(t('collaboration.gradingReport.empty'));
-      return;
-    }
-    setExportingGradingReportFor(workspaceId);
-    try {
-      const screenplayIds = sectionScreenplays.map(s => s.id);
-      // 1. Pull annotations + tags across all screenplays in the workspace
-      //    (chunked by 10 — Firestore `in` limit).
-      const annotationsRef = collection(db, 'screenplayAnnotations');
-      const tagsRef = collection(db, 'screenplayTags');
-      type RawNote = { screenplayId?: string; userName?: string; userId?: string; pageNumber?: number; content?: string; annotation?: string; supervisorAtAuthorTime?: boolean; resolved?: boolean; timestamp?: unknown; tagType?: string };
-      const allAnnotations: RawNote[] = [];
-      const allTags: RawNote[] = [];
-      for (let i = 0; i < screenplayIds.length; i += 10) {
-        const chunk = screenplayIds.slice(i, i + 10);
-        const [annSnap, tagSnap] = await Promise.all([
-          getDocs(query(annotationsRef, where('screenplayId', 'in', chunk))),
-          getDocs(query(tagsRef, where('screenplayId', 'in', chunk)))
-        ]);
-        annSnap.docs.forEach(d => allAnnotations.push(d.data() as RawNote));
-        tagSnap.docs.forEach(d => allTags.push(d.data() as RawNote));
-      }
-      // 2. Resolve student names by crewProfile DOCUMENT ID (doc id == uid).
-      // crewProfiles created at signup omit the `uid` field on purpose, so a
-      // where('uid','in',...) query misses them and the Student column falls
-      // back to "Crew Member <last4>". A doc-id get is robust either way.
-      const uploaderUids = Array.from(new Set(sectionScreenplays.map(s => s.uploadedBy).filter((u): u is string => Boolean(u))));
-      const uidToName = new Map<string, string>();
-      await Promise.all(uploaderUids.map(async uid => {
-        try {
-          const snap = await getDoc(doc(db, 'crewProfiles', uid));
-          if (snap.exists()) {
-            const data: any = snap.data();
-            uidToName.set(uid, data.name || data.displayName || `Crew Member ${uid.slice(-4)}`);
-          }
-        } catch {
-          // Ignore — fallback name handles missing/unreadable profiles.
-        }
-      }));
-      // 3. Build rows. One per note, with Student + Screenplay columns prepended.
-      const escapeCsv = (v: unknown): string => `"${(v === null || v === undefined ? '' : String(v)).replace(/"/g, '""')}"`;
-      const headers = [
-        t('collaboration.gradingReport.columns.student'),
-        t('collaboration.gradingReport.columns.screenplay'),
-        t('collaboration.gradingReport.columns.reviewStatus'),
-        t('collaboration.gradingReport.columns.reviewNote'),
-        t('collaboration.gradingReport.columns.type'),
-        t('collaboration.gradingReport.columns.category'),
-        t('collaboration.gradingReport.columns.page'),
-        t('collaboration.gradingReport.columns.content'),
-        t('collaboration.gradingReport.columns.author'),
-        t('collaboration.gradingReport.columns.supervisor'),
-        t('collaboration.gradingReport.columns.resolved'),
-        t('collaboration.gradingReport.columns.timestamp')
-      ].map(escapeCsv).join(',');
-      const yes = t('collaboration.gradingReport.boolean.yes');
-      const no = t('collaboration.gradingReport.boolean.no');
-      const screenplayById = new Map(sectionScreenplays.map(s => [s.id, s]));
-      const toIso = (ts: unknown): string => {
-        if (!ts) return '';
-        try {
-          const d = (ts as any)?.toDate ? (ts as any).toDate() : new Date(ts as any);
-          return isNaN(d.getTime()) ? '' : d.toISOString();
-        } catch { return ''; }
-      };
-      type Row = { student: string; screenplay: string; reviewStatus: string; reviewNote: string; type: string; category: string; page: number; content: string; author: string; supervisor: string; resolved: string; timestamp: string };
-      const rowsFromNotes = (notes: RawNote[], type: string, category: (note: RawNote) => string, content: (note: RawNote) => string): Row[] =>
-        notes.map(n => {
-          const sp = n.screenplayId ? screenplayById.get(n.screenplayId) : undefined;
-          const student = sp?.uploadedBy ? (uidToName.get(sp.uploadedBy) || `Crew Member ${sp.uploadedBy.slice(-4)}`) : '';
-          const reviewStatus = sp?.reviewStatus ? t(`collaboration.reviewStatus.labels.${sp.reviewStatus}`) : '';
-          return {
-            student,
-            screenplay: sp?.name || '',
-            reviewStatus,
-            reviewNote: sp?.reviewStatusNote || '',
-            type,
-            category: category(n),
-            page: n.pageNumber ?? 0,
-            content: content(n) || '',
-            author: n.userName || '',
-            supervisor: n.supervisorAtAuthorTime ? yes : no,
-            resolved: n.resolved ? yes : no,
-            timestamp: toIso(n.timestamp)
-          };
-        });
-      const allRows: Row[] = [
-        ...rowsFromNotes(allAnnotations, t('collaboration.gradingReport.types.annotation'), () => '', n => n.annotation || ''),
-        ...rowsFromNotes(allTags, t('collaboration.gradingReport.types.tag'), n => n.tagType ? t(`screenplay.categories.${n.tagType}`, { defaultValue: n.tagType }) : '', n => n.content || '')
-      ];
-      allRows.sort((a, b) => a.student.localeCompare(b.student) || a.screenplay.localeCompare(b.screenplay) || a.page - b.page || a.timestamp.localeCompare(b.timestamp));
-      const csv = '﻿' + [headers, ...allRows.map(r => [r.student, r.screenplay, r.reviewStatus, r.reviewNote, r.type, r.category, r.page, r.content, r.author, r.supervisor, r.resolved, r.timestamp].map(escapeCsv).join(','))].join('\r\n');
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const date = new Date().toISOString().slice(0, 10);
-      const safeName = (workspace.name || 'workspace').replace(/[^a-z0-9\-_]+/gi, '-').slice(0, 60) || 'workspace';
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${safeName}-grading-${date}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-      toast.success(t('collaboration.gradingReport.success'));
-    } catch (err) {
-      console.error('Grading report export failed:', err);
-      toast.error(t('collaboration.gradingReport.failed'));
-    } finally {
-      setExportingGradingReportFor(null);
-    }
-  };
-  const screenplaysByWorkspaceForExport = (workspaceId: string) =>
-    userScreenplays.filter(s => s.workspaceId === workspaceId);
-
-  const handleDeleteScreenplay = async (screenplayId: string) => {
-    const screenplay = userScreenplays.find(item => item.id === screenplayId);
-    if (!screenplay || !canDeleteScreenplay(screenplay)) {
+  const handleDeleteScreenplay = async (screenplay: Screenplay) => {
+    if (!currentUser || !canDeleteScreenplay(screenplay)) {
       toast.error(t('collaboration.screenplaysTab.deleteNotAllowed'));
       return;
     }
 
     if (window.confirm(t('collaboration.screenplaysTab.deleteConfirm'))) {
       try {
-        await deleteDoc(doc(db, 'screenplays', screenplayId));
+        await deleteScreenplayDoc(screenplay, { uid: currentUser.uid, displayName: currentUser.displayName });
         toast.success(t('collaboration.screenplaysTab.deleteSuccess'));
-        if (screenplay.workspaceId && currentUser) {
-          logWorkspaceActivity({
-            workspaceId: screenplay.workspaceId,
-            actorUid: currentUser.uid,
-            actorName: currentUser.displayName,
-            verb: 'screenplay_deleted',
-            targetId: screenplay.id,
-            targetName: screenplay.name
-          });
-        }
       } catch (error) {
         console.error('Error deleting screenplay:', error);
         toast.error(t('collaboration.screenplaysTab.deleteFailed'));
       }
-    }
-  };
-
-  const getReviewStatus = (screenplay: Screenplay): ScreenplayReviewStatus =>
-    screenplay.reviewStatus || 'draft';
-
-  const getReviewActivityVerb = (status: ScreenplayReviewStatus): WorkspaceActivityVerb => {
-    switch (status) {
-      case 'submitted':
-        return 'review_submitted';
-      case 'changes_requested':
-        return 'review_changes_requested';
-      case 'approved':
-        return 'review_approved';
-      case 'draft':
-      default:
-        return 'review_returned_to_draft';
     }
   };
 
@@ -1694,7 +986,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       return;
     }
 
-    const currentStatus = getReviewStatus(screenplay);
+    const currentStatus = access.getReviewStatus(screenplay);
     if (currentStatus === nextStatus) return;
 
     const creatorAllowed = canEditScreenplay(screenplay) && (nextStatus === 'draft' || nextStatus === 'submitted');
@@ -1704,32 +996,12 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       return;
     }
 
-    const updates: Partial<Screenplay> = {
-      reviewStatus: nextStatus,
-      reviewStatusUpdatedAt: new Date(),
-      reviewStatusUpdatedBy: currentUser.uid,
-      reviewStatusNote: ''
-    };
-
     try {
-      await updateDoc(doc(db, 'screenplays', screenplay.id), {
-        reviewStatus: nextStatus,
-        reviewStatusUpdatedAt: serverTimestamp(),
-        reviewStatusUpdatedBy: currentUser.uid,
-        reviewStatusNote: '',
-        lastModified: serverTimestamp()
+      const updates = await setScreenplayReviewStatus(screenplay, nextStatus, {
+        uid: currentUser.uid,
+        displayName: currentUser.displayName
       });
       updateLocalScreenplay(screenplay.id, updates);
-      if (screenplay.workspaceId) {
-        logWorkspaceActivity({
-          workspaceId: screenplay.workspaceId,
-          actorUid: currentUser.uid,
-          actorName: currentUser.displayName,
-          verb: getReviewActivityVerb(nextStatus),
-          targetId: screenplay.id,
-          targetName: screenplay.name
-        });
-      }
       toast.success(t(`collaboration.reviewStatus.toasts.${nextStatus}`));
     } catch (error) {
       console.error('Error updating review status:', error);
@@ -1892,6 +1164,19 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       return statusOrder[a.status || 'active'] - statusOrder[b.status || 'active'];
     });
 
+    // Per-group rollups for the cards, derived from the already-subscribed
+    // screenplay list: total count + how many sit in "submitted" (supervisors
+    // see the latter as an "awaiting review" badge).
+    const screenplayCountByWorkspace: Record<string, number> = {};
+    const submittedCountByWorkspace: Record<string, number> = {};
+    userScreenplays.forEach(screenplay => {
+      if (!screenplay.workspaceId) return;
+      screenplayCountByWorkspace[screenplay.workspaceId] = (screenplayCountByWorkspace[screenplay.workspaceId] || 0) + 1;
+      if (access.getReviewStatus(screenplay) === 'submitted') {
+        submittedCountByWorkspace[screenplay.workspaceId] = (submittedCountByWorkspace[screenplay.workspaceId] || 0) + 1;
+      }
+    });
+
     return (
     <div className="workspaces-tab">
       <div className="workspaces-header">
@@ -1909,8 +1194,9 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         {workspaceList.map(workspace => (
 	          <div
 	            key={workspace.id}
-	            className={`workspace-card ${selectedWorkspace?.id === workspace.id ? 'selected' : ''} ${workspace.status || 'active'}`}
-	            onClick={() => setSelectedWorkspace(workspace)}
+	            className={`workspace-card ${workspace.status || 'active'}`}
+	            onClick={() => { if (workspace.status !== 'deleted') handleOpenWorkspace(workspace.id); }}
+	            style={{ cursor: workspace.status !== 'deleted' ? 'pointer' : 'default' }}
 	          >
             {/* Settings gear icon in top-right */}
 	            {canManageWorkspace(workspace) && workspace.status !== 'deleted' && (
@@ -1974,16 +1260,35 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                   <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                 </svg>
                 <span className="stat-value" style={{ color: '#333', fontWeight: 600 }}>{workspace.members.length}</span>
-                <span className="stat-label" style={{ color: '#666' }}>Members</span>
+                <span className="stat-label" style={{ color: '#666' }}>{t('collaboration.members')}</span>
               </div>
               <div className="stat" style={{ color: '#666' }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10"/>
-                  <polyline points="12,6 12,12 16,14"/>
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14,2 14,8 20,8"/>
                 </svg>
-                <span className="stat-value" style={{ color: '#333', fontWeight: 600 }}>{workspace.members.filter(m => m.isOnline).length}</span>
-                <span className="stat-label" style={{ color: '#666' }}>Online</span>
+                <span className="stat-value" style={{ color: '#333', fontWeight: 600 }}>{screenplayCountByWorkspace[workspace.id] || 0}</span>
+                <span className="stat-label" style={{ color: '#666' }}>{t('collaboration.screenplays')}</span>
               </div>
+              {getEffectiveRole(workspace) === 'supervisor' && (submittedCountByWorkspace[workspace.id] || 0) > 0 && (
+                <span
+                  className="stat awaiting-review-chip"
+                  title={t('collaboration.groupCard.awaitingReviewTooltip')}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    padding: '2px 10px',
+                    borderRadius: 999,
+                    fontSize: '0.8em',
+                    fontWeight: 700,
+                    background: '#dbeafe',
+                    color: '#1e40af'
+                  }}
+                >
+                  📥 {t('collaboration.groupCard.awaitingReview', { count: submittedCountByWorkspace[workspace.id] })}
+                </span>
+              )}
             </div>
 
             {(getEffectiveRole(workspace) || canToggleSupervisor(workspace)) && (
@@ -2036,7 +1341,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 	                  className="btn-primary"
 	                  onClick={(e) => {
 	                    e.stopPropagation();
-	                    handleJoinWorkspace(workspace.id);
+	                    handleOpenWorkspace(workspace.id);
 	                  }}
 	                >
 	                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -2044,7 +1349,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 	                    <polyline points="10,17 15,12 10,7"/>
 	                    <line x1="15" y1="12" x2="3" y2="12"/>
 	                  </svg>
-	                  Open
+	                  {t('collaboration.openGroup')}
 	                </button>
 	              )}
 	              {canManageWorkspace(workspace) && (workspace.status || 'active') === 'active' && (
@@ -2117,50 +1422,6 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
           </div>
         ))}
       </div>
-
-      {/* G5 — Recent activity for the selected workspace */}
-      {selectedWorkspace && (selectedWorkspace.status || 'active') !== 'deleted' && (
-        <div className="workspace-activity" style={{ marginTop: 24, background: '#fff', borderRadius: 8, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', padding: '16px 20px' }}>
-          <h3 style={{ margin: '0 0 12px', fontSize: '1.05em', color: '#1e293b' }}>
-            {t('collaboration.activity.title')} — {selectedWorkspace.name}
-          </h3>
-          {activityEvents.length === 0 ? (
-            <p style={{ color: '#94a3b8', margin: 0 }}>{t('collaboration.activity.empty')}</p>
-          ) : (
-            <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-              {activityEvents.map(ev => {
-                const when = toDate(ev.createdAt);
-                return (
-                  <li key={ev.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '6px 0', borderBottom: '1px solid #f1f5f9' }}>
-                    <span style={{ color: '#334155', minWidth: 0 }}>
-                      <strong>{ev.actorName || t('collaboration.activity.someone')}</strong>{' '}
-                      {t(`collaboration.activity.verbs.${ev.verb}`, {
-                        target: ev.targetName || t('collaboration.activity.aScreenplay'),
-                        detail: ev.detail || ''
-                      })}
-                    </span>
-                    <span style={{ color: '#94a3b8', fontSize: '0.85em', whiteSpace: 'nowrap' }}>
-                      {when ? formatTimeAgo(when) : ''}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-          {activityHasMore && (
-            <div style={{ display: 'flex', justifyContent: 'center', marginTop: 12 }}>
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => setActivityLimit(prev => prev + ACTIVITY_PAGE_SIZE)}
-                style={{ padding: '0.3rem 0.9rem', fontSize: '0.85em' }}
-              >
-                {t('collaboration.activity.loadMore')}
-              </button>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Create Workspace Modal - 2-Step Process */}
       {showCreateWorkspaceModal && (
@@ -2582,197 +1843,55 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   );
 
   const renderScreenplaysTab = () => {
-    const uploadableWorkspaces = workspaces.filter(workspace => canEditWorkspaceContent(workspace));
-    const selectedUploadWorkspace = uploadableWorkspaces.find(workspace => workspace.id === uploadWorkspaceId) || null;
-    const screenplaysByWorkspace = userScreenplays.reduce<Record<string, Screenplay[]>>((groups, screenplay) => {
-      const key = screenplay.workspaceId || 'personal';
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(screenplay);
-      return groups;
-    }, {});
-    const sectionKeys = [
-      ...workspaces
-        .filter(workspace => screenplaysByWorkspace[workspace.id]?.length)
-        .map(workspace => workspace.id),
-      ...(screenplaysByWorkspace.personal?.length ? ['personal'] : [])
-    ];
+    // Group screenplays live on each group's page now; this tab keeps personal
+    // (no-group) work plus, for supervisors, a cross-group queue of submissions.
+    const personalScreenplays = userScreenplays.filter(screenplay => !screenplay.workspaceId);
+    const reviewQueue = userScreenplays.filter(screenplay => {
+      if (!screenplay.workspaceId || access.getReviewStatus(screenplay) !== 'submitted') return false;
+      const workspace = getWorkspaceById(screenplay.workspaceId);
+      return workspace ? getEffectiveRole(workspace) === 'supervisor' : false;
+    });
+    const supervisesAnyWorkspace = workspaces.some(workspace => getEffectiveRole(workspace) === 'supervisor');
 
-    const renderScreenplayRows = (screenplays: Screenplay[]) => (
-      <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-        {screenplays.map(screenplay => {
-          const openCount = unresolvedCountByScreenplay[screenplay.id] || 0;
-          const teacherCount = unresolvedFromTeacherCountByScreenplay[screenplay.id] || 0;
-          const reviewStatus = getReviewStatus(screenplay);
-          const canSubmitReview = canEditScreenplay(screenplay) && (reviewStatus === 'draft' || reviewStatus === 'changes_requested');
-          const canReturnToDraft = canEditScreenplay(screenplay) && reviewStatus !== 'draft';
-          const canTeacherReview = canReviewScreenplay(screenplay) && reviewStatus === 'submitted';
-          return (
-            <li key={screenplay.id} style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 16,
-              flexWrap: 'wrap',
-              padding: '0.75rem 0',
-              borderBottom: '1px solid #eee'
-            }}>
-              <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
-                <span style={{ fontWeight: 600, color: '#222' }}>{screenplay.name}</span>
-                <span style={{ color: '#888', fontSize: '0.95em' }}>{screenplay.type}</span>
-                <span style={{ color: '#666', fontSize: '0.85em' }}>{getWorkspaceLabel(screenplay.workspaceId)}</span>
-                <span
-                  className={`review-status-chip review-status-chip--${reviewStatus}`}
-                  title={t(`collaboration.reviewStatus.descriptions.${reviewStatus}`)}
-                  aria-label={t(`collaboration.reviewStatus.labels.${reviewStatus}`)}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    padding: '2px 8px',
-                    borderRadius: 999,
-                    fontSize: '0.76em',
-                    fontWeight: 700,
-                    background: reviewStatus === 'approved' ? '#dcfce7' : reviewStatus === 'changes_requested' ? '#ffedd5' : reviewStatus === 'submitted' ? '#dbeafe' : '#f1f5f9',
-                    color: reviewStatus === 'approved' ? '#166534' : reviewStatus === 'changes_requested' ? '#9a3412' : reviewStatus === 'submitted' ? '#1e40af' : '#475569'
-                  }}
-                >
-                  {t(`collaboration.reviewStatus.labels.${reviewStatus}`)}
-                </span>
-                {openCount > 0 && (
-                  <span
-                    title={t('collaboration.badges.unresolvedTooltip', { count: openCount })}
-                    aria-label={t('collaboration.badges.unresolvedTooltip', { count: openCount })}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 4,
-                      padding: '2px 8px',
-                      borderRadius: 999,
-                      fontSize: '0.78em',
-                      fontWeight: 600,
-                      background: '#fee2e2',
-                      color: '#991b1b'
-                    }}
-                  >
-                    💬 {openCount}
-                  </span>
-                )}
-                {teacherCount > 0 && (
-                  <span
-                    title={t('collaboration.badges.unresolvedSupervisorTooltip', { count: teacherCount })}
-                    aria-label={t('collaboration.badges.unresolvedSupervisorTooltip', { count: teacherCount })}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 4,
-                      padding: '2px 8px',
-                      borderRadius: 999,
-                      fontSize: '0.78em',
-                      fontWeight: 700,
-                      background: '#fde68a',
-                      color: '#92400e'
-                    }}
-                  >
-                    🎓 {teacherCount}
-                  </span>
-                )}
-              </div>
-              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                {screenplay.format === 'fountain' && canEditScreenplay(screenplay) && (
-                  <button
-                    className="btn-primary"
-                    style={{ padding: '0.4rem 1rem', fontSize: '0.95em' }}
-                    onClick={() => setEditingFountain(screenplay)}
-                  >
-                    ✍️ {t('fountain.write')}
-                  </button>
-                )}
-                <button
-                  className="btn-secondary"
-                  style={{ padding: '0.4rem 1rem', fontSize: '0.95em' }}
-                  onClick={() => openScreenplayViewer(screenplay)}
-                >
-                  {t('collaboration.view')}
-                </button>
-                {canDeleteScreenplay(screenplay) && (
-                  <button
-                    className="btn-danger"
-                    style={{ padding: '0.4rem 1rem', fontSize: '0.95em' }}
-                    onClick={() => handleDeleteScreenplay(screenplay.id)}
-                  >
-                    {t('collaboration.delete')}
-                  </button>
-                )}
-              </div>
-              {(canSubmitReview || canReturnToDraft || canTeacherReview) && (
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                  {canSubmitReview && (
-                    <button
-                      className="btn-primary"
-                      style={{ padding: '0.35rem 0.8rem', fontSize: '0.85em' }}
-                      onClick={() => handleReviewStatusChange(screenplay, 'submitted')}
-                    >
-                      {t('collaboration.reviewStatus.actions.submit')}
-                    </button>
-                  )}
-                  {canTeacherReview && (
-                    <>
-                      <button
-                        className="btn-secondary"
-                        style={{ padding: '0.35rem 0.8rem', fontSize: '0.85em' }}
-                        onClick={() => handleReviewStatusChange(screenplay, 'changes_requested')}
-                      >
-                        {t('collaboration.reviewStatus.actions.requestChanges')}
-                      </button>
-                      <button
-                        className="btn-primary"
-                        style={{ padding: '0.35rem 0.8rem', fontSize: '0.85em' }}
-                        onClick={() => handleReviewStatusChange(screenplay, 'approved')}
-                      >
-                        {t('collaboration.reviewStatus.actions.approve')}
-                      </button>
-                    </>
-                  )}
-                  {canReturnToDraft && (
-                    <button
-                      className="btn-secondary"
-                      style={{ padding: '0.35rem 0.8rem', fontSize: '0.85em' }}
-                      onClick={() => handleReviewStatusChange(screenplay, 'draft')}
-                    >
-                      {t('collaboration.reviewStatus.actions.returnToDraft')}
-                    </button>
-                  )}
-                </div>
-              )}
-            </li>
-          );
-        })}
-      </ul>
-    );
+    const listProps = {
+      unresolvedCounts: unresolvedCountByScreenplay,
+      unresolvedFromTeacherCounts: unresolvedFromTeacherCountByScreenplay,
+      canEdit: canEditScreenplay,
+      canDelete: canDeleteScreenplay,
+      canReview: canReviewScreenplay,
+      onView: openScreenplayViewer,
+      onEditFountain: setEditingFountain,
+      onDelete: handleDeleteScreenplay,
+      onReviewChange: handleReviewStatusChange
+    };
 
     return (
       <div className="screenplays-tab">
         <div className="screenplays-header">
-          <h2>{t('collaboration.screenplaysTab.title')}</h2>
-          <p>{t('collaboration.screenplaysTab.subtitle')}</p>
+          <h2>{t('collaboration.myScreenplays.title')}</h2>
+          <p>{t('collaboration.myScreenplays.subtitle')}</p>
         </div>
         <div className="screenplays-content">
-          <div className="screenplay-upload-card bg-white rounded-lg shadow-md p-6 mb-6">
-            <div className="form-group">
-              <label>{t('collaboration.uploadToWorkspace')}</label>
-              <select
-                className="form-input"
-                value={selectedUploadWorkspace?.id || ''}
-                onChange={event => setUploadWorkspaceId(event.target.value)}
-              >
-                <option value="">{t('collaboration.personalNoWorkspace')}</option>
-                {uploadableWorkspaces.map(workspace => (
-                  <option key={workspace.id} value={workspace.id}>{workspace.name}</option>
-                ))}
-              </select>
-              <p className="form-help">
-                {t('collaboration.uploadHelp')}
-              </p>
+          {supervisesAnyWorkspace && (
+            <div className="screenplays-list bg-white rounded-lg shadow-md p-6 mb-6">
+              <section className="screenplay-section">
+                <h3 style={{ margin: 0 }}>📥 {t('collaboration.reviewQueue.title')}</h3>
+                <p style={{ color: '#64748b', margin: '4px 0 8px', fontSize: '0.9em' }}>
+                  {t('collaboration.reviewQueue.subtitle')}
+                </p>
+                {reviewQueue.length === 0 ? (
+                  <p style={{ color: '#94a3b8', margin: 0 }}>{t('collaboration.reviewQueue.empty')}</p>
+                ) : (
+                  <ScreenplayList
+                    screenplays={reviewQueue}
+                    workspaceLabel={getWorkspaceLabel}
+                    {...listProps}
+                  />
+                )}
+              </section>
             </div>
+          )}
+          <div className="screenplay-upload-card bg-white rounded-lg shadow-md p-6 mb-6">
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
               <button
                 type="button"
@@ -2820,84 +1939,46 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                 ✍️ {t('fountain.startWriting')}
               </button>
             </div>
-            {selectedUploadWorkspace && canManageWorkspace(selectedUploadWorkspace) && (
-              <div className="optional-invite" style={{ marginTop: 16 }}>
-                <button
-                  className="btn-secondary"
-                  type="button"
-                  onClick={() => openAddMemberModalForWorkspace(selectedUploadWorkspace)}
-                >
-                  {t('collaboration.inviteMembersOptional')}
-                </button>
-              </div>
-            )}
+            <p className="form-help" style={{ marginTop: 10 }}>
+              {t('collaboration.myScreenplays.groupHint')}
+            </p>
           </div>
           <div className="screenplays-list bg-white rounded-lg shadow-md p-6">
-            {userScreenplays.length === 0 ? (
-              <div
-                className="screenplays-empty-state"
-                style={{
-                  textAlign: 'center',
-                  padding: '2.5rem 1.5rem',
-                  color: '#475569'
-                }}
-              >
-                <div style={{ fontSize: 36, marginBottom: 12 }} aria-hidden="true">🎬</div>
-                <h3 style={{ margin: '0 0 8px', color: '#1e293b', fontSize: '1.15em' }}>
-                  {t('collaboration.emptyState.title')}
-                </h3>
-                <p style={{ margin: '0 auto 20px', maxWidth: 460, lineHeight: 1.5 }}>
-                  {t('collaboration.emptyState.body')}
-                </p>
-                <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
-                  <button
-                    type="button"
-                    className="btn-primary"
-                    onClick={() => {
-                      const input = document.getElementById('screenplay-upload') as HTMLInputElement | null;
-                      input?.click();
-                    }}
-                  >
-                    {t('collaboration.emptyState.uploadCta')}
-                  </button>
-                  {selectedUploadWorkspace && canManageWorkspace(selectedUploadWorkspace) && (
+            <section className="screenplay-section">
+              <h3 style={{ margin: 0 }}>{t('collaboration.personalNoWorkspace')}</h3>
+              {personalScreenplays.length === 0 ? (
+                <div
+                  className="screenplays-empty-state"
+                  style={{
+                    textAlign: 'center',
+                    padding: '2.5rem 1.5rem',
+                    color: '#475569'
+                  }}
+                >
+                  <div style={{ fontSize: 36, marginBottom: 12 }} aria-hidden="true">🎬</div>
+                  <h3 style={{ margin: '0 0 8px', color: '#1e293b', fontSize: '1.15em' }}>
+                    {t('collaboration.emptyState.title')}
+                  </h3>
+                  <p style={{ margin: '0 auto 20px', maxWidth: 460, lineHeight: 1.5 }}>
+                    {t('collaboration.emptyState.body')}
+                  </p>
+                  <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
                     <button
                       type="button"
-                      className="btn-secondary"
-                      onClick={() => openAddMemberModalForWorkspace(selectedUploadWorkspace)}
+                      className="btn-primary"
+                      onClick={() => {
+                        const input = document.getElementById('screenplay-upload') as HTMLInputElement | null;
+                        input?.click();
+                      }}
                     >
-                      {t('collaboration.emptyState.inviteCta')}
+                      {t('collaboration.emptyState.uploadCta')}
                     </button>
-                  )}
+                  </div>
                 </div>
-              </div>
-            ) : (
-              sectionKeys.map(sectionKey => {
-                const sectionWorkspace = sectionKey === 'personal' ? null : getWorkspaceById(sectionKey);
-                const showGradingExport = sectionWorkspace && canExportGradingReport(sectionWorkspace);
-                const exporting = exportingGradingReportFor === sectionKey;
-                return (
-                  <section key={sectionKey} className="screenplay-section">
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-                      <h3 style={{ margin: 0 }}>{sectionKey === 'personal' ? t('collaboration.personalNoWorkspace') : getWorkspaceLabel(sectionKey)}</h3>
-                      {showGradingExport && (
-                        <button
-                          type="button"
-                          className="btn-secondary"
-                          onClick={() => handleExportGradingReport(sectionKey)}
-                          disabled={exporting}
-                          style={{ padding: '0.3rem 0.7rem', fontSize: '0.8rem' }}
-                          title={t('collaboration.gradingReport.tooltip')}
-                        >
-                          {exporting ? `⏳ ${t('collaboration.gradingReport.generating')}` : `📊 ${t('collaboration.gradingReport.button')}`}
-                        </button>
-                      )}
-                    </div>
-                    {renderScreenplayRows(screenplaysByWorkspace[sectionKey] || [])}
-                  </section>
-                );
-              })
-            )}
+              ) : (
+                <ScreenplayList screenplays={personalScreenplays} {...listProps} />
+              )}
+            </section>
           </div>
         </div>
       </div>
@@ -3004,24 +2085,6 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
           </div>
         </div>
 
-        {/* Screenplay Viewer Modal */}
-        {showScreenplayViewer && uploadedScreenplay && (
-          <ScreenplayViewer
-            screenplay={{
-              id: uploadedScreenplay.id || '',
-              name: uploadedScreenplay.name,
-              url: uploadedScreenplay.url,
-              type: uploadedScreenplay.type,
-              format: uploadedScreenplay.format,
-              fountainSource: uploadedScreenplay.fountainSource,
-              reviewStatus: uploadedScreenplay.reviewStatus
-            }}
-            projectId={projectId || 'default-project'}
-            onClose={() => setShowScreenplayViewer(false)}
-            onGenerateReport={handleGenerateReport}
-          />
-        )}
-
         {/* Full-Screen Screenplay Modal */}
         {showScreenplayModal && selectedScreenplayId && (
           <div 
@@ -3097,19 +2160,9 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                     onKeyDown={e => { if (e.key === 'Enter') handleCreateFountainScreenplay(); }}
                   />
                 </div>
-                <div className="form-group">
-                  <label>{t('collaboration.uploadToWorkspace')}</label>
-                  <select
-                    className="form-input"
-                    value={workspaces.find(w => w.id === uploadWorkspaceId && canEditWorkspaceContent(w)) ? uploadWorkspaceId : ''}
-                    onChange={e => setUploadWorkspaceId(e.target.value)}
-                  >
-                    <option value="">{t('collaboration.personalNoWorkspace')}</option>
-                    {workspaces.filter(canEditWorkspaceContent).map(workspace => (
-                      <option key={workspace.id} value={workspace.id}>{workspace.name}</option>
-                    ))}
-                  </select>
-                </div>
+                <p className="form-help" style={{ margin: 0, color: '#64748b' }}>
+                  {t('collaboration.myScreenplays.fountainPersonalHint')}
+                </p>
               </div>
               <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', padding: '1.5rem 2rem 1rem 2rem' }}>
                 <button

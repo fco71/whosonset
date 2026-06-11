@@ -1,0 +1,323 @@
+// Layout + modal styles for the single-group page (/collaboration/:workspaceId).
+// Buttons (.btn-primary etc.), avatars, and review chips come from
+// CollaborationHub.scss top-level classes; this file only adds what the page
+// itself introduces.
+.workspace-detail-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+
+  .group-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    padding: 0;
+    margin-bottom: 1rem;
+    color: #475569;
+    font-size: 0.95rem;
+    cursor: pointer;
+
+    &:hover {
+      color: #1e293b;
+      text-decoration: underline;
+    }
+  }
+
+  .group-header {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    padding: 1.5rem 2rem;
+    margin-bottom: 1.5rem;
+
+    .group-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+
+      h1 {
+        margin: 0;
+        font-size: 1.6rem;
+        color: #1a1a1a;
+      }
+    }
+
+    .group-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .group-description {
+      color: #666;
+      margin: 12px 0 0;
+      max-width: 720px;
+    }
+
+    .group-header-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+  }
+
+  .group-status-banner {
+    border-radius: 8px;
+    padding: 10px 16px;
+    margin-bottom: 1.5rem;
+    font-size: 0.95rem;
+
+    &.archived {
+      background: #fef9c3;
+      color: #854d0e;
+    }
+
+    &.deleted {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+  }
+
+  .group-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
+    gap: 1.5rem;
+    align-items: start;
+
+    @media (max-width: 860px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .group-section {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+
+    h2 {
+      margin: 0 0 12px;
+      font-size: 1.1rem;
+      color: #1e293b;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+
+      h2 {
+        margin: 0;
+      }
+    }
+  }
+
+  .group-empty {
+    color: #94a3b8;
+    margin: 8px 0;
+  }
+
+  .member-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+    border-bottom: 1px solid #f1f5f9;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    .member-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #e2e8f0;
+      color: #475569;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.85rem;
+      overflow: hidden;
+      flex-shrink: 0;
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    }
+
+    .member-name {
+      color: #1e293b;
+      font-weight: 500;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .member-role {
+      margin-left: auto;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 2px 10px;
+      border-radius: 999px;
+      background: #f1f5f9;
+      color: #475569;
+      white-space: nowrap;
+
+      &.owner { background: #ede9fe; color: #5b21b6; }
+      &.supervisor { background: #fde68a; color: #92400e; }
+      &.viewer { background: #e0f2fe; color: #075985; }
+    }
+  }
+
+  .role-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 0.78em;
+    font-weight: 600;
+    background: #e0e7ff;
+    color: #3730a3;
+
+    &.self-elected {
+      background: #fde68a;
+      color: #92400e;
+    }
+  }
+
+  .group-type-chip {
+    font-size: 0.78rem;
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: #f0f0f0;
+    color: #666;
+  }
+
+  .activity-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 0;
+    border-bottom: 1px solid #f1f5f9;
+
+    .activity-text {
+      color: #334155;
+      min-width: 0;
+    }
+
+    .activity-when {
+      color: #94a3b8;
+      font-size: 0.85em;
+      white-space: nowrap;
+    }
+  }
+
+  // Modal styles (the hub nests these under its own tree, so they don't reach here).
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+
+    .modal-content {
+      background: #fff;
+      border-radius: 12px;
+      width: min(560px, calc(100vw - 32px));
+      max-height: calc(100vh - 64px);
+      overflow-y: auto;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.25rem 2rem 0.5rem;
+
+      h3 {
+        margin: 0;
+        color: #1e293b;
+      }
+
+      .close-btn {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        line-height: 1;
+        color: #64748b;
+        cursor: pointer;
+      }
+    }
+
+    .modal-body {
+      padding: 0.75rem 2rem;
+
+      .form-group {
+        margin-bottom: 1rem;
+
+        label {
+          display: block;
+          margin-bottom: 6px;
+          color: #334155;
+          font-weight: 500;
+        }
+      }
+
+      .searching-indicator {
+        color: #94a3b8;
+        font-size: 0.9rem;
+        margin-top: 6px;
+      }
+
+      .selected-members {
+        margin-top: 12px;
+
+        h5 {
+          margin: 0 0 8px;
+          color: #475569;
+        }
+
+        .selected-member {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          padding: 6px 0;
+          border-bottom: 1px solid #f1f5f9;
+
+          .user-email {
+            color: #94a3b8;
+            font-size: 0.85rem;
+          }
+        }
+      }
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 1rem;
+      padding: 1rem 2rem 1.5rem;
+    }
+  }
+}

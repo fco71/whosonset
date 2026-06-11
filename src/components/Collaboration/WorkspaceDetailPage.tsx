@@ -1,0 +1,936 @@
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { toast } from 'react-hot-toast';
+import {
+  collection,
+  doc,
+  getDoc,
+  onSnapshot,
+  orderBy,
+  limit,
+  query,
+  QuerySnapshot,
+  Unsubscribe,
+  where
+} from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { app, db } from '../../firebase';
+import { useAuth } from '../../contexts/AuthContext';
+import { CollaborationWorkspace, ScreenplayReviewStatus, WorkspaceRole } from '../../types/Collaboration';
+import { logWorkspaceActivity } from '../../services/workspaceActivityService';
+import {
+  createFountainScreenplay,
+  createWorkspaceInvitations,
+  deleteScreenplayDoc,
+  exportWorkspaceGradingCsv,
+  isAcceptedScreenplayFile,
+  setScreenplayReviewStatus,
+  uploadScreenplayFile
+} from '../../services/screenplayService';
+import * as access from './workspaceAccess';
+import { Screenplay, MAX_UPLOAD_BYTES, MAX_UPLOAD_MB } from './workspaceAccess';
+import ScreenplayList from './ScreenplayList';
+import ScreenplayViewer from './ScreenplayViewer';
+import FountainEditor from './FountainEditor';
+import UserAutocomplete, { UserAutocompleteOption } from './UserAutocomplete';
+import { searchCrewProfiles } from './crewSearch';
+import './CollaborationHub.scss';
+import './WorkspaceDetailPage.scss';
+
+// A single group's home page (/collaboration/:workspaceId): the group's screenplays,
+// members, and activity in one place. The hub (/collaboration) lists the groups and
+// links here. Personal (no-group) screenplays stay on the hub.
+
+const INVITABLE_WORKSPACE_ROLES: Array<Extract<WorkspaceRole, 'member' | 'supervisor' | 'viewer'>> =
+  ['member', 'supervisor', 'viewer'];
+
+interface MemberProfile {
+  id: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  role: WorkspaceRole;
+}
+
+interface ActivityEvent {
+  id: string;
+  actorName?: string;
+  verb: string;
+  targetName?: string | null;
+  detail?: string | null;
+  createdAt?: any;
+}
+
+const ACTIVITY_PAGE_SIZE = 25;
+
+const WorkspaceDetailPage: React.FC = () => {
+  const { workspaceId } = useParams<{ workspaceId: string }>();
+  const navigate = useNavigate();
+  const { t } = useTranslation();
+  const { currentUser } = useAuth();
+
+  const [workspace, setWorkspace] = useState<CollaborationWorkspace | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
+  const [isTeacher, setIsTeacher] = useState(false);
+  const [screenplays, setScreenplays] = useState<Screenplay[]>([]);
+  const [memberProfiles, setMemberProfiles] = useState<MemberProfile[]>([]);
+  const [unresolvedCounts, setUnresolvedCounts] = useState<Record<string, number>>({});
+  const [unresolvedFromTeacherCounts, setUnresolvedFromTeacherCounts] = useState<Record<string, number>>({});
+  const [activityEvents, setActivityEvents] = useState<ActivityEvent[]>([]);
+  const [activityLimit, setActivityLimit] = useState(ACTIVITY_PAGE_SIZE);
+  const [activityHasMore, setActivityHasMore] = useState(false);
+
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
+  const [viewingScreenplay, setViewingScreenplay] = useState<Screenplay | null>(null);
+  const [editingFountain, setEditingFountain] = useState<Screenplay | null>(null);
+  const [showStartWritingModal, setShowStartWritingModal] = useState(false);
+  const [newFountainTitle, setNewFountainTitle] = useState('');
+  const [creatingFountain, setCreatingFountain] = useState(false);
+  const [exportingGrading, setExportingGrading] = useState(false);
+  const [toggleSupervisorPending, setToggleSupervisorPending] = useState(false);
+
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [pendingInvitees, setPendingInvitees] = useState<UserAutocompleteOption[]>([]);
+  const [inviteRole, setInviteRole] = useState<Extract<WorkspaceRole, 'member' | 'supervisor' | 'viewer'>>('member');
+  const [inviteSearchResults, setInviteSearchResults] = useState<UserAutocompleteOption[]>([]);
+  const [isSearchingUsers, setIsSearchingUsers] = useState(false);
+  const [isSendingInvites, setIsSendingInvites] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const uid = currentUser?.uid;
+
+  // ---- Subscriptions -------------------------------------------------------
+
+  // The workspace doc itself. Members may `get` it (firestore.rules); anyone else
+  // hits permission-denied, which we surface as "not found or no access".
+  useEffect(() => {
+    if (!workspaceId || !uid) {
+      setLoading(false);
+      setNotFound(true);
+      return;
+    }
+    setLoading(true);
+    setNotFound(false);
+    const unsubscribe = onSnapshot(
+      doc(db, 'workspaces', workspaceId),
+      snapshot => {
+        if (!snapshot.exists()) {
+          setWorkspace(null);
+          setNotFound(true);
+          setLoading(false);
+          return;
+        }
+        setWorkspace(access.normalizeWorkspace(snapshot.id, snapshot.data()));
+        setNotFound(false);
+        setLoading(false);
+      },
+      err => {
+        console.error('Error subscribing to workspace:', err);
+        setWorkspace(null);
+        setNotFound(true);
+        setLoading(false);
+      }
+    );
+    return () => unsubscribe();
+  }, [workspaceId, uid]);
+
+  // Privilege source of truth: admin-granted teacherRoles/{uid} doc.
+  // crewProfiles.isTeacher / profileType are user-writable display fields and
+  // must NOT gate teacher actions (students could set them on themselves).
+  useEffect(() => {
+    if (!uid) {
+      setIsTeacher(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const snap = await getDoc(doc(db, 'teacherRoles', uid));
+        if (cancelled) return;
+        setIsTeacher(snap.exists());
+      } catch (err) {
+        console.error('Failed to load teacher flag:', err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [uid]);
+
+  // This group's screenplays.
+  useEffect(() => {
+    if (!workspaceId || !uid || notFound) {
+      setScreenplays([]);
+      return;
+    }
+    const unsubscribe = onSnapshot(
+      query(collection(db, 'screenplays'), where('workspaceId', '==', workspaceId)),
+      (snapshot: QuerySnapshot) => {
+        const items = snapshot.docs.map(d => access.normalizeScreenplay(d.id, d.data()));
+        // Most recently touched first.
+        items.sort((a, b) =>
+          (access.toDate(b.lastModified)?.getTime() || 0) - (access.toDate(a.lastModified)?.getTime() || 0)
+        );
+        setScreenplays(items);
+      },
+      err => console.error('Error subscribing to group screenplays:', err)
+    );
+    return () => unsubscribe();
+  }, [workspaceId, uid, notFound]);
+
+  // Unresolved annotation/tag counts per screenplay (chunked by Firestore `in` limit).
+  const screenplayIdsKey = useMemo(() => screenplays.map(s => s.id).sort().join(','), [screenplays]);
+  useEffect(() => {
+    if (!uid || screenplayIdsKey === '') {
+      setUnresolvedCounts({});
+      setUnresolvedFromTeacherCounts({});
+      return;
+    }
+    const screenplayIds = screenplayIdsKey.split(',');
+    const annotationsRef = collection(db, 'screenplayAnnotations');
+    const tagsRef = collection(db, 'screenplayTags');
+    const chunkAnnotations = new Map<string, Array<{ screenplayId?: string; resolved?: boolean; supervisorAtAuthorTime?: boolean }>>();
+
+    const recompute = () => {
+      const open: Record<string, number> = {};
+      const fromTeacher: Record<string, number> = {};
+      chunkAnnotations.forEach(list => {
+        list.forEach(annotation => {
+          const id = annotation.screenplayId;
+          if (!id || annotation.resolved) return;
+          open[id] = (open[id] || 0) + 1;
+          if (annotation.supervisorAtAuthorTime) {
+            fromTeacher[id] = (fromTeacher[id] || 0) + 1;
+          }
+        });
+      });
+      setUnresolvedCounts(open);
+      setUnresolvedFromTeacherCounts(fromTeacher);
+    };
+
+    const unsubs: Unsubscribe[] = [];
+    for (let i = 0; i < screenplayIds.length; i += 10) {
+      const chunk = screenplayIds.slice(i, i + 10);
+      const annKey = `ann-${i}`;
+      const tagKey = `tag-${i}`;
+      unsubs.push(onSnapshot(
+        query(annotationsRef, where('screenplayId', 'in', chunk)),
+        snapshot => {
+          chunkAnnotations.set(annKey, snapshot.docs.map(d => d.data() as { screenplayId?: string; resolved?: boolean; supervisorAtAuthorTime?: boolean }));
+          recompute();
+        },
+        err => console.error('Annotation count subscription error:', err)
+      ));
+      unsubs.push(onSnapshot(
+        query(tagsRef, where('screenplayId', 'in', chunk)),
+        snapshot => {
+          chunkAnnotations.set(tagKey, snapshot.docs.map(d => d.data() as { screenplayId?: string; resolved?: boolean; supervisorAtAuthorTime?: boolean }));
+          recompute();
+        },
+        err => console.error('Tag count subscription error:', err)
+      ));
+    }
+    return () => {
+      unsubs.forEach(u => u());
+    };
+  }, [uid, screenplayIdsKey]);
+
+  // Member profiles, resolved by crewProfile DOCUMENT ID (doc id == uid) — profiles
+  // created at signup omit the `uid` field, so doc-id gets are the robust lookup.
+  const memberIdsKey = workspace ? access.getWorkspaceMemberIds(workspace).sort().join(',') : '';
+  useEffect(() => {
+    if (!workspace || memberIdsKey === '') {
+      setMemberProfiles([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const roleByUid = new Map<string, WorkspaceRole>(
+          (workspace.members || []).map(member => [member.userId, member.role])
+        );
+        const profiles = await Promise.all(memberIdsKey.split(',').map(async memberUid => {
+          const snap = await getDoc(doc(db, 'crewProfiles', memberUid));
+          const data: any = snap.exists() ? snap.data() : {};
+          return {
+            id: memberUid,
+            name: data.name || data.displayName || `Crew Member ${memberUid.slice(-4)}`,
+            email: data.email || '',
+            avatar: data.profileImageUrl || data.avatarUrl || '',
+            role: roleByUid.get(memberUid) || 'member'
+          } as MemberProfile;
+        }));
+        if (cancelled) return;
+        const roleOrder: Record<string, number> = { owner: 0, admin: 1, supervisor: 2, member: 3, viewer: 4 };
+        profiles.sort((a, b) => (roleOrder[a.role] ?? 5) - (roleOrder[b.role] ?? 5) || a.name.localeCompare(b.name));
+        setMemberProfiles(profiles);
+      } catch (err) {
+        console.error('Error loading member profiles:', err);
+        if (!cancelled) setMemberProfiles([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [memberIdsKey]);
+
+  // Live "Recent activity" feed, paginated in 25-event chunks via "Load more".
+  useEffect(() => {
+    if (!uid || !workspaceId || notFound) {
+      setActivityEvents([]);
+      setActivityHasMore(false);
+      return;
+    }
+    // Fetch one beyond the displayed window so we know whether there's a next page.
+    const activityQuery = query(
+      collection(db, 'workspaceActivity'),
+      where('workspaceId', '==', workspaceId),
+      orderBy('createdAt', 'desc'),
+      limit(activityLimit + 1)
+    );
+    const unsubscribe = onSnapshot(
+      activityQuery,
+      snapshot => {
+        const all = snapshot.docs.map(d => {
+          const data = d.data();
+          return {
+            id: d.id,
+            actorName: data.actorName,
+            verb: data.verb,
+            targetName: data.targetName ?? null,
+            detail: data.detail ?? null,
+            createdAt: data.createdAt
+          };
+        });
+        setActivityHasMore(all.length > activityLimit);
+        setActivityEvents(all.slice(0, activityLimit));
+      },
+      err => {
+        console.error('Activity feed subscription error:', err);
+        setActivityEvents([]);
+        setActivityHasMore(false);
+      }
+    );
+    return () => unsubscribe();
+  }, [uid, workspaceId, notFound, activityLimit]);
+
+  // ---- Capabilities --------------------------------------------------------
+
+  const getWorkspaceLookup = (id: string) => (workspace && workspace.id === id ? workspace : null);
+  const canEditContent = workspace ? access.canEditWorkspaceContent(workspace, uid) : false;
+  const canManage = workspace ? access.canManageWorkspace(workspace, uid) : false;
+  const effectiveRole = workspace ? access.getEffectiveRole(workspace, uid) : null;
+  const selfElected = workspace ? access.isSelfElectedSupervisor(workspace, uid) : false;
+  const showSupervisorToggle = workspace ? access.canToggleSupervisor(workspace, uid, isTeacher) : false;
+  const canExportGrading = workspace ? access.canExportGradingReport(workspace, uid) : false;
+  const status = workspace?.status || 'active';
+
+  // ---- Actions -------------------------------------------------------------
+
+  const handleUploadFiles = async (rawFiles: FileList | File[]) => {
+    if (!currentUser || !workspace) return;
+    if (!canEditContent) {
+      toast.error(t('collaboration.groupPage.readOnlyUpload'));
+      return;
+    }
+    const files = Array.from(rawFiles);
+    if (files.length === 0) return;
+
+    const validFiles = files.filter(isAcceptedScreenplayFile);
+    const rejectedCount = files.length - validFiles.length;
+    if (rejectedCount > 0) {
+      toast(t('collaboration.groupPage.filesIgnored', { count: rejectedCount }));
+    }
+    const sizedFiles = validFiles.filter(file => {
+      if (file.size > MAX_UPLOAD_BYTES) {
+        toast.error(t('collaboration.screenplaysTab.fileTooLarge', { name: file.name, max: MAX_UPLOAD_MB }));
+        return false;
+      }
+      return true;
+    });
+    if (sizedFiles.length === 0) return;
+
+    setUploading(true);
+    setUploadProgress({ current: 0, total: sizedFiles.length });
+    let successCount = 0;
+    let failureCount = 0;
+    for (let i = 0; i < sizedFiles.length; i++) {
+      setUploadProgress({ current: i + 1, total: sizedFiles.length });
+      try {
+        await uploadScreenplayFile({
+          file: sizedFiles[i],
+          actor: { uid: currentUser.uid, displayName: currentUser.displayName },
+          workspace,
+          projectId: workspace.projectId
+        });
+        successCount++;
+      } catch (err) {
+        console.error(`Failed to upload ${sizedFiles[i].name}:`, err);
+        failureCount++;
+      }
+    }
+    setUploading(false);
+    setUploadProgress(null);
+
+    if (successCount > 0 && failureCount === 0) {
+      toast.success(successCount === 1
+        ? `${sizedFiles[0].name} ${t('collaboration.screenplaysTab.uploadSuccess')}`
+        : t('collaboration.groupPage.uploadedMany', { count: successCount }));
+    } else if (successCount > 0 && failureCount > 0) {
+      toast(t('collaboration.groupPage.uploadedPartial', { success: successCount, total: sizedFiles.length }));
+    } else if (failureCount > 0) {
+      toast.error(t('collaboration.screenplaysTab.uploadFailed'));
+    }
+  };
+
+  const handleCreateFountain = async () => {
+    if (!currentUser || !workspace) return;
+    const title = newFountainTitle.trim();
+    if (!title) {
+      toast.error(t('fountain.titleRequired'));
+      return;
+    }
+    if (!canEditContent) {
+      toast.error(t('collaboration.groupPage.readOnlyUpload'));
+      return;
+    }
+    setCreatingFountain(true);
+    try {
+      const created = await createFountainScreenplay({
+        title,
+        actor: { uid: currentUser.uid, displayName: currentUser.displayName },
+        workspace,
+        projectId: workspace.projectId
+      });
+      setShowStartWritingModal(false);
+      setNewFountainTitle('');
+      setEditingFountain(created);
+    } catch (err) {
+      console.error('Error creating Fountain screenplay:', err);
+      toast.error(t('fountain.createError'));
+    } finally {
+      setCreatingFountain(false);
+    }
+  };
+
+  const handleDeleteScreenplay = async (screenplay: Screenplay) => {
+    if (!currentUser) return;
+    if (!access.canDeleteScreenplay(screenplay, uid, getWorkspaceLookup)) {
+      toast.error(t('collaboration.screenplaysTab.deleteNotAllowed'));
+      return;
+    }
+    if (!window.confirm(t('collaboration.screenplaysTab.deleteConfirm'))) return;
+    try {
+      await deleteScreenplayDoc(screenplay, { uid: currentUser.uid, displayName: currentUser.displayName });
+      toast.success(t('collaboration.screenplaysTab.deleteSuccess'));
+    } catch (err) {
+      console.error('Error deleting screenplay:', err);
+      toast.error(t('collaboration.screenplaysTab.deleteFailed'));
+    }
+  };
+
+  const handleReviewStatusChange = async (screenplay: Screenplay, nextStatus: ScreenplayReviewStatus) => {
+    if (!currentUser) return;
+    const currentStatus = access.getReviewStatus(screenplay);
+    if (currentStatus === nextStatus) return;
+
+    const creatorAllowed = access.canEditScreenplay(screenplay, uid, getWorkspaceLookup) &&
+      (nextStatus === 'draft' || nextStatus === 'submitted');
+    const reviewerAllowed = access.canReviewScreenplay(screenplay, uid, getWorkspaceLookup) &&
+      (nextStatus === 'changes_requested' || nextStatus === 'approved');
+    if (!creatorAllowed && !reviewerAllowed) {
+      toast.error(t('collaboration.groupPage.reviewNotAllowed'));
+      return;
+    }
+    try {
+      await setScreenplayReviewStatus(screenplay, nextStatus, {
+        uid: currentUser.uid,
+        displayName: currentUser.displayName
+      });
+      toast.success(t(`collaboration.reviewStatus.toasts.${nextStatus}`));
+    } catch (err) {
+      console.error('Error updating review status:', err);
+      toast.error(t('collaboration.reviewStatus.toasts.failed'));
+    }
+  };
+
+  const handleExportGrading = async () => {
+    if (!workspace || !canExportGrading) return;
+    if (screenplays.length === 0) {
+      toast(t('collaboration.gradingReport.empty'));
+      return;
+    }
+    setExportingGrading(true);
+    try {
+      await exportWorkspaceGradingCsv({ workspace, screenplays, t });
+      toast.success(t('collaboration.gradingReport.success'));
+    } catch (err) {
+      console.error('Grading report export failed:', err);
+      toast.error(t('collaboration.gradingReport.failed'));
+    } finally {
+      setExportingGrading(false);
+    }
+  };
+
+  const handleToggleSupervisor = async () => {
+    if (!currentUser || !workspace || toggleSupervisorPending) return;
+    const enabling = !selfElected;
+    setToggleSupervisorPending(true);
+    try {
+      const functions = getFunctions(app, 'us-central1');
+      const setSupervisorMode = httpsCallable(functions, 'setWorkspaceSupervisorMode');
+      await setSupervisorMode({ workspaceId: workspace.id, enabled: enabling });
+      // The doc subscription refreshes selfElectedSupervisors on its own.
+      toast.success(enabling
+        ? t('collaboration.supervisor.enabled')
+        : t('collaboration.supervisor.disabled'));
+      if (enabling) {
+        logWorkspaceActivity({
+          workspaceId: workspace.id,
+          actorUid: currentUser.uid,
+          actorName: currentUser.displayName,
+          verb: 'member_self_promoted'
+        });
+      }
+    } catch (err) {
+      console.error('Failed to toggle supervisor mode:', err);
+      toast.error(t('collaboration.supervisor.toggleError'));
+    } finally {
+      setToggleSupervisorPending(false);
+    }
+  };
+
+  const handleInviteSearch = async (queryStr: string) => {
+    if (!queryStr.trim()) {
+      setInviteSearchResults([]);
+      return;
+    }
+    setIsSearchingUsers(true);
+    try {
+      // crewSearch caches the profile fetch, so per-keystroke calls are cheap.
+      const results = await searchCrewProfiles(queryStr, { excludeUid: uid });
+      setInviteSearchResults(results);
+    } catch (err) {
+      console.error('Error searching users:', err);
+      setInviteSearchResults([]);
+    } finally {
+      setIsSearchingUsers(false);
+    }
+  };
+
+  const handleSendInvites = async () => {
+    if (!currentUser || !workspace || pendingInvitees.length === 0) return;
+    if (!canManage) {
+      toast.error(t('collaboration.onlyCreatorCanInvite'));
+      return;
+    }
+    setIsSendingInvites(true);
+    try {
+      const invitedCount = await createWorkspaceInvitations({
+        workspace,
+        users: pendingInvitees,
+        getRole: () => inviteRole,
+        actor: { uid: currentUser.uid, displayName: currentUser.displayName },
+        t
+      });
+      if (invitedCount === 0) {
+        toast.error(t('collaboration.groupPage.alreadyInvited'));
+        return;
+      }
+      const invitedNames = pendingInvitees.map(user => user.name || user.email || 'a collaborator').join(', ');
+      logWorkspaceActivity({
+        workspaceId: workspace.id,
+        actorUid: currentUser.uid,
+        actorName: currentUser.displayName,
+        verb: 'member_added',
+        detail: invitedNames
+      });
+      setShowInviteModal(false);
+      setPendingInvitees([]);
+      setInviteRole('member');
+      setInviteSearchResults([]);
+      toast.success(t('collaboration.groupPage.invitationsSent', { count: invitedCount, workspace: workspace.name }));
+    } catch (err) {
+      console.error('Error inviting users to workspace:', err);
+      toast.error(t('collaboration.groupPage.invitationsFailed'));
+    } finally {
+      setIsSendingInvites(false);
+    }
+  };
+
+  // ---- Render --------------------------------------------------------------
+
+  if (loading) {
+    return (
+      <div className="workspace-detail-page">
+        <div className="group-section" style={{ textAlign: 'center', color: '#94a3b8' }}>
+          {t('collaboration.groupPage.loading')}
+        </div>
+      </div>
+    );
+  }
+
+  if (notFound || !workspace) {
+    return (
+      <div className="workspace-detail-page">
+        <button type="button" className="group-back-link" onClick={() => navigate('/collaboration')}>
+          ← {t('collaboration.groupPage.back')}
+        </button>
+        <div className="group-section" style={{ textAlign: 'center' }}>
+          <h2>{t('collaboration.groupPage.notFoundTitle')}</h2>
+          <p className="group-empty">{t('collaboration.groupPage.notFoundBody')}</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="workspace-detail-page">
+      <button type="button" className="group-back-link" onClick={() => navigate('/collaboration')}>
+        ← {t('collaboration.groupPage.back')}
+      </button>
+
+      <header className="group-header">
+        <div className="group-title-row">
+          <h1>{workspace.name}</h1>
+          <div className="group-header-actions">
+            {canManage && status === 'active' && (
+              <button type="button" className="btn-secondary" onClick={() => setShowInviteModal(true)}>
+                {t('collaboration.groupPage.inviteMembers')}
+              </button>
+            )}
+            {canExportGrading && (
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={handleExportGrading}
+                disabled={exportingGrading}
+                title={t('collaboration.gradingReport.tooltip')}
+              >
+                {exportingGrading ? `⏳ ${t('collaboration.gradingReport.generating')}` : `📊 ${t('collaboration.gradingReport.button')}`}
+              </button>
+            )}
+            {showSupervisorToggle && (
+              <button
+                type="button"
+                className="btn-secondary"
+                disabled={toggleSupervisorPending}
+                onClick={handleToggleSupervisor}
+              >
+                {selfElected ? t('collaboration.supervisor.stepDown') : t('collaboration.supervisor.actAs')}
+              </button>
+            )}
+          </div>
+        </div>
+        <div className="group-meta">
+          <span className="group-type-chip">{t(`collaboration.workspaceTypes.${workspace.type}`, { defaultValue: workspace.type })}</span>
+          {effectiveRole && (
+            <span
+              className={`role-chip ${selfElected ? 'self-elected' : ''}`}
+              title={selfElected ? t('collaboration.supervisor.tooltipSelf') : t('collaboration.supervisor.tooltipRole')}
+            >
+              {t('collaboration.supervisor.yourRole', { role: t(`collaboration.roles.${effectiveRole}`) })}
+              {selfElected ? ` ${t('collaboration.supervisor.selfTag')}` : ''}
+            </span>
+          )}
+        </div>
+        {workspace.description && <p className="group-description">{workspace.description}</p>}
+      </header>
+
+      {status === 'archived' && (
+        <div className="group-status-banner archived">{t('collaboration.groupPage.archivedNotice')}</div>
+      )}
+      {status === 'deleted' && (
+        <div className="group-status-banner deleted">{t('collaboration.groupPage.deletedNotice')}</div>
+      )}
+
+      <div className="group-grid">
+        <div>
+          <section className="group-section">
+            <div className="section-header">
+              <h2>{t('collaboration.groupPage.screenplaysTitle')}</h2>
+              {canEditContent && (
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    disabled={uploading}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {uploading
+                      ? (uploadProgress
+                        ? t('collaboration.uploadProgress', { current: uploadProgress.current, total: uploadProgress.total })
+                        : t('collaboration.screenplaysTab.uploading'))
+                      : t('collaboration.screenplaysTab.uploadScreenplay')}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => { setNewFountainTitle(''); setShowStartWritingModal(true); }}
+                  >
+                    ✍️ {t('fountain.startWriting')}
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept=".pdf,.doc,.docx,.txt"
+                    style={{ display: 'none' }}
+                    disabled={uploading}
+                    onChange={async event => {
+                      const files = event.target.files;
+                      if (files && files.length > 0) {
+                        await handleUploadFiles(files);
+                      }
+                      event.target.value = '';
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+            {screenplays.length === 0 ? (
+              <p className="group-empty">{t('collaboration.groupPage.noScreenplays')}</p>
+            ) : (
+              <ScreenplayList
+                screenplays={screenplays}
+                unresolvedCounts={unresolvedCounts}
+                unresolvedFromTeacherCounts={unresolvedFromTeacherCounts}
+                canEdit={s => access.canEditScreenplay(s, uid, getWorkspaceLookup)}
+                canDelete={s => access.canDeleteScreenplay(s, uid, getWorkspaceLookup)}
+                canReview={s => access.canReviewScreenplay(s, uid, getWorkspaceLookup)}
+                onView={setViewingScreenplay}
+                onEditFountain={setEditingFountain}
+                onDelete={handleDeleteScreenplay}
+                onReviewChange={handleReviewStatusChange}
+              />
+            )}
+          </section>
+
+          <section className="group-section">
+            <h2>{t('collaboration.activity.title')}</h2>
+            {activityEvents.length === 0 ? (
+              <p className="group-empty">{t('collaboration.activity.empty')}</p>
+            ) : (
+              <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+                {activityEvents.map(ev => {
+                  const when = access.toDate(ev.createdAt);
+                  return (
+                    <li key={ev.id} className="activity-row">
+                      <span className="activity-text">
+                        <strong>{ev.actorName || t('collaboration.activity.someone')}</strong>{' '}
+                        {t(`collaboration.activity.verbs.${ev.verb}`, {
+                          target: ev.targetName || t('collaboration.activity.aScreenplay'),
+                          detail: ev.detail || ''
+                        })}
+                      </span>
+                      <span className="activity-when">{when ? access.formatTimeAgo(when) : ''}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            {activityHasMore && (
+              <div style={{ display: 'flex', justifyContent: 'center', marginTop: 12 }}>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => setActivityLimit(prev => prev + ACTIVITY_PAGE_SIZE)}
+                  style={{ padding: '0.3rem 0.9rem', fontSize: '0.85em' }}
+                >
+                  {t('collaboration.activity.loadMore')}
+                </button>
+              </div>
+            )}
+          </section>
+        </div>
+
+        <aside>
+          <section className="group-section">
+            <h2>{t('collaboration.groupPage.membersTitle', { count: memberProfiles.length })}</h2>
+            {memberProfiles.length === 0 ? (
+              <p className="group-empty">{t('collaboration.groupPage.noMembers')}</p>
+            ) : (
+              memberProfiles.map(member => (
+                <div className="member-row" key={member.id}>
+                  <span className="member-avatar">
+                    {member.avatar
+                      ? <img src={member.avatar} alt="" />
+                      : (member.name || '?').charAt(0).toUpperCase()}
+                  </span>
+                  <span className="member-name" title={member.email || member.name}>{member.name}</span>
+                  <span className={`member-role ${member.role}`}>
+                    {t(`collaboration.roles.${member.role}`, { defaultValue: member.role })}
+                  </span>
+                </div>
+              ))
+            )}
+          </section>
+        </aside>
+      </div>
+
+      {/* Screenplay viewer */}
+      {viewingScreenplay && (
+        <div
+          className="screenplay-modal-overlay"
+          onScroll={e => e.stopPropagation()}
+          onWheel={e => e.stopPropagation()}
+        >
+          <div className="screenplay-modal">
+            <div className="modal-content">
+              <ScreenplayViewer
+                screenplay={{
+                  id: viewingScreenplay.id,
+                  name: viewingScreenplay.name,
+                  url: viewingScreenplay.url,
+                  type: viewingScreenplay.type,
+                  format: viewingScreenplay.format,
+                  fountainSource: viewingScreenplay.fountainSource,
+                  reviewStatus: viewingScreenplay.reviewStatus
+                }}
+                projectId={workspace.projectId || 'default-project'}
+                onClose={() => setViewingScreenplay(null)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* In-browser Fountain editor */}
+      {editingFountain && (
+        <FountainEditor
+          screenplay={{
+            id: editingFountain.id,
+            name: editingFountain.name,
+            fountainSource: editingFountain.fountainSource
+          }}
+          onClose={() => setEditingFountain(null)}
+        />
+      )}
+
+      {/* Start Writing modal */}
+      {showStartWritingModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>{t('fountain.startWriting')}</h3>
+              <button
+                className="close-btn"
+                aria-label={t('fountain.close')}
+                onClick={() => { setShowStartWritingModal(false); setNewFountainTitle(''); }}
+              >×</button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label>{t('fountain.titleLabel')}</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={newFountainTitle}
+                  autoFocus
+                  placeholder={t('fountain.titlePlaceholder')}
+                  onChange={e => setNewFountainTitle(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleCreateFountain(); }}
+                />
+              </div>
+              <p className="group-empty" style={{ margin: 0 }}>
+                {t('collaboration.groupPage.fountainScopeHint', { workspace: workspace.name })}
+              </p>
+            </div>
+            <div className="modal-footer">
+              <button
+                className="btn-secondary"
+                onClick={() => { setShowStartWritingModal(false); setNewFountainTitle(''); }}
+              >
+                {t('fountain.cancel')}
+              </button>
+              <button
+                className="btn-primary"
+                disabled={creatingFountain || !newFountainTitle.trim()}
+                onClick={handleCreateFountain}
+              >
+                {creatingFountain ? t('fountain.creating') : t('fountain.create')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Invite members modal */}
+      {showInviteModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>{t('collaboration.groupPage.inviteModalTitle', { workspace: workspace.name })}</h3>
+              <button
+                className="close-btn"
+                aria-label={t('fountain.close')}
+                onClick={() => {
+                  setShowInviteModal(false);
+                  setPendingInvitees([]);
+                  setInviteRole('member');
+                  setInviteSearchResults([]);
+                }}
+              >×</button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label>{t('collaboration.createWorkspaceModal.searchUsers')}</label>
+                <UserAutocomplete
+                  value={pendingInvitees}
+                  onChange={(users: UserAutocompleteOption[]) => {
+                    const existingIds = new Set(access.getWorkspaceMemberIds(workspace));
+                    setPendingInvitees(users.filter(user => !existingIds.has(user.id)));
+                  }}
+                  onSearch={handleInviteSearch}
+                  options={inviteSearchResults}
+                  loading={isSearchingUsers}
+                  placeholder={t('collaboration.createWorkspaceModal.searchPlaceholder')}
+                />
+                {isSearchingUsers && <div className="searching-indicator">{t('collaboration.groupPage.searching')}</div>}
+              </div>
+              <div className="form-group">
+                <label>{t('collaboration.groupPage.inviteRoleLabel')}</label>
+                <select
+                  className="form-input"
+                  value={inviteRole}
+                  onChange={event => setInviteRole(event.target.value as Extract<WorkspaceRole, 'member' | 'supervisor' | 'viewer'>)}
+                >
+                  {INVITABLE_WORKSPACE_ROLES.map(role => (
+                    <option key={role} value={role}>
+                      {t(`collaboration.roles.${role}`)} — {t(`collaboration.roles.${role}Desc`)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button
+                className="btn-secondary"
+                onClick={() => {
+                  setShowInviteModal(false);
+                  setPendingInvitees([]);
+                  setInviteRole('member');
+                }}
+              >
+                {t('collaboration.createWorkspaceModal.cancel')}
+              </button>
+              <button
+                className="btn-primary"
+                disabled={isSendingInvites || pendingInvitees.length === 0}
+                onClick={handleSendInvites}
+              >
+                {isSendingInvites ? t('collaboration.groupPage.sending') : t('collaboration.groupPage.sendInvitations')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default WorkspaceDetailPage;
