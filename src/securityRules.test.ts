@@ -64,10 +64,16 @@ describe('security rules guardrails', () => {
     expect(assignmentRules).toMatch(/request\.resource\.data\.createdBy\s+==\s+request\.auth\.uid/);
     expect(assignmentRules).toMatch(/isWorkspaceOwner\(request\.resource\.data\.workspaceId, request\.auth\.uid\)/);
     expect(assignmentRules).toMatch(/isEffectiveWorkspaceSupervisor\(request\.resource\.data\.workspaceId, request\.auth\.uid\)/);
-    // Edits are creator-only and limited to the text fields; workspaceId/createdBy
-    // must stay immutable so an assignment can't be moved or reowned.
+    // Edits are creator-only, require current group access, and are limited to the
+    // text fields; workspaceId/createdBy must stay immutable so an assignment can't
+    // be moved or reowned.
     expect(assignmentRules).toMatch(/allow\s+update:\s+if\s+signedIn\(\)\s+&&\s+resource\.data\.createdBy\s+==\s+request\.auth\.uid/);
-    expect(assignmentRules).toMatch(/affectedKeys\(\)\.hasOnly\(\['title',\s*'description',\s*'updatedAt'\]\)/);
+    const updateClause = assignmentRules.match(/allow\s+update:[\s\S]*?;/)?.[0] || '';
+    expect(updateClause).toMatch(/canAccessWorkspace\(resource\.data\.workspaceId\)/);
+    expect(updateClause).toMatch(/affectedKeys\(\)\.hasOnly\(\['title',\s*'description',\s*'updatedAt'\]\)/);
+    // The update condition must stay a single conjunction — any `||` broadening
+    // (e.g. "or any member") should trip this guardrail.
+    expect(updateClause).not.toMatch(/\|\|/);
     // Plain members must not be able to author assignments.
     expect(assignmentRules).not.toMatch(/allow\s+create:\s+if\s+signedIn\(\);/);
   });

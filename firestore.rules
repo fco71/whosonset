@@ -849,9 +849,9 @@ service cloud.firestore {
 
     // Assignments posted to a group (class work, no due dates in v1). Readable by group
     // members. Only the group owner or an effective supervisor (the teacher) may create,
-    // and each doc is self-authored. Immutable in v1 (no update); the creator or the
-    // group owner may delete. Screenplays reference these via an optional assignmentId
-    // set at creation.
+    // and each doc is self-authored. The creator may edit the text fields while they
+    // still belong to the group; the creator or the group owner may delete. Screenplays
+    // reference these via an optional assignmentId set at creation.
     match /workspaceAssignments/{assignmentId} {
       allow read: if canAccessWorkspace(resource.data.workspaceId);
       allow create: if signedIn() &&
@@ -860,19 +860,25 @@ service cloud.firestore {
         request.resource.data.title is string &&
         request.resource.data.title.size() > 0 &&
         request.resource.data.title.size() <= 200 &&
+        request.resource.data.description is string &&
+        request.resource.data.description.size() <= 5000 &&
         canAccessWorkspace(request.resource.data.workspaceId) &&
         (
           isWorkspaceOwner(request.resource.data.workspaceId, request.auth.uid) ||
           isEffectiveWorkspaceSupervisor(request.resource.data.workspaceId, request.auth.uid)
         );
-      // Only the creator may edit, and only the text fields — workspaceId and
-      // createdBy stay immutable so an assignment can never be moved or reowned.
+      // Only the creator may edit, only the text fields — workspaceId and createdBy
+      // stay immutable so an assignment can never be moved or reowned — and only
+      // while they still have access to the group.
       allow update: if signedIn() &&
         resource.data.createdBy == request.auth.uid &&
+        canAccessWorkspace(resource.data.workspaceId) &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['title', 'description', 'updatedAt']) &&
         request.resource.data.title is string &&
         request.resource.data.title.size() > 0 &&
-        request.resource.data.title.size() <= 200;
+        request.resource.data.title.size() <= 200 &&
+        request.resource.data.description is string &&
+        request.resource.data.description.size() <= 5000;
       allow delete: if signedIn() && (
         resource.data.createdBy == request.auth.uid ||
         isWorkspaceOwner(resource.data.workspaceId, request.auth.uid)

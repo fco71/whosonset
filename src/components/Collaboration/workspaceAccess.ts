@@ -59,6 +59,12 @@ export const isScreenplayReviewStatus = (value: unknown): value is ScreenplayRev
 export const getReviewStatus = (screenplay: Screenplay): ScreenplayReviewStatus =>
   screenplay.reviewStatus || 'draft';
 
+// "Turned in" = currently with the reviewer or already accepted. Counted on the
+// group page's assignment rollups and the class roster — keep them in sync here.
+export const TURNED_IN_STATUSES: ScreenplayReviewStatus[] = ['submitted', 'approved'];
+export const isTurnedIn = (screenplay: Screenplay): boolean =>
+  TURNED_IN_STATUSES.includes(getReviewStatus(screenplay));
+
 export const toDate = (value: any): Date | null => {
   if (!value) return null;
   if (value instanceof Date) return value;

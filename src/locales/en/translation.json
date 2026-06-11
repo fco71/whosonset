@@ -1117,7 +1117,8 @@
       "addMemberToClassHint": "They'll appear on that class's roster as an individual — useful when their group belongs to a different class.",
       "alreadyViaGroup": "Already in {{class}} through this group.",
       "alreadyOnRoster": "Already on the roster of {{class}}.",
-      "memberAddedToClass": "{{name}} added to {{class}}."
+      "memberAddedToClass": "{{name}} added to {{class}}.",
+      "memberRestoredToClass": "{{name}} restored to {{class}}'s roster."
     },
     "assignments": {
       "title": "Assignments",
@@ -1208,7 +1209,13 @@
       "checklistPlaceholder": "Add an item…",
       "addItem": "Add",
       "showWork": "show work",
-      "hideWork": "hide work"
+      "hideWork": "hide work",
+      "removeStudentHint": "Removes this student's individual entry from the class roster (their group membership is untouched).",
+      "excludeStudentHint": "Removes this student from the class roster only — their group stays in the class and they stay in their group.",
+      "studentExcluded": "{{name}} removed from the roster. Restore them from the Excluded list below.",
+      "excludedTitle_one": "Excluded from this class ({{count}})",
+      "excludedTitle_other": "Excluded from this class ({{count}})",
+      "restoreStudent": "restore"
     },
     "loadError": "Failed to load your groups.",
     "generatingReport": "Generating screenplay breakdown report…",
@@ -1243,6 +1250,11 @@
       "deletePermanently": "Delete permanently",
       "settings": "Settings",
       "deleteGroup": "Delete group"
+    },
+    "errors": {
+      "boundaryTitle": "Something went wrong with the Collaboration Hub.",
+      "boundaryBody": "Please refresh the page or try again later.",
+      "refreshPage": "Refresh page"
     }
   },
   "tasks": {

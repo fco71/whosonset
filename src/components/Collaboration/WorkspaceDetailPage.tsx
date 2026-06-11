@@ -30,11 +30,18 @@ import {
   uploadScreenplayFile
 } from '../../services/screenplayService';
 import { createAssignments, deleteAssignment, updateAssignment } from '../../services/assignmentService';
-import { newLocalId, normalizeTeacherClass, TeacherClass, updateTeacherClass } from '../../services/classService';
+import {
+  addManualStudentToClass,
+  newLocalId,
+  normalizeTeacherClass,
+  restoreStudentToClass,
+  setWorkspaceInClass,
+  TeacherClass
+} from '../../services/classService';
 import * as access from './workspaceAccess';
 import { Screenplay, MAX_UPLOAD_BYTES, MAX_UPLOAD_MB } from './workspaceAccess';
 import ScreenplayList from './ScreenplayList';
-import ScreenplayViewer from './ScreenplayViewer';
+import ScreenplayViewerModal from './ScreenplayViewerModal';
 import FountainEditor from './FountainEditor';
 import UserAutocomplete, { UserAutocompleteOption } from './UserAutocomplete';
 import { searchCrewProfiles } from './crewSearch';
@@ -629,17 +636,15 @@ const WorkspaceDetailPage: React.FC = () => {
   };
 
   // Toggle THIS group's membership in one of the teacher's classes, from the
-  // group page where the members are visible.
+  // group page where the members are visible. Atomic arrayUnion/arrayRemove —
+  // the class page may be open in another tab. Guard per class, so a pending
+  // write on class A doesn't silently swallow a click on class B.
   const handleToggleGroupInClass = async (teacherClass: TeacherClass) => {
-    if (!workspace || classTogglePending) return;
+    if (!workspace || classTogglePending === teacherClass.id) return;
     const isInClass = teacherClass.workspaceIds.includes(workspace.id);
     setClassTogglePending(teacherClass.id);
     try {
-      await updateTeacherClass(teacherClass.id, {
-        workspaceIds: isInClass
-          ? teacherClass.workspaceIds.filter(id => id !== workspace.id)
-          : [...teacherClass.workspaceIds, workspace.id]
-      });
+      await setWorkspaceInClass(teacherClass.id, workspace.id, !isInClass);
       toast.success(isInClass
         ? t('collaboration.groupPage.removedFromClass', { class: teacherClass.name })
         : t('collaboration.groupPage.addedToClass', { class: teacherClass.name }));
@@ -658,22 +663,30 @@ const WorkspaceDetailPage: React.FC = () => {
     if (!addingMemberToClass || !targetClassId) return;
     const teacherClass = teacherClasses.find(item => item.id === targetClassId);
     if (!teacherClass) return;
-    if (workspace && teacherClass.workspaceIds.includes(workspace.id)) {
-      toast(t('collaboration.groupPage.alreadyViaGroup', { class: teacherClass.name }));
-      setAddingMemberToClass(null);
-      return;
-    }
-    if ((teacherClass.manualStudents || []).some(student => student.uid === addingMemberToClass.uid)) {
-      toast(t('collaboration.groupPage.alreadyOnRoster', { class: teacherClass.name }));
-      setAddingMemberToClass(null);
-      return;
-    }
     try {
-      await updateTeacherClass(teacherClass.id, {
-        manualStudents: [
-          ...(teacherClass.manualStudents || []),
-          { id: newLocalId('manual'), name: addingMemberToClass.name, uid: addingMemberToClass.uid }
-        ]
+      // A previously removed ("excluded") student gets restored rather than duplicated.
+      const wasExcluded = (teacherClass.excludedUids || []).includes(addingMemberToClass.uid);
+      if (wasExcluded) {
+        await restoreStudentToClass(teacherClass.id, addingMemberToClass.uid);
+      }
+      if (workspace && teacherClass.workspaceIds.includes(workspace.id)) {
+        toast(wasExcluded
+          ? t('collaboration.groupPage.memberRestoredToClass', { name: addingMemberToClass.name, class: teacherClass.name })
+          : t('collaboration.groupPage.alreadyViaGroup', { class: teacherClass.name }));
+        setAddingMemberToClass(null);
+        return;
+      }
+      if ((teacherClass.manualStudents || []).some(student => student.uid === addingMemberToClass.uid)) {
+        toast(wasExcluded
+          ? t('collaboration.groupPage.memberRestoredToClass', { name: addingMemberToClass.name, class: teacherClass.name })
+          : t('collaboration.groupPage.alreadyOnRoster', { class: teacherClass.name }));
+        setAddingMemberToClass(null);
+        return;
+      }
+      await addManualStudentToClass(teacherClass.id, {
+        id: newLocalId('manual'),
+        name: addingMemberToClass.name,
+        uid: addingMemberToClass.uid
       });
       toast.success(t('collaboration.groupPage.memberAddedToClass', {
         name: addingMemberToClass.name,
@@ -980,9 +993,7 @@ const WorkspaceDetailPage: React.FC = () => {
               <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
                 {assignments.map(assignment => {
                   const tagged = screenplays.filter(s => s.assignmentId === assignment.id);
-                  const turnedIn = tagged.filter(s =>
-                    ['submitted', 'approved'].includes(access.getReviewStatus(s))
-                  ).length;
+                  const turnedIn = tagged.filter(access.isTurnedIn).length;
                   if (editingAssignmentId === assignment.id) {
                     return (
                       <li key={assignment.id} className="assignment-row">
@@ -1261,29 +1272,11 @@ const WorkspaceDetailPage: React.FC = () => {
 
       {/* Screenplay viewer */}
       {viewingScreenplay && (
-        <div
-          className="screenplay-modal-overlay"
-          onScroll={e => e.stopPropagation()}
-          onWheel={e => e.stopPropagation()}
-        >
-          <div className="screenplay-modal">
-            <div className="modal-content">
-              <ScreenplayViewer
-                screenplay={{
-                  id: viewingScreenplay.id,
-                  name: viewingScreenplay.name,
-                  url: viewingScreenplay.url,
-                  type: viewingScreenplay.type,
-                  format: viewingScreenplay.format,
-                  fountainSource: viewingScreenplay.fountainSource,
-                  reviewStatus: viewingScreenplay.reviewStatus
-                }}
-                projectId={workspace.projectId || 'default-project'}
-                onClose={() => setViewingScreenplay(null)}
-              />
-            </div>
-          </div>
-        </div>
+        <ScreenplayViewerModal
+          screenplay={viewingScreenplay}
+          projectId={workspace.projectId || 'default-project'}
+          onClose={() => setViewingScreenplay(null)}
+        />
       )}
 
       {/* In-browser Fountain editor */}

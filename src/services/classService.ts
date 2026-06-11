@@ -1,7 +1,10 @@
 import {
   addDoc,
+  arrayRemove,
+  arrayUnion,
   collection,
   deleteDoc,
+  deleteField,
   doc,
   serverTimestamp,
   updateDoc
@@ -31,6 +34,12 @@ export interface TeacherClass {
   name: string;
   workspaceIds: string[];
   manualStudents: ManualStudent[];
+  /**
+   * Students removed from the roster individually even though their group is in
+   * the class. Restorable from the roster's "Excluded" list — this is what makes
+   * group-derived students behave like removable individuals.
+   */
+  excludedUids: string[];
   /** Per-student tick, keyed by student uid (derived) or manual student id. */
   studentChecks: Record<string, boolean>;
   checklist: ClassChecklistItem[];
@@ -45,6 +54,9 @@ export const normalizeTeacherClass = (classId: string, data: any): TeacherClass 
   workspaceIds: Array.isArray(data.workspaceIds) ? data.workspaceIds.filter((id: unknown): id is string => typeof id === 'string') : [],
   manualStudents: Array.isArray(data.manualStudents)
     ? data.manualStudents.filter((s: any) => s && typeof s.id === 'string' && typeof s.name === 'string')
+    : [],
+  excludedUids: Array.isArray(data.excludedUids)
+    ? data.excludedUids.filter((id: unknown): id is string => typeof id === 'string')
     : [],
   studentChecks: data.studentChecks && typeof data.studentChecks === 'object' ? data.studentChecks : {},
   checklist: Array.isArray(data.checklist)
@@ -78,6 +90,68 @@ export async function updateTeacherClass(
 ): Promise<void> {
   await updateDoc(doc(db, 'teacherClasses', classId), {
     ...updates,
+    updatedAt: serverTimestamp()
+  });
+}
+
+// Membership mutations use atomic array operators / field paths rather than
+// read-modify-write of whole arrays: the group page and the class page can both
+// be open (two tabs is the normal teacher flow), and full-array writes from a
+// stale snapshot silently resurrect or drop entries.
+
+export async function setWorkspaceInClass(classId: string, workspaceId: string, include: boolean): Promise<void> {
+  await updateDoc(doc(db, 'teacherClasses', classId), {
+    workspaceIds: include ? arrayUnion(workspaceId) : arrayRemove(workspaceId),
+    updatedAt: serverTimestamp()
+  });
+}
+
+export async function addWorkspacesToClass(classId: string, workspaceIds: string[]): Promise<void> {
+  if (workspaceIds.length === 0) return;
+  await updateDoc(doc(db, 'teacherClasses', classId), {
+    workspaceIds: arrayUnion(...workspaceIds),
+    updatedAt: serverTimestamp()
+  });
+}
+
+export async function addManualStudentToClass(classId: string, student: ManualStudent): Promise<void> {
+  await updateDoc(doc(db, 'teacherClasses', classId), {
+    manualStudents: arrayUnion(student),
+    updatedAt: serverTimestamp()
+  });
+}
+
+/**
+ * Remove one student from the roster, whatever their source(s): drops their
+ * manual entry (arrayRemove matches by deep equality — pass the exact stored
+ * object from the snapshot), excludes their uid when they also arrive via a
+ * group, and clears their tick. One atomic write.
+ */
+export async function removeStudentFromRoster(
+  classId: string,
+  params: { manualStudent?: ManualStudent; excludeUid?: string; tickKey: string }
+): Promise<void> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const payload: Record<string, any> = {
+    [`studentChecks.${params.tickKey}`]: deleteField(),
+    updatedAt: serverTimestamp()
+  };
+  if (params.manualStudent) payload.manualStudents = arrayRemove(params.manualStudent);
+  if (params.excludeUid) payload.excludedUids = arrayUnion(params.excludeUid);
+  await updateDoc(doc(db, 'teacherClasses', classId), payload);
+}
+
+/** Undo an exclusion — the student reappears on the roster via their group. */
+export async function restoreStudentToClass(classId: string, studentUid: string): Promise<void> {
+  await updateDoc(doc(db, 'teacherClasses', classId), {
+    excludedUids: arrayRemove(studentUid),
+    updatedAt: serverTimestamp()
+  });
+}
+
+export async function setStudentTick(classId: string, tickKey: string, ticked: boolean): Promise<void> {
+  await updateDoc(doc(db, 'teacherClasses', classId), {
+    [`studentChecks.${tickKey}`]: ticked ? true : deleteField(),
     updatedAt: serverTimestamp()
   });
 }

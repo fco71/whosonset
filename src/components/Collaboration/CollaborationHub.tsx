@@ -14,7 +14,7 @@ import { toast } from 'react-hot-toast';
 import { collection, addDoc, query, where, getDocs, getDoc, onSnapshot, updateDoc, doc, deleteDoc, serverTimestamp, Timestamp, QuerySnapshot, Unsubscribe, writeBatch } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { app, db } from '../../firebase';
-import ScreenplayViewer from './ScreenplayViewer';
+import ScreenplayViewerModal from './ScreenplayViewerModal';
 import FountainEditor from './FountainEditor';
 import { logWorkspaceActivity } from '../../services/workspaceActivityService';
 import {
@@ -31,6 +31,7 @@ import ScreenplayList from './ScreenplayList';
 import { searchCrewProfiles } from './crewSearch';
 import { createTeacherClass, normalizeTeacherClass, TeacherClass } from '../../services/classService';
 import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 
 const debugLog = (...args: unknown[]) => {
   if (process.env.NODE_ENV !== 'production') {
@@ -99,11 +100,13 @@ class CollaborationErrorBoundary extends React.Component<ErrorBoundaryProps, Err
 
   render() {
     if (this.state.hasError) {
+      // Class components can't use the useTranslation hook; the i18next instance
+      // translates fine and re-evaluates on each crash render.
       return (
         <div className="error-boundary">
-          <h2>Something went wrong with the Collaboration Hub.</h2>
-          <p>Please refresh the page or try again later.</p>
-          <button onClick={() => window.location.reload()}>Refresh Page</button>
+          <h2>{i18n.t('collaboration.errors.boundaryTitle')}</h2>
+          <p>{i18n.t('collaboration.errors.boundaryBody')}</p>
+          <button onClick={() => window.location.reload()}>{i18n.t('collaboration.errors.refreshPage')}</button>
         </div>
       );
     }
@@ -2227,42 +2230,21 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         </div>
 
         {/* Full-Screen Screenplay Modal */}
-        {showScreenplayModal && selectedScreenplayId && (
-          <div 
-            className="screenplay-modal-overlay"
-            onScroll={(e) => e.stopPropagation()}
-            onWheel={(e) => e.stopPropagation()}
-          >
-            <div className="screenplay-modal">
-              <div className="modal-content">
-                {(() => {
-                  const selectedScreenplay = userScreenplays.find(s => s.id === selectedScreenplayId);
-                  if (!selectedScreenplay) return null;
-                  
-                  return (
-                    <ScreenplayViewer
-                      screenplay={{
-                        id: selectedScreenplay.id,
-                        name: selectedScreenplay.name,
-                        url: selectedScreenplay.url,
-                        type: selectedScreenplay.type,
-                        format: selectedScreenplay.format,
-                        fountainSource: selectedScreenplay.fountainSource,
-                        reviewStatus: selectedScreenplay.reviewStatus
-                      }}
-                      projectId={projectId || 'default-project'}
-                      onClose={() => {
-                        setShowScreenplayModal(false);
-                        setSelectedScreenplayId(null);
-                      }}
-                      onGenerateReport={handleGenerateReport}
-                    />
-                  );
-                })()}
-              </div>
-            </div>
-          </div>
-        )}
+        {showScreenplayModal && selectedScreenplayId && (() => {
+          const selectedScreenplay = userScreenplays.find(s => s.id === selectedScreenplayId);
+          if (!selectedScreenplay) return null;
+          return (
+            <ScreenplayViewerModal
+              screenplay={selectedScreenplay}
+              projectId={projectId || 'default-project'}
+              onClose={() => {
+                setShowScreenplayModal(false);
+                setSelectedScreenplayId(null);
+              }}
+              onGenerateReport={handleGenerateReport}
+            />
+          );
+        })()}
 
         {/* In-browser Fountain editor (B3) */}
         {editingFountain && (
