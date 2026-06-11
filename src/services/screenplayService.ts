@@ -46,8 +46,9 @@ export async function uploadScreenplayFile(params: {
   actor: ActorInfo;
   workspace: CollaborationWorkspace | null;
   projectId?: string | null;
+  assignmentId?: string | null;
 }): Promise<Screenplay> {
-  const { file, actor, workspace, projectId } = params;
+  const { file, actor, workspace, projectId, assignmentId } = params;
 
   const storageRef = ref(storage, `screenplays/${actor.uid}/${Date.now()}_${file.name}`);
   const snapshot = await uploadBytes(storageRef, file);
@@ -65,6 +66,7 @@ export async function uploadScreenplayFile(params: {
     teamMembers: teamMemberIds,
     workspaceId: workspace?.id || null,
     projectId: projectId || workspace?.projectId || null,
+    assignmentId: (workspace && assignmentId) || null,
     size: file.size,
     reviewStatus: 'draft',
     uploadedAt: now,
@@ -91,8 +93,9 @@ export async function createFountainScreenplay(params: {
   actor: ActorInfo;
   workspace: CollaborationWorkspace | null;
   projectId?: string | null;
+  assignmentId?: string | null;
 }): Promise<Screenplay> {
-  const { title, actor, workspace, projectId } = params;
+  const { title, actor, workspace, projectId, assignmentId } = params;
 
   const workspaceMemberIds = workspace ? getWorkspaceMemberIds(workspace) : [];
   const teamMemberIds = Array.from(new Set([actor.uid, ...workspaceMemberIds]));
@@ -107,6 +110,7 @@ export async function createFountainScreenplay(params: {
     teamMembers: teamMemberIds,
     workspaceId: workspace?.id || null,
     projectId: projectId || workspace?.projectId || null,
+    assignmentId: (workspace && assignmentId) || null,
     reviewStatus: 'draft',
     uploadedAt: now,
     lastModified: now

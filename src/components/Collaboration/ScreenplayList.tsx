@@ -13,6 +13,8 @@ interface ScreenplayListProps {
   unresolvedFromTeacherCounts: Record<string, number>;
   /** Renders a small label after the type (used when rows mix several groups). */
   workspaceLabel?: (workspaceId?: string | null) => string;
+  /** Resolves an assignment chip for a row; return null/'' to hide it. */
+  assignmentLabel?: (screenplay: Screenplay) => string | null;
   canEdit: (screenplay: Screenplay) => boolean;
   canDelete: (screenplay: Screenplay) => boolean;
   canReview: (screenplay: Screenplay) => boolean;
@@ -27,6 +29,7 @@ const ScreenplayList: React.FC<ScreenplayListProps> = ({
   unresolvedCounts,
   unresolvedFromTeacherCounts,
   workspaceLabel,
+  assignmentLabel,
   canEdit,
   canDelete,
   canReview,
@@ -47,6 +50,7 @@ const ScreenplayList: React.FC<ScreenplayListProps> = ({
         const canSubmitReview = editable && (reviewStatus === 'draft' || reviewStatus === 'changes_requested');
         const canReturnToDraft = editable && reviewStatus !== 'draft';
         const canTeacherReview = canReview(screenplay) && reviewStatus === 'submitted';
+        const assignmentChip = assignmentLabel ? assignmentLabel(screenplay) : null;
         return (
           <li key={screenplay.id} style={{
             display: 'flex',
@@ -62,6 +66,23 @@ const ScreenplayList: React.FC<ScreenplayListProps> = ({
               <span style={{ color: '#888', fontSize: '0.95em' }}>{screenplay.type}</span>
               {workspaceLabel && (
                 <span style={{ color: '#666', fontSize: '0.85em' }}>{workspaceLabel(screenplay.workspaceId)}</span>
+              )}
+              {assignmentChip && (
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    padding: '2px 8px',
+                    borderRadius: 999,
+                    fontSize: '0.78em',
+                    fontWeight: 600,
+                    background: '#ede9fe',
+                    color: '#5b21b6'
+                  }}
+                >
+                  📋 {assignmentChip}
+                </span>
               )}
               <span
                 className={`review-status-chip review-status-chip--${reviewStatus}`}

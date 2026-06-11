@@ -14,6 +14,8 @@ export type WorkspaceActivityVerb =
   | 'review_returned_to_draft'
   | 'member_added'
   | 'member_self_promoted'
+  | 'assignment_created'
+  | 'assignment_deleted'
   | 'annotation_added'
   | 'tag_added'
   | 'supervisor_note_addressed'

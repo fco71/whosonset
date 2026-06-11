@@ -829,6 +829,49 @@ service cloud.firestore {
         isWorkspaceOwner(resource.data.workspaceId, request.auth.uid);
     }
 
+    // A teacher's PRIVATE organizer: classes that group their workspaces, with a
+    // student roster, per-student ticks, and a to-do checklist. Owner-only in every
+    // mode; creation additionally requires an admin-granted teacherRoles doc so
+    // students cannot create classes. Students never read these docs.
+    match /teacherClasses/{classId} {
+      allow read: if signedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if signedIn() &&
+        request.resource.data.ownerId == request.auth.uid &&
+        exists(/databases/$(database)/documents/teacherRoles/$(request.auth.uid)) &&
+        request.resource.data.name is string &&
+        request.resource.data.name.size() > 0 &&
+        request.resource.data.name.size() <= 120;
+      allow update: if signedIn() &&
+        resource.data.ownerId == request.auth.uid &&
+        request.resource.data.ownerId == resource.data.ownerId;
+      allow delete: if signedIn() && resource.data.ownerId == request.auth.uid;
+    }
+
+    // Assignments posted to a group (class work, no due dates in v1). Readable by group
+    // members. Only the group owner or an effective supervisor (the teacher) may create,
+    // and each doc is self-authored. Immutable in v1 (no update); the creator or the
+    // group owner may delete. Screenplays reference these via an optional assignmentId
+    // set at creation.
+    match /workspaceAssignments/{assignmentId} {
+      allow read: if canAccessWorkspace(resource.data.workspaceId);
+      allow create: if signedIn() &&
+        request.resource.data.createdBy == request.auth.uid &&
+        request.resource.data.workspaceId is string &&
+        request.resource.data.title is string &&
+        request.resource.data.title.size() > 0 &&
+        request.resource.data.title.size() <= 200 &&
+        canAccessWorkspace(request.resource.data.workspaceId) &&
+        (
+          isWorkspaceOwner(request.resource.data.workspaceId, request.auth.uid) ||
+          isEffectiveWorkspaceSupervisor(request.resource.data.workspaceId, request.auth.uid)
+        );
+      allow update: if false;
+      allow delete: if signedIn() && (
+        resource.data.createdBy == request.auth.uid ||
+        isWorkspaceOwner(resource.data.workspaceId, request.auth.uid)
+      );
+    }
+
     match /workspaces/{workspaceId} {
       allow get: if signedIn() &&
         isWorkspaceMemberData(resource.data, request.auth.uid);

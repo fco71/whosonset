@@ -44,6 +44,31 @@ describe('security rules guardrails', () => {
     expect(activityRules).toMatch(/allow\s+delete:\s+if\s+signedIn\(\)\s+&&\s+isWorkspaceOwner/);
   });
 
+  it('keeps teacher classes private to their owner and teacher-created', () => {
+    const rules = readRepoFile('firestore.rules');
+    const classRules = rules.match(/match\s+\/teacherClasses\/\{classId\}\s+\{[\s\S]*?\n\s+\}/)?.[0] || '';
+
+    expect(classRules).toMatch(/allow\s+read:\s+if\s+signedIn\(\)\s+&&\s+resource\.data\.ownerId\s+==\s+request\.auth\.uid/);
+    expect(classRules).toMatch(/exists\(\/databases\/\$\(database\)\/documents\/teacherRoles\/\$\(request\.auth\.uid\)\)/);
+    expect(classRules).toMatch(/request\.resource\.data\.ownerId\s+==\s+resource\.data\.ownerId/);
+    // Never publicly listable or member-shared.
+    expect(classRules).not.toMatch(/canAccessWorkspace/);
+    expect(classRules).not.toMatch(/allow\s+read:\s+if\s+signedIn\(\);/);
+  });
+
+  it('keeps group assignments member-readable and owner/supervisor-authored', () => {
+    const rules = readRepoFile('firestore.rules');
+    const assignmentRules = rules.match(/match\s+\/workspaceAssignments\/\{assignmentId\}\s+\{[\s\S]*?\n\s+\}/)?.[0] || '';
+
+    expect(assignmentRules).toMatch(/allow\s+read:\s+if\s+canAccessWorkspace\(resource\.data\.workspaceId\)/);
+    expect(assignmentRules).toMatch(/request\.resource\.data\.createdBy\s+==\s+request\.auth\.uid/);
+    expect(assignmentRules).toMatch(/isWorkspaceOwner\(request\.resource\.data\.workspaceId, request\.auth\.uid\)/);
+    expect(assignmentRules).toMatch(/isEffectiveWorkspaceSupervisor\(request\.resource\.data\.workspaceId, request\.auth\.uid\)/);
+    expect(assignmentRules).toMatch(/allow\s+update:\s+if\s+false;/);
+    // Plain members must not be able to author assignments.
+    expect(assignmentRules).not.toMatch(/allow\s+create:\s+if\s+signedIn\(\);/);
+  });
+
   it('constrains top-level notification creation to internal links + capped payloads', () => {
     const rules = readRepoFile('firestore.rules');
     // The top-level /notifications block is the one whose first allow line is

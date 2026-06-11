@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   CollaborationWorkspace,
@@ -29,6 +29,7 @@ import * as access from './workspaceAccess';
 import { MAX_UPLOAD_BYTES, MAX_UPLOAD_MB, Screenplay } from './workspaceAccess';
 import ScreenplayList from './ScreenplayList';
 import { searchCrewProfiles } from './crewSearch';
+import { createTeacherClass, normalizeTeacherClass, TeacherClass } from '../../services/classService';
 import { useTranslation } from 'react-i18next';
 
 const debugLog = (...args: unknown[]) => {
@@ -58,7 +59,8 @@ interface UserSearchResult {
 type WorkspaceCreationStep = 'details' | 'members' | 'settings';
 
 // Define TabType at the top of the file
-type TabType = 'workspaces' | 'tasks' | 'screenplays';
+type TabType = 'workspaces' | 'tasks' | 'screenplays' | 'classes';
+const TAB_TYPES: TabType[] = ['workspaces', 'tasks', 'screenplays', 'classes'];
 
 const WORKSPACE_DELETE_RECOVERY_DAYS = 7;
 // Labels + descriptions are resolved via i18n at render time (collaboration.roles.*)
@@ -114,7 +116,13 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const { t } = useTranslation();
   const { currentUser } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<TabType>('workspaces');
+  // Deep links (e.g. the class page's back button) can land on a specific tab
+  // via ?tab=; the param is only read on mount.
+  const [searchParams] = useSearchParams();
+  const requestedTab = searchParams.get('tab') as TabType | null;
+  const [activeTab, setActiveTab] = useState<TabType>(
+    requestedTab && TAB_TYPES.includes(requestedTab) ? requestedTab : 'workspaces'
+  );
   const [workspaces, setWorkspaces] = useState<CollaborationWorkspace[]>([]);
   const [selectedWorkspace, setSelectedWorkspace] = useState<CollaborationWorkspace | null>(null);
   const [loading, setLoading] = useState(true);
@@ -175,6 +183,11 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 
   const [approvedContacts, setApprovedContacts] = useState<string[]>([]);
   const [isTeacher, setIsTeacher] = useState(false);
+
+  // Teacher-only class organizer (teacherClasses collection, owner-scoped).
+  const [teacherClasses, setTeacherClasses] = useState<TeacherClass[]>([]);
+  const [newClassName, setNewClassName] = useState('');
+  const [creatingClass, setCreatingClass] = useState(false);
   const [toggleSupervisorPending, setToggleSupervisorPending] = useState(false);
 
   // Capability + normalization helpers are shared with WorkspaceDetailPage via
@@ -538,6 +551,41 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     };
   }, [currentUser]);
 
+  // The teacher's classes (private organizer). Owner-scoped query, teacher-only.
+  useEffect(() => {
+    if (!currentUser || !isTeacher) {
+      setTeacherClasses([]);
+      return;
+    }
+    const unsubscribe = onSnapshot(
+      query(collection(db, 'teacherClasses'), where('ownerId', '==', currentUser.uid)),
+      snapshot => {
+        const items = snapshot.docs.map(d => normalizeTeacherClass(d.id, d.data()));
+        items.sort((a, b) => a.name.localeCompare(b.name));
+        setTeacherClasses(items);
+      },
+      err => console.error('Error subscribing to classes:', err)
+    );
+    return () => unsubscribe();
+  }, [currentUser, isTeacher]);
+
+  const handleCreateClass = async () => {
+    if (!currentUser) return;
+    const name = newClassName.trim();
+    if (!name) return;
+    setCreatingClass(true);
+    try {
+      const classId = await createTeacherClass(currentUser.uid, name);
+      setNewClassName('');
+      navigate(`/collaboration/class/${classId}`);
+    } catch (err) {
+      console.error('Failed to create class:', err);
+      toast.error(t('collaboration.classes.createFailed'));
+    } finally {
+      setCreatingClass(false);
+    }
+  };
+
   useEffect(() => {
     if (!currentUser) return;
     const fetchApprovedContacts = async () => {
@@ -617,7 +665,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       const invitedCount = await createWorkspaceInvitations(workspace, users, () => role);
 
       if (invitedCount === 0) {
-        toast.error('Those users are already in this workspace or could not be invited.');
+        toast.error('Those users are already in this group or could not be invited.');
         return;
       }
 
@@ -650,7 +698,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const handleCreateWorkspaceStep = () => {
     if (workspaceCreationStep === 'details') {
       if (!newWorkspaceData.name.trim()) {
-        toast.error('Please enter a workspace name');
+        toast.error('Please enter a group name');
         return;
       }
       setWorkspaceCreationStep('members');
@@ -663,7 +711,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 
   const handleCreateWorkspace = async () => {
     if (!currentUser) {
-      toast.error('Please sign in to create a workspace.');
+      toast.error('Please sign in to create a group.');
       return;
     }
 
@@ -740,11 +788,11 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       setWorkspaceCreationStep('details');
       setShowCreateWorkspaceModal(false);
       toast.success(invitedCount > 0
-        ? `Workspace "${newWorkspaceData.name.trim()}" created and ${invitedCount} invitation${invitedCount === 1 ? '' : 's'} sent.`
-        : `Workspace "${newWorkspaceData.name.trim()}" created successfully!`);
+        ? `Group "${newWorkspaceData.name.trim()}" created and ${invitedCount} invitation${invitedCount === 1 ? '' : 's'} sent.`
+        : `Group "${newWorkspaceData.name.trim()}" created successfully!`);
     } catch (error) {
       console.error('Error in handleCreateWorkspace:', error);
-      toast.error('Failed to create workspace. Please try again.');
+      toast.error('Failed to create the group. Please try again.');
     }
   };
 
@@ -775,13 +823,13 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     if (!selectedWorkspace) return;
 
     if (!canManageWorkspace(selectedWorkspace)) {
-      toast.error('Only the workspace creator can update settings.');
+      toast.error('Only the group creator can update settings.');
       return;
     }
 
     const nextName = workspaceDetails.name.trim();
     if (!nextName) {
-      toast.error('Workspace name is required.');
+      toast.error('Group name is required.');
       return;
     }
 
@@ -806,10 +854,10 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       };
       updateWorkspaceState(updatedWorkspace);
       setShowSettingsModal(false);
-      toast.success('Workspace updated successfully!');
+      toast.success('Group updated successfully!');
     } catch (error) {
       console.error('Error updating workspace settings:', error);
-      toast.error('Failed to update workspace.');
+      toast.error('Failed to update the group.');
     }
   };
 
@@ -1043,7 +1091,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       toast.success(`Archived ${workspace.name}.`);
     } catch (error) {
       console.error('Error archiving workspace:', error);
-      toast.error('Failed to archive workspace.');
+      toast.error('Failed to archive the group.');
     }
   };
 
@@ -1073,7 +1121,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       toast.success(`Restored ${workspace.name}.`);
     } catch (error) {
       console.error('Error restoring workspace:', error);
-      toast.error('Failed to restore workspace.');
+      toast.error('Failed to restore the group.');
     }
   };
 
@@ -1082,7 +1130,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     const workspace = getWorkspaceById(workspaceId);
     if (!workspace || !isWorkspaceCreator(workspace)) return;
 
-    if (window.confirm('Delete this workspace? It can be restored for 30 days.')) {
+    if (window.confirm('Delete this group? It can be restored for 30 days.')) {
       try {
         const deleteRecoverableUntil = getDeleteRecoveryDate();
         await updateDoc(doc(db, 'workspaces', workspaceId), {
@@ -1106,7 +1154,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         toast.success(`${workspace.name} moved to recently deleted.`);
       } catch (error) {
         console.error('Error deleting workspace:', error);
-        toast.error('Failed to delete workspace.');
+        toast.error('Failed to delete the group.');
       }
     }
   };
@@ -1119,11 +1167,11 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     // recovery window — no need to wait it out. (Firestore rule allows owner delete when
     // status == 'deleted'.)
     if (workspace.status !== 'deleted') {
-      toast.error('Move the workspace to the deleted state first.');
+      toast.error('Move the group to the deleted state first.');
       return;
     }
 
-    if (window.confirm('Permanently delete this workspace? This cannot be undone.')) {
+    if (window.confirm('Permanently delete this group? This cannot be undone.')) {
       try {
         // Best-effort membership cleanup, by CONSTRUCTED doc id — NOT a query.
         // Querying workspaceMemberships by workspaceId is denied (the list rule only permits
@@ -1153,7 +1201,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         toast.success(`${workspace.name} permanently deleted.`);
       } catch (error) {
         console.error('Error permanently deleting workspace:', error);
-        toast.error('Failed to permanently delete workspace.');
+        toast.error('Failed to permanently delete the group.');
       }
     }
   };
@@ -1217,8 +1265,8 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 	            {isWorkspaceCreator(workspace) && workspace.status !== 'deleted' && (
 	              <button
 	                className="workspace-delete-btn"
-	                title="Delete Workspace"
-	                aria-label="Delete Workspace"
+	                title="Delete group"
+	                aria-label="Delete group"
 	                onClick={e => { e.stopPropagation(); handleDeleteWorkspace(workspace.id); }}
 	                style={{ position: 'absolute', top: 16, right: 16, background: 'none', border: 'none', padding: 0, cursor: 'pointer', zIndex: 2 }}
 	              >
@@ -1626,7 +1674,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 	        <div className="modal-overlay">
 	          <div className="modal-content">
 	            <div className="modal-header">
-	              <h3>Add members to {selectedWorkspace?.name || 'workspace'}</h3>
+	              <h3>Add members to {selectedWorkspace?.name || 'the group'}</h3>
 	              <button onClick={() => {
 	                setShowAddMemberModal(false);
 	                setPendingMembersToAdd([]);
@@ -1655,7 +1703,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 	                {!isSearchingUsers && !userSearchQuery.trim() && <div className="searching-indicator">Start typing to search for users</div>}
 	              </div>
 	              <div className="form-group">
-	                <label>Workspace role</label>
+	                <label>Group role</label>
 	                <select
 	                  className="form-input"
 	                  value={pendingMemberRole}
@@ -1985,6 +2033,83 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     );
   };
 
+  // Teacher-only: the private class organizer. One card per class, linking to
+  // /collaboration/class/:classId. Students never get this tab.
+  const renderClassesTab = () => (
+    <div className="workspaces-tab">
+      <div className="workspaces-header">
+        <h2>{t('collaboration.classes.tabTitle')}</h2>
+      </div>
+      <p style={{ color: '#64748b', margin: '0 0 16px' }}>{t('collaboration.classes.tabSubtitle')}</p>
+      <div style={{ display: 'flex', gap: 10, margin: '0 0 24px', maxWidth: 480 }}>
+        <input
+          type="text"
+          className="form-input"
+          style={{ flex: 1 }}
+          value={newClassName}
+          maxLength={120}
+          placeholder={t('collaboration.classes.namePlaceholder')}
+          onChange={e => setNewClassName(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') handleCreateClass(); }}
+        />
+        <button
+          type="button"
+          className="btn-primary"
+          disabled={creatingClass || !newClassName.trim()}
+          onClick={handleCreateClass}
+        >
+          {creatingClass ? t('collaboration.classes.creating') : t('collaboration.classes.newClass')}
+        </button>
+      </div>
+      {teacherClasses.length === 0 ? (
+        <p style={{ color: '#94a3b8' }}>{t('collaboration.classes.empty')}</p>
+      ) : (
+        <div className="workspaces-grid">
+          {teacherClasses.map(teacherClass => {
+            const doneCount = teacherClass.checklist.filter(item => item.done).length;
+            return (
+              <div
+                key={teacherClass.id}
+                className="workspace-card active"
+                style={{ cursor: 'pointer' }}
+                onClick={() => navigate(`/collaboration/class/${teacherClass.id}`)}
+              >
+                <div className="workspace-header">
+                  <div className="workspace-title-section">
+                    <div className="workspace-icon" aria-hidden="true" style={{ fontSize: 22 }}>🏫</div>
+                    <div className="workspace-info">
+                      <h3 className="workspace-title" style={{ color: '#1a1a1a', fontWeight: 600 }}>{teacherClass.name}</h3>
+                    </div>
+                  </div>
+                </div>
+                <div className="workspace-stats">
+                  <div className="stat" style={{ color: '#666' }}>
+                    <span className="stat-value" style={{ color: '#333', fontWeight: 600 }}>{teacherClass.workspaceIds.length}</span>
+                    <span className="stat-label" style={{ color: '#666' }}>{t('collaboration.workspaces')}</span>
+                  </div>
+                  {teacherClass.checklist.length > 0 && (
+                    <div className="stat" style={{ color: '#666' }}>
+                      <span className="stat-value" style={{ color: '#333', fontWeight: 600 }}>{doneCount}/{teacherClass.checklist.length}</span>
+                      <span className="stat-label" style={{ color: '#666' }}>{t('collaboration.classes.checklistTitle')}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="workspace-actions">
+                  <button
+                    className="btn-primary"
+                    onClick={e => { e.stopPropagation(); navigate(`/collaboration/class/${teacherClass.id}`); }}
+                  >
+                    {t('collaboration.openGroup')}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'workspaces':
@@ -1993,6 +2118,9 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         return renderTasksTab();
       case 'screenplays':
         return renderScreenplaysTab();
+      case 'classes':
+        // Non-teachers never see the tab button; a deep link falls back to groups.
+        return isTeacher ? renderClassesTab() : renderWorkspacesTab();
       default:
         return (
           <div className="error-content">
@@ -2077,6 +2205,19 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                 </svg>
                 <span className="nav-label">{t('collaboration.screenplays')}</span>
               </button>
+
+              {isTeacher && (
+                <button
+                  className={`nav-item ${activeTab === 'classes' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('classes')}
+                >
+                  <svg className="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+                    <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+                  </svg>
+                  <span className="nav-label">{t('collaboration.classes.tabTitle')}</span>
+                </button>
+              )}
             </nav>
           </div>
 

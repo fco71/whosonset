@@ -6,6 +6,7 @@ import {
   collection,
   doc,
   getDoc,
+  getDocs,
   onSnapshot,
   orderBy,
   limit,
@@ -28,6 +29,7 @@ import {
   setScreenplayReviewStatus,
   uploadScreenplayFile
 } from '../../services/screenplayService';
+import { createAssignments, deleteAssignment } from '../../services/assignmentService';
 import * as access from './workspaceAccess';
 import { Screenplay, MAX_UPLOAD_BYTES, MAX_UPLOAD_MB } from './workspaceAccess';
 import ScreenplayList from './ScreenplayList';
@@ -81,6 +83,21 @@ const WorkspaceDetailPage: React.FC = () => {
   const [activityEvents, setActivityEvents] = useState<ActivityEvent[]>([]);
   const [activityLimit, setActivityLimit] = useState(ACTIVITY_PAGE_SIZE);
   const [activityHasMore, setActivityHasMore] = useState(false);
+
+  const [assignments, setAssignments] = useState<access.WorkspaceAssignment[]>([]);
+  const [showNewAssignmentForm, setShowNewAssignmentForm] = useState(false);
+  const [newAssignmentTitle, setNewAssignmentTitle] = useState('');
+  const [newAssignmentDescription, setNewAssignmentDescription] = useState('');
+  // Per-group opt-in for cross-posting. The teacher runs several classes at once
+  // (and old ones accumulate), so "post to all my groups" is never right — they
+  // pick exactly which other groups receive the assignment. Keyed by group id.
+  const [extraTargetIds, setExtraTargetIds] = useState<Record<string, boolean>>({});
+  // Lazily loaded list of OTHER active groups where the user may post assignments
+  // (feeds the cross-post picker). null = not fetched yet.
+  const [otherSupervisedGroups, setOtherSupervisedGroups] = useState<CollaborationWorkspace[] | null>(null);
+  const [creatingAssignment, setCreatingAssignment] = useState(false);
+  // ''= no assignment; applies to the next upload / start-writing action.
+  const [uploadAssignmentId, setUploadAssignmentId] = useState('');
 
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
@@ -177,6 +194,29 @@ const WorkspaceDetailPage: React.FC = () => {
         setScreenplays(items);
       },
       err => console.error('Error subscribing to group screenplays:', err)
+    );
+    return () => unsubscribe();
+  }, [workspaceId, uid, notFound]);
+
+  // This group's assignments (sorted newest-first client-side — small lists, no
+  // composite index needed).
+  useEffect(() => {
+    if (!workspaceId || !uid || notFound) {
+      setAssignments([]);
+      return;
+    }
+    const unsubscribe = onSnapshot(
+      query(collection(db, 'workspaceAssignments'), where('workspaceId', '==', workspaceId)),
+      snapshot => {
+        const items = snapshot.docs.map(d => access.normalizeAssignment(d.id, d.data()));
+        items.sort((a, b) =>
+          (access.toDate(b.createdAt)?.getTime() || 0) - (access.toDate(a.createdAt)?.getTime() || 0)
+        );
+        setAssignments(items);
+        // Drop a stale upload-target selection if its assignment was deleted.
+        setUploadAssignmentId(prev => (prev && !items.some(item => item.id === prev) ? '' : prev));
+      },
+      err => console.error('Error subscribing to group assignments:', err)
     );
     return () => unsubscribe();
   }, [workspaceId, uid, notFound]);
@@ -327,6 +367,7 @@ const WorkspaceDetailPage: React.FC = () => {
   const selfElected = workspace ? access.isSelfElectedSupervisor(workspace, uid) : false;
   const showSupervisorToggle = workspace ? access.canToggleSupervisor(workspace, uid, isTeacher) : false;
   const canExportGrading = workspace ? access.canExportGradingReport(workspace, uid) : false;
+  const canPostAssignment = workspace ? access.canCreateAssignment(workspace, uid) : false;
   const status = workspace?.status || 'active';
 
   // ---- Actions -------------------------------------------------------------
@@ -365,7 +406,8 @@ const WorkspaceDetailPage: React.FC = () => {
           file: sizedFiles[i],
           actor: { uid: currentUser.uid, displayName: currentUser.displayName },
           workspace,
-          projectId: workspace.projectId
+          projectId: workspace.projectId,
+          assignmentId: uploadAssignmentId || null
         });
         successCount++;
       } catch (err) {
@@ -404,7 +446,8 @@ const WorkspaceDetailPage: React.FC = () => {
         title,
         actor: { uid: currentUser.uid, displayName: currentUser.displayName },
         workspace,
-        projectId: workspace.projectId
+        projectId: workspace.projectId,
+        assignmentId: uploadAssignmentId || null
       });
       setShowStartWritingModal(false);
       setNewFountainTitle('');
@@ -455,6 +498,78 @@ const WorkspaceDetailPage: React.FC = () => {
     } catch (err) {
       console.error('Error updating review status:', err);
       toast.error(t('collaboration.reviewStatus.toasts.failed'));
+    }
+  };
+
+  // The "post to all my groups" option needs the user's other postable groups; fetched
+  // once on demand (when the form opens), not subscribed — the list only feeds the checkbox.
+  const loadOtherSupervisedGroups = async () => {
+    if (!uid || otherSupervisedGroups !== null) return;
+    try {
+      const memberships = await getDocs(query(
+        collection(db, 'workspaceMemberships'),
+        where('userId', '==', uid)
+      ));
+      const ids = Array.from(new Set(
+        memberships.docs
+          .map(d => d.data().workspaceId)
+          .filter((id): id is string => typeof id === 'string' && id.length > 0 && id !== workspaceId)
+      ));
+      const snapshots = await Promise.all(ids.map(id => getDoc(doc(db, 'workspaces', id))));
+      const groups = snapshots
+        .filter(snap => snap.exists())
+        .map(snap => access.normalizeWorkspace(snap.id, snap.data()))
+        .filter(group => (group.status || 'active') === 'active')
+        .filter(group => access.canCreateAssignment(group, uid))
+        .sort((a, b) => a.name.localeCompare(b.name));
+      setOtherSupervisedGroups(groups);
+    } catch (err) {
+      console.error('Failed to load other supervised groups:', err);
+      setOtherSupervisedGroups([]);
+    }
+  };
+
+  const handleCreateAssignment = async () => {
+    if (!currentUser || !workspace || !canPostAssignment) return;
+    const title = newAssignmentTitle.trim();
+    if (!title) {
+      toast.error(t('collaboration.assignments.titleRequired'));
+      return;
+    }
+    const targets = [
+      workspace,
+      ...(otherSupervisedGroups || []).filter(group => extraTargetIds[group.id])
+    ];
+    setCreatingAssignment(true);
+    try {
+      await createAssignments({
+        title,
+        description: newAssignmentDescription.trim(),
+        workspaces: targets,
+        actor: { uid: currentUser.uid, displayName: currentUser.displayName }
+      });
+      toast.success(t('collaboration.assignments.created', { count: targets.length }));
+      setShowNewAssignmentForm(false);
+      setNewAssignmentTitle('');
+      setNewAssignmentDescription('');
+      setExtraTargetIds({});
+    } catch (err) {
+      console.error('Failed to create assignment:', err);
+      toast.error(t('collaboration.assignments.createFailed'));
+    } finally {
+      setCreatingAssignment(false);
+    }
+  };
+
+  const handleDeleteAssignment = async (assignment: access.WorkspaceAssignment) => {
+    if (!currentUser || !access.canDeleteAssignment(assignment, workspace, uid)) return;
+    if (!window.confirm(t('collaboration.assignments.deleteConfirm'))) return;
+    try {
+      await deleteAssignment(assignment, { uid: currentUser.uid, displayName: currentUser.displayName });
+      toast.success(t('collaboration.assignments.deleted'));
+    } catch (err) {
+      console.error('Failed to delete assignment:', err);
+      toast.error(t('collaboration.assignments.deleteFailed'));
     }
   };
 
@@ -650,11 +765,170 @@ const WorkspaceDetailPage: React.FC = () => {
 
       <div className="group-grid">
         <div>
+          {/* Assignments are an optional overlay on the verbal workflow: groups with
+              none show nothing to students; only posters see the empty section. */}
+          {(assignments.length > 0 || canPostAssignment) && (
+          <section className="group-section">
+            <div className="section-header">
+              <h2>📋 {t('collaboration.assignments.title')}</h2>
+              {canPostAssignment && status === 'active' && !showNewAssignmentForm && (
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => { setShowNewAssignmentForm(true); loadOtherSupervisedGroups(); }}
+                >
+                  {t('collaboration.assignments.new')}
+                </button>
+              )}
+            </div>
+            {showNewAssignmentForm && (
+              <div className="assignment-form">
+                <div className="form-group">
+                  <label>{t('collaboration.assignments.titleLabel')}</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={newAssignmentTitle}
+                    autoFocus
+                    maxLength={200}
+                    placeholder={t('collaboration.assignments.titlePlaceholder')}
+                    onChange={e => setNewAssignmentTitle(e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>{t('collaboration.assignments.descriptionLabel')}</label>
+                  <textarea
+                    className="form-input"
+                    rows={2}
+                    maxLength={2000}
+                    value={newAssignmentDescription}
+                    onChange={e => setNewAssignmentDescription(e.target.value)}
+                  />
+                </div>
+                {(otherSupervisedGroups?.length || 0) > 0 && (
+                  <div className="assignment-targets">
+                    <div className="assignment-targets-head">
+                      <span>{t('collaboration.assignments.alsoPostTo')}</span>
+                      <button
+                        type="button"
+                        className="btn-text-link"
+                        onClick={() => {
+                          const groups = otherSupervisedGroups || [];
+                          const allChecked = groups.every(group => extraTargetIds[group.id]);
+                          setExtraTargetIds(allChecked
+                            ? {}
+                            : Object.fromEntries(groups.map(group => [group.id, true])));
+                        }}
+                      >
+                        {(otherSupervisedGroups || []).every(group => extraTargetIds[group.id])
+                          ? t('collaboration.assignments.selectNone')
+                          : t('collaboration.assignments.selectAll')}
+                      </button>
+                    </div>
+                    {(otherSupervisedGroups || []).map(group => (
+                      <label key={group.id} className="assignment-target-option">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(extraTargetIds[group.id])}
+                          onChange={e => setExtraTargetIds(prev => ({ ...prev, [group.id]: e.target.checked }))}
+                        />
+                        {group.name}
+                      </label>
+                    ))}
+                  </div>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => {
+                      setShowNewAssignmentForm(false);
+                      setNewAssignmentTitle('');
+                      setNewAssignmentDescription('');
+                      setExtraTargetIds({});
+                    }}
+                  >
+                    {t('collaboration.createWorkspaceModal.cancel')}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    disabled={creatingAssignment || !newAssignmentTitle.trim()}
+                    onClick={handleCreateAssignment}
+                  >
+                    {creatingAssignment ? t('collaboration.assignments.creating') : t('collaboration.assignments.create')}
+                  </button>
+                </div>
+              </div>
+            )}
+            {assignments.length === 0 ? (
+              <p className="group-empty">{t('collaboration.assignments.empty')}</p>
+            ) : (
+              <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+                {assignments.map(assignment => {
+                  const tagged = screenplays.filter(s => s.assignmentId === assignment.id);
+                  const turnedIn = tagged.filter(s =>
+                    ['submitted', 'approved'].includes(access.getReviewStatus(s))
+                  ).length;
+                  return (
+                    <li key={assignment.id} className="assignment-row">
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div className="assignment-title">{assignment.title}</div>
+                        {assignment.description && (
+                          <p className="assignment-desc">{assignment.description}</p>
+                        )}
+                        <div className="assignment-meta">
+                          <span className="assignment-chip">
+                            {t('collaboration.assignments.works', { count: tagged.length })}
+                          </span>
+                          <span className={`assignment-chip ${turnedIn > 0 ? 'turned-in' : ''}`}>
+                            {t('collaboration.assignments.turnedIn', { count: turnedIn })}
+                          </span>
+                          {assignment.createdByName && (
+                            <span style={{ color: '#94a3b8', fontSize: '0.82em' }}>
+                              {t('collaboration.assignments.postedBy', { name: assignment.createdByName })}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {access.canDeleteAssignment(assignment, workspace, uid) && (
+                        <button
+                          type="button"
+                          className="btn-danger"
+                          style={{ padding: '0.3rem 0.8rem', fontSize: '0.85em', flexShrink: 0 }}
+                          onClick={() => handleDeleteAssignment(assignment)}
+                        >
+                          {t('collaboration.delete')}
+                        </button>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+          )}
+
           <section className="group-section">
             <div className="section-header">
               <h2>{t('collaboration.groupPage.screenplaysTitle')}</h2>
               {canEditContent && (
-                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+                  {assignments.length > 0 && (
+                    <select
+                      className="form-input"
+                      style={{ maxWidth: 240 }}
+                      value={uploadAssignmentId}
+                      onChange={e => setUploadAssignmentId(e.target.value)}
+                      aria-label={t('collaboration.assignments.forAssignment')}
+                      title={t('collaboration.assignments.forAssignment')}
+                    >
+                      <option value="">{t('collaboration.assignments.noneOption')}</option>
+                      {assignments.map(assignment => (
+                        <option key={assignment.id} value={assignment.id}>📋 {assignment.title}</option>
+                      ))}
+                    </select>
+                  )}
                   <button
                     type="button"
                     className="btn-primary"
@@ -699,6 +973,9 @@ const WorkspaceDetailPage: React.FC = () => {
                 screenplays={screenplays}
                 unresolvedCounts={unresolvedCounts}
                 unresolvedFromTeacherCounts={unresolvedFromTeacherCounts}
+                assignmentLabel={s => s.assignmentId
+                  ? assignments.find(a => a.id === s.assignmentId)?.title || null
+                  : null}
                 canEdit={s => access.canEditScreenplay(s, uid, getWorkspaceLookup)}
                 canDelete={s => access.canDeleteScreenplay(s, uid, getWorkspaceLookup)}
                 canReview={s => access.canReviewScreenplay(s, uid, getWorkspaceLookup)}

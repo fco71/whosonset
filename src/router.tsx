@@ -12,6 +12,7 @@ const CollectionsHubPage = React.lazy(() => import('./pages/CollectionsHubPage')
 const SocialPage = React.lazy(() => import('./pages/SocialPage'));
 const CollaborationPage = React.lazy(() => import('./pages/CollaborationPage'));
 const WorkspaceDetailPage = React.lazy(() => import('./components/Collaboration/WorkspaceDetailPage'));
+const ClassDetailPage = React.lazy(() => import('./components/Collaboration/ClassDetailPage'));
 const SettingsPage = React.lazy(() => import('./pages/SettingsPage'));
 const JobsPage = React.lazy(() => import('./pages/JobsPage'));
 const PostJobPage = React.lazy(() => import('./pages/PostJobPage'));
@@ -245,6 +246,14 @@ export function createAppRouter() {
           element: (
             <ProtectedRoute>
               <CollaborationPage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'collaboration/class/:classId',
+          element: (
+            <ProtectedRoute>
+              <ClassDetailPage />
             </ProtectedRoute>
           )
         },

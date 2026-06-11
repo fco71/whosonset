@@ -36,6 +36,8 @@ export interface Screenplay {
   teamMembers?: string[];
   workspaceId?: string | null;
   projectId?: string | null;
+  /** Optional link to a workspaceAssignments doc, set when the work is created. */
+  assignmentId?: string | null;
   uploadedAt?: Date | { seconds: number; nanoseconds: number };
   lastModified?: Date | { seconds: number; nanoseconds: number };
   size?: number;
@@ -82,8 +84,44 @@ export const normalizeScreenplay = (screenplayId: string, data: any): Screenplay
   reviewStatusUpdatedBy: typeof data.reviewStatusUpdatedBy === 'string' ? data.reviewStatusUpdatedBy : undefined,
   reviewStatusNote: typeof data.reviewStatusNote === 'string' ? data.reviewStatusNote : '',
   uploadedAt: data.uploadedAt?.toDate ? data.uploadedAt.toDate() : data.uploadedAt,
-  lastModified: data.lastModified?.toDate ? data.lastModified.toDate() : data.lastModified
+  lastModified: data.lastModified?.toDate ? data.lastModified.toDate() : data.lastModified,
+  assignmentId: typeof data.assignmentId === 'string' ? data.assignmentId : null
 });
+
+// An assignment posted to a group (v1: title + optional description, no due date).
+// Backed by the workspaceAssignments collection; see firestore.rules.
+export interface WorkspaceAssignment {
+  id: string;
+  workspaceId: string;
+  title: string;
+  description: string;
+  createdBy: string;
+  createdByName: string;
+  createdAt?: any;
+}
+
+export const normalizeAssignment = (assignmentId: string, data: any): WorkspaceAssignment => ({
+  id: assignmentId,
+  workspaceId: data.workspaceId || '',
+  title: data.title || 'Untitled assignment',
+  description: typeof data.description === 'string' ? data.description : '',
+  createdBy: data.createdBy || '',
+  createdByName: data.createdByName || '',
+  createdAt: data.createdAt
+});
+
+export const canCreateAssignment = (workspace: CollaborationWorkspace, uid?: string | null): boolean =>
+  isWorkspaceCreator(workspace, uid) || getEffectiveRole(workspace, uid) === 'supervisor';
+
+export const canDeleteAssignment = (
+  assignment: WorkspaceAssignment,
+  workspace: CollaborationWorkspace | null,
+  uid?: string | null
+): boolean => {
+  if (!uid) return false;
+  if (assignment.createdBy === uid) return true;
+  return workspace ? isWorkspaceCreator(workspace, uid) : false;
+};
 
 export const getWorkspaceSupervisorIds = (members: WorkspaceMember[]): string[] =>
   members.filter(member => member.role === 'supervisor').map(member => member.userId);

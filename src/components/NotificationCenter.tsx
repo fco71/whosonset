@@ -245,7 +245,16 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
         isRead: true,
         read: true,
       });
-      toast.success(response === 'accept' ? 'Workspace invitation accepted.' : 'Workspace invitation declined.');
+      toast.success(response === 'accept' ? 'Invitation accepted — opening the group.' : 'Group invitation declined.');
+      if (response === 'accept') {
+        // Membership is in place once the callable returns, so the group page is
+        // readable now. Land the new member directly in their group.
+        const workspaceId = getMetadataString(notification, 'workspaceId');
+        if (workspaceId) {
+          navigate(`/collaboration/${workspaceId}`);
+          onClose();
+        }
+      }
     } catch (error) {
       console.error('[NotificationCenter] Failed to respond to workspace invitation:', error);
       // Surface the real cause. Firebase callable errors carry a code/message
@@ -253,7 +262,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
       // HttpsError messages like "This invitation has already been handled" are actionable).
       const detail = (error as { message?: string; code?: string } | null)?.message
         || (error as { code?: string } | null)?.code;
-      toast.error(detail ? `Could not respond to invitation: ${detail}` : 'Could not update the workspace invitation.');
+      toast.error(detail ? `Could not respond to invitation: ${detail}` : 'Could not update the group invitation.');
     } finally {
       setRespondingInvitationId(null);
     }
