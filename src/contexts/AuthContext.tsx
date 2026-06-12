@@ -62,9 +62,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [userProfile, setUserProfile] = useState<any | null>(null);
   const [requiresEmailVerification, setRequiresEmailVerification] = useState(false);
 
-  // Add debugging
-  console.log('[AuthProvider] Initializing...');
-
   const login = async (email: string, password: string) => {
     try {
       console.log('[AuthContext] Attempting login for:', email);
@@ -1074,11 +1071,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     try {
-      console.log('[AuthProvider] Setting up auth state listener...');
-      
       const unsubscribe = auth.onAuthStateChanged(async (user) => {
         try {
-          console.log('[AuthProvider] Auth state changed:', user ? 'User logged in' : 'No user');
           setLoading(true);
           setCurrentUser(user);
           

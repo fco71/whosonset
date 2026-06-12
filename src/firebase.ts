@@ -40,10 +40,13 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
-// Initialize Firestore with settings to prevent internal assertion errors
+// Let Firestore detect when long polling is required. Forcing it globally makes
+// Safari keep more Listen/channel requests open and commonly produces a noisy
+// "due to access control checks" message when a request is interrupted during
+// navigation. Auto-detection has been Firebase's default since SDK 9.22.
 const db = initializeFirestore(app, {
   cacheSizeBytes: 50 * 1024 * 1024, // 50MB cache
-  experimentalForceLongPolling: true, // Use long polling instead of WebSocket
+  experimentalAutoDetectLongPolling: true,
   // Drop undefined fields instead of throwing "Unsupported field value: undefined".
   // Matches the Admin SDK config (functions) and prevents a whole class of write
   // failures from optional fields (e.g. a member with no email).

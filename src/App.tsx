@@ -105,8 +105,6 @@ function AppContent() {
   const { i18n } = useTranslation();
   const location = useLocation();
   
-  console.log('[App] Rendering with currentUser:', currentUser?.email);
-  
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const requestedLanguage = params.get('lang');
