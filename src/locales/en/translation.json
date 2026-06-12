@@ -1016,7 +1016,9 @@
         "supervisor_note_addressed": "addressed a teacher note on {{target}}",
         "supervisor_note_reopened": "reopened a teacher note on {{target}}",
         "assignment_created": "posted the assignment \"{{target}}\"",
-        "assignment_deleted": "removed the assignment \"{{target}}\""
+        "assignment_deleted": "removed the assignment \"{{target}}\"",
+        "scene_marked": "marked a scene in {{target}}",
+        "scene_removed": "removed a scene mark in {{target}}"
       }
     },
     "personalNoWorkspace": "Personal / no group",
@@ -1729,6 +1731,41 @@
         "yes": "Yes",
         "no": "No"
       }
+    },
+    "scenes": {
+      "title": "Scenes",
+      "addScene": "Mark scene",
+      "popupTitle": "Mark a scene",
+      "numberShort": "#",
+      "intExtNone": "INT/EXT…",
+      "location": "Location (e.g. BAR)",
+      "timeOfDay": "Time of day (e.g. NIGHT)",
+      "noteOptional": "Note (optional)",
+      "added": "Scene marked.",
+      "addFailed": "Failed to mark the scene.",
+      "updated": "Scene updated.",
+      "updateFailed": "Failed to update the scene.",
+      "deleteConfirm": "Remove this scene mark? Annotations and tags inside it are not affected.",
+      "deleted": "Scene mark removed.",
+      "deleteFailed": "Failed to remove the scene mark.",
+      "empty": "No scenes marked yet — select a slug line (e.g. INT. BAR - NIGHT) in the script and choose \"Mark scene\".",
+      "fountainEmpty": "No scene headings found in this script yet.",
+      "jumpTo": "Jump to this scene",
+      "edit": "Edit scene",
+      "delete": "Remove scene mark",
+      "expand": "Show notes in this scene",
+      "collapse": "Hide notes",
+      "noNotes": "No notes in this scene yet.",
+      "beforeFirst": "Before the first scene",
+      "openNote": "Note by {{user}} — click to jump",
+      "pageCol": "Pg",
+      "introCol": "I/E",
+      "locationCol": "Location",
+      "filterPlaceholder": "Filter by location, #, time…",
+      "headingLabel": "Heading",
+      "synopsis": "Synopsis",
+      "notesInScene_one": "Notes in this scene ({{count}})",
+      "notesInScene_other": "Notes in this scene ({{count}})"
     }
   },
   "common": {

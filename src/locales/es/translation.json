@@ -981,7 +981,9 @@
         "supervisor_note_addressed": "atendió una nota del profesor en {{target}}",
         "supervisor_note_reopened": "reabrió una nota del profesor en {{target}}",
         "assignment_created": "publicó la tarea \"{{target}}\"",
-        "assignment_deleted": "eliminó la tarea \"{{target}}\""
+        "assignment_deleted": "eliminó la tarea \"{{target}}\"",
+        "scene_marked": "marcó una escena en {{target}}",
+        "scene_removed": "quitó una marca de escena en {{target}}"
       }
     },
     "personalNoWorkspace": "Personal / sin grupo",
@@ -1694,6 +1696,41 @@
         "yes": "Sí",
         "no": "No"
       }
+    },
+    "scenes": {
+      "title": "Escenas",
+      "addScene": "Marcar escena",
+      "popupTitle": "Marcar una escena",
+      "numberShort": "#",
+      "intExtNone": "INT/EXT…",
+      "location": "Locación (p. ej. BAR)",
+      "timeOfDay": "Momento del día (p. ej. NOCHE)",
+      "noteOptional": "Nota (opcional)",
+      "added": "Escena marcada.",
+      "addFailed": "No se pudo marcar la escena.",
+      "updated": "Escena actualizada.",
+      "updateFailed": "No se pudo actualizar la escena.",
+      "deleteConfirm": "¿Quitar esta marca de escena? Las anotaciones y etiquetas dentro no se ven afectadas.",
+      "deleted": "Marca de escena eliminada.",
+      "deleteFailed": "No se pudo eliminar la marca de escena.",
+      "empty": "Aún no hay escenas marcadas — selecciona un encabezado (p. ej. INT. BAR - NOCHE) en el guion y elige \"Marcar escena\".",
+      "fountainEmpty": "Aún no hay encabezados de escena en este guion.",
+      "jumpTo": "Ir a esta escena",
+      "edit": "Editar escena",
+      "delete": "Quitar marca de escena",
+      "expand": "Ver notas de esta escena",
+      "collapse": "Ocultar notas",
+      "noNotes": "Aún no hay notas en esta escena.",
+      "beforeFirst": "Antes de la primera escena",
+      "openNote": "Nota de {{user}} — clic para ir",
+      "pageCol": "Pág",
+      "introCol": "I/E",
+      "locationCol": "Locación",
+      "filterPlaceholder": "Filtrar por locación, #, momento…",
+      "headingLabel": "Encabezado",
+      "synopsis": "Sinopsis",
+      "notesInScene_one": "Notas en esta escena ({{count}})",
+      "notesInScene_other": "Notas en esta escena ({{count}})"
     }
   },
   "common": {

@@ -797,6 +797,22 @@ service cloud.firestore {
       allow delete: if canModerateAnnotationData(resource.data);
     }
 
+    // Scene marks (slug anchors with number/INT-EXT/location/time-of-day) used for
+    // per-scene navigation and breakdown. Same access shape as annotations/tags;
+    // edits are author-only and must keep identity (screenplayId/userId immutable),
+    // deletes follow the annotation moderation model.
+    match /screenplayScenes/{sceneId} {
+      allow read: if canAccessScreenplay(resource.data.screenplayId);
+      allow create: if signedIn() &&
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.screenplayId is string &&
+        canAccessScreenplay(request.resource.data.screenplayId);
+      allow update: if signedIn() &&
+        resource.data.userId == request.auth.uid &&
+        keepsAnnotationIdentity(request.resource.data, resource.data);
+      allow delete: if canModerateAnnotationData(resource.data);
+    }
+
     match /screenplaySessions/{sessionId} {
       allow read, update, delete: if canAccessScreenplay(resource.data.screenplayId);
       allow create: if signedIn() &&

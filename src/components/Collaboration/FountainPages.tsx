@@ -62,7 +62,15 @@ const FountainPages: React.FC<FountainPagesProps> = ({ source, innerRef, compact
           {/* Screenplay page number: top-right, "N." — omitted on page 1 by convention. */}
           {pageNumber > 1 && <div style={pageNumberStyle}>{pageNumber}.</div>}
           {elements.map((element, index) => (
-            <div key={index} style={elementStyle(element.type)}>{element.text}</div>
+            <div
+              key={index}
+              style={elementStyle(element.type)}
+              // Scene headings get a stable anchor so the scenes sidebar can
+              // scroll the reader straight to them.
+              {...(element.type === 'scene_heading' ? { 'data-scene-line': element.lineIndex } : {})}
+            >
+              {element.text}
+            </div>
           ))}
         </div>
       ))}

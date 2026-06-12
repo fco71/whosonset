@@ -11,6 +11,8 @@ import { useTranslation } from 'react-i18next';
 import EmailNotificationService from '../../services/emailNotificationService';
 import { logWorkspaceActivity, WorkspaceActivityVerb } from '../../services/workspaceActivityService';
 import FountainViewer from './FountainViewer';
+import ScenesPanel, { SceneNoteItem } from './ScenesPanel';
+import { addScene, parseSlugText, subscribeScenes, SceneIntExt, SceneMark } from '../../services/sceneService';
 import type { ScreenplayReviewStatus, WorkspaceMember } from '../../types/Collaboration';
 import {
   applyMentionSuggestion,
@@ -199,9 +201,17 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   const [selectedText, setSelectedText] = useState<string>('');
   const [selectionPage, setSelectionPage] = useState<number | null>(null);
   const [showSelectionPopup, setShowSelectionPopup] = useState(false);
-  const [popupType, setPopupType] = useState<'annotation' | 'tag' | null>(null);
+  const [popupType, setPopupType] = useState<'annotation' | 'tag' | 'scene' | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
+  // Scene marks (screenplayScenes) + the scene-creation form in the selection popup.
+  const [scenes, setScenes] = useState<SceneMark[]>([]);
+  const [liveFountainSource, setLiveFountainSource] = useState<string | null>(null);
+  const [sceneNumberInput, setSceneNumberInput] = useState('');
+  const [sceneIntExt, setSceneIntExt] = useState<SceneIntExt>('');
+  const [sceneLocation, setSceneLocation] = useState('');
+  const [sceneTimeOfDay, setSceneTimeOfDay] = useState('');
+  const [sceneNoteInput, setSceneNoteInput] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isNavigating, setIsNavigating] = useState(false);
@@ -227,7 +237,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   const pdfContainerRef = useRef<HTMLDivElement>(null);
   const drawingCanvasRef = useRef<HTMLCanvasElement>(null);
   const popupRef = useRef<HTMLDivElement>(null);
-  const popupTypeRef = useRef<'annotation' | 'tag' | null>(null);
+  const popupTypeRef = useRef<'annotation' | 'tag' | 'scene' | null>(null);
   const pdfScrollRef = useRef<HTMLDivElement>(null);
 
   // Add state for virtualization
@@ -522,7 +532,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   // first placed it). Use the last selection rect as the anchor.
   useEffect(() => {
     if (popupType && selectionRect) {
-      const popupHeight = popupType === 'annotation' ? 240 : 200;
+      const popupHeight = popupType === 'annotation' ? 240 : popupType === 'scene' ? 340 : 200;
       const next = calculatePopupPosition(selectionRect as DOMRect, 320, popupHeight);
       setPopupPosition(next);
     }
@@ -629,6 +639,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       setScreenplayUploadedBy(uploadedBy);
       setReviewStatus(isScreenplayReviewStatus(data?.reviewStatus) ? data.reviewStatus : 'draft');
       setReviewStatusNote(typeof data?.reviewStatusNote === 'string' ? data.reviewStatusNote : '');
+      setLiveFountainSource(typeof data?.fountainSource === 'string' ? data.fountainSource : null);
 
       let managerAllowed = Boolean(currentUser?.uid && uploadedBy === currentUser.uid);
       let creatorAllowed = managerAllowed;
@@ -1182,6 +1193,47 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     canModerateScreenplayElement(element, screenplayElementActorAccess),
   [screenplayElementActorAccess]);
 
+  // Scene marks subscription — same lifecycle as the annotation/tag sync.
+  useEffect(() => {
+    const unsubscribe = subscribeScenes(screenplay.id, setScenes);
+    return () => unsubscribe();
+  }, [screenplay.id]);
+
+  const addSceneMark = async (position: { x: number; y: number; width: number; height: number }, pageNumber: number) => {
+    try {
+      await addScene({
+        screenplayId: screenplay.id,
+        projectId,
+        actor: { uid: currentUser?.uid || 'unknown', displayName: currentUser?.displayName },
+        fields: {
+          sceneNumber: sceneNumberInput.trim(),
+          intExt: sceneIntExt,
+          location: sceneLocation.trim(),
+          timeOfDay: sceneTimeOfDay.trim(),
+          synopsis: '',
+          note: sceneNoteInput.trim()
+        },
+        pageNumber,
+        position,
+        selection: selectedText
+      });
+      toast.success(t('screenplay.scenes.added'));
+      if (screenplayWorkspaceId && currentUser) {
+        logWorkspaceActivity({
+          workspaceId: screenplayWorkspaceId,
+          actorUid: currentUser.uid,
+          actorName: currentUser.displayName,
+          verb: 'scene_marked',
+          targetId: screenplay.id,
+          targetName: screenplay.name
+        });
+      }
+    } catch (error) {
+      console.error('Error adding scene:', error);
+      toast.error(t('screenplay.scenes.addFailed'));
+    }
+  };
+
   const addAnnotation = async (position: { x: number; y: number; width: number; height: number }, pageNumber: number, annotation: string) => {
     if (!annotation.trim()) return;
 
@@ -1701,12 +1753,12 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   }, [isDragging, dragOffset]);
 
   // Simplified and faster annotation/tag creation
-  const createAnnotation = useCallback(async (type: 'annotation' | 'tag') => {
+  const createAnnotation = useCallback(async (type: 'annotation' | 'tag' | 'scene') => {
     if (!selectionRect || !selectionPage || !currentUser) return;
-    
-    const content = type === 'annotation' ? annotationInput.trim() : newTag.trim();
+
+    const content = type === 'annotation' ? annotationInput.trim() : type === 'tag' ? newTag.trim() : sceneLocation.trim();
     if (!content) return;
-    
+
     try {
       const position = {
         x: (selectionRect as any).relativeX ?? selectionRect.left / window.innerWidth,
@@ -1714,13 +1766,15 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         width: (selectionRect as any).relativeWidth ?? selectionRect.width / window.innerWidth,
         height: (selectionRect as any).relativeHeight ?? selectionRect.height / window.innerHeight,
       };
-      
+
       if (type === 'annotation') {
         await addAnnotation(position, selectionPage, content);
-      } else {
+      } else if (type === 'tag') {
         await addTag(position, selectionPage, content);
+      } else {
+        await addSceneMark(position, selectionPage);
       }
-      
+
       // Clear the selection popup immediately
       setShowSelectionPopup(false);
       setSelectionRect(null);
@@ -1728,17 +1782,57 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       setSelectionPage(null);
       setAnnotationInput('');
       setNewTag('');
+      setSceneNumberInput('');
+      setSceneLocation('');
+      setSceneTimeOfDay('');
+      setSceneNoteInput('');
+      setSceneIntExt('');
       setPopupType(null);
       setMentionState(null);
 
       // Clear the text selection
       window.getSelection()?.removeAllRanges();
-      
+
     } catch (error) {
       console.error(`Error creating ${type}:`, error);
       toast.error(`Failed to create ${type}`);
     }
-  }, [selectionRect, selectionPage, currentUser, annotationInput, newTag, addAnnotation, addTag]);
+  }, [selectionRect, selectionPage, currentUser, annotationInput, newTag, sceneLocation, sceneNumberInput, sceneTimeOfDay, sceneNoteInput, sceneIntExt, addAnnotation, addTag, addSceneMark]);
+
+  // Scene navigation: page containers exist for every page (virtualization renders
+  // placeholders), so scrollIntoView works even before the page has painted.
+  const jumpToPdfPage = useCallback((pageNumber: number) => {
+    const node = document.querySelector(`.page-container[data-page-number="${pageNumber}"]`) as HTMLElement | null;
+    node?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
+
+  const jumpToFountainLine = useCallback((lineIndex: number) => {
+    const node = document.querySelector(`[data-scene-line="${lineIndex}"]`) as HTMLElement | null;
+    node?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, []);
+
+  // Flat annotation+tag list the scenes panel nests under each scene by position.
+  const sceneNotes: SceneNoteItem[] = [
+    ...annotations.map(a => ({
+      id: a.id,
+      kind: 'annotation' as const,
+      label: a.annotation,
+      userName: a.userName,
+      pageNumber: a.pageNumber,
+      positionY: a.position?.y || 0,
+      resolved: a.resolved
+    })),
+    ...tags.map(tagItem => ({
+      id: tagItem.id,
+      kind: 'tag' as const,
+      label: tagItem.content,
+      userName: tagItem.userName,
+      pageNumber: tagItem.pageNumber,
+      positionY: tagItem.position?.y || 0,
+      resolved: tagItem.resolved,
+      color: tagItem.color
+    }))
+  ];
 
   // Helper to calculate visible pages based on scroll. Uses the live-measured page height
   // (set from the first rendered Page) so virtualization stays in sync with whatever the
@@ -3039,6 +3133,19 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                     <button className="add-collaborator-btn" onClick={() => setShowAddCollaboratorModal(true)}>+ {t('screenplay.addCollaborator')}</button>
                   </div>
 
+                  {/* Scenes */}
+                  <ScenesPanel
+                    isFountain={isFountain}
+                    fountainSource={liveFountainSource ?? screenplay.fountainSource ?? ''}
+                    scenes={scenes}
+                    notes={sceneNotes}
+                    currentUserUid={currentUser?.uid}
+                    screenplayUploadedBy={screenplayUploadedBy}
+                    onJumpToPage={jumpToPdfPage}
+                    onJumpToFountainLine={jumpToFountainLine}
+                    onOpenNote={note => jumpToPdfPage(note.pageNumber)}
+                  />
+
                   {/* Annotations List */}
                   <div className="annotations-section">
                     {(() => {
@@ -3515,7 +3622,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
               title={t('screenplay.popupHeader.dragToMove')}
             >
               <span aria-hidden="true" style={{ color: '#9ca3af', fontSize: 14, lineHeight: 1 }}>⠿</span>
-              {popupType === 'annotation' ? t('screenplay.popup.addAnnotation') : popupType === 'tag' ? t('screenplay.popup.addTag') : t('screenplay.popup.addToSelection')}
+              {popupType === 'annotation' ? t('screenplay.popup.addAnnotation') : popupType === 'tag' ? t('screenplay.popup.addTag') : popupType === 'scene' ? t('screenplay.scenes.popupTitle') : t('screenplay.popup.addToSelection')}
             </div>
             {popupType === 'annotation' && (
               <>
@@ -3620,6 +3727,67 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                 {renderMentionTypeahead('tag')}
               </>
             )}
+            {popupType === 'scene' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 8 }}>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input
+                    type="text"
+                    value={sceneNumberInput}
+                    maxLength={10}
+                    placeholder={t('screenplay.scenes.numberShort')}
+                    onChange={e => setSceneNumberInput(e.target.value)}
+                    style={{ width: 64, border: '1px solid #d1d5db', borderRadius: 6, padding: 8, fontSize: 13 }}
+                  />
+                  <select
+                    value={sceneIntExt}
+                    onChange={e => setSceneIntExt(e.target.value as SceneIntExt)}
+                    style={{ flex: 1, border: '1px solid #d1d5db', borderRadius: 6, padding: 8, fontSize: 13 }}
+                  >
+                    <option value="">{t('screenplay.scenes.intExtNone')}</option>
+                    <option value="INT">INT</option>
+                    <option value="EXT">EXT</option>
+                    <option value="INT/EXT">INT/EXT</option>
+                  </select>
+                </div>
+                <input
+                  type="text"
+                  value={sceneLocation}
+                  maxLength={120}
+                  autoFocus
+                  placeholder={t('screenplay.scenes.location')}
+                  onChange={e => setSceneLocation(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') createAnnotation('scene');
+                    else if (e.key === 'Escape') setPopupType(null);
+                  }}
+                  style={{ border: '1px solid #d1d5db', borderRadius: 6, padding: 8, fontSize: 13 }}
+                />
+                <input
+                  type="text"
+                  value={sceneTimeOfDay}
+                  maxLength={40}
+                  placeholder={t('screenplay.scenes.timeOfDay')}
+                  onChange={e => setSceneTimeOfDay(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') createAnnotation('scene');
+                    else if (e.key === 'Escape') setPopupType(null);
+                  }}
+                  style={{ border: '1px solid #d1d5db', borderRadius: 6, padding: 8, fontSize: 13 }}
+                />
+                <input
+                  type="text"
+                  value={sceneNoteInput}
+                  maxLength={300}
+                  placeholder={t('screenplay.scenes.noteOptional')}
+                  onChange={e => setSceneNoteInput(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') createAnnotation('scene');
+                    else if (e.key === 'Escape') setPopupType(null);
+                  }}
+                  style={{ border: '1px solid #d1d5db', borderRadius: 6, padding: 8, fontSize: 13 }}
+                />
+              </div>
+            )}
             {!popupType && (
               <div style={{ display: 'flex', gap: 8, flexDirection: 'column' }}>
                 <button
@@ -3642,6 +3810,22 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                 </button>
                 <button
                   onClick={() => {
+                    // Prefill from the selected slug ("INT. BAR - NIGHT") and
+                    // suggest the next scene number.
+                    const parsed = parseSlugText(selectedText);
+                    setSceneIntExt(parsed.intExt);
+                    setSceneLocation(parsed.location);
+                    setSceneTimeOfDay(parsed.timeOfDay);
+                    setSceneNumberInput(String(scenes.length + 1));
+                    setSceneNoteInput('');
+                    setPopupType('scene');
+                  }}
+                  style={{ background: '#8b5cf6', color: 'white', border: 'none', borderRadius: 6, padding: '8px 12px', fontSize: 13, cursor: 'pointer', transition: 'background 0.2s ease' }}
+                >
+                  🎬 {t('screenplay.scenes.addScene')}
+                </button>
+                <button
+                  onClick={() => {
                     setShowSelectionPopup(false);
                     setSelectionRect(null);
                     setSelectedText('');
@@ -3654,25 +3838,40 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                 </button>
               </div>
             )}
-            {(popupType === 'annotation' || popupType === 'tag') && (
+            {(popupType === 'annotation' || popupType === 'tag' || popupType === 'scene') && (
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                 <button
                   onClick={() => {
                     setPopupType(null);
                     setAnnotationInput('');
                     setNewTag('');
+                    setSceneNumberInput('');
+                    setSceneLocation('');
+                    setSceneTimeOfDay('');
+                    setSceneNoteInput('');
+                    setSceneIntExt('');
                   }}
                   style={{ background: '#f3f4f6', color: '#6b7280', border: '1px solid #d1d5db', borderRadius: 6, padding: '6px 12px', fontSize: 12, cursor: 'pointer' }}
                 >
                   {t('screenplay.popup.cancel')}
                 </button>
-                <button
-                  onClick={() => createAnnotation(popupType as 'annotation' | 'tag')}
-                  disabled={popupType === 'annotation' ? !annotationInput.trim() : !newTag.trim()}
-                  style={{ background: (popupType === 'annotation' ? annotationInput.trim() : newTag.trim()) ? (popupType === 'annotation' ? '#3b82f6' : '#f59e0b') : '#9ca3af', color: 'white', border: 'none', borderRadius: 6, padding: '6px 12px', fontSize: 12, cursor: (popupType === 'annotation' ? annotationInput.trim() : newTag.trim()) ? 'pointer' : 'not-allowed' }}
-                >
-                  {t('screenplay.popup.save')} {popupType === 'annotation' ? '(Ctrl+Enter)' : '(Enter)'}
-                </button>
+                {(() => {
+                  const saveReady = popupType === 'annotation'
+                    ? Boolean(annotationInput.trim())
+                    : popupType === 'tag'
+                      ? Boolean(newTag.trim())
+                      : Boolean(sceneLocation.trim());
+                  const saveColor = popupType === 'annotation' ? '#3b82f6' : popupType === 'tag' ? '#f59e0b' : '#8b5cf6';
+                  return (
+                    <button
+                      onClick={() => createAnnotation(popupType as 'annotation' | 'tag' | 'scene')}
+                      disabled={!saveReady}
+                      style={{ background: saveReady ? saveColor : '#9ca3af', color: 'white', border: 'none', borderRadius: 6, padding: '6px 12px', fontSize: 12, cursor: saveReady ? 'pointer' : 'not-allowed' }}
+                    >
+                      {t('screenplay.popup.save')} {popupType === 'annotation' ? '(Ctrl+Enter)' : '(Enter)'}
+                    </button>
+                  );
+                })()}
               </div>
             )}
           </div>

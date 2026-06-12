@@ -16,6 +16,8 @@ export type WorkspaceActivityVerb =
   | 'member_self_promoted'
   | 'assignment_created'
   | 'assignment_deleted'
+  | 'scene_marked'
+  | 'scene_removed'
   | 'annotation_added'
   | 'tag_added'
   | 'supervisor_note_addressed'

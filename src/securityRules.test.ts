@@ -44,6 +44,18 @@ describe('security rules guardrails', () => {
     expect(activityRules).toMatch(/allow\s+delete:\s+if\s+signedIn\(\)\s+&&\s+isWorkspaceOwner/);
   });
 
+  it('keeps scene marks screenplay-scoped with author-only edits', () => {
+    const rules = readRepoFile('firestore.rules');
+    const sceneRules = rules.match(/match\s+\/screenplayScenes\/\{sceneId\}\s+\{[\s\S]*?\n\s+\}/)?.[0] || '';
+
+    expect(sceneRules).toMatch(/allow\s+read:\s+if\s+canAccessScreenplay\(resource\.data\.screenplayId\)/);
+    expect(sceneRules).toMatch(/request\.resource\.data\.userId\s+==\s+request\.auth\.uid/);
+    expect(sceneRules).toMatch(/resource\.data\.userId\s+==\s+request\.auth\.uid/);
+    expect(sceneRules).toMatch(/keepsAnnotationIdentity/);
+    expect(sceneRules).toMatch(/allow\s+delete:\s+if\s+canModerateAnnotationData/);
+    expect(sceneRules).not.toMatch(/allow\s+(read|create|update|delete)[^;]*if\s+signedIn\(\);/);
+  });
+
   it('keeps teacher classes private to their owner and teacher-created', () => {
     const rules = readRepoFile('firestore.rules');
     const classRules = rules.match(/match\s+\/teacherClasses\/\{classId\}\s+\{[\s\S]*?\n\s+\}/)?.[0] || '';
