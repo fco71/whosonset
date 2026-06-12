@@ -2501,7 +2501,12 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
               style={{ position: 'relative' }}
             >
               {isFountain ? (
-                <FountainViewer screenplayId={screenplay.id} screenplayName={screenplay.name} initialSource={screenplay.fountainSource} />
+                <FountainViewer
+                  screenplayId={screenplay.id}
+                  screenplayName={screenplay.name}
+                  initialSource={screenplay.fountainSource}
+                  onSourceChange={setLiveFountainSource}
+                />
               ) : error ? (
                 <div className="error-message">{error}</div>
               ) : screenplay.url && !isPdfDocument ? (

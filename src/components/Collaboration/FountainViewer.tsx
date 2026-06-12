@@ -11,18 +11,28 @@ interface FountainViewerProps {
   screenplayId: string;
   screenplayName?: string;
   initialSource?: string;
+  onSourceChange?: (source: string) => void;
 }
 
 // Read-only formatted render of a Fountain screenplay, shown inside ScreenplayViewer for
 // format === 'fountain' docs. Subscribes so a reader sees the author's latest saved text
 // live (last-write-wins; no multi-cursor). Includes a "Download PDF" action.
-const FountainViewer: React.FC<FountainViewerProps> = ({ screenplayId, screenplayName, initialSource }) => {
+const FountainViewer: React.FC<FountainViewerProps> = ({
+  screenplayId,
+  screenplayName,
+  initialSource,
+  onSourceChange
+}) => {
   const { t } = useTranslation();
   const [source, setSource] = useState(initialSource || '');
   const [exporting, setExporting] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const startingSource = initialSource || '';
+    setSource(startingSource);
+    onSourceChange?.(startingSource);
+
     const unsubscribe = onSnapshot(
       doc(db, 'screenplays', screenplayId),
       snap => {
@@ -30,13 +40,14 @@ const FountainViewer: React.FC<FountainViewerProps> = ({ screenplayId, screenpla
           const data = snap.data();
           if (typeof data.fountainSource === 'string') {
             setSource(data.fountainSource);
+            onSourceChange?.(data.fountainSource);
           }
         }
       },
       err => console.error('FountainViewer subscription error:', err)
     );
     return () => unsubscribe();
-  }, [screenplayId]);
+  }, [screenplayId, initialSource, onSourceChange]);
 
   const pageCount = useMemo(() => computePageCount(source), [source]);
 
