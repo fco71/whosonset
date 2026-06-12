@@ -51,7 +51,7 @@ async function notifyInviter(
     type: accepted ? "workspace_invitation_accepted" : "workspace_invitation_declined",
     // English fallback strings; titleKey/bodyKey/i18nParams let the recipient's client
     // render in their own locale (the function has no notion of the recipient's language).
-    title: accepted ? "Workspace invitation accepted" : "Workspace invitation declined",
+    title: accepted ? "Group invitation accepted" : "Group invitation declined",
     body: `${safeInvitee} ${accepted ? "accepted" : "declined"} the invitation to ${workspaceName}.`,
     message: `${safeInvitee} ${accepted ? "accepted" : "declined"} the invitation to ${workspaceName}.`,
     titleKey: accepted
@@ -77,7 +77,7 @@ export const respondToWorkspaceInvitation = onCall({ region: "us-central1" }, as
   const auth = request.auth;
   const uid = auth?.uid;
   if (!uid) {
-    throw new HttpsError("unauthenticated", "Must be signed in to respond to a workspace invitation.");
+    throw new HttpsError("unauthenticated", "Must be signed in to respond to a group invitation.");
   }
 
   const invitationId = typeof request.data?.invitationId === "string" ? request.data.invitationId.trim() : "";
@@ -101,7 +101,7 @@ export const respondToWorkspaceInvitation = onCall({ region: "us-central1" }, as
   await db.runTransaction(async (transaction) => {
     const invitationSnap = await transaction.get(invitationRef);
     if (!invitationSnap.exists) {
-      throw new HttpsError("not-found", "Workspace invitation not found.");
+      throw new HttpsError("not-found", "Group invitation not found.");
     }
 
     const invitation = invitationSnap.data() || {};
@@ -115,7 +115,7 @@ export const respondToWorkspaceInvitation = onCall({ region: "us-central1" }, as
     workspaceId = typeof invitation.workspaceId === "string" ? invitation.workspaceId : "";
     inviterId = typeof invitation.inviterId === "string" ? invitation.inviterId : "";
     inviteeName = typeof invitation.inviteeName === "string" ? invitation.inviteeName : "";
-    workspaceName = typeof invitation.workspaceName === "string" ? invitation.workspaceName : "workspace";
+    workspaceName = typeof invitation.workspaceName === "string" ? invitation.workspaceName : "group";
 
     if (response === "decline") {
       transaction.update(invitationRef, {
@@ -129,7 +129,7 @@ export const respondToWorkspaceInvitation = onCall({ region: "us-central1" }, as
     const workspaceRef = db.collection("workspaces").doc(workspaceId);
     const workspaceSnap = await transaction.get(workspaceRef);
     if (!workspaceSnap.exists) {
-      throw new HttpsError("not-found", "Workspace no longer exists.");
+      throw new HttpsError("not-found", "Group no longer exists.");
     }
 
     const workspace = workspaceSnap.data() || {};
