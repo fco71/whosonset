@@ -21,6 +21,7 @@ import {
   getReviewStatus,
   Screenplay
 } from '../components/Collaboration/workspaceAccess';
+import { normalizeScene, sceneForPosition, SceneMark } from './sceneService';
 
 // Firestore/Storage mutations shared by CollaborationHub and WorkspaceDetailPage.
 // Callers own validation, permission checks, and user-facing toasts; functions here
@@ -292,18 +293,30 @@ export async function exportWorkspaceGradingCsv(params: {
   //    (chunked by 10 — Firestore `in` limit).
   const annotationsRef = collection(db, 'screenplayAnnotations');
   const tagsRef = collection(db, 'screenplayTags');
-  type RawNote = { screenplayId?: string; userName?: string; userId?: string; pageNumber?: number; content?: string; annotation?: string; supervisorAtAuthorTime?: boolean; resolved?: boolean; timestamp?: unknown; tagType?: string };
+  const scenesRef = collection(db, 'screenplayScenes');
+  type RawNote = { screenplayId?: string; userName?: string; userId?: string; pageNumber?: number; position?: { y?: number }; content?: string; annotation?: string; supervisorAtAuthorTime?: boolean; resolved?: boolean; timestamp?: unknown; tagType?: string };
   const allAnnotations: RawNote[] = [];
   const allTags: RawNote[] = [];
+  const scenesByScreenplay = new Map<string, SceneMark[]>();
   for (let i = 0; i < screenplayIds.length; i += 10) {
     const chunk = screenplayIds.slice(i, i + 10);
-    const [annSnap, tagSnap] = await Promise.all([
+    const [annSnap, tagSnap, sceneSnap] = await Promise.all([
       getDocs(query(annotationsRef, where('screenplayId', 'in', chunk))),
-      getDocs(query(tagsRef, where('screenplayId', 'in', chunk)))
+      getDocs(query(tagsRef, where('screenplayId', 'in', chunk))),
+      getDocs(query(scenesRef, where('screenplayId', 'in', chunk)))
     ]);
     annSnap.docs.forEach(d => allAnnotations.push(d.data() as RawNote));
     tagSnap.docs.forEach(d => allTags.push(d.data() as RawNote));
+    sceneSnap.docs.forEach(d => {
+      const scene = normalizeScene(d.id, d.data());
+      const list = scenesByScreenplay.get(scene.screenplayId) || [];
+      list.push(scene);
+      scenesByScreenplay.set(scene.screenplayId, list);
+    });
   }
+  scenesByScreenplay.forEach(list => list.sort((a, b) =>
+    (a.pageNumber * 10000 + (a.position?.y || 0) * 1000) - (b.pageNumber * 10000 + (b.position?.y || 0) * 1000)
+  ));
   // 2. Resolve student names by crewProfile DOCUMENT ID (doc id == uid).
   // crewProfiles created at signup omit the `uid` field on purpose, so a
   // where('uid','in',...) query misses them and the Student column falls
@@ -331,6 +344,7 @@ export async function exportWorkspaceGradingCsv(params: {
     t('collaboration.gradingReport.columns.type'),
     t('collaboration.gradingReport.columns.category'),
     t('collaboration.gradingReport.columns.page'),
+    t('collaboration.gradingReport.columns.scene'),
     t('collaboration.gradingReport.columns.content'),
     t('collaboration.gradingReport.columns.author'),
     t('collaboration.gradingReport.columns.supervisor'),
@@ -347,7 +361,17 @@ export async function exportWorkspaceGradingCsv(params: {
       return isNaN(d.getTime()) ? '' : d.toISOString();
     } catch { return ''; }
   };
-  type Row = { student: string; screenplay: string; reviewStatus: string; reviewNote: string; type: string; category: string; page: number; content: string; author: string; supervisor: string; resolved: string; timestamp: string };
+  type Row = { student: string; screenplay: string; reviewStatus: string; reviewNote: string; type: string; category: string; page: number; scene: string; content: string; author: string; supervisor: string; resolved: string; timestamp: string };
+  const sceneCell = (note: RawNote): string => {
+    if (!note.screenplayId) return '';
+    const scenes = scenesByScreenplay.get(note.screenplayId) || [];
+    const owner = sceneForPosition(scenes, note.pageNumber ?? 0, note.position?.y || 0);
+    if (!owner) return '';
+    return [
+      owner.sceneNumber ? `#${owner.sceneNumber}` : '',
+      [owner.intExt ? `${owner.intExt}.` : '', owner.location].filter(Boolean).join(' ')
+    ].filter(Boolean).join(' ');
+  };
   const rowsFromNotes = (notes: RawNote[], type: string, category: (note: RawNote) => string, content: (note: RawNote) => string): Row[] =>
     notes.map(n => {
       const sp = n.screenplayId ? screenplayById.get(n.screenplayId) : undefined;
@@ -361,6 +385,7 @@ export async function exportWorkspaceGradingCsv(params: {
         type,
         category: category(n),
         page: n.pageNumber ?? 0,
+        scene: sceneCell(n),
         content: content(n) || '',
         author: n.userName || '',
         supervisor: n.supervisorAtAuthorTime ? yes : no,
@@ -373,7 +398,7 @@ export async function exportWorkspaceGradingCsv(params: {
     ...rowsFromNotes(allTags, t('collaboration.gradingReport.types.tag'), n => n.tagType ? t(`screenplay.categories.${n.tagType}`, { defaultValue: n.tagType }) : '', n => n.content || '')
   ];
   allRows.sort((a, b) => a.student.localeCompare(b.student) || a.screenplay.localeCompare(b.screenplay) || a.page - b.page || a.timestamp.localeCompare(b.timestamp));
-  const csv = '﻿' + [headers, ...allRows.map(r => [r.student, r.screenplay, r.reviewStatus, r.reviewNote, r.type, r.category, r.page, r.content, r.author, r.supervisor, r.resolved, r.timestamp].map(escapeCsv).join(','))].join('\r\n');
+  const csv = '﻿' + [headers, ...allRows.map(r => [r.student, r.screenplay, r.reviewStatus, r.reviewNote, r.type, r.category, r.page, r.scene, r.content, r.author, r.supervisor, r.resolved, r.timestamp].map(escapeCsv).join(','))].join('\r\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const date = new Date().toISOString().slice(0, 10);

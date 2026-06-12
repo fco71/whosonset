@@ -59,6 +59,21 @@ export const normalizeScene = (sceneId: string, data: any): SceneMark => ({
 export const sceneOrderKey = (item: { pageNumber: number; position: { y: number } }): number =>
   item.pageNumber * 10000 + (item.position?.y || 0) * 1000;
 
+/** The scene owning a document position: nearest scene anchor at or above it. */
+export function sceneForPosition(
+  scenes: SceneMark[],
+  pageNumber: number,
+  positionY: number
+): SceneMark | null {
+  const key = pageNumber * 10000 + positionY * 1000;
+  let owner: SceneMark | null = null;
+  for (const scene of scenes) {
+    if (sceneOrderKey(scene) <= key) owner = scene;
+    else break;
+  }
+  return owner;
+}
+
 export function subscribeScenes(
   screenplayId: string,
   onScenes: (scenes: SceneMark[]) => void,

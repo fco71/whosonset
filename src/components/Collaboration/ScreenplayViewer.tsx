@@ -12,7 +12,7 @@ import EmailNotificationService from '../../services/emailNotificationService';
 import { logWorkspaceActivity, WorkspaceActivityVerb } from '../../services/workspaceActivityService';
 import FountainViewer from './FountainViewer';
 import ScenesPanel, { SceneNoteItem } from './ScenesPanel';
-import { addScene, parseSlugText, subscribeScenes, SceneIntExt, SceneMark } from '../../services/sceneService';
+import { addScene, parseSlugText, sceneForPosition, subscribeScenes, SceneIntExt, SceneMark } from '../../services/sceneService';
 import type { ScreenplayReviewStatus, WorkspaceMember } from '../../types/Collaboration';
 import {
   applyMentionSuggestion,
@@ -1468,6 +1468,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         t('screenplay.export.columns.type'),
         t('screenplay.export.columns.category'),
         t('screenplay.export.columns.page'),
+        t('screenplay.export.columns.scene'),
         t('screenplay.export.columns.content'),
         t('screenplay.export.columns.author'),
         t('screenplay.export.columns.supervisor'),
@@ -1479,10 +1480,20 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       const yes = t('screenplay.export.boolean.yes');
       const no = t('screenplay.export.boolean.no');
 
+      const sceneCell = (pageNumber: number, positionY: number): string => {
+        const owner = sceneForPosition(scenes, pageNumber, positionY);
+        if (!owner) return '';
+        return [
+          owner.sceneNumber ? `#${owner.sceneNumber}` : '',
+          [owner.intExt ? `${owner.intExt}.` : '', owner.location].filter(Boolean).join(' ')
+        ].filter(Boolean).join(' ');
+      };
+
       type Row = {
         type: string;
         category: string;
         page: number;
+        scene: string;
         content: string;
         author: string;
         supervisor: string;
@@ -1494,6 +1505,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         type: t('screenplay.export.types.annotation'),
         category: '',
         page: annotation.pageNumber ?? 0,
+        scene: sceneCell(annotation.pageNumber ?? 0, annotation.position?.y || 0),
         content: annotation.annotation || '',
         author: annotation.userName || '',
         supervisor: annotation.supervisorAtAuthorTime ? yes : no,
@@ -1505,6 +1517,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         type: t('screenplay.export.types.tag'),
         category: tag.tagType ? t(`screenplay.categories.${tag.tagType}`, { defaultValue: tag.tagType }) : '',
         page: tag.pageNumber ?? 0,
+        scene: sceneCell(tag.pageNumber ?? 0, tag.position?.y || 0),
         content: tag.content || '',
         author: tag.userName || '',
         supervisor: tag.supervisorAtAuthorTime ? yes : no,
@@ -1521,6 +1534,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         row.type,
         row.category,
         row.page,
+        row.scene,
         row.content,
         row.author,
         row.supervisor,
@@ -2649,6 +2663,48 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                                     );
                                   })}
                                   {/* Tag Overlays for this page */}
+                                  {/* Scene markers: a thin divider + badge at each scene anchor so
+                                      scenes are identifiable on the document itself. */}
+                                  {showOverlays && scenes.filter(scene => scene.pageNumber === pageNumber).map(scene => (
+                                    <div
+                                      key={`scene-${scene.id}`}
+                                      style={{
+                                        position: 'absolute',
+                                        left: 0,
+                                        right: 0,
+                                        top: `${scene.position.y * 100}%`,
+                                        zIndex: 6,
+                                        pointerEvents: 'none'
+                                      }}
+                                    >
+                                      <div style={{ borderTop: '2px solid rgba(139, 92, 246, 0.55)' }} />
+                                      <span
+                                        title={[
+                                          scene.intExt ? `${scene.intExt}.` : '',
+                                          scene.location,
+                                          scene.timeOfDay ? `- ${scene.timeOfDay}` : ''
+                                        ].filter(Boolean).join(' ')}
+                                        style={{
+                                          position: 'absolute',
+                                          left: 4,
+                                          top: -9,
+                                          background: '#8b5cf6',
+                                          color: '#fff',
+                                          borderRadius: 4,
+                                          padding: '1px 6px',
+                                          fontSize: 10,
+                                          fontWeight: 700,
+                                          lineHeight: '14px',
+                                          whiteSpace: 'nowrap',
+                                          maxWidth: '60%',
+                                          overflow: 'hidden',
+                                          textOverflow: 'ellipsis'
+                                        }}
+                                      >
+                                        SC {scene.sceneNumber || '·'}{scene.location ? ` · ${scene.location}` : ''}
+                                      </span>
+                                    </div>
+                                  ))}
                                   {showOverlays && tags.filter(tag => tag.pageNumber === pageNumber).map(tag => {
                                     const overlayHeight = `${tag.position.height * 100}%`;
                                     const pagePixelHeight = measuredPageHeight;

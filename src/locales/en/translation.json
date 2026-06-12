@@ -935,7 +935,8 @@
         "author": "Author",
         "supervisor": "From supervisor",
         "resolved": "Resolved",
-        "timestamp": "Timestamp"
+        "timestamp": "Timestamp",
+        "scene": "Scene"
       }
     },
     "reviewStatus": {
@@ -1721,7 +1722,8 @@
         "supervisor": "Supervisor",
         "resolved": "Resolved",
         "timestamp": "Timestamp",
-        "screenplay": "Screenplay"
+        "screenplay": "Screenplay",
+        "scene": "Scene"
       },
       "types": {
         "annotation": "Annotation",

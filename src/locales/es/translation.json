@@ -900,7 +900,8 @@
         "author": "Autor",
         "supervisor": "De supervisor",
         "resolved": "Resuelto",
-        "timestamp": "Fecha y hora"
+        "timestamp": "Fecha y hora",
+        "scene": "Escena"
       }
     },
     "reviewStatus": {
@@ -1686,7 +1687,8 @@
         "supervisor": "Supervisor",
         "resolved": "Resuelto",
         "timestamp": "Fecha",
-        "screenplay": "Guion"
+        "screenplay": "Guion",
+        "scene": "Escena"
       },
       "types": {
         "annotation": "Anotación",

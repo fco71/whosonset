@@ -5,7 +5,7 @@ import { paginateElements } from '../../utilities/fountain';
 import {
   deleteScene,
   parseSlugText,
-  sceneOrderKey,
+  sceneForPosition,
   SceneIntExt,
   SceneMark,
   updateScene
@@ -139,12 +139,7 @@ const ScenesPanel: React.FC<ScenesPanelProps> = ({
     const front: SceneNoteItem[] = [];
     if (scenes.length === 0) return { notesByScene: byScene, frontMatterNotes: front };
     sortedNotes.forEach(note => {
-      const noteKey = note.pageNumber * 10000 + note.positionY * 1000;
-      let owner: SceneMark | null = null;
-      for (const scene of scenes) {
-        if (sceneOrderKey(scene) <= noteKey) owner = scene;
-        else break;
-      }
+      const owner = sceneForPosition(scenes, note.pageNumber, note.positionY);
       if (!owner) {
         front.push(note);
         return;
