@@ -6,6 +6,9 @@ import {
   deleteScene,
   parseSlugText,
   sceneForPosition,
+  sceneHeading,
+  sceneOrderKey,
+  INT_EXT_OPTIONS,
   SceneIntExt,
   SceneMark,
   updateScene
@@ -47,14 +50,14 @@ interface ScenesPanelProps {
   scenes: SceneMark[];
   notes: SceneNoteItem[];
   currentUserUid?: string | null;
-  /** Uploader may also delete scene marks (rules: moderation model). */
-  screenplayUploadedBy?: string | null;
+  /** Mirrors the viewer's annotation/tag moderation gate (supervisor-aware). */
+  canModerateScene: (scene: SceneMark) => boolean;
   onJumpToPage: (pageNumber: number) => void;
   onJumpToFountainLine: (lineIndex: number) => void;
   onOpenNote: (note: SceneNoteItem) => void;
+  /** Fired after a successful delete so the viewer can log the activity. */
+  onSceneDeleted?: () => void;
 }
-
-const INT_EXT_OPTIONS: SceneIntExt[] = ['', 'INT', 'EXT', 'INT/EXT'];
 
 const ScenesPanel: React.FC<ScenesPanelProps> = ({
   isFountain,
@@ -62,10 +65,11 @@ const ScenesPanel: React.FC<ScenesPanelProps> = ({
   scenes,
   notes,
   currentUserUid,
-  screenplayUploadedBy,
+  canModerateScene,
   onJumpToPage,
   onJumpToFountainLine,
-  onOpenNote
+  onOpenNote,
+  onSceneDeleted
 }) => {
   const { t } = useTranslation();
   const [collapsed, setCollapsed] = useState(false);
@@ -109,11 +113,7 @@ const ScenesPanel: React.FC<ScenesPanelProps> = ({
       intExt: scene.intExt,
       location: scene.location || scene.selection,
       timeOfDay: scene.timeOfDay,
-      heading: [
-        scene.intExt ? `${scene.intExt}.` : '',
-        scene.location,
-        scene.timeOfDay ? `- ${scene.timeOfDay}` : ''
-      ].filter(Boolean).join(' ') || scene.selection,
+      heading: sceneHeading(scene),
       scene
     }));
   }, [isFountain, fountainSource, scenes]);
@@ -132,12 +132,14 @@ const ScenesPanel: React.FC<ScenesPanelProps> = ({
 
   // PDF: each scene owns the notes from its anchor up to the next scene's anchor.
   const { notesByScene, frontMatterNotes } = useMemo(() => {
-    const sortedNotes = [...notes].sort((a, b) =>
-      (a.pageNumber * 10000 + a.positionY * 1000) - (b.pageNumber * 10000 + b.positionY * 1000)
-    );
     const byScene = new Map<string, SceneNoteItem[]>();
     const front: SceneNoteItem[] = [];
     if (scenes.length === 0) return { notesByScene: byScene, frontMatterNotes: front };
+    // Sorted so each bucket lists its notes in document order (same key as scenes).
+    const sortedNotes = [...notes].sort((a, b) =>
+      sceneOrderKey({ pageNumber: a.pageNumber, position: { y: a.positionY } as any })
+      - sceneOrderKey({ pageNumber: b.pageNumber, position: { y: b.positionY } as any })
+    );
     sortedNotes.forEach(note => {
       const owner = sceneForPosition(scenes, note.pageNumber, note.positionY);
       if (!owner) {
@@ -151,14 +153,15 @@ const ScenesPanel: React.FC<ScenesPanelProps> = ({
     return { notesByScene: byScene, frontMatterNotes: front };
   }, [scenes, notes]);
 
-  const selectedRow = filteredRows.find(row => row.key === selectedKey)
-    || rows.find(row => row.key === selectedKey)
-    || null;
+  // filteredRows ⊆ rows, so one lookup over the full list suffices.
+  const selectedRow = rows.find(row => row.key === selectedKey) || null;
   const selectedScene = selectedRow?.scene || null;
   const selectedNotes = selectedScene ? (notesByScene.get(selectedScene.id) || []) : [];
 
+  // Same gate as annotation/tag delete buttons: author, or the viewer's
+  // supervisor-aware moderation capability (rules enforce the same server-side).
   const canDeleteScene = (scene: SceneMark): boolean =>
-    Boolean(currentUserUid && (scene.userId === currentUserUid || screenplayUploadedBy === currentUserUid));
+    Boolean(currentUserUid && (scene.userId === currentUserUid || canModerateScene(scene)));
 
   const handleRowClick = (row: SceneRow) => {
     setSelectedKey(row.key);
@@ -208,6 +211,7 @@ const ScenesPanel: React.FC<ScenesPanelProps> = ({
     try {
       await deleteScene(selectedScene.id);
       toast.success(t('screenplay.scenes.deleted'));
+      onSceneDeleted?.();
       setSelectedKey(null);
       setEditing(false);
     } catch (err) {

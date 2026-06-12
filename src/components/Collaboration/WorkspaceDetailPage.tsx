@@ -1219,17 +1219,28 @@ const WorkspaceDetailPage: React.FC = () => {
               <p className="group-empty" style={{ marginTop: 0 }}>
                 {t('collaboration.groupPage.yourClassesHint')}
               </p>
-              {teacherClasses.map(teacherClass => (
-                <label key={teacherClass.id} className="assignment-target-option" style={{ padding: '5px 0' }}>
-                  <input
-                    type="checkbox"
-                    disabled={classTogglePending === teacherClass.id}
-                    checked={workspace ? teacherClass.workspaceIds.includes(workspace.id) : false}
-                    onChange={() => handleToggleGroupInClass(teacherClass)}
-                  />
-                  {teacherClass.name}
-                </label>
-              ))}
+              {teacherClasses.map(teacherClass => {
+                const inClass = workspace ? teacherClass.workspaceIds.includes(workspace.id) : false;
+                const pending = classTogglePending === teacherClass.id;
+                return (
+                  <div key={teacherClass.id} className="class-toggle-row">
+                    <span className="class-toggle-name" title={teacherClass.name}>{teacherClass.name}</span>
+                    <button
+                      type="button"
+                      className={`class-toggle-btn ${inClass ? 'in-class' : ''}`}
+                      disabled={pending}
+                      title={inClass
+                        ? t('collaboration.groupPage.removeFromClassBtnHint')
+                        : t('collaboration.groupPage.addToClassBtnHint')}
+                      onClick={() => handleToggleGroupInClass(teacherClass)}
+                    >
+                      {pending ? '…' : inClass
+                        ? `✓ ${t('collaboration.groupPage.inClass')}`
+                        : `+ ${t('collaboration.groupPage.addToClassBtn')}`}
+                    </button>
+                  </div>
+                );
+              })}
             </section>
           )}
           <section className="group-section">

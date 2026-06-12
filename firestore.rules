@@ -799,17 +799,46 @@ service cloud.firestore {
 
     // Scene marks (slug anchors with number/INT-EXT/location/time-of-day) used for
     // per-scene navigation and breakdown. Same access shape as annotations/tags;
-    // edits are author-only and must keep identity (screenplayId/userId immutable),
-    // deletes follow the annotation moderation model.
+    // edits are author-only WHILE they still have screenplay access, limited to the
+    // text fields (anchor + identity immutable), deletes follow the annotation
+    // moderation model (supervisorAtAuthorTime protects the teacher's marks).
     match /screenplayScenes/{sceneId} {
       allow read: if canAccessScreenplay(resource.data.screenplayId);
       allow create: if signedIn() &&
         request.resource.data.userId == request.auth.uid &&
         request.resource.data.screenplayId is string &&
+        request.resource.data.pageNumber is number &&
+        request.resource.data.position is map &&
+        request.resource.data.sceneNumber is string &&
+        request.resource.data.sceneNumber.size() <= 20 &&
+        request.resource.data.intExt in ['', 'INT', 'EXT', 'INT/EXT'] &&
+        request.resource.data.location is string &&
+        request.resource.data.location.size() <= 200 &&
+        request.resource.data.timeOfDay is string &&
+        request.resource.data.timeOfDay.size() <= 80 &&
+        request.resource.data.synopsis is string &&
+        request.resource.data.synopsis.size() <= 2000 &&
+        request.resource.data.note is string &&
+        request.resource.data.note.size() <= 500 &&
+        request.resource.data.selection is string &&
+        request.resource.data.selection.size() <= 500 &&
         canAccessScreenplay(request.resource.data.screenplayId);
       allow update: if signedIn() &&
         resource.data.userId == request.auth.uid &&
-        keepsAnnotationIdentity(request.resource.data, resource.data);
+        canAccessScreenplay(resource.data.screenplayId) &&
+        keepsAnnotationIdentity(request.resource.data, resource.data) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['sceneNumber', 'intExt', 'location', 'timeOfDay', 'synopsis', 'note']) &&
+        request.resource.data.sceneNumber is string &&
+        request.resource.data.sceneNumber.size() <= 20 &&
+        request.resource.data.intExt in ['', 'INT', 'EXT', 'INT/EXT'] &&
+        request.resource.data.location is string &&
+        request.resource.data.location.size() <= 200 &&
+        request.resource.data.timeOfDay is string &&
+        request.resource.data.timeOfDay.size() <= 80 &&
+        request.resource.data.synopsis is string &&
+        request.resource.data.synopsis.size() <= 2000 &&
+        request.resource.data.note is string &&
+        request.resource.data.note.size() <= 500;
       allow delete: if canModerateAnnotationData(resource.data);
     }
 

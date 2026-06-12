@@ -298,3 +298,41 @@ export function prevElementType(current: ScreenplayElementType): ScreenplayEleme
   if (index === -1) return TAB_CYCLE[TAB_CYCLE.length - 1];
   return TAB_CYCLE[(index - 1 + TAB_CYCLE.length) % TAB_CYCLE.length];
 }
+
+export type SlugIntExt = '' | 'INT' | 'EXT' | 'INT/EXT';
+
+export interface ParsedSlug {
+  intExt: SlugIntExt;
+  location: string;
+  timeOfDay: string;
+}
+
+/**
+ * Best-effort parse of a slug line ("INT. BAR - NIGHT") into its parts.
+ * Tolerates partial selections ("BAR - NIGHT", just "BAR"), forced headings
+ * (".BARN - DAY"), and hyphenated locations ("EXT. DRIVE-IN - NIGHT").
+ * Lives next to SCENE_PREFIXES so slug detection and slug parsing can't drift.
+ */
+export function parseSlugText(text: string): ParsedSlug {
+  let cleaned = text.trim().replace(/\s+/g, ' ');
+  // Forced scene headings carry a leading dot (".BARN - DAY").
+  if (/^\.[^.\s]/.test(cleaned)) cleaned = cleaned.slice(1);
+
+  let intExt: SlugIntExt = '';
+  let rest = cleaned;
+  // The prefix must be FOLLOWED by a dot or whitespace — "INT. X", "INT X",
+  // "I/E. X" match; "INTERROGATION ROOM" must not.
+  const prefixMatch = cleaned.match(/^(INT\s*\.?\s*\/\s*EXT|I\/E|INT|EXT|EST)(\.|\s)\s*/i);
+  if (prefixMatch) {
+    const raw = prefixMatch[1].toUpperCase().replace(/\s/g, '');
+    intExt = raw.includes('/') ? 'INT/EXT' : raw === 'EXT' || raw === 'EST' ? 'EXT' : 'INT';
+    rest = cleaned.slice(prefixMatch[0].length);
+  }
+
+  // Time of day separates with a SPACED dash so hyphenated locations survive
+  // ("JEAN-PAUL'S APARTMENT - NIGHT" → location "JEAN-PAUL'S APARTMENT").
+  const dashSplit = rest.split(/\s+[-–—]\s+/);
+  const location = (dashSplit[0] || '').trim();
+  const timeOfDay = dashSplit.length > 1 ? dashSplit.slice(1).join(' - ').trim() : '';
+  return { intExt, location, timeOfDay };
+}

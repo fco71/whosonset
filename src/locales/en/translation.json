@@ -1111,7 +1111,7 @@
       "sendInvitations": "Send invitations",
       "fountainScopeHint": "This screenplay will belong to {{workspace}} and its members will have access.",
       "yourClasses": "Your classes",
-      "yourClassesHint": "Tick a class to put this group in it.",
+      "yourClassesHint": "Add this group to any of your classes.",
       "addedToClass": "Group added to {{class}}.",
       "removedFromClass": "Group removed from {{class}}.",
       "addMemberToClassTitle": "Add this student to a class roster",
@@ -1121,7 +1121,11 @@
       "alreadyViaGroup": "Already in {{class}} through this group.",
       "alreadyOnRoster": "Already on the roster of {{class}}.",
       "memberAddedToClass": "{{name}} added to {{class}}.",
-      "memberRestoredToClass": "{{name}} restored to {{class}}'s roster."
+      "memberRestoredToClass": "{{name}} restored to {{class}}'s roster.",
+      "inClass": "In this class",
+      "addToClassBtn": "Add",
+      "addToClassBtnHint": "Add this group to the class",
+      "removeFromClassBtnHint": "Remove this group from the class"
     },
     "assignments": {
       "title": "Assignments",
@@ -1755,8 +1759,6 @@
       "jumpTo": "Jump to this scene",
       "edit": "Edit scene",
       "delete": "Remove scene mark",
-      "expand": "Show notes in this scene",
-      "collapse": "Hide notes",
       "noNotes": "No notes in this scene yet.",
       "beforeFirst": "Before the first scene",
       "openNote": "Note by {{user}} — click to jump",

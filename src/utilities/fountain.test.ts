@@ -12,6 +12,7 @@ import {
   isTransition,
   isCharacter,
   isParenthetical,
+  parseSlugText,
   LINES_PER_PAGE
 } from './fountain';
 
@@ -246,5 +247,38 @@ describe('element type cycling', () => {
 describe('constants', () => {
   it('uses 55 lines per page', () => {
     expect(LINES_PER_PAGE).toBe(55);
+  });
+});
+
+describe('parseSlugText', () => {
+  it('parses a standard slug', () => {
+    expect(parseSlugText('INT. BAR - NIGHT')).toEqual({ intExt: 'INT', location: 'BAR', timeOfDay: 'NIGHT' });
+  });
+
+  it('does not eat word-initial INT/EXT/EST', () => {
+    expect(parseSlugText('INTERROGATION ROOM - DAY')).toEqual({ intExt: '', location: 'INTERROGATION ROOM', timeOfDay: 'DAY' });
+    expect(parseSlugText('ESTATE GROUNDS - DAY')).toEqual({ intExt: '', location: 'ESTATE GROUNDS', timeOfDay: 'DAY' });
+  });
+
+  it('keeps hyphenated locations whole', () => {
+    expect(parseSlugText("INT. JEAN-PAUL'S APARTMENT - NIGHT")).toEqual({ intExt: 'INT', location: "JEAN-PAUL'S APARTMENT", timeOfDay: 'NIGHT' });
+    expect(parseSlugText('EXT. DRIVE-IN THEATER - NIGHT')).toEqual({ intExt: 'EXT', location: 'DRIVE-IN THEATER', timeOfDay: 'NIGHT' });
+  });
+
+  it('handles INT/EXT variants and EST', () => {
+    expect(parseSlugText('INT./EXT. CAR - DUSK').intExt).toBe('INT/EXT');
+    expect(parseSlugText('I/E. CAR - DUSK').intExt).toBe('INT/EXT');
+    expect(parseSlugText('EST. FARMHOUSE - DAY').intExt).toBe('EXT');
+  });
+
+  it('strips forced-heading dots and tolerates prefixless selections', () => {
+    expect(parseSlugText('.BARN - DAY')).toEqual({ intExt: '', location: 'BARN', timeOfDay: 'DAY' });
+    expect(parseSlugText('BAR - NIGHT')).toEqual({ intExt: '', location: 'BAR', timeOfDay: 'NIGHT' });
+    expect(parseSlugText('BAR')).toEqual({ intExt: '', location: 'BAR', timeOfDay: '' });
+  });
+
+  it('is case-insensitive and keeps compound times intact', () => {
+    expect(parseSlugText('int. bar - night')).toEqual({ intExt: 'INT', location: 'bar', timeOfDay: 'night' });
+    expect(parseSlugText('EXT. FIELD - DAY-FOR-NIGHT').timeOfDay).toBe('DAY-FOR-NIGHT');
   });
 });

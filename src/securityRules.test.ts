@@ -54,6 +54,12 @@ describe('security rules guardrails', () => {
     expect(sceneRules).toMatch(/keepsAnnotationIdentity/);
     expect(sceneRules).toMatch(/allow\s+delete:\s+if\s+canModerateAnnotationData/);
     expect(sceneRules).not.toMatch(/allow\s+(read|create|update|delete)[^;]*if\s+signedIn\(\);/);
+    // Edits must require CURRENT screenplay access and stay limited to the text
+    // fields (anchor/identity immutable); no `||` broadening of the update clause.
+    const sceneUpdate = sceneRules.match(/allow\s+update:[\s\S]*?;/)?.[0] || '';
+    expect(sceneUpdate).toMatch(/canAccessScreenplay\(resource\.data\.screenplayId\)/);
+    expect(sceneUpdate).toMatch(/affectedKeys\(\)\.hasOnly\(\['sceneNumber',\s*'intExt',\s*'location',\s*'timeOfDay',\s*'synopsis',\s*'note'\]\)/);
+    expect(sceneUpdate).not.toMatch(/\|\|/);
   });
 
   it('keeps teacher classes private to their owner and teacher-created', () => {

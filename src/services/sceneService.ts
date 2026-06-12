@@ -10,6 +10,7 @@ import {
   Unsubscribe
 } from 'firebase/firestore';
 import { db } from '../firebase';
+import { parseSlugText, SlugIntExt } from '../utilities/fountain';
 
 // Scene marks on a screenplay (the screenplayScenes collection). A scene is an
 // anchored slug — page + position on PDFs — carrying the identifying fields a
@@ -17,7 +18,11 @@ import { db } from '../firebase';
 // derive their scene list from the source text instead and only use these docs
 // when a PDF anchor exists. Rules mirror screenplayAnnotations (see firestore.rules).
 
-export type SceneIntExt = '' | 'INT' | 'EXT' | 'INT/EXT';
+export type SceneIntExt = SlugIntExt;
+export { parseSlugText };
+
+/** The choices both scene forms (popup create + panel edit) offer. */
+export const INT_EXT_OPTIONS: SceneIntExt[] = ['', 'INT', 'EXT', 'INT/EXT'];
 
 export interface SceneMark {
   id: string;
@@ -33,6 +38,9 @@ export interface SceneMark {
   pageNumber: number;
   position: { x: number; y: number; width: number; height: number };
   selection: string;
+  /** Whether the author was a workspace supervisor when marking — drives the
+   * moderation rules (a student manager must not delete the teacher's marks). */
+  supervisorAtAuthorTime?: boolean;
   timestamp?: any;
 }
 
@@ -52,6 +60,7 @@ export const normalizeScene = (sceneId: string, data: any): SceneMark => ({
     ? data.position
     : { x: 0, y: 0, width: 0, height: 0 },
   selection: typeof data.selection === 'string' ? data.selection : '',
+  supervisorAtAuthorTime: data.supervisorAtAuthorTime === true,
   timestamp: data.timestamp
 });
 
@@ -59,7 +68,10 @@ export const normalizeScene = (sceneId: string, data: any): SceneMark => ({
 export const sceneOrderKey = (item: { pageNumber: number; position: { y: number } }): number =>
   item.pageNumber * 10000 + (item.position?.y || 0) * 1000;
 
-/** The scene owning a document position: nearest scene anchor at or above it. */
+/**
+ * The scene owning a document position: nearest scene anchor at or above it.
+ * Scans the whole list (no sorted-input contract — callers sort for display only).
+ */
 export function sceneForPosition(
   scenes: SceneMark[],
   pageNumber: number,
@@ -67,9 +79,13 @@ export function sceneForPosition(
 ): SceneMark | null {
   const key = pageNumber * 10000 + positionY * 1000;
   let owner: SceneMark | null = null;
+  let ownerKey = -Infinity;
   for (const scene of scenes) {
-    if (sceneOrderKey(scene) <= key) owner = scene;
-    else break;
+    const sceneKey = sceneOrderKey(scene);
+    if (sceneKey <= key && sceneKey > ownerKey) {
+      owner = scene;
+      ownerKey = sceneKey;
+    }
   }
   return owner;
 }
@@ -101,6 +117,7 @@ export async function addScene(params: {
   pageNumber: number;
   position: { x: number; y: number; width: number; height: number };
   selection: string;
+  supervisorAtAuthorTime: boolean;
 }): Promise<string> {
   const ref = await addDoc(collection(db, 'screenplayScenes'), {
     screenplayId: params.screenplayId,
@@ -116,6 +133,7 @@ export async function addScene(params: {
     pageNumber: params.pageNumber,
     position: params.position,
     selection: params.selection,
+    supervisorAtAuthorTime: params.supervisorAtAuthorTime,
     timestamp: new Date()
   });
   return ref.id;
@@ -132,36 +150,28 @@ export async function deleteScene(sceneId: string): Promise<void> {
   await deleteDoc(doc(db, 'screenplayScenes', sceneId));
 }
 
-/**
- * Best-effort parse of a selected slug line ("INT. BAR - NIGHT") into form
- * prefills. Tolerates partial selections (just "BAR", or "EXT. ALLEY").
- */
-export function parseSlugText(text: string): { intExt: SceneIntExt; location: string; timeOfDay: string } {
-  const cleaned = text.trim().replace(/\s+/g, ' ');
-  let intExt: SceneIntExt = '';
-  let rest = cleaned;
-
-  const prefixMatch = cleaned.match(/^(INT\.?\s*\/\s*EXT|I\/E|INT|EXT|EST)\.?\s*/i);
-  if (prefixMatch) {
-    const raw = prefixMatch[1].toUpperCase().replace(/\s/g, '');
-    intExt = raw.includes('/') || raw === 'I/E' ? 'INT/EXT' : raw === 'EXT' || raw === 'EST' ? 'EXT' : 'INT';
-    rest = cleaned.slice(prefixMatch[0].length);
-  }
-
-  // "LOCATION - TIME OF DAY" (en/em dashes tolerated)
-  const dashSplit = rest.split(/\s*[-–—]\s*/);
-  const location = (dashSplit[0] || '').trim();
-  const timeOfDay = dashSplit.length > 1 ? dashSplit.slice(1).join(' - ').trim() : '';
-  return { intExt, location, timeOfDay };
+/** Slug heading for a scene: "INT. BAR - NIGHT" (falls back to the selection text). */
+export function sceneHeading(scene: Pick<SceneMark, 'intExt' | 'location' | 'timeOfDay' | 'selection'>): string {
+  return [
+    scene.intExt ? `${scene.intExt}.` : '',
+    scene.location,
+    scene.timeOfDay ? `- ${scene.timeOfDay}` : ''
+  ].filter(Boolean).join(' ') || scene.selection || '';
 }
 
 /** Display label for a scene: "#3 · INT. BAR - NIGHT". */
 export function sceneLabel(scene: Pick<SceneMark, 'sceneNumber' | 'intExt' | 'location' | 'timeOfDay' | 'selection'>): string {
-  const slugParts = [
-    scene.intExt ? `${scene.intExt}.` : '',
-    scene.location,
-    scene.timeOfDay ? `- ${scene.timeOfDay}` : ''
-  ].filter(Boolean).join(' ');
-  const body = slugParts || scene.selection || '';
+  const body = sceneHeading(scene);
   return scene.sceneNumber ? `#${scene.sceneNumber} · ${body}` : body;
+}
+
+/** Scene cell for the CSV exports: "#3 INT. BAR" — shared so the viewer
+ * breakdown export and the workspace grading export can't drift apart. */
+export function sceneCsvCell(scenes: SceneMark[], pageNumber: number, positionY: number): string {
+  const owner = sceneForPosition(scenes, pageNumber, positionY);
+  if (!owner) return '';
+  return [
+    owner.sceneNumber ? `#${owner.sceneNumber}` : '',
+    [owner.intExt ? `${owner.intExt}.` : '', owner.location].filter(Boolean).join(' ')
+  ].filter(Boolean).join(' ');
 }

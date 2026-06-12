@@ -21,7 +21,7 @@ import {
   getReviewStatus,
   Screenplay
 } from '../components/Collaboration/workspaceAccess';
-import { normalizeScene, sceneForPosition, SceneMark } from './sceneService';
+import { normalizeScene, sceneCsvCell, SceneMark } from './sceneService';
 
 // Firestore/Storage mutations shared by CollaborationHub and WorkspaceDetailPage.
 // Callers own validation, permission checks, and user-facing toasts; functions here
@@ -314,9 +314,6 @@ export async function exportWorkspaceGradingCsv(params: {
       scenesByScreenplay.set(scene.screenplayId, list);
     });
   }
-  scenesByScreenplay.forEach(list => list.sort((a, b) =>
-    (a.pageNumber * 10000 + (a.position?.y || 0) * 1000) - (b.pageNumber * 10000 + (b.position?.y || 0) * 1000)
-  ));
   // 2. Resolve student names by crewProfile DOCUMENT ID (doc id == uid).
   // crewProfiles created at signup omit the `uid` field on purpose, so a
   // where('uid','in',...) query misses them and the Student column falls
@@ -365,12 +362,7 @@ export async function exportWorkspaceGradingCsv(params: {
   const sceneCell = (note: RawNote): string => {
     if (!note.screenplayId) return '';
     const scenes = scenesByScreenplay.get(note.screenplayId) || [];
-    const owner = sceneForPosition(scenes, note.pageNumber ?? 0, note.position?.y || 0);
-    if (!owner) return '';
-    return [
-      owner.sceneNumber ? `#${owner.sceneNumber}` : '',
-      [owner.intExt ? `${owner.intExt}.` : '', owner.location].filter(Boolean).join(' ')
-    ].filter(Boolean).join(' ');
+    return sceneCsvCell(scenes, note.pageNumber ?? 0, note.position?.y || 0);
   };
   const rowsFromNotes = (notes: RawNote[], type: string, category: (note: RawNote) => string, content: (note: RawNote) => string): Row[] =>
     notes.map(n => {

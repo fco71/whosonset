@@ -1076,7 +1076,7 @@
       "sendInvitations": "Enviar invitaciones",
       "fountainScopeHint": "Este guion pertenecerá a {{workspace}} y sus integrantes tendrán acceso.",
       "yourClasses": "Tus clases",
-      "yourClassesHint": "Marca una clase para incluir este grupo en ella.",
+      "yourClassesHint": "Añade este grupo a cualquiera de tus clases.",
       "addedToClass": "Grupo añadido a {{class}}.",
       "removedFromClass": "Grupo quitado de {{class}}.",
       "addMemberToClassTitle": "Añadir este estudiante a una clase",
@@ -1086,7 +1086,11 @@
       "alreadyViaGroup": "Ya está en {{class}} a través de este grupo.",
       "alreadyOnRoster": "Ya está en la lista de {{class}}.",
       "memberAddedToClass": "{{name}} añadido a {{class}}.",
-      "memberRestoredToClass": "{{name}} restaurado a la lista de {{class}}."
+      "memberRestoredToClass": "{{name}} restaurado a la lista de {{class}}.",
+      "inClass": "En esta clase",
+      "addToClassBtn": "Añadir",
+      "addToClassBtnHint": "Añadir este grupo a la clase",
+      "removeFromClassBtnHint": "Quitar este grupo de la clase"
     },
     "assignments": {
       "title": "Tareas",
@@ -1720,8 +1724,6 @@
       "jumpTo": "Ir a esta escena",
       "edit": "Editar escena",
       "delete": "Quitar marca de escena",
-      "expand": "Ver notas de esta escena",
-      "collapse": "Ocultar notas",
       "noNotes": "Aún no hay notas en esta escena.",
       "beforeFirst": "Antes de la primera escena",
       "openNote": "Nota de {{user}} — clic para ir",

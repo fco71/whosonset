@@ -12,7 +12,7 @@ import EmailNotificationService from '../../services/emailNotificationService';
 import { logWorkspaceActivity, WorkspaceActivityVerb } from '../../services/workspaceActivityService';
 import FountainViewer from './FountainViewer';
 import ScenesPanel, { SceneNoteItem } from './ScenesPanel';
-import { addScene, parseSlugText, sceneForPosition, subscribeScenes, SceneIntExt, SceneMark } from '../../services/sceneService';
+import { addScene, parseSlugText, sceneCsvCell, sceneHeading, sceneOrderKey, subscribeScenes, INT_EXT_OPTIONS, SceneIntExt, SceneMark } from '../../services/sceneService';
 import type { ScreenplayReviewStatus, WorkspaceMember } from '../../types/Collaboration';
 import {
   applyMentionSuggestion,
@@ -1194,17 +1194,24 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   [screenplayElementActorAccess]);
 
   // Scene marks subscription — same lifecycle as the annotation/tag sync.
+  // Fountain docs derive scenes from the source text; no marks exist to listen for.
   useEffect(() => {
+    if (isFountain) return;
     const unsubscribe = subscribeScenes(screenplay.id, setScenes);
     return () => unsubscribe();
-  }, [screenplay.id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screenplay.id, isFountain]);
 
   const addSceneMark = async (position: { x: number; y: number; width: number; height: number }, pageNumber: number) => {
     try {
+      // Same provenance stamp as annotations/tags: the moderation rules protect
+      // supervisor-authored marks from deletion by the student manager.
+      const supervisorAtAuthorTime = await resolveSupervisorAtAuthorTime();
       await addScene({
         screenplayId: screenplay.id,
         projectId,
         actor: { uid: currentUser?.uid || 'unknown', displayName: currentUser?.displayName },
+        supervisorAtAuthorTime,
         fields: {
           sceneNumber: sceneNumberInput.trim(),
           intExt: sceneIntExt,
@@ -1233,6 +1240,18 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       toast.error(t('screenplay.scenes.addFailed'));
     }
   };
+
+  const handleSceneDeleted = useCallback(() => {
+    if (!screenplayWorkspaceId || !currentUser) return;
+    logWorkspaceActivity({
+      workspaceId: screenplayWorkspaceId,
+      actorUid: currentUser.uid,
+      actorName: currentUser.displayName,
+      verb: 'scene_removed',
+      targetId: screenplay.id,
+      targetName: screenplay.name
+    });
+  }, [screenplayWorkspaceId, currentUser, screenplay.id, screenplay.name]);
 
   const addAnnotation = async (position: { x: number; y: number; width: number; height: number }, pageNumber: number, annotation: string) => {
     if (!annotation.trim()) return;
@@ -1423,8 +1442,9 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         setSelectionPage(pageNumber);
         setShowSelectionPopup(true);
         
-        // Calculate popup position immediately
-        const position = calculatePopupPosition(rect);
+        // Calculate popup position immediately. 230px ≈ the 4-button choice card
+        // (annotation/tag/scene/cancel) so bottom-of-viewport selections flip above.
+        const position = calculatePopupPosition(rect, 320, 230);
         setPopupPosition(position);
       }
     });
@@ -1480,14 +1500,8 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       const yes = t('screenplay.export.boolean.yes');
       const no = t('screenplay.export.boolean.no');
 
-      const sceneCell = (pageNumber: number, positionY: number): string => {
-        const owner = sceneForPosition(scenes, pageNumber, positionY);
-        if (!owner) return '';
-        return [
-          owner.sceneNumber ? `#${owner.sceneNumber}` : '',
-          [owner.intExt ? `${owner.intExt}.` : '', owner.location].filter(Boolean).join(' ')
-        ].filter(Boolean).join(' ');
-      };
+      const sceneCell = (pageNumber: number, positionY: number): string =>
+        sceneCsvCell(scenes, pageNumber, positionY);
 
       type Row = {
         type: string;
@@ -1815,24 +1829,30 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
 
   // Scene navigation: page containers exist for every page (virtualization renders
   // placeholders), so scrollIntoView works even before the page has painted.
+  // Queries are scoped to this viewer's own containers — a Fountain editor preview
+  // or second viewer elsewhere in the DOM must not swallow the jump.
   const jumpToPdfPage = useCallback((pageNumber: number) => {
-    const node = document.querySelector(`.page-container[data-page-number="${pageNumber}"]`) as HTMLElement | null;
+    const root = pdfContainerRef.current ?? document;
+    const node = root.querySelector(`.page-container[data-page-number="${pageNumber}"]`) as HTMLElement | null;
     node?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, []);
 
   const jumpToFountainLine = useCallback((lineIndex: number) => {
-    const node = document.querySelector(`[data-scene-line="${lineIndex}"]`) as HTMLElement | null;
+    const root = pdfContainerRef.current ?? document;
+    const node = root.querySelector(`[data-scene-line="${lineIndex}"]`) as HTMLElement | null;
     node?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, []);
 
   // Flat annotation+tag list the scenes panel nests under each scene by position.
-  const sceneNotes: SceneNoteItem[] = [
+  // Memoized: this feeds ScenesPanel's memos, and the viewer re-renders on every
+  // scroll tick — a fresh array identity per render would defeat all of them.
+  const sceneNotes: SceneNoteItem[] = useMemo(() => [
     ...annotations.map(a => ({
       id: a.id,
       kind: 'annotation' as const,
       label: a.annotation,
       userName: a.userName,
-      pageNumber: a.pageNumber,
+      pageNumber: a.pageNumber ?? 0,
       positionY: a.position?.y || 0,
       resolved: a.resolved
     })),
@@ -1841,12 +1861,35 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       kind: 'tag' as const,
       label: tagItem.content,
       userName: tagItem.userName,
-      pageNumber: tagItem.pageNumber,
+      pageNumber: tagItem.pageNumber ?? 0,
       positionY: tagItem.position?.y || 0,
       resolved: tagItem.resolved,
       color: tagItem.color
     }))
-  ];
+  ], [annotations, tags]);
+
+  // Per-page scene index for the overlays: one O(scenes) pass per snapshot
+  // instead of scenes.filter inside every visible page on every render.
+  const scenesByPage = useMemo(() => {
+    const byPage = new Map<number, SceneMark[]>();
+    scenes.forEach(scene => {
+      const list = byPage.get(scene.pageNumber) || [];
+      list.push(scene);
+      byPage.set(scene.pageNumber, list);
+    });
+    return byPage;
+  }, [scenes]);
+
+  // Scene-panel note clicks reuse the same precise scroll+pulse navigation the
+  // annotation/tag lists use; fall back to the page jump if the doc vanished.
+  const handleOpenSceneNote = useCallback((note: SceneNoteItem) => {
+    const target = note.kind === 'annotation'
+      ? annotations.find(a => a.id === note.id)
+      : tags.find(tagItem => tagItem.id === note.id);
+    if (target) navigateToElement(target);
+    else jumpToPdfPage(note.pageNumber);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [annotations, tags]);
 
   // Helper to calculate visible pages based on scroll. Uses the live-measured page height
   // (set from the first rendered Page) so virtualization stays in sync with whatever the
@@ -2665,7 +2708,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                                   {/* Tag Overlays for this page */}
                                   {/* Scene markers: a thin divider + badge at each scene anchor so
                                       scenes are identifiable on the document itself. */}
-                                  {showOverlays && scenes.filter(scene => scene.pageNumber === pageNumber).map(scene => (
+                                  {showOverlays && (scenesByPage.get(pageNumber) || []).map(scene => (
                                     <div
                                       key={`scene-${scene.id}`}
                                       style={{
@@ -2679,11 +2722,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                                     >
                                       <div style={{ borderTop: '2px solid rgba(139, 92, 246, 0.55)' }} />
                                       <span
-                                        title={[
-                                          scene.intExt ? `${scene.intExt}.` : '',
-                                          scene.location,
-                                          scene.timeOfDay ? `- ${scene.timeOfDay}` : ''
-                                        ].filter(Boolean).join(' ')}
+                                        title={sceneHeading(scene)}
                                         style={{
                                           position: 'absolute',
                                           left: 4,
@@ -3196,10 +3235,14 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                     scenes={scenes}
                     notes={sceneNotes}
                     currentUserUid={currentUser?.uid}
-                    screenplayUploadedBy={screenplayUploadedBy}
+                    canModerateScene={scene => canModerateScreenplayElement(
+                      { userId: scene.userId, supervisorAtAuthorTime: scene.supervisorAtAuthorTime },
+                      screenplayElementActorAccess
+                    )}
                     onJumpToPage={jumpToPdfPage}
                     onJumpToFountainLine={jumpToFountainLine}
-                    onOpenNote={note => jumpToPdfPage(note.pageNumber)}
+                    onOpenNote={handleOpenSceneNote}
+                    onSceneDeleted={handleSceneDeleted}
                   />
 
                   {/* Annotations List */}
@@ -3799,10 +3842,11 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                     onChange={e => setSceneIntExt(e.target.value as SceneIntExt)}
                     style={{ flex: 1, border: '1px solid #d1d5db', borderRadius: 6, padding: 8, fontSize: 13 }}
                   >
-                    <option value="">{t('screenplay.scenes.intExtNone')}</option>
-                    <option value="INT">INT</option>
-                    <option value="EXT">EXT</option>
-                    <option value="INT/EXT">INT/EXT</option>
+                    {INT_EXT_OPTIONS.map(option => (
+                      <option key={option || 'none'} value={option}>
+                        {option || t('screenplay.scenes.intExtNone')}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <input
@@ -3866,13 +3910,16 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                 </button>
                 <button
                   onClick={() => {
-                    // Prefill from the selected slug ("INT. BAR - NIGHT") and
-                    // suggest the next scene number.
+                    // Prefill from the selected slug ("INT. BAR - NIGHT"). The
+                    // suggested number is position-aware: scenes above this anchor
+                    // + 1, so marking a missed scene mid-script suggests sanely.
                     const parsed = parseSlugText(selectedText);
                     setSceneIntExt(parsed.intExt);
                     setSceneLocation(parsed.location);
                     setSceneTimeOfDay(parsed.timeOfDay);
-                    setSceneNumberInput(String(scenes.length + 1));
+                    const anchorKey = (selectionPage || 1) * 10000 + (((selectionRect as any)?.relativeY ?? 0) * 1000);
+                    const scenesAbove = scenes.filter(scene => sceneOrderKey(scene) <= anchorKey).length;
+                    setSceneNumberInput(String(scenesAbove + 1));
                     setSceneNoteInput('');
                     setPopupType('scene');
                   }}
