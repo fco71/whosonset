@@ -262,7 +262,13 @@ describe('parseSlugText', () => {
 
   it('keeps hyphenated locations whole', () => {
     expect(parseSlugText("INT. JEAN-PAUL'S APARTMENT - NIGHT")).toEqual({ intExt: 'INT', location: "JEAN-PAUL'S APARTMENT", timeOfDay: 'NIGHT' });
+    expect(parseSlugText('EXT. DRIVE-IN - NIGHT')).toEqual({ intExt: 'EXT', location: 'DRIVE-IN', timeOfDay: 'NIGHT' });
     expect(parseSlugText('EXT. DRIVE-IN THEATER - NIGHT')).toEqual({ intExt: 'EXT', location: 'DRIVE-IN THEATER', timeOfDay: 'NIGHT' });
+  });
+
+  it('accepts typographic PDF separators without splitting typographic hyphens', () => {
+    expect(parseSlugText('EXT. DRIVE-IN\u2014NIGHT')).toEqual({ intExt: 'EXT', location: 'DRIVE-IN', timeOfDay: 'NIGHT' });
+    expect(parseSlugText('EXT. DRIVE\u2011IN - NIGHT')).toEqual({ intExt: 'EXT', location: 'DRIVE\u2011IN', timeOfDay: 'NIGHT' });
   });
 
   it('handles INT/EXT variants and EST', () => {

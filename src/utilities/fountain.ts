@@ -307,6 +307,11 @@ export interface ParsedSlug {
   timeOfDay: string;
 }
 
+// ASCII hyphens split a slug only when surrounded by whitespace, preserving
+// locations such as DRIVE-IN. En/em dashes are unambiguous separators and may
+// arrive without spaces when text is extracted from a PDF.
+const SLUG_PART_SEPARATOR = /\s+[-\u2013\u2014]\s+|[\u2013\u2014]/;
+
 /**
  * Best-effort parse of a slug line ("INT. BAR - NIGHT") into its parts.
  * Tolerates partial selections ("BAR - NIGHT", just "BAR"), forced headings
@@ -329,10 +334,10 @@ export function parseSlugText(text: string): ParsedSlug {
     rest = cleaned.slice(prefixMatch[0].length);
   }
 
-  // Time of day separates with a SPACED dash so hyphenated locations survive
-  // ("JEAN-PAUL'S APARTMENT - NIGHT" → location "JEAN-PAUL'S APARTMENT").
-  const dashSplit = rest.split(/\s+[-–—]\s+/);
-  const location = (dashSplit[0] || '').trim();
-  const timeOfDay = dashSplit.length > 1 ? dashSplit.slice(1).join(' - ').trim() : '';
+  const separator = SLUG_PART_SEPARATOR.exec(rest);
+  const location = (separator ? rest.slice(0, separator.index) : rest).trim();
+  const timeOfDay = separator
+    ? rest.slice(separator.index + separator[0].length).trim()
+    : '';
   return { intExt, location, timeOfDay };
 }

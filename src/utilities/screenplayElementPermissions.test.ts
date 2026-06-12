@@ -34,4 +34,25 @@ describe('screenplay element permissions', () => {
     expect(canResolveScreenplayElement({ userId: 'student', supervisorAtAuthorTime: false }, actor)).toBe(false);
     expect(canModerateScreenplayElement({ userId: 'teacher', supervisorAtAuthorTime: true }, actor)).toBe(false);
   });
+
+  it('enforces the supervisor/student scene-mark deletion matrix', () => {
+    const studentMark = { userId: 'student', supervisorAtAuthorTime: false };
+    const supervisorMark = { userId: 'teacher', supervisorAtAuthorTime: true };
+
+    expect(canModerateScreenplayElement(studentMark, {
+      currentUserId: 'teacher',
+      isScreenplaySupervisor: true
+    })).toBe(true);
+    expect(canModerateScreenplayElement(supervisorMark, {
+      currentUserId: 'student',
+      canManageScreenplay: true,
+      isScreenplaySupervisor: false
+    })).toBe(false);
+    expect(canModerateScreenplayElement(studentMark, {
+      currentUserId: 'student'
+    })).toBe(true);
+    expect(canModerateScreenplayElement(supervisorMark, {
+      currentUserId: 'teacher'
+    })).toBe(true);
+  });
 });

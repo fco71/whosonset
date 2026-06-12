@@ -88,7 +88,7 @@ const WorkspaceDetailPage: React.FC = () => {
   // controls right where the membership is visible (instead of recalling names
   // back on the class page). Empty for students.
   const [teacherClasses, setTeacherClasses] = useState<TeacherClass[]>([]);
-  const [classTogglePending, setClassTogglePending] = useState<string | null>(null);
+  const [classTogglePending, setClassTogglePending] = useState<Set<string>>(() => new Set());
   const [addingMemberToClass, setAddingMemberToClass] = useState<{ uid: string; name: string } | null>(null);
   const [targetClassId, setTargetClassId] = useState('');
   const [screenplays, setScreenplays] = useState<Screenplay[]>([]);
@@ -640,9 +640,9 @@ const WorkspaceDetailPage: React.FC = () => {
   // the class page may be open in another tab. Guard per class, so a pending
   // write on class A doesn't silently swallow a click on class B.
   const handleToggleGroupInClass = async (teacherClass: TeacherClass) => {
-    if (!workspace || classTogglePending === teacherClass.id) return;
+    if (!workspace || classTogglePending.has(teacherClass.id)) return;
     const isInClass = teacherClass.workspaceIds.includes(workspace.id);
-    setClassTogglePending(teacherClass.id);
+    setClassTogglePending(current => new Set(current).add(teacherClass.id));
     try {
       await setWorkspaceInClass(teacherClass.id, workspace.id, !isInClass);
       toast.success(isInClass
@@ -652,7 +652,11 @@ const WorkspaceDetailPage: React.FC = () => {
       console.error('Failed to toggle class membership:', err);
       toast.error(t('collaboration.classes.updateFailed'));
     } finally {
-      setClassTogglePending(null);
+      setClassTogglePending(current => {
+        const next = new Set(current);
+        next.delete(teacherClass.id);
+        return next;
+      });
     }
   };
 
@@ -1221,7 +1225,7 @@ const WorkspaceDetailPage: React.FC = () => {
               </p>
               {teacherClasses.map(teacherClass => {
                 const inClass = workspace ? teacherClass.workspaceIds.includes(workspace.id) : false;
-                const pending = classTogglePending === teacherClass.id;
+                const pending = classTogglePending.has(teacherClass.id);
                 return (
                   <div key={teacherClass.id} className="class-toggle-row">
                     <span className="class-toggle-name" title={teacherClass.name}>{teacherClass.name}</span>
