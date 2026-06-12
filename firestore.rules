@@ -291,6 +291,110 @@ service cloud.firestore {
         newData.get('supervisorAtAuthorTime', false) == oldData.get('supervisorAtAuthorTime', false);
     }
 
+    function isValidScreenplayElementAnchor(data) {
+      return data.screenplayId is string &&
+        data.screenplayId.size() <= 200 &&
+        data.projectId is string &&
+        data.projectId.size() <= 200 &&
+        data.userId is string &&
+        data.userId.size() <= 200 &&
+        data.userName is string &&
+        data.userName.size() <= 200 &&
+        data.get('userAvatar', '') is string &&
+        data.get('userAvatar', '').size() <= 2000 &&
+        data.timestamp is timestamp &&
+        data.pageNumber is number &&
+        data.pageNumber >= 0 &&
+        data.pageNumber <= 10000 &&
+        data.position is map &&
+        data.position.keys().hasAll(['x', 'y', 'width', 'height']) &&
+        data.position.keys().hasOnly(['x', 'y', 'width', 'height']) &&
+        data.position.x is number &&
+        data.position.y is number &&
+        data.position.width is number &&
+        data.position.height is number &&
+        data.get('selection', '') is string &&
+        data.get('selection', '').size() <= 500 &&
+        data.resolved is bool &&
+        data.supervisorAtAuthorTime is bool;
+    }
+
+    function isValidAnnotationReply(reply) {
+      return reply is map &&
+        reply.keys().hasAll(['id', 'userId', 'userName', 'content', 'timestamp', 'supervisorAtAuthorTime']) &&
+        reply.keys().hasOnly(['id', 'userId', 'userName', 'userAvatar', 'content', 'timestamp', 'supervisorAtAuthorTime']) &&
+        reply.id is string &&
+        reply.id.size() <= 100 &&
+        reply.userId is string &&
+        reply.userId.size() <= 200 &&
+        reply.userName is string &&
+        reply.userName.size() <= 200 &&
+        (
+          reply.get('userAvatar', null) == null ||
+          (
+            reply.get('userAvatar', '') is string &&
+            reply.get('userAvatar', '').size() <= 2000
+          )
+        ) &&
+        reply.content is string &&
+        reply.content.size() > 0 &&
+        reply.content.size() <= 2000 &&
+        reply.timestamp is timestamp &&
+        reply.supervisorAtAuthorTime is bool;
+    }
+
+    function isValidAnnotationData(data) {
+      return data.keys().hasAll([
+          'screenplayId', 'projectId', 'userId', 'userName', 'userAvatar',
+          'annotation', 'timestamp', 'pageNumber', 'position', 'replies',
+          'resolved', 'supervisorAtAuthorTime', 'priority'
+        ]) &&
+        data.keys().hasOnly([
+          'screenplayId', 'projectId', 'userId', 'userName', 'userAvatar',
+          'annotation', 'timestamp', 'pageNumber', 'position', 'selection',
+          'replies', 'resolved', 'supervisorAtAuthorTime', 'priority'
+        ]) &&
+        isValidScreenplayElementAnchor(data) &&
+        data.annotation is string &&
+        data.annotation.size() > 0 &&
+        data.annotation.size() <= 5000 &&
+        data.replies is list &&
+        data.replies.size() == 0 &&
+        data.priority in ['low', 'medium', 'high', 'critical'];
+    }
+
+    function isValidTagData(data) {
+      return data.keys().hasAll([
+          'screenplayId', 'projectId', 'userId', 'userName', 'userAvatar',
+          'tagType', 'content', 'timestamp', 'pageNumber', 'position', 'color',
+          'resolved', 'supervisorAtAuthorTime'
+        ]) &&
+        data.keys().hasOnly([
+          'screenplayId', 'projectId', 'userId', 'userName', 'userAvatar',
+          'tagType', 'content', 'timestamp', 'pageNumber', 'position', 'selection',
+          'color', 'resolved', 'supervisorAtAuthorTime'
+        ]) &&
+        isValidScreenplayElementAnchor(data) &&
+        data.tagType in [
+          'cast_member', 'background_actors', 'stunts', 'vehicles', 'props',
+          'camera', 'special_effects', 'vfx', 'mechanical_effects', 'wardrobe',
+          'makeup_hair', 'animals', 'animal_wrangler', 'music', 'sound',
+          'art_department', 'set_dressing', 'greenery', 'special_equipment',
+          'security', 'additional_labor', 'miscellaneous', 'other', 'notes',
+          'comments', 'set', 'sequence', 'script_day', 'unit', 'location',
+          'character', 'character_arc', 'character_development',
+          'location_detail', 'costume', 'makeup', 'scene', 'scene_transition',
+          'scene_beat', 'lighting', 'plot_point', 'subplot', 'theme', 'budget',
+          'schedule', 'logistics', 'note', 'revision', 'research'
+        ] &&
+        data.content is string &&
+        data.content.size() > 0 &&
+        data.content.size() <= 2000 &&
+        data.color is string &&
+        data.color.size() > 0 &&
+        data.color.size() <= 32;
+    }
+
     function canModerateAnnotationData(data) {
       return canAccessScreenplay(data.screenplayId) &&
         (
@@ -320,12 +424,20 @@ service cloud.firestore {
 
     function isAnnotationReplyUpdate(newData, oldData) {
       return canAccessScreenplay(oldData.screenplayId) &&
-        newData.diff(oldData).affectedKeys().hasOnly(['replies']);
+        newData.diff(oldData).affectedKeys().hasOnly(['replies']) &&
+        oldData.get('replies', []) is list &&
+        newData.replies is list &&
+        newData.replies.size() == oldData.get('replies', []).size() + 1 &&
+        newData.replies.size() <= 100 &&
+        newData.replies.hasAll(oldData.get('replies', [])) &&
+        isValidAnnotationReply(newData.replies[newData.replies.size() - 1]) &&
+        newData.replies[newData.replies.size() - 1].userId == request.auth.uid;
     }
 
     function isAnnotationResolveUpdate(newData, oldData) {
       return canResolveAnnotationData(oldData) &&
-        newData.diff(oldData).affectedKeys().hasOnly(['resolved']);
+        newData.diff(oldData).affectedKeys().hasOnly(['resolved']) &&
+        newData.resolved is bool;
     }
 
     // SECURITY: teacher privilege is granted ONLY via the Admin SDK writing a
@@ -778,6 +890,7 @@ service cloud.firestore {
       allow read: if canAccessScreenplay(resource.data.screenplayId);
       allow create: if signedIn() &&
         request.resource.data.userId == request.auth.uid &&
+        isValidAnnotationData(request.resource.data) &&
         canAccessScreenplay(request.resource.data.screenplayId);
       allow update: if keepsAnnotationIdentity(request.resource.data, resource.data) &&
         (
@@ -791,6 +904,7 @@ service cloud.firestore {
       allow read: if canAccessScreenplay(resource.data.screenplayId);
       allow create: if signedIn() &&
         request.resource.data.userId == request.auth.uid &&
+        isValidTagData(request.resource.data) &&
         canAccessScreenplay(request.resource.data.screenplayId);
       allow update: if keepsAnnotationIdentity(request.resource.data, resource.data) &&
         isAnnotationResolveUpdate(request.resource.data, resource.data);

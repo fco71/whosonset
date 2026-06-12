@@ -30,6 +30,7 @@ export interface SceneNoteItem {
   positionY: number;
   resolved?: boolean;
   color?: string;
+  category?: string;
 }
 
 interface SceneRow {
@@ -75,6 +76,7 @@ const ScenesPanel: React.FC<ScenesPanelProps> = ({
   const [collapsed, setCollapsed] = useState(false);
   const [filter, setFilter] = useState('');
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [editFields, setEditFields] = useState({
     sceneNumber: '',
@@ -157,6 +159,47 @@ const ScenesPanel: React.FC<ScenesPanelProps> = ({
   const selectedRow = rows.find(row => row.key === selectedKey) || null;
   const selectedScene = selectedRow?.scene || null;
   const selectedNotes = selectedScene ? (notesByScene.get(selectedScene.id) || []) : [];
+  const selectedAnnotations = useMemo(
+    () => selectedNotes.filter(note => note.kind === 'annotation'),
+    [selectedNotes]
+  );
+  const selectedTags = useMemo(
+    () => selectedNotes.filter(note => note.kind === 'tag'),
+    [selectedNotes]
+  );
+  const allTags = useMemo(
+    () => notes.filter(note => note.kind === 'tag'),
+    [notes]
+  );
+
+  const categoryRows = useMemo(() => {
+    const counts = new Map<string, { scene: number; all: number }>();
+    allTags.forEach(tag => {
+      if (!tag.category) return;
+      const count = counts.get(tag.category) || { scene: 0, all: 0 };
+      count.all += 1;
+      counts.set(tag.category, count);
+    });
+    selectedTags.forEach(tag => {
+      if (!tag.category) return;
+      const count = counts.get(tag.category) || { scene: 0, all: 0 };
+      count.scene += 1;
+      counts.set(tag.category, count);
+    });
+    return Array.from(counts.entries())
+      .map(([category, count]) => ({ category, ...count }))
+      .sort((a, b) => a.category.localeCompare(b.category));
+  }, [allTags, selectedTags]);
+
+  const activeCategory = selectedCategory && categoryRows.some(row => row.category === selectedCategory)
+    ? selectedCategory
+    : null;
+  const tagsInScene = activeCategory
+    ? selectedTags.filter(tag => tag.category === activeCategory)
+    : selectedTags;
+  const tagsAcrossScreenplay = activeCategory
+    ? allTags.filter(tag => tag.category === activeCategory)
+    : allTags;
 
   // Same gate as annotation/tag delete buttons: author, or the viewer's
   // supervisor-aware moderation capability (rules enforce the same server-side).
@@ -165,6 +208,7 @@ const ScenesPanel: React.FC<ScenesPanelProps> = ({
 
   const handleRowClick = (row: SceneRow) => {
     setSelectedKey(row.key);
+    setSelectedCategory(null);
     setEditing(false);
     if (row.lineIndex !== undefined) onJumpToFountainLine(row.lineIndex);
     else onJumpToPage(row.page);
@@ -256,6 +300,59 @@ const ScenesPanel: React.FC<ScenesPanelProps> = ({
         {note.label}
       </span>
       <span style={{ marginLeft: 'auto', color: '#94a3b8', whiteSpace: 'nowrap' }}>p.{note.pageNumber}</span>
+    </button>
+  );
+
+  const renderBreakdownTag = (note: SceneNoteItem, showCategory: boolean) => (
+    <button
+      key={`breakdown-${note.id}`}
+      type="button"
+      onClick={() => onOpenNote(note)}
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '8px minmax(0, 1fr)',
+        columnGap: 6,
+        width: '100%',
+        textAlign: 'left',
+        background: 'none',
+        border: 'none',
+        padding: '4px 2px',
+        cursor: 'pointer',
+        color: note.resolved ? '#94a3b8' : '#334155',
+        fontSize: '0.76em'
+      }}
+      title={t('screenplay.scenes.openNote', { user: note.userName })}
+    >
+      <span
+        aria-hidden="true"
+        style={{
+          width: 8,
+          height: 8,
+          borderRadius: 2,
+          marginTop: 3,
+          background: note.color || '#b45309'
+        }}
+      />
+      <span style={{ minWidth: 0 }}>
+        <span style={{
+          display: 'block',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          textDecoration: note.resolved ? 'line-through' : 'none',
+          fontWeight: 600
+        }}>
+          {note.label}
+        </span>
+        <span style={{ display: 'flex', gap: 4, color: '#94a3b8', fontSize: '0.9em' }}>
+          {showCategory && note.category && (
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {t(`screenplay.categories.${note.category}`, { defaultValue: note.category })}
+            </span>
+          )}
+          <span style={{ marginLeft: 'auto', whiteSpace: 'nowrap' }}>p.{note.pageNumber}</span>
+        </span>
+      </span>
     </button>
   );
 
@@ -363,15 +460,116 @@ const ScenesPanel: React.FC<ScenesPanelProps> = ({
                   )}
                   <div style={{ marginTop: 6 }}>
                     <div style={{ color: '#64748b', fontSize: '0.75em', fontWeight: 700, textTransform: 'uppercase' }}>
-                      {t('screenplay.scenes.notesInScene', { count: selectedNotes.length })}
+                      {t('screenplay.scenes.annotationsInScene', { count: selectedAnnotations.length })}
                     </div>
-                    {selectedNotes.length === 0 ? (
+                    {selectedAnnotations.length === 0 ? (
                       <div style={{ color: '#94a3b8', fontSize: '0.8em', padding: '2px 0' }}>
-                        {t('screenplay.scenes.noNotes')}
+                        {t('screenplay.scenes.noAnnotations')}
                       </div>
                     ) : (
-                      selectedNotes.map(renderNoteRow)
+                      selectedAnnotations.map(renderNoteRow)
                     )}
+                  </div>
+
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'minmax(92px, 0.8fr) repeat(2, minmax(0, 1.25fr))',
+                      marginTop: 8,
+                      border: '1px solid #e2e8f0',
+                      borderRadius: 7,
+                      overflow: 'hidden',
+                      background: '#fff'
+                    }}
+                  >
+                    <div style={{ minWidth: 0, borderRight: '1px solid #e2e8f0' }}>
+                      <div style={{ padding: '5px 6px', background: '#f1f5f9', color: '#475569', fontSize: '0.68em', fontWeight: 700, textTransform: 'uppercase' }}>
+                        {t('screenplay.scenes.categoriesPane')}
+                      </div>
+                      <div style={{ maxHeight: 170, overflowY: 'auto', padding: 3 }}>
+                        <button
+                          type="button"
+                          aria-pressed={activeCategory === null}
+                          onClick={() => setSelectedCategory(null)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            width: '100%',
+                            border: 'none',
+                            borderRadius: 4,
+                            padding: '4px 5px',
+                            background: activeCategory === null ? '#e0e7ff' : 'transparent',
+                            color: activeCategory === null ? '#3730a3' : '#475569',
+                            cursor: 'pointer',
+                            fontSize: '0.72em',
+                            textAlign: 'left'
+                          }}
+                        >
+                          <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {t('screenplay.scenes.allCategories')}
+                          </span>
+                          <span style={{ marginLeft: 'auto', color: '#94a3b8' }}>{selectedTags.length}/{allTags.length}</span>
+                        </button>
+                        {categoryRows.map(row => (
+                          <button
+                            key={row.category}
+                            type="button"
+                            aria-pressed={activeCategory === row.category}
+                            onClick={() => setSelectedCategory(row.category)}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              width: '100%',
+                              border: 'none',
+                              borderRadius: 4,
+                              padding: '4px 5px',
+                              background: activeCategory === row.category ? '#e0e7ff' : 'transparent',
+                              color: row.scene > 0 ? (activeCategory === row.category ? '#3730a3' : '#475569') : '#94a3b8',
+                              cursor: 'pointer',
+                              fontSize: '0.72em',
+                              textAlign: 'left'
+                            }}
+                          >
+                            <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {t(`screenplay.categories.${row.category}`, { defaultValue: row.category })}
+                            </span>
+                            <span style={{ marginLeft: 'auto', color: '#94a3b8' }}>{row.scene}/{row.all}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div style={{ minWidth: 0, borderRight: '1px solid #e2e8f0' }}>
+                      <div style={{ padding: '5px 6px', background: '#f1f5f9', color: '#475569', fontSize: '0.68em', fontWeight: 700, textTransform: 'uppercase' }}>
+                        {t('screenplay.scenes.tagsInScenePane', { count: tagsInScene.length })}
+                      </div>
+                      <div style={{ maxHeight: 170, overflowY: 'auto', padding: 3 }}>
+                        {tagsInScene.length === 0 ? (
+                          <div style={{ color: '#94a3b8', fontSize: '0.72em', padding: 5 }}>
+                            {t('screenplay.scenes.noTagsInScene')}
+                          </div>
+                        ) : (
+                          tagsInScene.map(tag => renderBreakdownTag(tag, activeCategory === null))
+                        )}
+                      </div>
+                    </div>
+
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ padding: '5px 6px', background: '#f1f5f9', color: '#475569', fontSize: '0.68em', fontWeight: 700, textTransform: 'uppercase' }}>
+                        {t('screenplay.scenes.allTagsPane', { count: tagsAcrossScreenplay.length })}
+                      </div>
+                      <div style={{ maxHeight: 170, overflowY: 'auto', padding: 3 }}>
+                        {tagsAcrossScreenplay.length === 0 ? (
+                          <div style={{ color: '#94a3b8', fontSize: '0.72em', padding: 5 }}>
+                            {t('screenplay.scenes.noTags')}
+                          </div>
+                        ) : (
+                          tagsAcrossScreenplay.map(tag => renderBreakdownTag(tag, activeCategory === null))
+                        )}
+                      </div>
+                    </div>
                   </div>
                   <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 6 }}>
                     {selectedScene.userId === currentUserUid && (

@@ -214,6 +214,7 @@ describe('security rules guardrails', () => {
   it('keeps supervisor annotations protected from broad participant updates', () => {
     const rules = readRepoFile('firestore.rules');
     const annotationRules = rules.match(/match\s+\/screenplayAnnotations\/\{annotationId\}\s+\{[\s\S]*?\n\s+\}\n\n\s+match\s+\/screenplayTags/)?.[0] || '';
+    const replyUpdateFn = rules.match(/function\s+isAnnotationReplyUpdate[\s\S]*?\n\s+\}/)?.[0] || '';
 
     expect(rules).toMatch(/function\s+canModerateAnnotationData/);
     expect(rules).toMatch(/function\s+canResolveAnnotationData/);
@@ -223,16 +224,26 @@ describe('security rules guardrails', () => {
     expect(annotationRules).toMatch(/allow\s+update:\s+if\s+keepsAnnotationIdentity/);
     expect(annotationRules).toMatch(/allow\s+delete:\s+if\s+canModerateAnnotationData\(resource\.data\)/);
     expect(annotationRules).not.toMatch(/allow\s+update,\s+delete:\s+if\s+signedIn\(\)\s+&&\s+canAccessScreenplay/);
+    expect(annotationRules).toMatch(/isValidAnnotationData\(request\.resource\.data\)/);
+    expect(rules).toMatch(/data\.annotation\.size\(\)\s*<=\s*5000/);
+    expect(rules).toMatch(/data\.position\.keys\(\)\.hasOnly\(\['x',\s*'y',\s*'width',\s*'height'\]\)/);
+    expect(replyUpdateFn).toMatch(/newData\.replies\.size\(\)\s*==\s*oldData\.get\('replies',\s*\[\]\)\.size\(\)\s*\+\s*1/);
+    expect(replyUpdateFn).toMatch(/newData\.replies\.hasAll\(oldData\.get\('replies',\s*\[\]\)\)/);
+    expect(replyUpdateFn).toMatch(/newData\.replies\[newData\.replies\.size\(\)\s*-\s*1\]\.userId\s*==\s*request\.auth\.uid/);
   });
 
   it('keeps screenplay tags aligned with annotation moderation rules', () => {
     const rules = readRepoFile('firestore.rules');
-    const tagRules = rules.match(/match\s+\/screenplayTags\/\{tagId\}\s+\{[\s\S]*?\n\s+\}\n\n\s+match\s+\/screenplaySessions/)?.[0] || '';
+    const tagRules = rules.match(/match\s+\/screenplayTags\/\{tagId\}\s+\{[\s\S]*?\n\s+\}\n\n\s+\/\/ Scene marks/)?.[0] || '';
 
     expect(tagRules).toMatch(/allow\s+update:\s+if\s+keepsAnnotationIdentity/);
     expect(tagRules).toMatch(/isAnnotationResolveUpdate\(request\.resource\.data,\s+resource\.data\)/);
     expect(tagRules).toMatch(/allow\s+delete:\s+if\s+canModerateAnnotationData\(resource\.data\)/);
     expect(tagRules).not.toMatch(/allow\s+update,\s+delete:\s+if\s+signedIn\(\)\s+&&\s+canAccessScreenplay/);
+    expect(tagRules).toMatch(/isValidTagData\(request\.resource\.data\)/);
+    expect(rules).toMatch(/data\.content\.size\(\)\s*<=\s*2000/);
+    expect(rules).toMatch(/data\.tagType\s+in\s+\[[\s\S]*?'cast_member'[\s\S]*?'research'[\s\S]*?\]/);
+    expect(rules).toMatch(/data\.color\.size\(\)\s*<=\s*32/);
   });
 
   it('keeps screenplay history queries aligned with workspace-scoped activity rules', () => {

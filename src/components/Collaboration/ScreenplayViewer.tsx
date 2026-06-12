@@ -391,29 +391,6 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     }
   };
 
-  const handleRemoveTag = async (annotationId: string, replyId: string) => {
-    try {
-      const annotation = annotations.find(a => a.id === annotationId);
-      if (annotation) {
-        const updatedReplies = annotation.replies?.filter(r => r.id !== replyId) || [];
-        const annotationRef = doc(db, 'screenplayAnnotations', annotationId);
-        await updateDoc(annotationRef, { replies: updatedReplies });
-        
-        // Update local state
-        setAnnotations(prev => prev.map(a => 
-          a.id === annotationId 
-            ? { ...a, replies: updatedReplies }
-            : a
-        ));
-        
-        toast.success('Reply removed successfully!');
-      }
-    } catch (error) {
-      console.error('Error removing reply:', error);
-      toast.error('Failed to remove reply');
-    }
-  };
-
   const tagColors = {
     // Cast & Performance
     cast_member: '#FF6B6B',
@@ -1864,7 +1841,8 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       pageNumber: tagItem.pageNumber ?? 0,
       positionY: tagItem.position?.y || 0,
       resolved: tagItem.resolved,
-      color: tagItem.color
+      color: tagItem.color,
+      category: tagItem.tagType
     }))
   ], [annotations, tags]);
 
@@ -3463,6 +3441,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                             <div className="reply-input-section compact">
                               <textarea
                                 value={replyInput}
+                                maxLength={2000}
                                 onChange={(e) => setReplyInput(e.target.value)}
                                 placeholder={t('screenplay.popup.writeReply')}
                                 className="reply-textarea compact"
@@ -3728,6 +3707,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                 <textarea
                   placeholder={t('screenplay.popup.enterAnnotation')}
                   value={annotationInput}
+                  maxLength={5000}
                   onChange={e => {
                     setAnnotationInput(e.target.value);
                     updateMentionStateFromInput('annotation', e.target.value, e.target.selectionStart ?? e.target.value.length);
@@ -3795,6 +3775,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                   type="text"
                   placeholder={t('screenplay.popup.enterTag')}
                   value={newTag}
+                  maxLength={2000}
                   onChange={e => {
                     setNewTag(e.target.value);
                     updateMentionStateFromInput('tag', e.target.value, e.target.selectionStart ?? e.target.value.length);
