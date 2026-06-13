@@ -1921,6 +1921,32 @@ export const notifyNewMessage = onDocumentCreated({
 
     // Get conversation ID from event params
     const conversationId = event.params.conversationId;
+    const messageId = event.params.messageId;
+
+    // Sender data computed once (reused by the in-app notification and the email).
+    const senderData = await getUserData(senderId);
+    const senderName = (senderData as any)?.name || (senderData as any)?.displayName || 'Unknown User';
+    const messagePreviewText = typeof content === 'string' && content.length > 50
+      ? content.substring(0, 50) + '...'
+      : (content || '');
+
+    // In-app notification: fires for EVERY message, independent of the email
+    // preference/throttle below. Server-side source of truth (Phase 2 migration);
+    // mirrors the client write in messagingService.createMessageNotification, which
+    // is removed from the client once this is verified in production.
+    try {
+      await createInAppNotification({
+        userId: receiverId,
+        type: 'message',
+        title: 'New Message',
+        body: `New message from ${senderName}: ${messagePreviewText}`,
+        link: `/chat?user=${encodeURIComponent(senderId)}`,
+        senderId,
+        metadata: { messageId, conversationId },
+      });
+    } catch (inAppErr) {
+      console.error('[notifyNewMessage] in-app notification write failed:', inAppErr);
+    }
 
     // Get recipient's data using helper function
     const recipientData = await getUserData(receiverId);
@@ -1944,12 +1970,8 @@ export const notifyNewMessage = onDocumentCreated({
       return;
     }
 
-    // Get sender's data using helper function
-    const senderData = await getUserData(senderId);
-    const senderName = (senderData as any)?.name || (senderData as any)?.displayName || 'Unknown User';
-
-    // Send email notification
-    const messagePreview = content.length > 50 ? content.substring(0, 50) + '...' : content;
+    // Send email notification (senderName + preview already computed above).
+    const messagePreview = messagePreviewText;
     const emailTemplate = EmailService.getMessageNotificationTemplate(senderName, messagePreview);
     const success = await EmailService.sendEmail({
       to: recipientEmail,

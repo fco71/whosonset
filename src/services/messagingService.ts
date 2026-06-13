@@ -152,8 +152,10 @@ export class MessagingService {
         unreadCount: increment(1)
       });
 
-      // Create notification for receiver
-      await this.createMessageNotification(receiverId, senderId, docRef.id, content, messageType);
+      // In-app notification AND the (throttled, ~1 per conversation / 30 min) email
+      // are both handled server-side by the notifyNewMessage Cloud Function (Phase 2).
+      // The client intentionally sends nothing here — this is what keeps message email
+      // sporadic instead of one-per-message.
 
       debugLog('[MessagingService] Message sent successfully:', docRef.id);
       return docRef.id;
@@ -705,22 +707,10 @@ export class MessagingService {
       const senderProfile = await this.getUserProfile(senderId);
       const senderName = senderProfile?.displayName || 'Unknown User';
       
-      // Create notification with message preview
+      // DEPRECATED / UNUSED as of Phase 2: notifyNewMessage now writes the in-app
+      // notification AND sends the throttled email server-side, and sendMessage no
+      // longer calls this method. Kept only until the Inc 7 dead-code cleanup.
       const messagePreview = content.length > 50 ? content.substring(0, 50) + '...' : content;
-      const body = `New message from ${senderName}: ${messagePreview}`;
-      await addDoc(collection(db, 'notifications'), {
-        userId: receiverId,
-        type: "message",
-        title: 'New Message',
-        body,
-        message: body,
-        link: `/chat?user=${encodeURIComponent(senderId)}`,
-        senderId: senderId,
-        messageId: messageId,
-        isRead: false,
-        read: false,
-        createdAt: serverTimestamp()
-      });
 
       // Send email notification
       await EmailNotificationService.sendMessageNotificationEmail(receiverId, senderName, messagePreview);
