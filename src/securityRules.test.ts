@@ -44,22 +44,23 @@ describe('security rules guardrails', () => {
     expect(activityRules).toMatch(/allow\s+delete:\s+if\s+signedIn\(\)\s+&&\s+isWorkspaceOwner/);
   });
 
-  it('keeps scene marks screenplay-scoped with author-only edits', () => {
+  it('keeps scene records screenplay-scoped with field-limited edits', () => {
     const rules = readRepoFile('firestore.rules');
     const sceneRules = rules.match(/match\s+\/screenplayScenes\/\{sceneId\}\s+\{[\s\S]*?\n\s+\}/)?.[0] || '';
 
     expect(sceneRules).toMatch(/allow\s+read:\s+if\s+canAccessScreenplay\(resource\.data\.screenplayId\)/);
     expect(sceneRules).toMatch(/request\.resource\.data\.userId\s+==\s+request\.auth\.uid/);
-    expect(sceneRules).toMatch(/resource\.data\.userId\s+==\s+request\.auth\.uid/);
     expect(sceneRules).toMatch(/keepsAnnotationIdentity/);
     expect(sceneRules).toMatch(/allow\s+delete:\s+if\s+canModerateAnnotationData/);
     expect(sceneRules).not.toMatch(/allow\s+(read|create|update|delete)[^;]*if\s+signedIn\(\);/);
-    // Edits must require CURRENT screenplay access and stay limited to the text
-    // fields (anchor/identity immutable); no `||` broadening of the update clause.
+    // Edits require current access. Metadata and source synchronization are
+    // separate field-limited branches.
     const sceneUpdate = sceneRules.match(/allow\s+update:[\s\S]*?;/)?.[0] || '';
     expect(sceneUpdate).toMatch(/canAccessScreenplay\(resource\.data\.screenplayId\)/);
-    expect(sceneUpdate).toMatch(/affectedKeys\(\)\.hasOnly\(\['sceneNumber',\s*'intExt',\s*'location',\s*'timeOfDay',\s*'synopsis',\s*'note'\]\)/);
-    expect(sceneUpdate).not.toMatch(/\|\|/);
+    expect(sceneUpdate).toMatch(/'sceneNumberAuto'/);
+    expect(sceneUpdate).toMatch(/'scriptDay'/);
+    expect(sceneUpdate).toMatch(/'sourceLineIndex'/);
+    expect(sceneUpdate).toMatch(/canEditScreenplay\(resource\.data\.screenplayId\)/);
   });
 
   it('keeps teacher classes private to their owner and teacher-created', () => {
@@ -171,6 +172,33 @@ describe('security rules guardrails', () => {
     expect(rules).not.toMatch(/allow\s+update:\s+if\s+canEditScreenplayData\(resource\.data\)\s+&&/);
   });
 
+  it('allows shared scene metadata edits without exposing source anchors', () => {
+    const rules = readRepoFile('firestore.rules');
+    const sceneRules = rules.match(/match\s+\/screenplayScenes\/\{sceneId\}\s+\{[\s\S]*?\n\s+\}/)?.[0] || '';
+
+    expect(rules).toMatch(/function\s+isValidSceneMetadata/);
+    expect(rules).toMatch(/function\s+isValidFountainSceneFields/);
+    expect(sceneRules).toMatch(/canAccessScreenplay\(resource\.data\.screenplayId\)/);
+    expect(sceneRules).toMatch(/'scriptDay'/);
+    expect(sceneRules).toMatch(/'estimatedTime'/);
+    expect(sceneRules).toMatch(/canEditScreenplay\(resource\.data\.screenplayId\)/);
+    expect(sceneRules).toMatch(/'sourceLineIndex'/);
+    const sceneUpdate = sceneRules.match(/allow\s+update:[\s\S]*?;/)?.[0] || '';
+    expect(sceneUpdate).not.toMatch(/resource\.data\.userId\s*==\s*request\.auth\.uid/);
+  });
+
+  it('keeps the general email endpoint registered-recipient and quota restricted', () => {
+    const functions = readRepoFile('functions/src/index.ts');
+    const client = readRepoFile('src/services/emailNotificationService.ts');
+
+    expect(functions).toMatch(/resolveRegisteredRecipientEmail/);
+    expect(functions).toMatch(/consumeEmailSendQuota/);
+    expect(functions).toMatch(/EMAIL_SEND_DAILY_LIMIT/);
+    expect(functions).toMatch(/Recipient must be a registered My Film Jobs account/);
+    expect(client).toMatch(/getIdToken\(\)/);
+    expect(client).toMatch(/Authorization.*Bearer/);
+  });
+
   it('gates the supervisor-mode callable on teacherRoles, not user-writable profile fields', () => {
     // The client self-elects supervisor through the setWorkspaceSupervisorMode
     // callable, which runs with the Admin SDK and BYPASSES Firestore rules — so
@@ -234,7 +262,7 @@ describe('security rules guardrails', () => {
 
   it('keeps screenplay tags aligned with annotation moderation rules', () => {
     const rules = readRepoFile('firestore.rules');
-    const tagRules = rules.match(/match\s+\/screenplayTags\/\{tagId\}\s+\{[\s\S]*?\n\s+\}\n\n\s+\/\/ Scene marks/)?.[0] || '';
+    const tagRules = rules.match(/match\s+\/screenplayTags\/\{tagId\}\s+\{[\s\S]*?\n\s+\}\n\n\s+\/\/ Scene records/)?.[0] || '';
 
     expect(tagRules).toMatch(/allow\s+update:\s+if\s+keepsAnnotationIdentity/);
     expect(tagRules).toMatch(/isAnnotationResolveUpdate\(request\.resource\.data,\s+resource\.data\)/);

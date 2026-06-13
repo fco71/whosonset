@@ -262,6 +262,15 @@ service cloud.firestore {
         isScreenplayMemberData(get(/databases/$(database)/documents/screenplays/$(screenplayId)).data);
     }
 
+    function canEditScreenplay(screenplayId) {
+      return signedIn() &&
+        screenplayId is string &&
+        exists(/databases/$(database)/documents/screenplays/$(screenplayId)) &&
+        canEditScreenplayData(
+          get(/databases/$(database)/documents/screenplays/$(screenplayId)).data
+        );
+    }
+
     function isScreenplayManager(screenplayId, uid) {
       return signedIn() &&
         screenplayId is string &&
@@ -411,6 +420,43 @@ service cloud.firestore {
             )
           )
         );
+    }
+
+    function isValidSceneMetadata(data) {
+      return data.sceneNumber is string &&
+        data.sceneNumber.size() <= 20 &&
+        data.intExt in ['', 'INT', 'EXT', 'INT/EXT'] &&
+        data.location is string &&
+        data.location.size() <= 200 &&
+        data.timeOfDay is string &&
+        data.timeOfDay.size() <= 80 &&
+        data.synopsis is string &&
+        data.synopsis.size() <= 2000 &&
+        data.note is string &&
+        data.note.size() <= 500 &&
+        data.get('scriptDay', '') is string &&
+        data.get('scriptDay', '').size() <= 40 &&
+        data.get('unit', '') is string &&
+        data.get('unit', '').size() <= 40 &&
+        data.get('sequence', '') is string &&
+        data.get('sequence', '').size() <= 80 &&
+        data.get('estimatedTime', '') is string &&
+        data.get('estimatedTime', '').size() <= 40 &&
+        data.get('sceneNumberAuto', false) is bool;
+    }
+
+    function isValidFountainSceneFields(data) {
+      return data.get('sourceType', 'pdf') in ['pdf', 'fountain'] &&
+        data.get('sourceStatus', 'active') in ['active', 'orphaned'] &&
+        data.get('sourceLineIndex', 0) is number &&
+        data.get('sourceLineIndex', 0) >= 0 &&
+        data.get('sourceOrdinal', 0) is number &&
+        data.get('sourceOrdinal', 0) >= 0 &&
+        data.get('sourceHeading', '') is string &&
+        data.get('sourceHeading', '').size() <= 500 &&
+        data.get('estimatedPageEighths', 1) is number &&
+        data.get('estimatedPageEighths', 1) >= 1 &&
+        data.get('estimatedPageEighths', 1) <= 800;
     }
 
     function canResolveAnnotationData(data) {
@@ -911,11 +957,9 @@ service cloud.firestore {
       allow delete: if canModerateAnnotationData(resource.data);
     }
 
-    // Scene marks (slug anchors with number/INT-EXT/location/time-of-day) used for
-    // per-scene navigation and breakdown. Same access shape as annotations/tags;
-    // edits are author-only WHILE they still have screenplay access, limited to the
-    // text fields (anchor + identity immutable), deletes follow the annotation
-    // moderation model (supervisorAtAuthorTime protects the teacher's marks).
+    // Scene records back both PDF marks and Fountain-derived headings. Any current
+    // screenplay participant may edit production metadata. Source anchor movement is
+    // reserved for users who may edit the screenplay itself.
     match /screenplayScenes/{sceneId} {
       allow read: if canAccessScreenplay(resource.data.screenplayId);
       allow create: if signedIn() &&
@@ -923,36 +967,52 @@ service cloud.firestore {
         request.resource.data.screenplayId is string &&
         request.resource.data.pageNumber is number &&
         request.resource.data.position is map &&
-        request.resource.data.sceneNumber is string &&
-        request.resource.data.sceneNumber.size() <= 20 &&
-        request.resource.data.intExt in ['', 'INT', 'EXT', 'INT/EXT'] &&
-        request.resource.data.location is string &&
-        request.resource.data.location.size() <= 200 &&
-        request.resource.data.timeOfDay is string &&
-        request.resource.data.timeOfDay.size() <= 80 &&
-        request.resource.data.synopsis is string &&
-        request.resource.data.synopsis.size() <= 2000 &&
-        request.resource.data.note is string &&
-        request.resource.data.note.size() <= 500 &&
+        isValidSceneMetadata(request.resource.data) &&
+        isValidFountainSceneFields(request.resource.data) &&
         request.resource.data.selection is string &&
         request.resource.data.selection.size() <= 500 &&
         canAccessScreenplay(request.resource.data.screenplayId);
       allow update: if signedIn() &&
-        resource.data.userId == request.auth.uid &&
         canAccessScreenplay(resource.data.screenplayId) &&
         keepsAnnotationIdentity(request.resource.data, resource.data) &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['sceneNumber', 'intExt', 'location', 'timeOfDay', 'synopsis', 'note']) &&
-        request.resource.data.sceneNumber is string &&
-        request.resource.data.sceneNumber.size() <= 20 &&
-        request.resource.data.intExt in ['', 'INT', 'EXT', 'INT/EXT'] &&
-        request.resource.data.location is string &&
-        request.resource.data.location.size() <= 200 &&
-        request.resource.data.timeOfDay is string &&
-        request.resource.data.timeOfDay.size() <= 80 &&
-        request.resource.data.synopsis is string &&
-        request.resource.data.synopsis.size() <= 2000 &&
-        request.resource.data.note is string &&
-        request.resource.data.note.size() <= 500;
+        isValidSceneMetadata(request.resource.data) &&
+        isValidFountainSceneFields(request.resource.data) &&
+        (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'sceneNumber',
+            'sceneNumberAuto',
+            'intExt',
+            'location',
+            'timeOfDay',
+            'synopsis',
+            'note',
+            'scriptDay',
+            'unit',
+            'sequence',
+            'estimatedTime'
+          ]) ||
+          (
+            resource.data.get('sourceType', 'pdf') == 'fountain' &&
+            request.resource.data.get('sourceType', 'pdf') == 'fountain' &&
+            canEditScreenplay(resource.data.screenplayId) &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'sceneNumber',
+              'intExt',
+              'location',
+              'timeOfDay',
+              'pageNumber',
+              'position',
+              'selection',
+              'sourceType',
+              'sourceLineIndex',
+              'sourceHeading',
+              'sourceOrdinal',
+              'sourceStatus',
+              'estimatedPageEighths',
+              'lastSyncedAt'
+            ])
+          )
+        );
       allow delete: if canModerateAnnotationData(resource.data);
     }
 

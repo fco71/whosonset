@@ -2254,6 +2254,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
               name: editingFountain.name,
               fountainSource: editingFountain.fountainSource
             }}
+            projectId={projectId || 'default-project'}
             onClose={() => setEditingFountain(null)}
           />
         )}

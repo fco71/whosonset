@@ -12,7 +12,7 @@ import EmailNotificationService from '../../services/emailNotificationService';
 import { logWorkspaceActivity, WorkspaceActivityVerb } from '../../services/workspaceActivityService';
 import FountainViewer from './FountainViewer';
 import ScenesPanel, { SceneNoteItem } from './ScenesPanel';
-import { addScene, parseSlugText, sceneCsvCell, sceneHeading, sceneOrderKey, subscribeScenes, INT_EXT_OPTIONS, SceneIntExt, SceneMark } from '../../services/sceneService';
+import { addScene, parseSlugText, sceneCsvMetadata, sceneHeading, sceneOrderKey, subscribeScenes, INT_EXT_OPTIONS, SceneIntExt, SceneMark } from '../../services/sceneService';
 import type { ScreenplayReviewStatus, WorkspaceMember } from '../../types/Collaboration';
 import {
   applyMentionSuggestion,
@@ -1170,14 +1170,13 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     canModerateScreenplayElement(element, screenplayElementActorAccess),
   [screenplayElementActorAccess]);
 
-  // Scene marks subscription — same lifecycle as the annotation/tag sync.
-  // Fountain docs derive scenes from the source text; no marks exist to listen for.
+  // Scene records subscription — PDF anchors and Fountain-derived scene metadata
+  // share the same collection.
   useEffect(() => {
-    if (isFountain) return;
     const unsubscribe = subscribeScenes(screenplay.id, setScenes);
     return () => unsubscribe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [screenplay.id, isFountain]);
+  }, [screenplay.id]);
 
   const addSceneMark = async (position: { x: number; y: number; width: number; height: number }, pageNumber: number) => {
     try {
@@ -1466,6 +1465,11 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         t('screenplay.export.columns.category'),
         t('screenplay.export.columns.page'),
         t('screenplay.export.columns.scene'),
+        t('screenplay.export.columns.scriptDay'),
+        t('screenplay.export.columns.unit'),
+        t('screenplay.export.columns.sequence'),
+        t('screenplay.export.columns.estimatedTime'),
+        t('screenplay.export.columns.pageEighths'),
         t('screenplay.export.columns.content'),
         t('screenplay.export.columns.author'),
         t('screenplay.export.columns.supervisor'),
@@ -1477,14 +1481,19 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       const yes = t('screenplay.export.boolean.yes');
       const no = t('screenplay.export.boolean.no');
 
-      const sceneCell = (pageNumber: number, positionY: number): string =>
-        sceneCsvCell(scenes, pageNumber, positionY);
+      const sceneDetails = (pageNumber: number, positionY: number) =>
+        sceneCsvMetadata(scenes, pageNumber, positionY, numPages);
 
       type Row = {
         type: string;
         category: string;
         page: number;
         scene: string;
+        scriptDay: string;
+        unit: string;
+        sequence: string;
+        estimatedTime: string;
+        pageEighths: string;
         content: string;
         author: string;
         supervisor: string;
@@ -1492,29 +1501,35 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         timestamp: string;
       };
 
-      const annotationRows: Row[] = annotations.map(annotation => ({
-        type: t('screenplay.export.types.annotation'),
-        category: '',
-        page: annotation.pageNumber ?? 0,
-        scene: sceneCell(annotation.pageNumber ?? 0, annotation.position?.y || 0),
-        content: annotation.annotation || '',
-        author: annotation.userName || '',
-        supervisor: annotation.supervisorAtAuthorTime ? yes : no,
-        resolved: annotation.resolved ? yes : no,
-        timestamp: formatTimestampForCsv(annotation.timestamp)
-      }));
+      const annotationRows: Row[] = annotations.map(annotation => {
+        const metadata = sceneDetails(annotation.pageNumber ?? 0, annotation.position?.y || 0);
+        return {
+          type: t('screenplay.export.types.annotation'),
+          category: '',
+          page: annotation.pageNumber ?? 0,
+          ...metadata,
+          content: annotation.annotation || '',
+          author: annotation.userName || '',
+          supervisor: annotation.supervisorAtAuthorTime ? yes : no,
+          resolved: annotation.resolved ? yes : no,
+          timestamp: formatTimestampForCsv(annotation.timestamp)
+        };
+      });
 
-      const tagRows: Row[] = tags.map(tag => ({
-        type: t('screenplay.export.types.tag'),
-        category: tag.tagType ? t(`screenplay.categories.${tag.tagType}`, { defaultValue: tag.tagType }) : '',
-        page: tag.pageNumber ?? 0,
-        scene: sceneCell(tag.pageNumber ?? 0, tag.position?.y || 0),
-        content: tag.content || '',
-        author: tag.userName || '',
-        supervisor: tag.supervisorAtAuthorTime ? yes : no,
-        resolved: tag.resolved ? yes : no,
-        timestamp: formatTimestampForCsv(tag.timestamp)
-      }));
+      const tagRows: Row[] = tags.map(tag => {
+        const metadata = sceneDetails(tag.pageNumber ?? 0, tag.position?.y || 0);
+        return {
+          type: t('screenplay.export.types.tag'),
+          category: tag.tagType ? t(`screenplay.categories.${tag.tagType}`, { defaultValue: tag.tagType }) : '',
+          page: tag.pageNumber ?? 0,
+          ...metadata,
+          content: tag.content || '',
+          author: tag.userName || '',
+          supervisor: tag.supervisorAtAuthorTime ? yes : no,
+          resolved: tag.resolved ? yes : no,
+          timestamp: formatTimestampForCsv(tag.timestamp)
+        };
+      });
 
       const allRows = [...annotationRows, ...tagRows].sort((a, b) => {
         if (a.page !== b.page) return a.page - b.page;
@@ -1526,6 +1541,11 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         row.category,
         row.page,
         row.scene,
+        row.scriptDay,
+        row.unit,
+        row.sequence,
+        row.estimatedTime,
+        row.pageEighths,
         row.content,
         row.author,
         row.supervisor,
@@ -3225,6 +3245,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                     onJumpToPage={jumpToPdfPage}
                     onJumpToFountainLine={jumpToFountainLine}
                     onOpenNote={handleOpenSceneNote}
+                    documentPageCount={isFountain ? null : numPages}
                     onSceneDeleted={handleSceneDeleted}
                   />
 

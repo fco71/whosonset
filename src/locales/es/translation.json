@@ -901,7 +901,12 @@
         "supervisor": "De supervisor",
         "resolved": "Resuelto",
         "timestamp": "Fecha y hora",
-        "scene": "Escena"
+        "scene": "Escena",
+        "scriptDay": "Día de guion",
+        "unit": "Unidad",
+        "sequence": "Secuencia",
+        "estimatedTime": "Tiempo est.",
+        "pageEighths": "Octavos de página"
       }
     },
     "reviewStatus": {
@@ -1506,6 +1511,7 @@
     "pageOf": "Página {{current}} / {{total}}",
     "pageDivider": "Página {{page}}",
     "pageCountTooltip": "Número de página estimado (aproximado — sin saltos de página fijos)",
+    "sceneNavigator": "Navegador de escenas",
     "emptyDraft": "Este borrador está vacío.",
     "downloadPdf": "Descargar PDF",
     "pdfExporting": "Preparando PDF…",
@@ -1692,7 +1698,12 @@
         "resolved": "Resuelto",
         "timestamp": "Fecha",
         "screenplay": "Guion",
-        "scene": "Escena"
+        "scene": "Escena",
+        "scriptDay": "Día de guion",
+        "unit": "Unidad",
+        "sequence": "Secuencia",
+        "estimatedTime": "Tiempo est.",
+        "pageEighths": "Octavos de página"
       },
       "types": {
         "annotation": "Anotación",
@@ -1736,6 +1747,12 @@
       "filterPlaceholder": "Filtrar por locación, #, momento…",
       "headingLabel": "Encabezado",
       "synopsis": "Sinopsis",
+      "scriptDay": "Día de guion",
+      "unit": "Unidad",
+      "sequence": "Secuencia",
+      "estimatedTime": "Tiempo est.",
+      "pageEighths": "Octavos de página",
+      "fountainHeadingHint": "Edita INT/EXT, la locación y el momento del día en el encabezado Fountain. Los metadatos de producción compartidos se editan aquí.",
       "categoriesPane": "Categorías",
       "allCategories": "Todas",
       "tagsInScenePane_one": "Etiqueta en escena ({{count}})",

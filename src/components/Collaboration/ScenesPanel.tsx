@@ -1,10 +1,15 @@
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
-import { paginateElements } from '../../utilities/fountain';
+import {
+  describeFountainScenes,
+  formatPageEighths
+} from '../../utilities/fountain';
 import {
   deleteScene,
+  estimateScenePageEighths,
   parseSlugText,
+  reconcileFountainScenes,
   sceneForPosition,
   sceneHeading,
   sceneOrderKey,
@@ -56,6 +61,7 @@ interface ScenesPanelProps {
   onJumpToPage: (pageNumber: number) => void;
   onJumpToFountainLine: (lineIndex: number) => void;
   onOpenNote: (note: SceneNoteItem) => void;
+  documentPageCount?: number | null;
   /** Fired after a successful delete so the viewer can log the activity. */
   onSceneDeleted?: () => void;
 }
@@ -70,6 +76,7 @@ const ScenesPanel: React.FC<ScenesPanelProps> = ({
   onJumpToPage,
   onJumpToFountainLine,
   onOpenNote,
+  documentPageCount,
   onSceneDeleted
 }) => {
   const { t } = useTranslation();
@@ -84,7 +91,11 @@ const ScenesPanel: React.FC<ScenesPanelProps> = ({
     location: '',
     timeOfDay: '',
     synopsis: '',
-    note: ''
+    note: '',
+    scriptDay: '',
+    unit: '',
+    sequence: '',
+    estimatedTime: ''
   });
   const [savingEdit, setSavingEdit] = useState(false);
 
@@ -92,19 +103,23 @@ const ScenesPanel: React.FC<ScenesPanelProps> = ({
   const rows: SceneRow[] = useMemo(() => {
     if (isFountain) {
       if (!fountainSource) return [];
-      return paginateElements(fountainSource)
-        .filter(element => element.type === 'scene_heading')
-        .map((element, index) => {
-          const parsed = parseSlugText(element.text);
+      const descriptors = describeFountainScenes(fountainSource);
+      const matches = reconcileFountainScenes(
+        scenes.filter(scene => scene.sourceType === 'fountain'),
+        descriptors
+      );
+      return matches.map(({ descriptor, scene }) => {
+          const parsed = parseSlugText(descriptor.heading);
           return {
-            key: `line-${element.lineIndex}`,
-            page: element.page,
-            number: String(index + 1),
+            key: scene?.id || `line-${descriptor.lineIndex}`,
+            page: descriptor.page,
+            number: scene?.sceneNumber || String(descriptor.ordinal + 1),
             intExt: parsed.intExt,
-            location: parsed.location || element.text,
+            location: parsed.location || descriptor.heading,
             timeOfDay: parsed.timeOfDay,
-            heading: element.text,
-            lineIndex: element.lineIndex
+            heading: descriptor.heading,
+            scene,
+            lineIndex: descriptor.lineIndex
           };
         });
     }
@@ -128,7 +143,11 @@ const ScenesPanel: React.FC<ScenesPanelProps> = ({
       row.number.toLowerCase().includes(needle) ||
       row.intExt.toLowerCase().includes(needle) ||
       row.timeOfDay.toLowerCase().includes(needle) ||
-      (row.scene?.synopsis || '').toLowerCase().includes(needle)
+      (row.scene?.synopsis || '').toLowerCase().includes(needle) ||
+      (row.scene?.scriptDay || '').toLowerCase().includes(needle) ||
+      (row.scene?.unit || '').toLowerCase().includes(needle) ||
+      (row.scene?.sequence || '').toLowerCase().includes(needle) ||
+      (row.scene?.estimatedTime || '').toLowerCase().includes(needle)
     );
   }, [rows, filter]);
 
@@ -222,7 +241,11 @@ const ScenesPanel: React.FC<ScenesPanelProps> = ({
       location: selectedScene.location,
       timeOfDay: selectedScene.timeOfDay,
       synopsis: selectedScene.synopsis,
-      note: selectedScene.note
+      note: selectedScene.note,
+      scriptDay: selectedScene.scriptDay,
+      unit: selectedScene.unit,
+      sequence: selectedScene.sequence,
+      estimatedTime: selectedScene.estimatedTime
     });
     setEditing(true);
   };
@@ -237,8 +260,13 @@ const ScenesPanel: React.FC<ScenesPanelProps> = ({
         location: editFields.location.trim(),
         timeOfDay: editFields.timeOfDay.trim(),
         synopsis: editFields.synopsis.trim(),
-        note: editFields.note.trim()
-      });
+        note: editFields.note.trim(),
+        scriptDay: editFields.scriptDay.trim(),
+        unit: editFields.unit.trim(),
+        sequence: editFields.sequence.trim(),
+        estimatedTime: editFields.estimatedTime.trim()
+      }, selectedScene.sceneNumberAuto === true &&
+        editFields.sceneNumber.trim() === selectedScene.sceneNumber);
       toast.success(t('screenplay.scenes.updated'));
       setEditing(false);
     } catch (err) {
@@ -357,6 +385,9 @@ const ScenesPanel: React.FC<ScenesPanelProps> = ({
   );
 
   const sceneCount = rows.length;
+  const selectedPageEighths = selectedScene
+    ? estimateScenePageEighths(scenes, selectedScene, documentPageCount)
+    : null;
 
   return (
     <div className="scenes-section" style={{ marginBottom: 16 }}>
@@ -458,6 +489,27 @@ const ScenesPanel: React.FC<ScenesPanelProps> = ({
                       {selectedScene.note}
                     </p>
                   )}
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(88px, 1fr))',
+                      gap: 5,
+                      marginTop: 8
+                    }}
+                  >
+                    {[
+                      [t('screenplay.scenes.scriptDay'), selectedScene.scriptDay],
+                      [t('screenplay.scenes.unit'), selectedScene.unit],
+                      [t('screenplay.scenes.sequence'), selectedScene.sequence],
+                      [t('screenplay.scenes.estimatedTime'), selectedScene.estimatedTime],
+                      [t('screenplay.scenes.pageEighths'), selectedPageEighths ? formatPageEighths(selectedPageEighths) : '']
+                    ].map(([label, value]) => (
+                      <div key={label} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 6, padding: '5px 6px' }}>
+                        <div style={{ color: '#64748b', fontSize: '0.66em', fontWeight: 700, textTransform: 'uppercase' }}>{label}</div>
+                        <div style={{ color: value ? '#1e293b' : '#94a3b8', fontSize: '0.8em', fontWeight: 600 }}>{value || '—'}</div>
+                      </div>
+                    ))}
+                  </div>
                   <div style={{ marginTop: 6 }}>
                     <div style={{ color: '#64748b', fontSize: '0.75em', fontWeight: 700, textTransform: 'uppercase' }}>
                       {t('screenplay.scenes.annotationsInScene', { count: selectedAnnotations.length })}
@@ -572,16 +624,14 @@ const ScenesPanel: React.FC<ScenesPanelProps> = ({
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 6 }}>
-                    {selectedScene.userId === currentUserUid && (
-                      <button
-                        type="button"
-                        onClick={handleStartEdit}
-                        style={{ background: '#fff', border: '1px solid #cbd5e1', borderRadius: 6, padding: '3px 10px', fontSize: 12, cursor: 'pointer', color: '#1e293b' }}
-                      >
-                        ✎ {t('screenplay.scenes.edit')}
-                      </button>
-                    )}
-                    {canDeleteScene(selectedScene) && (
+                    <button
+                      type="button"
+                      onClick={handleStartEdit}
+                      style={{ background: '#fff', border: '1px solid #cbd5e1', borderRadius: 6, padding: '3px 10px', fontSize: 12, cursor: 'pointer', color: '#1e293b' }}
+                    >
+                      ✎ {t('screenplay.scenes.edit')}
+                    </button>
+                    {!isFountain && canDeleteScene(selectedScene) && (
                       <button
                         type="button"
                         onClick={handleDelete}
@@ -607,6 +657,7 @@ const ScenesPanel: React.FC<ScenesPanelProps> = ({
                     />
                     <select
                       value={editFields.intExt}
+                      disabled={isFountain}
                       onChange={e => setEditFields(prev => ({ ...prev, intExt: e.target.value as SceneIntExt }))}
                       style={{ ...inputStyle, width: 'auto' }}
                     >
@@ -619,6 +670,7 @@ const ScenesPanel: React.FC<ScenesPanelProps> = ({
                     <input
                       type="text"
                       value={editFields.timeOfDay}
+                      disabled={isFountain}
                       maxLength={40}
                       placeholder={t('screenplay.scenes.timeOfDay')}
                       onChange={e => setEditFields(prev => ({ ...prev, timeOfDay: e.target.value }))}
@@ -628,11 +680,51 @@ const ScenesPanel: React.FC<ScenesPanelProps> = ({
                   <input
                     type="text"
                     value={editFields.location}
+                    disabled={isFountain}
                     maxLength={120}
                     placeholder={t('screenplay.scenes.location')}
                     onChange={e => setEditFields(prev => ({ ...prev, location: e.target.value }))}
                     style={inputStyle}
                   />
+                  {isFountain && (
+                    <div style={{ color: '#64748b', fontSize: '0.74em' }}>
+                      {t('screenplay.scenes.fountainHeadingHint')}
+                    </div>
+                  )}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 6 }}>
+                    <input
+                      type="text"
+                      value={editFields.scriptDay}
+                      maxLength={40}
+                      placeholder={t('screenplay.scenes.scriptDay')}
+                      onChange={e => setEditFields(prev => ({ ...prev, scriptDay: e.target.value }))}
+                      style={inputStyle}
+                    />
+                    <input
+                      type="text"
+                      value={editFields.unit}
+                      maxLength={40}
+                      placeholder={t('screenplay.scenes.unit')}
+                      onChange={e => setEditFields(prev => ({ ...prev, unit: e.target.value }))}
+                      style={inputStyle}
+                    />
+                    <input
+                      type="text"
+                      value={editFields.sequence}
+                      maxLength={80}
+                      placeholder={t('screenplay.scenes.sequence')}
+                      onChange={e => setEditFields(prev => ({ ...prev, sequence: e.target.value }))}
+                      style={inputStyle}
+                    />
+                    <input
+                      type="text"
+                      value={editFields.estimatedTime}
+                      maxLength={40}
+                      placeholder={t('screenplay.scenes.estimatedTime')}
+                      onChange={e => setEditFields(prev => ({ ...prev, estimatedTime: e.target.value }))}
+                      style={inputStyle}
+                    />
+                  </div>
                   <textarea
                     value={editFields.synopsis}
                     maxLength={1000}

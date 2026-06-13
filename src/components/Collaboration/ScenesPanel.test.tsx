@@ -24,6 +24,8 @@ vi.mock('../../services/sceneService', () => ({
   INT_EXT_OPTIONS: ['', 'INT', 'EXT', 'INT/EXT'],
   deleteScene: vi.fn(),
   updateScene: vi.fn(),
+  estimateScenePageEighths: vi.fn(() => 2),
+  reconcileFountainScenes: vi.fn(() => []),
   parseSlugText: vi.fn(),
   sceneHeading: (scene: SceneMark) => `${scene.intExt}. ${scene.location} - ${scene.timeOfDay}`,
   sceneOrderKey: (item: { pageNumber: number; position: { y: number } }) =>
@@ -58,7 +60,13 @@ const makeScene = (
   note: '',
   pageNumber,
   position: { x: 0.1, y: 0.1, width: 0.5, height: 0.05 },
-  selection: `INT. ${location} - DAY`
+  selection: `INT. ${location} - DAY`,
+  sourceType: 'pdf',
+  sourceStatus: 'active',
+  scriptDay: '',
+  unit: '',
+  sequence: '',
+  estimatedTime: ''
 });
 
 const notes: SceneNoteItem[] = [
@@ -126,5 +134,25 @@ describe('ScenesPanel category filtering', () => {
     expect(screen.queryByText('Hero')).not.toBeInTheDocument();
     expect(screen.queryByText('Car')).not.toBeInTheDocument();
     expect(screen.getAllByText('Knife')).toHaveLength(2);
+  });
+
+  it('offers scene metadata editing to any current participant', () => {
+    render(
+      <ScenesPanel
+        isFountain={false}
+        fountainSource=""
+        scenes={[makeScene('scene-1', 1, 'KITCHEN', '1')]}
+        notes={[]}
+        currentUserUid="user-2"
+        canModerateScene={() => false}
+        onJumpToPage={vi.fn()}
+        onJumpToFountainLine={vi.fn()}
+        onOpenNote={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByText('KITCHEN'));
+
+    expect(screen.getByRole('button', { name: /screenplay\.scenes\.edit/ })).toBeInTheDocument();
   });
 });

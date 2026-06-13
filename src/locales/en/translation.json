@@ -936,7 +936,12 @@
         "supervisor": "From supervisor",
         "resolved": "Resolved",
         "timestamp": "Timestamp",
-        "scene": "Scene"
+        "scene": "Scene",
+        "scriptDay": "Script day",
+        "unit": "Unit",
+        "sequence": "Sequence",
+        "estimatedTime": "Est. time",
+        "pageEighths": "Page eighths"
       }
     },
     "reviewStatus": {
@@ -1541,6 +1546,7 @@
     "pageOf": "Page {{current}} / {{total}}",
     "pageDivider": "Page {{page}}",
     "pageCountTooltip": "Estimated page number (approximate — no fixed page breaks)",
+    "sceneNavigator": "Scene navigator",
     "emptyDraft": "This draft is empty.",
     "downloadPdf": "Download PDF",
     "pdfExporting": "Preparing PDF…",
@@ -1727,7 +1733,12 @@
         "resolved": "Resolved",
         "timestamp": "Timestamp",
         "screenplay": "Screenplay",
-        "scene": "Scene"
+        "scene": "Scene",
+        "scriptDay": "Script day",
+        "unit": "Unit",
+        "sequence": "Sequence",
+        "estimatedTime": "Est. time",
+        "pageEighths": "Page eighths"
       },
       "types": {
         "annotation": "Annotation",
@@ -1771,6 +1782,12 @@
       "filterPlaceholder": "Filter by location, #, time…",
       "headingLabel": "Heading",
       "synopsis": "Synopsis",
+      "scriptDay": "Script day",
+      "unit": "Unit",
+      "sequence": "Sequence",
+      "estimatedTime": "Est. time",
+      "pageEighths": "Page eighths",
+      "fountainHeadingHint": "Edit INT/EXT, location, and time of day in the Fountain scene heading. Shared production metadata can be edited here.",
       "categoriesPane": "Categories",
       "allCategories": "All",
       "tagsInScenePane_one": "Scene tag ({{count}})",

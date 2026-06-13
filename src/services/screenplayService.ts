@@ -21,7 +21,7 @@ import {
   getReviewStatus,
   Screenplay
 } from '../components/Collaboration/workspaceAccess';
-import { normalizeScene, sceneCsvCell, SceneMark } from './sceneService';
+import { normalizeScene, sceneCsvMetadata, SceneMark } from './sceneService';
 
 // Firestore/Storage mutations shared by CollaborationHub and WorkspaceDetailPage.
 // Callers own validation, permission checks, and user-facing toasts; functions here
@@ -342,6 +342,11 @@ export async function exportWorkspaceGradingCsv(params: {
     t('collaboration.gradingReport.columns.category'),
     t('collaboration.gradingReport.columns.page'),
     t('collaboration.gradingReport.columns.scene'),
+    t('collaboration.gradingReport.columns.scriptDay'),
+    t('collaboration.gradingReport.columns.unit'),
+    t('collaboration.gradingReport.columns.sequence'),
+    t('collaboration.gradingReport.columns.estimatedTime'),
+    t('collaboration.gradingReport.columns.pageEighths'),
     t('collaboration.gradingReport.columns.content'),
     t('collaboration.gradingReport.columns.author'),
     t('collaboration.gradingReport.columns.supervisor'),
@@ -358,17 +363,27 @@ export async function exportWorkspaceGradingCsv(params: {
       return isNaN(d.getTime()) ? '' : d.toISOString();
     } catch { return ''; }
   };
-  type Row = { student: string; screenplay: string; reviewStatus: string; reviewNote: string; type: string; category: string; page: number; scene: string; content: string; author: string; supervisor: string; resolved: string; timestamp: string };
-  const sceneCell = (note: RawNote): string => {
-    if (!note.screenplayId) return '';
+  type Row = { student: string; screenplay: string; reviewStatus: string; reviewNote: string; type: string; category: string; page: number; scene: string; scriptDay: string; unit: string; sequence: string; estimatedTime: string; pageEighths: string; content: string; author: string; supervisor: string; resolved: string; timestamp: string };
+  const sceneDetails = (note: RawNote) => {
+    if (!note.screenplayId) {
+      return {
+        scene: '',
+        scriptDay: '',
+        unit: '',
+        sequence: '',
+        estimatedTime: '',
+        pageEighths: ''
+      };
+    }
     const scenes = scenesByScreenplay.get(note.screenplayId) || [];
-    return sceneCsvCell(scenes, note.pageNumber ?? 0, note.position?.y || 0);
+    return sceneCsvMetadata(scenes, note.pageNumber ?? 0, note.position?.y || 0);
   };
   const rowsFromNotes = (notes: RawNote[], type: string, category: (note: RawNote) => string, content: (note: RawNote) => string): Row[] =>
     notes.map(n => {
       const sp = n.screenplayId ? screenplayById.get(n.screenplayId) : undefined;
       const student = sp?.uploadedBy ? (uidToName.get(sp.uploadedBy) || `Crew Member ${sp.uploadedBy.slice(-4)}`) : '';
       const reviewStatus = sp ? t(`collaboration.reviewStatus.labels.${getReviewStatus(sp)}`) : '';
+      const metadata = sceneDetails(n);
       return {
         student,
         screenplay: sp?.name || '',
@@ -377,7 +392,7 @@ export async function exportWorkspaceGradingCsv(params: {
         type,
         category: category(n),
         page: n.pageNumber ?? 0,
-        scene: sceneCell(n),
+        ...metadata,
         content: content(n) || '',
         author: n.userName || '',
         supervisor: n.supervisorAtAuthorTime ? yes : no,
@@ -390,7 +405,7 @@ export async function exportWorkspaceGradingCsv(params: {
     ...rowsFromNotes(allTags, t('collaboration.gradingReport.types.tag'), n => n.tagType ? t(`screenplay.categories.${n.tagType}`, { defaultValue: n.tagType }) : '', n => n.content || '')
   ];
   allRows.sort((a, b) => a.student.localeCompare(b.student) || a.screenplay.localeCompare(b.screenplay) || a.page - b.page || a.timestamp.localeCompare(b.timestamp));
-  const csv = '﻿' + [headers, ...allRows.map(r => [r.student, r.screenplay, r.reviewStatus, r.reviewNote, r.type, r.category, r.page, r.scene, r.content, r.author, r.supervisor, r.resolved, r.timestamp].map(escapeCsv).join(','))].join('\r\n');
+  const csv = '﻿' + [headers, ...allRows.map(r => [r.student, r.screenplay, r.reviewStatus, r.reviewNote, r.type, r.category, r.page, r.scene, r.scriptDay, r.unit, r.sequence, r.estimatedTime, r.pageEighths, r.content, r.author, r.supervisor, r.resolved, r.timestamp].map(escapeCsv).join(','))].join('\r\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const date = new Date().toISOString().slice(0, 10);

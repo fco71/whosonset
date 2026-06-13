@@ -28,6 +28,76 @@ function escapeHtml(value: unknown): string {
     .replace(/'/g, "&#39;");
 }
 
+const EMAIL_SEND_DAILY_LIMIT = 50;
+const EMAIL_SEND_MIN_INTERVAL_MS = 1000;
+const EMAIL_TEMPLATE_ALLOWLIST = new Set([
+  "chat",
+  "project",
+  "job",
+  "general",
+  "follow_request",
+  "message",
+  "application_message",
+  "collaboration_request",
+  "collaborator_added",
+  "application_status_update",
+  "interview_scheduled",
+  "task_assignment",
+]);
+
+async function resolveRegisteredRecipientEmail(
+  requestedEmail: string,
+  recipientUserId?: string
+): Promise<string | null> {
+  const normalizedRequested = requestedEmail.trim().toLowerCase();
+  if (recipientUserId) {
+    const [userDoc, crewDoc] = await Promise.all([
+      admin.firestore().collection("users").doc(recipientUserId).get(),
+      admin.firestore().collection("crewProfiles").doc(recipientUserId).get(),
+    ]);
+    const candidates = [
+      userDoc.data()?.email,
+      userDoc.data()?.contactInfo?.email,
+      crewDoc.data()?.email,
+      crewDoc.data()?.contactInfo?.email,
+    ].filter((value): value is string => typeof value === "string");
+    const matchingEmail = candidates.find(
+      (value) => value.trim().toLowerCase() === normalizedRequested
+    );
+    if (matchingEmail) return matchingEmail.trim();
+  }
+
+  const [usersSnapshot, crewSnapshot] = await Promise.all([
+    admin.firestore().collection("users").where("email", "==", requestedEmail.trim()).limit(1).get(),
+    admin.firestore().collection("crewProfiles").where("email", "==", requestedEmail.trim()).limit(1).get(),
+  ]);
+  const matchedDoc = usersSnapshot.docs[0] || crewSnapshot.docs[0];
+  const matchedEmail = matchedDoc?.data()?.email;
+  return typeof matchedEmail === "string" ? matchedEmail.trim() : null;
+}
+
+async function consumeEmailSendQuota(uid: string): Promise<"ok" | "rate" | "daily"> {
+  const dateKey = new Date().toISOString().slice(0, 10);
+  const quotaRef = admin.firestore().collection("emailSendRateLimits").doc(`${uid}_${dateKey}`);
+  return admin.firestore().runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(quotaRef);
+    const data = snapshot.data();
+    const count = typeof data?.count === "number" ? data.count : 0;
+    const lastSentAt = data?.lastSentAt?.toMillis?.() || 0;
+    const now = Date.now();
+    if (count >= EMAIL_SEND_DAILY_LIMIT) return "daily";
+    if (lastSentAt && now - lastSentAt < EMAIL_SEND_MIN_INTERVAL_MS) return "rate";
+    transaction.set(quotaRef, {
+      uid,
+      dateKey,
+      count: count + 1,
+      lastSentAt: admin.firestore.Timestamp.fromMillis(now),
+      expiresAt: admin.firestore.Timestamp.fromMillis(now + (8 * 24 * 60 * 60 * 1000)),
+    }, { merge: true });
+    return "ok";
+  });
+}
+
 // Helper function to get user data from crewProfiles first, then users
 async function getUserData(userId: string) {
   try {
@@ -1633,19 +1703,56 @@ export const emailSend = onRequest({
 
     // Verify the token
     const idToken = authHeader.split('Bearer ')[1];
+    let caller: admin.auth.DecodedIdToken;
     try {
-      await admin.auth().verifyIdToken(idToken);
+      caller = await admin.auth().verifyIdToken(idToken);
     } catch (error) {
       console.error('Authentication error:', error);
       res.status(401).json({ error: 'Unauthorized: Invalid token' });
       return;
     }
 
-    const { to, subject, message, senderName } = req.body;
+    const { to, subject, message, senderName, recipientUserId, template } = req.body || {};
     
-    if (!to || !subject || !message) {
+    if (
+      typeof to !== "string" ||
+      typeof subject !== "string" ||
+      typeof message !== "string" ||
+      !to.trim() ||
+      !subject.trim() ||
+      !message.trim()
+    ) {
       res.status(400).json({ 
         error: 'Missing required fields: to, subject, message' 
+      });
+      return;
+    }
+    if (to.length > 320 || subject.length > 200 || message.length > 10000) {
+      res.status(400).json({ error: "Email payload exceeds allowed size." });
+      return;
+    }
+    if (recipientUserId !== undefined && typeof recipientUserId !== "string") {
+      res.status(400).json({ error: "Invalid recipientUserId." });
+      return;
+    }
+    const normalizedTemplate = typeof template === "string" ? template : "general";
+    if (!EMAIL_TEMPLATE_ALLOWLIST.has(normalizedTemplate)) {
+      res.status(400).json({ error: "Unsupported email template." });
+      return;
+    }
+
+    const registeredRecipient = await resolveRegisteredRecipientEmail(to, recipientUserId);
+    if (!registeredRecipient) {
+      res.status(403).json({ error: "Recipient must be a registered My Film Jobs account." });
+      return;
+    }
+
+    const quota = await consumeEmailSendQuota(caller.uid);
+    if (quota !== "ok") {
+      res.status(429).json({
+        error: quota === "daily"
+          ? "Daily email limit reached."
+          : "Email requests are being sent too quickly."
       });
       return;
     }
@@ -1659,10 +1766,13 @@ export const emailSend = onRequest({
     // part; the text part is plain text and needs no escaping. The <h3> subject
     // line uses the raw subject (Handlebars compile in EmailService is a no-op
     // here because there are no {{ }} placeholders left in this string).
-    const safeSenderName = escapeHtml(senderName || 'My Film Jobs');
+    const verifiedSenderName = senderName === "My Film Jobs"
+      ? "My Film Jobs"
+      : caller.name || caller.email || "My Film Jobs member";
+    const safeSenderName = escapeHtml(verifiedSenderName);
     const safeMessageHtml = escapeHtml(message).replace(/\n/g, '<br>');
     const emailTemplate = {
-      subject: subject || `New message from ${senderName || 'My Film Jobs'}`,
+      subject,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #2563eb;">My Film Jobs</h2>
@@ -1683,7 +1793,7 @@ My Film Jobs
 
 Hello,
 
-You have received a new message from ${senderName || 'My Film Jobs'}.
+You have received a new message from ${verifiedSenderName}.
 
 Message:
 ${message}
@@ -1695,30 +1805,36 @@ The My Film Jobs Team
 
     // Send the email using EmailService
     const success = await EmailService.sendEmail({
-      to,
+      to: registeredRecipient,
       template: emailTemplate,
       data: {
-        senderName: senderName || 'My Film Jobs',
+        senderName: verifiedSenderName,
         message
       }
     });
 
     if (success) {
-      console.log(`[emailSend] Email sent successfully to ${to}`);
+      console.log('[emailSend] Email sent successfully to registered recipient', {
+        callerUid: caller.uid,
+        template: normalizedTemplate,
+      });
       res.json({ 
         success: true, 
         message: 'Email sent successfully!',
         data: { 
-          to, 
+          to: registeredRecipient,
           subject, 
           message: message ? 'Message content redacted for security' : undefined,
-          senderName 
+          senderName: verifiedSenderName
         },
         timestamp: new Date().toISOString()
       });
     } else {
       const errorMsg = 'Failed to send email. Please check the logs for details.';
-      console.error(`[emailSend] ${errorMsg}`, { to, subject });
+      console.error(`[emailSend] ${errorMsg}`, {
+        callerUid: caller.uid,
+        template: normalizedTemplate,
+      });
       res.status(500).json({ 
         success: false,
         error: errorMsg

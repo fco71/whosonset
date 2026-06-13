@@ -1,15 +1,17 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
+import { syncFountainScenes } from '../../services/sceneService';
 import {
   ScreenplayElementType,
   applyElementType,
   computePageCount,
   computePageAtCaret,
   detectLineType,
+  describeFountainScenes,
   nextElementType,
   prevElementType
 } from '../../utilities/fountain';
@@ -18,6 +20,7 @@ import FountainPages from './FountainPages';
 
 interface FountainEditorProps {
   screenplay: { id: string; name: string; fountainSource?: string };
+  projectId: string;
   onClose: () => void;
 }
 
@@ -43,7 +46,7 @@ const modLabel = isMac ? '⌥' : 'Alt+';
 // real screenplay page's text block than an infinite horizontal line.
 const EDITOR_COLUMN_CH = 63;
 
-const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, onClose }) => {
+const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, projectId, onClose }) => {
   const { currentUser } = useAuth();
   const { t } = useTranslation();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -66,6 +69,7 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, onClose }) 
   latestSource.current = source;
 
   const pageCount = computePageCount(source);
+  const sceneDescriptors = useMemo(() => describeFountainScenes(source), [source]);
 
   // Load the freshest source once on mount (the list-level copy may be stale).
   useEffect(() => {
@@ -77,6 +81,17 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, onClose }) 
         const data = snap.data();
         if (typeof data.fountainSource === 'string' && !hasLocalEdit.current) {
           setSource(data.fountainSource);
+          if (currentUser?.uid) {
+            syncFountainScenes({
+              screenplayId: screenplay.id,
+              projectId,
+              source: data.fountainSource,
+              actor: {
+                uid: currentUser.uid,
+                displayName: currentUser.displayName
+              }
+            }).catch(err => console.error('Failed to backfill Fountain scenes:', err));
+          }
         }
       } catch (err) {
         console.error('Failed to load fountain source:', err);
@@ -86,7 +101,7 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, onClose }) 
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [screenplay.id]);
+  }, [screenplay.id, projectId, currentUser?.uid, currentUser?.displayName]);
 
   // Persist (debounced). Last write wins — no merge, no version (per product decision).
   const scheduleSave = useCallback((value: string) => {
@@ -102,6 +117,17 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, onClose }) 
           lastModified: serverTimestamp(),
           lastEditedBy: currentUser?.uid || null
         });
+        if (currentUser?.uid) {
+          await syncFountainScenes({
+            screenplayId: screenplay.id,
+            projectId,
+            source: value,
+            actor: {
+              uid: currentUser.uid,
+              displayName: currentUser.displayName
+            }
+          });
+        }
         setSaveStatus('saved');
       } catch (err) {
         console.error('Failed to save fountain source:', err);
@@ -109,7 +135,7 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, onClose }) 
         toast.error(t('fountain.saveError'));
       }
     }, SAVE_DEBOUNCE_MS);
-  }, [screenplay.id, currentUser?.uid, t]);
+  }, [screenplay.id, projectId, currentUser?.uid, currentUser?.displayName, t]);
 
   // Flush any pending save on unmount.
   useEffect(() => {
@@ -117,16 +143,28 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, onClose }) 
       if (saveTimer.current) {
         window.clearTimeout(saveTimer.current);
         // Best-effort final write so closing immediately after typing doesn't lose work.
+        const finalSource = latestSource.current;
         updateDoc(doc(db, 'screenplays', screenplay.id), {
           fountainSource: latestSource.current,
           fountainUpdatedAt: serverTimestamp(),
           lastModified: serverTimestamp(),
           lastEditedBy: currentUser?.uid || null
+        }).then(() => {
+          if (!currentUser?.uid) return;
+          return syncFountainScenes({
+            screenplayId: screenplay.id,
+            projectId,
+            source: finalSource,
+            actor: {
+              uid: currentUser.uid,
+              displayName: currentUser.displayName
+            }
+          });
         }).catch(err => console.error('Final fountain save failed:', err));
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [screenplay.id]);
+  }, [screenplay.id, projectId, currentUser?.uid, currentUser?.displayName]);
 
   // Restore caret after a programmatic source change (toolbar / shortcut transforms).
   useEffect(() => {
@@ -237,6 +275,18 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, onClose }) 
     }
   };
 
+  const jumpToScene = (lineIndex: number) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    const lines = source.split('\n');
+    const start = lines.slice(0, lineIndex).reduce((offset, line) => offset + line.length + 1, 0);
+    const end = start + (lines[lineIndex]?.length || 0);
+    textarea.focus();
+    textarea.setSelectionRange(start, end);
+    setActiveType('scene_heading');
+    setCurrentPage(computePageAtCaret(source, start));
+  };
+
   return (
     <div className="fountain-editor-overlay" style={overlayStyle}>
       <div className="fountain-editor" style={editorStyle}>
@@ -295,6 +345,34 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, onClose }) 
 
         {/* Editor body: textarea + (optional) live formatted preview, resizable divider */}
         <div style={bodyStyle} ref={bodyRef}>
+          <nav style={sceneNavigatorStyle} aria-label={t('fountain.sceneNavigator')}>
+            <div style={sceneNavigatorHeaderStyle}>
+              {t('fountain.sceneNavigator')} ({sceneDescriptors.length})
+            </div>
+            <div style={{ overflowY: 'auto', flex: 1 }}>
+              {sceneDescriptors.length === 0 ? (
+                <div style={sceneNavigatorEmptyStyle}>{t('screenplay.scenes.fountainEmpty')}</div>
+              ) : (
+                sceneDescriptors.map(descriptor => (
+                  <button
+                    key={`${descriptor.lineIndex}-${descriptor.heading}`}
+                    type="button"
+                    onClick={() => jumpToScene(descriptor.lineIndex)}
+                    style={sceneNavigatorButtonStyle}
+                    title={descriptor.heading}
+                  >
+                    <span style={sceneNavigatorNumberStyle}>{descriptor.ordinal + 1}</span>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {descriptor.heading}
+                    </span>
+                    <span style={{ marginLeft: 'auto', color: '#94a3b8', fontSize: '0.82em' }}>
+                      p.{descriptor.page}
+                    </span>
+                  </button>
+                ))
+              )}
+            </div>
+          </nav>
           <div
             style={{
               flex: showPreview ? `0 0 ${editorPanePct}%` : '1 1 100%',
@@ -370,6 +448,54 @@ const bodyStyle: React.CSSProperties = {
   flex: 1,
   display: 'flex',
   minHeight: 0
+};
+
+const sceneNavigatorStyle: React.CSSProperties = {
+  flex: '0 0 210px',
+  minWidth: 0,
+  display: 'flex',
+  flexDirection: 'column',
+  borderRight: '1px solid #e2e8f0',
+  background: '#f8fafc'
+};
+
+const sceneNavigatorHeaderStyle: React.CSSProperties = {
+  padding: '9px 10px',
+  borderBottom: '1px solid #e2e8f0',
+  color: '#475569',
+  fontSize: '0.75em',
+  fontWeight: 700,
+  textTransform: 'uppercase'
+};
+
+const sceneNavigatorEmptyStyle: React.CSSProperties = {
+  padding: 10,
+  color: '#94a3b8',
+  fontSize: '0.76em',
+  lineHeight: 1.4
+};
+
+const sceneNavigatorButtonStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 6,
+  width: '100%',
+  border: 'none',
+  borderBottom: '1px solid #eef2f7',
+  background: 'transparent',
+  padding: '7px 8px',
+  color: '#334155',
+  cursor: 'pointer',
+  textAlign: 'left',
+  fontFamily: '"Courier Prime", "Courier New", Courier, monospace',
+  fontSize: '0.72em'
+};
+
+const sceneNavigatorNumberStyle: React.CSSProperties = {
+  flex: '0 0 auto',
+  minWidth: 20,
+  color: '#4338ca',
+  fontWeight: 700
 };
 
 const previewPaneStyle: React.CSSProperties = {

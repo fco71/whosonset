@@ -13,6 +13,8 @@ import {
   isCharacter,
   isParenthetical,
   parseSlugText,
+  describeFountainScenes,
+  formatPageEighths,
   LINES_PER_PAGE
 } from './fountain';
 
@@ -159,6 +161,43 @@ describe('paginateElements', () => {
     for (let i = 1; i < paginated.length; i++) {
       expect(paginated[i].page).toBeGreaterThanOrEqual(paginated[i - 1].page);
     }
+  });
+});
+
+describe('describeFountainScenes', () => {
+  it('returns scene anchors and automatic page-eighth estimates', () => {
+    const source = [
+      'INT. KITCHEN - DAY',
+      '',
+      'PAUL cooks.',
+      '',
+      'EXT. STREET - NIGHT',
+      '',
+      ...Array.from({ length: 12 }, (_, index) => `Action ${index}.`)
+    ].join('\n');
+
+    const scenes = describeFountainScenes(source);
+
+    expect(scenes).toHaveLength(2);
+    expect(scenes[0]).toMatchObject({
+      ordinal: 0,
+      lineIndex: 0,
+      page: 1,
+      heading: 'INT. KITCHEN - DAY'
+    });
+    expect(scenes[1]).toMatchObject({
+      ordinal: 1,
+      lineIndex: 4,
+      page: 1,
+      heading: 'EXT. STREET - NIGHT'
+    });
+    expect(scenes.every(scene => scene.estimatedPageEighths >= 1)).toBe(true);
+  });
+
+  it('formats integer eighth counts as production page lengths', () => {
+    expect(formatPageEighths(1)).toBe('1/8');
+    expect(formatPageEighths(8)).toBe('1');
+    expect(formatPageEighths(11)).toBe('1 3/8');
   });
 });
 

@@ -1,5 +1,5 @@
 import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '../firebase';
+import { auth, db } from '../firebase';
 
 const debugLog = (...args: unknown[]) => {
   if (process.env.NODE_ENV !== 'production') {
@@ -163,16 +163,25 @@ class EmailNotificationService {
         return false;
       }
 
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        console.error('[EmailNotificationService] Cannot send email without an authenticated user.');
+        return false;
+      }
+      const idToken = await currentUser.getIdToken();
       const response = await fetch(this.EMAIL_FUNCTION_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
         },
         body: JSON.stringify({
           to: data.to,
           subject: data.subject,
           message: data.message,
           senderName: data.senderName,
+          recipientUserId: data.userId,
+          template: data.template || 'general'
         }),
       });
 

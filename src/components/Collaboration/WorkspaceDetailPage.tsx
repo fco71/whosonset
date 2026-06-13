@@ -1302,6 +1302,7 @@ const WorkspaceDetailPage: React.FC = () => {
             name: editingFountain.name,
             fountainSource: editingFountain.fountainSource
           }}
+          projectId={workspace.projectId || 'default-project'}
           onClose={() => setEditingFountain(null)}
         />
       )}

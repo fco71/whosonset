@@ -161,6 +161,10 @@ export function computePageCount(source: string): number {
 export interface PaginatedElement extends ParsedElement {
   /** 1-based page this element begins on, per the line-count heuristic. */
   page: number;
+  /** 0-based wrapped-line offset within the estimated document layout. */
+  lineStart: number;
+  /** Number of wrapped screenplay lines occupied by this element. */
+  lineSpan: number;
 }
 
 /**
@@ -182,12 +186,117 @@ export function paginateElements(source: string): PaginatedElement[] {
     const width = ELEMENT_WIDTHS[element.type];
     const stripped = element.text.replace(/^[.>@]/, '');
     const wrapped = Math.max(1, Math.ceil(stripped.length / width));
+    const lineStart = totalLines;
     totalLines += wrapped;
-    result.push({ ...element, page });
+    result.push({ ...element, page, lineStart, lineSpan: wrapped });
     prevType = element.type;
   }
 
   return result;
+}
+
+export interface FountainSceneDescriptor {
+  ordinal: number;
+  lineIndex: number;
+  page: number;
+  positionY: number;
+  heading: string;
+  estimatedPageEighths: number;
+}
+
+export interface FountainSceneAnchor {
+  id: string;
+  selection: string;
+  sourceLineIndex?: number;
+  sourceHeading?: string;
+  sourceOrdinal?: number;
+}
+
+export interface FountainSceneMatch<T extends FountainSceneAnchor> {
+  descriptor: FountainSceneDescriptor;
+  scene?: T;
+}
+
+/**
+ * Scene-level layout derived from the same wrapped-line model as Fountain pages.
+ * `estimatedPageEighths` is an integer count: 1 = 1/8 page, 11 = 1 3/8 pages.
+ */
+export function describeFountainScenes(source: string): FountainSceneDescriptor[] {
+  const elements = paginateElements(source);
+  const sceneElements = elements.filter(element => element.type === 'scene_heading');
+  const documentEnd = elements.length === 0
+    ? 0
+    : elements[elements.length - 1].lineStart + elements[elements.length - 1].lineSpan;
+
+  return sceneElements.map((element, index) => {
+    const nextScene = sceneElements[index + 1];
+    const sceneEnd = nextScene?.lineStart ?? documentEnd;
+    const sceneLines = Math.max(1, sceneEnd - element.lineStart);
+    return {
+      ordinal: index,
+      lineIndex: element.lineIndex,
+      page: element.page,
+      positionY: (element.lineStart % LINES_PER_PAGE) / LINES_PER_PAGE,
+      heading: element.text,
+      estimatedPageEighths: Math.max(1, Math.ceil((sceneLines * 8) / LINES_PER_PAGE))
+    };
+  });
+}
+
+const normalizedSceneHeading = (heading: string): string =>
+  heading.trim().replace(/\s+/g, ' ').toUpperCase();
+
+/**
+ * Match current Fountain headings to stored scene IDs. Exact anchors win, then
+ * headings, then ordinal position so a heading rename keeps its metadata.
+ */
+export function reconcileFountainScenes<T extends FountainSceneAnchor>(
+  existingScenes: T[],
+  descriptors: FountainSceneDescriptor[]
+): FountainSceneMatch<T>[] {
+  const available = new Map(existingScenes.map(scene => [scene.id, scene]));
+  const matches = new Map<number, T>();
+
+  const claim = (
+    predicate: (scene: T, descriptor: FountainSceneDescriptor) => boolean
+  ) => {
+    descriptors.forEach(descriptor => {
+      if (matches.has(descriptor.ordinal)) return;
+      const candidate = Array.from(available.values())
+        .filter(scene => predicate(scene, descriptor))
+        .sort((a, b) =>
+          Math.abs((a.sourceOrdinal ?? 0) - descriptor.ordinal) -
+          Math.abs((b.sourceOrdinal ?? 0) - descriptor.ordinal)
+        )[0];
+      if (!candidate) return;
+      matches.set(descriptor.ordinal, candidate);
+      available.delete(candidate.id);
+    });
+  };
+
+  claim((scene, descriptor) =>
+    scene.sourceLineIndex === descriptor.lineIndex &&
+    normalizedSceneHeading(scene.sourceHeading || scene.selection) ===
+      normalizedSceneHeading(descriptor.heading)
+  );
+  claim((scene, descriptor) =>
+    normalizedSceneHeading(scene.sourceHeading || scene.selection) ===
+      normalizedSceneHeading(descriptor.heading)
+  );
+  claim((scene, descriptor) => scene.sourceOrdinal === descriptor.ordinal);
+
+  return descriptors.map(descriptor => ({
+    descriptor,
+    scene: matches.get(descriptor.ordinal)
+  }));
+}
+
+export function formatPageEighths(eighths: number): string {
+  const safeEighths = Math.max(1, Math.round(eighths));
+  const pages = Math.floor(safeEighths / 8);
+  const remainder = safeEighths % 8;
+  if (remainder === 0) return String(pages);
+  return pages > 0 ? `${pages} ${remainder}/8` : `${remainder}/8`;
 }
 
 /** Which page the caret currently sits on (1-based). Empty docs / caret-before-content => 1. */
