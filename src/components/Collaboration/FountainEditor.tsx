@@ -117,8 +117,9 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, projectId, 
           lastModified: serverTimestamp(),
           lastEditedBy: currentUser?.uid || null
         });
+        setSaveStatus('saved');
         if (currentUser?.uid) {
-          await syncFountainScenes({
+          syncFountainScenes({
             screenplayId: screenplay.id,
             projectId,
             source: value,
@@ -126,9 +127,8 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, projectId, 
               uid: currentUser.uid,
               displayName: currentUser.displayName
             }
-          });
+          }).catch(err => console.error('Failed to synchronize Fountain scenes:', err));
         }
-        setSaveStatus('saved');
       } catch (err) {
         console.error('Failed to save fountain source:', err);
         setSaveStatus('error');

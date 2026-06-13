@@ -114,9 +114,6 @@ jobs:
           workload_identity_provider: projects/403346239424/locations/global/workloadIdentityPools/github-actions/providers/github
           service_account: github-action-whosonset@my-film-jobs.iam.gserviceaccount.com
 
-      - name: Deploy Firestore rules
-        run: npx firebase deploy --only firestore:rules --project my-film-jobs --non-interactive
-
       - name: Deploy to Firebase Hosting (production target)
         run: npx firebase deploy --only hosting:production --project my-film-jobs --non-interactive
 
