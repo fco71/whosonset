@@ -44,6 +44,16 @@ import * as admin from "firebase-admin";
 const REGION = "us-central1";
 const COMMIT_CHUNK = 450; // Firestore batches cap at 500 ops.
 
+// 1st-gen functions default to the App Engine service account
+// (my-film-jobs@appspot.gserviceaccount.com), which on this project does NOT have
+// Firestore access — the function deployed fine but every run died with
+// `PERMISSION_DENIED` on its first `.get()` (the Admin SDK bypasses rules, so a
+// denial there is an IAM problem, not a rules problem). Pin it to the SAME Compute
+// Engine service account the Gen-2 functions already run as; that account has the
+// Firestore roles the cleanup needs. Project number 403346239424.
+const RUNTIME_SERVICE_ACCOUNT =
+  "403346239424-compute@developer.gserviceaccount.com";
+
 async function deleteRefsInChunks(
   db: admin.firestore.Firestore,
   refs: admin.firestore.DocumentReference[]
@@ -67,6 +77,7 @@ async function deleteSubcollection(
 }
 
 export const onAuthUserDeleted = functionsV1
+  .runWith({ serviceAccount: RUNTIME_SERVICE_ACCOUNT })
   .region(REGION)
   .auth.user()
   .onDelete(async (user) => {

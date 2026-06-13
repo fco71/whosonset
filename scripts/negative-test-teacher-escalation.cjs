@@ -156,6 +156,10 @@ const isDenied = (e) =>
     try {
       await signOut(auth);
       await signInWithEmailAndPassword(auth, OWN_EMAIL, PW);
+      // Rules only allow deleting a workspace once it is soft-deleted
+      // (status == 'deleted'); hard-deleting an active doc is denied and would
+      // orphan it. Soft-delete first, then hard-delete.
+      await updateDoc(doc(dbc, 'workspaces', WS_ID), { status: 'deleted' }).catch(() => {});
       await deleteDoc(doc(dbc, 'workspaces', WS_ID)).catch(() => {});
       await deleteUser(auth.currentUser).catch(() => {});
     } catch (_) {}
