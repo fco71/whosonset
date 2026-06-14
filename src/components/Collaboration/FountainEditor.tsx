@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 import { syncFountainScenes } from '../../services/sceneService';
 import { shouldSnapshot, writeRevision, pruneRevisions } from '../../services/screenplayRevisions';
+import FountainRevisionHistory from './FountainRevisionHistory';
 import {
   ScreenplayElementType,
   applyElementType,
@@ -62,6 +63,7 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, projectId, 
   const [currentPage, setCurrentPage] = useState(1);
   const [showPreview, setShowPreview] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [editorPanePct, setEditorPanePct] = useState(50); // width % of the editor pane when preview is shown
   const printRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -336,6 +338,48 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, projectId, 
     setCurrentPage(computePageAtCaret(source, start));
   };
 
+  // Restore a previous version. Backs up the CURRENT content first (so restoring a
+  // less-advanced version is itself reversible), then writes the chosen source.
+  const handleRestoreVersion = useCallback(async (restoredSource: string) => {
+    if (!currentUser?.uid) return;
+    setShowHistory(false);
+    try {
+      const current = latestSource.current;
+      if (current && current !== restoredSource) {
+        writeRevision({
+          screenplayId: screenplay.id,
+          source: current,
+          authorId: currentUser.uid,
+          authorName: currentUser.displayName,
+          reason: 'pre_restore'
+        }).catch(err => console.error('Failed to back up before restore:', err));
+      }
+      if (saveTimer.current) window.clearTimeout(saveTimer.current);
+      setSaveStatus('saving');
+      await updateDoc(doc(db, 'screenplays', screenplay.id), {
+        fountainSource: restoredSource,
+        fountainUpdatedAt: serverTimestamp(),
+        lastModified: serverTimestamp(),
+        lastEditedBy: currentUser.uid
+      });
+      lastSavedSource.current = restoredSource;
+      hasLocalEdit.current = true;
+      setSource(restoredSource);
+      setSaveStatus('saved');
+      syncFountainScenes({
+        screenplayId: screenplay.id,
+        projectId,
+        source: restoredSource,
+        actor: { uid: currentUser.uid, displayName: currentUser.displayName }
+      }).catch(err => console.error('Failed to sync scenes after restore:', err));
+      toast.success(t('fountain.revisions.restored'));
+    } catch (err) {
+      console.error('Failed to restore revision:', err);
+      setSaveStatus('error');
+      toast.error(t('fountain.saveError'));
+    }
+  }, [screenplay.id, projectId, currentUser?.uid, currentUser?.displayName, t]);
+
   return (
     <div className="fountain-editor-overlay" style={overlayStyle}>
       <div className="fountain-editor" style={editorStyle}>
@@ -364,12 +408,23 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, projectId, 
             <button type="button" onClick={handleDownloadPdf} disabled={exporting} style={ghostBtnStyle}>
               {exporting ? t('fountain.pdfExporting') : `⬇ ${t('fountain.downloadPdf')}`}
             </button>
+            <button type="button" onClick={() => setShowHistory(true)} style={ghostBtnStyle} title={t('fountain.revisions.title')}>
+              🕘 {t('fountain.revisions.button')}
+            </button>
             <span style={pageBadgeStyle} title={t('fountain.pageCountTooltip')}>
               {t('fountain.pageOf', { current: currentPage, total: pageCount })}
             </span>
             <button type="button" onClick={onClose} style={closeBtnStyle} aria-label={t('fountain.close')}>×</button>
           </div>
         </div>
+
+        {showHistory && (
+          <FountainRevisionHistory
+            screenplayId={screenplay.id}
+            onRestore={handleRestoreVersion}
+            onClose={() => setShowHistory(false)}
+          />
+        )}
 
         {/* Format toolbar */}
         <div style={toolbarStyle}>

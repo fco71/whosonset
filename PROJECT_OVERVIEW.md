@@ -55,7 +55,7 @@ accidental mass-deletion, without per-keystroke storage bloat. Also reduces auto
 Design (layered):
 - **Anti-destruction guard** — a save that shrinks content sharply (new < 50% of prev, prev ≥ 200 chars) always archives the prior version first, regardless of throttle.
 - **Throttled bounded revision ring** — archive the just-overwritten source at most every 5 min of editing; keep the newest 25 per screenplay (prune oldest). Worst case ~25×~120KB ≈ 3MB/screenplay.
-- **User-facing restore** (PENDING) — a Version History panel listing revisions (time, author, ~pages) with preview/diff BEFORE overwrite; restoring snapshots the pre-restore state first (reversible). This is how users become aware + self-recover; PITR stays the deep admin backstop.
+- **User-facing restore** (DONE 2026-06-14) — a Version History panel listing revisions (time, author, ~pages) with a read-only preview BEFORE overwrite; restoring snapshots the pre-restore state first (reversible). This is how users become aware + self-recover; PITR stays the deep admin backstop. (Line-level diff is a possible later enhancement.)
 - **App undo/redo buttons + concurrent-edit guard** (PENDING) — real in-app undo stack (not the flaky textarea one); warn before overwriting when the doc changed since load (matters for pro/concurrent use).
 
 Status:
@@ -64,7 +64,8 @@ Status:
   - `FountainEditor.tsx` save path archives the prior source when warranted + prunes every 5th write. **Cost-opt:** autosave debounce 1500→2500ms; `syncFountainScenes` (the expensive read-all-scenes+write part) throttled to ≥12s during editing (unmount still does a final sync) — this *reduces* current Firestore spend.
   - `firestore.rules`: `screenplayRevisions` block (members read; editors create [immutable, ≤1MB source] + delete-for-prune), mirroring screenplayAnnotations access. Composite index `screenplayRevisions (screenplayId ASC, createdAt DESC)` added to `firestore.indexes.json`.
 - DEPLOY ORDER (when ready): (1) `firebase deploy --only firestore:rules` + push the index (or `firebase deploy --only firestore:indexes`) FIRST so client revision writes are permitted; (2) push the client (Hosting) so the editor starts archiving. Until rules ship, the editor's revision writes will be denied (best-effort, swallowed — no user-facing error, just no archive yet).
-- PENDING: the Restore UI, app undo/redo buttons, and concurrent-edit guard (tasks tracked). EN+ES strings required for all new UI.
+- DONE (code, typechecks; Hosting-only, ships on push): Restore UI — `src/components/Collaboration/FountainRevisionHistory.tsx` (revision list + read-only preview + confirm-before-restore) opened from a 🕘 History button in the editor header; `FountainEditor.handleRestoreVersion` archives the current content as a `pre_restore` revision before applying the chosen version. EN+ES strings under `fountain.revisions.*`.
+- PENDING: app Undo/Redo buttons (real in-editor stack, not the textarea native one) + concurrent-edit guard (warn before overwriting when the doc changed since load). Tracked in task #99.
 
 ## Current Product State
 

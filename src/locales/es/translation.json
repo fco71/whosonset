@@ -1493,6 +1493,18 @@
     }
   },
   "fountain": {
+    "revisions": {
+      "button": "Historial",
+      "title": "Historial de versiones",
+      "loading": "Cargando versiones…",
+      "empty": "Aún no hay versiones guardadas. Aparecen automáticamente a medida que sigues editando.",
+      "pages": "{{count}} pág.",
+      "reasonShrink": "Copia automática antes de un borrado grande",
+      "restore": "Restaurar esta versión",
+      "confirmRestore": "Esto reemplaza tu guion actual con esta versión. Tu contenido actual se respalda primero, así que puedes deshacer esta restauración.",
+      "confirmYes": "Restaurar",
+      "restored": "Versión restaurada"
+    },
     "startWriting": "Empezar a escribir",
     "write": "Escribir",
     "titleLabel": "Título del guion",

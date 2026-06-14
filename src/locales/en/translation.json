@@ -1528,6 +1528,18 @@
     }
   },
   "fountain": {
+    "revisions": {
+      "button": "History",
+      "title": "Version history",
+      "loading": "Loading versions…",
+      "empty": "No saved versions yet. They appear automatically as you keep editing.",
+      "pages": "{{count}} pp.",
+      "reasonShrink": "Auto-backup before a large deletion",
+      "restore": "Restore this version",
+      "confirmRestore": "This replaces your current screenplay with this version. Your current content is backed up first, so you can undo this restore.",
+      "confirmYes": "Restore",
+      "restored": "Version restored"
+    },
     "startWriting": "Start writing",
     "write": "Write",
     "titleLabel": "Screenplay title",
