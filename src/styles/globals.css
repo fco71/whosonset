@@ -142,6 +142,22 @@
   }
 }
 
+/* ===== TYPOGRAPHY SYSTEM TOKENS ===== */
+/* Single source of truth: Satoshi for headings/display, Inter for body/UI.
+   Medium & clean personality — bold-ish heads, tight tracking, comfortable body. */
+:root {
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-head: 'Satoshi', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  --tracking-tight: -0.025em;
+  --tracking-snug: -0.014em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.04em;
+
+  --weight-head: 700;
+  --weight-subhead: 600;
+}
+
 /* ===== GLOBAL RESET & BASE STYLES ===== */
 
 * {
@@ -149,7 +165,7 @@
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: var(--font-body);
   line-height: 1.6;
   color: var(--text-primary);
   background-color: var(--bg-primary);
@@ -159,26 +175,45 @@ body {
 
 /* ===== TYPOGRAPHY ENHANCEMENTS ===== */
 
+  h1, h2, h3, h4, h5, h6,
+  .heading-primary, .heading-secondary, .heading-tertiary, .heading-card {
+    font-family: var(--font-head);
+  }
+
   h1, .heading-primary {
     font-size: 3rem;
-    font-weight: 700;
-    line-height: 1.1;
+    font-weight: var(--weight-head);
+    line-height: 1.08;
     color: var(--neutral-900) !important;
-    letter-spacing: -0.02em;
+    letter-spacing: var(--tracking-tight);
 }
 
 h2, .heading-secondary {
   font-size: 2rem;
-  font-weight: 400;
-  line-height: 1.2;
-  color: #222 !important;
+  font-weight: var(--weight-head);
+  line-height: 1.15;
+  letter-spacing: var(--tracking-snug);
+  color: var(--neutral-900) !important;
 }
 
   h3, .heading-tertiary {
     font-size: 1.5rem;
-    font-weight: 600;
+    font-weight: var(--weight-subhead);
     line-height: 1.3;
+    letter-spacing: var(--tracking-snug);
     color: var(--neutral-900) !important;
+}
+
+/* Kill anemic thin (300) headings app-wide. Heading elements should never
+   render at font-light — this overrides the Tailwind `font-light` utility
+   on heading tags wherever it was used (marketing/landing pages). */
+h1.font-light, .heading-primary.font-light,
+h2.font-light, .heading-secondary.font-light {
+  font-weight: var(--weight-head);
+}
+h3.font-light, h4.font-light, h5.font-light, h6.font-light,
+.heading-tertiary.font-light, .heading-card.font-light {
+  font-weight: var(--weight-subhead);
 }
 
 .heading-card {
