@@ -43,6 +43,29 @@ Current guardrails:
 - Capital `Projects/` and lowercase `projects/` are both treated as live until a planned migration proves otherwise.
 - Build artifacts such as `dist/`, `bundle-analysis.html`, and `.specstory/` should stay untracked.
 
+## Screenplay Version Safety (user-recoverable content history) — IN PROGRESS 2026-06-14
+
+Problem: the Fountain editor autosaves (debounced) by OVERWRITING the single
+`screenplays/{id}.fountainSource` field ("last write wins — no version", per the old
+product decision). Undo is browser-textarea-only (lost on reload). So a user who deletes
+content, exhausts undo, and lets autosave commit the blank has NO app-level recovery —
+only admin PITR. Goal: make screenplay content **user-recoverable**, foolproof against
+accidental mass-deletion, without per-keystroke storage bloat. Also reduces autosave cost.
+
+Design (layered):
+- **Anti-destruction guard** — a save that shrinks content sharply (new < 50% of prev, prev ≥ 200 chars) always archives the prior version first, regardless of throttle.
+- **Throttled bounded revision ring** — archive the just-overwritten source at most every 5 min of editing; keep the newest 25 per screenplay (prune oldest). Worst case ~25×~120KB ≈ 3MB/screenplay.
+- **User-facing restore** (PENDING) — a Version History panel listing revisions (time, author, ~pages) with preview/diff BEFORE overwrite; restoring snapshots the pre-restore state first (reversible). This is how users become aware + self-recover; PITR stays the deep admin backstop.
+- **App undo/redo buttons + concurrent-edit guard** (PENDING) — real in-app undo stack (not the flaky textarea one); warn before overwriting when the doc changed since load (matters for pro/concurrent use).
+
+Status:
+- DONE (code, typechecks; ships on next push + needs a rules+index deploy first):
+  - `src/services/screenplayRevisions.ts` — `shouldSnapshot()` (periodic + shrink-guard), `writeRevision`, `listRevisions`, `pruneRevisions`. Constants: 5-min interval, cap 25, shrink ratio 0.5.
+  - `FountainEditor.tsx` save path archives the prior source when warranted + prunes every 5th write. **Cost-opt:** autosave debounce 1500→2500ms; `syncFountainScenes` (the expensive read-all-scenes+write part) throttled to ≥12s during editing (unmount still does a final sync) — this *reduces* current Firestore spend.
+  - `firestore.rules`: `screenplayRevisions` block (members read; editors create [immutable, ≤1MB source] + delete-for-prune), mirroring screenplayAnnotations access. Composite index `screenplayRevisions (screenplayId ASC, createdAt DESC)` added to `firestore.indexes.json`.
+- DEPLOY ORDER (when ready): (1) `firebase deploy --only firestore:rules` + push the index (or `firebase deploy --only firestore:indexes`) FIRST so client revision writes are permitted; (2) push the client (Hosting) so the editor starts archiving. Until rules ship, the editor's revision writes will be denied (best-effort, swallowed — no user-facing error, just no archive yet).
+- PENDING: the Restore UI, app undo/redo buttons, and concurrent-edit guard (tasks tracked). EN+ES strings required for all new UI.
+
 ## Current Product State
 
 - Collaboration is group-centric (2026-06-11): `/collaboration` lists the user's groups (workspaces) plus a personal "My screenplays" tab and a supervisor review queue; each group has its own page at `/collaboration/:workspaceId` (`WorkspaceDetailPage`) with the group's screenplays, upload/start-writing, members, activity feed, invite (owner), supervisor self-toggle, and the grading CSV export. The old workspace-card "Open" button used to only show a fake "Successfully joined workspace" toast; it now navigates to the group page. Group uploads happen on the group page; the hub upload is personal-only. Visible nav/tab strings say "Groups"/"Grupos"; deeper strings (settings modal, invitation notifications) still say "workspace". No Firestore schema or rules changes — purely client navigation/IA.

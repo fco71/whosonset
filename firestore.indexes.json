@@ -1,6 +1,20 @@
 {
   "indexes": [
     {
+      "collectionGroup": "screenplayRevisions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "screenplayId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
       "collectionGroup": "activityFeed",
       "queryScope": "COLLECTION",
       "fields": [

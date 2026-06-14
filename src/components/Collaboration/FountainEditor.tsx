@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 import { syncFountainScenes } from '../../services/sceneService';
+import { shouldSnapshot, writeRevision, pruneRevisions } from '../../services/screenplayRevisions';
 import {
   ScreenplayElementType,
   applyElementType,
@@ -26,7 +27,11 @@ interface FountainEditorProps {
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
-const SAVE_DEBOUNCE_MS = 1500;
+const SAVE_DEBOUNCE_MS = 2500;
+// Scene reconciliation (reads all scene docs + writes changed ones) is the expensive part
+// of a save, so throttle it well below the source-save cadence. The unmount flush always
+// runs a final sync, so the latest scene state is never lost.
+const SCENE_SYNC_MIN_INTERVAL_MS = 12000;
 
 // Toolbar button order + the keyboard letter that triggers each (with Alt/Option).
 const TOOLBAR: Array<{ type: ScreenplayElementType; labelKey: string; key: string }> = [
@@ -68,6 +73,14 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, projectId, 
   const latestSource = useRef(source);
   latestSource.current = source;
 
+  // Version-safety bookkeeping: the last successfully-saved source (the version a save
+  // overwrites), when we last archived a revision, when scenes were last synced, and how
+  // many revisions we've written this session (for periodic pruning).
+  const lastSavedSource = useRef(screenplay.fountainSource || '');
+  const lastSnapshotAt = useRef(0);
+  const lastSceneSyncAt = useRef(0);
+  const revisionCount = useRef(0);
+
   const pageCount = computePageCount(source);
   const sceneDescriptors = useMemo(() => describeFountainScenes(source), [source]);
 
@@ -81,6 +94,7 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, projectId, 
         const data = snap.data();
         if (typeof data.fountainSource === 'string' && !hasLocalEdit.current) {
           setSource(data.fountainSource);
+          lastSavedSource.current = data.fountainSource;
           if (currentUser?.uid) {
             syncFountainScenes({
               screenplayId: screenplay.id,
@@ -111,23 +125,58 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, projectId, 
     setSaveStatus('saving');
     saveTimer.current = window.setTimeout(async () => {
       try {
+        const previous = lastSavedSource.current;
         await updateDoc(doc(db, 'screenplays', screenplay.id), {
           fountainSource: value,
           fountainUpdatedAt: serverTimestamp(),
           lastModified: serverTimestamp(),
           lastEditedBy: currentUser?.uid || null
         });
+        lastSavedSource.current = value;
         setSaveStatus('saved');
+
         if (currentUser?.uid) {
-          syncFountainScenes({
-            screenplayId: screenplay.id,
-            projectId,
-            source: value,
-            actor: {
-              uid: currentUser.uid,
-              displayName: currentUser.displayName
-            }
-          }).catch(err => console.error('Failed to synchronize Fountain scenes:', err));
+          // Version safety: archive the just-overwritten source when warranted (a periodic
+          // ~5-min checkpoint OR a suspicious large shrink), keeping a bounded ring so an
+          // accidental delete-then-autosave is always recoverable. Best-effort.
+          const now = Date.now();
+          const decision = shouldSnapshot({
+            previousSource: previous,
+            newSource: value,
+            lastSnapshotAt: lastSnapshotAt.current,
+            now
+          });
+          if (decision.snapshot) {
+            lastSnapshotAt.current = now;
+            writeRevision({
+              screenplayId: screenplay.id,
+              source: previous,
+              authorId: currentUser.uid,
+              authorName: currentUser.displayName,
+              reason: decision.reason
+            }).then(() => {
+              revisionCount.current += 1;
+              if (revisionCount.current % 5 === 0) {
+                return pruneRevisions(screenplay.id);
+              }
+              return undefined;
+            }).catch(err => console.error('Failed to archive screenplay revision:', err));
+          }
+
+          // Scene reconciliation is throttled — it's the costly part of a save (reads all
+          // scene docs + writes changed ones). The unmount flush runs a final sync.
+          if (now - lastSceneSyncAt.current >= SCENE_SYNC_MIN_INTERVAL_MS) {
+            lastSceneSyncAt.current = now;
+            syncFountainScenes({
+              screenplayId: screenplay.id,
+              projectId,
+              source: value,
+              actor: {
+                uid: currentUser.uid,
+                displayName: currentUser.displayName
+              }
+            }).catch(err => console.error('Failed to synchronize Fountain scenes:', err));
+          }
         }
       } catch (err) {
         console.error('Failed to save fountain source:', err);

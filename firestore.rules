@@ -980,6 +980,21 @@ service cloud.firestore {
       allow delete: if canModerateAnnotationData(resource.data);
     }
 
+    // Version-safety archive of prior Fountain source (bounded, throttled ring written by
+    // the editor — see src/services/screenplayRevisions.ts). Members read; editors create
+    // (immutable) + prune oldest. Mirrors screenplayAnnotations access.
+    match /screenplayRevisions/{revisionId} {
+      allow read: if canAccessScreenplay(resource.data.screenplayId);
+      allow create: if signedIn() &&
+        request.resource.data.authorId == request.auth.uid &&
+        request.resource.data.screenplayId is string &&
+        request.resource.data.source is string &&
+        request.resource.data.source.size() < 1000000 &&
+        canEditScreenplay(request.resource.data.screenplayId);
+      allow update: if false;
+      allow delete: if canEditScreenplay(resource.data.screenplayId);
+    }
+
     match /screenplayTags/{tagId} {
       allow read: if canAccessScreenplay(resource.data.screenplayId);
       allow create: if signedIn() &&
