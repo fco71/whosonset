@@ -100,36 +100,6 @@ const SocialTestPage: React.FC<SocialTestPageProps> = ({
     }
   };
 
-  const testNotificationCreation = async () => {
-    if (!currentUserId) {
-      toast.error('Please log in first');
-      return;
-    }
-
-    try {
-      console.log('[SocialTestPage] Testing notification creation for user:', currentUserId);
-      
-      // Create a test notification
-      await SocialService.createNotification({
-        userId: currentUserId,
-        type: 'follow_request',
-        title: 'Test Follow Request',
-        message: 'This is a test notification to verify the system is working',
-        relatedUserId: 'test-user-id',
-        isRead: false,
-        createdAt: new Date(),
-        actionUrl: '/social'
-      });
-      
-      console.log('[SocialTestPage] Test notification created successfully');
-      toast.success('Test notification created! Check your notification bell.');
-      
-    } catch (error) {
-      console.error('[SocialTestPage] Error creating test notification:', error);
-      toast.error('Error creating test notification: ' + error);
-    }
-  };
-
   const testFollowRequestWithNotification = async () => {
     if (!currentUserId) {
       toast.error('Please log in first');
@@ -239,14 +209,6 @@ const SocialTestPage: React.FC<SocialTestPageProps> = ({
 
           <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
             <button
-              onClick={testNotificationCreation}
-              disabled={loading}
-              className="px-6 py-3 bg-purple-600 text-white font-light tracking-wide rounded-lg hover:bg-purple-700 transition-all duration-300 disabled:opacity-50"
-            >
-              Test Notification Creation
-            </button>
-            
-            <button
               onClick={testFollowRequestWithNotification}
               disabled={loading}
               className="px-6 py-3 bg-orange-600 text-white font-light tracking-wide rounded-lg hover:bg-orange-700 transition-all duration-300 disabled:opacity-50"
@@ -300,4 +262,4 @@ const SocialTestPage: React.FC<SocialTestPageProps> = ({
   );
 };
 
-export default SocialTestPage; 
+export default SocialTestPage;

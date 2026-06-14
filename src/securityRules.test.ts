@@ -97,22 +97,18 @@ describe('security rules guardrails', () => {
     expect(assignmentRules).not.toMatch(/allow\s+create:\s+if\s+signedIn\(\);/);
   });
 
-  it('constrains top-level notification creation to internal links + capped payloads', () => {
+  it('blocks all client notification creation paths', () => {
     const rules = readRepoFile('firestore.rules');
-    // The top-level /notifications block is the one whose first allow line is
-    // `read, update, delete: if ownsUserId(...)` (the users/ + crewProfiles/
-    // subcollection notification blocks start with `allow read:` instead).
     const notifRules = rules.match(/match\s+\/notifications\/\{notificationId\}\s+\{\s*\n\s*allow read, update, delete: if ownsUserId\(resource\.data\);[\s\S]*?\n\s+\}/)?.[0] || '';
+    const userNotifRules = rules.match(/match\s+\/users\/\{userId\}[\s\S]*?match\s+\/notifications\/\{notificationId\}\s+\{[\s\S]*?\n\s+\}/)?.[0] || '';
+    const crewNotifRules = rules.match(/match\s+\/crewProfiles\/\{profileId\}[\s\S]*?match\s+\/notifications\/\{notificationId\}\s+\{[\s\S]*?\n\s+\}/)?.[0] || '';
 
-    expect(notifRules).toMatch(/allow\s+create:\s+if\s+signedIn\(\)/);
-    // link must be absent or an internal relative path (blocks external/phishing URLs)
-    expect(notifRules).toMatch(/request\.resource\.data\.link\.matches\(/);
-    expect(notifRules).toMatch(/request\.resource\.data\.link\.size\(\)\s*<\s*500/);
-    // payload length caps
-    expect(notifRules).toMatch(/title\.size\(\)\s*<\s*300/);
-    expect(notifRules).toMatch(/body\.size\(\)\s*<\s*2000/);
-    // must NOT regress to the old unconstrained create
-    expect(notifRules).not.toMatch(/allow\s+create:\s+if\s+signedIn\(\)\s+&&\s+request\.resource\.data\.userId\s+is\s+string;/);
+    expect(notifRules).toMatch(/allow\s+create:\s+if\s+false;/);
+    expect(userNotifRules).toMatch(/allow\s+create:\s+if\s+false;/);
+    expect(crewNotifRules).toMatch(/allow\s+create:\s+if\s+false;/);
+    expect(notifRules).not.toMatch(/allow\s+create:\s+if\s+signedIn\(\)/);
+    expect(userNotifRules).not.toMatch(/allow\s+create:\s+if\s+request\.auth\s*!=\s*null/);
+    expect(crewNotifRules).not.toMatch(/allow\s+(create|write):\s+if\s+request\.auth\s*!=\s*null/);
   });
 
   it('keeps project-management collections scoped to project access instead of any signed-in user', () => {
@@ -199,6 +195,42 @@ describe('security rules guardrails', () => {
     expect(client).toMatch(/Authorization.*Bearer/);
   });
 
+  it('keeps in-app notification creation server-side across every active client flow', () => {
+    const functions = readRepoFile('functions/src/index.ts');
+    const clientFiles = [
+      'src/components/Collaboration/ScreenplayViewer.tsx',
+      'src/components/JobSearch/InterviewScheduler.tsx',
+      'src/services/jobApplicationService.ts',
+      'src/services/messagingService.ts',
+      'src/services/screenplayService.ts',
+      'src/services/socialService.ts',
+      'src/services/socialService.v2.ts'
+    ].map(readRepoFile).join('\n');
+
+    [
+      'notifyJobApplicationCreated',
+      'notifyJobApplicationStatusChange',
+      'notifyJobApplicationMessageCreated',
+      'notifyNewMessage',
+      'notifyWorkspaceInvitationCreated',
+      'notifyScreenplayReviewStatus',
+      'notifyFollowRequest',
+      'notifyFollowRequestStatus',
+      'notifyFollowCreated',
+      'notifyFollowStatus',
+      'notifyScreenplayAnnotationCreated',
+      'notifyScreenplayTagCreated',
+      'notifyInterviewScheduled',
+      'addScreenplayCollaborator'
+    ].forEach(exportName => {
+      expect(functions).toMatch(new RegExp(`export const ${exportName}`));
+    });
+
+    expect(clientFiles).not.toMatch(/addDoc\(collection\(db,\s*['"]notifications['"]\)/);
+    expect(clientFiles).not.toMatch(/setDoc\(doc\(collection\(db,\s*['"]notifications['"]\)/);
+    expect(clientFiles).not.toMatch(/createNotification\s*\(/);
+  });
+
   it('gates the supervisor-mode callable on teacherRoles, not user-writable profile fields', () => {
     // The client self-elects supervisor through the setWorkspaceSupervisorMode
     // callable, which runs with the Admin SDK and BYPASSES Firestore rules — so
@@ -253,6 +285,9 @@ describe('security rules guardrails', () => {
     expect(annotationRules).toMatch(/allow\s+delete:\s+if\s+canModerateAnnotationData\(resource\.data\)/);
     expect(annotationRules).not.toMatch(/allow\s+update,\s+delete:\s+if\s+signedIn\(\)\s+&&\s+canAccessScreenplay/);
     expect(annotationRules).toMatch(/isValidAnnotationData\(request\.resource\.data\)/);
+    expect(annotationRules).toMatch(/supervisorAtAuthorTime\s*==\s*\n\s*isScreenplaySupervisor/);
+    expect(rules).toMatch(/function\s+hasValidMentionRecipients/);
+    expect(rules).toMatch(/mentionedUserIds/);
     expect(rules).toMatch(/data\.annotation\.size\(\)\s*<=\s*5000/);
     expect(rules).toMatch(/data\.position\.keys\(\)\.hasOnly\(\['x',\s*'y',\s*'width',\s*'height'\]\)/);
     expect(replyUpdateFn).toMatch(/newData\.replies\.size\(\)\s*==\s*oldData\.get\('replies',\s*\[\]\)\.size\(\)\s*\+\s*1/);
@@ -269,6 +304,7 @@ describe('security rules guardrails', () => {
     expect(tagRules).toMatch(/allow\s+delete:\s+if\s+canModerateAnnotationData\(resource\.data\)/);
     expect(tagRules).not.toMatch(/allow\s+update,\s+delete:\s+if\s+signedIn\(\)\s+&&\s+canAccessScreenplay/);
     expect(tagRules).toMatch(/isValidTagData\(request\.resource\.data\)/);
+    expect(tagRules).toMatch(/supervisorAtAuthorTime\s*==\s*\n\s*isScreenplaySupervisor/);
     expect(rules).toMatch(/data\.content\.size\(\)\s*<=\s*2000/);
     expect(rules).toMatch(/data\.tagType\s+in\s+\[[\s\S]*?'cast_member'[\s\S]*?'research'[\s\S]*?\]/);
     expect(rules).toMatch(/data\.color\.size\(\)\s*<=\s*32/);

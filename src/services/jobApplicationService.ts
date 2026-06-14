@@ -32,7 +32,6 @@ import {
   ApplicationMessage,
   ApplicationNotification
 } from '../types/JobApplication';
-import EmailNotificationService from './emailNotificationService';
 
 export class JobApplicationService {
   // Job Search Operations
@@ -352,104 +351,6 @@ export class JobApplicationService {
     } catch (error) {
       console.error('Error getting user dashboard:', error);
       throw error;
-    }
-  }
-
-  // Messaging Operations
-  static async sendApplicationMessage(applicationId: string, message: Omit<ApplicationMessage, 'id' | 'timestamp'>): Promise<void> {
-    try {
-      const messageData = {
-        ...message,
-        timestamp: serverTimestamp(),
-        isRead: false
-      };
-
-      await addDoc(collection(db, 'applicationMessages'), {
-        applicationId,
-        ...messageData
-      });
-
-      // Create notification
-      await this.createMessageNotification(applicationId, message.senderId, message.senderName);
-    } catch (error) {
-      console.error('Error sending application message:', error);
-      throw error;
-    }
-  }
-
-  // Notification Operations
-  static async createApplicationNotification(jobId: string, applicationId: string, applicantId: string): Promise<void> {
-    try {
-      const notificationData = {
-        userId: applicantId,
-        type: 'application_submitted',
-        title: 'Application Submitted',
-        body: 'Your job application has been submitted successfully.',
-        message: 'Your job application has been submitted successfully.',
-        relatedJobId: jobId,
-        relatedApplicationId: applicationId,
-        link: `/applications/${encodeURIComponent(applicationId)}`,
-        isRead: false,
-        read: false,
-        createdAt: serverTimestamp()
-      };
-
-      await addDoc(collection(db, 'notifications'), notificationData);
-      console.log('Application notification created successfully');
-    } catch (error: any) {
-      console.error('Error creating application notification:', error);
-      
-      // Only log if it's not a permission error
-      if (error.code !== 'permission-denied') {
-        console.log('Notification creation failed:', error.code);
-      }
-      
-      // Don't throw the error - notification creation is not critical
-    }
-  }
-
-  static async createStatusUpdateNotification(applicationId: string, userId: string, status: string): Promise<void> {
-    try {
-      const notificationData = {
-        userId,
-        type: 'application_status_update',
-        title: 'Application Status Updated',
-        body: `Your application status has been updated to: ${status}`,
-        message: `Your application status has been updated to: ${status}`,
-        relatedApplicationId: applicationId,
-        link: `/applications/${encodeURIComponent(applicationId)}`,
-        isRead: false,
-        read: false,
-        createdAt: serverTimestamp()
-      };
-
-      await addDoc(collection(db, 'notifications'), notificationData);
-    } catch (error) {
-      console.error('Error creating status update notification:', error);
-    }
-  }
-
-  static async createMessageNotification(applicationId: string, userId: string, senderName: string): Promise<void> {
-    try {
-      const notificationData = {
-        userId,
-        type: 'application_message',
-        title: 'New Message',
-        body: `You received a message from ${senderName} regarding your application.`,
-        message: `You received a message from ${senderName} regarding your application.`,
-        relatedApplicationId: applicationId,
-        link: `/applications/${encodeURIComponent(applicationId)}`,
-        isRead: false,
-        read: false,
-        createdAt: serverTimestamp()
-      };
-
-      await addDoc(collection(db, 'notifications'), notificationData);
-
-      // Send email notification
-      await EmailNotificationService.sendApplicationMessageEmail(userId, senderName, applicationId);
-    } catch (error) {
-      console.error('Error creating message notification:', error);
     }
   }
 

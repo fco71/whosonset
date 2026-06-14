@@ -98,13 +98,6 @@ export class SocialService {
         updatedAt: serverTimestamp(),
       });
 
-      // Create notification for the user being followed
-      await this.createNotification({
-        userId: followingId,
-        type: 'follow_request',
-        message: 'sent you a follow request',
-        metadata: { followerId }
-      });
     } catch (error) {
       console.error('Error sending follow request:', error);
       throw error;
@@ -134,13 +127,6 @@ export class SocialService {
           updatedAt: serverTimestamp(),
         });
 
-        // Create notification for the follower
-        await this.createNotification({
-          userId: followData.followerId,
-          type: 'follow_accepted',
-          message: 'accepted your follow request',
-          metadata: { followingId: followData.followingId }
-        });
       } else {
         await deleteDoc(followRef);
       }
@@ -418,22 +404,6 @@ export class SocialService {
     } catch (error) {
       console.error('Error getting follow relationship:', error);
       return null;
-    }
-  }
-
-  /**
-   * Create a notification
-   */
-  private static async createNotification(data: Omit<NotificationData, 'id' | 'createdAt' | 'isRead'>): Promise<void> {
-    try {
-      await setDoc(doc(collection(db, 'notifications')), {
-        ...data,
-        isRead: false,
-        createdAt: serverTimestamp(),
-      });
-    } catch (error) {
-      console.error('Error creating notification:', error);
-      throw error;
     }
   }
 

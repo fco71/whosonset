@@ -22,7 +22,6 @@ import { db } from '../firebase';
 import { FollowRequest, Follow, SocialNotification, ActivityFeedItem, SocialLike, SocialComment } from '../types/Social';
 import { CrewProfile } from '../types/CrewProfile';
 import { UserUtils } from '../utilities/userUtils';
-import EmailNotificationService from './emailNotificationService';
 
 export class SocialService {
   // Cache for activity feed
@@ -72,24 +71,6 @@ export class SocialService {
       console.log('[SocialService] Creating follow request with data:', requestData);
       await addDoc(collection(db, 'followRequests'), requestData);
       console.log('[SocialService] Follow request created successfully');
-
-      // Create notification for the target user
-      console.log('[SocialService] Creating notification for user:', toUserId);
-      await this.createNotification({
-        userId: toUserId,
-        type: 'follow_request',
-        title: 'New Follow Request',
-        message: `${fromUserName} wants to follow you`,
-        relatedUserId: fromUserId,
-        isRead: false,
-        createdAt: new Date(),
-        actionUrl: '/social?tab=requests'
-      });
-      console.log('[SocialService] Notification created successfully');
-
-      // Send email notification
-      await EmailNotificationService.sendFollowRequestEmail(toUserId, fromUserName);
-      console.log('[SocialService] Email notification sent successfully');
 
     } catch (error) {
       console.error('Error sending follow request:', error);
@@ -179,21 +160,10 @@ export class SocialService {
       await batch.commit();
       console.log('[SocialService] Batch committed successfully');
 
-      // Then create notifications and activity feed items (these are separate operations)
+      // Then create the activity feed item. The accepted notification is written
+      // server-side from the followRequests status transition.
       if (status === 'accepted') {
         try {
-          // Create notification for the requester
-          await this.createNotification({
-            userId: fromUserId,
-            type: 'follow_accepted',
-            title: 'Follow Request Accepted',
-            message: 'Your follow request was accepted',
-            relatedUserId: toUserId,
-            isRead: false,
-            createdAt: new Date(),
-            actionUrl: '/social?tab=connections'
-          });
-
           // Create activity feed item
           await this.createActivityFeedItem({
             userId: fromUserId,
@@ -207,9 +177,9 @@ export class SocialService {
             isPublic: true
           });
           
-          console.log('[SocialService] Notification and activity feed created successfully');
+          console.log('[SocialService] Activity feed created successfully');
         } catch (notificationError) {
-          console.error('[SocialService] Error creating notification/activity feed:', notificationError);
+          console.error('[SocialService] Error creating activity feed:', notificationError);
           // Don't throw here as the main operation (follow acceptance) was successful
         }
       }
@@ -411,27 +381,6 @@ export class SocialService {
     } catch (error) {
       console.error('[SocialService] Error setting up notifications listener:', error);
       return () => {};
-    }
-  }
-
-  // Notification Operations
-  static async createNotification(notification: Omit<SocialNotification, 'id'>): Promise<void> {
-    try {
-      console.log('[SocialService] Creating notification:', notification);
-      const body = notification.message || notification.title || 'You have a new notification.';
-      const docRef = await addDoc(collection(db, 'notifications'), {
-        ...notification,
-        body,
-        message: body,
-        read: notification.isRead ?? false,
-        isRead: notification.isRead ?? false,
-        link: notification.actionUrl || '',
-        createdAt: serverTimestamp()
-      });
-      console.log('[SocialService] Notification created with ID:', docRef.id);
-    } catch (error) {
-      console.error('Error creating notification:', error);
-      throw error;
     }
   }
 
@@ -915,57 +864,6 @@ export class SocialService {
     } catch (error) {
       console.error('[SocialService] Error fetching crew profiles:', error);
       return [];
-    }
-  }
-
-  /**
-   * Send a collaboration request notification to a user for a screenplay/project.
-   * This does NOT add them to teamMembers directly; approval is required.
-   */
-  static async sendCollaborationRequest({
-    inviteeId,
-    inviterId,
-    screenplayId,
-    screenplayName,
-    inviterName
-  }: {
-    inviteeId: string;
-    inviterId: string;
-    screenplayId: string;
-    screenplayName: string;
-    inviterName: string;
-  }): Promise<void> {
-    try {
-      // Check for existing pending request
-      const notificationsQuery = query(
-        collection(db, 'notifications'),
-        where('userId', '==', inviteeId),
-        where('type', '==', 'collaboration_request'),
-        where('relatedScreenplayId', '==', screenplayId),
-        where('relatedUserId', '==', inviterId),
-      );
-      const existing = await getDocs(notificationsQuery);
-      if (!existing.empty) {
-        throw new Error('A collaboration request is already pending for this user and screenplay.');
-      }
-      // Create the notification
-      await addDoc(collection(db, 'notifications'), {
-        userId: inviteeId,
-        type: 'collaboration_request',
-        title: 'Collaboration Request',
-        message: `${inviterName} has invited you to collaborate on "${screenplayName}".`,
-        relatedScreenplayId: screenplayId,
-        relatedUserId: inviterId,
-        isRead: false,
-        createdAt: serverTimestamp(),
-        actionUrl: `/screenplays/${screenplayId}/collab-request`
-      });
-
-      // Send email notification
-      await EmailNotificationService.sendCollaborationRequestEmail(inviteeId, inviterName, screenplayName, screenplayId);
-    } catch (error) {
-      console.error('Error sending collaboration request:', error);
-      throw error;
     }
   }
 

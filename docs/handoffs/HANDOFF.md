@@ -1,6 +1,8 @@
 # Project Handoff — myfilmjobs.com / whosonset
 
-**Last updated:** May 28, 2026 (Firebase account target clarified). Owner: Francisco Valdez. Firebase CLI/Console/deploy work must use `iam@myfilmjobs.com`.
+**Current status note (June 14, 2026):** This file is historical. `PROJECT_OVERVIEW.md` is the canonical current handoff. Notification Phase 2 is fully live: all active notification creation is server-side, client creates are denied by Firestore rules, and emulator-backed rules tests run in production CI.
+
+**Last historical update:** May 28, 2026 (Firebase account target clarified). Owner: Francisco Valdez. Firebase CLI/Console/deploy work must use `iam@myfilmjobs.com`.
 
 This doc lets another agent pick up where we left off without re-asking the basics. Read it top-to-bottom before making changes. Delete it from the repo or `.gitignore` it before committing — it contains internal status notes.
 

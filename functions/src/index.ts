@@ -1,5 +1,5 @@
 import * as admin from "firebase-admin";
-import { onRequest } from "firebase-functions/v2/https";
+import { HttpsError, onCall, onRequest } from "firebase-functions/v2/https";
 import { onDocumentCreated, onDocumentDeleted, onDocumentUpdated } from "firebase-functions/v2/firestore";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { defineSecret } from "firebase-functions/params";
@@ -1329,7 +1329,7 @@ export const notifyJobApplicationCreated = onDocumentCreated({
     return;
   }
 
-  const applicantName = asString(data.applicantName) || "A new applicant";
+  const applicantName = await getActorName(applicantId);
   const jobTitle = jobInfo.title || "your job posting";
 
   await createInAppNotification({
@@ -1405,7 +1405,7 @@ export const notifyJobApplicationMessageCreated = onDocumentCreated({
   }
 
   const senderId = asString(messageData.senderId);
-  const senderName = asString(messageData.senderName) || "A member";
+  const senderName = await getActorName(senderId);
 
   const applicationSnapshot = await db.collection("jobApplications").doc(applicationId).get();
   if (!applicationSnapshot.exists) {
@@ -1893,7 +1893,24 @@ export const notifyFollowRequest = onDocumentCreated({
       return;
     }
 
-    const { toUserId, fromUserName } = requestData;
+    const toUserId = asString(requestData.toUserId);
+    const fromUserId = asString(requestData.fromUserId);
+    const fromUserName = await getActorName(fromUserId);
+    if (!toUserId || toUserId === fromUserId) {
+      return;
+    }
+
+    await createInAppNotification({
+      userId: toUserId,
+      type: 'follow_request',
+      title: 'New Follow Request',
+      body: `${fromUserName} wants to follow you.`,
+      link: '/social?tab=requests',
+      relatedId: event.params.requestId,
+      senderId: fromUserId,
+      senderName: fromUserName,
+      metadata: { fromUserId }
+    });
     
     // Get recipient's data using helper function
     const recipientData = await getUserData(toUserId);
@@ -1925,6 +1942,95 @@ export const notifyFollowRequest = onDocumentCreated({
   }
 });
 
+export const notifyFollowRequestStatus = onDocumentUpdated({
+  document: 'followRequests/{requestId}',
+  region: 'us-central1'
+}, async (event) => {
+  const before = event.data?.before.data();
+  const after = event.data?.after.data();
+  if (!before || !after || before.status === after.status || after.status !== 'accepted') {
+    return;
+  }
+
+  const recipientId = asString(after.fromUserId);
+  const actorId = asString(after.toUserId);
+  if (!recipientId || recipientId === actorId) {
+    return;
+  }
+  const actorName = await getActorName(actorId);
+
+  await createInAppNotification({
+    userId: recipientId,
+    type: 'follow_accepted',
+    title: 'Follow Request Accepted',
+    body: `${actorName} accepted your follow request.`,
+    link: '/social?tab=connections',
+    relatedId: event.params.requestId,
+    senderId: actorId,
+    senderName: actorName,
+    metadata: { followingId: actorId }
+  });
+});
+
+export const notifyFollowCreated = onDocumentCreated({
+  document: 'follows/{followId}',
+  region: 'us-central1'
+}, async (event) => {
+  const data = event.data?.data();
+  if (!data || data.status !== 'pending') {
+    return;
+  }
+
+  const actorId = asString(data.followerId);
+  const recipientId = asString(data.followingId);
+  if (!actorId || !recipientId || actorId === recipientId) {
+    return;
+  }
+  const actorName = await getActorName(actorId);
+
+  await createInAppNotification({
+    userId: recipientId,
+    type: 'follow_request',
+    title: 'New Follow Request',
+    body: `${actorName} wants to follow you.`,
+    link: '/social?tab=requests',
+    relatedId: event.params.followId,
+    senderId: actorId,
+    senderName: actorName,
+    metadata: { followerId: actorId }
+  });
+});
+
+export const notifyFollowStatus = onDocumentUpdated({
+  document: 'follows/{followId}',
+  region: 'us-central1'
+}, async (event) => {
+  const before = event.data?.before.data();
+  const after = event.data?.after.data();
+  if (!before || !after || before.status === after.status || after.status !== 'accepted') {
+    return;
+  }
+
+  const recipientId = asString(after.followerId);
+  const actorId = asString(after.followingId);
+  if (!recipientId || !actorId || recipientId === actorId) {
+    return;
+  }
+  const actorName = await getActorName(actorId);
+
+  await createInAppNotification({
+    userId: recipientId,
+    type: 'follow_accepted',
+    title: 'Follow Request Accepted',
+    body: `${actorName} accepted your follow request.`,
+    link: '/social?tab=connections',
+    relatedId: event.params.followId,
+    senderId: actorId,
+    senderName: actorName,
+    metadata: { followingId: actorId }
+  });
+});
+
 // Trigger function for message notifications
 export const notifyNewMessage = onDocumentCreated({
   document: 'conversations/{conversationId}/messages/{messageId}',
@@ -1943,11 +2049,20 @@ export const notifyNewMessage = onDocumentCreated({
       return;
     }
 
-    const { senderId, receiverId, content } = messageData;
-
     // Get conversation ID from event params
     const conversationId = event.params.conversationId;
     const messageId = event.params.messageId;
+    const senderId = asString(messageData.senderId);
+    const content = asString(messageData.content);
+    const conversationSnapshot = await db.collection('conversations').doc(conversationId).get();
+    const participants = conversationSnapshot.exists && Array.isArray(conversationSnapshot.data()?.participants)
+      ? conversationSnapshot.data()?.participants.filter((uid: unknown): uid is string => typeof uid === 'string')
+      : [];
+    const receiverId = participants.find((uid: string) => uid !== senderId) || '';
+    if (!senderId || !receiverId) {
+      console.log(`[notifyNewMessage] Could not derive conversation recipient: ${conversationId}`);
+      return;
+    }
 
     // Sender data computed once (reused by the in-app notification and the email).
     const senderData = await getUserData(senderId);
@@ -2041,7 +2156,7 @@ export const notifyWorkspaceInvitationCreated = onDocumentCreated({
 
     const workspaceId = typeof data.workspaceId === 'string' ? data.workspaceId : '';
     const workspaceName = typeof data.workspaceName === 'string' && data.workspaceName ? data.workspaceName : 'group';
-    const inviterName = typeof data.inviterName === 'string' && data.inviterName ? data.inviterName : 'A collaborator';
+    const inviterName = await getActorName(inviterId);
     const role = typeof data.role === 'string' && data.role ? data.role : 'member';
 
     await createInAppNotification({
@@ -2161,4 +2276,246 @@ export const notifyScreenplayReviewStatus = onDocumentUpdated({
   } catch (error) {
     console.error('[notifyScreenplayReviewStatus] Error:', error);
   }
+});
+
+async function getScreenplayParticipantIds(
+  screenplay: Record<string, unknown>
+): Promise<Set<string>> {
+  const participantIds = new Set<string>();
+  const uploadedBy = asString(screenplay.uploadedBy);
+  if (uploadedBy) participantIds.add(uploadedBy);
+
+  if (Array.isArray(screenplay.teamMembers)) {
+    screenplay.teamMembers.forEach((uid) => {
+      if (typeof uid === 'string' && uid) participantIds.add(uid);
+    });
+  }
+
+  const workspaceId = asString(screenplay.workspaceId);
+  if (workspaceId) {
+    const workspaceSnapshot = await db.collection('workspaces').doc(workspaceId).get();
+    const workspace = workspaceSnapshot.data() || {};
+    if (Array.isArray(workspace.memberIds)) {
+      workspace.memberIds.forEach((uid: unknown) => {
+        if (typeof uid === 'string' && uid) participantIds.add(uid);
+      });
+    }
+    if (Array.isArray(workspace.members)) {
+      workspace.members.forEach((member: unknown) => {
+        if (member && typeof member === 'object') {
+          const uid = asString((member as Record<string, unknown>).userId);
+          if (uid) participantIds.add(uid);
+        }
+      });
+    }
+  }
+
+  return participantIds;
+}
+
+async function notifyScreenplayElementCreated(
+  kind: 'annotation' | 'tag',
+  elementId: string,
+  data: Record<string, unknown>
+): Promise<void> {
+  const screenplayId = asString(data.screenplayId);
+  const actorId = asString(data.userId);
+  if (!screenplayId || !actorId) return;
+
+  const screenplaySnapshot = await db.collection('screenplays').doc(screenplayId).get();
+  if (!screenplaySnapshot.exists) return;
+  const screenplay = screenplaySnapshot.data() || {};
+  const screenplayName = asString(screenplay.name) || asString(screenplay.title) || 'screenplay';
+  const workspaceId = asString(screenplay.workspaceId);
+  const uploadedBy = asString(screenplay.uploadedBy);
+  const actorName = await getActorName(actorId);
+  const content = asString(kind === 'annotation' ? data.annotation : data.content);
+  const excerpt = content.length > 140 ? `${content.slice(0, 140).trim()}…` : content;
+  const pageNumber = typeof data.pageNumber === 'number' ? data.pageNumber : 0;
+  const metadata = {
+    screenplayId,
+    screenplayName,
+    workspaceId,
+    [kind === 'annotation' ? 'annotationId' : 'tagId']: elementId,
+    pageNumber,
+    kind
+  };
+
+  if (data.supervisorAtAuthorTime === true && uploadedBy && uploadedBy !== actorId) {
+    const titleKey = kind === 'annotation'
+      ? 'screenplay.notifications.supervisorAnnotation.title'
+      : 'screenplay.notifications.supervisorTag.title';
+    const bodyKey = kind === 'annotation'
+      ? 'screenplay.notifications.supervisorAnnotation.body'
+      : 'screenplay.notifications.supervisorTag.body';
+    await createInAppNotification({
+      userId: uploadedBy,
+      type: kind === 'annotation' ? 'supervisor_annotation' : 'supervisor_tag',
+      title: `${actorName} left a supervisor ${kind} on ${screenplayName}.`,
+      body: `${actorName} left a supervisor ${kind} on ${screenplayName}: ${excerpt}`,
+      titleKey,
+      bodyKey,
+      i18nParams: { author: actorName, screenplay: screenplayName, page: pageNumber, excerpt },
+      link: '/collaboration',
+      relatedId: elementId,
+      senderId: actorId,
+      senderName: actorName,
+      metadata
+    });
+  }
+
+  const participants = await getScreenplayParticipantIds(screenplay);
+  const mentionedUserIds = Array.isArray(data.mentionedUserIds)
+    ? data.mentionedUserIds.filter((uid): uid is string => typeof uid === 'string')
+    : [];
+  const recipients = [...new Set(mentionedUserIds)]
+    .filter((uid) => uid !== actorId && participants.has(uid));
+  const titleKey = `screenplay.notifications.mention${kind === 'annotation' ? 'Annotation' : 'Tag'}.title`;
+  const bodyKey = `screenplay.notifications.mention${kind === 'annotation' ? 'Annotation' : 'Tag'}.body`;
+
+  await Promise.all(recipients.map((recipientId) => createInAppNotification({
+    userId: recipientId,
+    type: `mention_${kind}`,
+    title: `${actorName} mentioned you in a ${kind}.`,
+    body: `${actorName} mentioned you in ${screenplayName}: ${excerpt}`,
+    titleKey,
+    bodyKey,
+    i18nParams: { author: actorName, screenplay: screenplayName, page: pageNumber, excerpt },
+    link: '/collaboration',
+    relatedId: elementId,
+    senderId: actorId,
+    senderName: actorName,
+    metadata
+  })));
+}
+
+export const notifyScreenplayAnnotationCreated = onDocumentCreated({
+  document: 'screenplayAnnotations/{annotationId}',
+  region: 'us-central1'
+}, async (event) => {
+  const data = event.data?.data();
+  if (!data) return;
+  await notifyScreenplayElementCreated('annotation', event.params.annotationId, data);
+});
+
+export const notifyScreenplayTagCreated = onDocumentCreated({
+  document: 'screenplayTags/{tagId}',
+  region: 'us-central1'
+}, async (event) => {
+  const data = event.data?.data();
+  if (!data) return;
+  await notifyScreenplayElementCreated('tag', event.params.tagId, data);
+});
+
+export const notifyInterviewScheduled = onDocumentCreated({
+  document: 'interviews/{interviewId}',
+  region: 'us-central1'
+}, async (event) => {
+  const interview = event.data?.data();
+  if (!interview) return;
+
+  const applicationId = asString(interview.applicationId);
+  if (!applicationId) return;
+
+  const applicationSnapshot = await db.collection('jobApplications').doc(applicationId).get();
+  if (!applicationSnapshot.exists) return;
+  const application = applicationSnapshot.data() || {};
+  const applicantId = asString(application.applicantId);
+  const jobId = asString(application.jobId);
+  if (!applicantId) return;
+
+  const jobInfo = await getJobInfo(jobId);
+  const jobTitle = jobInfo.title || 'your application';
+  await createInAppNotification({
+    userId: applicantId,
+    type: 'interview_scheduled',
+    title: 'Interview Scheduled',
+    body: `An interview for ${jobTitle} has been scheduled.`,
+    link: `/applications/${encodeURIComponent(applicationId)}`,
+    relatedId: event.params.interviewId,
+    applicationId,
+    senderId: jobInfo.posterId,
+    metadata: {
+      interviewId: event.params.interviewId,
+      jobId,
+      scheduledAt: interview.scheduledAt || null
+    }
+  });
+});
+
+export const addScreenplayCollaborator = onCall({
+  region: 'us-central1'
+}, async (request) => {
+  const actorId = request.auth?.uid;
+  if (!actorId) {
+    throw new HttpsError('unauthenticated', 'Must be signed in to add a collaborator.');
+  }
+
+  const screenplayId = asString(request.data?.screenplayId);
+  const collaboratorId = asString(request.data?.collaboratorId);
+  if (!screenplayId || !collaboratorId || collaboratorId === actorId) {
+    throw new HttpsError('invalid-argument', 'A valid screenplay and collaborator are required.');
+  }
+
+  try {
+    await admin.auth().getUser(collaboratorId);
+  } catch {
+    throw new HttpsError('not-found', 'Collaborator account not found.');
+  }
+
+  const screenplayRef = db.collection('screenplays').doc(screenplayId);
+  const screenplaySnapshot = await screenplayRef.get();
+  if (!screenplaySnapshot.exists) {
+    throw new HttpsError('not-found', 'Screenplay not found.');
+  }
+
+  const screenplay = screenplaySnapshot.data() || {};
+  const workspaceId = asString(screenplay.workspaceId);
+  let canManage = asString(screenplay.uploadedBy) === actorId;
+  if (!canManage && workspaceId) {
+    const workspaceSnapshot = await db.collection('workspaces').doc(workspaceId).get();
+    canManage = workspaceSnapshot.exists && asString(workspaceSnapshot.data()?.ownerId) === actorId;
+  }
+  if (!canManage) {
+    throw new HttpsError('permission-denied', 'Only the screenplay owner or group owner can add collaborators.');
+  }
+
+  const added = await db.runTransaction(async (transaction) => {
+    const currentSnapshot = await transaction.get(screenplayRef);
+    if (!currentSnapshot.exists) {
+      throw new HttpsError('not-found', 'Screenplay not found.');
+    }
+    const current = currentSnapshot.data() || {};
+    const teamMembers = Array.isArray(current.teamMembers)
+      ? current.teamMembers.filter((uid): uid is string => typeof uid === 'string')
+      : [];
+    if (teamMembers.includes(collaboratorId)) {
+      return false;
+    }
+    transaction.update(screenplayRef, {
+      teamMembers: admin.firestore.FieldValue.arrayUnion(collaboratorId),
+      lastModified: admin.firestore.FieldValue.serverTimestamp()
+    });
+    return true;
+  });
+
+  if (!added) {
+    return { status: 'already_added', screenplayId, collaboratorId };
+  }
+
+  const actorName = await getActorName(actorId);
+  const screenplayName = asString(screenplay.name) || asString(screenplay.title) || 'screenplay';
+  await createInAppNotification({
+    userId: collaboratorId,
+    type: 'collaborator_added',
+    title: 'Added as Collaborator',
+    body: `${actorName} added you as a collaborator to ${screenplayName}.`,
+    link: '/collaboration',
+    relatedId: screenplayId,
+    senderId: actorId,
+    senderName: actorName,
+    metadata: { screenplayId, screenplayName, workspaceId }
+  });
+
+  return { status: 'added', screenplayId, collaboratorId };
 });

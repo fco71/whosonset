@@ -328,6 +328,11 @@ service cloud.firestore {
         data.supervisorAtAuthorTime is bool;
     }
 
+    function hasValidMentionRecipients(data) {
+      return data.get('mentionedUserIds', []) is list &&
+        data.get('mentionedUserIds', []).size() <= 20;
+    }
+
     function isValidAnnotationReply(reply) {
       return reply is map &&
         reply.keys().hasAll(['id', 'userId', 'userName', 'content', 'timestamp', 'supervisorAtAuthorTime']) &&
@@ -361,9 +366,11 @@ service cloud.firestore {
         data.keys().hasOnly([
           'screenplayId', 'projectId', 'userId', 'userName', 'userAvatar',
           'annotation', 'timestamp', 'pageNumber', 'position', 'selection',
-          'replies', 'resolved', 'supervisorAtAuthorTime', 'priority'
+          'replies', 'resolved', 'supervisorAtAuthorTime', 'mentionedUserIds',
+          'priority'
         ]) &&
         isValidScreenplayElementAnchor(data) &&
+        hasValidMentionRecipients(data) &&
         data.annotation is string &&
         data.annotation.size() > 0 &&
         data.annotation.size() <= 5000 &&
@@ -381,9 +388,10 @@ service cloud.firestore {
         data.keys().hasOnly([
           'screenplayId', 'projectId', 'userId', 'userName', 'userAvatar',
           'tagType', 'content', 'timestamp', 'pageNumber', 'position', 'selection',
-          'color', 'resolved', 'supervisorAtAuthorTime'
+          'color', 'resolved', 'supervisorAtAuthorTime', 'mentionedUserIds'
         ]) &&
         isValidScreenplayElementAnchor(data) &&
+        hasValidMentionRecipients(data) &&
         data.tagType in [
           'cast_member', 'background_actors', 'stunts', 'vehicles', 'props',
           'camera', 'special_effects', 'vfx', 'mechanical_effects', 'wardrobe',
@@ -545,7 +553,7 @@ service cloud.firestore {
       // Notifications subcollection: only the user can read/write
       match /notifications/{notificationId} {
         allow read: if request.auth != null && request.auth.uid == userId;
-        allow create: if request.auth != null;
+        allow create: if false;
         allow update, delete: if request.auth != null && request.auth.uid == userId;
       }
     }
@@ -573,7 +581,8 @@ service cloud.firestore {
 
       // Notifications subcollection: only the user can read/write
       match /notifications/{notificationId} {
-        allow read, write: if request.auth != null && request.auth.uid == profileId;
+        allow read, update, delete: if request.auth != null && request.auth.uid == profileId;
+        allow create: if false;
       }
     }
 
@@ -760,21 +769,7 @@ service cloud.firestore {
 
     match /notifications/{notificationId} {
       allow read, update, delete: if ownsUserId(resource.data);
-      // Client creation is still allowed (the app writes notifications
-      // cross-user), but hardened against the phishing/spam vector: `link`
-      // must be absent or an internal relative path — blocking javascript:,
-      // http(s):// and protocol-relative //host links — and title/body carry
-      // sane length caps. Full server-side creation (create: if false) is a
-      // planned follow-up once the notification write schema is normalized.
-      allow create: if signedIn()
-        && request.resource.data.userId is string
-        && (!('link' in request.resource.data)
-            || request.resource.data.link == ''
-            || (request.resource.data.link is string
-                && request.resource.data.link.size() < 500
-                && request.resource.data.link.matches('^/([^/].*)?$')))
-        && (!('title' in request.resource.data) || request.resource.data.title.size() < 300)
-        && (!('body' in request.resource.data) || request.resource.data.body.size() < 2000);
+      allow create: if false;
     }
 
     match /workspaceInvitations/{invitationId} {
@@ -800,22 +795,54 @@ service cloud.firestore {
     }
 
     match /followRequests/{requestId} {
-      allow read, update, delete: if signedIn() && (
+      allow read, delete: if signedIn() && (
         resource.data.fromUserId == request.auth.uid ||
         resource.data.toUserId == request.auth.uid
       );
       allow create: if signedIn() &&
         request.resource.data.fromUserId == request.auth.uid &&
-        request.resource.data.toUserId is string;
+        request.resource.data.toUserId is string &&
+        request.resource.data.toUserId != request.auth.uid &&
+        request.resource.data.status == 'pending';
+      allow update: if signedIn() &&
+        resource.data.toUserId == request.auth.uid &&
+        request.resource.data.fromUserId == resource.data.fromUserId &&
+        request.resource.data.toUserId == resource.data.toUserId &&
+        resource.data.status == 'pending' &&
+        request.resource.data.status in ['accepted', 'rejected'] &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt']);
     }
 
     match /follows/{followId} {
       allow read: if signedIn();
-      allow create: if signedIn() && (
-        request.resource.data.followerId == request.auth.uid ||
-        request.resource.data.followingId == request.auth.uid
-      );
-      allow update, delete: if signedIn() && (
+      allow create: if signedIn() &&
+        request.resource.data.followerId is string &&
+        request.resource.data.followingId is string &&
+        request.resource.data.followerId != request.resource.data.followingId &&
+        (
+          (
+            request.resource.data.status == 'pending' &&
+            request.resource.data.followerId == request.auth.uid
+          ) ||
+          (
+            request.resource.data.status == 'active' &&
+            (
+              request.resource.data.followingId == request.auth.uid ||
+              (
+                request.resource.data.get('isAutoFollow', false) == true &&
+                request.resource.data.followerId == request.auth.uid
+              )
+            )
+          )
+        );
+      allow update: if signedIn() &&
+        resource.data.followingId == request.auth.uid &&
+        request.resource.data.followerId == resource.data.followerId &&
+        request.resource.data.followingId == resource.data.followingId &&
+        resource.data.status == 'pending' &&
+        request.resource.data.status in ['accepted', 'rejected'] &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt']);
+      allow delete: if signedIn() && (
         resource.data.followerId == request.auth.uid ||
         resource.data.followingId == request.auth.uid
       );
@@ -937,6 +964,8 @@ service cloud.firestore {
       allow create: if signedIn() &&
         request.resource.data.userId == request.auth.uid &&
         isValidAnnotationData(request.resource.data) &&
+        request.resource.data.supervisorAtAuthorTime ==
+          isScreenplaySupervisor(request.resource.data.screenplayId, request.auth.uid) &&
         canAccessScreenplay(request.resource.data.screenplayId);
       allow update: if keepsAnnotationIdentity(request.resource.data, resource.data) &&
         (
@@ -951,6 +980,8 @@ service cloud.firestore {
       allow create: if signedIn() &&
         request.resource.data.userId == request.auth.uid &&
         isValidTagData(request.resource.data) &&
+        request.resource.data.supervisorAtAuthorTime ==
+          isScreenplaySupervisor(request.resource.data.screenplayId, request.auth.uid) &&
         canAccessScreenplay(request.resource.data.screenplayId);
       allow update: if keepsAnnotationIdentity(request.resource.data, resource.data) &&
         isAnnotationResolveUpdate(request.resource.data, resource.data);

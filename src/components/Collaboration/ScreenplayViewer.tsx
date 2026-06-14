@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { collection, addDoc, query, where, orderBy, getDocs, onSnapshot, updateDoc, doc, deleteDoc, arrayUnion, arrayRemove, limit, getDoc, serverTimestamp, writeBatch } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
@@ -76,6 +77,7 @@ interface Annotation {
   replies?: Reply[];
   resolved?: boolean;
   supervisorAtAuthorTime?: boolean;
+  mentionedUserIds?: string[];
   priority?: 'low' | 'medium' | 'high' | 'critical';
 }
 
@@ -108,6 +110,7 @@ interface Tag {
   color: string;
   resolved?: boolean;
   supervisorAtAuthorTime?: boolean;
+  mentionedUserIds?: string[];
 }
 
 interface ScreenplaySession {
@@ -164,7 +167,6 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   const [statusFilter, setStatusFilter] = useState<'open' | 'mine' | 'from_teacher' | 'all'>('open');
   const [tagStatusFilter, setTagStatusFilter] = useState<'open' | 'mine' | 'from_teacher' | 'all'>('open');
   const [screenplayWorkspaceId, setScreenplayWorkspaceId] = useState<string | null>(null);
-  const [screenplayUploadedBy, setScreenplayUploadedBy] = useState<string | null>(null);
   const [reviewStatus, setReviewStatus] = useState<ScreenplayReviewStatus>(screenplay.reviewStatus || 'draft');
   const [reviewStatusNote, setReviewStatusNote] = useState<string>('');
   // L — per-screenplay revision history (activity events scoped to this screenplay).
@@ -595,7 +597,6 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     setLoading(true);
     setNumPages(null);
     setScreenplayWorkspaceId(null);
-    setScreenplayUploadedBy(null);
     setReviewStatus(screenplay.reviewStatus || 'draft');
     setCanManageScreenplay(false);
     setCanUpdateReviewAsCreator(false);
@@ -613,7 +614,6 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       const workspaceId = typeof data?.workspaceId === 'string' ? data.workspaceId : null;
       const uploadedBy = typeof data?.uploadedBy === 'string' ? data.uploadedBy : null;
       setScreenplayWorkspaceId(workspaceId);
-      setScreenplayUploadedBy(uploadedBy);
       setReviewStatus(isScreenplayReviewStatus(data?.reviewStatus) ? data.reviewStatus : 'draft');
       setReviewStatusNote(typeof data?.reviewStatusNote === 'string' ? data.reviewStatusNote : '');
       setLiveFountainSource(typeof data?.fountainSource === 'string' ? data.fountainSource : null);
@@ -909,81 +909,6 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     }
   };
 
-  // G6 — write an in-app notification to the screenplay author when a supervisor leaves a
-  // comment or tag. Guarded so:
-  //   - only fires when the author was acting as a supervisor at write time
-  //   - never notifies the screenplay's own uploader if they're the author of the comment
-  //     (no self-notifications when a teacher uploads + comments on their own demo)
-  //   - silently no-ops if uploadedBy is missing (defensive — old screenplays)
-  // The doc lives in the top-level `notifications` collection (same as the rest of the
-  // app's notification system, surfaced by useNotifications + NotificationBell).
-  // We deliberately do NOT send email here — see G6 design note. Email digest is a
-  // future Cloud-Function workstream so we don't bombard students per keystroke.
-  const writeSupervisorCommentNotification = async (params: {
-    kind: 'annotation' | 'tag';
-    pageNumber: number;
-    content: string;
-    refId: string;
-  }) => {
-    if (!currentUser || !screenplayUploadedBy) return;
-    if (screenplayUploadedBy === currentUser.uid) return;
-    try {
-      const authorName = currentUser.displayName || t('screenplay.notifications.fallbackAuthor');
-      const screenplayName = screenplay.name || t('screenplay.notifications.fallbackScreenplay');
-      const excerpt = params.content.length > 80
-        ? `${params.content.slice(0, 80).trim()}…`
-        : params.content;
-      const titleKey = params.kind === 'annotation'
-        ? 'screenplay.notifications.supervisorAnnotation.title'
-        : 'screenplay.notifications.supervisorTag.title';
-      const bodyKey = params.kind === 'annotation'
-        ? 'screenplay.notifications.supervisorAnnotation.body'
-        : 'screenplay.notifications.supervisorTag.body';
-      const title = t(titleKey, { author: authorName, screenplay: screenplayName });
-      const body = t(bodyKey, {
-        author: authorName,
-        screenplay: screenplayName,
-        page: params.pageNumber,
-        excerpt
-      });
-      await addDoc(collection(db, 'notifications'), {
-        userId: screenplayUploadedBy,
-        type: params.kind === 'annotation' ? 'supervisor_annotation' : 'supervisor_tag',
-        title,
-        body,
-        message: body,
-        // Stored title/body are a fallback (author's locale); keys+params render in the
-        // recipient's locale. excerpt/screenplay are data; author is a name.
-        titleKey,
-        bodyKey,
-        i18nParams: { author: authorName, screenplay: screenplayName, page: params.pageNumber, excerpt },
-        isRead: false,
-        read: false,
-        createdAt: serverTimestamp(),
-        timestamp: serverTimestamp(),
-        senderId: currentUser.uid,
-        senderName: authorName,
-        // relatedId is the annotation/tag doc id (NOT the screenplay id) — this
-        // lines up with mention notifications so a single query can find every
-        // notification tied to a specific note when the student addresses it.
-        // The screenplay id stays in metadata for the click handler.
-        relatedId: params.refId,
-        link: '/collaboration',
-        metadata: {
-          screenplayId: screenplay.id,
-          screenplayName,
-          workspaceId: screenplayWorkspaceId || null,
-          [params.kind === 'annotation' ? 'annotationId' : 'tagId']: params.refId,
-          pageNumber: params.pageNumber,
-          kind: params.kind
-        }
-      });
-    } catch (err) {
-      // Failure to write a notification must never block the underlying comment.
-      console.error('Failed to write supervisor-comment notification:', err);
-    }
-  };
-
   // -------- @-mention typeahead (K) --------
   // While typing `@<partial>` in the annotation textarea or tag input we
   // show a small dropdown of matching workspace members. Click/Enter/Tab
@@ -1115,47 +1040,6 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
     return extractMentionedUserIdsFromText(text, collaborators, currentUser?.uid);
   };
 
-  // Best-effort: write a "you were @mentioned" notification per target.
-  // Never blocks the underlying write; failures only console.error.
-  const notifyMentions = async (
-    text: string,
-    pageNumber: number,
-    refId: string,
-    kind: 'annotation' | 'tag'
-  ) => {
-    const targets = extractMentionedUserIds(text);
-    if (!targets.length || !currentUser) return;
-    const actorName = currentUser.displayName || t('screenplay.notifications.fallbackAuthor');
-    const screenplayName = screenplay.name || t('screenplay.notifications.fallbackScreenplay');
-    const excerpt = text.trim().slice(0, 140);
-    const titleKey = `screenplay.notifications.mention${kind === 'annotation' ? 'Annotation' : 'Tag'}.title`;
-    const bodyKey = `screenplay.notifications.mention${kind === 'annotation' ? 'Annotation' : 'Tag'}.body`;
-    const params = { author: actorName, screenplay: screenplayName, page: pageNumber, excerpt };
-    try {
-      await Promise.all(targets.map(uid => addDoc(collection(db, 'notifications'), {
-        userId: uid,
-        type: `mention_${kind}`,
-        title: t(titleKey, params),
-        body: t(bodyKey, params),
-        message: t(bodyKey, params),
-        titleKey,
-        bodyKey,
-        i18nParams: params,
-        isRead: false,
-        read: false,
-        createdAt: serverTimestamp(),
-        timestamp: serverTimestamp(),
-        senderId: currentUser.uid,
-        senderName: actorName,
-        relatedId: refId,
-        link: '/collaboration',
-        metadata: { screenplayId: screenplay.id, screenplayName, kind, refId, pageNumber }
-      })));
-    } catch (err) {
-      console.error('Failed to write @mention notification:', err);
-    }
-  };
-
   const screenplayElementActorAccess = useMemo(() => ({
     currentUserId: currentUser?.uid,
     canManageScreenplay,
@@ -1247,10 +1131,11 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         replies: [],
         resolved: false,
         supervisorAtAuthorTime,
+        mentionedUserIds: extractMentionedUserIds(annotation.trim()),
         priority: 'medium' as const
       };
 
-      const annotationRef = await addDoc(collection(db, 'screenplayAnnotations'), annotationData);
+      await addDoc(collection(db, 'screenplayAnnotations'), annotationData);
       setNewAnnotation('');
       toast.success(supervisorAtAuthorTime ? t('screenplay.toasts.supervisorNoteAdded') : t('screenplay.toasts.annotationAdded'));
 
@@ -1265,17 +1150,6 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         });
       }
 
-      if (supervisorAtAuthorTime) {
-        // Don't await — notification is best-effort, never block the user's flow.
-        writeSupervisorCommentNotification({
-          kind: 'annotation',
-          pageNumber,
-          content: annotation.trim(),
-          refId: annotationRef.id
-        });
-      }
-      // @mention notifications — target anyone tagged in the text. Best-effort.
-      notifyMentions(annotation.trim(), pageNumber, annotationRef.id, 'annotation');
     } catch (error) {
       console.error('Error adding annotation:', error);
       toast.error(t('screenplay.toasts.annotationFailed'));
@@ -1300,10 +1174,11 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         position,
         color: tagColors[selectedTagType],
         resolved: false,
-        supervisorAtAuthorTime
+        supervisorAtAuthorTime,
+        mentionedUserIds: extractMentionedUserIds(tag.trim())
       };
 
-      const tagRef = await addDoc(collection(db, 'screenplayTags'), tagData);
+      await addDoc(collection(db, 'screenplayTags'), tagData);
       setNewTag('');
       toast.success(t('screenplay.toasts.tagAdded'));
 
@@ -1318,16 +1193,6 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
         });
       }
 
-      if (supervisorAtAuthorTime) {
-        writeSupervisorCommentNotification({
-          kind: 'tag',
-          pageNumber,
-          content: tag.trim(),
-          refId: tagRef.id
-        });
-      }
-      // @mention notifications also fire on tag content.
-      notifyMentions(tag.trim(), pageNumber, tagRef.id, 'tag');
     } catch (error) {
       console.error('Error adding tag:', error);
       toast.error(t('screenplay.toasts.tagFailed'));
@@ -2237,11 +2102,19 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
       // writes the array). Display metadata is hydrated at read time from crewProfiles.
       debugLog('Adding collaborator uid:', user.id);
 
-      // Update the database
-      await updateDoc(screenplayRef, {
-        teamMembers: arrayUnion(user.id),
-        lastModified: serverTimestamp()
+      const addCollaborator = httpsCallable(getFunctions(), 'addScreenplayCollaborator');
+      const result = await addCollaborator({
+        screenplayId: screenplay.id,
+        collaboratorId: user.id
       });
+      const resultData = result.data as { status?: string };
+      if (resultData.status === 'added') {
+        await EmailNotificationService.sendCollaboratorAddedEmail(
+          user.id,
+          screenplay.name || screenplay.id,
+          currentUser?.displayName || 'Unknown User'
+        );
+      }
 
       debugLog('Database updated successfully');
 
@@ -2259,21 +2132,6 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
 
       // Show success message
       toast.success(`${user.name} added as collaborator!`);
-      // Create notification for the new collaborator
-      if (user.id) {
-        await addDoc(collection(db, 'notifications'), {
-          type: 'collaborator_added',
-          message: `You have been added as a collaborator to the screenplay: ${screenplay.id}`,
-          timestamp: serverTimestamp(),
-          read: false,
-          userId: user.id,
-          screenplayId: screenplay.id,
-          addedBy: currentUser?.uid || '',
-        });
-
-        // Send email notification
-        await EmailNotificationService.sendCollaboratorAddedEmail(user.id, screenplay.name || screenplay.id, currentUser?.displayName || 'Unknown User');
-      }
       // Close modal and reset search
       setShowAddCollaboratorModal(false);
       setCollaboratorSearch('');

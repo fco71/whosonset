@@ -26,7 +26,6 @@ import { DirectMessage, ChatRoom, ChatSettings, MessageReaction, ChatPresence } 
 import { SocialService } from './socialService';
 import { storage } from '../firebase';
 import { ref, uploadBytes, getDownloadURL, ref as storageRef, deleteObject } from 'firebase/storage';
-import EmailNotificationService from './emailNotificationService';
 
 const debugLog = (...args: unknown[]) => {
   if (process.env.NODE_ENV !== 'production') {
@@ -689,37 +688,6 @@ export class MessagingService {
     }
     
     this.conversationCache.set(userId1, conversations);
-  }
-
-  // ===== NOTIFICATION MANAGEMENT =====
-  
-  static async createMessageNotification(
-    receiverId: string, 
-    senderId: string, 
-    messageId: string, 
-    content: string, 
-    messageType: string
-  ): Promise<void> {
-    try {
-      debugLog('[MessagingService] Creating message notification for:', receiverId);
-      
-      // Get sender info
-      const senderProfile = await this.getUserProfile(senderId);
-      const senderName = senderProfile?.displayName || 'Unknown User';
-      
-      // DEPRECATED / UNUSED as of Phase 2: notifyNewMessage now writes the in-app
-      // notification AND sends the throttled email server-side, and sendMessage no
-      // longer calls this method. Kept only until the Inc 7 dead-code cleanup.
-      const messagePreview = content.length > 50 ? content.substring(0, 50) + '...' : content;
-
-      // Send email notification
-      await EmailNotificationService.sendMessageNotificationEmail(receiverId, senderName, messagePreview);
-      
-      debugLog('[MessagingService] Message notification created successfully');
-    } catch (error) {
-      console.error('[MessagingService] Error creating message notification:', error);
-      // Don't throw error - notification failure shouldn't break message sending
-    }
   }
 
   // ===== CLEANUP =====

@@ -161,18 +161,6 @@ const InterviewScheduler: React.FC<InterviewSchedulerProps> = ({
       };
       
       const interviewRef = await addDoc(collection(db, 'interviews'), interviewRecord);
-      
-      // Create notification for applicant
-      await addDoc(collection(db, 'notifications'), {
-        userId: application.applicantId,
-        type: 'interview_scheduled',
-        title: 'Interview Scheduled',
-        message: `Your interview for ${job?.title} has been scheduled for ${interviewDateTime.toLocaleDateString()} at ${interviewDateTime.toLocaleTimeString()}`,
-        isRead: false,
-        createdAt: serverTimestamp(),
-        actionUrl: `/applications/${applicationId}`,
-        interviewId: interviewRef.id
-      });
 
       // Send email notification
       await EmailNotificationService.sendInterviewScheduledEmail(
@@ -411,4 +399,4 @@ const InterviewScheduler: React.FC<InterviewSchedulerProps> = ({
   );
 };
 
-export default InterviewScheduler; 
+export default InterviewScheduler;

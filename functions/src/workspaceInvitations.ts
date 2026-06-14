@@ -7,6 +7,22 @@ type InvitationResponse = "accept" | "decline";
 const VALID_ROLES = new Set<WorkspaceRole>(["member", "supervisor", "viewer"]);
 const BATCH_LIMIT = 450;
 
+async function getUserDisplayName(
+  db: admin.firestore.Firestore,
+  uid: string,
+  fallback: string
+): Promise<string> {
+  const [crewSnapshot, userSnapshot] = await Promise.all([
+    db.collection("crewProfiles").doc(uid).get(),
+    db.collection("users").doc(uid).get()
+  ]);
+  const crew = crewSnapshot.data() || {};
+  const user = userSnapshot.data() || {};
+  const candidates = [crew.name, crew.displayName, user.name, user.displayName, fallback];
+  const resolved = candidates.find((value) => typeof value === "string" && value.trim());
+  return typeof resolved === "string" ? resolved.trim() : "A collaborator";
+}
+
 function permissionsForRole(role: WorkspaceRole): string[] {
   switch (role) {
     case "supervisor":
@@ -187,7 +203,12 @@ export const respondToWorkspaceInvitation = onCall({ region: "us-central1" }, as
   }
 
   if (inviterId && inviterId !== uid) {
-    await notifyInviter(db, workspaceId, inviterId, inviteeName || auth.token.name || "A collaborator", workspaceName, accepted);
+    const resolvedInviteeName = await getUserDisplayName(
+      db,
+      uid,
+      inviteeName || auth.token.name || "A collaborator"
+    );
+    await notifyInviter(db, workspaceId, inviterId, resolvedInviteeName, workspaceName, accepted);
   }
 
   return { status: accepted ? "accepted" : "declined", workspaceId };
