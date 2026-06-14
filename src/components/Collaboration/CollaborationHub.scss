@@ -1,10 +1,40 @@
+// ============================================================
+// Collaboration design tokens (shared with Workspace & Class detail)
+// ============================================================
+:root {
+  --collab-accent: #007aff;
+  --collab-accent-hover: #0063e6;
+  --collab-accent-soft: rgba(0, 122, 255, 0.10);
+  --collab-accent-ring: rgba(0, 122, 255, 0.30);
+  --collab-danger: #ef4444;
+  --collab-danger-hover: #dc2626;
+  --collab-success: #10b981;
+  --collab-surface: #ffffff;
+  --collab-surface-2: #f8fafc;
+  --collab-surface-3: #f1f5f9;
+  --collab-border: #e8edf2;
+  --collab-border-strong: #d6dde5;
+  --collab-text: #0f172a;
+  --collab-text-secondary: #475569;
+  --collab-text-muted: #94a3b8;
+  --collab-radius-sm: 8px;
+  --collab-radius: 12px;
+  --collab-radius-lg: 16px;
+  --collab-radius-pill: 999px;
+  --collab-shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --collab-shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --collab-shadow-md: 0 6px 16px rgba(15, 23, 42, 0.08);
+  --collab-shadow-lg: 0 16px 36px rgba(15, 23, 42, 0.14);
+  --collab-transition: 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 .collaboration-hub {
   display: flex;
   flex-direction: column;
   height: 100vh;
   background: #ffffff;
-  color: #1a1a1a;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  color: var(--collab-text);
+  font-family: var(--font-body, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
   font-size: 14px;
   line-height: 1.5;
 
@@ -42,7 +72,7 @@
       }
       
       button {
-        background: #007AFF;
+        background: var(--collab-accent);
         color: white;
         border: none;
         padding: 0.625rem 1.25rem;
@@ -53,7 +83,7 @@
         transition: all 0.15s ease;
 
         &:hover {
-          background: #0056CC;
+          background: var(--collab-accent-hover);
           transform: translateY(-1px);
         }
       }
@@ -83,7 +113,7 @@
       gap: 0.75rem;
 
       button {
-        background: #007AFF;
+        background: var(--collab-accent);
         color: white;
         border: none;
         padding: 0.5rem 1rem;
@@ -94,7 +124,7 @@
         transition: all 0.15s ease;
 
         &:hover {
-          background: #0056CC;
+          background: var(--collab-accent-hover);
           transform: translateY(-1px);
         }
       }
@@ -173,7 +203,7 @@
           }
 
           &.active {
-            background: #007AFF;
+            background: var(--collab-accent);
             color: white;
             box-shadow: 0 2px 4px rgba(0, 122, 255, 0.15);
           }
@@ -235,7 +265,7 @@
           }
 
           .create-workspace-btn {
-            background: #007AFF;
+            background: var(--collab-accent);
             color: white;
             border: none;
             padding: 0.625rem 1.25rem;
@@ -249,7 +279,7 @@
             gap: 0.5rem;
 
             &:hover {
-              background: #0056CC;
+              background: var(--collab-accent-hover);
               transform: translateY(-1px);
             }
           }
@@ -261,34 +291,38 @@
           gap: 1.25rem;
 
           .workspace-card {
-            background: #f8f9fb;
-            color: #1a1a1a;
-            border: 1px solid #f0f0f0;
-            border-radius: 12px;
-            padding: 1.5rem;
-            transition: all 0.15s ease;
+            background: var(--collab-surface);
+            color: var(--collab-text);
+            border: 1px solid var(--collab-border);
+            border-radius: var(--collab-radius);
+            padding: 1.25rem;
+            box-shadow: var(--collab-shadow-xs);
+            transition: transform var(--collab-transition), box-shadow var(--collab-transition), border-color var(--collab-transition);
             cursor: pointer;
             position: relative;
+            overflow: hidden;
             box-sizing: border-box;
-            
-            .workspace-title,
-            .workspace-type,
-            .workspace-description,
-            .stat,
-            .stat-value,
-            .stat-label {
-              color: #1a1a1a !important;
+
+            &::before {
+              content: "";
+              position: absolute;
+              top: 0; left: 0; right: 0;
+              height: 3px;
+              background: var(--collab-accent);
+              opacity: 0;
+              transition: opacity var(--collab-transition);
             }
-            
+            &:hover::before { opacity: 1; }
+
             &:hover {
-              border-color: #007AFF;
-              box-shadow: 0 4px 12px rgba(0, 122, 255, 0.08);
-              transform: translateY(-2px);
+              border-color: var(--collab-border-strong);
+              box-shadow: var(--collab-shadow-md);
+              transform: translateY(-3px);
             }
-            
+
             &.selected {
-              border-color: #007AFF;
-              background: #f4f7ff;
+              border-color: var(--collab-accent);
+              background: var(--collab-accent-soft);
             }
 
             .workspace-header {
@@ -300,9 +334,17 @@
                 gap: 0.75rem;
 
                 .workspace-icon {
-                  color: #007AFF;
+                  width: 44px;
+                  height: 44px;
+                  border-radius: 12px;
+                  background: var(--collab-accent-soft);
+                  color: var(--collab-accent);
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
                   flex-shrink: 0;
-                  margin-top: 0.125rem;
+
+                  svg { width: 22px; height: 22px; }
                 }
 
                 .workspace-info {
@@ -310,32 +352,37 @@
                   min-width: 0;
 
                   .workspace-title {
-                    font-size: 1.125rem;
-                    font-weight: 600;
-                    color: #1a1a1a;
-                    margin: 0 0 0.25rem 0;
+                    font-size: 1rem;
+                    font-weight: 700;
+                    letter-spacing: -0.012em;
+                    color: var(--collab-text);
+                    margin: 0 0 0.4rem 0;
                     line-height: 1.3;
                   }
 
 	                  .workspace-type {
-	                    display: inline-block;
-	                    background: #f0f0f0;
-	                    color: #666;
-	                    padding: 0.25rem 0.5rem;
-                    border-radius: 4px;
-                    font-size: 0.75rem;
-                    font-weight: 500;
-	                    text-transform: capitalize;
-	                  }
+                    display: inline-flex;
+                    align-items: center;
+                    background: var(--collab-surface-3);
+                    color: var(--collab-text-secondary);
+                    padding: 0.2rem 0.6rem;
+                    border-radius: var(--collab-radius-pill);
+                    font-size: 0.7rem;
+                    font-weight: 600;
+                    letter-spacing: 0.02em;
+                    text-transform: capitalize;
+                  }
 
 	                  .workspace-status {
-	                    display: inline-block;
-	                    margin-left: 0.5rem;
-	                    padding: 0.25rem 0.5rem;
-	                    border-radius: 4px;
-	                    font-size: 0.75rem;
-	                    font-weight: 600;
-	                    text-transform: none;
+                    display: inline-flex;
+                    align-items: center;
+                    margin-left: 0.4rem;
+                    padding: 0.2rem 0.6rem;
+                    border-radius: var(--collab-radius-pill);
+                    font-size: 0.7rem;
+                    font-weight: 700;
+                    letter-spacing: 0.02em;
+                    text-transform: none;
 
 	                    &.archived {
 	                      background: #fff7ed;
@@ -362,39 +409,85 @@
 	            }
             
             .workspace-description {
-              color: #666;
-              margin-bottom: 1.25rem;
-              line-height: 1.5;
-              font-size: 0.875rem;
+              color: var(--collab-text-secondary);
+              margin: 0.85rem 0 0;
+              line-height: 1.55;
+              font-size: 0.825rem;
+              display: -webkit-box;
+              -webkit-line-clamp: 2;
+              -webkit-box-orient: vertical;
+              overflow: hidden;
             }
             
             .workspace-stats {
               display: flex;
-              gap: 1rem;
-              margin-bottom: 1.25rem;
+              align-items: center;
+              flex-wrap: wrap;
+              gap: 0.85rem 1.1rem;
+              margin: 0.95rem 0 0;
 
               .stat {
-                display: flex;
+                display: inline-flex;
                 align-items: center;
-                gap: 0.5rem;
-                color: #666;
-                font-size: 0.875rem;
+                gap: 0.4rem;
+                color: var(--collab-text-secondary);
+                font-size: 0.8rem;
 
-                svg {
-                  color: #999;
-                }
+                svg { color: var(--collab-text-muted); width: 15px; height: 15px; }
 
-                .stat-value {
-                  font-weight: 600;
-                  color: #333;
-                }
+                .stat-value { font-weight: 700; color: var(--collab-text); }
+                .stat-label { color: var(--collab-text-muted); }
+              }
 
-                .stat-label {
-                  color: #666;
-                }
+              .awaiting-review-chip {
+                gap: 0.3rem;
+                padding: 0.2rem 0.6rem;
+                border-radius: var(--collab-radius-pill);
+                background: var(--collab-accent-soft) !important;
+                color: var(--collab-accent-hover) !important;
+                font-size: 0.7rem;
+                font-weight: 700;
               }
             }
             
+            .workspace-self-role {
+              display: flex;
+              align-items: center;
+              gap: 0.5rem;
+              flex-wrap: wrap;
+              margin: 0.95rem 0 0;
+
+              .role-chip {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.35rem;
+                padding: 0.2rem 0.6rem;
+                border-radius: var(--collab-radius-pill);
+                font-size: 0.7rem;
+                font-weight: 700;
+                letter-spacing: 0.02em;
+                background: var(--collab-accent-soft);
+                color: var(--collab-accent-hover);
+
+                &.role-chip--supervisor { background: rgba(245,158,11,.14); color: #b45309; }
+              }
+
+              .btn-text {
+                background: transparent;
+                border: 1px solid var(--collab-border-strong);
+                border-radius: var(--collab-radius-sm);
+                padding: 0.25rem 0.6rem;
+                font-size: 0.72rem;
+                font-weight: 600;
+                color: var(--collab-text-secondary);
+                cursor: pointer;
+                transition: all var(--collab-transition);
+
+                &:hover:not(:disabled) { border-color: var(--collab-accent); color: var(--collab-accent); }
+                &:disabled { opacity: 0.6; cursor: not-allowed; }
+              }
+            }
+
             .workspace-actions {
               display: flex;
               flex-wrap: wrap;
@@ -403,7 +496,17 @@
               box-sizing: border-box;
               justify-content: flex-start;
               align-items: stretch;
-              margin-top: 1rem;
+              margin-top: 1.1rem;
+              padding-top: 1.1rem;
+              border-top: 1px solid var(--collab-border);
+
+              .btn-primary, .btn-secondary {
+                flex: 1 1 auto;
+                justify-content: center;
+                padding: 0.5rem 0.9rem;
+                font-size: 0.8rem;
+              }
+              .btn-primary svg, .btn-secondary svg { width: 15px; height: 15px; }
 
               .action-btn {
                 flex: 1;
@@ -422,18 +525,18 @@
 
                 &:hover {
                   background: #f8f9fa;
-                  border-color: #007AFF;
-                  color: #007AFF;
+                  border-color: var(--collab-accent);
+                  color: var(--collab-accent);
                 }
 
                 &.primary {
-                  background: #007AFF;
+                  background: var(--collab-accent);
                   color: white;
-                  border-color: #007AFF;
+                  border-color: var(--collab-accent);
 
                   &:hover {
-                    background: #0056CC;
-                    border-color: #0056CC;
+                    background: var(--collab-accent-hover);
+                    border-color: var(--collab-accent-hover);
                   }
                 }
 
@@ -476,7 +579,7 @@
               padding: 0;
               &:hover, &:focus {
                 background: #f0f0f0;
-                color: #007AFF;
+                color: var(--collab-accent);
               }
               svg {
                 display: block;
@@ -569,7 +672,7 @@
               padding: 1rem;
               background: white;
               border-radius: 8px;
-              box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+              box-shadow: var(--collab-shadow-sm);
               cursor: pointer;
               transition: all 0.2s;
 
@@ -648,12 +751,12 @@
             background: white;
             border-radius: 12px;
             padding: 1.5rem;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            box-shadow: var(--collab-shadow-md);
             transition: all 0.3s;
 
             &:hover {
               transform: translateY(-2px);
-              box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+              box-shadow: var(--collab-shadow-lg);
             }
 
             .document-icon {
@@ -758,12 +861,12 @@
             background: white;
             border-radius: 12px;
             overflow: hidden;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            box-shadow: var(--collab-shadow-md);
             transition: all 0.3s;
 
             &:hover {
               transform: translateY(-4px);
-              box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+              box-shadow: var(--collab-shadow-lg);
             }
 
             .whiteboard-preview {
@@ -904,7 +1007,7 @@
               background: white;
               border-radius: 12px;
               padding: 1.5rem;
-              box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+              box-shadow: var(--collab-shadow-sm);
             }
           }
         }
@@ -997,8 +1100,8 @@
 
                 &:focus {
                   outline: none;
-                  border-color: #007AFF;
-                  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+                  border-color: var(--collab-accent);
+                  box-shadow: 0 0 0 3px var(--collab-accent-ring);
                 }
 
                 &::placeholder {
@@ -1076,7 +1179,7 @@
                   }
 
                   .user-role {
-                    color: #007AFF;
+                    color: var(--collab-accent);
                     font-size: 0.75rem;
                     font-weight: 500;
                   }
@@ -1084,7 +1187,7 @@
 
                 .btn-add-user {
                   padding: 0.5rem 1rem;
-                  background: #007AFF;
+                  background: var(--collab-accent);
                   color: white;
                   border: none;
                   border-radius: 6px;
@@ -1094,7 +1197,7 @@
                   transition: all 0.15s ease;
 
                   &:hover:not(:disabled) {
-                    background: #0056CC;
+                    background: var(--collab-accent-hover);
                   }
 
                   &:disabled {
@@ -1118,7 +1221,7 @@
                 border-bottom: 1px solid #f0f0f0;
                 font-size: 0.875rem;
                 font-weight: 600;
-                color: #007AFF;
+                color: var(--collab-accent);
               }
 
               .selected-member {
@@ -1152,7 +1255,7 @@
 
                 .btn-remove-member {
                   padding: 0.25rem 0.75rem;
-                  background: #ef4444;
+                  background: var(--collab-danger);
                   color: white;
                   border: none;
                   border-radius: 4px;
@@ -1161,7 +1264,7 @@
                   transition: all 0.2s;
 
                   &:hover {
-                    background: #dc2626;
+                    background: var(--collab-danger-hover);
                   }
                 }
               }
@@ -1210,7 +1313,7 @@
 
 // Global button styles for consistency
 .btn-primary {
-  background: #007AFF;
+  background: var(--collab-accent);
   color: white;
   border: none;
   padding: 0.625rem 1.25rem;
@@ -1224,7 +1327,7 @@
   gap: 0.5rem;
 
   &:hover {
-    background: #0056CC;
+    background: var(--collab-accent-hover);
     transform: translateY(-1px);
   }
 
@@ -1251,8 +1354,8 @@
 
   &:hover {
     background: #f8f9fa;
-    border-color: #007AFF;
-    color: #007AFF;
+    border-color: var(--collab-accent);
+    color: var(--collab-accent);
   }
 }
 
@@ -1364,7 +1467,7 @@
     }
     
     .upload-btn {
-      background: #2563eb;
+      background: var(--collab-accent);
       color: white;
       border: none;
       padding: 10px 20px;
@@ -1377,7 +1480,7 @@
       transition: background 0.2s;
       
       &:hover {
-        background: #1e40af;
+        background: var(--collab-accent-hover);
       }
       
       span {
@@ -1409,7 +1512,7 @@
     }
     
     .upload-btn.primary {
-      background: #2563eb;
+      background: var(--collab-accent);
       color: white;
       border: none;
       padding: 12px 24px;
@@ -1419,7 +1522,7 @@
       transition: background 0.2s;
       
       &:hover {
-        background: #1e40af;
+        background: var(--collab-accent-hover);
       }
     }
   }
@@ -1438,7 +1541,7 @@
       cursor: pointer;
       
       &:hover {
-        border-color: #2563eb;
+        border-color: var(--collab-accent);
         box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
         transform: translateY(-2px);
       }
@@ -1472,7 +1575,7 @@
           gap: 10px;
           
           .open-btn {
-            background: #2563eb;
+            background: var(--collab-accent);
             color: white;
             border: none;
             padding: 8px 16px;
@@ -1483,12 +1586,12 @@
             transition: background 0.2s;
             
             &:hover {
-              background: #1e40af;
+              background: var(--collab-accent-hover);
             }
           }
           
           .delete-btn {
-            background: #ef4444;
+            background: var(--collab-danger);
             color: white;
             border: none;
             padding: 8px 16px;
@@ -1498,7 +1601,7 @@
             transition: background 0.2s;
             
             &:hover {
-              background: #dc2626;
+              background: var(--collab-danger-hover);
             }
           }
         }
@@ -1567,7 +1670,7 @@
       max-width: 95vw;
       background: #fff;
       border-radius: 18px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+      box-shadow: var(--collab-shadow-lg);
       padding: 0;
       overflow: hidden;
       display: flex;
@@ -1636,18 +1739,18 @@
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 10px;
-  box-shadow: 0 1px 4px rgba(30,41,59,0.04);
+  box-shadow: var(--collab-shadow-xs);
   padding: 14px 16px 10px 16px;
   margin-bottom: 12px;
   transition: box-shadow 0.18s, border 0.18s;
   &:hover {
-    box-shadow: 0 2px 8px rgba(30,41,59,0.08);
+    box-shadow: var(--collab-shadow-sm);
     border-color: #cbd5e1;
   }
 }
 // Nav item active
 .nav-item.active {
-  background: #2563eb;
+  background: var(--collab-accent);
   color: #fff;
   box-shadow: 0 2px 8px rgba(37,99,235,0.10);
   font-weight: 600;
@@ -1673,5 +1776,77 @@
     .stat-label {
       color: #1a1a1a !important;
     }
+  }
+}
+
+// ============================================================
+// Additional responsive refinements (layout only — no color/type changes)
+// ============================================================
+@media (max-width: 1024px) {
+  .collaboration-hub .collaboration-content .collaboration-main {
+    padding: 1.5rem;
+
+    .workspaces-grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
+    .documents-grid { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+    .whiteboards-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+  }
+}
+
+@media (max-width: 768px) {
+  .collaboration-hub {
+    .collaboration-header {
+      padding: 1rem 1.25rem;
+      h1 { font-size: 1.25rem; }
+    }
+
+    .collaboration-content .collaboration-main {
+      padding: 1.25rem;
+
+      .workspaces-header,
+      .channels-header,
+      .documents-header,
+      .whiteboards-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.875rem;
+
+        .create-workspace-btn { width: 100%; justify-content: center; }
+      }
+    }
+  }
+}
+
+@media (max-width: 560px) {
+  .collaboration-hub {
+    .collaboration-content .collaboration-main {
+      padding: 1rem;
+
+      .workspaces-grid,
+      .documents-grid,
+      .whiteboards-grid,
+      .screenplay-grid { grid-template-columns: 1fr; }
+
+      .workspace-stats { flex-wrap: wrap; gap: 0.75rem; }
+    }
+
+    // Centered dialogs become full-width bottom sheets on phones
+    .modal-overlay {
+      align-items: flex-end;
+
+      .modal-content {
+        width: 100%;
+        max-width: 100%;
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+        max-height: 92vh;
+      }
+    }
+  }
+
+  .screenplay-modal-overlay .screenplay-modal {
+    width: 100vw;
+    height: 100dvh;
+    max-width: 100%;
+    border-radius: 0;
   }
 }

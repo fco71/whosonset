@@ -48,7 +48,7 @@
         &.excellent { color: #4ade80; }
         &.good { color: #fbbf24; }
         &.fair { color: #f97316; }
-        &.poor { color: #ef4444; }
+        &.poor { color: var(--error-500); }
       }
 
       .bandwidth {
@@ -200,7 +200,7 @@
             }
 
             .stop-share-btn {
-              background: #ef4444;
+              background: var(--error-500);
               color: white;
               border: none;
               padding: 0.5rem 1rem;
@@ -210,7 +210,7 @@
               transition: background-color 0.2s;
 
               &:hover {
-                background: #dc2626;
+                background: var(--error-600);
               }
             }
           }
@@ -393,13 +393,13 @@
 
           &:focus {
             outline: none;
-            border-color: #3b82f6;
+            border-color: var(--primary-500);
             background: rgba(255, 255, 255, 0.15);
           }
         }
 
         .send-btn {
-          background: #3b82f6;
+          background: var(--primary-500);
           color: white;
           border: none;
           padding: 0.75rem 1rem;
@@ -409,7 +409,7 @@
           transition: background-color 0.2s;
 
           &:hover {
-            background: #2563eb;
+            background: var(--primary-600);
           }
         }
       }
@@ -450,15 +450,15 @@
         }
 
         &.active {
-          background: #3b82f6;
+          background: var(--primary-500);
         }
 
         &.disabled {
-          background: #ef4444;
+          background: var(--error-500);
         }
 
         &.leave-btn {
-          background: #ef4444;
+          background: var(--error-500);
           width: auto;
           padding: 0 1.5rem;
           border-radius: 24px;
@@ -466,7 +466,7 @@
           font-weight: 500;
 
           &:hover {
-            background: #dc2626;
+            background: var(--error-600);
           }
         }
       }

@@ -100,10 +100,10 @@
         }
 
         &.stop-btn {
-          background: #ef4444;
+          background: var(--error-500);
 
           &:hover {
-            background: #dc2626;
+            background: var(--error-600);
           }
         }
       }
@@ -148,7 +148,7 @@
         }
 
         &.active {
-          background: #3b82f6;
+          background: var(--primary-500);
         }
       }
 

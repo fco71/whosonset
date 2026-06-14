@@ -1291,8 +1291,8 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                   </svg>
                 </div>
 	                <div className="workspace-info">
-	                  <h3 className="workspace-title" style={{ color: '#1a1a1a', fontWeight: 600 }}>{workspace.name}</h3>
-	                  <span className={`workspace-type ${workspace.type}`} style={{ color: '#666', background: '#f0f0f0' }}>{workspace.type}</span>
+	                  <h3 className="workspace-title">{workspace.name}</h3>
+	                  <span className={`workspace-type ${workspace.type}`}>{workspace.type}</span>
 	                  {workspace.status && workspace.status !== 'active' && (
 	                    <span className={`workspace-status ${workspace.status}`}>{workspace.status === 'deleted' ? t('collaboration.groupLifecycle.statusDeleted') : t('collaboration.groupLifecycle.statusArchived')}</span>
 	                  )}
@@ -1300,64 +1300,47 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
               </div>
             </div>
 
-            <p className="workspace-description" style={{ color: '#666', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{workspace.description}</p>
+            <p className="workspace-description">{workspace.description}</p>
 
             <div className="workspace-stats">
-              <div className="stat" style={{ color: '#666' }}>
+              <div className="stat">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
                   <circle cx="9" cy="7" r="4"/>
                   <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
                   <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                 </svg>
-                <span className="stat-value" style={{ color: '#333', fontWeight: 600 }}>{workspace.members.length}</span>
-                <span className="stat-label" style={{ color: '#666' }}>{t('collaboration.members')}</span>
+                <span className="stat-value">{workspace.members.length}</span>
+                <span className="stat-label">{t('collaboration.members')}</span>
               </div>
-              <div className="stat" style={{ color: '#666' }}>
+              <div className="stat">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                   <polyline points="14,2 14,8 20,8"/>
                 </svg>
-                <span className="stat-value" style={{ color: '#333', fontWeight: 600 }}>{screenplayCountByWorkspace[workspace.id] || 0}</span>
-                <span className="stat-label" style={{ color: '#666' }}>{t('collaboration.screenplays')}</span>
+                <span className="stat-value">{screenplayCountByWorkspace[workspace.id] || 0}</span>
+                <span className="stat-label">{t('collaboration.screenplays')}</span>
               </div>
               {getEffectiveRole(workspace) === 'supervisor' && (submittedCountByWorkspace[workspace.id] || 0) > 0 && (
                 <span
                   className="stat awaiting-review-chip"
                   title={t('collaboration.groupCard.awaitingReviewTooltip')}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 4,
-                    padding: '2px 10px',
-                    borderRadius: 999,
-                    fontSize: '0.8em',
-                    fontWeight: 700,
-                    background: '#dbeafe',
-                    color: '#1e40af'
-                  }}
                 >
-                  📥 {t('collaboration.groupCard.awaitingReview', { count: submittedCountByWorkspace[workspace.id] })}
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                  </svg>
+                  {t('collaboration.groupCard.awaitingReview', { count: submittedCountByWorkspace[workspace.id] })}
                 </span>
               )}
             </div>
 
             {(getEffectiveRole(workspace) || canToggleSupervisor(workspace)) && (
-              <div className="workspace-self-role" style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '4px 0 12px', flexWrap: 'wrap' }}>
+              <div className="workspace-self-role">
                 {getEffectiveRole(workspace) && (
                   <span
                     className={`role-chip role-chip--${getEffectiveRole(workspace)}`}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      padding: '2px 10px',
-                      borderRadius: 999,
-                      fontSize: '0.78em',
-                      fontWeight: 600,
-                      background: isSelfElectedSupervisor(workspace) ? '#fde68a' : '#e0e7ff',
-                      color: isSelfElectedSupervisor(workspace) ? '#92400e' : '#3730a3'
-                    }}
                     title={isSelfElectedSupervisor(workspace) ? t('collaboration.supervisor.tooltipSelf') : t('collaboration.supervisor.tooltipRole')}
                   >
                     {t('collaboration.supervisor.yourRole', { role: t(`collaboration.roles.${getEffectiveRole(workspace)}`) })}
@@ -1370,15 +1353,6 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                     className="btn-text"
                     disabled={toggleSupervisorPending}
                     onClick={e => { e.stopPropagation(); toggleSelfElectedSupervisor(workspace); }}
-                    style={{
-                      background: 'transparent',
-                      border: '1px solid #cbd5e1',
-                      borderRadius: 6,
-                      padding: '4px 10px',
-                      fontSize: '0.8em',
-                      color: '#1e293b',
-                      cursor: toggleSupervisorPending ? 'not-allowed' : 'pointer'
-                    }}
                   >
                     {isSelfElectedSupervisor(workspace) ? t('collaboration.supervisor.stepDown') : t('collaboration.supervisor.actAs')}
                   </button>
@@ -1926,7 +1900,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
           {supervisesAnyWorkspace && (
             <div className="screenplays-list bg-white rounded-lg shadow-md p-6 mb-6">
               <section className="screenplay-section">
-                <h3 style={{ margin: 0 }}>📥 {t('collaboration.reviewQueue.title')}</h3>
+                <h3 style={{ margin: 0 }}>{t('collaboration.reviewQueue.title')}</h3>
                 <p style={{ color: '#64748b', margin: '4px 0 8px', fontSize: '0.9em' }}>
                   {t('collaboration.reviewQueue.subtitle')}
                 </p>
@@ -1987,7 +1961,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                 onClick={() => { setNewFountainTitle(''); setShowStartWritingModal(true); }}
                 style={{ padding: '0.75rem 1.5rem', fontWeight: 600 }}
               >
-                ✍️ {t('fountain.startWriting')}
+                {t('fountain.startWriting')}
               </button>
             </div>
             <p className="form-help" style={{ marginTop: 10 }}>
@@ -2006,7 +1980,11 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                     color: '#475569'
                   }}
                 >
-                  <div style={{ fontSize: 36, marginBottom: 12 }} aria-hidden="true">🎬</div>
+                  <div style={{ marginBottom: 12, color: '#94a3b8' }} aria-hidden="true">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="2" y="2" width="20" height="20" rx="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/>
+                    </svg>
+                  </div>
                   <h3 style={{ margin: '0 0 8px', color: '#1e293b', fontSize: '1.15em' }}>
                     {t('collaboration.emptyState.title')}
                   </h3>
@@ -2079,21 +2057,26 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
               >
                 <div className="workspace-header">
                   <div className="workspace-title-section">
-                    <div className="workspace-icon" aria-hidden="true" style={{ fontSize: 22 }}>🏫</div>
+                    <div className="workspace-icon" aria-hidden="true">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M22 10 12 5 2 10l10 5 10-5Z"/>
+                      <path d="M6 12v5c0 1 2.5 3 6 3s6-2 6-3v-5"/>
+                    </svg>
+                  </div>
                     <div className="workspace-info">
                       <h3 className="workspace-title" style={{ color: '#1a1a1a', fontWeight: 600 }}>{teacherClass.name}</h3>
                     </div>
                   </div>
                 </div>
                 <div className="workspace-stats">
-                  <div className="stat" style={{ color: '#666' }}>
-                    <span className="stat-value" style={{ color: '#333', fontWeight: 600 }}>{teacherClass.workspaceIds.length}</span>
-                    <span className="stat-label" style={{ color: '#666' }}>{t('collaboration.workspaces')}</span>
+                  <div className="stat">
+                    <span className="stat-value">{teacherClass.workspaceIds.length}</span>
+                    <span className="stat-label">{t('collaboration.workspaces')}</span>
                   </div>
                   {teacherClass.checklist.length > 0 && (
-                    <div className="stat" style={{ color: '#666' }}>
-                      <span className="stat-value" style={{ color: '#333', fontWeight: 600 }}>{doneCount}/{teacherClass.checklist.length}</span>
-                      <span className="stat-label" style={{ color: '#666' }}>{t('collaboration.classes.checklistTitle')}</span>
+                    <div className="stat">
+                      <span className="stat-value">{doneCount}/{teacherClass.checklist.length}</span>
+                      <span className="stat-label">{t('collaboration.classes.checklistTitle')}</span>
                     </div>
                   )}
                 </div>

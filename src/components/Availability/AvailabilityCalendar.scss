@@ -2,7 +2,7 @@
   background: white;
   border-radius: 12px;
   padding: 2rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-md);
   border: 1px solid #e5e7eb;
 
   .calendar-header {
@@ -82,7 +82,7 @@
       }
 
       &.selected {
-        background: #3b82f6;
+        background: var(--primary-500);
         color: white;
 
         .day-number {
@@ -91,11 +91,11 @@
       }
 
       &.unavailable {
-        background: #fee2e2;
-        color: #dc2626;
+        background: var(--error-100);
+        color: var(--error-600);
 
         .day-number {
-          color: #dc2626;
+          color: var(--error-600);
         }
 
         &::after {
@@ -105,7 +105,7 @@
           right: 0.25rem;
           font-size: 0.75rem;
           font-weight: bold;
-          color: #dc2626;
+          color: var(--error-600);
         }
       }
 
@@ -151,11 +151,11 @@
         }
 
         &.unavailable {
-          background: #dc2626;
+          background: var(--error-600);
         }
 
         &.selected {
-          background: #3b82f6;
+          background: var(--primary-500);
         }
       }
     }
@@ -178,12 +178,12 @@
       transition: all 0.2s ease;
 
       &.save-btn {
-        background: #3b82f6;
+        background: var(--primary-500);
         color: white;
         border: none;
 
         &:hover {
-          background: #2563eb;
+          background: var(--primary-600);
         }
 
         &:active {

@@ -197,7 +197,7 @@
       gap: 12px;
       
       .nav-btn {
-        background: #3b82f6;
+        background: var(--primary-500);
         border: none;
         color: white;
         padding: 8px 16px;
@@ -207,7 +207,7 @@
         transition: all 0.2s ease;
         
         &:hover:not(:disabled) {
-          background: #2563eb;
+          background: var(--primary-600);
         }
         
         &:disabled {
@@ -296,13 +296,13 @@
     min-height: 40px;
     padding: 0.625rem 1rem;
     border-radius: 6px;
-    background: #2563eb;
+    background: var(--primary-600);
     color: #ffffff;
     font-weight: 700;
     text-decoration: none;
 
     &:hover {
-      background: #1d4ed8;
+      background: var(--primary-700);
     }
   }
 }
@@ -333,7 +333,7 @@
   }
 
   a {
-    color: #2563eb;
+    color: var(--primary-600);
     font-weight: 700;
     text-decoration: none;
 
@@ -403,7 +403,7 @@
   align-items: center;
   justify-content: center;
   padding: 40px;
-  color: #ef4444;
+  color: var(--error-500);
   font-size: 0.875rem;
   text-align: center;
   
@@ -680,13 +680,13 @@
               }
               
               &.delete {
-                background: #fef2f2;
-                border-color: #fecaca;
-                color: #dc2626;
+                background: var(--error-50);
+                border-color: var(--error-200);
+                color: var(--error-600);
                 
                 &:hover {
-                  background: #fee2e2;
-                  color: #b91c1c;
+                  background: var(--error-100);
+                  color: var(--error-700);
                 }
               }
             }
@@ -711,7 +711,7 @@
 }
 
 .annotation-overlay:hover, .annotation-overlay.selected {
-  border: 2.5px solid #ef4444;
+  border: 2.5px solid var(--error-500);
   box-shadow: 0 4px 16px rgba(239, 68, 68, 0.13);
 }
 
@@ -747,7 +747,7 @@
     width: 24px;
     height: 24px;
     border-radius: 50%;
-    background: #3b82f6;
+    background: var(--primary-500);
     color: white;
     display: flex;
     align-items: center;
@@ -1043,7 +1043,7 @@
   select {
     &:focus {
       outline: none;
-      border-color: #3b82f6;
+      border-color: var(--primary-500);
       box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
     }
   }
@@ -1149,7 +1149,7 @@
       padding: 12px;
       background: #f9fafb;
       border-radius: 8px;
-      border-left: 4px solid #3b82f6;
+      border-left: 4px solid var(--primary-500);
     }
     
     .annotation-replies {
@@ -1181,7 +1181,7 @@
             .reply-author {
               font-weight: 500;
               font-size: 0.75rem;
-              color: #3b82f6;
+              color: var(--primary-500);
             }
             
             .reply-time {
@@ -1202,7 +1202,7 @@
             right: 4px;
             background: none;
             border: none;
-            color: #ef4444;
+            color: var(--error-500);
             cursor: pointer;
             font-size: 14px;
             padding: 2px 6px;
@@ -1211,7 +1211,7 @@
             transition: opacity 0.2s ease;
             
             &:hover {
-              background: #fee2e2;
+              background: var(--error-100);
             }
           }
           
@@ -1234,14 +1234,14 @@
           
           &:focus {
             outline: none;
-            border-color: #3b82f6;
+            border-color: var(--primary-500);
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
           }
         }
         
         button {
           padding: 8px 16px;
-          background: #3b82f6;
+          background: var(--primary-500);
           color: white;
           border: none;
           border-radius: 6px;
@@ -1251,7 +1251,7 @@
           transition: all 0.2s ease;
           
           &:hover:not(:disabled) {
-            background: #2563eb;
+            background: var(--primary-600);
           }
           
           &:disabled {
@@ -1407,7 +1407,7 @@
   
   button {
     &:focus {
-      outline: 2px solid #3b82f6;
+      outline: 2px solid var(--primary-500);
       outline-offset: 2px;
     }
     
@@ -1418,7 +1418,7 @@
   
   input, textarea, select {
     &:focus {
-      outline: 2px solid #3b82f6;
+      outline: 2px solid var(--primary-500);
       outline-offset: 2px;
     }
   }
@@ -1475,7 +1475,7 @@
   
   button, input, textarea, select {
     &:focus-visible {
-      outline: 2px solid #3b82f6;
+      outline: 2px solid var(--primary-500);
       outline-offset: 2px;
     }
   }
@@ -1639,7 +1639,7 @@
   align-items: center;
   justify-content: center;
   padding: 40px;
-  color: #ef4444;
+  color: var(--error-500);
   font-size: 0.875rem;
 }
 
@@ -1933,7 +1933,7 @@
     color: #374151;
     cursor: pointer;
     transition: background 0.2s, color 0.2s;
-    &:hover { background: #3b82f6; color: white; }
+    &:hover { background: var(--primary-500); color: white; }
   }
   span {
     font-size: 15px;
@@ -1994,7 +1994,7 @@
   background: #f3f4f6;
   border: 1px solid #e2e8f0;
   border-radius: 0 8px 8px 0;
-  color: #3b82f6;
+  color: var(--primary-500);
   font-size: 28px;
   display: flex;
   align-items: center;
@@ -2002,7 +2002,7 @@
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   opacity: 0.85;
-  &:hover { background: #3b82f6; color: white; opacity: 1; }
+  &:hover { background: var(--primary-500); color: white; opacity: 1; }
 }
 
 // Annotation/tag popup should never go offscreen and should be draggable
@@ -2324,7 +2324,7 @@
   gap: 4px;
   padding: 2px 8px;
   background: none;
-  color: #2563eb;
+  color: var(--primary-600);
   border: none;
   border-radius: 6px;
   font-size: 0.98em;
@@ -2337,15 +2337,15 @@
   margin-bottom: 2px;
   margin-left: 0;
   &:hover, &:focus {
-    background: #eff6ff;
-    color: #1d4ed8;
+    background: var(--primary-50);
+    color: var(--primary-700);
   }
 }
 
 // Action row resolve/reopen button
 .annotation-actions .action-btn {
   background: #f8fafc;
-  color: #2563eb;
+  color: var(--primary-600);
   border: 1.5px solid #cbd5e1;
   border-radius: 999px;
   font-size: 0.98em;
@@ -2356,9 +2356,9 @@
   cursor: pointer;
   outline: none;
   &:hover, &:focus {
-    background: #eff6ff;
-    border-color: #2563eb;
-    color: #1d4ed8;
+    background: var(--primary-50);
+    border-color: var(--primary-600);
+    color: var(--primary-700);
   }
 }
 
@@ -2572,7 +2572,7 @@
   .add-collaborator-btn {
     margin-top: 4px;
     padding: 6px 14px;
-    background: #3b82f6;
+    background: var(--primary-500);
     color: #fff;
     border: none;
     border-radius: 6px;
@@ -2581,7 +2581,7 @@
     cursor: pointer;
     transition: background 0.18s;
     &:hover {
-      background: #2563eb;
+      background: var(--primary-600);
     }
   }
 }
@@ -2631,10 +2631,10 @@
     border-radius: 6px;
     transition: all 0.18s;
     &:hover {
-      color: #ef4444;
+      color: var(--error-500);
     }
     &:focus {
-      outline: 2px solid #3b82f6;
+      outline: 2px solid var(--primary-500);
       outline-offset: 2px;
     }
   }
@@ -2651,7 +2651,7 @@
     outline: none;
     transition: border 0.18s, box-shadow 0.18s;
     &:focus {
-      border-color: #3b82f6;
+      border-color: var(--primary-500);
       box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
     }
   }
@@ -2754,7 +2754,7 @@
           }
           
           .user-role {
-            color: #3b82f6;
+            color: var(--primary-500);
             font-size: 0.8rem;
             font-weight: 500;
             white-space: nowrap;
@@ -2860,7 +2860,7 @@
 // Button styles (already present, ensure usage)
 // Nav item active
 .nav-item.active {
-  background: #2563eb;
+  background: var(--primary-600);
   color: #fff;
   box-shadow: 0 2px 8px rgba(37,99,235,0.10);
   font-weight: 600;

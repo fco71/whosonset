@@ -111,7 +111,7 @@ const FountainRevisionHistory: React.FC<FountainRevisionHistoryProps> = ({ scree
                     <p style={{ margin: '0 0 10px', color: '#b45309', fontSize: 13 }}>{t('fountain.revisions.confirmRestore')}</p>
                     <button
                       onClick={() => selected && onRestore(selected.source)}
-                      style={{ background: '#2563eb', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 16px', cursor: 'pointer', marginRight: 8 }}
+                      style={{ background: 'var(--primary-600)', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 16px', cursor: 'pointer', marginRight: 8 }}
                     >
                       {t('fountain.revisions.confirmYes')}
                     </button>
@@ -123,7 +123,7 @@ const FountainRevisionHistory: React.FC<FountainRevisionHistoryProps> = ({ scree
                   <button
                     onClick={() => setConfirming(true)}
                     disabled={!selected}
-                    style={{ background: '#2563eb', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 16px', cursor: 'pointer' }}
+                    style={{ background: 'var(--primary-600)', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 16px', cursor: 'pointer' }}
                   >
                     {t('fountain.revisions.restore')}
                   </button>

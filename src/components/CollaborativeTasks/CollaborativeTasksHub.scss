@@ -15,7 +15,7 @@
       width: 3rem;
       height: 3rem;
       border: 3px solid #e2e8f0;
-      border-top: 3px solid #3b82f6;
+      border-top: 3px solid var(--primary-500);
       border-radius: 50%;
       animation: spin 1s linear infinite;
     }
@@ -59,7 +59,7 @@
           display: flex;
           align-items: center;
           gap: 0.5rem;
-          background: #3b82f6;
+          background: var(--primary-500);
           color: white;
           padding: 0.75rem 1.5rem;
           border-radius: 0.5rem;
@@ -69,7 +69,7 @@
           transition: all 0.2s;
 
           &:hover {
-            background: #2563eb;
+            background: var(--primary-600);
             transform: translateY(-1px);
           }
 
@@ -105,8 +105,8 @@
           justify-content: center;
 
           &.total {
-            background: #dbeafe;
-            color: #1d4ed8;
+            background: var(--primary-100);
+            color: var(--primary-700);
           }
 
           &.completed {
@@ -120,8 +120,8 @@
           }
 
           &.overdue {
-            background: #fee2e2;
-            color: #dc2626;
+            background: var(--error-100);
+            color: var(--error-600);
           }
         }
 
@@ -183,7 +183,7 @@
           }
 
           &.active {
-            background: #3b82f6;
+            background: var(--primary-500);
             color: white;
             box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
           }
@@ -237,7 +237,7 @@
               box-sizing: border-box;
 
               &:focus {
-                border-color: #3b82f6;
+                border-color: var(--primary-500);
                 box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
               }
 
@@ -265,7 +265,7 @@
             transition: all 0.2s;
 
             &:focus {
-              border-color: #3b82f6;
+              border-color: var(--primary-500);
               box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
             }
           }
@@ -330,7 +330,7 @@
         }
 
         .btn-primary {
-          background: #3b82f6;
+          background: var(--primary-500);
           color: white;
           padding: 0.75rem 1.5rem;
           border-radius: 0.5rem;
@@ -340,7 +340,7 @@
           transition: all 0.2s;
 
           &:hover {
-            background: #2563eb;
+            background: var(--primary-600);
             transform: translateY(-1px);
           }
         }
@@ -481,8 +481,8 @@
                 }
 
                 &.in_progress {
-                  background: #dbeafe;
-                  color: #1e40af;
+                  background: var(--primary-100);
+                  color: var(--primary-800);
                 }
 
                 &.completed {
@@ -491,13 +491,13 @@
                 }
 
                 &.cancelled {
-                  background: #fee2e2;
-                  color: #991b1b;
+                  background: var(--error-100);
+                  color: var(--error-800);
                 }
 
                 &.overdue {
-                  background: #fecaca;
-                  color: #dc2626;
+                  background: var(--error-200);
+                  color: var(--error-600);
                 }
               }
 
@@ -573,11 +573,11 @@
                 white-space: nowrap;
 
                 &.btn-start {
-                  background: #3b82f6;
+                  background: var(--primary-500);
                   color: white;
 
                   &:hover {
-                    background: #2563eb;
+                    background: var(--primary-600);
                   }
                 }
 
@@ -655,13 +655,13 @@
                       }
 
                       &.high {
-                        background: #fee2e2;
-                        color: #dc2626;
+                        background: var(--error-100);
+                        color: var(--error-600);
                       }
 
                       &.critical {
-                        background: #fecaca;
-                        color: #991b1b;
+                        background: var(--error-200);
+                        color: var(--error-800);
                       }
                     }
                   }
@@ -830,8 +830,8 @@
                         }
 
                         &.in_progress {
-                          background: #dbeafe;
-                          color: #1d4ed8;
+                          background: var(--primary-100);
+                          color: var(--primary-700);
                         }
 
                         &.completed {
@@ -840,8 +840,8 @@
                         }
 
                         &.cancelled {
-                          background: #fee2e2;
-                          color: #dc2626;
+                          background: var(--error-100);
+                          color: var(--error-600);
                         }
                       }
                     }
@@ -965,7 +965,7 @@
 
                   &:focus {
                     outline: none;
-                    border-color: #3b82f6;
+                    border-color: var(--primary-500);
                     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
                   }
 
@@ -979,7 +979,7 @@
                   justify-content: flex-end;
 
                   .btn-primary {
-                    background: #3b82f6;
+                    background: var(--primary-500);
                     color: white;
                     padding: 0.5rem 1rem;
                     border-radius: 0.5rem;
@@ -990,7 +990,7 @@
                     transition: all 0.2s;
 
                     &:hover:not(:disabled) {
-                      background: #2563eb;
+                      background: var(--primary-600);
                     }
 
                     &:disabled {
@@ -1043,7 +1043,7 @@
               }
 
               .btn-danger {
-                background: #ef4444;
+                background: var(--error-500);
                 color: white;
                 padding: 0.5rem 1rem;
                 border-radius: 0.5rem;
@@ -1054,7 +1054,7 @@
                 transition: all 0.2s;
 
                 &:hover {
-                  background: #dc2626;
+                  background: var(--error-600);
                 }
               }
             }
@@ -1143,20 +1143,20 @@
             transition: all 0.2s;
 
             &.restore {
-              background: #dbeafe;
-              color: #1d4ed8;
+              background: var(--primary-100);
+              color: var(--primary-700);
 
               &:hover {
-                background: #bfdbfe;
+                background: var(--primary-200);
               }
             }
 
             &.delete {
-              background: #fee2e2;
-              color: #dc2626;
+              background: var(--error-100);
+              color: var(--error-600);
 
               &:hover {
-                background: #fecaca;
+                background: var(--error-200);
               }
             }
 
@@ -1259,11 +1259,11 @@
       white-space: nowrap;
 
       &.btn-start {
-        background: #3b82f6;
+        background: var(--primary-500);
         color: white;
 
         &:hover {
-          background: #2563eb;
+          background: var(--primary-600);
         }
       }
 

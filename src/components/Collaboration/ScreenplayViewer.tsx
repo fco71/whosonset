@@ -3015,7 +3015,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                               className="remove-btn"
                               onClick={() => handleRemoveCollaborator(user.id)}
                               title="Remove collaborator"
-                              style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#ef4444', fontSize: '1.2rem', cursor: 'pointer' }}
+                              style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'var(--error-500)', fontSize: '1.2rem', cursor: 'pointer' }}
                             >
                               ×
                             </button>
@@ -3697,7 +3697,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                     setPopupType('annotation');
                     setAnnotationInput('');
                   }}
-                  style={{ background: '#3b82f6', color: 'white', border: 'none', borderRadius: 6, padding: '8px 12px', fontSize: 13, cursor: 'pointer', transition: 'background 0.2s ease' }}
+                  style={{ background: 'var(--primary-500)', color: 'white', border: 'none', borderRadius: 6, padding: '8px 12px', fontSize: 13, cursor: 'pointer', transition: 'background 0.2s ease' }}
                 >
                   💬 {t('screenplay.popup.addAnnotation')}
                 </button>

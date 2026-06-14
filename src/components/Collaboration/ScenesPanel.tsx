@@ -635,7 +635,7 @@ const ScenesPanel: React.FC<ScenesPanelProps> = ({
                       <button
                         type="button"
                         onClick={handleDelete}
-                        style={{ background: '#fff', border: '1px solid #fecaca', borderRadius: 6, padding: '3px 10px', fontSize: 12, cursor: 'pointer', color: '#ef4444' }}
+                        style={{ background: '#fff', border: '1px solid #fecaca', borderRadius: 6, padding: '3px 10px', fontSize: 12, cursor: 'pointer', color: 'var(--error-500)' }}
                       >
                         × {t('screenplay.scenes.delete')}
                       </button>
@@ -753,7 +753,7 @@ const ScenesPanel: React.FC<ScenesPanelProps> = ({
                       type="button"
                       disabled={savingEdit}
                       onClick={handleSaveEdit}
-                      style={{ background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 12, cursor: savingEdit ? 'wait' : 'pointer' }}
+                      style={{ background: 'var(--primary-500)', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 12, cursor: savingEdit ? 'wait' : 'pointer' }}
                     >
                       {t('screenplay.popup.save')}
                     </button>

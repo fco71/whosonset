@@ -16,7 +16,7 @@
 .task-form-modal {
   background: white;
   border-radius: 16px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-xl);
   max-width: 800px;
   width: 100%;
   max-height: 90vh;
@@ -214,7 +214,7 @@
       }
 
       .btn-remove {
-        background: #ef4444;
+        background: var(--error-500);
         color: white;
         border: none;
         padding: 0.5rem 1rem;
@@ -225,7 +225,7 @@
         white-space: nowrap;
 
         &:hover {
-          background: #dc2626;
+          background: var(--error-600);
           transform: translateY(-1px);
         }
       }
@@ -304,7 +304,7 @@
             }
 
             .btn-remove-small {
-              background: #ef4444;
+              background: var(--error-500);
               color: white;
               border: none;
               width: 24px;
@@ -319,7 +319,7 @@
               transition: all 0.2s ease;
 
               &:hover {
-                background: #dc2626;
+                background: var(--error-600);
                 transform: scale(1.1);
               }
             }

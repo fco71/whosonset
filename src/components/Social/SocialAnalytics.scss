@@ -43,7 +43,7 @@
         }
 
         &.active {
-          background: #3b82f6;
+          background: var(--primary-500);
           color: white;
         }
       }
@@ -106,7 +106,7 @@
           }
 
           &.negative {
-            color: #dc2626;
+            color: var(--error-600);
           }
         }
       }
@@ -204,11 +204,11 @@
   }
 
   .error-message {
-    background: #fef2f2;
-    color: #dc2626;
+    background: var(--error-50);
+    color: var(--error-600);
     padding: 1rem;
     border-radius: 0.5rem;
-    border: 1px solid #fecaca;
+    border: 1px solid var(--error-200);
     text-align: center;
   }
 

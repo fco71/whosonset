@@ -113,8 +113,8 @@ const ScreenplayList: React.FC<ScreenplayListProps> = ({
                     borderRadius: 999,
                     fontSize: '0.78em',
                     fontWeight: 600,
-                    background: '#fee2e2',
-                    color: '#991b1b'
+                    background: 'var(--error-100)',
+                    color: 'var(--error-800)'
                   }}
                 >
                   💬 {openCount}
