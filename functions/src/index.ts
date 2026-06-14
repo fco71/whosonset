@@ -585,10 +585,17 @@ interface InAppNotificationInput {
   type: string;
   title: string;
   body: string;
+  // Optional i18n: the recipient's client renders titleKey/bodyKey with i18nParams in
+  // their own locale; title/body are the English fallback. i18nParams keys ending in
+  // "Key" (e.g. roleKey) are themselves resolved via t() at render time.
+  titleKey?: string;
+  bodyKey?: string;
+  i18nParams?: Record<string, unknown>;
   link?: string;
   relatedId?: string;
   applicationId?: string;
   senderId?: string;
+  senderName?: string;
   status?: string;
   metadata?: Record<string, unknown>;
 }
@@ -649,6 +656,25 @@ async function createInAppNotification(input: InAppNotificationInput): Promise<v
   const senderId = asString(input.senderId);
   if (senderId) {
     payload.senderId = senderId;
+  }
+
+  const senderName = asString(input.senderName);
+  if (senderName) {
+    payload.senderName = senderName;
+  }
+
+  const titleKey = asString(input.titleKey);
+  if (titleKey) {
+    payload.titleKey = titleKey;
+  }
+
+  const bodyKey = asString(input.bodyKey);
+  if (bodyKey) {
+    payload.bodyKey = bodyKey;
+  }
+
+  if (input.i18nParams && typeof input.i18nParams === "object") {
+    payload.i18nParams = input.i18nParams;
   }
 
   const status = asString(input.status);
@@ -1991,5 +2017,48 @@ export const notifyNewMessage = onDocumentCreated({
     }
   } catch (error) {
     console.error('[notifyNewMessage] Error:', error);
+  }
+});
+
+// Notify the invitee when a workspace (group) invitation is created. Server-side
+// source of truth (Phase 2); replaces the client notification write in
+// screenplayService.ts. Fires on the invitation doc create — every field the
+// notification needs is already on that doc.
+export const notifyWorkspaceInvitationCreated = onDocumentCreated({
+  document: 'workspaceInvitations/{invitationId}',
+  region: 'us-central1'
+}, async (event) => {
+  try {
+    const data = event.data?.data();
+    if (!data) return;
+    // Only notify for a fresh pending invitation.
+    if (typeof data.status === 'string' && data.status !== 'pending') return;
+
+    const inviteeId = typeof data.inviteeId === 'string' ? data.inviteeId : '';
+    if (!inviteeId) return;
+    const inviterId = typeof data.inviterId === 'string' ? data.inviterId : '';
+    if (inviterId && inviterId === inviteeId) return; // never self-notify
+
+    const workspaceId = typeof data.workspaceId === 'string' ? data.workspaceId : '';
+    const workspaceName = typeof data.workspaceName === 'string' && data.workspaceName ? data.workspaceName : 'group';
+    const inviterName = typeof data.inviterName === 'string' && data.inviterName ? data.inviterName : 'A collaborator';
+    const role = typeof data.role === 'string' && data.role ? data.role : 'member';
+
+    await createInAppNotification({
+      userId: inviteeId,
+      type: 'workspace_invitation',
+      title: 'Group invitation',
+      body: `${inviterName} invited you to ${workspaceName} (${role}).`,
+      titleKey: 'collaboration.notifications.invitedToWorkspace.title',
+      bodyKey: 'collaboration.notifications.invitedToWorkspace.body',
+      i18nParams: { inviter: inviterName, workspace: workspaceName, roleKey: `collaboration.roles.${role}` },
+      link: '/collaboration',
+      relatedId: workspaceId,
+      senderId: inviterId,
+      senderName: inviterName,
+      metadata: { invitationId: event.params.invitationId, workspaceId, role }
+    });
+  } catch (error) {
+    console.error('[notifyWorkspaceInvitationCreated] Error:', error);
   }
 });
