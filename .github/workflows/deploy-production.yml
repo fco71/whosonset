@@ -30,6 +30,7 @@ jobs:
       REACT_APP_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.REACT_APP_FIREBASE_MESSAGING_SENDER_ID }}
       REACT_APP_FIREBASE_APP_ID: ${{ secrets.REACT_APP_FIREBASE_APP_ID }}
       REACT_APP_FIREBASE_MEASUREMENT_ID: ${{ secrets.REACT_APP_FIREBASE_MEASUREMENT_ID }}
+      REACT_APP_FIREBASE_APP_CHECK_SITE_KEY: ${{ secrets.REACT_APP_FIREBASE_APP_CHECK_SITE_KEY }}
 
     steps:
       - name: Checkout repo
@@ -53,7 +54,8 @@ jobs:
             REACT_APP_FIREBASE_PROJECT_ID \
             REACT_APP_FIREBASE_STORAGE_BUCKET \
             REACT_APP_FIREBASE_MESSAGING_SENDER_ID \
-            REACT_APP_FIREBASE_APP_ID; do
+            REACT_APP_FIREBASE_APP_ID \
+            REACT_APP_FIREBASE_APP_CHECK_SITE_KEY; do
             if [ -z "${!key}" ]; then
               echo "::error::$key is not configured in GitHub Actions secrets"
               missing=1
@@ -71,6 +73,7 @@ jobs:
             echo "REACT_APP_FIREBASE_MESSAGING_SENDER_ID=${REACT_APP_FIREBASE_MESSAGING_SENDER_ID}"
             echo "REACT_APP_FIREBASE_APP_ID=${REACT_APP_FIREBASE_APP_ID}"
             echo "REACT_APP_FIREBASE_MEASUREMENT_ID=${REACT_APP_FIREBASE_MEASUREMENT_ID}"
+            echo "REACT_APP_FIREBASE_APP_CHECK_SITE_KEY=${REACT_APP_FIREBASE_APP_CHECK_SITE_KEY}"
           } > .env
 
       # Gate the deploy on the same checks run locally. The 2026-06-10 outage
@@ -102,7 +105,8 @@ jobs:
           for key in \
             REACT_APP_FIREBASE_API_KEY \
             REACT_APP_FIREBASE_PROJECT_ID \
-            REACT_APP_FIREBASE_APP_ID; do
+            REACT_APP_FIREBASE_APP_ID \
+            REACT_APP_FIREBASE_APP_CHECK_SITE_KEY; do
             if ! grep -R -F "${!key}" dist --include='*.js' >/dev/null; then
               echo "::error::$key was not injected into the production bundle"
               exit 1

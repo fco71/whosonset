@@ -1,5 +1,10 @@
 // src/firebase.ts
 import { initializeApp } from "firebase/app";
+import {
+  AppCheck,
+  initializeAppCheck,
+  ReCaptchaEnterpriseProvider
+} from "firebase/app-check";
 import { getAuth } from "firebase/auth";
 import { 
   Firestore as FirestoreType, 
@@ -38,6 +43,30 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+
+const appCheckSiteKey = process.env.REACT_APP_FIREBASE_APP_CHECK_SITE_KEY;
+const appCheckDebugToken = process.env.REACT_APP_FIREBASE_APP_CHECK_DEBUG_TOKEN;
+const hostname = typeof window === 'undefined' ? '' : window.location.hostname;
+const isLocalDevelopment = hostname === 'localhost' ||
+  hostname === '127.0.0.1' ||
+  hostname === '::1';
+
+let appCheck: AppCheck | null = null;
+if (appCheckSiteKey && (!isLocalDevelopment || appCheckDebugToken)) {
+  if (isLocalDevelopment && appCheckDebugToken) {
+    const debugTarget = globalThis as typeof globalThis & {
+      FIREBASE_APPCHECK_DEBUG_TOKEN?: boolean | string;
+    };
+    debugTarget.FIREBASE_APPCHECK_DEBUG_TOKEN =
+      appCheckDebugToken === 'true' ? true : appCheckDebugToken;
+  }
+
+  appCheck = initializeAppCheck(app, {
+    provider: new ReCaptchaEnterpriseProvider(appCheckSiteKey),
+    isTokenAutoRefreshEnabled: true
+  });
+}
+
 const auth = getAuth(app);
 
 // Let Firestore detect when long polling is required. Forcing it globally makes
@@ -68,6 +97,7 @@ const handleFirestoreError = (error: any) => {
 // Export Firestore utilities
 export { 
   app, 
+  appCheck,
   auth, 
   db, 
   storage, 
