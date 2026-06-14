@@ -53,6 +53,7 @@ export class SocialService {
     try {
       let q = query(
         collection(db, 'crewProfiles'),
+        where('isPublished', '==', true),
         orderBy('name'),
         limit(limitCount)
       );

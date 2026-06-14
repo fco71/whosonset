@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { db } from '../firebase';
-import { collection, getDocs, query } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { PhotoConflictMonitor } from '../utilities/photoConflictMonitor';
 
 interface PublicCrewProfile {
@@ -51,14 +51,15 @@ const PublicCrewPage: React.FC = () => {
         };
 
         const crewQuery = query(
-          collection(db, 'crewProfiles')
+          collection(db, 'crewProfiles'),
+          where('isPublished', '==', true)
         );
         const snapshot = await getDocs(crewQuery);
         
         const profiles: PublicCrewProfile[] = [];
         snapshot.forEach(doc => {
           const data = doc.data();
-          if (data.isPublished !== false) { // Only show published profiles
+          if (data.isPublished === true) {
             profiles.push({
               uid: doc.id,
               name: data.name || 'Unknown',

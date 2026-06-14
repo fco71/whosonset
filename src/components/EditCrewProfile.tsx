@@ -126,7 +126,7 @@ const EditCrewProfile: React.FC = () => {
     },
     languages: [],
     otherInfo: '',
-    isPublished: true,
+    isPublished: false,
     availability: 'available'
   });
 
@@ -134,7 +134,7 @@ const EditCrewProfile: React.FC = () => {
   const [departments, setDepartments] = useState<JobDepartment[]>([]);
   const [countryOptions, setCountryOptions] = useState<{ name: string; cities: string[] }[]>([]);
   const [message, setMessage] = useState<string | null>(null);
-  const [isPublished, setIsPublished] = useState(true);
+  const [isPublished, setIsPublished] = useState(false);
   const [photoConflict, setPhotoConflict] = useState<{hasConflict: boolean, conflictUsers: string[]}>({hasConflict: false, conflictUsers: []});
   const [registeredTeachers, setRegisteredTeachers] = useState<RegisteredTeacher[]>([]);
   const [profileLoaded, setProfileLoaded] = useState(false);

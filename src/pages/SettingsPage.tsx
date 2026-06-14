@@ -27,7 +27,7 @@ const defaultQuickProfile: QuickProfileForm = {
   profileImageUrl: '/bust-avatar.svg',
   primaryRole: '',
   availability: 'available',
-  isPublished: true
+  isPublished: false
 };
 
 const getPrimaryRole = (jobTitles: unknown[]): string => {
@@ -113,7 +113,7 @@ const SettingsPage: React.FC = () => {
           profileImageUrl: profileData.profileImageUrl || profileData.photoURL || currentUser.photoURL || '/bust-avatar.svg',
           primaryRole: getPrimaryRole(jobTitles),
           availability: normalizeAvailability(profileData.availability),
-          isPublished: profileData.isPublished !== false
+          isPublished: profileData.isPublished === true
         });
       } catch (error) {
         console.error('Error loading quick profile:', error);

@@ -155,7 +155,7 @@ const RegisterForm: React.FC = () => {
         residences: form.residences.filter(r => r.country && r.city),
         userType: form.userType,
         availability: 'available',
-        isPublished: true,
+        isPublished: false,
         updatedAt: new Date()
       };
 

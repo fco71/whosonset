@@ -144,7 +144,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           education: [],
           otherInfo: '',
           availability: 'available',
-          isPublished: true,
+          isPublished: false,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
         };
@@ -220,7 +220,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         education: [],
         otherInfo: '',
         availability: 'available',
-        isPublished: true,
+        isPublished: false,
         emailVerificationRequired: true,
         emailVerificationRequiredAt: serverTimestamp(),
         createdAt: serverTimestamp(),

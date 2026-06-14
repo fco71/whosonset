@@ -7,12 +7,16 @@ import {
   RulesTestEnvironment
 } from '@firebase/rules-unit-testing';
 import {
+  collection,
   deleteDoc,
   doc,
   getDoc,
+  getDocs,
+  query,
   setDoc,
   Timestamp,
-  updateDoc
+  updateDoc,
+  where
 } from 'firebase/firestore';
 import { afterAll, afterEach, beforeAll, describe, it } from 'vitest';
 
@@ -236,6 +240,62 @@ describe('verified teacher authority', () => {
       selfElectedSupervisors: [],
       updatedAt: Timestamp.now()
     }));
+  });
+});
+
+describe('crew profile publication privacy', () => {
+  it('exposes only explicitly published profiles to anonymous clients', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const adminDb = context.firestore();
+      await setDoc(doc(adminDb, 'crewProfiles', 'published'), {
+        name: 'Published Profile',
+        isPublished: true
+      });
+      await setDoc(doc(adminDb, 'crewProfiles', 'private'), {
+        name: 'Private Profile',
+        email: 'private@example.com',
+        isPublished: false
+      });
+      await setDoc(doc(adminDb, 'crewProfiles', 'legacy-unset'), {
+        name: 'Legacy Unset Profile'
+      });
+    });
+
+    const anonymousDb = testEnv.unauthenticatedContext().firestore();
+    await assertSucceeds(getDoc(doc(anonymousDb, 'crewProfiles', 'published')));
+    await assertFails(getDoc(doc(anonymousDb, 'crewProfiles', 'private')));
+    await assertFails(getDoc(doc(anonymousDb, 'crewProfiles', 'legacy-unset')));
+
+    const publishedQuery = query(
+      collection(anonymousDb, 'crewProfiles'),
+      where('isPublished', '==', true)
+    );
+    const snapshot = await assertSucceeds(getDocs(publishedQuery));
+    if (snapshot.docs.map(profile => profile.id).join(',') !== 'published') {
+      throw new Error('Anonymous published-profile query returned unexpected documents.');
+    }
+  });
+
+  it('preserves signed-in identity reads and owner publication updates', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), 'crewProfiles', 'private-member'), {
+        name: 'Private Member',
+        email: 'private@example.com',
+        isPublished: false
+      });
+    });
+
+    const signedInDb = testEnv.authenticatedContext('collaborator').firestore();
+    const ownerDb = testEnv.authenticatedContext('private-member').firestore();
+    await assertSucceeds(getDoc(doc(signedInDb, 'crewProfiles', 'private-member')));
+    await assertSucceeds(updateDoc(doc(ownerDb, 'crewProfiles', 'private-member'), {
+      isPublished: true
+    }));
+    await assertSucceeds(getDoc(doc(
+      testEnv.unauthenticatedContext().firestore(),
+      'crewProfiles',
+      'private-member'
+    )));
   });
 });
 

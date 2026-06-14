@@ -558,9 +558,11 @@ service cloud.firestore {
       }
     }
 
-    // Crew profiles - allow public read for homepage stats, authenticated users can read/write all
+    // Published profiles are public. Signed-in users retain direct reads for
+    // messaging, classroom, application, and collaboration identity lookups.
+    // New accounts default to unpublished in the client and must explicitly opt in.
     match /crewProfiles/{profileId} {
-      allow read: if true; // Allow public read for homepage statistics
+      allow read: if signedIn() || resource.data.isPublished == true;
       allow create: if signedIn() &&
         profileId == request.auth.uid &&
         (
