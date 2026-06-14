@@ -121,6 +121,9 @@ jobs:
           workload_identity_provider: projects/403346239424/locations/global/workloadIdentityPools/github-actions/providers/github
           service_account: github-action-whosonset@my-film-jobs.iam.gserviceaccount.com
 
+      - name: Backfill project crew membership index
+        run: node scripts/backfill-project-crew-member-ids.cjs --apply
+
       - name: Deploy to Firebase Hosting (production target)
         run: npx firebase deploy --only hosting:production --project my-film-jobs --non-interactive
 

@@ -5,7 +5,6 @@ import {
   getDoc, 
   updateDoc, 
   arrayUnion, 
-  arrayRemove, 
   query, 
   where, 
   getDocs,
@@ -16,6 +15,15 @@ import { Project, ProjectCrewMember, ProjectInvitation } from '../models/Project
 
 export class ProjectCrewService {
   private static readonly PROJECTS_COLLECTION = 'Projects';
+
+  private static activeCrewMemberIds(crewMembers: ProjectCrewMember[]): string[] {
+    return Array.from(new Set(
+      crewMembers
+        .filter(member => member.status === 'active')
+        .map(member => member.userId)
+        .filter(Boolean)
+    ));
+  }
 
   /**
    * Add a crew member to a project
@@ -60,7 +68,9 @@ export class ProjectCrewService {
 
       await updateDoc(projectRef, {
         crewMembers: arrayUnion(newCrewMember),
-        crewMemberIds: arrayUnion(crewMember.userId),
+        crewMemberIds: newCrewMember.status === 'active'
+          ? arrayUnion(newCrewMember.userId)
+          : this.activeCrewMemberIds(existingCrew),
         lastUpdated: serverTimestamp(),
         updateCount: (projectData.updateCount || 0) + 1
       });
@@ -119,7 +129,7 @@ export class ProjectCrewService {
 
       await updateDoc(projectRef, {
         crewMembers: updatedCrew,
-        crewMemberIds: arrayRemove(userId),
+        crewMemberIds: this.activeCrewMemberIds(updatedCrew),
         lastUpdated: serverTimestamp(),
         updateCount: (projectData.updateCount || 0) + 1
       });
@@ -137,26 +147,19 @@ export class ProjectCrewService {
       console.log('[ProjectCrewService] Getting projects for crew member:', userId);
       
       const projectsRef = collection(db, this.PROJECTS_COLLECTION);
-      const snapshot = await getDocs(projectsRef);
-      const projects: Project[] = [];
-      
-      console.log('[ProjectCrewService] Total projects found:', snapshot.docs.length);
-      
-      snapshot.forEach(doc => {
+      const crewProjectsQuery = query(
+        projectsRef,
+        where('crewMemberIds', 'array-contains', userId)
+      );
+      const snapshot = await getDocs(crewProjectsQuery);
+
+      const projects = snapshot.docs.flatMap(doc => {
         const projectData = doc.data() as Project;
         const crewMembers = projectData.crewMembers || [];
-        
-        console.log('[ProjectCrewService] Project:', doc.id, 'has crew members:', crewMembers.length);
-        
-        // Check if user is in the crew members array
         const isCrewMember = crewMembers.some(
           member => member.userId === userId && member.status === 'active'
         );
-        
-        if (isCrewMember) {
-          console.log('[ProjectCrewService] User is crew member of project:', doc.id);
-          projects.push({ ...projectData, id: doc.id });
-        }
+        return isCrewMember ? [{ ...projectData, id: doc.id }] : [];
       });
       
       console.log('[ProjectCrewService] Total crew projects found for user:', projects.length);
@@ -235,6 +238,7 @@ export class ProjectCrewService {
 
       await updateDoc(projectRef, {
         crewMembers: updatedCrew,
+        crewMemberIds: this.activeCrewMemberIds(updatedCrew),
         lastUpdated: serverTimestamp(),
         updateCount: (projectData.updateCount || 0) + 1
       });
@@ -346,6 +350,7 @@ export class ProjectCrewService {
         
         await updateDoc(projectRef, {
           crewMembers: arrayUnion(newCrewMember),
+          crewMemberIds: arrayUnion(userId),
           invitedCrewMembers: existingInvitations.map(invite => 
             invite.userId === userId 
               ? { ...invite, status: 'accepted' }

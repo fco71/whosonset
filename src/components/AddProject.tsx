@@ -117,7 +117,7 @@ const AddProject: React.FC = () => {
         productionBudget,
         productionCompanyContact,
         owner_uid: user.uid,
-        crewMemberIds: [user.uid],
+        crewMemberIds: [],
         createdAt: serverTimestamp(),
       });
       if (coverImageUrl) {

@@ -22,6 +22,7 @@ export interface Project {
     
     // Crew management fields
     crewMembers?: ProjectCrewMember[];
+    crewMemberIds?: string[];
     invitedCrewMembers?: ProjectInvitation[];
     
     // New enhanced fields
