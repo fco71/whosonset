@@ -191,3 +191,254 @@ describe('screenplay notification source integrity', () => {
     }));
   });
 });
+
+describe('verified teacher authority', () => {
+  it('rejects cosmetic teacher self-election and allows only an admin-verified teacher to toggle self', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const adminDb = context.firestore();
+      await setDoc(doc(adminDb, 'crewProfiles', 'candidate'), {
+        uid: 'candidate',
+        isTeacher: true,
+        profileType: 'teacher'
+      });
+      await setDoc(doc(adminDb, 'workspaces', 'workspace-teacher'), {
+        ownerId: 'owner',
+        memberIds: ['owner', 'candidate'],
+        members: [{ userId: 'owner' }, { userId: 'candidate' }],
+        supervisorIds: [],
+        selfElectedSupervisors: [],
+        viewerIds: [],
+        updatedAt: Timestamp.now()
+      });
+    });
+
+    const candidateDb = testEnv.authenticatedContext('candidate').firestore();
+    const workspaceRef = doc(candidateDb, 'workspaces', 'workspace-teacher');
+    const roleRef = doc(candidateDb, 'teacherRoles', 'candidate');
+
+    await assertFails(updateDoc(workspaceRef, {
+      selfElectedSupervisors: ['candidate'],
+      updatedAt: Timestamp.now()
+    }));
+    await assertFails(setDoc(roleRef, { grantedAt: Timestamp.now() }));
+
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), 'teacherRoles', 'candidate'), {
+        grantedAt: Timestamp.now()
+      });
+    });
+
+    await assertSucceeds(updateDoc(workspaceRef, {
+      selfElectedSupervisors: ['candidate'],
+      updatedAt: Timestamp.now()
+    }));
+    await assertSucceeds(updateDoc(workspaceRef, {
+      selfElectedSupervisors: [],
+      updatedAt: Timestamp.now()
+    }));
+  });
+});
+
+describe('conversation message ownership', () => {
+  it('prevents recipients from rewriting message content while preserving receipts and sender edits', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const adminDb = context.firestore();
+      await setDoc(doc(adminDb, 'conversations', 'conversation-1'), {
+        participants: ['sender', 'recipient'],
+        createdAt: Timestamp.now()
+      });
+      await setDoc(doc(adminDb, 'conversations', 'conversation-1', 'messages', 'message-1'), {
+        senderId: 'sender',
+        content: 'Original message',
+        messageType: 'text',
+        timestamp: Timestamp.now(),
+        isRead: false,
+        reactions: [],
+        status: 'sent'
+      });
+    });
+
+    const recipientRef = doc(
+      testEnv.authenticatedContext('recipient').firestore(),
+      'conversations',
+      'conversation-1',
+      'messages',
+      'message-1'
+    );
+    const senderRef = doc(
+      testEnv.authenticatedContext('sender').firestore(),
+      'conversations',
+      'conversation-1',
+      'messages',
+      'message-1'
+    );
+    const outsiderRef = doc(
+      testEnv.authenticatedContext('outsider').firestore(),
+      'conversations',
+      'conversation-1',
+      'messages',
+      'message-1'
+    );
+
+    await assertFails(updateDoc(recipientRef, { content: 'Rewritten by recipient' }));
+    await assertSucceeds(updateDoc(recipientRef, {
+      isRead: true,
+      readAt: Timestamp.now()
+    }));
+    await assertSucceeds(updateDoc(senderRef, { content: 'Edited by sender' }));
+    await assertFails(getDoc(outsiderRef));
+    await assertFails(updateDoc(outsiderRef, { isRead: true }));
+  });
+});
+
+describe('screenplay ownership and collaborator authority', () => {
+  it('limits access-list changes to the screenplay uploader or workspace owner', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const adminDb = context.firestore();
+      await setDoc(doc(adminDb, 'workspaces', 'workspace-access'), {
+        ownerId: 'workspace-owner',
+        memberIds: ['workspace-owner', 'uploader', 'member'],
+        members: [
+          { userId: 'workspace-owner' },
+          { userId: 'uploader' },
+          { userId: 'member' }
+        ],
+        supervisorIds: [],
+        selfElectedSupervisors: [],
+        viewerIds: []
+      });
+      await setDoc(doc(adminDb, 'screenplays', 'script-access'), {
+        uploadedBy: 'uploader',
+        teamMembers: ['member'],
+        workspaceId: 'workspace-access',
+        name: 'Access Test'
+      });
+    });
+
+    const memberRef = doc(
+      testEnv.authenticatedContext('member').firestore(),
+      'screenplays',
+      'script-access'
+    );
+    const uploaderRef = doc(
+      testEnv.authenticatedContext('uploader').firestore(),
+      'screenplays',
+      'script-access'
+    );
+    const ownerRef = doc(
+      testEnv.authenticatedContext('workspace-owner').firestore(),
+      'screenplays',
+      'script-access'
+    );
+
+    await assertFails(updateDoc(memberRef, {
+      teamMembers: ['member', 'outsider'],
+      lastModified: Timestamp.now()
+    }));
+    await assertSucceeds(updateDoc(uploaderRef, {
+      teamMembers: ['member', 'collaborator-1'],
+      lastModified: Timestamp.now()
+    }));
+    await assertSucceeds(updateDoc(ownerRef, {
+      teamMembers: ['member', 'collaborator-1', 'collaborator-2'],
+      lastModified: Timestamp.now()
+    }));
+  });
+
+  it('allows only the uploader or workspace owner to delete a screenplay', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const adminDb = context.firestore();
+      await setDoc(doc(adminDb, 'workspaces', 'workspace-delete'), {
+        ownerId: 'workspace-owner',
+        memberIds: ['workspace-owner', 'uploader', 'member', 'supervisor'],
+        members: [
+          { userId: 'workspace-owner' },
+          { userId: 'uploader' },
+          { userId: 'member' },
+          { userId: 'supervisor' }
+        ],
+        supervisorIds: ['supervisor'],
+        selfElectedSupervisors: [],
+        viewerIds: []
+      });
+      for (const screenplayId of ['member-attempt', 'supervisor-attempt', 'owner-delete', 'uploader-delete']) {
+        await setDoc(doc(adminDb, 'screenplays', screenplayId), {
+          uploadedBy: 'uploader',
+          teamMembers: ['member', 'supervisor'],
+          workspaceId: 'workspace-delete',
+          name: screenplayId
+        });
+      }
+    });
+
+    await assertFails(deleteDoc(doc(
+      testEnv.authenticatedContext('member').firestore(),
+      'screenplays',
+      'member-attempt'
+    )));
+    await assertFails(deleteDoc(doc(
+      testEnv.authenticatedContext('supervisor').firestore(),
+      'screenplays',
+      'supervisor-attempt'
+    )));
+    await assertSucceeds(deleteDoc(doc(
+      testEnv.authenticatedContext('workspace-owner').firestore(),
+      'screenplays',
+      'owner-delete'
+    )));
+    await assertSucceeds(deleteDoc(doc(
+      testEnv.authenticatedContext('uploader').firestore(),
+      'screenplays',
+      'uploader-delete'
+    )));
+  });
+});
+
+describe('scene-mark moderation authority', () => {
+  it('allows authors and supervisors to delete student marks but protects supervisor marks from students', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const adminDb = context.firestore();
+      await setDoc(doc(adminDb, 'workspaces', 'workspace-scenes'), {
+        ownerId: 'owner',
+        memberIds: ['owner', 'student', 'supervisor'],
+        members: [
+          { userId: 'owner' },
+          { userId: 'student' },
+          { userId: 'supervisor' }
+        ],
+        supervisorIds: ['supervisor'],
+        selfElectedSupervisors: [],
+        viewerIds: []
+      });
+      await setDoc(doc(adminDb, 'screenplays', 'script-scenes'), {
+        uploadedBy: 'owner',
+        teamMembers: ['student', 'supervisor'],
+        workspaceId: 'workspace-scenes',
+        name: 'Scene Test'
+      });
+      await setDoc(doc(adminDb, 'screenplayScenes', 'student-own'), {
+        screenplayId: 'script-scenes',
+        userId: 'student',
+        supervisorAtAuthorTime: false
+      });
+      await setDoc(doc(adminDb, 'screenplayScenes', 'student-moderated'), {
+        screenplayId: 'script-scenes',
+        userId: 'student',
+        supervisorAtAuthorTime: false
+      });
+      await setDoc(doc(adminDb, 'screenplayScenes', 'supervisor-protected'), {
+        screenplayId: 'script-scenes',
+        userId: 'supervisor',
+        supervisorAtAuthorTime: true
+      });
+    });
+
+    const studentDb = testEnv.authenticatedContext('student').firestore();
+    const supervisorDb = testEnv.authenticatedContext('supervisor').firestore();
+
+    await assertSucceeds(deleteDoc(doc(studentDb, 'screenplayScenes', 'student-own')));
+    await assertSucceeds(deleteDoc(doc(supervisorDb, 'screenplayScenes', 'student-moderated')));
+    await assertFails(deleteDoc(doc(studentDb, 'screenplayScenes', 'supervisor-protected')));
+    await assertSucceeds(deleteDoc(doc(supervisorDb, 'screenplayScenes', 'supervisor-protected')));
+  });
+});
