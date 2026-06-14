@@ -2062,3 +2062,103 @@ export const notifyWorkspaceInvitationCreated = onDocumentCreated({
     console.error('[notifyWorkspaceInvitationCreated] Error:', error);
   }
 });
+
+async function getActorName(uid: string): Promise<string> {
+  if (!uid) return 'A collaborator';
+  try {
+    const data = await getUserData(uid);
+    return (data as any)?.name || (data as any)?.displayName || 'A collaborator';
+  } catch {
+    return 'A collaborator';
+  }
+}
+
+// Notify on screenplay review-status changes (feedback workflow). Server-side source
+// of truth (Phase 2); replaces the notifyReviewStatusChange writes in ScreenplayViewer.
+// Fires on every screenplays update but bails immediately unless reviewStatus changed
+// (the doc is also written on every Fountain autosave). submitted-by-author => notify
+// supervisors; submitted-by-someone-else => a supervisor reopened => notify the author.
+export const notifyScreenplayReviewStatus = onDocumentUpdated({
+  document: 'screenplays/{screenplayId}',
+  region: 'us-central1'
+}, async (event) => {
+  try {
+    const before = event.data?.before.data();
+    const after = event.data?.after.data();
+    if (!before || !after) return;
+
+    const beforeStatus = asString(before.reviewStatus);
+    const afterStatus = asString(after.reviewStatus);
+    if (beforeStatus === afterStatus || !afterStatus) return; // only on a real status change
+
+    const screenplayId = event.params.screenplayId;
+    const screenplayName = asString(after.name) || asString(after.title) || 'screenplay';
+    const uploadedBy = asString(after.uploadedBy);
+    const workspaceId = asString(after.workspaceId);
+    const updatedBy = asString(after.reviewStatusUpdatedBy);
+    const note = asString(after.reviewStatusNote);
+    const actorName = await getActorName(updatedBy);
+    const meta = { screenplayId, screenplayName, workspaceId };
+
+    if (afterStatus === 'approved') {
+      if (uploadedBy && uploadedBy !== updatedBy) {
+        await createInAppNotification({
+          userId: uploadedBy, type: 'review_approved',
+          title: `${actorName} marked feedback complete on ${screenplayName}.`,
+          body: `${actorName} marked feedback complete on ${screenplayName}.`,
+          titleKey: 'screenplay.notifications.reviewApproved.title',
+          bodyKey: 'screenplay.notifications.reviewApproved.body',
+          i18nParams: { reviewer: actorName, screenplay: screenplayName },
+          link: '/collaboration', relatedId: screenplayId, senderId: updatedBy, senderName: actorName, metadata: meta
+        });
+      }
+    } else if (afterStatus === 'changes_requested') {
+      if (uploadedBy && uploadedBy !== updatedBy) {
+        await createInAppNotification({
+          userId: uploadedBy, type: 'review_changes_requested',
+          title: `${actorName} left feedback on ${screenplayName}.`,
+          body: note ? `${actorName} left feedback on ${screenplayName}: ${note}` : `${actorName} left feedback on ${screenplayName}.`,
+          titleKey: 'screenplay.notifications.reviewChangesRequested.title',
+          bodyKey: note ? 'screenplay.notifications.reviewChangesRequested.bodyWithNote' : 'screenplay.notifications.reviewChangesRequested.body',
+          i18nParams: { reviewer: actorName, screenplay: screenplayName, note },
+          link: '/collaboration', relatedId: screenplayId, senderId: updatedBy, senderName: actorName, metadata: meta
+        });
+      }
+    } else if (afterStatus === 'submitted') {
+      if (uploadedBy && updatedBy && updatedBy !== uploadedBy) {
+        // A supervisor set it back to submitted -> reopened. Notify the author.
+        await createInAppNotification({
+          userId: uploadedBy, type: 'review_reopened',
+          title: `${actorName} reopened feedback on ${screenplayName}.`,
+          body: `${actorName} reopened feedback on ${screenplayName}.`,
+          titleKey: 'screenplay.notifications.reviewReopened.title',
+          bodyKey: 'screenplay.notifications.reviewReopened.body',
+          i18nParams: { reviewer: actorName, screenplay: screenplayName },
+          link: '/collaboration', relatedId: screenplayId, senderId: updatedBy, senderName: actorName, metadata: meta
+        });
+      } else if (workspaceId) {
+        // Author submitted for feedback -> notify the workspace's supervisors.
+        const wsSnap = await db.collection('workspaces').doc(workspaceId).get();
+        const ws = wsSnap.exists ? (wsSnap.data() || {}) : {};
+        const supervisors = new Set<string>([
+          ...(Array.isArray(ws.supervisorIds) ? ws.supervisorIds : []),
+          ...(Array.isArray(ws.selfElectedSupervisors) ? ws.selfElectedSupervisors : [])
+        ].filter((x): x is string => typeof x === 'string' && !!x));
+        supervisors.delete(updatedBy);
+        for (const supUid of supervisors) {
+          await createInAppNotification({
+            userId: supUid, type: 'review_submitted',
+            title: `${actorName} shared ${screenplayName} for feedback.`,
+            body: `${actorName} shared ${screenplayName} for feedback.`,
+            titleKey: 'screenplay.notifications.reviewSubmitted.title',
+            bodyKey: 'screenplay.notifications.reviewSubmitted.body',
+            i18nParams: { author: actorName, screenplay: screenplayName },
+            link: '/collaboration', relatedId: screenplayId, senderId: updatedBy, senderName: actorName, metadata: meta
+          });
+        }
+      }
+    }
+  } catch (error) {
+    console.error('[notifyScreenplayReviewStatus] Error:', error);
+  }
+});

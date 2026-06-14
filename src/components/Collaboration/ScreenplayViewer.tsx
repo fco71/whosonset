@@ -2367,76 +2367,13 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
   // supervisor reopen (-> submitted) -> notify the screenplay author instead.
   // returned_to_draft -> no notification (self-action by the creator).
   // Best-effort: never blocks the status change.
-  const notifyReviewStatusChange = async (nextStatus: ScreenplayReviewStatus, note: string = '', isReopen: boolean = false) => {
-    if (!currentUser || !screenplayWorkspaceId) return;
-    const actorName = currentUser.displayName || t('screenplay.notifications.fallbackAuthor');
-    const screenplayName = screenplay.name || t('screenplay.notifications.fallbackScreenplay');
-    const baseDoc = (userId: string, type: string, titleKey: string, bodyKey: string, params: Record<string, unknown>) => ({
-      userId,
-      type,
-      title: t(titleKey, params),
-      body: t(bodyKey, params),
-      message: t(bodyKey, params),
-      titleKey,
-      bodyKey,
-      i18nParams: params,
-      isRead: false,
-      read: false,
-      createdAt: serverTimestamp(),
-      timestamp: serverTimestamp(),
-      senderId: currentUser.uid,
-      senderName: actorName,
-      relatedId: screenplay.id,
-      link: '/collaboration',
-      metadata: { screenplayId: screenplay.id, screenplayName, workspaceId: screenplayWorkspaceId }
-    });
-    try {
-      if (nextStatus === 'approved' || nextStatus === 'changes_requested') {
-        if (screenplayUploadedBy && screenplayUploadedBy !== currentUser.uid) {
-          const key = nextStatus === 'approved' ? 'reviewApproved' : 'reviewChangesRequested';
-          const trimmedNote = note.trim();
-          const useNoteVariant = nextStatus === 'changes_requested' && trimmedNote.length > 0;
-          const bodyKeyName = useNoteVariant ? 'bodyWithNote' : 'body';
-          await addDoc(collection(db, 'notifications'), baseDoc(
-            screenplayUploadedBy,
-            `review_${nextStatus}`,
-            `screenplay.notifications.${key}.title`,
-            `screenplay.notifications.${key}.${bodyKeyName}`,
-            { reviewer: actorName, screenplay: screenplayName, note: trimmedNote }
-          ));
-        }
-      } else if (nextStatus === 'submitted' && isReopen) {
-        // Supervisor reopened feedback: tell the author their screenplay is
-        // back in the feedback queue (not the supervisors — one of them did it).
-        if (screenplayUploadedBy && screenplayUploadedBy !== currentUser.uid) {
-          await addDoc(collection(db, 'notifications'), baseDoc(
-            screenplayUploadedBy,
-            'review_reopened',
-            'screenplay.notifications.reviewReopened.title',
-            'screenplay.notifications.reviewReopened.body',
-            { reviewer: actorName, screenplay: screenplayName }
-          ));
-        }
-      } else if (nextStatus === 'submitted') {
-        const wsSnap = await getDoc(doc(db, 'workspaces', screenplayWorkspaceId));
-        const data = wsSnap.exists() ? wsSnap.data() : {};
-        const supervisorIds = new Set<string>([
-          ...(Array.isArray(data.supervisorIds) ? data.supervisorIds : []),
-          ...(Array.isArray(data.selfElectedSupervisors) ? data.selfElectedSupervisors : [])
-        ]);
-        supervisorIds.delete(currentUser.uid);
-        await Promise.all([...supervisorIds].map(uid => addDoc(collection(db, 'notifications'), baseDoc(
-          uid,
-          'review_submitted',
-          'screenplay.notifications.reviewSubmitted.title',
-          'screenplay.notifications.reviewSubmitted.body',
-          { author: actorName, screenplay: screenplayName }
-        ))));
-      }
-    } catch (err) {
-      console.error('Failed to write review-status notification:', err);
-    }
-  };
+  // Review-status notifications are written SERVER-SIDE by the notifyScreenplayReviewStatus
+  // Cloud Function (Phase 2). The client only updates reviewStatus/reviewStatusUpdatedBy/
+  // reviewStatusNote on the screenplay doc (in handleReviewStatusChange below); the trigger
+  // derives recipients + localized content from that. Kept as a no-op for the call site.
+  const notifyReviewStatusChange = async (
+    _nextStatus: ScreenplayReviewStatus, _note: string = '', _isReopen: boolean = false
+  ) => { /* server-side now */ };
 
   const handleReviewStatusChange = async (nextStatus: ScreenplayReviewStatus, note: string = '', isReopen: boolean = false) => {
     if (!currentUser) {
