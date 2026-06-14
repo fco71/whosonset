@@ -10,6 +10,7 @@
     "seed:countries": "node scripts/seedCountries.js",
     "seed:job-departments": "ts-node scripts/seedJobDepartments.ts",
     "seed:job-titles": "ts-node scripts/seedJobTitles.ts",
+    "backfill:crew-search": "npm --prefix functions run build && node scripts/backfill-crew-search-index.cjs --apply",
     "deploy:dev": "firebase deploy --project my-film-jobs --only hosting:development",
     "deploy:prod": "firebase deploy --project my-film-jobs",
     "test": "vitest",

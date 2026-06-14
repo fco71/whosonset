@@ -1,12 +1,10 @@
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { app } from '../../firebase';
 
 // Crew-profile search used by the invite flows (hub modals + group page).
-// Searches ALL crew profiles, not just the user's approved contacts: the
-// collaboration assignment requires students to add arbitrary classmates and the
-// teacher — people they are NOT necessarily connected to. crewProfiles is
-// public-read, so this is allowed. Approved contacts are ranked first as a
-// convenience when provided.
+// Search remains broader than approved contacts so classmates and teachers can
+// find each other, but the callable returns only bounded identity fields instead
+// of downloading every crew profile to the browser.
 
 export interface CrewSearchResult {
   id: string;
@@ -17,30 +15,54 @@ export interface CrewSearchResult {
   company?: string;
 }
 
-// Module-level cache so typing doesn't re-fetch the whole collection on every
-// keystroke (and pages share it). 30s TTL so newly-created classmates still appear.
-let crewProfilesCache: { at: number; data: CrewSearchResult[] } | null = null;
-const CACHE_TTL_MS = 30000;
+interface CrewProfilesResponse {
+  profiles: CrewSearchResult[];
+}
 
-export async function fetchAllCrewProfiles(): Promise<CrewSearchResult[]> {
+const functions = getFunctions(app, 'us-central1');
+const searchCrewProfilesCallable = httpsCallable<{ query: string }, CrewProfilesResponse>(
+  functions,
+  'searchCrewProfiles'
+);
+const getCrewProfilesByIdsCallable = httpsCallable<{ ids: string[] }, CrewProfilesResponse>(
+  functions,
+  'getCrewProfilesByIds'
+);
+
+const searchCache = new Map<string, { at: number; data: CrewSearchResult[] }>();
+const profileCache = new Map<string, { at: number; data: CrewSearchResult }>();
+const CACHE_TTL_MS = 30000;
+const PROFILE_CACHE_TTL_MS = 5 * 60 * 1000;
+
+export async function fetchCrewProfilesByIds(ids: string[]): Promise<CrewSearchResult[]> {
+  const uniqueIds = Array.from(new Set(ids.filter(Boolean)));
+  if (uniqueIds.length === 0) return [];
+
   const now = Date.now();
-  if (crewProfilesCache && now - crewProfilesCache.at < CACHE_TTL_MS) {
-    return crewProfilesCache.data;
+  const found = new Map<string, CrewSearchResult>();
+  const missingIds: string[] = [];
+  uniqueIds.forEach(id => {
+    const cached = profileCache.get(id);
+    if (cached && now - cached.at < PROFILE_CACHE_TTL_MS) {
+      found.set(id, cached.data);
+    } else {
+      missingIds.push(id);
+    }
+  });
+
+  for (let offset = 0; offset < missingIds.length; offset += 100) {
+    const chunk = missingIds.slice(offset, offset + 100);
+    const response = await getCrewProfilesByIdsCallable({ ids: chunk });
+    response.data.profiles.forEach(profile => {
+      profileCache.set(profile.id, { at: now, data: profile });
+      found.set(profile.id, profile);
+    });
   }
-  const snap = await getDocs(collection(db, 'crewProfiles'));
-  const allResults = snap.docs.map(doc => ({
-    id: doc.id,
-    name: doc.data().name || doc.data().displayName || `Crew Member ${doc.id.slice(-4)}`,
-    email: doc.data().email || '',
-    avatar: doc.data().profileImageUrl || doc.data().avatarUrl || '',
-    role: doc.data().jobTitles?.[0]?.title || 'Crew Member',
-    company: doc.data().company || ''
-  }));
-  crewProfilesCache = { at: now, data: allResults };
-  if (allResults.length === 0) {
-    console.warn('[crewSearch] No crew profiles found in Firestore crewProfiles collection.');
-  }
-  return allResults;
+
+  return uniqueIds.flatMap(id => {
+    const profile = found.get(id);
+    return profile ? [profile] : [];
+  });
 }
 
 export async function searchCrewProfiles(
@@ -48,16 +70,23 @@ export async function searchCrewProfiles(
   options: { excludeUid?: string | null; approvedContacts?: string[] } = {}
 ): Promise<CrewSearchResult[]> {
   const { excludeUid, approvedContacts = [] } = options;
-  const allResults = await fetchAllCrewProfiles();
-  const needle = queryStr.toLowerCase();
-  return allResults
-    .filter(user => user.id !== excludeUid) // can't add yourself
-    .filter(user =>
-      (user.name || '').toLowerCase().includes(needle) ||
-      (user.email || '').toLowerCase().includes(needle) ||
-      (user.role || '').toLowerCase().includes(needle) ||
-      (user.company || '').toLowerCase().includes(needle)
-    )
+  const query = queryStr.trim();
+  if (query.length < 2) return [];
+
+  const cacheKey = query.toLowerCase();
+  const cached = searchCache.get(cacheKey);
+  let results: CrewSearchResult[];
+  if (cached && Date.now() - cached.at < CACHE_TTL_MS) {
+    results = cached.data;
+  } else {
+    const response = await searchCrewProfilesCallable({ query });
+    results = response.data.profiles;
+    searchCache.set(cacheKey, { at: Date.now(), data: results });
+    results.forEach(profile => profileCache.set(profile.id, { at: Date.now(), data: profile }));
+  }
+
+  return results
+    .filter(user => user.id !== excludeUid)
     .sort((a, b) => {
       // Approved contacts first, then alphabetical.
       const aContact = approvedContacts.includes(a.id) ? 0 : 1;

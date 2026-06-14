@@ -297,6 +297,32 @@ describe('crew profile publication privacy', () => {
       'private-member'
     )));
   });
+
+  it('keeps crew search index fields server-owned', async () => {
+    const ownerDb = testEnv.authenticatedContext('profile-owner').firestore();
+    const profileRef = doc(ownerDb, 'crewProfiles', 'profile-owner');
+
+    await assertFails(setDoc(profileRef, {
+      name: 'Profile Owner',
+      searchPrefixes: ['pr', 'pro'],
+      searchIndexVersion: 1
+    }));
+    await assertSucceeds(setDoc(profileRef, {
+      name: 'Profile Owner',
+      isPublished: false
+    }));
+
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await updateDoc(doc(context.firestore(), 'crewProfiles', 'profile-owner'), {
+        searchPrefixes: ['pr', 'pro'],
+        searchIndexVersion: 1
+      });
+    });
+
+    await assertSucceeds(updateDoc(profileRef, { company: 'Film Company' }));
+    await assertFails(updateDoc(profileRef, { searchPrefixes: ['attacker'] }));
+    await assertFails(updateDoc(profileRef, { searchIndexVersion: 2 }));
+  });
 });
 
 describe('conversation message ownership', () => {

@@ -33,7 +33,7 @@ import { createAssignments } from '../../services/assignmentService';
 import { Screenplay, WorkspaceAssignment } from './workspaceAccess';
 import ScreenplayViewerModal from './ScreenplayViewerModal';
 import ScreenplayList from './ScreenplayList';
-import { fetchAllCrewProfiles } from './crewSearch';
+import { fetchCrewProfilesByIds } from './crewSearch';
 import './CollaborationHub.scss';
 import './WorkspaceDetailPage.scss';
 
@@ -187,8 +187,8 @@ const ClassDetailPage: React.FC = () => {
           });
         }
 
-        // Derived roster: union of group members (minus the teacher). Names come
-        // from the cached crewProfiles fetch — one read set instead of N getDocs.
+        // Derived roster: union of group members (minus the teacher). Resolve only
+        // those known member ids through the bounded callable lookup.
         const groupNamesByUid = new Map<string, string[]>();
         workspaces.forEach(workspace => {
           access.getWorkspaceMemberIds(workspace)
@@ -199,7 +199,7 @@ const ClassDetailPage: React.FC = () => {
               groupNamesByUid.set(memberUid, list);
             });
         });
-        const profiles = await fetchAllCrewProfiles();
+        const profiles = await fetchCrewProfilesByIds(Array.from(groupNamesByUid.keys()));
         const profileByUid = new Map(profiles.map(profile => [profile.id, profile]));
         const derived: RosterEntry[] = Array.from(groupNamesByUid.entries()).map(([studentUid, groupNames]) => {
           const profile = profileByUid.get(studentUid);
@@ -248,7 +248,9 @@ const ClassDetailPage: React.FC = () => {
     let cancelled = false;
     (async () => {
       try {
-        const profiles = await fetchAllCrewProfiles();
+        const profiles = await fetchCrewProfilesByIds(
+          manualStudents.flatMap(student => student.uid ? [student.uid] : [])
+        );
         const profileByUid = new Map(profiles.map(profile => [profile.id, profile]));
         if (cancelled) return;
         setManualRoster(manualStudents.map(student => {
@@ -396,9 +398,12 @@ const ClassDetailPage: React.FC = () => {
         .map(snap => access.normalizeWorkspace(snap.id, snap.data()))
         .filter(group => (group.status || 'active') === 'active')
         .sort((a, b) => a.name.localeCompare(b.name));
-      // Member-name previews via the cached crewProfiles fetch (one query, 30s TTL).
+      // Resolve only the member ids needed for these group previews.
       try {
-        const profiles = await fetchAllCrewProfiles();
+        const memberIds = Array.from(new Set(groups.flatMap(group =>
+          access.getWorkspaceMemberIds(group).filter(memberUid => memberUid !== uid)
+        )));
+        const profiles = await fetchCrewProfilesByIds(memberIds);
         const nameByUid = new Map(profiles.map(profile => [profile.id, profile.name]));
         const preview: Record<string, string> = {};
         groups.forEach(group => {

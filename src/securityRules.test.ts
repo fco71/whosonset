@@ -13,6 +13,23 @@ describe('security rules guardrails', () => {
     expect(rules).not.toMatch(/allow\s+read,\s*write:\s*if\s+request\.auth\s*!=\s*null\s*&&\s*collectionName/);
   });
 
+  it('keeps collaboration member search indexed and server-bounded', () => {
+    const rules = readRepoFile('firestore.rules');
+    const searchClient = readRepoFile('src/components/Collaboration/crewSearch.ts');
+    const functions = readRepoFile('functions/src/index.ts');
+
+    expect(searchClient).not.toMatch(/getDocs\(collection\(db,\s*['"]crewProfiles['"]\)\)/);
+    expect(searchClient).toMatch(/httpsCallable<[\s\S]*['"]searchCrewProfiles['"]/);
+    expect(searchClient).toMatch(/['"]getCrewProfilesByIds['"]/);
+    expect(functions).toMatch(/export const syncCrewProfileSearchIndex = onDocumentWritten/);
+    expect(functions).toMatch(/export const searchCrewProfiles = onCall/);
+    expect(functions).toMatch(/\.where\('searchPrefixes', 'array-contains'/);
+    expect(functions).toMatch(/\.limit\(30\)/);
+    expect(functions).toMatch(/export const getCrewProfilesByIds = onCall/);
+    expect(rules).toMatch(/!request\.resource\.data\.keys\(\)\.hasAny\(\['searchPrefixes', 'searchIndexVersion'\]\)/);
+    expect(rules).toMatch(/request\.resource\.data\.get\('searchPrefixes', \[\]\) == resource\.data\.get\('searchPrefixes', \[\]\)/);
+  });
+
   it('keeps confidential Storage write paths scoped by user id', () => {
     const rules = readRepoFile('storage.rules');
 

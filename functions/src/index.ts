@@ -1,8 +1,13 @@
 import * as admin from "firebase-admin";
 import { HttpsError, onCall, onRequest } from "firebase-functions/v2/https";
-import { onDocumentCreated, onDocumentDeleted, onDocumentUpdated } from "firebase-functions/v2/firestore";
+import { onDocumentCreated, onDocumentDeleted, onDocumentUpdated, onDocumentWritten } from "firebase-functions/v2/firestore";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { defineSecret } from "firebase-functions/params";
+import {
+  buildCrewProfileSearchIndex,
+  crewProfileSearchIndexMatches,
+  normalizeCrewSearchText
+} from "./crewProfileSearch";
 import { QueryDocumentSnapshot } from "firebase-admin/firestore";
 import Parser from "rss-parser";
 import { createHash, timingSafeEqual } from "node:crypto";
@@ -2441,6 +2446,109 @@ export const notifyInterviewScheduled = onDocumentCreated({
       scheduledAt: interview.scheduledAt || null
     }
   });
+});
+
+interface CrewProfileSearchResult {
+  id: string;
+  name: string;
+  email: string;
+  avatar: string;
+  role: string;
+  company: string;
+}
+
+function crewProfileSearchResult(
+  snapshot: QueryDocumentSnapshot | admin.firestore.DocumentSnapshot
+): CrewProfileSearchResult {
+  const profile = snapshot.data() || {};
+  const firstJobTitle = Array.isArray(profile.jobTitles)
+    ? profile.jobTitles.find((jobTitle: unknown) => (
+        typeof jobTitle === 'string' ||
+        (jobTitle && typeof jobTitle === 'object' && typeof (jobTitle as Record<string, unknown>).title === 'string')
+      ))
+    : undefined;
+  const role = typeof firstJobTitle === 'string'
+    ? firstJobTitle
+    : asString((firstJobTitle as Record<string, unknown> | undefined)?.title);
+
+  return {
+    id: snapshot.id,
+    name: asString(profile.name) || asString(profile.displayName) || `Crew Member ${snapshot.id.slice(-4)}`,
+    email: asString(profile.email) || asString(profile.contactInfo?.email),
+    avatar: asString(profile.profileImageUrl) || asString(profile.avatarUrl),
+    role: role || 'Crew Member',
+    company: asString(profile.company)
+  };
+}
+
+export const syncCrewProfileSearchIndex = onDocumentWritten({
+  document: 'crewProfiles/{profileId}',
+  region: 'us-central1'
+}, async (event) => {
+  const after = event.data?.after;
+  if (!after?.exists) return;
+
+  const profile = after.data() || {};
+  const expectedIndex = buildCrewProfileSearchIndex(profile);
+  if (crewProfileSearchIndexMatches(profile, expectedIndex)) return;
+
+  await after.ref.set(expectedIndex, { merge: true });
+});
+
+export const searchCrewProfiles = onCall({
+  region: 'us-central1'
+}, async (request) => {
+  const actorId = request.auth?.uid;
+  if (!actorId) {
+    throw new HttpsError('unauthenticated', 'Must be signed in to search crew profiles.');
+  }
+
+  const normalizedQuery = normalizeCrewSearchText(request.data?.query);
+  if (normalizedQuery.length < 2 || normalizedQuery.length > 80) {
+    throw new HttpsError('invalid-argument', 'Search text must be between 2 and 80 characters.');
+  }
+
+  const snapshot = await db.collection('crewProfiles')
+    .where('searchPrefixes', 'array-contains', normalizedQuery.slice(0, 40))
+    .limit(30)
+    .get();
+  const profiles = snapshot.docs
+    .filter((profile) => profile.id !== actorId)
+    .map(crewProfileSearchResult)
+    .sort((left, right) => left.name.localeCompare(right.name));
+
+  return { profiles };
+});
+
+export const getCrewProfilesByIds = onCall({
+  region: 'us-central1'
+}, async (request) => {
+  if (!request.auth?.uid) {
+    throw new HttpsError('unauthenticated', 'Must be signed in to resolve crew profiles.');
+  }
+
+  const requestedIds = request.data?.ids;
+  if (!Array.isArray(requestedIds)) {
+    throw new HttpsError('invalid-argument', 'Profile ids must be an array.');
+  }
+  const ids = Array.from(new Set(
+    requestedIds
+      .map(asString)
+      .filter(Boolean)
+  ));
+  if (ids.length > 100) {
+    throw new HttpsError('invalid-argument', 'At most 100 profile ids may be resolved at once.');
+  }
+  if (ids.length === 0) return { profiles: [] };
+
+  const snapshots = await db.getAll(
+    ...ids.map((profileId) => db.collection('crewProfiles').doc(profileId))
+  );
+  const profiles = snapshots
+    .filter((snapshot) => snapshot.exists)
+    .map(crewProfileSearchResult);
+
+  return { profiles };
 });
 
 export const addScreenplayCollaborator = onCall({
