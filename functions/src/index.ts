@@ -19,6 +19,14 @@ export { cleanupUserWorkspaces } from "./cleanupUserWorkspaces";
 export { onAuthUserDeleted } from "./onAuthUserDeleted";
 export { respondToWorkspaceInvitation } from "./workspaceInvitations";
 export { setWorkspaceSupervisorMode } from "./workspaceSupervisors";
+// Student-initiated "request to join a group" + the server-maintained classDirectory that
+// lets students discover the other groups in their class. See workspaceJoinRequests.ts.
+export {
+  onTeacherClassWritten,
+  onWorkspaceWrittenSyncDirectories,
+  notifyWorkspaceJoinRequestCreated,
+  approveJoinRequest
+} from "./workspaceJoinRequests";
 
 // Escape user-supplied values before interpolating them into HTML email bodies.
 // emailSend builds its HTML with template literals (not Handlebars placeholders),

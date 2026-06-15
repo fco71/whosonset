@@ -168,6 +168,32 @@ describe('security rules guardrails', () => {
     expect(invitationRules).toMatch(/allow\s+update:\s+if\s+false;/);
   });
 
+  it('keeps class join requests class-scoped and on the callable/Admin SDK path', () => {
+    const rules = readRepoFile('firestore.rules');
+    const directoryRules = rules.match(/match\s+\/classDirectory\/\{classId\}\s+\{[\s\S]*?\n\s+\}/)?.[0] || '';
+    const requestRules = rules.match(/match\s+\/workspaceJoinRequests\/\{requestId\}\s+\{[\s\S]*?\n\s+\}/)?.[0] || '';
+    const indexExports = readRepoFile('functions/src/index.ts');
+
+    // The directory is server-maintained and member-gated; never client-writable.
+    expect(directoryRules).toMatch(/allow\s+read:/);
+    expect(directoryRules).toMatch(/resource\.data\.memberIds\.hasAny\(\[request\.auth\.uid\]\)/);
+    expect(directoryRules).toMatch(/allow\s+write:\s+if\s+false;/);
+
+    // Requests are self-authored, class-scoped via the trusted directory, blocked when the
+    // student is already a member, and (like invitations) approval-locked to the callable.
+    expect(requestRules).toMatch(/request\.resource\.data\.requesterId\s+==\s+request\.auth\.uid/);
+    expect(requestRules).toMatch(/request\.resource\.data\.status\s+==\s+'pending'/);
+    expect(requestRules).toMatch(/classDirectory\/\$\(request\.resource\.data\.classId\)/);
+    expect(requestRules).toMatch(/groupWorkspaceIds\.hasAny\(\[request\.resource\.data\.workspaceId\]\)/);
+    expect(requestRules).toMatch(/!isWorkspaceMemberByGet\(request\.resource\.data\.workspaceId,\s+request\.auth\.uid\)/);
+    expect(requestRules).toMatch(/allow\s+update:\s+if\s+false;/);
+    expect(requestRules).not.toMatch(/allow\s+read:\s+if\s+signedIn\(\);/);
+
+    // The membership-granting callable + directory-maintenance triggers must be deployed.
+    expect(indexExports).toMatch(/export\s+\{[\s\S]*approveJoinRequest[\s\S]*\}\s+from\s+["']\.\/workspaceJoinRequests["']/);
+    expect(indexExports).toMatch(/onWorkspaceWrittenSyncDirectories/);
+  });
+
   it('keeps screenplay updates field-scoped', () => {
     const rules = readRepoFile('firestore.rules');
 

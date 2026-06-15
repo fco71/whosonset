@@ -67,6 +67,61 @@ Status:
 - DONE (code, typechecks; Hosting-only, ships on push): Restore UI — `src/components/Collaboration/FountainRevisionHistory.tsx` (revision list + read-only preview + confirm-before-restore) opened from a 🕘 History button in the editor header; `FountainEditor.handleRestoreVersion` archives the current content as a `pre_restore` revision before applying the chosen version. EN+ES strings under `fountain.revisions.*`.
 - PENDING: app Undo/Redo buttons (real in-editor stack, not the textarea native one) + concurrent-edit guard (warn before overwriting when the doc changed since load). Tracked in task #99.
 
+## Class Join Requests (student request-to-join) — SHIPPED 2026-06-15
+
+Problem: group membership only flows owner→member (the `workspaceInvitations` +
+`respondToWorkspaceInvitation` callable). A student left out of / ignored by a group can't
+ask in, and can't even see the other groups in their class — `teacherClasses` is
+owner-scoped, so students can't read class composition. This is the reverse flow: a student
+discovers the other groups in their class and sends a join request; the group **owner OR the
+class teacher** approves/denies. On approval, membership is granted through the SAME path
+invitation-accept uses (members + memberIds + `workspaceMemberships/{wsId}_{uid}` +
+`addUserToWorkspaceScreenplays`). Decisions (confirmed w/ Francisco): the directory exposes
+full member names (intra-class only); approver = owner OR teacher; any class group is
+requestable. Builds on [class permanent groups] model.
+
+Design:
+- **`classDirectory/{classId}`** (NEW collection) — server-maintained, student-readable view
+  of a class's groups (`groups[]` w/ name/owner/memberNames/memberCount, `groupWorkspaceIds[]`,
+  and the union `memberIds[]`). Read gate: `memberIds.hasAny([uid])`. Students discover via
+  `where('memberIds','array-contains', uid)` — never reads the teacher's private class doc.
+  Built ONLY by Cloud Functions; `allow write: if false`.
+- **`workspaceJoinRequests/{requestId}`** (NEW collection) — self-authored, class-scoped via
+  the trusted directory (must be a class member, target must be a class group, not already a
+  member; optional ≤1000-char message). `allow update: if false` — approve/deny goes only
+  through the `approveJoinRequest` callable (mirrors invitations). Read: requester / group
+  owner / group supervisor / class teacher.
+
+Status — DONE (code, backend, backfill, and client deploy):
+- `functions/src/workspaceJoinRequests.ts` (exported from `index.ts`): `rebuildClassDirectory`
+  helper; `onTeacherClassWritten` + `onWorkspaceWrittenSyncDirectories` triggers (keep
+  directories fresh, early-bail on irrelevant writes); `notifyWorkspaceJoinRequestCreated`
+  (notifies the real owner); `approveJoinRequest` callable (owner/supervisor/teacher authz;
+  grant logic DUPLICATED from `respondToWorkspaceInvitation` on purpose — do not touch the
+  live invitation path). Self-contained (own copies of getUserDisplayName/permissionsForRole/
+  addUserToWorkspaceScreenplays/notification writes).
+- `firestore.rules`: `isWorkspaceMemberByGet` + `isClassTeacherForRequest` helpers + the two
+  match blocks above. No new indexes (single-field equality + array-contains are auto-indexed;
+  status filtered client-side, mirroring the pendingInvites convention).
+- `src/services/joinRequestService.ts`: directory + request subscriptions, `createJoinRequest`
+  (dedupes pending), `respondToJoinRequest` (callable).
+- UI: student "Other groups in your class" panel in `CollaborationHub` (non-teachers only);
+  owner "Join requests" panel in `WorkspaceDetailPage` (mirrors pending-invites); teacher
+  "Join requests in this class" panel in `ClassDetailPage`. EN+ES `collaboration.joinRequests.*`
+  + `collaboration.notifications.joinRequest*`.
+- Tests: 6 behavioral cases in `src/firestoreRules.emulator.test.ts` (directory read gate +
+  server-only, class-scoped create, callable-only update, read/delete authz) — all green via
+  `npm run test:rules` (20/20); a static guardrail in `src/securityRules.test.ts` (25/25).
+- `scripts/backfill-class-directories.cjs` — one-time directory build for existing classes
+  (ADC, dry-run default, `--apply`).
+
+Deploy notes: backend was deployed before the client on 2026-06-15. Firestore rules were
+dry-run compiled and released; the four new functions were deployed; `node
+scripts/backfill-class-directories.cjs --apply` wrote 2 `classDirectory` docs for the current
+classes (10 active groups, 27 unique class-directory members across those two docs). No new
+index was required. Hosting deploys through the production Actions pipeline on the feature
+commit push.
+
 ## Current Product State
 
 - Collaboration is group-centric (2026-06-11): `/collaboration` lists the user's groups (workspaces) plus a personal "My screenplays" tab and a supervisor review queue; each group has its own page at `/collaboration/:workspaceId` (`WorkspaceDetailPage`) with the group's screenplays, upload/start-writing, members, activity feed, invite (owner), supervisor self-toggle, and the grading CSV export. The old workspace-card "Open" button used to only show a fake "Successfully joined workspace" toast; it now navigates to the group page. Group uploads happen on the group page; the hub upload is personal-only. Visible nav/tab strings say "Groups"/"Grupos"; deeper strings (settings modal, invitation notifications) still say "workspace". No Firestore schema or rules changes — purely client navigation/IA.
@@ -387,3 +442,38 @@ Risks and gotchas:
 - The supplemental screenplay `teamMembers` collection subscription was removed because Firestore denied that broad list query; current collaboration loading relies on `uploadedBy` and workspace-scoped screenplay queries.
 - Public `crewProfiles` reads and authenticated `users/{userId}` reads are intentional current behavior but should be reviewed before broader launch if contact info needs tighter privacy.
 - A restore drill has not been performed against Firestore backups. Backups are configured, but a restore into a throwaway database would prove the process.
+
+### NEXT (planned 2026-06-15 eve) — teacher "add any user to a group" + groupless-student catch-22
+
+Problem (surfaced while building Class Join Requests): a teacher builds the class roster by
+bulk-adding students *via their groups* (`teacherClasses.workspaceIds` → roster derived from
+group `memberIds`), so a student in NO group never appears in the class and is left adrift.
+The join-request feature inherits the same gap: `classDirectory.memberIds` is the union of
+*group* members only, so a groupless student is in no directory → can't see or request any
+group. Catch-22: you can't request into a group until you're already visible to the class,
+and you're only visible once you're in a group.
+
+Two complementary fixes (do both, or at least the first):
+1. **Teacher adds any user directly to a group.** Today only the workspace OWNER can invite
+   (`workspaceInvitations` create is `isWorkspaceOwner`-gated), so a teacher who only
+   supervises a group can't add members. Add a teacher-initiated add — cleanest is a new
+   Admin SDK callable that REUSES the grant path we just built (`approveJoinRequest`'s
+   owner/supervisor/teacher authz + the duplicated member-grant). A teacher who owns a class
+   containing the group adds `{ groupId, uid }`; same members/memberIds/workspaceMemberships/
+   addUserToWorkspaceScreenplays writes. (This is the moment to finally extract the shared
+   `addMemberToWorkspaceTx` helper from `respondToWorkspaceInvitation` so invitation-accept,
+   join-request-approve, and teacher-add all share ONE proven path — the deliberate
+   duplication debt noted under Class Join Requests.)
+2. **Let class-roster membership (not just group membership) grant directory visibility.**
+   Make `rebuildClassDirectory`'s `memberIds` = (active group members) ∪ (class roster linked
+   uids: `manualStudents[].uid` + any future direct class members). Then a teacher can add a
+   groupless student to the class roster and that student immediately sees the class's groups
+   and can request to join one — breaking the catch-22 without forcing a group assignment
+   first. (Trigger already reruns on `teacherClasses` writes, so adding a manual student with
+   a uid would refresh the directory; just widen the union + ensure `onTeacherClassWritten`
+   doesn't early-bail when only `manualStudents` changed.)
+
+Tonight's checklist: (a) extract shared grant helper; (b) teacher add-to-group callable +
+UI (likely from `ClassDetailPage` group rows and/or `WorkspaceDetailPage` for owners already);
+(c) widen `classDirectory.memberIds` union + un-bail the class trigger on roster changes;
+(d) rules/tests for the new callable; (e) emulator tests; (f) same backend-first deploy order.

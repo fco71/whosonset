@@ -528,3 +528,143 @@ describe('scene-mark moderation authority', () => {
     await assertSucceeds(deleteDoc(doc(supervisorDb, 'screenplayScenes', 'supervisor-protected')));
   });
 });
+
+// Student-initiated "request to join a group". `alice` and `owner1` are in ws-1; `owner2`
+// owns ws-2 with supervisor `sup2`; both groups belong to `teacher`'s class-1. The
+// classDirectory doc is the server-written, student-readable oracle that gates discovery
+// and the class-scoping of a request. `carol` belongs to a different class; `outsider` to none.
+async function seedClassDirectoryFixture(adminDb: any) {
+  await setDoc(doc(adminDb, 'teacherRoles', 'teacher'), { grantedAt: Timestamp.now() });
+  await setDoc(doc(adminDb, 'teacherClasses', 'class-1'), {
+    ownerId: 'teacher',
+    name: 'Film 101',
+    workspaceIds: ['ws-1', 'ws-2']
+  });
+  await setDoc(doc(adminDb, 'workspaces', 'ws-1'), {
+    ownerId: 'owner1',
+    memberIds: ['owner1', 'alice'],
+    members: [{ userId: 'owner1' }, { userId: 'alice' }],
+    supervisorIds: [],
+    selfElectedSupervisors: [],
+    viewerIds: []
+  });
+  await setDoc(doc(adminDb, 'workspaces', 'ws-2'), {
+    ownerId: 'owner2',
+    memberIds: ['owner2', 'sup2'],
+    members: [{ userId: 'owner2' }, { userId: 'sup2' }],
+    supervisorIds: ['sup2'],
+    selfElectedSupervisors: [],
+    viewerIds: []
+  });
+  await setDoc(doc(adminDb, 'classDirectory', 'class-1'), {
+    classId: 'class-1',
+    className: 'Film 101',
+    groupWorkspaceIds: ['ws-1', 'ws-2'],
+    memberIds: ['owner1', 'alice', 'owner2', 'sup2'],
+    groups: [
+      { workspaceId: 'ws-1', name: 'Group 1', ownerId: 'owner1', ownerName: 'Owner 1', memberCount: 2, memberNames: ['Owner 1', 'Alice'], memberIds: ['owner1', 'alice'] },
+      { workspaceId: 'ws-2', name: 'Group 2', ownerId: 'owner2', ownerName: 'Owner 2', memberCount: 2, memberNames: ['Owner 2', 'Sup 2'], memberIds: ['owner2', 'sup2'] }
+    ]
+  });
+  // A different class alice/owner1 are NOT part of (cross-class read denial).
+  await setDoc(doc(adminDb, 'classDirectory', 'class-2'), {
+    classId: 'class-2',
+    className: 'Other class',
+    groupWorkspaceIds: ['ws-9'],
+    memberIds: ['carol'],
+    groups: []
+  });
+}
+
+const joinRequestPayload = (overrides: Record<string, unknown> = {}) => ({
+  workspaceId: 'ws-2',
+  workspaceName: 'Group 2',
+  classId: 'class-1',
+  requesterId: 'alice',
+  requesterName: 'Alice',
+  requesterEmail: 'alice@example.com',
+  status: 'pending',
+  createdAt: Timestamp.now(),
+  ...overrides
+});
+
+describe('class directory visibility', () => {
+  it('lets a class member read their class directory but blocks other classes and outsiders', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => seedClassDirectoryFixture(context.firestore()));
+
+    await assertSucceeds(getDoc(doc(testEnv.authenticatedContext('alice').firestore(), 'classDirectory', 'class-1')));
+    await assertFails(getDoc(doc(testEnv.authenticatedContext('outsider').firestore(), 'classDirectory', 'class-1')));
+    await assertFails(getDoc(doc(testEnv.authenticatedContext('carol').firestore(), 'classDirectory', 'class-1')));
+  });
+
+  it('keeps the class directory server-owned (no client writes)', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => seedClassDirectoryFixture(context.firestore()));
+
+    const aliceDb = testEnv.authenticatedContext('alice').firestore();
+    await assertFails(updateDoc(doc(aliceDb, 'classDirectory', 'class-1'), { className: 'Hacked' }));
+    await assertFails(setDoc(doc(aliceDb, 'classDirectory', 'class-new'), {
+      classId: 'class-new', memberIds: ['alice'], groupWorkspaceIds: [], groups: []
+    }));
+  });
+});
+
+describe('workspace join requests', () => {
+  it('lets an in-class student request a group they are not in, but blocks out-of-scope requests', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => seedClassDirectoryFixture(context.firestore()));
+    const aliceDb = testEnv.authenticatedContext('alice').firestore();
+
+    // Valid: a class member requests ws-2, a class group she is not yet in.
+    await assertSucceeds(setDoc(doc(aliceDb, 'workspaceJoinRequests', 'r-valid'), joinRequestPayload()));
+    // Already a member of ws-1 → blocked.
+    await assertFails(setDoc(doc(aliceDb, 'workspaceJoinRequests', 'r-member'), joinRequestPayload({ workspaceId: 'ws-1', workspaceName: 'Group 1' })));
+    // Target group not in this class's directory → blocked.
+    await assertFails(setDoc(doc(aliceDb, 'workspaceJoinRequests', 'r-foreign'), joinRequestPayload({ workspaceId: 'ws-404' })));
+    // Spoofed requesterId → blocked.
+    await assertFails(setDoc(doc(aliceDb, 'workspaceJoinRequests', 'r-spoof'), joinRequestPayload({ requesterId: 'owner2' })));
+    // Pre-approved status → blocked (must start pending).
+    await assertFails(setDoc(doc(aliceDb, 'workspaceJoinRequests', 'r-approved'), joinRequestPayload({ status: 'approved' })));
+    // A non-class member cannot request a class group.
+    await assertFails(setDoc(doc(testEnv.authenticatedContext('outsider').firestore(), 'workspaceJoinRequests', 'r-outsider'),
+      joinRequestPayload({ requesterId: 'outsider', requesterName: 'Outsider' })));
+  });
+
+  it('blocks direct status updates — approval must go through the callable', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await seedClassDirectoryFixture(context.firestore());
+      await setDoc(doc(context.firestore(), 'workspaceJoinRequests', 'r-1'), joinRequestPayload());
+    });
+    const tryApprove = (uid: string) => updateDoc(
+      doc(testEnv.authenticatedContext(uid).firestore(), 'workspaceJoinRequests', 'r-1'),
+      { status: 'approved', respondedAt: Timestamp.now() }
+    );
+    await assertFails(tryApprove('alice'));    // requester
+    await assertFails(tryApprove('owner2'));   // group owner
+    await assertFails(tryApprove('teacher'));  // class teacher
+  });
+
+  it('limits reads to the requester, group owner, group supervisor, and class teacher', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await seedClassDirectoryFixture(context.firestore());
+      await setDoc(doc(context.firestore(), 'workspaceJoinRequests', 'r-1'), joinRequestPayload());
+    });
+    const read = (uid: string) => getDoc(doc(testEnv.authenticatedContext(uid).firestore(), 'workspaceJoinRequests', 'r-1'));
+
+    await assertSucceeds(read('alice'));    // requester
+    await assertSucceeds(read('owner2'));   // owner of the target group ws-2
+    await assertSucceeds(read('sup2'));     // effective supervisor of ws-2
+    await assertSucceeds(read('teacher'));  // owns class-1, which contains ws-2
+    await assertFails(read('owner1'));      // owns a DIFFERENT group, not this request's
+    await assertFails(read('outsider'));
+  });
+
+  it('lets the requester or class teacher delete a request, but not an unrelated user', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await seedClassDirectoryFixture(context.firestore());
+      await setDoc(doc(context.firestore(), 'workspaceJoinRequests', 'r-del-1'), joinRequestPayload());
+      await setDoc(doc(context.firestore(), 'workspaceJoinRequests', 'r-del-2'), joinRequestPayload());
+    });
+    await assertFails(deleteDoc(doc(testEnv.authenticatedContext('outsider').firestore(), 'workspaceJoinRequests', 'r-del-1')));
+    await assertSucceeds(deleteDoc(doc(testEnv.authenticatedContext('alice').firestore(), 'workspaceJoinRequests', 'r-del-1')));
+    await assertSucceeds(deleteDoc(doc(testEnv.authenticatedContext('teacher').firestore(), 'workspaceJoinRequests', 'r-del-2')));
+  });
+});

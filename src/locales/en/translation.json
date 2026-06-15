@@ -998,7 +998,47 @@
       "invitationDeclined": {
         "title": "Workspace invitation declined",
         "body": "{{invitee}} declined the invitation to {{workspace}}."
+      },
+      "joinRequest": {
+        "title": "{{requester}} asked to join {{workspace}}",
+        "body": "Review the request to approve or decline."
+      },
+      "joinRequestApproved": {
+        "title": "You're in {{workspace}}",
+        "body": "Your request to join {{workspace}} was approved."
+      },
+      "joinRequestDenied": {
+        "title": "Request to join {{workspace}} declined",
+        "body": "Your request to join {{workspace}} wasn't approved."
       }
+    },
+    "joinRequests": {
+      "otherGroupsTitle": "Other groups in your class",
+      "otherGroupsHint": "Need to join a different group? Ask below — the group's owner or your teacher reviews your request.",
+      "membersLabel": "Members",
+      "noOtherGroups": "There are no other groups in your class yet.",
+      "requestToJoin": "Request to join",
+      "requestPending": "Request pending",
+      "requestDenied": "Request declined",
+      "alreadyMember": "You're in this group",
+      "messagePlaceholder": "Add a short note (optional)",
+      "send": "Send request",
+      "cancel": "Cancel",
+      "requestSent": "Request sent to {{group}}.",
+      "requestDuplicate": "You already have a pending request for {{group}}.",
+      "requestFailed": "Couldn't send your request. Please try again.",
+      "ownerTitle_one": "Join request ({{count}})",
+      "ownerTitle_other": "Join requests ({{count}})",
+      "ownerHint": "Students asking to join this group. Approve to add them as a member.",
+      "classTitle_one": "Join request in this class ({{count}})",
+      "classTitle_other": "Join requests in this class ({{count}})",
+      "classHint": "Students asking to join a group in this class.",
+      "wantsToJoin": "wants to join {{group}}",
+      "approve": "Approve",
+      "deny": "Decline",
+      "approved": "{{name}} added to {{group}}.",
+      "denied": "Request declined.",
+      "actionFailed": "Couldn't update the request. Please try again."
     },
     "activity": {
       "title": "Recent activity",

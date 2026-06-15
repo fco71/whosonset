@@ -99,6 +99,33 @@ service cloud.firestore {
         get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.ownerId == uid;
     }
 
+    // Rule get()s bypass security rules, so we can inspect a workspace the caller is NOT a
+    // member of — used to forbid a join request to a group the student already belongs to.
+    function isWorkspaceMemberByGet(workspaceId, uid) {
+      return workspaceId is string &&
+        exists(/databases/$(database)/documents/workspaces/$(workspaceId)) &&
+        get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.memberIds is list &&
+        get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.memberIds.hasAny([uid]);
+    }
+
+    // The caller is the teacher who owns the class a join request was filed under. Lets a
+    // teacher read/dismiss requests for groups they don't personally sit in (the teacher
+    // class panel queries by classId). isVerifiedTeacher() is the admin-granted source of
+    // truth (teacherRoles/{uid}); classId is stamped on the request at create time, and the
+    // create rule already proved the request is genuinely scoped to that class (the student
+    // was a class member and the target was one of the class's groups) — so ownership of
+    // that exact class is sufficient here. We intentionally do NOT re-check that the group
+    // is STILL in the class: a query returns permission-denied for the WHOLE result set if
+    // any single matched doc fails, so a group later removed from the class must not poison
+    // the teacher's query — they should still see (and be able to dismiss) the leftover.
+    function isClassTeacherForRequest(data) {
+      return signedIn() &&
+        isVerifiedTeacher(request.auth.uid) &&
+        data.classId is string &&
+        exists(/databases/$(database)/documents/teacherClasses/$(data.classId)) &&
+        get(/databases/$(database)/documents/teacherClasses/$(data.classId)).data.ownerId == request.auth.uid;
+    }
+
     function isProjectParticipantData(data, uid) {
       return signedIn() && (
         data.createdBy == uid ||
@@ -796,6 +823,54 @@ service cloud.firestore {
       allow delete: if signedIn() && (
         resource.data.inviterId == request.auth.uid ||
         isWorkspaceOwner(resource.data.workspaceId, request.auth.uid)
+      );
+    }
+
+    // Server-maintained, student-readable view of a class's groups. Readable by anyone in
+    // the union of those groups' members (memberIds) — that's how a student sees the OTHER
+    // groups in their own class without ever reading the teacher's private teacherClasses
+    // doc. Built/refreshed ONLY by Cloud Functions (onTeacherClassWritten /
+    // onWorkspaceWrittenSyncDirectories); never client-writable.
+    match /classDirectory/{classId} {
+      allow read: if signedIn() &&
+        resource.data.memberIds is list &&
+        resource.data.memberIds.hasAny([request.auth.uid]);
+      allow write: if false;
+    }
+
+    // Student-initiated requests to join a group in their class — the reverse of
+    // workspaceInvitations. Create is self-authored and CLASS-SCOPED via the trusted,
+    // server-written classDirectory (the student must be a class member and the target must
+    // be a group in that class), and forbidden if they're already a member. Approval/denial
+    // changes membership + screenplay access, so — exactly like invitations — it must go
+    // through the Admin SDK callable `approveJoinRequest`; direct update is forbidden.
+    match /workspaceJoinRequests/{requestId} {
+      allow read: if signedIn() && (
+        resource.data.requesterId == request.auth.uid ||
+        isWorkspaceOwner(resource.data.workspaceId, request.auth.uid) ||
+        isEffectiveWorkspaceSupervisor(resource.data.workspaceId, request.auth.uid) ||
+        isClassTeacherForRequest(resource.data)
+      );
+      allow create: if signedIn() &&
+        request.resource.data.requesterId == request.auth.uid &&
+        request.resource.data.status == 'pending' &&
+        request.resource.data.classId is string &&
+        request.resource.data.workspaceId is string &&
+        (
+          !request.resource.data.keys().hasAny(['message']) ||
+          (request.resource.data.message is string && request.resource.data.message.size() <= 1000)
+        ) &&
+        exists(/databases/$(database)/documents/classDirectory/$(request.resource.data.classId)) &&
+        get(/databases/$(database)/documents/classDirectory/$(request.resource.data.classId)).data.memberIds is list &&
+        get(/databases/$(database)/documents/classDirectory/$(request.resource.data.classId)).data.memberIds.hasAny([request.auth.uid]) &&
+        get(/databases/$(database)/documents/classDirectory/$(request.resource.data.classId)).data.groupWorkspaceIds is list &&
+        get(/databases/$(database)/documents/classDirectory/$(request.resource.data.classId)).data.groupWorkspaceIds.hasAny([request.resource.data.workspaceId]) &&
+        !isWorkspaceMemberByGet(request.resource.data.workspaceId, request.auth.uid);
+      allow update: if false;
+      allow delete: if signedIn() && (
+        resource.data.requesterId == request.auth.uid ||
+        isWorkspaceOwner(resource.data.workspaceId, request.auth.uid) ||
+        isClassTeacherForRequest(resource.data)
       );
     }
 

@@ -30,6 +30,15 @@ import { MAX_UPLOAD_BYTES, MAX_UPLOAD_MB, Screenplay } from './workspaceAccess';
 import ScreenplayList from './ScreenplayList';
 import { searchCrewProfiles } from './crewSearch';
 import { createTeacherClass, normalizeTeacherClass, updateTeacherClass, TeacherClass, CLASS_COLORS, getClassColor, getReadableTextColor } from '../../services/classService';
+import {
+  ClassDirectory,
+  ClassDirectoryGroup,
+  createJoinRequest,
+  JoinRequestStatus,
+  subscribeToClassDirectory,
+  subscribeToMyJoinRequests,
+  WorkspaceJoinRequest
+} from '../../services/joinRequestService';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
 
@@ -143,6 +152,13 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     requestedTab && TAB_TYPES.includes(requestedTab) ? requestedTab : 'workspaces'
   );
   const [workspaces, setWorkspaces] = useState<CollaborationWorkspace[]>([]);
+  // Student "request to join" — the other groups in the student's class (server-maintained
+  // classDirectory) plus the student's own outgoing requests, for per-group state.
+  const [classDirectories, setClassDirectories] = useState<ClassDirectory[]>([]);
+  const [myJoinRequests, setMyJoinRequests] = useState<WorkspaceJoinRequest[]>([]);
+  const [requestingGroupId, setRequestingGroupId] = useState<string | null>(null);
+  const [joinRequestMessage, setJoinRequestMessage] = useState('');
+  const [sendingJoinRequest, setSendingJoinRequest] = useState(false);
   const [selectedWorkspace, setSelectedWorkspace] = useState<CollaborationWorkspace | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -453,6 +469,48 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       unsubscribe();
     };
   }, [currentUser, projectId]);
+
+  // Class directory (the other groups in the student's class) + the student's own outgoing
+  // join requests. Drives the "Other groups in your class" panel. The directory query is
+  // rules-safe (array-contains on the union memberIds). Teachers manage requests from the
+  // class page, so the panel itself is rendered only to non-teachers in renderWorkspacesTab.
+  useEffect(() => {
+    if (!currentUser) {
+      setClassDirectories([]);
+      setMyJoinRequests([]);
+      return;
+    }
+    const unsubDirectory = subscribeToClassDirectory(currentUser.uid, setClassDirectories);
+    const unsubRequests = subscribeToMyJoinRequests(currentUser.uid, setMyJoinRequests);
+    return () => { unsubDirectory(); unsubRequests(); };
+  }, [currentUser]);
+
+  // File a join request for another group in the student's class.
+  const handleSendJoinRequest = async (directory: ClassDirectory, group: ClassDirectoryGroup) => {
+    if (!currentUser) return;
+    setSendingJoinRequest(true);
+    try {
+      const result = await createJoinRequest({
+        workspaceId: group.workspaceId,
+        workspaceName: group.name,
+        classId: directory.classId,
+        requester: { uid: currentUser.uid, name: currentUser.displayName, email: currentUser.email },
+        message: joinRequestMessage
+      });
+      if (result === 'duplicate') {
+        toast(t('collaboration.joinRequests.requestDuplicate', { group: group.name }));
+      } else {
+        toast.success(t('collaboration.joinRequests.requestSent', { group: group.name }));
+      }
+      setRequestingGroupId(null);
+      setJoinRequestMessage('');
+    } catch (err) {
+      console.error('Error sending join request:', err);
+      toast.error(t('collaboration.joinRequests.requestFailed'));
+    } finally {
+      setSendingJoinRequest(false);
+    }
+  };
 
   const accessibleWorkspaceIds = workspaces
     .filter(workspace => (workspace.status || 'active') !== 'deleted')
@@ -1527,6 +1585,96 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
           </div>
         ))}
       </div>
+
+      {/* Other groups in your class — student "request to join" discovery. Teachers manage
+          requests from the class page, so this is shown only to non-teachers. */}
+      {!isTeacher && currentUser && (() => {
+        const myUid = currentUser.uid;
+        // Most-relevant status per group: a pending request wins; otherwise the latest known.
+        const statusByWorkspace: Record<string, JoinRequestStatus> = {};
+        myJoinRequests.forEach(request => {
+          if (request.status === 'pending') statusByWorkspace[request.workspaceId] = 'pending';
+          else if (!statusByWorkspace[request.workspaceId]) statusByWorkspace[request.workspaceId] = request.status;
+        });
+        const sections = classDirectories
+          .map(directory => ({ directory, requestable: directory.groups.filter(group => !group.memberIds.includes(myUid)) }))
+          .filter(section => section.requestable.length > 0);
+        if (sections.length === 0) return null;
+        return (
+          <div className="other-groups" style={{ marginTop: 32 }}>
+            {sections.map(({ directory, requestable }) => (
+              <div key={directory.id} style={{ marginBottom: 24 }}>
+                <h2 style={{ margin: '0 0 4px' }}>
+                  {t('collaboration.joinRequests.otherGroupsTitle')}{directory.className ? ` · ${directory.className}` : ''}
+                </h2>
+                <p style={{ color: '#64748b', fontSize: '0.9em', margin: '0 0 14px' }}>{t('collaboration.joinRequests.otherGroupsHint')}</p>
+                <div className="workspaces-grid">
+                  {requestable.map(group => {
+                    const status = statusByWorkspace[group.workspaceId];
+                    const expanded = requestingGroupId === group.workspaceId;
+                    return (
+                      <div key={group.workspaceId} className="workspace-card active" style={{ cursor: 'default' }}>
+                        <div className="workspace-header">
+                          <div className="workspace-title-section">
+                            <div className="workspace-icon">
+                              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                              </svg>
+                            </div>
+                            <div className="workspace-info">
+                              <h3 className="workspace-title">{group.name}</h3>
+                              <div className="workspace-meta">
+                                <span className="workspace-type general">{t('collaboration.joinRequests.membersLabel')}: {group.memberCount}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        {group.memberNames.length > 0 && (
+                          <p style={{ color: '#94a3b8', fontSize: '0.85em', margin: '10px 0 0' }}>{group.memberNames.join(', ')}</p>
+                        )}
+                        <div style={{ marginTop: 14 }}>
+                          {status === 'pending' ? (
+                            <span className="role-chip" style={{ background: '#1e293b', color: '#cbd5e1' }}>{t('collaboration.joinRequests.requestPending')}</span>
+                          ) : expanded ? (
+                            <div>
+                              <textarea
+                                className="form-input"
+                                rows={2}
+                                value={joinRequestMessage}
+                                placeholder={t('collaboration.joinRequests.messagePlaceholder')}
+                                maxLength={1000}
+                                onChange={e => setJoinRequestMessage(e.target.value)}
+                                style={{ width: '100%', marginBottom: 8, resize: 'vertical' }}
+                              />
+                              <div style={{ display: 'flex', gap: 8 }}>
+                                <button type="button" className="btn-primary" disabled={sendingJoinRequest} onClick={() => handleSendJoinRequest(directory, group)}>
+                                  {t('collaboration.joinRequests.send')}
+                                </button>
+                                <button type="button" className="btn-secondary" disabled={sendingJoinRequest} onClick={() => { setRequestingGroupId(null); setJoinRequestMessage(''); }}>
+                                  {t('collaboration.joinRequests.cancel')}
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              {status === 'denied' && (
+                                <span style={{ color: '#94a3b8', fontSize: '0.82em' }}>{t('collaboration.joinRequests.requestDenied')}</span>
+                              )}
+                              <button type="button" className="btn-primary" onClick={() => { setRequestingGroupId(group.workspaceId); setJoinRequestMessage(''); }}>
+                                {t('collaboration.joinRequests.requestToJoin')}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
 
       {/* Create Workspace Modal - 2-Step Process */}
       {showCreateWorkspaceModal && (

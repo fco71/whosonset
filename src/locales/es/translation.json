@@ -963,7 +963,47 @@
       "invitationDeclined": {
         "title": "Invitación al espacio de trabajo rechazada",
         "body": "{{invitee}} rechazó la invitación a {{workspace}}."
+      },
+      "joinRequest": {
+        "title": "{{requester}} pidió unirse a {{workspace}}",
+        "body": "Revisa la solicitud para aprobarla o rechazarla."
+      },
+      "joinRequestApproved": {
+        "title": "Ya estás en {{workspace}}",
+        "body": "Tu solicitud para unirte a {{workspace}} fue aprobada."
+      },
+      "joinRequestDenied": {
+        "title": "Solicitud para unirte a {{workspace}} rechazada",
+        "body": "Tu solicitud para unirte a {{workspace}} no fue aprobada."
       }
+    },
+    "joinRequests": {
+      "otherGroupsTitle": "Otros grupos de tu clase",
+      "otherGroupsHint": "¿Necesitas unirte a otro grupo? Solicítalo abajo: el dueño del grupo o tu profesor revisará tu solicitud.",
+      "membersLabel": "Integrantes",
+      "noOtherGroups": "Aún no hay otros grupos en tu clase.",
+      "requestToJoin": "Solicitar unirme",
+      "requestPending": "Solicitud pendiente",
+      "requestDenied": "Solicitud rechazada",
+      "alreadyMember": "Ya estás en este grupo",
+      "messagePlaceholder": "Agrega una nota breve (opcional)",
+      "send": "Enviar solicitud",
+      "cancel": "Cancelar",
+      "requestSent": "Solicitud enviada a {{group}}.",
+      "requestDuplicate": "Ya tienes una solicitud pendiente para {{group}}.",
+      "requestFailed": "No se pudo enviar tu solicitud. Inténtalo de nuevo.",
+      "ownerTitle_one": "Solicitud para unirse ({{count}})",
+      "ownerTitle_other": "Solicitudes para unirse ({{count}})",
+      "ownerHint": "Estudiantes que piden unirse a este grupo. Apruébalos para agregarlos como integrantes.",
+      "classTitle_one": "Solicitud para unirse en esta clase ({{count}})",
+      "classTitle_other": "Solicitudes para unirse en esta clase ({{count}})",
+      "classHint": "Estudiantes que piden unirse a un grupo de esta clase.",
+      "wantsToJoin": "quiere unirse a {{group}}",
+      "approve": "Aprobar",
+      "deny": "Rechazar",
+      "approved": "{{name}} agregado a {{group}}.",
+      "denied": "Solicitud rechazada.",
+      "actionFailed": "No se pudo actualizar la solicitud. Inténtalo de nuevo."
     },
     "activity": {
       "title": "Actividad reciente",

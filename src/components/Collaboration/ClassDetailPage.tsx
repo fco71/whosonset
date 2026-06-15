@@ -30,6 +30,11 @@ import {
   updateTeacherClass
 } from '../../services/classService';
 import { createAssignments } from '../../services/assignmentService';
+import {
+  respondToJoinRequest,
+  subscribeToJoinRequestsForClass,
+  WorkspaceJoinRequest
+} from '../../services/joinRequestService';
 import { Screenplay, WorkspaceAssignment } from './workspaceAccess';
 import ScreenplayViewerModal from './ScreenplayViewerModal';
 import ScreenplayList from './ScreenplayList';
@@ -81,6 +86,8 @@ const ClassDetailPage: React.FC = () => {
   const [viewingScreenplay, setViewingScreenplay] = useState<Screenplay | null>(null);
   const [loadingGroups, setLoadingGroups] = useState(false);
   const [reloadNonce, setReloadNonce] = useState(0);
+  const [classJoinRequests, setClassJoinRequests] = useState<WorkspaceJoinRequest[]>([]);
+  const [joinRequestPendingId, setJoinRequestPendingId] = useState<string | null>(null);
 
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState('');
@@ -134,6 +141,19 @@ const ClassDetailPage: React.FC = () => {
     );
     return () => unsubscribe();
   }, [classId, uid]);
+
+  // ---- Pending join requests across this class -----------------------------
+  // The teacher can approve/deny here even for groups they don't personally sit in. Status
+  // is filtered in the service; read access comes from the isClassTeacherForRequest rule
+  // (teacher owns the class the request is stamped with).
+  useEffect(() => {
+    if (!classId || notFound) {
+      setClassJoinRequests([]);
+      return;
+    }
+    const unsubscribe = subscribeToJoinRequestsForClass(classId, setClassJoinRequests);
+    return () => unsubscribe();
+  }, [classId, notFound]);
 
   // ---- Groups + roster (one-shot, with manual refresh) ----------------------
 
@@ -607,6 +627,28 @@ const ClassDetailPage: React.FC = () => {
     group => !(teacherClass.workspaceIds || []).includes(group.id)
   );
 
+  // Approve/deny a student's request to join a group in this class. Membership is granted
+  // server-side by approveJoinRequest; the subscription drops the row when status changes.
+  const handleRespondToJoinRequest = async (request: WorkspaceJoinRequest, response: 'approve' | 'deny') => {
+    setJoinRequestPendingId(request.id);
+    try {
+      await respondToJoinRequest(request.id, response);
+      const groupName = workspaceNameById.get(request.workspaceId) || request.workspaceName || '';
+      if (response === 'approve') {
+        toast.success(t('collaboration.joinRequests.approved', {
+          name: request.requesterName || request.requesterEmail || 'Student',
+          group: groupName
+        }));
+      } else {
+        toast.success(t('collaboration.joinRequests.denied'));
+      }
+    } catch (err) {
+      console.error('Error responding to join request:', err);
+      toast.error(t('collaboration.joinRequests.actionFailed'));
+    } finally {
+      setJoinRequestPendingId(null);
+    }
+  };
 
   return (
     <div className="workspace-detail-page">
@@ -838,6 +880,51 @@ const ClassDetailPage: React.FC = () => {
               </ul>
             )}
           </section>
+
+          {classJoinRequests.length > 0 && (
+            <section className="group-section">
+              <h2>{t('collaboration.joinRequests.classTitle', { count: classJoinRequests.length })}</h2>
+              <p className="group-empty" style={{ margin: '0 0 10px' }}>{t('collaboration.joinRequests.classHint')}</p>
+              <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+                {classJoinRequests.map(request => {
+                  const groupName = workspaceNameById.get(request.workspaceId) || request.workspaceName || '';
+                  return (
+                    <li key={request.id} className="assignment-row">
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div className="assignment-title">{request.requesterName || request.requesterEmail || 'Student'}</div>
+                        <div className="assignment-meta">
+                          <span className="assignment-chip">{t('collaboration.joinRequests.wantsToJoin', { group: groupName })}</span>
+                        </div>
+                        {request.message && (
+                          <div style={{ color: '#94a3b8', fontSize: '0.82em', marginTop: 4 }}>“{request.message}”</div>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                        <button
+                          type="button"
+                          className="btn-primary"
+                          style={{ padding: '0.3rem 0.9rem', fontSize: '0.85em' }}
+                          disabled={joinRequestPendingId === request.id}
+                          onClick={() => handleRespondToJoinRequest(request, 'approve')}
+                        >
+                          {t('collaboration.joinRequests.approve')}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          style={{ padding: '0.3rem 0.9rem', fontSize: '0.85em' }}
+                          disabled={joinRequestPendingId === request.id}
+                          onClick={() => handleRespondToJoinRequest(request, 'deny')}
+                        >
+                          {t('collaboration.joinRequests.deny')}
+                        </button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          )}
 
           <section className="group-section">
             <div className="section-header">

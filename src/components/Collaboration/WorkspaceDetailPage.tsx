@@ -40,6 +40,11 @@ import {
   setWorkspaceInClass,
   TeacherClass
 } from '../../services/classService';
+import {
+  respondToJoinRequest,
+  subscribeToJoinRequestsForWorkspace,
+  WorkspaceJoinRequest
+} from '../../services/joinRequestService';
 import * as access from './workspaceAccess';
 import { Screenplay, MAX_UPLOAD_BYTES, MAX_UPLOAD_MB } from './workspaceAccess';
 import ScreenplayList from './ScreenplayList';
@@ -139,6 +144,8 @@ const WorkspaceDetailPage: React.FC = () => {
   const [isSendingInvites, setIsSendingInvites] = useState(false);
   const [pendingInvites, setPendingInvites] = useState<Array<{ id: string; inviteeName: string; inviteeEmail: string; role: WorkspaceRole }>>([]);
   const [invitePendingId, setInvitePendingId] = useState<string | null>(null);
+  const [pendingJoinRequests, setPendingJoinRequests] = useState<WorkspaceJoinRequest[]>([]);
+  const [joinRequestPendingId, setJoinRequestPendingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const uid = currentUser?.uid;
@@ -289,6 +296,19 @@ const WorkspaceDetailPage: React.FC = () => {
       },
       err => console.error('Error subscribing to pending invitations:', err)
     );
+    return () => unsubscribe();
+  }, [workspaceId, workspace, uid, notFound]);
+
+  // Pending join requests for this workspace, owner/supervisor-only — drives the
+  // "Join requests" panel. Queried by workspaceId alone (status filtered in the service)
+  // to avoid a composite index, exactly like the pending invitations above.
+  useEffect(() => {
+    const canManageNow = workspace ? access.canManageWorkspace(workspace, uid) : false;
+    if (!workspaceId || !canManageNow || notFound) {
+      setPendingJoinRequests([]);
+      return;
+    }
+    const unsubscribe = subscribeToJoinRequestsForWorkspace(workspaceId, setPendingJoinRequests);
     return () => unsubscribe();
   }, [workspaceId, workspace, uid, notFound]);
 
@@ -877,6 +897,28 @@ const WorkspaceDetailPage: React.FC = () => {
     }
   };
 
+  // Approve/deny a student's request to join this group. Membership is granted server-side
+  // by the approveJoinRequest callable; the subscription drops the row when status changes.
+  const handleRespondToJoinRequest = async (request: WorkspaceJoinRequest, response: 'approve' | 'deny') => {
+    setJoinRequestPendingId(request.id);
+    try {
+      await respondToJoinRequest(request.id, response);
+      if (response === 'approve') {
+        toast.success(t('collaboration.joinRequests.approved', {
+          name: request.requesterName || request.requesterEmail || 'Student',
+          group: workspace?.name || ''
+        }));
+      } else {
+        toast.success(t('collaboration.joinRequests.denied'));
+      }
+    } catch (err) {
+      console.error('Error responding to join request:', err);
+      toast.error(t('collaboration.joinRequests.actionFailed'));
+    } finally {
+      setJoinRequestPendingId(null);
+    }
+  };
+
   // ---- Render --------------------------------------------------------------
 
   if (loading) {
@@ -1378,6 +1420,31 @@ const WorkspaceDetailPage: React.FC = () => {
                     </button>
                     <button type="button" className="btn-text-link" disabled={invitePendingId === invite.id} onClick={() => handleCancelInvite(invite.id)}>
                       {t('collaboration.groupPage.cancelInvite')}
+                    </button>
+                  </span>
+                </div>
+              ))}
+            </section>
+          )}
+          {canManage && pendingJoinRequests.length > 0 && (
+            <section className="group-section">
+              <h2>{t('collaboration.joinRequests.ownerTitle', { count: pendingJoinRequests.length })}</h2>
+              <p style={{ color: '#64748b', fontSize: '0.85em', margin: '0 0 10px' }}>{t('collaboration.joinRequests.ownerHint')}</p>
+              {pendingJoinRequests.map(request => (
+                <div className="member-row" key={request.id}>
+                  <span className="member-avatar" aria-hidden="true">{(request.requesterName || '?').charAt(0).toUpperCase()}</span>
+                  <span className="member-name" title={request.requesterEmail || request.requesterName}>
+                    {request.requesterName || request.requesterEmail || 'Student'}
+                    {request.message ? (
+                      <span style={{ display: 'block', color: '#94a3b8', fontSize: '0.82em', fontWeight: 400 }}>“{request.message}”</span>
+                    ) : null}
+                  </span>
+                  <span style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <button type="button" className="btn-text-link" disabled={joinRequestPendingId === request.id} onClick={() => handleRespondToJoinRequest(request, 'approve')}>
+                      {t('collaboration.joinRequests.approve')}
+                    </button>
+                    <button type="button" className="btn-text-link" disabled={joinRequestPendingId === request.id} onClick={() => handleRespondToJoinRequest(request, 'deny')}>
+                      {t('collaboration.joinRequests.deny')}
                     </button>
                   </span>
                 </div>
