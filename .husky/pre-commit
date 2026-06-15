@@ -1,18 +1,26 @@
 # Pre-commit hook to check for potential secrets
 echo "🔍 Checking for potential secrets..."
 
-# Check for API keys, tokens, and other secrets (only in added/modified files)
-if git diff --cached --name-only --diff-filter=AM | xargs grep -l -E "(AIza[0-9A-Za-z_-]{35}|sk_[0-9a-zA-Z]{48}|pk_[0-9a-zA-Z]{48}|ghp_[0-9a-zA-Z]{36}|gho_[0-9a-zA-Z]{36}|ghu_[0-9a-zA-Z]{36}|ghs_[0-9a-zA-Z]{36}|ghr_[0-9a-zA-Z]{36})" 2>/dev/null; then
-    echo "❌ Potential secrets detected in staged files!"
-    echo "Please remove any API keys, tokens, or other secrets before committing."
-    exit 1
-fi
+# Only added/modified files can introduce a secret; deletions never can. Capture the
+# list once and skip the scans when it's empty. Without this guard, an empty list piped
+# into `xargs grep` makes grep run with no file args (it then reads stdin and exits 0 on
+# macOS/BSD), which falsely reports a secret on every deletion-only commit.
+staged_files=$(git diff --cached --name-only --diff-filter=AM)
 
-# Check for .env files being added or modified (deletions are fine)
-if git diff --cached --name-only --diff-filter=AM | grep -E "\.env$"; then
-    echo "❌ .env file detected in staged files!"
-    echo "Please ensure .env files are not committed to version control."
-    exit 1
+if [ -n "$staged_files" ]; then
+    # Check for API keys, tokens, and other secrets in added/modified files
+    if printf '%s\n' "$staged_files" | xargs grep -l -E "(AIza[0-9A-Za-z_-]{35}|sk_[0-9a-zA-Z]{48}|pk_[0-9a-zA-Z]{48}|ghp_[0-9a-zA-Z]{36}|gho_[0-9a-zA-Z]{36}|ghu_[0-9a-zA-Z]{36}|ghs_[0-9a-zA-Z]{36}|ghr_[0-9a-zA-Z]{36})" 2>/dev/null; then
+        echo "❌ Potential secrets detected in staged files!"
+        echo "Please remove any API keys, tokens, or other secrets before committing."
+        exit 1
+    fi
+
+    # Check for .env files being added or modified (deletions are fine)
+    if printf '%s\n' "$staged_files" | grep -qE "\.env$"; then
+        echo "❌ .env file detected in staged files!"
+        echo "Please ensure .env files are not committed to version control."
+        exit 1
+    fi
 fi
 
 echo "✅ No secrets detected. Proceeding with commit..."
