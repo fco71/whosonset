@@ -186,8 +186,8 @@
               border-radius: 0.25rem;
 
               &.positive {
-                background: #dcfce7;
-                color: #166534;
+                background: var(--success-100);
+                color: var(--success-800);
               }
 
               &.negative {
@@ -405,7 +405,7 @@
           }
 
           &.warning {
-            border-left: 4px solid #f59e0b;
+            border-left: 4px solid var(--warning-500);
           }
 
           &.error {

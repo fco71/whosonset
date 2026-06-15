@@ -45,8 +45,8 @@
       font-size: 0.9rem;
 
       .connection-quality {
-        &.excellent { color: #4ade80; }
-        &.good { color: #fbbf24; }
+        &.excellent { color: var(--success-400); }
+        &.good { color: var(--warning-400); }
         &.fair { color: #f97316; }
         &.poor { color: var(--error-500); }
       }

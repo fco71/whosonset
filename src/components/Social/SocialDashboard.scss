@@ -39,8 +39,8 @@
         }
 
         .requests-badge {
-          background: #fef3c7;
-          color: #d97706;
+          background: var(--warning-100);
+          color: var(--warning-600);
         }
       }
     }

@@ -156,7 +156,7 @@
           }
 
           &.warning {
-            border-left: 4px solid #f59e0b;
+            border-left: 4px solid var(--warning-500);
             .metric-icon { background: linear-gradient(135deg, #f59e0b, #d97706); }
           }
 
@@ -371,7 +371,7 @@
             }
 
             &.spent {
-              border-left: 4px solid #f59e0b;
+              border-left: 4px solid var(--warning-500);
             }
 
             &.remaining {
@@ -439,8 +439,8 @@
                   border-radius: 0.25rem;
 
                   &.positive {
-                    background: #dcfce7;
-                    color: #166534;
+                    background: var(--success-100);
+                    color: var(--success-800);
                   }
 
                   &.negative {
@@ -485,7 +485,7 @@
                       }
 
                       &.spent {
-                        background: #f59e0b;
+                        background: var(--warning-500);
                       }
                     }
                   }
@@ -610,13 +610,13 @@
               letter-spacing: 0.05em;
 
               &.low {
-                background: #dcfce7;
-                color: #166534;
+                background: var(--success-100);
+                color: var(--success-800);
               }
 
               &.medium {
-                background: #fef3c7;
-                color: #92400e;
+                background: var(--warning-100);
+                color: var(--warning-800);
               }
 
               &.high {
@@ -674,13 +674,13 @@
                   border-radius: 0.25rem;
 
                   &.success {
-                    background: #dcfce7;
-                    color: #166534;
+                    background: var(--success-100);
+                    color: var(--success-800);
                   }
 
                   &.warning {
-                    background: #fef3c7;
-                    color: #92400e;
+                    background: var(--warning-100);
+                    color: var(--warning-800);
                   }
                 }
 

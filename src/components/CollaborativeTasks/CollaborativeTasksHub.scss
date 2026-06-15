@@ -110,13 +110,13 @@
           }
 
           &.completed {
-            background: #dcfce7;
-            color: #16a34a;
+            background: var(--success-100);
+            color: var(--success-600);
           }
 
           &.in-progress {
-            background: #fef3c7;
-            color: #d97706;
+            background: var(--warning-100);
+            color: var(--warning-600);
           }
 
           &.overdue {
@@ -476,8 +476,8 @@
                 text-transform: capitalize;
 
                 &.pending {
-                  background: #fef3c7;
-                  color: #92400e;
+                  background: var(--warning-100);
+                  color: var(--warning-800);
                 }
 
                 &.in_progress {
@@ -591,11 +591,11 @@
                 }
 
                 &.btn-edit {
-                  background: #f59e0b;
+                  background: var(--warning-500);
                   color: white;
 
                   &:hover {
-                    background: #d97706;
+                    background: var(--warning-600);
                   }
                 }
 
@@ -645,13 +645,13 @@
                       width: fit-content;
 
                       &.low {
-                        background: #dcfce7;
-                        color: #16a34a;
+                        background: var(--success-100);
+                        color: var(--success-600);
                       }
 
                       &.medium {
-                        background: #fef3c7;
-                        color: #d97706;
+                        background: var(--warning-100);
+                        color: var(--warning-600);
                       }
 
                       &.high {
@@ -825,8 +825,8 @@
                         text-transform: uppercase;
 
                         &.pending {
-                          background: #fef3c7;
-                          color: #d97706;
+                          background: var(--warning-100);
+                          color: var(--warning-600);
                         }
 
                         &.in_progress {
@@ -835,8 +835,8 @@
                         }
 
                         &.completed {
-                          background: #dcfce7;
-                          color: #16a34a;
+                          background: var(--success-100);
+                          color: var(--success-600);
                         }
 
                         &.cancelled {
@@ -1074,8 +1074,8 @@
             }
 
             .task-status.completed {
-              background: #dcfce7;
-              color: #16a34a;
+              background: var(--success-100);
+              color: var(--success-600);
             }
           }
         }
@@ -1277,11 +1277,11 @@
       }
 
       &.btn-edit {
-        background: #f59e0b;
+        background: var(--warning-500);
         color: white;
 
         &:hover {
-          background: #d97706;
+          background: var(--warning-600);
         }
       }
 

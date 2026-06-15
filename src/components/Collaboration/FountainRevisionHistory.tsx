@@ -93,7 +93,7 @@ const FountainRevisionHistory: React.FC<FountainRevisionHistoryProps> = ({ scree
                         {rev.authorName ? ` · ${rev.authorName}` : ''}
                       </div>
                       {isShrink && (
-                        <div style={{ fontSize: 11, color: '#b45309', marginTop: 2 }}>⚠ {t('fountain.revisions.reasonShrink')}</div>
+                        <div style={{ fontSize: 11, color: 'var(--warning-700)', marginTop: 2 }}>⚠ {t('fountain.revisions.reasonShrink')}</div>
                       )}
                     </button>
                   </li>
@@ -108,7 +108,7 @@ const FountainRevisionHistory: React.FC<FountainRevisionHistoryProps> = ({ scree
               <div style={{ padding: 14, borderTop: '1px solid #eee' }}>
                 {confirming ? (
                   <div>
-                    <p style={{ margin: '0 0 10px', color: '#b45309', fontSize: 13 }}>{t('fountain.revisions.confirmRestore')}</p>
+                    <p style={{ margin: '0 0 10px', color: 'var(--warning-700)', fontSize: 13 }}>{t('fountain.revisions.confirmRestore')}</p>
                     <button
                       onClick={() => selected && onRestore(selected.source)}
                       style={{ background: 'var(--primary-600)', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 16px', cursor: 'pointer', marginRight: 8 }}

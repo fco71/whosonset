@@ -3069,8 +3069,8 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                                       padding: '4px 10px',
                                       fontSize: '0.78em',
                                       border: '1px solid #f59e0b',
-                                      background: '#fffbeb',
-                                      color: '#92400e',
+                                      background: 'var(--warning-50)',
+                                      color: 'var(--warning-800)',
                                       borderRadius: 6,
                                       cursor: bulkResolving ? 'wait' : 'pointer',
                                       whiteSpace: 'nowrap',
@@ -3200,8 +3200,8 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                                     borderRadius: 999,
                                     fontSize: '0.7em',
                                     fontWeight: 700,
-                                    background: '#fde68a',
-                                    color: '#92400e'
+                                    background: 'var(--warning-200)',
+                                    color: 'var(--warning-800)'
                                   }}
                                 >
                                   🎓 {t('screenplay.supervisorBadge.label')}
@@ -3243,8 +3243,8 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                                           borderRadius: 999,
                                           fontSize: '0.62rem',
                                           fontWeight: 700,
-                                          background: '#fde68a',
-                                          color: '#92400e'
+                                          background: 'var(--warning-200)',
+                                          color: 'var(--warning-800)'
                                         }}
                                       >
                                         🎓 {t('screenplay.supervisorBadge.label')}
@@ -3426,8 +3426,8 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                                     borderRadius: 999,
                                     fontSize: '0.7em',
                                     fontWeight: 700,
-                                    background: '#fde68a',
-                                    color: '#92400e'
+                                    background: 'var(--warning-200)',
+                                    color: 'var(--warning-800)'
                                   }}
                                 >
                                   🎓 {t('screenplay.supervisorBadge.label')}
@@ -3706,7 +3706,7 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                     setPopupType('tag');
                     setNewTag('');
                   }}
-                  style={{ background: '#f59e0b', color: 'white', border: 'none', borderRadius: 6, padding: '8px 12px', fontSize: 13, cursor: 'pointer', transition: 'background 0.2s ease' }}
+                  style={{ background: 'var(--warning-500)', color: 'white', border: 'none', borderRadius: 6, padding: '8px 12px', fontSize: 13, cursor: 'pointer', transition: 'background 0.2s ease' }}
                 >
                   🏷️ {t('screenplay.popup.addTag')}
                 </button>

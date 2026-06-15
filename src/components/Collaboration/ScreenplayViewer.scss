@@ -569,8 +569,8 @@
           // Supervisor-authored notes get a left amber stripe so students
           // can scan the panel and see teacher feedback at a glance.
           &.from-supervisor {
-            border-left: 3px solid #f59e0b;
-            background: #fffbeb;
+            border-left: 3px solid var(--warning-500);
+            background: var(--warning-50);
           }
 
           &.resolved {
@@ -674,9 +674,9 @@
               }
               
               &.resolved {
-                background: #dcfce7;
-                border-color: #bbf7d0;
-                color: #166534;
+                background: var(--success-100);
+                border-color: var(--success-200);
+                color: var(--success-800);
               }
               
               &.delete {
@@ -728,7 +728,7 @@
 }
 
 .tag-overlay:hover, .tag-overlay.selected {
-  border: 2.5px solid #f59e0b;
+  border: 2.5px solid var(--warning-500);
   box-shadow: 0 4px 16px rgba(245, 158, 11, 0.13);
 }
 
@@ -2187,8 +2187,8 @@
 .reply-item.compact.from-supervisor,
 .reply-item.compact.from-supervisor:nth-child(even),
 .reply-item.compact.from-supervisor:nth-child(odd) {
-  background: #fffbeb;
-  border-left: 3px solid #f59e0b;
+  background: var(--warning-50);
+  border-left: 3px solid var(--warning-500);
   padding-left: 13px;
 }
 

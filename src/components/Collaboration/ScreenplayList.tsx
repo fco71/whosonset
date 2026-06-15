@@ -132,8 +132,8 @@ const ScreenplayList: React.FC<ScreenplayListProps> = ({
                     borderRadius: 999,
                     fontSize: '0.78em',
                     fontWeight: 700,
-                    background: '#fde68a',
-                    color: '#92400e'
+                    background: 'var(--warning-200)',
+                    color: 'var(--warning-800)'
                   }}
                 >
                   🎓 {teacherCount}
