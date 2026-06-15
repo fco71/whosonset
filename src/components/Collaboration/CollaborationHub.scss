@@ -2018,12 +2018,38 @@
   }
 }
 
-// Per-class color picker on the Classes-tab cards.
-.workspaces-grid .workspace-card .class-color-picker {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-  margin: 0 0 0.85rem;
+// Discreet per-class color control on the Classes-tab cards: a single dot in the
+// top-right that opens a small swatch menu on click.
+.workspaces-grid .workspace-card .class-color-control {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 4;
+}
+.workspaces-grid .workspace-card .class-color-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--collab-surface);
+  padding: 0;
+  cursor: pointer;
+  box-shadow: 0 0 0 1px var(--collab-border-strong), var(--collab-shadow-xs);
+  transition: transform var(--collab-transition);
+
+  &:hover { transform: scale(1.12); }
+}
+.workspaces-grid .workspace-card .class-color-menu {
+  position: absolute;
+  top: 28px;
+  right: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 20px);
+  gap: 8px;
+  padding: 10px;
+  background: var(--collab-surface);
+  border: 1px solid var(--collab-border);
+  border-radius: var(--collab-radius-sm);
+  box-shadow: var(--collab-shadow-md);
 }
 .workspaces-grid .workspace-card .class-swatch {
   width: 20px;

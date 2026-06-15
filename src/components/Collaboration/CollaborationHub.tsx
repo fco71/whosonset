@@ -203,6 +203,8 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const [selectedScreenplayId, setSelectedScreenplayId] = useState<string | null>(null);
   // "All student work" status filter on the teacher review tab; 'all' shows everything.
   const [studentWorkFilter, setStudentWorkFilter] = useState<'all' | ScreenplayReviewStatus>('all');
+  // Which class card's color menu is open (Classes tab); null = all closed.
+  const [colorMenuClassId, setColorMenuClassId] = useState<string | null>(null);
 
   const [approvedContacts, setApprovedContacts] = useState<string[]>([]);
   const [isTeacher, setIsTeacher] = useState(false);
@@ -2221,6 +2223,33 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                 style={{ cursor: 'pointer' }}
                 onClick={() => navigate(`/collaboration/class/${teacherClass.id}`)}
               >
+                <div className="class-color-control" onClick={e => e.stopPropagation()}>
+                  <button
+                    type="button"
+                    className="class-color-dot"
+                    style={{ background: classColor }}
+                    title={t('collaboration.classes.setColor')}
+                    aria-label={t('collaboration.classes.setColor')}
+                    aria-expanded={colorMenuClassId === teacherClass.id}
+                    onClick={e => { e.stopPropagation(); setColorMenuClassId(prev => (prev === teacherClass.id ? null : teacherClass.id)); }}
+                  />
+                  {colorMenuClassId === teacherClass.id && (
+                    <div className="class-color-menu" role="menu">
+                      {CLASS_COLORS.map(swatch => (
+                        <button
+                          key={swatch}
+                          type="button"
+                          role="menuitemradio"
+                          aria-checked={classColor === swatch}
+                          className={`class-swatch${classColor === swatch ? ' is-selected' : ''}`}
+                          style={{ background: swatch }}
+                          aria-label={swatch}
+                          onClick={e => { e.stopPropagation(); handleSetClassColor(teacherClass.id, swatch); setColorMenuClassId(null); }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <div className="workspace-header">
                   <div className="workspace-title-section">
                     <div className="workspace-icon" aria-hidden="true" style={{ background: `${classColor}22`, color: classColor }}>
@@ -2245,19 +2274,6 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                       <span className="stat-label">{t('collaboration.classes.checklistTitle')}</span>
                     </div>
                   )}
-                </div>
-                <div className="class-color-picker" onClick={e => e.stopPropagation()}>
-                  {CLASS_COLORS.map(swatch => (
-                    <button
-                      key={swatch}
-                      type="button"
-                      className={`class-swatch${classColor === swatch ? ' is-selected' : ''}`}
-                      style={{ background: swatch }}
-                      title={t('collaboration.classes.setColor')}
-                      aria-label={t('collaboration.classes.setColor')}
-                      onClick={e => { e.stopPropagation(); handleSetClassColor(teacherClass.id, swatch); }}
-                    />
-                  ))}
                 </div>
                 <div className="workspace-actions">
                   <button
