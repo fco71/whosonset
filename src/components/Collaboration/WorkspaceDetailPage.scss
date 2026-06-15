@@ -140,6 +140,37 @@
     margin: 8px 0;
   }
 
+  // Student nudge: drafts that still need the per-screenplay "Share for feedback"
+  // step before a supervisor sees them in their review inbox. Soft amber reads as a
+  // gentle to-do, not an error.
+  .share-feedback-nudge {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 14px;
+    margin: 0 0 14px;
+    border-radius: 8px;
+    background: var(--warning-50);
+    border: 1px solid var(--warning-200);
+    color: var(--warning-800);
+
+    .nudge-icon {
+      font-size: 1.15rem;
+      line-height: 1.4;
+      flex-shrink: 0;
+    }
+
+    .nudge-text {
+      min-width: 0;
+    }
+
+    .nudge-hint {
+      margin: 2px 0 0;
+      font-size: 0.9em;
+      opacity: 0.95;
+    }
+  }
+
   .member-row {
     display: flex;
     align-items: center;

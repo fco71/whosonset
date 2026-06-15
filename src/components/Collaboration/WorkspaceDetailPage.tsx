@@ -409,6 +409,17 @@ const WorkspaceDetailPage: React.FC = () => {
   const canPostAssignment = workspace ? access.canCreateAssignment(workspace, uid) : false;
   const status = workspace?.status || 'active';
 
+  // Drafts the current user could still share for feedback. Being a workspace member
+  // already gives supervisors access, but a work only lands in their review inbox once
+  // it's explicitly shared — students forget this per-screenplay step, so surface a
+  // count. Same predicate as ScreenplayList's prominent "Share for feedback" button, so
+  // this number always matches the number of those buttons below.
+  const unsharedForFeedbackCount = screenplays.filter(screenplay => {
+    if (!access.canEditScreenplay(screenplay, uid, getWorkspaceLookup)) return false;
+    const reviewStatus = access.getReviewStatus(screenplay);
+    return reviewStatus === 'draft' || reviewStatus === 'changes_requested';
+  }).length;
+
   // ---- Actions -------------------------------------------------------------
 
   const handleUploadFiles = async (rawFiles: FileList | File[]) => {
@@ -1157,6 +1168,15 @@ const WorkspaceDetailPage: React.FC = () => {
                 </div>
               )}
             </div>
+            {unsharedForFeedbackCount > 0 && (
+              <div className="share-feedback-nudge" role="status">
+                <span className="nudge-icon" aria-hidden="true">📤</span>
+                <div className="nudge-text">
+                  <strong>{t('collaboration.groupPage.notSharedNudge', { count: unsharedForFeedbackCount })}</strong>
+                  <p className="nudge-hint">{t('collaboration.groupPage.notSharedNudgeHint')}</p>
+                </div>
+              </div>
+            )}
             {screenplays.length === 0 ? (
               <p className="group-empty">{t('collaboration.groupPage.noScreenplays')}</p>
             ) : (

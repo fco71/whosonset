@@ -170,12 +170,21 @@ const ScreenplayList: React.FC<ScreenplayListProps> = ({
             {(canSubmitReview || canReturnToDraft || canTeacherReview) && (
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                 {canSubmitReview && (
+                  // The student's primary call to action: a draft only reaches a
+                  // supervisor's review inbox once it's explicitly shared. Made bigger,
+                  // ringed, and icon-led so it stands out from the quieter controls.
                   <button
-                    className="btn-primary"
-                    style={{ padding: '0.35rem 0.8rem', fontSize: '0.85em' }}
+                    className="btn-primary share-feedback-btn"
+                    style={{
+                      padding: '0.45rem 1.05rem',
+                      fontSize: '0.95em',
+                      fontWeight: 700,
+                      boxShadow: '0 0 0 3px var(--collab-accent-ring)'
+                    }}
+                    title={t('collaboration.reviewStatus.descriptions.submitted')}
                     onClick={() => onReviewChange(screenplay, 'submitted')}
                   >
-                    {t('collaboration.reviewStatus.actions.submit')}
+                    📤 {t('collaboration.reviewStatus.actions.submit')}
                   </button>
                 )}
                 {canTeacherReview && (
