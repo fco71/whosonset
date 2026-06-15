@@ -39,6 +39,20 @@ const debugLog = (...args: unknown[]) => {
   }
 };
 
+const AVATAR_COLORS = ['#0a84ff', '#5e5ce6', '#0f9d6e', '#d97706', '#db2777', '#0891b2', '#e11d48'];
+const avatarColor = (seed: string): string => {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h + seed.charCodeAt(i)) % AVATAR_COLORS.length;
+  return AVATAR_COLORS[h];
+};
+const memberInitials = (m: { email?: string; userId: string }): string => {
+  const base = (m.email || m.userId || '?').split('@')[0];
+  const parts = base.split(/[._\-\s]+/).filter(Boolean);
+  const a = parts[0]?.[0] || base[0] || '?';
+  const b = parts[1]?.[0] || '';
+  return (a + b).toUpperCase().slice(0, 2);
+};
+
 interface CollaborationHubProps {
   projectId?: string;
 }
@@ -1284,19 +1298,33 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
             {/* Card content */}
             <div className="workspace-header">
               <div className="workspace-title-section">
-                <div className="workspace-icon">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-                    <polyline points="9,22 9,12 15,12 15,22"/>
+                <div className={`workspace-icon ${workspace.status === 'archived' ? 'tile-amber' : workspace.status === 'deleted' ? 'tile-danger' : workspace.type === 'department' ? 'tile-violet' : ''}`}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="2" width="20" height="20" rx="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/>
                   </svg>
                 </div>
 	                <div className="workspace-info">
-	                  <h3 className="workspace-title">{workspace.name}</h3>
-	                  <span className={`workspace-type ${workspace.type}`}>{workspace.type}</span>
-	                  {workspace.status && workspace.status !== 'active' && (
-	                    <span className={`workspace-status ${workspace.status}`}>{workspace.status === 'deleted' ? t('collaboration.groupLifecycle.statusDeleted') : t('collaboration.groupLifecycle.statusArchived')}</span>
-	                  )}
-	                </div>
+                  <h3 className="workspace-title">{workspace.name}</h3>
+                  <div className="workspace-meta">
+                    {(workspace.status || 'active') === 'active' && (
+                      <span className="workspace-status active">● {t('collaboration.groupLifecycle.statusActive', 'Active')}</span>
+                    )}
+                    {workspace.status && workspace.status !== 'active' && (
+                      <span className={`workspace-status ${workspace.status}`}>{workspace.status === 'deleted' ? t('collaboration.groupLifecycle.statusDeleted') : t('collaboration.groupLifecycle.statusArchived')}</span>
+                    )}
+                    <span className={`workspace-type ${workspace.type}`}>{workspace.type}</span>
+                    {getEffectiveRole(workspace) && (
+                      <span className={`role-chip role-chip--${getEffectiveRole(workspace)}`} title={isSelfElectedSupervisor(workspace) ? t('collaboration.supervisor.tooltipSelf') : t('collaboration.supervisor.tooltipRole')}>
+                        {t(`collaboration.roles.${getEffectiveRole(workspace)}`)}{isSelfElectedSupervisor(workspace) ? ` ${t('collaboration.supervisor.selfTag')}` : ''}
+                      </span>
+                    )}
+                    {canToggleSupervisor(workspace) && (
+                      <button type="button" className="btn-text" disabled={toggleSupervisorPending} onClick={e => { e.stopPropagation(); toggleSelfElectedSupervisor(workspace); }}>
+                        {isSelfElectedSupervisor(workspace) ? t('collaboration.supervisor.stepDown') : t('collaboration.supervisor.actAs')}
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -1336,31 +1364,18 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
               )}
             </div>
 
-            {(getEffectiveRole(workspace) || canToggleSupervisor(workspace)) && (
-              <div className="workspace-self-role">
-                {getEffectiveRole(workspace) && (
-                  <span
-                    className={`role-chip role-chip--${getEffectiveRole(workspace)}`}
-                    title={isSelfElectedSupervisor(workspace) ? t('collaboration.supervisor.tooltipSelf') : t('collaboration.supervisor.tooltipRole')}
-                  >
-                    {t('collaboration.supervisor.yourRole', { role: t(`collaboration.roles.${getEffectiveRole(workspace)}`) })}
-                    {isSelfElectedSupervisor(workspace) ? ` ${t('collaboration.supervisor.selfTag')}` : ''}
-                  </span>
-                )}
-                {canToggleSupervisor(workspace) && (
-                  <button
-                    type="button"
-                    className="btn-text"
-                    disabled={toggleSupervisorPending}
-                    onClick={e => { e.stopPropagation(); toggleSelfElectedSupervisor(workspace); }}
-                  >
-                    {isSelfElectedSupervisor(workspace) ? t('collaboration.supervisor.stepDown') : t('collaboration.supervisor.actAs')}
-                  </button>
-                )}
-              </div>
-            )}
+            <div className="workspace-actions">
+              <div className="member-avatars">
 
-	            <div className="workspace-actions">
+              {workspace.members.slice(0, 4).map(m => (
+
+                <span className="av" key={m.userId} style={{ background: avatarColor(m.userId) }} title={m.email || m.userId}>{memberInitials(m)}</span>
+
+              ))}
+
+              {workspace.members.length > 4 && <span className="av more">+{workspace.members.length - 4}</span>}
+
+            </div>
 	              {workspace.status !== 'deleted' && (
 	                <button
 	                  className="btn-primary"
@@ -1369,12 +1384,8 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 	                    handleOpenWorkspace(workspace.id);
 	                  }}
 	                >
-	                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-	                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
-	                    <polyline points="10,17 15,12 10,7"/>
-	                    <line x1="15" y1="12" x2="3" y2="12"/>
-	                  </svg>
 	                  {t('collaboration.openGroup')}
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
 	                </button>
 	              )}
 	              {canManageWorkspace(workspace) && (workspace.status || 'active') === 'active' && (
