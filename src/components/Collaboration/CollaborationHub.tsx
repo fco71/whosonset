@@ -1276,6 +1276,16 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       }
     });
 
+    // Class titles (the teacher's own classes) that include each workspace — drives the
+    // floating class tag on the card. teacherClasses is owner-scoped, so this is empty
+    // for students and the tag only ever shows on the class owner's cards.
+    const classNamesByWorkspace: Record<string, string[]> = {};
+    teacherClasses.forEach(teacherClass => {
+      teacherClass.workspaceIds.forEach(workspaceId => {
+        (classNamesByWorkspace[workspaceId] = classNamesByWorkspace[workspaceId] || []).push(teacherClass.name);
+      });
+    });
+
     return (
     <div className="workspaces-tab">
       <div className="workspaces-header">
@@ -1297,6 +1307,20 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 	            onClick={() => { if (workspace.status !== 'deleted') handleOpenWorkspace(workspace.id); }}
 	            style={{ cursor: workspace.status !== 'deleted' ? 'pointer' : 'default' }}
 	          >
+            {(classNamesByWorkspace[workspace.id]?.length ?? 0) > 0 && (
+              <span
+                className="workspace-class-tag"
+                title={t('collaboration.workspaceClassTag.label', { classes: classNamesByWorkspace[workspace.id].join(', ') })}
+                aria-label={t('collaboration.workspaceClassTag.label', { classes: classNamesByWorkspace[workspace.id].join(', ') })}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5"/>
+                </svg>
+                <span className="workspace-class-tag__label">
+                  {classNamesByWorkspace[workspace.id][0]}{classNamesByWorkspace[workspace.id].length > 1 ? ` +${classNamesByWorkspace[workspace.id].length - 1}` : ''}
+                </span>
+              </span>
+            )}
             {/* Settings gear icon in top-right */}
 	            {canManageWorkspace(workspace) && workspace.status !== 'deleted' && (
 	              <button

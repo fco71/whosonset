@@ -300,7 +300,7 @@
             transition: transform var(--collab-transition), box-shadow var(--collab-transition), border-color var(--collab-transition);
             cursor: pointer;
             position: relative;
-            overflow: hidden;
+            overflow: visible;
             box-sizing: border-box;
 
             &::before {
@@ -308,6 +308,7 @@
               position: absolute;
               top: 0; left: 0; right: 0;
               height: 3px;
+              border-radius: var(--collab-radius) var(--collab-radius) 0 0;
               background: var(--collab-accent);
               opacity: 0;
               transition: opacity var(--collab-transition);
@@ -1986,5 +1987,33 @@
     margin: 0.4rem 0 0;
     color: var(--collab-text-muted);
     font-size: 0.9rem;
+  }
+}
+
+// Floating tag on a workspace card naming the teacher's class it belongs to.
+.workspaces-grid .workspace-card .workspace-class-tag {
+  position: absolute;
+  top: -9px;
+  left: 14px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: calc(100% - 28px);
+  padding: 3px 10px;
+  border-radius: var(--collab-radius-pill);
+  background: var(--collab-accent);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.45;
+  box-shadow: var(--collab-shadow-sm);
+
+  svg { width: 12px; height: 12px; stroke: currentColor; flex: none; }
+
+  .workspace-class-tag__label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }

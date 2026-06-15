@@ -1098,6 +1098,9 @@
       "filterLabel": "Filter by status",
       "empty": "No work in this category yet."
     },
+    "workspaceClassTag": {
+      "label": "In your class: {{classes}}"
+    },
     "groupPage": {
       "back": "All workspaces",
       "loading": "Loading workspace…",

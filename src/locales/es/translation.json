@@ -1063,6 +1063,9 @@
       "filterLabel": "Filtrar por estado",
       "empty": "Aún no hay trabajos en esta categoría."
     },
+    "workspaceClassTag": {
+      "label": "En tu clase: {{classes}}"
+    },
     "groupPage": {
       "back": "Todos los espacios de trabajo",
       "loading": "Cargando espacio de trabajo…",
