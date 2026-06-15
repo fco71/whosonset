@@ -1850,3 +1850,141 @@
     border-radius: 0;
   }
 }
+
+// ============================================================
+// Teacher screenplays tab — zoned layout: review inbox + all
+// student work (from your students) vs. your own work below.
+// ============================================================
+.screenplays-tab {
+  .sp-zone {
+    margin-bottom: 2rem;
+  }
+
+  .sp-zone-label {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin: 0 0 0.85rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--collab-text-muted);
+
+    svg { width: 15px; height: 15px; stroke: currentColor; flex: none; }
+
+    &--personal { margin-top: 1.75rem; }
+  }
+
+  .review-inbox {
+    background: var(--collab-surface);
+    border: 2px solid var(--collab-accent);
+    border-radius: var(--collab-radius);
+    padding: 1.1rem 1.25rem;
+    margin-bottom: 1rem;
+
+    &__head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    &__icon {
+      width: 30px;
+      height: 30px;
+      flex: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: var(--collab-accent-soft);
+      color: var(--collab-accent);
+
+      svg { width: 17px; height: 17px; stroke: currentColor; }
+    }
+
+    &__title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--collab-text);
+    }
+
+    &__count {
+      margin-left: auto;
+      padding: 3px 10px;
+      border-radius: var(--collab-radius-pill);
+      background: var(--collab-accent);
+      color: #fff;
+      font-size: 0.8rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    &__sub {
+      margin: 2px 0 0.4rem 40px;
+      color: var(--collab-text-secondary);
+      font-size: 0.875rem;
+    }
+  }
+
+  .student-work-card {
+    background: var(--collab-surface);
+    border: 1px solid var(--collab-border);
+    border-radius: var(--collab-radius);
+    box-shadow: var(--collab-shadow-sm);
+    padding: 1.1rem 1.25rem;
+
+    &__title {
+      margin: 0;
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--collab-text);
+    }
+
+    &__sub {
+      margin: 2px 0 0.85rem;
+      color: var(--collab-text-secondary);
+      font-size: 0.875rem;
+    }
+  }
+
+  .work-filter-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 0.35rem;
+  }
+
+  .work-filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 11px;
+    border-radius: var(--collab-radius-pill);
+    border: 1px solid var(--collab-border-strong);
+    background: var(--collab-surface);
+    color: var(--collab-text-secondary);
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background var(--collab-transition), border-color var(--collab-transition), color var(--collab-transition);
+
+    &:hover { background: var(--collab-surface-3); }
+
+    &__count { color: var(--collab-text-muted); font-weight: 600; }
+
+    &.is-active {
+      background: var(--collab-accent);
+      border-color: var(--collab-accent);
+      color: #fff;
+
+      .work-filter-chip__count { color: rgba(255, 255, 255, 0.85); }
+    }
+  }
+
+  .sp-empty {
+    margin: 0.4rem 0 0;
+    color: var(--collab-text-muted);
+    font-size: 0.9rem;
+  }
+}

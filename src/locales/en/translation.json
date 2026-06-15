@@ -1085,6 +1085,19 @@
       "subtitle": "Submitted screenplays from every workspace you supervise",
       "empty": "Nothing waiting for your review right now."
     },
+    "studentZone": {
+      "label": "From your students"
+    },
+    "personalZone": {
+      "label": "Your own work"
+    },
+    "allStudentWork": {
+      "title": "All student work",
+      "subtitle": "Everything across the workspaces you supervise — including drafts not yet shared",
+      "filterAll": "All",
+      "filterLabel": "Filter by status",
+      "empty": "No work in this category yet."
+    },
     "groupPage": {
       "back": "All workspaces",
       "loading": "Loading workspace…",

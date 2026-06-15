@@ -1050,6 +1050,19 @@
       "subtitle": "Guiones entregados de todos los espacios de trabajo que supervisas",
       "empty": "No hay nada esperando tu revisión por ahora."
     },
+    "studentZone": {
+      "label": "De tus estudiantes"
+    },
+    "personalZone": {
+      "label": "Tu propio trabajo"
+    },
+    "allStudentWork": {
+      "title": "Todo el trabajo de estudiantes",
+      "subtitle": "Todo el contenido de los espacios de trabajo que supervisas — incluidos los borradores aún no compartidos",
+      "filterAll": "Todos",
+      "filterLabel": "Filtrar por estado",
+      "empty": "Aún no hay trabajos en esta categoría."
+    },
     "groupPage": {
       "back": "Todos los espacios de trabajo",
       "loading": "Cargando espacio de trabajo…",

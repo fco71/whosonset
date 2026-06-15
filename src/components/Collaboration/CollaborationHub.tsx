@@ -201,6 +201,8 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const [unresolvedCountByScreenplay, setUnresolvedCountByScreenplay] = useState<Record<string, number>>({});
   const [unresolvedFromTeacherCountByScreenplay, setUnresolvedFromTeacherCountByScreenplay] = useState<Record<string, number>>({});
   const [selectedScreenplayId, setSelectedScreenplayId] = useState<string | null>(null);
+  // "All student work" status filter on the teacher review tab; 'all' shows everything.
+  const [studentWorkFilter, setStudentWorkFilter] = useState<'all' | ScreenplayReviewStatus>('all');
 
   const [approvedContacts, setApprovedContacts] = useState<string[]>([]);
   const [isTeacher, setIsTeacher] = useState(false);
@@ -1917,12 +1919,39 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     // Group screenplays live on each group's page now; this tab keeps personal
     // (no-group) work plus, for supervisors, a cross-group queue of submissions.
     const personalScreenplays = userScreenplays.filter(screenplay => !screenplay.workspaceId);
-    const reviewQueue = userScreenplays.filter(screenplay => {
-      if (!screenplay.workspaceId || access.getReviewStatus(screenplay) !== 'submitted') return false;
-      const workspace = getWorkspaceById(screenplay.workspaceId);
-      return workspace ? getEffectiveRole(workspace) === 'supervisor' : false;
+
+    // Everything across the workspaces this user supervises — the teacher's full
+    // picture, not just the screenplays students explicitly submitted for review.
+    const supervisedWorkspaceIds = new Set(
+      workspaces.filter(workspace => getEffectiveRole(workspace) === 'supervisor').map(workspace => workspace.id)
+    );
+    const supervisesAnyWorkspace = supervisedWorkspaceIds.size > 0;
+    const studentWork = userScreenplays.filter(
+      screenplay => screenplay.workspaceId && supervisedWorkspaceIds.has(screenplay.workspaceId)
+    );
+
+    // The review inbox is the actionable slice: submitted, awaiting the teacher.
+    const reviewQueue = studentWork.filter(screenplay => access.getReviewStatus(screenplay) === 'submitted');
+
+    // Counts per status drive the "All student work" filter chips.
+    const studentStatusCounts: Record<string, number> = {
+      all: studentWork.length, submitted: 0, changes_requested: 0, draft: 0, approved: 0
+    };
+    studentWork.forEach(screenplay => {
+      const status = access.getReviewStatus(screenplay);
+      studentStatusCounts[status] = (studentStatusCounts[status] || 0) + 1;
     });
-    const supervisesAnyWorkspace = workspaces.some(workspace => getEffectiveRole(workspace) === 'supervisor');
+    const studentFilterOrder: Array<'all' | ScreenplayReviewStatus> = ['all', 'submitted', 'changes_requested', 'draft', 'approved'];
+    const reviewSortPriority: Record<string, number> = { submitted: 0, changes_requested: 1, draft: 2, approved: 3 };
+    const filteredStudentWork = (studentWorkFilter === 'all'
+      ? studentWork
+      : studentWork.filter(screenplay => access.getReviewStatus(screenplay) === studentWorkFilter)
+    ).slice().sort((a, b) => {
+      const pa = reviewSortPriority[access.getReviewStatus(a)] ?? 9;
+      const pb = reviewSortPriority[access.getReviewStatus(b)] ?? 9;
+      if (pa !== pb) return pa - pb;
+      return (a.name || '').localeCompare(b.name || '');
+    });
 
     const listProps = {
       unresolvedCounts: unresolvedCountByScreenplay,
@@ -1944,14 +1973,25 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         </div>
         <div className="screenplays-content">
           {supervisesAnyWorkspace && (
-            <div className="screenplays-list bg-white rounded-lg shadow-md p-6 mb-6">
-              <section className="screenplay-section">
-                <h3 style={{ margin: 0 }}>{t('collaboration.reviewQueue.title')}</h3>
-                <p style={{ color: '#64748b', margin: '4px 0 8px', fontSize: '0.9em' }}>
-                  {t('collaboration.reviewQueue.subtitle')}
-                </p>
+            <section className="sp-zone" aria-label={t('collaboration.studentZone.label')}>
+              <h3 className="sp-zone-label">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                {t('collaboration.studentZone.label')}
+              </h3>
+
+              <div className="review-inbox">
+                <div className="review-inbox__head">
+                  <span className="review-inbox__icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+                  </span>
+                  <span className="review-inbox__title">{t('collaboration.reviewQueue.title')}</span>
+                  {reviewQueue.length > 0 && (
+                    <span className="review-inbox__count">{t('collaboration.groupCard.awaitingReview', { count: reviewQueue.length })}</span>
+                  )}
+                </div>
+                <p className="review-inbox__sub">{t('collaboration.reviewQueue.subtitle')}</p>
                 {reviewQueue.length === 0 ? (
-                  <p style={{ color: '#94a3b8', margin: 0 }}>{t('collaboration.reviewQueue.empty')}</p>
+                  <p className="sp-empty">{t('collaboration.reviewQueue.empty')}</p>
                 ) : (
                   <ScreenplayList
                     screenplays={reviewQueue}
@@ -1959,8 +1999,48 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                     {...listProps}
                   />
                 )}
-              </section>
-            </div>
+              </div>
+
+              <div className="student-work-card">
+                <h4 className="student-work-card__title">{t('collaboration.allStudentWork.title')}</h4>
+                <p className="student-work-card__sub">{t('collaboration.allStudentWork.subtitle')}</p>
+                <div className="work-filter-chips" role="group" aria-label={t('collaboration.allStudentWork.filterLabel')}>
+                  {studentFilterOrder.map(status => {
+                    const count = studentStatusCounts[status] || 0;
+                    if (status !== 'all' && count === 0) return null;
+                    const label = status === 'all'
+                      ? t('collaboration.allStudentWork.filterAll')
+                      : t(`collaboration.reviewStatus.labels.${status}`);
+                    return (
+                      <button
+                        key={status}
+                        type="button"
+                        className={`work-filter-chip${studentWorkFilter === status ? ' is-active' : ''}`}
+                        aria-pressed={studentWorkFilter === status}
+                        onClick={() => setStudentWorkFilter(status)}
+                      >
+                        {label} <span className="work-filter-chip__count">{count}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {filteredStudentWork.length === 0 ? (
+                  <p className="sp-empty">{t('collaboration.allStudentWork.empty')}</p>
+                ) : (
+                  <ScreenplayList
+                    screenplays={filteredStudentWork}
+                    workspaceLabel={getWorkspaceLabel}
+                    {...listProps}
+                  />
+                )}
+              </div>
+            </section>
+          )}
+          {supervisesAnyWorkspace && (
+            <h3 className="sp-zone-label sp-zone-label--personal">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              {t('collaboration.personalZone.label')}
+            </h3>
           )}
           <div className="screenplay-upload-card bg-white rounded-lg shadow-md p-6 mb-6">
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
