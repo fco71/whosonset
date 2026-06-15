@@ -1,6 +1,6 @@
 ---
 title: WhosOnSet Project Overview
-last_reviewed: 2026-06-12
+last_reviewed: 2026-06-14
 status: current operating summary
 ---
 
@@ -21,6 +21,11 @@ Handoff rule: after meaningful code, rules, deploy, QA, or product-state changes
 - Secondary Hosting site: `my-film-jobs`
 
 Only deploy Firebase Hosting, Firestore, Storage, Functions, indexes, or secrets from `iam@myfilmjobs.com`.
+
+Latest production deployment (2026-06-14): commit `29c6e01e` deployed to Firebase
+Hosting through GitHub Actions run `27512668259`. Typecheck, unit tests, Firestore
+rules emulator tests, production build, release-integrity checks, and both production
+health checks passed. The release completed at 2026-06-14 21:34 UTC.
 
 ## Stack
 
