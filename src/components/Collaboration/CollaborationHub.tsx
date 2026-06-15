@@ -45,11 +45,13 @@ const avatarColor = (seed: string): string => {
   for (let i = 0; i < seed.length; i++) h = (h + seed.charCodeAt(i)) % AVATAR_COLORS.length;
   return AVATAR_COLORS[h];
 };
-const memberInitials = (m: { email?: string; userId: string }): string => {
-  const base = (m.email || m.userId || '?').split('@')[0];
-  const parts = base.split(/[._\-\s]+/).filter(Boolean);
+// Initials from a display name ("Dana Velez" -> "DV") or, as a fallback, an email.
+const nameInitials = (s: string): string => {
+  const raw = s || '?';
+  const base = raw.includes('@') ? raw.split('@')[0] : raw;
+  const parts = base.trim().split(/[\s._\-]+/).filter(Boolean);
   const a = parts[0]?.[0] || base[0] || '?';
-  const b = parts[1]?.[0] || '';
+  const b = parts.length > 1 ? parts[parts.length - 1][0] : '';
   return (a + b).toUpperCase().slice(0, 2);
 };
 
@@ -190,6 +192,8 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
 
   const [userScreenplays, setUserScreenplays] = useState<Screenplay[]>([]);
+  // Resolved member display profiles (crewProfiles doc-id == uid), cached for the card avatars.
+  const [memberProfilesById, setMemberProfilesById] = useState<Record<string, { name: string; avatar: string }>>({});
   const [showStartWritingModal, setShowStartWritingModal] = useState(false);
   const [newFountainTitle, setNewFountainTitle] = useState('');
   const [creatingFountain, setCreatingFountain] = useState(false);
@@ -216,6 +220,34 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const normalizeScreenplay = access.normalizeScreenplay;
   const normalizeWorkspace = access.normalizeWorkspace;
   const toDate = access.toDate;
+
+  // Resolve member display name + avatar (crewProfiles, doc-id == uid) for the
+  // workspace card avatar stack. Batched across all visible workspaces and cached.
+  useEffect(() => {
+    const ids = Array.from(new Set(workspaces.flatMap(w => getWorkspaceMemberIds(w))));
+    const missing = ids.filter(id => id && !(id in memberProfilesById));
+    if (missing.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      const entries = await Promise.all(missing.map(async uid => {
+        try {
+          const snap = await getDoc(doc(db, 'crewProfiles', uid));
+          const data: any = snap.exists() ? snap.data() : {};
+          return [uid, { name: data.name || data.displayName || '', avatar: data.profileImageUrl || data.avatarUrl || '' }] as const;
+        } catch {
+          return [uid, { name: '', avatar: '' }] as const;
+        }
+      }));
+      if (cancelled) return;
+      setMemberProfilesById(prev => {
+        const next = { ...prev };
+        for (const [id, profile] of entries) next[id] = profile;
+        return next;
+      });
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workspaces]);
 
   const isWorkspaceCreator = (workspace: CollaborationWorkspace): boolean =>
     access.isWorkspaceCreator(workspace, currentUser?.uid);
@@ -1366,16 +1398,19 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 
             <div className="workspace-actions">
               <div className="member-avatars">
-
-              {workspace.members.slice(0, 4).map(m => (
-
-                <span className="av" key={m.userId} style={{ background: avatarColor(m.userId) }} title={m.email || m.userId}>{memberInitials(m)}</span>
-
-              ))}
-
-              {workspace.members.length > 4 && <span className="av more">+{workspace.members.length - 4}</span>}
-
-            </div>
+                {workspace.members.slice(0, 4).map(m => {
+                  const profile = memberProfilesById[m.userId];
+                  const display = profile?.name || m.email || m.userId;
+                  return profile?.avatar ? (
+                    <span className="av av-img" key={m.userId} title={display}>
+                      <img src={profile.avatar} alt={display} loading="lazy" />
+                    </span>
+                  ) : (
+                    <span className="av" key={m.userId} style={{ background: avatarColor(m.userId) }} title={display}>{nameInitials(display)}</span>
+                  );
+                })}
+                {workspace.members.length > 4 && <span className="av more">+{workspace.members.length - 4}</span>}
+              </div>
 	              {workspace.status !== 'deleted' && (
 	                <button
 	                  className="btn-primary"

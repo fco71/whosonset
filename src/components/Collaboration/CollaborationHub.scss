@@ -532,6 +532,9 @@
 
                   &:first-child { margin-left: 0; }
                   &.more { background: #eceef2; color: var(--collab-text-secondary); }
+
+                  &.av-img { background: #eceef2; padding: 0; overflow: hidden; }
+                  img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; }
                 }
               }
 
