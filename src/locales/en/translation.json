@@ -1189,6 +1189,8 @@
       "newClass": "New class",
       "creating": "Creating…",
       "createFailed": "Failed to create the class. Please try again.",
+      "setColor": "Set class color",
+      "colorError": "Couldn't update the class color.",
       "empty": "Create your first class to organize your workspaces.",
       "back": "All classes",
       "loading": "Loading…",

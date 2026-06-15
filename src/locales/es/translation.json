@@ -1154,6 +1154,8 @@
       "newClass": "Nueva clase",
       "creating": "Creando…",
       "createFailed": "No se pudo crear la clase. Inténtalo de nuevo.",
+      "setColor": "Asignar color a la clase",
+      "colorError": "No se pudo actualizar el color de la clase.",
       "empty": "Crea tu primera clase para organizar tus espacios de trabajo.",
       "back": "Todas las clases",
       "loading": "Cargando…",
