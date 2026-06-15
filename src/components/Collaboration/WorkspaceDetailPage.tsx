@@ -23,6 +23,8 @@ import { logWorkspaceActivity } from '../../services/workspaceActivityService';
 import {
   createFountainScreenplay,
   createWorkspaceInvitations,
+  resendWorkspaceInvitation,
+  cancelWorkspaceInvitation,
   deleteScreenplayDoc,
   exportWorkspaceGradingCsv,
   isAcceptedScreenplayFile,
@@ -135,6 +137,8 @@ const WorkspaceDetailPage: React.FC = () => {
   const [inviteSearchResults, setInviteSearchResults] = useState<UserAutocompleteOption[]>([]);
   const [isSearchingUsers, setIsSearchingUsers] = useState(false);
   const [isSendingInvites, setIsSendingInvites] = useState(false);
+  const [pendingInvites, setPendingInvites] = useState<Array<{ id: string; inviteeName: string; inviteeEmail: string; role: WorkspaceRole }>>([]);
+  const [invitePendingId, setInvitePendingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const uid = currentUser?.uid;
@@ -259,6 +263,34 @@ const WorkspaceDetailPage: React.FC = () => {
     );
     return () => unsubscribe();
   }, [workspaceId, uid, notFound]);
+
+  // Pending (not-yet-accepted) invitations for this workspace, owner-only — drives the
+  // "Pending invitations" panel with resend/cancel. Queried by workspaceId alone (then
+  // filtered to pending client-side) to avoid needing a composite index.
+  useEffect(() => {
+    const canManageNow = workspace ? access.canManageWorkspace(workspace, uid) : false;
+    if (!workspaceId || !canManageNow || notFound) {
+      setPendingInvites([]);
+      return;
+    }
+    const unsubscribe = onSnapshot(
+      query(collection(db, 'workspaceInvitations'), where('workspaceId', '==', workspaceId)),
+      snapshot => {
+        const items = snapshot.docs
+          .map(d => ({ id: d.id, data: d.data() as any }))
+          .filter(x => (x.data.status || 'pending') === 'pending')
+          .map(x => ({
+            id: x.id,
+            inviteeName: x.data.inviteeName || x.data.inviteeEmail || 'Collaborator',
+            inviteeEmail: x.data.inviteeEmail || '',
+            role: (x.data.role || 'member') as WorkspaceRole
+          }));
+        setPendingInvites(items);
+      },
+      err => console.error('Error subscribing to pending invitations:', err)
+    );
+    return () => unsubscribe();
+  }, [workspaceId, workspace, uid, notFound]);
 
   // Unresolved annotation/tag counts per screenplay (chunked by Firestore `in` limit).
   const screenplayIdsKey = useMemo(() => screenplays.map(s => s.id).sort().join(','), [screenplays]);
@@ -818,6 +850,33 @@ const WorkspaceDetailPage: React.FC = () => {
     }
   };
 
+  const handleResendInvite = async (invitationId: string) => {
+    if (!currentUser) return;
+    setInvitePendingId(invitationId);
+    try {
+      await resendWorkspaceInvitation(invitationId, { uid: currentUser.uid, displayName: currentUser.displayName });
+      toast.success(t('collaboration.groupPage.inviteResent'));
+    } catch (err) {
+      console.error('Error resending invitation:', err);
+      toast.error(t('collaboration.groupPage.resendFailed'));
+    } finally {
+      setInvitePendingId(null);
+    }
+  };
+
+  const handleCancelInvite = async (invitationId: string) => {
+    setInvitePendingId(invitationId);
+    try {
+      await cancelWorkspaceInvitation(invitationId);
+      toast.success(t('collaboration.groupPage.inviteCancelled'));
+    } catch (err) {
+      console.error('Error cancelling invitation:', err);
+      toast.error(t('collaboration.groupPage.cancelFailed'));
+    } finally {
+      setInvitePendingId(null);
+    }
+  };
+
   // ---- Render --------------------------------------------------------------
 
   if (loading) {
@@ -1302,6 +1361,29 @@ const WorkspaceDetailPage: React.FC = () => {
               ))
             )}
           </section>
+          {canManage && pendingInvites.length > 0 && (
+            <section className="group-section">
+              <h2>{t('collaboration.groupPage.pendingInvitesTitle', { count: pendingInvites.length })}</h2>
+              <p style={{ color: '#64748b', fontSize: '0.85em', margin: '0 0 10px' }}>{t('collaboration.groupPage.pendingInvitesHint')}</p>
+              {pendingInvites.map(invite => (
+                <div className="member-row" key={invite.id}>
+                  <span className="member-avatar" aria-hidden="true">{(invite.inviteeName || '?').charAt(0).toUpperCase()}</span>
+                  <span className="member-name" title={invite.inviteeEmail || invite.inviteeName}>{invite.inviteeName}</span>
+                  <span style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <span className={`member-role ${invite.role}`} style={{ marginLeft: 0 }}>
+                      {t(`collaboration.roles.${invite.role}`, { defaultValue: invite.role })}
+                    </span>
+                    <button type="button" className="btn-text-link" disabled={invitePendingId === invite.id} onClick={() => handleResendInvite(invite.id)}>
+                      {t('collaboration.groupPage.resend')}
+                    </button>
+                    <button type="button" className="btn-text-link" disabled={invitePendingId === invite.id} onClick={() => handleCancelInvite(invite.id)}>
+                      {t('collaboration.groupPage.cancelInvite')}
+                    </button>
+                  </span>
+                </div>
+              ))}
+            </section>
+          )}
         </aside>
       </div>
 

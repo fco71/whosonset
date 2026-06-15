@@ -253,6 +253,42 @@ export async function createWorkspaceInvitations(params: {
 }
 
 /**
+ * Re-send a pending invitation that may have gone stale. The invitee is notified only
+ * by the on-create Cloud Function (rules block invitation updates), so we delete the old
+ * doc and create a fresh one in one atomic batch — which re-fires the notification. The
+ * actor must be the workspace owner (enforced by rules) and becomes the new inviter.
+ */
+export async function resendWorkspaceInvitation(invitationId: string, actor: ActorInfo): Promise<void> {
+  const invitationRef = doc(db, 'workspaceInvitations', invitationId);
+  const snap = await getDoc(invitationRef);
+  if (!snap.exists()) throw new Error('Invitation not found');
+  const data = snap.data() as any;
+
+  const batch = writeBatch(db);
+  batch.delete(invitationRef);
+  const freshRef = doc(collection(db, 'workspaceInvitations'));
+  batch.set(freshRef, {
+    workspaceId: data.workspaceId,
+    workspaceName: data.workspaceName || '',
+    inviterId: actor.uid,
+    inviterName: actor.displayName || data.inviterName || '',
+    inviteeId: data.inviteeId,
+    inviteeName: data.inviteeName || data.inviteeEmail || 'Collaborator',
+    inviteeEmail: data.inviteeEmail || '',
+    role: data.role,
+    status: 'pending',
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp()
+  });
+  await batch.commit();
+}
+
+/** Withdraw a pending invitation. Workspace owner or the original inviter only (rules). */
+export async function cancelWorkspaceInvitation(invitationId: string): Promise<void> {
+  await deleteDoc(doc(db, 'workspaceInvitations', invitationId));
+}
+
+/**
  * Workspace-level grading export: one CSV that combines every student's screenplay +
  * the supervisor + peer notes left on each. Used by teachers at grading time so they
  * don't have to walk into each screenplay and export individually. Caller gates this
