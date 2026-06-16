@@ -144,13 +144,17 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const { t } = useTranslation();
   const { currentUser } = useAuth();
   const navigate = useNavigate();
-  // Deep links (e.g. the class page's back button) can land on a specific tab
-  // via ?tab=; the param is only read on mount.
-  const [searchParams] = useSearchParams();
+  // Tab lives in the URL (?tab=), so each switch is its own browser-history entry —
+  // browser Back/Forward and the detail pages' back buttons return to the right tab
+  // instead of collapsing back to the default Workspaces tab.
+  const [searchParams, setSearchParams] = useSearchParams();
   const requestedTab = searchParams.get('tab') as TabType | null;
-  const [activeTab, setActiveTab] = useState<TabType>(
-    requestedTab && TAB_TYPES.includes(requestedTab) ? requestedTab : 'workspaces'
-  );
+  const activeTab: TabType = requestedTab && TAB_TYPES.includes(requestedTab) ? requestedTab : 'workspaces';
+  const setActiveTab = (tab: TabType) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('tab', tab);
+    setSearchParams(next);
+  };
   const [workspaces, setWorkspaces] = useState<CollaborationWorkspace[]>([]);
   // Student "request to join" — the other groups in the student's class (server-maintained
   // classDirectory) plus the student's own outgoing requests, for per-group state.

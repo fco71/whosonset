@@ -1010,6 +1010,8 @@
       "button": "Agregar estudiante",
       "hint": "Busca un estudiante para agregarlo a {{group}}. Tendrá acceso de inmediato.",
       "placeholder": "Busca estudiantes por nombre…",
+      "fromRoster": "Agregar desde tu lista de clase:",
+      "orSearch": "O busca en todos:",
       "added": "{{name}} agregado a {{group}}.",
       "alreadyMember": "{{name}} ya está en este grupo.",
       "failed": "No se pudo agregar al estudiante. Inténtalo de nuevo.",

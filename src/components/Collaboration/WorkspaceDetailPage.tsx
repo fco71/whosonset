@@ -934,7 +934,7 @@ const WorkspaceDetailPage: React.FC = () => {
   if (notFound || !workspace) {
     return (
       <div className="workspace-detail-page">
-        <button type="button" className="group-back-link" onClick={() => navigate('/collaboration')}>
+        <button type="button" className="group-back-link" onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/collaboration'))}>
           ← {t('collaboration.groupPage.back')}
         </button>
         <div className="group-section" style={{ textAlign: 'center' }}>
@@ -947,7 +947,7 @@ const WorkspaceDetailPage: React.FC = () => {
 
   return (
     <div className="workspace-detail-page">
-      <button type="button" className="group-back-link" onClick={() => navigate('/collaboration')}>
+      <button type="button" className="group-back-link" onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/collaboration'))}>
         ← {t('collaboration.groupPage.back')}
       </button>
 

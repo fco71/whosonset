@@ -57,6 +57,7 @@ interface GroupStats {
 
 interface RosterEntry {
   key: string;            // uid when known (derived or linked), manual id otherwise
+  uid?: string;           // the student's real account uid when known — addable to a group
   name: string;
   avatar?: string;
   groupNames: string[];   // empty for manual students
@@ -230,6 +231,7 @@ const ClassDetailPage: React.FC = () => {
           const profile = profileByUid.get(studentUid);
           return {
             key: studentUid,
+            uid: studentUid,
             name: profile?.name || `Crew Member ${studentUid.slice(-4)}`,
             avatar: profile?.avatar || '',
             groupNames,
@@ -282,6 +284,7 @@ const ClassDetailPage: React.FC = () => {
           const profile = student.uid ? profileByUid.get(student.uid) : undefined;
           return {
             key: student.uid || student.id,
+            uid: student.uid || undefined,
             name: profile?.name || student.name,
             avatar: profile?.avatar || '',
             groupNames: [],
@@ -294,6 +297,7 @@ const ClassDetailPage: React.FC = () => {
         if (!cancelled) {
           setManualRoster(manualStudents.map(student => ({
             key: student.uid || student.id,
+            uid: student.uid || undefined,
             name: student.name,
             groupNames: [],
             manual: true,
@@ -632,7 +636,7 @@ const ClassDetailPage: React.FC = () => {
   if (notFound || !teacherClass) {
     return (
       <div className="workspace-detail-page">
-        <button type="button" className="group-back-link" onClick={() => navigate('/collaboration?tab=classes')}>
+        <button type="button" className="group-back-link" onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/collaboration?tab=classes'))}>
           ← {t('collaboration.classes.back')}
         </button>
         <div className="group-section" style={{ textAlign: 'center' }}>
@@ -707,7 +711,7 @@ const ClassDetailPage: React.FC = () => {
 
   return (
     <div className="workspace-detail-page">
-      <button type="button" className="group-back-link" onClick={() => navigate('/collaboration?tab=classes')}>
+      <button type="button" className="group-back-link" onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/collaboration?tab=classes'))}>
         ← {t('collaboration.classes.back')}
       </button>
 
@@ -949,6 +953,32 @@ const ClassDetailPage: React.FC = () => {
                         <p className="group-empty" style={{ margin: '0 0 8px' }}>
                           {t('collaboration.addStudent.hint', { group: workspace.name })}
                         </p>
+                        {(() => {
+                          // Students already in your class can be added straight from the roster
+                          // (their uid is known) — no crew-search profile required.
+                          const groupMemberIds = new Set(access.getWorkspaceMemberIds(workspace));
+                          const rosterCandidates = roster.filter(entry => entry.uid && !groupMemberIds.has(entry.uid));
+                          if (rosterCandidates.length === 0) return null;
+                          return (
+                            <div style={{ marginBottom: 12 }}>
+                              <p className="group-empty" style={{ margin: '0 0 6px' }}>{t('collaboration.addStudent.fromRoster')}</p>
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                                {rosterCandidates.map(entry => (
+                                  <button
+                                    key={entry.key}
+                                    type="button"
+                                    className="btn-secondary"
+                                    style={{ padding: '0.25rem 0.7rem', fontSize: '0.82em' }}
+                                    onClick={() => handleAddStudent(workspace.id, { id: entry.uid as string, name: entry.name } as UserAutocompleteOption)}
+                                  >
+                                    + {entry.name}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })()}
+                        <p className="group-empty" style={{ margin: '0 0 6px' }}>{t('collaboration.addStudent.orSearch')}</p>
                         <UserAutocomplete
                           value={[]}
                           onChange={(users: UserAutocompleteOption[]) => {

@@ -1045,6 +1045,8 @@
       "button": "Add student",
       "hint": "Search for a student to add to {{group}}. They get access right away.",
       "placeholder": "Search students by name…",
+      "fromRoster": "Add from your class roster:",
+      "orSearch": "Or search everyone:",
       "added": "{{name}} added to {{group}}.",
       "alreadyMember": "{{name}} is already in this group.",
       "failed": "Couldn't add the student. Please try again.",
