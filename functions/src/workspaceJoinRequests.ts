@@ -687,7 +687,11 @@ export const removeWorkspaceMember = onCall({ region: "us-central1" }, async (re
   });
 
   // Revoke access to the group's screenplays (their own uploads stay reachable via uploadedBy).
-  await removeUserFromWorkspaceScreenplays(db, workspaceId, userId);
+  // Only when they were actually a member — skip the fan-out write, and narrow the race with a
+  // concurrent re-add, when there was nothing to remove.
+  if (removed) {
+    await removeUserFromWorkspaceScreenplays(db, workspaceId, userId);
+  }
 
   return { status: removed ? "removed" : "not_member", workspaceId, userId };
 });

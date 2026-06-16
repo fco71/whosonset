@@ -399,8 +399,9 @@ const WorkspaceDetailPage: React.FC = () => {
           } as MemberProfile;
         }));
         if (cancelled) return;
-        // Soft-disabled members (crewProfiles/{uid}.disabled === true) are hidden from the list.
-        const visible = profiles.filter(member => !member.disabled);
+        // Soft-disabled members (crewProfiles/{uid}.disabled === true) are hidden — except the
+        // owner, who is a structural role: hiding them would make the group look ownerless.
+        const visible = profiles.filter(member => !member.disabled || member.id === workspace.ownerId);
         const roleOrder: Record<string, number> = { owner: 0, admin: 1, supervisor: 2, member: 3, viewer: 4 };
         visible.sort((a, b) => (roleOrder[a.role] ?? 5) - (roleOrder[b.role] ?? 5) || a.name.localeCompare(b.name));
         setMemberProfiles(visible);
