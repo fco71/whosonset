@@ -363,6 +363,17 @@ export const notifyWorkspaceJoinRequestCreated = onDocumentCreated({
     const ownerId = typeof ws.ownerId === "string" ? ws.ownerId : "";
     if (!ownerId || ownerId === requesterId) return; // never self-notify
 
+    // Throttle: only the FIRST pending request from this requester for this workspace
+    // notifies the owner. The client dedupes pending requests, but a direct write could
+    // bypass that and spam the owner; this guards the notification path server-side.
+    const pendingDup = await db.collection("workspaceJoinRequests")
+      .where("workspaceId", "==", workspaceId)
+      .where("requesterId", "==", requesterId)
+      .where("status", "==", "pending")
+      .limit(2)
+      .get();
+    if (pendingDup.docs.some((d) => d.id !== event.params.requestId)) return;
+
     const workspaceName =
       typeof data.workspaceName === "string" && data.workspaceName
         ? data.workspaceName
