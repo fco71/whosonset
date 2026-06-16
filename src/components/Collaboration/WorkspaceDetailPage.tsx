@@ -43,6 +43,7 @@ import {
 import {
   respondToJoinRequest,
   subscribeToJoinRequestsForWorkspace,
+  removeWorkspaceMember,
   WorkspaceJoinRequest
 } from '../../services/joinRequestService';
 import * as access from './workspaceAccess';
@@ -144,6 +145,7 @@ const WorkspaceDetailPage: React.FC = () => {
   const [isSendingInvites, setIsSendingInvites] = useState(false);
   const [pendingInvites, setPendingInvites] = useState<Array<{ id: string; inviteeName: string; inviteeEmail: string; role: WorkspaceRole }>>([]);
   const [invitePendingId, setInvitePendingId] = useState<string | null>(null);
+  const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
   const [pendingJoinRequests, setPendingJoinRequests] = useState<WorkspaceJoinRequest[]>([]);
   const [joinRequestPendingId, setJoinRequestPendingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -897,6 +899,21 @@ const WorkspaceDetailPage: React.FC = () => {
     }
   };
 
+  const handleRemoveMember = async (member: { id: string; name: string }) => {
+    if (!workspace) return;
+    if (!window.confirm(t('collaboration.groupPage.removeMemberConfirm', { name: member.name, group: workspace.name }))) return;
+    setRemovingMemberId(member.id);
+    try {
+      await removeWorkspaceMember(workspace.id, member.id);
+      toast.success(t('collaboration.groupPage.memberRemoved', { name: member.name }));
+    } catch (err) {
+      console.error('Error removing member:', err);
+      toast.error(t('collaboration.groupPage.removeMemberFailed'));
+    } finally {
+      setRemovingMemberId(null);
+    }
+  };
+
   // Approve/deny a student's request to join this group. Membership is granted server-side
   // by the approveJoinRequest callable; the subscription drops the row when status changes.
   const handleRespondToJoinRequest = async (request: WorkspaceJoinRequest, response: 'approve' | 'deny') => {
@@ -1396,6 +1413,18 @@ const WorkspaceDetailPage: React.FC = () => {
                         }}
                       >
                         + {t('collaboration.classes.tabTitle')}
+                      </button>
+                    )}
+                    {(canManage || effectiveRole === 'supervisor' || isTeacher) && member.id !== uid && member.id !== workspace.ownerId && (
+                      <button
+                        type="button"
+                        className="btn-text-link"
+                        style={{ color: '#b91c1c' }}
+                        disabled={removingMemberId === member.id}
+                        title={t('collaboration.groupPage.removeMemberHint')}
+                        onClick={() => handleRemoveMember({ id: member.id, name: member.name })}
+                      >
+                        {t('collaboration.groupPage.removeMember')}
                       </button>
                     )}
                   </span>

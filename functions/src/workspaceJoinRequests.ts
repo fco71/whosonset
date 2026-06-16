@@ -68,6 +68,27 @@ async function addUserToWorkspaceScreenplays(
   }
 }
 
+// Inverse of addUserToWorkspaceScreenplays: drop a removed member from the group's
+// screenplays' teamMembers. Screenplays they uploaded stay reachable to them via
+// uploadedBy; this only revokes the membership-granted access to the rest.
+async function removeUserFromWorkspaceScreenplays(
+  db: admin.firestore.Firestore,
+  workspaceId: string,
+  uid: string
+): Promise<void> {
+  const snapshot = await db.collection("screenplays").where("workspaceId", "==", workspaceId).get();
+  for (let i = 0; i < snapshot.docs.length; i += BATCH_LIMIT) {
+    const batch = db.batch();
+    snapshot.docs.slice(i, i + BATCH_LIMIT).forEach((screenplay) => {
+      batch.update(screenplay.ref, {
+        teamMembers: admin.firestore.FieldValue.arrayRemove(uid),
+        lastModified: admin.firestore.FieldValue.serverTimestamp()
+      });
+    });
+    await batch.commit();
+  }
+}
+
 // Shared by approveJoinRequest and addStudentToWorkspace: append a user to a workspace's
 // members + memberIds and write the workspaceMemberships index doc, inside a caller-owned
 // transaction. Returns whether they were ALREADY a member, so the caller can skip the
@@ -609,4 +630,64 @@ export const addStudentToWorkspace = onCall({ region: "us-central1" }, async (re
   }
 
   return { status: alreadyMember ? "already_member" : "added", workspaceId, userId };
+});
+
+// Remove a member from a workspace (undo a wrong add). Strips them from the member arrays,
+// deletes the membership index doc, and revokes screenplay access. Same authz as add
+// (owner / effective supervisor / class teacher). The owner cannot be removed.
+export const removeWorkspaceMember = onCall({ region: "us-central1" }, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Must be signed in to remove a group member.");
+  }
+
+  const workspaceId = typeof request.data?.workspaceId === "string" ? request.data.workspaceId.trim() : "";
+  const userId = typeof request.data?.userId === "string" ? request.data.userId.trim() : "";
+  if (!workspaceId || !userId) {
+    throw new HttpsError("invalid-argument", "A group and a user are required.");
+  }
+
+  const db = admin.firestore();
+  const workspaceRef = db.collection("workspaces").doc(workspaceId);
+  const workspaceSnap = await workspaceRef.get();
+  if (!workspaceSnap.exists) {
+    throw new HttpsError("not-found", "Group no longer exists.");
+  }
+  const workspaceData = workspaceSnap.data() || {};
+
+  if (!await canApproveJoinRequest(db, uid, workspaceId, workspaceData)) {
+    throw new HttpsError(
+      "permission-denied",
+      "Only the group owner or the class teacher can remove members from this group."
+    );
+  }
+  if (workspaceData.ownerId === userId) {
+    throw new HttpsError("failed-precondition", "The group owner can't be removed.");
+  }
+
+  const removed = await db.runTransaction(async (transaction) => {
+    const fresh = await transaction.get(workspaceRef);
+    if (!fresh.exists) {
+      throw new HttpsError("not-found", "Group no longer exists.");
+    }
+    const data = fresh.data() || {};
+    const members = Array.isArray(data.members) ? data.members : [];
+    const memberIds = Array.isArray(data.memberIds) ? data.memberIds : [];
+    const wasMember = memberIds.includes(userId) || members.some((m: any) => m?.userId === userId);
+    transaction.update(workspaceRef, {
+      members: members.filter((m: any) => m?.userId !== userId),
+      memberIds: admin.firestore.FieldValue.arrayRemove(userId),
+      supervisorIds: admin.firestore.FieldValue.arrayRemove(userId),
+      viewerIds: admin.firestore.FieldValue.arrayRemove(userId),
+      selfElectedSupervisors: admin.firestore.FieldValue.arrayRemove(userId),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    transaction.delete(db.collection("workspaceMemberships").doc(`${workspaceId}_${userId}`));
+    return wasMember;
+  });
+
+  // Revoke access to the group's screenplays (their own uploads stay reachable via uploadedBy).
+  await removeUserFromWorkspaceScreenplays(db, workspaceId, userId);
+
+  return { status: removed ? "removed" : "not_member", workspaceId, userId };
 });

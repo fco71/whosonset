@@ -219,3 +219,17 @@ export async function addStudentToWorkspace(
   const result = await addMember({ workspaceId, userId });
   return (result.data as { status?: string })?.status === 'already_member' ? 'already_member' : 'added';
 }
+
+/**
+ * Remove a member from a group (undo a wrong add). Server-side via the `removeWorkspaceMember`
+ * callable (owner / supervisor / class teacher; the owner can't be removed).
+ */
+export async function removeWorkspaceMember(
+  workspaceId: string,
+  userId: string
+): Promise<'removed' | 'not_member'> {
+  const functions = getFunctions(app, 'us-central1');
+  const removeMember = httpsCallable(functions, 'removeWorkspaceMember');
+  const result = await removeMember({ workspaceId, userId });
+  return (result.data as { status?: string })?.status === 'not_member' ? 'not_member' : 'removed';
+}
