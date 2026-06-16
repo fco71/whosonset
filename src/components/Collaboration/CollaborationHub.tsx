@@ -214,7 +214,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 
   const [userScreenplays, setUserScreenplays] = useState<Screenplay[]>([]);
   // Resolved member display profiles (crewProfiles doc-id == uid), cached for the card avatars.
-  const [memberProfilesById, setMemberProfilesById] = useState<Record<string, { name: string; avatar: string }>>({});
+  const [memberProfilesById, setMemberProfilesById] = useState<Record<string, { name: string; avatar: string; disabled?: boolean }>>({});
   const [showStartWritingModal, setShowStartWritingModal] = useState(false);
   const [newFountainTitle, setNewFountainTitle] = useState('');
   const [creatingFountain, setCreatingFountain] = useState(false);
@@ -258,9 +258,9 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         try {
           const snap = await getDoc(doc(db, 'crewProfiles', uid));
           const data: any = snap.exists() ? snap.data() : {};
-          return [uid, { name: data.name || data.displayName || '', avatar: data.profileImageUrl || data.avatarUrl || '' }] as const;
+          return [uid, { name: data.name || data.displayName || '', avatar: data.profileImageUrl || data.avatarUrl || '', disabled: data.disabled === true }] as const;
         } catch {
-          return [uid, { name: '', avatar: '' }] as const;
+          return [uid, { name: '', avatar: '', disabled: false }] as const;
         }
       }));
       if (cancelled) return;
@@ -308,6 +308,10 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     if (!workspaceId) return t('collaboration.personalNoWorkspace');
     return getWorkspaceById(workspaceId)?.name || 'Workspace';
   };
+
+  // Members minus soft-disabled ones (crewProfiles.disabled === true), for card counts/avatars.
+  const visibleMembers = (workspace: CollaborationWorkspace) =>
+    (workspace.members || []).filter(member => !memberProfilesById[member.userId]?.disabled);
 
   const workspaceMembershipId = access.workspaceMembershipId;
 
@@ -1471,7 +1475,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                   <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
                   <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                 </svg>
-                <span className="stat-value">{workspace.members.length}</span>
+                <span className="stat-value">{visibleMembers(workspace).length}</span>
                 <span className="stat-label">{t('collaboration.members')}</span>
               </div>
               <div className="stat">
@@ -1499,7 +1503,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 
             <div className="workspace-actions">
               <div className="member-avatars">
-                {workspace.members.slice(0, 4).map(m => {
+                {visibleMembers(workspace).slice(0, 4).map(m => {
                   const profile = memberProfilesById[m.userId];
                   const display = profile?.name || m.email || m.userId;
                   return profile?.avatar ? (
@@ -1510,7 +1514,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                     <span className="av" key={m.userId} style={{ background: avatarColor(m.userId) }} title={display}>{nameInitials(display)}</span>
                   );
                 })}
-                {workspace.members.length > 4 && <span className="av more">+{workspace.members.length - 4}</span>}
+                {visibleMembers(workspace).length > 4 && <span className="av more">+{visibleMembers(workspace).length - 4}</span>}
               </div>
 	              {workspace.status !== 'deleted' && (
 	                <button
@@ -2371,7 +2375,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     (teacherClass.manualStudents || []).forEach(student => { if (student.uid) ids.add(student.uid); });
     if (currentUser) ids.delete(currentUser.uid);
     (teacherClass.excludedUids || []).forEach(id => ids.delete(id));
-    return Array.from(ids);
+    return Array.from(ids).filter(id => !memberProfilesById[id]?.disabled);
   };
 
   const renderClassesTab = () => (
