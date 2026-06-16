@@ -77,6 +77,9 @@ const ClassDetailPage: React.FC = () => {
   const [notFound, setNotFound] = useState(false);
 
   const [classWorkspaces, setClassWorkspaces] = useState<CollaborationWorkspace[]>([]);
+  // Bulk "add ticked students to a workspace" from the roster list.
+  const [bulkWorkspaceId, setBulkWorkspaceId] = useState('');
+  const [bulkAdding, setBulkAdding] = useState(false);
   // Derived (from group members) and manual roster halves load independently:
   // manual edits must not re-fetch every workspace/screenplay in the class.
   const [derivedRoster, setDerivedRoster] = useState<RosterEntry[]>([]);
@@ -709,6 +712,39 @@ const ClassDetailPage: React.FC = () => {
     }
   };
 
+  // Add every ticked roster student (who has a real account uid and isn't already a
+  // member) to the chosen workspace — the roster's ticks finally drive an action.
+  const handleBulkAddToWorkspace = async () => {
+    const target = classWorkspaces.find(workspace => workspace.id === bulkWorkspaceId);
+    if (!target) return;
+    const targetMemberIds = new Set(access.getWorkspaceMemberIds(target));
+    const selected = roster.filter(entry => ticks[entry.key] && entry.uid && !targetMemberIds.has(entry.uid));
+    if (selected.length === 0) {
+      toast(t('collaboration.classes.bulkAddNone'));
+      return;
+    }
+    setBulkAdding(true);
+    let added = 0;
+    try {
+      for (const entry of selected) {
+        try {
+          const result = await addStudentToWorkspace(bulkWorkspaceId, entry.uid as string);
+          if (result !== 'already_member') added += 1;
+        } catch (err) {
+          console.error('Bulk add to workspace failed:', err);
+        }
+      }
+      if (added > 0) {
+        toast.success(t('collaboration.classes.bulkAdded', { count: added, group: target.name }));
+        setReloadNonce(n => n + 1);
+      } else {
+        toast(t('collaboration.classes.bulkAddNone'));
+      }
+    } finally {
+      setBulkAdding(false);
+    }
+  };
+
   return (
     <div className="workspace-detail-page">
       <button type="button" className="group-back-link" onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/collaboration?tab=classes'))}>
@@ -1057,14 +1093,37 @@ const ClassDetailPage: React.FC = () => {
             <div className="section-header">
               <h2>{t('collaboration.classes.rosterTitle', { count: roster.length })}</h2>
               {roster.length > 0 && (
-                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                   <span style={{ color: '#64748b', fontSize: '0.9em' }}>
                     {t('collaboration.classes.tickedCount', { done: tickedCount, total: roster.length })}
                   </span>
                   {tickedCount > 0 && (
-                    <button type="button" className="btn-secondary" style={{ padding: '0.25rem 0.7rem', fontSize: '0.82em' }} onClick={handleClearTicks}>
-                      {t('collaboration.classes.clearTicks')}
-                    </button>
+                    <>
+                      <select
+                        className="form-input"
+                        style={{ padding: '0.25rem 0.5rem', fontSize: '0.85em', width: 'auto' }}
+                        value={bulkWorkspaceId}
+                        onChange={e => setBulkWorkspaceId(e.target.value)}
+                        aria-label={t('collaboration.classes.bulkAddSelect')}
+                      >
+                        <option value="">{t('collaboration.classes.bulkAddSelect')}</option>
+                        {classWorkspaces.map(workspace => (
+                          <option key={workspace.id} value={workspace.id}>{workspace.name}</option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        className="btn-primary"
+                        style={{ padding: '0.25rem 0.7rem', fontSize: '0.82em' }}
+                        disabled={!bulkWorkspaceId || bulkAdding}
+                        onClick={handleBulkAddToWorkspace}
+                      >
+                        {t('collaboration.classes.bulkAddButton')}
+                      </button>
+                      <button type="button" className="btn-secondary" style={{ padding: '0.25rem 0.7rem', fontSize: '0.82em' }} onClick={handleClearTicks}>
+                        {t('collaboration.classes.clearTicks')}
+                      </button>
+                    </>
                   )}
                 </div>
               )}
