@@ -106,7 +106,6 @@ const ClassDetailPage: React.FC = () => {
   const [assignmentTitle, setAssignmentTitle] = useState('');
   const [assignmentDescription, setAssignmentDescription] = useState('');
   const [postingAssignment, setPostingAssignment] = useState(false);
-  const [newStudentName, setNewStudentName] = useState('');
   const [newChecklistText, setNewChecklistText] = useState('');
 
   // ---- Class doc subscription ----------------------------------------------
@@ -514,17 +513,36 @@ const ClassDetailPage: React.FC = () => {
     }
   };
 
-  const handleAddManualStudent = async () => {
+  // Add a real crew account to the class roster, linked by uid. The roster already resolves
+  // uid-linked manual entries to their live profile and dedupes them against group-derived
+  // students — so this is the "pick any student from the crew database → add to the class"
+  // path. (Adding to a specific group, which also grants access, is the per-group button.)
+  const handleAddStudentToRoster = async (user: UserAutocompleteOption) => {
     if (!teacherClass) return;
-    const name = newStudentName.trim();
-    if (!name) return;
-    try {
-      await addManualStudentToClass(teacherClass.id, { id: newLocalId('manual'), name });
-    } catch (err) {
-      console.error('Class update failed:', err);
-      toast.error(t('collaboration.classes.updateFailed'));
+    setAddSearchResults([]);
+    // Previously removed from the roster → just un-exclude them (they reappear linked).
+    if ((teacherClass.excludedUids || []).includes(user.id)) {
+      try {
+        await restoreStudentToClass(teacherClass.id, user.id);
+        toast.success(t('collaboration.classes.studentAddedToClass', { name: user.name }));
+      } catch (err) {
+        console.error('Restore student failed:', err);
+        toast.error(t('collaboration.classes.addStudentToClassFailed'));
+      }
+      return;
     }
-    setNewStudentName('');
+    // Already on the roster (in a group, or already linked) → nothing to do.
+    if (roster.some(entry => entry.key === user.id) || (teacherClass.manualStudents || []).some(s => s.uid === user.id)) {
+      toast(t('collaboration.classes.studentAlreadyInClass', { name: user.name }));
+      return;
+    }
+    try {
+      await addManualStudentToClass(teacherClass.id, { id: newLocalId('manual'), name: user.name, uid: user.id });
+      toast.success(t('collaboration.classes.studentAddedToClass', { name: user.name }));
+    } catch (err) {
+      console.error('Add student to class failed:', err);
+      toast.error(t('collaboration.classes.addStudentToClassFailed'));
+    }
   };
 
   // Remove ANY roster row: a manual entry is dropped, a group-derived student is
@@ -1104,25 +1122,18 @@ const ClassDetailPage: React.FC = () => {
                 );
               })
             )}
-            <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
-              <input
-                type="text"
-                className="form-input"
-                style={{ flex: 1 }}
-                value={newStudentName}
-                maxLength={80}
-                placeholder={t('collaboration.classes.addStudentPlaceholder')}
-                onChange={e => setNewStudentName(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') handleAddManualStudent(); }}
+            <div style={{ marginTop: 12 }}>
+              <UserAutocomplete
+                value={[]}
+                onChange={(users: UserAutocompleteOption[]) => {
+                  const picked = users[users.length - 1];
+                  if (picked) handleAddStudentToRoster(picked);
+                }}
+                onSearch={handleAddStudentSearch}
+                options={addSearchResults}
+                loading={addSearchLoading}
+                placeholder={t('collaboration.classes.addStudentSearchPlaceholder')}
               />
-              <button
-                type="button"
-                className="btn-secondary"
-                disabled={!newStudentName.trim()}
-                onClick={handleAddManualStudent}
-              >
-                {t('collaboration.classes.addStudent')}
-              </button>
             </div>
             {excludedRoster.length > 0 && (
               <div style={{ marginTop: 14, paddingTop: 10, borderTop: '1px solid #f1f5f9' }}>

@@ -466,6 +466,14 @@ and you're only visible once you're in a group.
   user and refreshes the rollups. EN/ES `collaboration.addStudent.*`. NO firestore.rules / index
   change (Admin SDK callable; the workspace-write trigger refreshes the directory on its own).
   Verified: functions tsc, client tsc + webpack build clean.
+- Class ROSTER add (2026-06-15): the roster's dead-end "add student by name" field was replaced
+  with the SAME crew search — picking a crew member links the real account by `uid` via the
+  existing `addManualStudentToClass` (client-only; the teacherClasses owner-update rule already
+  allows it; the roster already resolves uid-linked entries to live profiles + dedupes vs.
+  group-derived students). This is the "pick any registered student from the whole crew database
+  → add to the class" path the teacher asked for. Verified live in the dev preview: searching
+  "fra" returned real crew profiles DB-wide. Note: roster membership alone still grants no group
+  access (that's the per-group add, or the still-open Fix #2).
 - DEPLOY: `firebase deploy --only functions:addStudentToWorkspace`, then push client (Hosting).
 - This ALSO unblocks the adrift student via the common path: the teacher just adds them to a
   group, after which they appear in the class roster + classDirectory.
