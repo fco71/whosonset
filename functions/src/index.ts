@@ -25,7 +25,8 @@ export {
   onTeacherClassWritten,
   onWorkspaceWrittenSyncDirectories,
   notifyWorkspaceJoinRequestCreated,
-  approveJoinRequest
+  approveJoinRequest,
+  addStudentToWorkspace
 } from "./workspaceJoinRequests";
 
 // Escape user-supplied values before interpolating them into HTML email bodies.

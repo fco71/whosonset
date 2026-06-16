@@ -204,3 +204,18 @@ export async function respondToJoinRequest(
   const approveJoinRequest = httpsCallable(functions, 'approveJoinRequest');
   await approveJoinRequest({ requestId, response });
 }
+
+/**
+ * Teacher (or group owner / supervisor) directly adds a user to a group as a member.
+ * Membership is granted server-side by the `addStudentToWorkspace` callable (Admin SDK).
+ * Returns 'added' or 'already_member'.
+ */
+export async function addStudentToWorkspace(
+  workspaceId: string,
+  userId: string
+): Promise<'added' | 'already_member'> {
+  const functions = getFunctions(app, 'us-central1');
+  const addMember = httpsCallable(functions, 'addStudentToWorkspace');
+  const result = await addMember({ workspaceId, userId });
+  return (result.data as { status?: string })?.status === 'already_member' ? 'already_member' : 'added';
+}

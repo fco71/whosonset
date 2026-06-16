@@ -443,7 +443,7 @@ Risks and gotchas:
 - Public `crewProfiles` reads and authenticated `users/{userId}` reads are intentional current behavior but should be reviewed before broader launch if contact info needs tighter privacy.
 - A restore drill has not been performed against Firestore backups. Backups are configured, but a restore into a throwaway database would prove the process.
 
-### NEXT (planned 2026-06-15 eve) — teacher "add any user to a group" + groupless-student catch-22
+### Teacher add-to-group — DONE 2026-06-15 (Fix #1); groupless-student catch-22 Fix #2 still open
 
 Problem (surfaced while building Class Join Requests): a teacher builds the class roster by
 bulk-adding students *via their groups* (`teacherClasses.workspaceIds` → roster derived from
@@ -453,27 +453,26 @@ The join-request feature inherits the same gap: `classDirectory.memberIds` is th
 group. Catch-22: you can't request into a group until you're already visible to the class,
 and you're only visible once you're in a group.
 
-Two complementary fixes (do both, or at least the first):
-1. **Teacher adds any user directly to a group.** Today only the workspace OWNER can invite
-   (`workspaceInvitations` create is `isWorkspaceOwner`-gated), so a teacher who only
-   supervises a group can't add members. Add a teacher-initiated add — cleanest is a new
-   Admin SDK callable that REUSES the grant path we just built (`approveJoinRequest`'s
-   owner/supervisor/teacher authz + the duplicated member-grant). A teacher who owns a class
-   containing the group adds `{ groupId, uid }`; same members/memberIds/workspaceMemberships/
-   addUserToWorkspaceScreenplays writes. (This is the moment to finally extract the shared
-   `addMemberToWorkspaceTx` helper from `respondToWorkspaceInvitation` so invitation-accept,
-   join-request-approve, and teacher-add all share ONE proven path — the deliberate
-   duplication debt noted under Class Join Requests.)
-2. **Let class-roster membership (not just group membership) grant directory visibility.**
-   Make `rebuildClassDirectory`'s `memberIds` = (active group members) ∪ (class roster linked
-   uids: `manualStudents[].uid` + any future direct class members). Then a teacher can add a
-   groupless student to the class roster and that student immediately sees the class's groups
-   and can request to join one — breaking the catch-22 without forcing a group assignment
-   first. (Trigger already reruns on `teacherClasses` writes, so adding a manual student with
-   a uid would refresh the directory; just widen the union + ensure `onTeacherClassWritten`
-   doesn't early-bail when only `manualStudents` changed.)
+**Fix #1 — DONE 2026-06-15 (teacher adds any user directly to a group):**
+- `functions/src/workspaceJoinRequests.ts`: extracted shared `grantWorkspaceMembershipInTx`
+  (now used by BOTH `approveJoinRequest` and the new callable — the duplication debt is paid
+  off within this file; the live `respondToWorkspaceInvitation` path stays untouched). New
+  `addStudentToWorkspace` callable: owner/effective-supervisor/class-teacher authz via the
+  existing `canApproveJoinRequest`, validates the target account (`admin.auth().getUser`),
+  grants role `member` through the shared helper, adds screenplay access, and notifies the
+  student (reuses `collaboration.notifications.addedToWorkspace`). Exported from `index.ts`.
+- Client: `joinRequestService.addStudentToWorkspace`; `ClassDetailPage` group rows now have an
+  "Add student" button → inline `UserAutocomplete` (`searchCrewProfiles`) that adds the picked
+  user and refreshes the rollups. EN/ES `collaboration.addStudent.*`. NO firestore.rules / index
+  change (Admin SDK callable; the workspace-write trigger refreshes the directory on its own).
+  Verified: functions tsc, client tsc + webpack build clean.
+- DEPLOY: `firebase deploy --only functions:addStudentToWorkspace`, then push client (Hosting).
+- This ALSO unblocks the adrift student via the common path: the teacher just adds them to a
+  group, after which they appear in the class roster + classDirectory.
 
-Tonight's checklist: (a) extract shared grant helper; (b) teacher add-to-group callable +
-UI (likely from `ClassDetailPage` group rows and/or `WorkspaceDetailPage` for owners already);
-(c) widen `classDirectory.memberIds` union + un-bail the class trigger on roster changes;
-(d) rules/tests for the new callable; (e) emulator tests; (f) same backend-first deploy order.
+**Fix #2 — STILL OPEN (optional now):** let class-roster membership (not just group membership)
+grant directory visibility — make `rebuildClassDirectory`'s `memberIds` = (active group members)
+∪ (class roster linked uids: `manualStudents[].uid`), and stop `onTeacherClassWritten`
+early-bailing when only `manualStudents` changed. Then a teacher could add a groupless student
+to the roster (no group) and they'd immediately see + request the class's groups. Lower priority
+now that Fix #1 covers adding straight to a group.

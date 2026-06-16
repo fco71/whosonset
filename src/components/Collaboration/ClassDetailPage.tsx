@@ -31,6 +31,7 @@ import {
 } from '../../services/classService';
 import { createAssignments } from '../../services/assignmentService';
 import {
+  addStudentToWorkspace,
   respondToJoinRequest,
   subscribeToJoinRequestsForClass,
   WorkspaceJoinRequest
@@ -38,7 +39,8 @@ import {
 import { Screenplay, WorkspaceAssignment } from './workspaceAccess';
 import ScreenplayViewerModal from './ScreenplayViewerModal';
 import ScreenplayList from './ScreenplayList';
-import { fetchCrewProfilesByIds } from './crewSearch';
+import { fetchCrewProfilesByIds, searchCrewProfiles } from './crewSearch';
+import UserAutocomplete, { UserAutocompleteOption } from './UserAutocomplete';
 import './CollaborationHub.scss';
 import './WorkspaceDetailPage.scss';
 
@@ -88,6 +90,10 @@ const ClassDetailPage: React.FC = () => {
   const [reloadNonce, setReloadNonce] = useState(0);
   const [classJoinRequests, setClassJoinRequests] = useState<WorkspaceJoinRequest[]>([]);
   const [joinRequestPendingId, setJoinRequestPendingId] = useState<string | null>(null);
+  // Teacher "add student to a group" picker — which group's picker is open + its search state.
+  const [addingToGroupId, setAddingToGroupId] = useState<string | null>(null);
+  const [addSearchResults, setAddSearchResults] = useState<UserAutocompleteOption[]>([]);
+  const [addSearchLoading, setAddSearchLoading] = useState(false);
 
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState('');
@@ -650,6 +656,37 @@ const ClassDetailPage: React.FC = () => {
     }
   };
 
+  const handleAddStudentSearch = async (queryStr: string) => {
+    setAddSearchLoading(true);
+    try {
+      setAddSearchResults(await searchCrewProfiles(queryStr));
+    } catch (err) {
+      console.error('Student search failed:', err);
+      setAddSearchResults([]);
+    } finally {
+      setAddSearchLoading(false);
+    }
+  };
+
+  // Add the picked user to the group via the callable, then refresh the class's group
+  // rollups so the new member shows up. The picker stays open for adding more.
+  const handleAddStudent = async (workspaceId: string, user: UserAutocompleteOption) => {
+    try {
+      const result = await addStudentToWorkspace(workspaceId, user.id);
+      const groupName = workspaceNameById.get(workspaceId) || '';
+      if (result === 'already_member') {
+        toast(t('collaboration.addStudent.alreadyMember', { name: user.name }));
+      } else {
+        toast.success(t('collaboration.addStudent.added', { name: user.name, group: groupName }));
+        setReloadNonce(n => n + 1);
+      }
+      setAddSearchResults([]);
+    } catch (err) {
+      console.error('Add student failed:', err);
+      toast.error(t('collaboration.addStudent.failed'));
+    }
+  };
+
   return (
     <div className="workspace-detail-page">
       <button type="button" className="group-back-link" onClick={() => navigate('/collaboration?tab=classes')}>
@@ -839,42 +876,84 @@ const ClassDetailPage: React.FC = () => {
             ) : (
               <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
                 {groupStats.map(({ workspace, screenplayCount, awaitingReview }) => (
-                  <li key={workspace.id} className="assignment-row">
-                    <div style={{ minWidth: 0, flex: 1 }}>
-                      <div className="assignment-title">{workspace.name}</div>
-                      <div className="assignment-meta">
-                        <span className="assignment-chip">
-                          {t('collaboration.classes.membersCount', { count: access.getWorkspaceMemberIds(workspace).filter(id => id !== uid).length })}
-                        </span>
-                        <span className="assignment-chip">
-                          {t('collaboration.classes.screenplaysCount', { count: screenplayCount })}
-                        </span>
-                        {awaitingReview > 0 && (
-                          <span className="assignment-chip turned-in">
-                            📥 {t('collaboration.groupCard.awaitingReview', { count: awaitingReview })}
+                  <li key={workspace.id} className="assignment-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 10 }}>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div className="assignment-title">{workspace.name}</div>
+                        <div className="assignment-meta">
+                          <span className="assignment-chip">
+                            {t('collaboration.classes.membersCount', { count: access.getWorkspaceMemberIds(workspace).filter(id => id !== uid).length })}
                           </span>
-                        )}
+                          <span className="assignment-chip">
+                            {t('collaboration.classes.screenplaysCount', { count: screenplayCount })}
+                          </span>
+                          {awaitingReview > 0 && (
+                            <span className="assignment-chip turned-in">
+                              📥 {t('collaboration.groupCard.awaitingReview', { count: awaitingReview })}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                        <button
+                          type="button"
+                          className="btn-primary"
+                          style={{ padding: '0.3rem 0.9rem', fontSize: '0.85em' }}
+                          onClick={() => navigate(`/collaboration/${workspace.id}`)}
+                        >
+                          {t('collaboration.openGroup')}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          style={{ padding: '0.3rem 0.9rem', fontSize: '0.85em' }}
+                          onClick={() => {
+                            setAddingToGroupId(prev => (prev === workspace.id ? null : workspace.id));
+                            setAddSearchResults([]);
+                          }}
+                          aria-expanded={addingToGroupId === workspace.id}
+                        >
+                          {t('collaboration.addStudent.button')}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          style={{ padding: '0.3rem 0.9rem', fontSize: '0.85em' }}
+                          onClick={() => handleRemoveGroup(workspace.id)}
+                          title={t('collaboration.classes.removeFromClassHint')}
+                        >
+                          {t('collaboration.classes.removeFromClass')}
+                        </button>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                      <button
-                        type="button"
-                        className="btn-primary"
-                        style={{ padding: '0.3rem 0.9rem', fontSize: '0.85em' }}
-                        onClick={() => navigate(`/collaboration/${workspace.id}`)}
-                      >
-                        {t('collaboration.openGroup')}
-                      </button>
-                      <button
-                        type="button"
-                        className="btn-secondary"
-                        style={{ padding: '0.3rem 0.9rem', fontSize: '0.85em' }}
-                        onClick={() => handleRemoveGroup(workspace.id)}
-                        title={t('collaboration.classes.removeFromClassHint')}
-                      >
-                        {t('collaboration.classes.removeFromClass')}
-                      </button>
-                    </div>
+                    {addingToGroupId === workspace.id && (
+                      <div className="assignment-form" style={{ marginTop: 0 }}>
+                        <p className="group-empty" style={{ margin: '0 0 8px' }}>
+                          {t('collaboration.addStudent.hint', { group: workspace.name })}
+                        </p>
+                        <UserAutocomplete
+                          value={[]}
+                          onChange={(users: UserAutocompleteOption[]) => {
+                            const picked = users[users.length - 1];
+                            if (picked) handleAddStudent(workspace.id, picked);
+                          }}
+                          onSearch={handleAddStudentSearch}
+                          options={addSearchResults}
+                          loading={addSearchLoading}
+                          placeholder={t('collaboration.addStudent.placeholder')}
+                        />
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+                          <button
+                            type="button"
+                            className="btn-secondary"
+                            style={{ padding: '0.3rem 0.9rem', fontSize: '0.85em' }}
+                            onClick={() => { setAddingToGroupId(null); setAddSearchResults([]); }}
+                          >
+                            {t('collaboration.addStudent.done')}
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>

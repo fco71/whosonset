@@ -68,6 +68,62 @@ async function addUserToWorkspaceScreenplays(
   }
 }
 
+// Shared by approveJoinRequest and addStudentToWorkspace: append a user to a workspace's
+// members + memberIds and write the workspaceMemberships index doc, inside a caller-owned
+// transaction. Returns whether they were ALREADY a member, so the caller can skip the
+// post-commit screenplay-access grant + notification. Mirrors respondToWorkspaceInvitation's
+// accept branch — the one proven membership-grant shape — kept local to this file.
+function grantWorkspaceMembershipInTx(
+  transaction: admin.firestore.Transaction,
+  db: admin.firestore.Firestore,
+  params: {
+    workspaceRef: admin.firestore.DocumentReference;
+    workspace: admin.firestore.DocumentData;
+    uid: string;
+    email: string;
+    role: WorkspaceRole;
+  }
+): boolean {
+  const { workspaceRef, workspace, uid, email, role } = params;
+  const members = Array.isArray(workspace.members) ? workspace.members : [];
+  const memberIds = Array.isArray(workspace.memberIds) ? workspace.memberIds : [];
+  const alreadyMember = memberIds.includes(uid) || members.some((m: any) => m?.userId === uid);
+  const now = admin.firestore.Timestamp.now();
+
+  const updatedMembers = alreadyMember
+    ? members
+    : [
+        ...members,
+        {
+          userId: uid,
+          email,
+          role,
+          joinedAt: now,
+          permissions: permissionsForRole(role),
+          isOnline: false,
+          lastSeen: now
+        }
+      ];
+
+  transaction.update(workspaceRef, {
+    members: updatedMembers,
+    memberIds: admin.firestore.FieldValue.arrayUnion(uid),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+  });
+
+  transaction.set(db.collection("workspaceMemberships").doc(`${workspaceRef.id}_${uid}`), {
+    workspaceId: workspaceRef.id,
+    userId: uid,
+    role,
+    ownerId: workspace.ownerId || "",
+    projectId: workspace.projectId || null,
+    status: workspace.status || "active",
+    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+  }, { merge: true });
+
+  return alreadyMember;
+}
+
 // Writes a notification doc with the same shape as index.ts createInAppNotification /
 // workspaceInvitations.ts notifyInviter — titleKey/bodyKey/i18nParams let each recipient
 // render in their own locale; title/body are the sender-locale fallback.
@@ -428,42 +484,13 @@ export const approveJoinRequest = onCall({ region: "us-central1" }, async (reque
     if (!freshWorkspace.exists) {
       throw new HttpsError("not-found", "Group no longer exists.");
     }
-    const workspace = freshWorkspace.data() || {};
-    const members = Array.isArray(workspace.members) ? workspace.members : [];
-    const memberIds = Array.isArray(workspace.memberIds) ? workspace.memberIds : [];
-    const alreadyMember = memberIds.includes(requesterId) || members.some((m: any) => m?.userId === requesterId);
-    const now = admin.firestore.Timestamp.now();
-
-    const updatedMembers = alreadyMember
-      ? members
-      : [
-          ...members,
-          {
-            userId: requesterId,
-            email: reqData.requesterEmail || "",
-            role,
-            joinedAt: now,
-            permissions: permissionsForRole(role),
-            isOnline: false,
-            lastSeen: now
-          }
-        ];
-
-    transaction.update(workspaceRef, {
-      members: updatedMembers,
-      memberIds: admin.firestore.FieldValue.arrayUnion(requesterId),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    grantWorkspaceMembershipInTx(transaction, db, {
+      workspaceRef,
+      workspace: freshWorkspace.data() || {},
+      uid: requesterId,
+      email: typeof reqData.requesterEmail === "string" ? reqData.requesterEmail : "",
+      role
     });
-
-    transaction.set(db.collection("workspaceMemberships").doc(`${workspaceId}_${requesterId}`), {
-      workspaceId,
-      userId: requesterId,
-      role,
-      ownerId: workspace.ownerId || "",
-      projectId: workspace.projectId || null,
-      status: workspace.status || "active",
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    }, { merge: true });
 
     transaction.update(requestRef, {
       status: "approved",
@@ -479,4 +506,87 @@ export const approveJoinRequest = onCall({ region: "us-central1" }, async (reque
   }
 
   return { status: "approved", workspaceId };
+});
+
+// Teacher-initiated direct add: a verified teacher (or the group owner / effective
+// supervisor) adds any user to a group in their class as a 'member'. This is what lets a
+// teacher bring in a student who isn't in any group yet — once added they appear in the
+// class roster and the classDirectory, breaking the "groupless student is invisible"
+// catch-22. Grants membership through the same shared path as join-request approval; no
+// request doc is involved. Authz mirrors canApproveJoinRequest, so the Admin SDK enforces it.
+export const addStudentToWorkspace = onCall({ region: "us-central1" }, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Must be signed in to add a group member.");
+  }
+
+  const workspaceId = typeof request.data?.workspaceId === "string" ? request.data.workspaceId.trim() : "";
+  const userId = typeof request.data?.userId === "string" ? request.data.userId.trim() : "";
+  if (!workspaceId || !userId) {
+    throw new HttpsError("invalid-argument", "A group and a user are required.");
+  }
+
+  const db = admin.firestore();
+
+  // The target must be a real account.
+  let targetEmail = "";
+  try {
+    const targetUser = await admin.auth().getUser(userId);
+    targetEmail = targetUser.email || "";
+  } catch {
+    throw new HttpsError("not-found", "That user account was not found.");
+  }
+
+  const workspaceRef = db.collection("workspaces").doc(workspaceId);
+  const workspaceSnap = await workspaceRef.get();
+  if (!workspaceSnap.exists) {
+    throw new HttpsError("not-found", "Group no longer exists.");
+  }
+  const workspaceData = workspaceSnap.data() || {};
+
+  // Owner / effective supervisor / teacher who owns a class containing this group — the same
+  // set that may approve a join request.
+  if (!await canApproveJoinRequest(db, uid, workspaceId, workspaceData)) {
+    throw new HttpsError(
+      "permission-denied",
+      "Only the group owner or the class teacher can add members to this group."
+    );
+  }
+
+  const role: WorkspaceRole = "member";
+  const alreadyMember = await db.runTransaction(async (transaction) => {
+    const fresh = await transaction.get(workspaceRef);
+    if (!fresh.exists) {
+      throw new HttpsError("not-found", "Group no longer exists.");
+    }
+    return grantWorkspaceMembershipInTx(transaction, db, {
+      workspaceRef,
+      workspace: fresh.data() || {},
+      uid: userId,
+      email: targetEmail,
+      role
+    });
+  });
+
+  if (!alreadyMember) {
+    await addUserToWorkspaceScreenplays(db, workspaceId, userId);
+    const actorName = await getUserDisplayName(db, uid, "Your teacher");
+    const workspaceName = typeof workspaceData.name === "string" && workspaceData.name ? workspaceData.name : "a group";
+    await addNotification(db, {
+      userId,
+      type: "collaborator_added",
+      title: "Added to a group",
+      body: `${actorName} added you to ${workspaceName}.`,
+      titleKey: "collaboration.notifications.addedToWorkspace.title",
+      bodyKey: "collaboration.notifications.addedToWorkspace.body",
+      i18nParams: { inviter: actorName, workspace: workspaceName, role },
+      link: `/collaboration/${workspaceId}`,
+      relatedId: workspaceId,
+      senderId: uid,
+      senderName: actorName,
+      metadata: { workspaceId }
+    });
+  }
+
+  return { status: alreadyMember ? "already_member" : "added", workspaceId, userId };
 });

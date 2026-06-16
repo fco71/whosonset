@@ -1040,6 +1040,15 @@
       "denied": "Request declined.",
       "actionFailed": "Couldn't update the request. Please try again."
     },
+    "addStudent": {
+      "button": "Add student",
+      "hint": "Search for a student to add to {{group}}. They get access right away.",
+      "placeholder": "Search students by name…",
+      "added": "{{name}} added to {{group}}.",
+      "alreadyMember": "{{name}} is already in this group.",
+      "failed": "Couldn't add the student. Please try again.",
+      "done": "Done"
+    },
     "activity": {
       "title": "Recent activity",
       "empty": "No activity yet.",
