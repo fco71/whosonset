@@ -159,6 +159,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const [requestingGroupId, setRequestingGroupId] = useState<string | null>(null);
   const [joinRequestMessage, setJoinRequestMessage] = useState('');
   const [sendingJoinRequest, setSendingJoinRequest] = useState(false);
+  const [joinDirectoryError, setJoinDirectoryError] = useState(false);
   const [selectedWorkspace, setSelectedWorkspace] = useState<CollaborationWorkspace | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -480,7 +481,11 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       setMyJoinRequests([]);
       return;
     }
-    const unsubDirectory = subscribeToClassDirectory(currentUser.uid, setClassDirectories);
+    const unsubDirectory = subscribeToClassDirectory(
+      currentUser.uid,
+      directories => { setClassDirectories(directories); setJoinDirectoryError(false); },
+      () => setJoinDirectoryError(true)
+    );
     const unsubRequests = subscribeToMyJoinRequests(currentUser.uid, setMyJoinRequests);
     return () => { unsubDirectory(); unsubRequests(); };
   }, [currentUser]);
@@ -1599,7 +1604,25 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
         const sections = classDirectories
           .map(directory => ({ directory, requestable: directory.groups.filter(group => !group.memberIds.includes(myUid)) }))
           .filter(section => section.requestable.length > 0);
-        if (sections.length === 0) return null;
+        // Don't fail silently: surface a read error, and if the student is in a class but
+        // there's nothing to request, say so instead of rendering nothing.
+        if (joinDirectoryError) {
+          return (
+            <div className="other-groups" style={{ marginTop: 32 }}>
+              <h2 style={{ margin: '0 0 4px' }}>{t('collaboration.joinRequests.otherGroupsTitle')}</h2>
+              <p style={{ color: '#94a3b8', fontSize: '0.9em', margin: 0 }}>{t('collaboration.joinRequests.loadError')}</p>
+            </div>
+          );
+        }
+        if (classDirectories.length === 0) return null;
+        if (sections.length === 0) {
+          return (
+            <div className="other-groups" style={{ marginTop: 32 }}>
+              <h2 style={{ margin: '0 0 4px' }}>{t('collaboration.joinRequests.otherGroupsTitle')}</h2>
+              <p style={{ color: '#94a3b8', fontSize: '0.9em', margin: 0 }}>{t('collaboration.joinRequests.noOtherGroups')}</p>
+            </div>
+          );
+        }
         return (
           <div className="other-groups" style={{ marginTop: 32 }}>
             {sections.map(({ directory, requestable }) => (

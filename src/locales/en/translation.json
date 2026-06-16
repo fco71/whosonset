@@ -1017,6 +1017,7 @@
       "otherGroupsHint": "Need to join a different group? Ask below — the group's owner or your teacher reviews your request.",
       "membersLabel": "Members",
       "noOtherGroups": "There are no other groups in your class yet.",
+      "loadError": "Couldn't load the other groups in your class. Refresh to try again.",
       "requestToJoin": "Request to join",
       "requestPending": "Request pending",
       "requestDenied": "Request declined",

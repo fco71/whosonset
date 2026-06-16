@@ -982,6 +982,7 @@
       "otherGroupsHint": "¿Necesitas unirte a otro grupo? Solicítalo abajo: el dueño del grupo o tu profesor revisará tu solicitud.",
       "membersLabel": "Integrantes",
       "noOtherGroups": "Aún no hay otros grupos en tu clase.",
+      "loadError": "No se pudieron cargar los otros grupos de tu clase. Actualiza para reintentar.",
       "requestToJoin": "Solicitar unirme",
       "requestPending": "Solicitud pendiente",
       "requestDenied": "Solicitud rechazada",
