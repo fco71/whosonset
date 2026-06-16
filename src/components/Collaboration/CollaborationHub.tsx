@@ -2358,6 +2358,22 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     }
   };
 
+  // Best-effort student set for a class CARD preview: union of the class's groups' members
+  // (from the already-loaded workspaces) + uid-linked manual students, minus the teacher and
+  // excluded uids. Groups the teacher isn't a member of aren't loaded here, so this can
+  // under-count — the class page holds the authoritative roster.
+  const getClassStudentIds = (teacherClass: TeacherClass): string[] => {
+    const ids = new Set<string>();
+    teacherClass.workspaceIds.forEach(workspaceId => {
+      const ws = workspaces.find(w => w.id === workspaceId);
+      if (ws) getWorkspaceMemberIds(ws).forEach(id => { if (id) ids.add(id); });
+    });
+    (teacherClass.manualStudents || []).forEach(student => { if (student.uid) ids.add(student.uid); });
+    if (currentUser) ids.delete(currentUser.uid);
+    (teacherClass.excludedUids || []).forEach(id => ids.delete(id));
+    return Array.from(ids);
+  };
+
   const renderClassesTab = () => (
     <div className="workspaces-tab">
       <div className="workspaces-header">
@@ -2391,6 +2407,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
           {teacherClasses.map(teacherClass => {
             const doneCount = teacherClass.checklist.filter(item => item.done).length;
             const classColor = getClassColor(teacherClass);
+            const studentIds = getClassStudentIds(teacherClass);
             return (
               <div
                 key={teacherClass.id}
@@ -2422,6 +2439,20 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                           onClick={e => { e.stopPropagation(); handleSetClassColor(teacherClass.id, swatch); setColorMenuClassId(null); }}
                         />
                       ))}
+                      <label
+                        className="class-swatch class-swatch--custom"
+                        title={t('collaboration.classes.customColor')}
+                        aria-label={t('collaboration.classes.customColor')}
+                        onClick={e => e.stopPropagation()}
+                      >
+                        +
+                        <input
+                          type="color"
+                          value={/^#[0-9a-fA-F]{6}$/.test(teacherClass.color || '') ? (teacherClass.color as string) : classColor}
+                          onChange={e => handleSetClassColor(teacherClass.id, e.target.value)}
+                          style={{ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none' }}
+                        />
+                      </label>
                     </div>
                   )}
                 </div>
@@ -2440,6 +2471,10 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                 </div>
                 <div className="workspace-stats">
                   <div className="stat">
+                    <span className="stat-value">{studentIds.length}</span>
+                    <span className="stat-label">{t('collaboration.classes.studentsLabel')}</span>
+                  </div>
+                  <div className="stat">
                     <span className="stat-value">{teacherClass.workspaceIds.length}</span>
                     <span className="stat-label">{t('collaboration.workspaces')}</span>
                   </div>
@@ -2450,6 +2485,22 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                     </div>
                   )}
                 </div>
+                {studentIds.length > 0 && (
+                  <div className="member-avatars" style={{ marginTop: 10 }}>
+                    {studentIds.slice(0, 6).map(id => {
+                      const profile = memberProfilesById[id];
+                      const display = profile?.name || id;
+                      return profile?.avatar ? (
+                        <span className="av av-img" key={id} title={display}>
+                          <img src={profile.avatar} alt={display} loading="lazy" />
+                        </span>
+                      ) : (
+                        <span className="av" key={id} style={{ background: avatarColor(id) }} title={display}>{nameInitials(display)}</span>
+                      );
+                    })}
+                    {studentIds.length > 6 && <span className="av more">+{studentIds.length - 6}</span>}
+                  </div>
+                )}
                 <div className="workspace-actions">
                   <button
                     className="btn-primary"

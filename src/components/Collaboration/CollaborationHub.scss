@@ -2066,4 +2066,15 @@
   &.is-selected {
     box-shadow: 0 0 0 2px var(--collab-surface), 0 0 0 4px var(--collab-text-secondary);
   }
+
+  &.class-swatch--custom {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--collab-surface);
+    color: var(--collab-text-secondary);
+    font-size: 15px;
+    line-height: 1;
+    overflow: hidden;
+  }
 }
