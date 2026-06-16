@@ -2465,6 +2465,7 @@ interface CrewProfileSearchResult {
   avatar: string;
   role: string;
   company: string;
+  disabled: boolean;
 }
 
 function crewProfileSearchResult(
@@ -2487,7 +2488,10 @@ function crewProfileSearchResult(
     email: asString(profile.email) || asString(profile.contactInfo?.email),
     avatar: asString(profile.profileImageUrl) || asString(profile.avatarUrl),
     role: role || 'Crew Member',
-    company: asString(profile.company)
+    company: asString(profile.company),
+    // Soft-disable: hide this account everywhere. Set crewProfiles/{uid}.disabled=true in
+    // the Firestore console to hide a user (reversible — nothing is deleted).
+    disabled: profile.disabled === true
   };
 }
 
@@ -2525,6 +2529,7 @@ export const searchCrewProfiles = onCall({
   const profiles = snapshot.docs
     .filter((profile) => profile.id !== actorId)
     .map(crewProfileSearchResult)
+    .filter((profile) => !profile.disabled)
     .sort((left, right) => left.name.localeCompare(right.name));
 
   return { profiles };

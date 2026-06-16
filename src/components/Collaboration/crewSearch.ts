@@ -13,6 +13,7 @@ export interface CrewSearchResult {
   avatar?: string;
   role?: string;
   company?: string;
+  disabled?: boolean;
 }
 
 interface CrewProfilesResponse {

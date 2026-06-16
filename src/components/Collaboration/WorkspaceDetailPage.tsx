@@ -69,6 +69,7 @@ interface MemberProfile {
   email: string;
   avatar?: string;
   role: WorkspaceRole;
+  disabled?: boolean;
 }
 
 interface ActivityEvent {
@@ -393,13 +394,16 @@ const WorkspaceDetailPage: React.FC = () => {
             name: data.name || data.displayName || `Crew Member ${memberUid.slice(-4)}`,
             email: data.email || '',
             avatar: data.profileImageUrl || data.avatarUrl || '',
-            role: roleByUid.get(memberUid) || 'member'
+            role: roleByUid.get(memberUid) || 'member',
+            disabled: data.disabled === true
           } as MemberProfile;
         }));
         if (cancelled) return;
+        // Soft-disabled members (crewProfiles/{uid}.disabled === true) are hidden from the list.
+        const visible = profiles.filter(member => !member.disabled);
         const roleOrder: Record<string, number> = { owner: 0, admin: 1, supervisor: 2, member: 3, viewer: 4 };
-        profiles.sort((a, b) => (roleOrder[a.role] ?? 5) - (roleOrder[b.role] ?? 5) || a.name.localeCompare(b.name));
-        setMemberProfiles(profiles);
+        visible.sort((a, b) => (roleOrder[a.role] ?? 5) - (roleOrder[b.role] ?? 5) || a.name.localeCompare(b.name));
+        setMemberProfiles(visible);
       } catch (err) {
         console.error('Error loading member profiles:', err);
         if (!cancelled) setMemberProfiles([]);

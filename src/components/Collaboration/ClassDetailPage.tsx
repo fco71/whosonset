@@ -230,7 +230,9 @@ const ClassDetailPage: React.FC = () => {
         });
         const profiles = await fetchCrewProfilesByIds(Array.from(groupNamesByUid.keys()));
         const profileByUid = new Map(profiles.map(profile => [profile.id, profile]));
-        const derived: RosterEntry[] = Array.from(groupNamesByUid.entries()).map(([studentUid, groupNames]) => {
+        const derived: RosterEntry[] = Array.from(groupNamesByUid.entries())
+          .filter(([studentUid]) => !profileByUid.get(studentUid)?.disabled)
+          .map(([studentUid, groupNames]) => {
           const profile = profileByUid.get(studentUid);
           return {
             key: studentUid,
@@ -283,7 +285,9 @@ const ClassDetailPage: React.FC = () => {
         );
         const profileByUid = new Map(profiles.map(profile => [profile.id, profile]));
         if (cancelled) return;
-        setManualRoster(manualStudents.map(student => {
+        setManualRoster(manualStudents
+          .filter(student => !(student.uid && profileByUid.get(student.uid)?.disabled))
+          .map(student => {
           const profile = student.uid ? profileByUid.get(student.uid) : undefined;
           return {
             key: student.uid || student.id,
