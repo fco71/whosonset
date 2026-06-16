@@ -108,6 +108,15 @@ function grantWorkspaceMembershipInTx(
   transaction.update(workspaceRef, {
     members: updatedMembers,
     memberIds: admin.firestore.FieldValue.arrayUnion(uid),
+    // Mirror respondToWorkspaceInvitation: keep the role arrays consistent with the granted
+    // role. Without the arrayRemove, a uid left in supervisorIds/viewerIds from a prior
+    // elevation would silently re-elevate the user when they're approved back as a member.
+    supervisorIds: role === "supervisor"
+      ? admin.firestore.FieldValue.arrayUnion(uid)
+      : admin.firestore.FieldValue.arrayRemove(uid),
+    viewerIds: role === "viewer"
+      ? admin.firestore.FieldValue.arrayUnion(uid)
+      : admin.firestore.FieldValue.arrayRemove(uid),
     updatedAt: admin.firestore.FieldValue.serverTimestamp()
   });
 
