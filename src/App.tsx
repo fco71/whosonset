@@ -11,6 +11,8 @@ import '@fontsource/inter/700.css';
 import './styles/fonts/satoshi.css';
 import './App.module.scss';
 import { removeStructuredData, setPageSeo, setStructuredData } from './utilities/seo';
+import { setAnalyticsUser } from './utilities/analytics';
+import { db, doc, setDoc, serverTimestamp } from './firebase';
 
 // Import components
 import Navigation from './components/Navigation';
@@ -142,7 +144,21 @@ function AppContent() {
       removeStructuredData(GLOBAL_SITE_SCHEMA_ID);
     };
   }, []);
-  
+
+  // Tie GA4 sessions to a stable user id (for returning-user / retention reporting)
+  // and record a best-effort lastActiveAt so retention is also visible in Firestore.
+  // Runs once per signed-in user per load; the users-doc self-write is allowed by rules.
+  useEffect(() => {
+    const uid = currentUser?.uid;
+    if (!uid) return;
+    setAnalyticsUser(uid);
+    setDoc(
+      doc(db, 'users', uid),
+      { lastActiveAt: serverTimestamp(), lastActiveDate: new Date().toISOString().slice(0, 10) },
+      { merge: true }
+    ).catch(() => {/* best-effort; never block the UI */});
+  }, [currentUser?.uid]);
+
   const handleSignOut = async () => {
     try {
       await logout();

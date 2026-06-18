@@ -1,0 +1,32 @@
+{
+  "_comment": "Single source of truth for the programmatic crew directory (Spanish-first SEO landing pages). Used by the directory pages (src) and the sitemap generator (scripts/generate-directory-sitemap.cjs). 'department' MUST match the names seeded in jobDepartments.js so crew filtering works.",
+  "categories": [
+    { "slug": "produccion", "es": "Producción", "en": "Production", "department": "Production" },
+    { "slug": "locaciones", "es": "Locaciones", "en": "Locations", "department": "Locations" },
+    { "slug": "direccion", "es": "Dirección", "en": "Directing", "department": "Directing" },
+    { "slug": "guion", "es": "Guion", "en": "Writing", "department": "Writing" },
+    { "slug": "camara", "es": "Cámara", "en": "Camera", "department": "Camera" },
+    { "slug": "sonido", "es": "Sonido", "en": "Sound", "department": "Sound" },
+    { "slug": "electrica-y-grip", "es": "Eléctrica y Grip", "en": "Grip & Electric", "department": "Grip & Electric" },
+    { "slug": "arte-y-decoracion", "es": "Arte y Decoración", "en": "Art Department & Set Decoration", "department": "Art Department & Set Decoration" },
+    { "slug": "vestuario", "es": "Vestuario", "en": "Costume & Wardrobe", "department": "Costume & Wardrobe" },
+    { "slug": "maquillaje-y-peinado", "es": "Maquillaje y Peinado", "en": "Hair & Makeup", "department": "Hair & Makeup" },
+    { "slug": "postproduccion", "es": "Postproducción", "en": "Post-Production", "department": "Post-Production" },
+    { "slug": "musica", "es": "Música", "en": "Music", "department": "Music" },
+    { "slug": "transporte", "es": "Transporte", "en": "Transportation", "department": "Transportation" },
+    { "slug": "dobles-y-efectos", "es": "Dobles y Efectos", "en": "Stunts & Effects", "department": "Stunts & Effects" },
+    { "slug": "equipo-de-apoyo", "es": "Equipo de Apoyo", "en": "Support & General Crew", "department": "Support & General Crew" },
+    { "slug": "casting", "es": "Casting", "en": "Casting", "department": "Casting" }
+  ],
+  "regions": [
+    { "slug": "republica-dominicana", "label": "República Dominicana", "national": true, "cities": [] },
+    { "slug": "santo-domingo", "label": "Santo Domingo", "cities": ["Santo Domingo", "Distrito Nacional", "Santo Domingo Este", "Santo Domingo Norte", "Santo Domingo Oeste"] },
+    { "slug": "santiago", "label": "Santiago", "cities": ["Santiago", "Santiago de los Caballeros"] },
+    { "slug": "punta-cana", "label": "Punta Cana", "cities": ["Punta Cana", "Bávaro", "La Altagracia", "Higüey"] },
+    { "slug": "puerto-plata", "label": "Puerto Plata", "cities": ["Puerto Plata", "Sosúa", "Cabarete"] },
+    { "slug": "la-romana", "label": "La Romana", "cities": ["La Romana", "Bayahíbe"] },
+    { "slug": "samana", "label": "Samaná", "cities": ["Samaná", "Las Terrenas"] },
+    { "slug": "la-vega", "label": "La Vega", "cities": ["La Vega", "Jarabacoa", "Constanza"] },
+    { "slug": "san-pedro-de-macoris", "label": "San Pedro de Macorís", "cities": ["San Pedro de Macorís"] }
+  ]
+}

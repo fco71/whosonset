@@ -40,9 +40,16 @@ const firebaseConfig = {
   storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
   appId:      process.env.REACT_APP_FIREBASE_APP_ID,
+  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID,
 };
 
 const app = initializeApp(firebaseConfig);
+
+// Initialize Google Analytics (GA4). Dynamically imported and self-guarded so it
+// never blocks startup and is a no-op where analytics isn't supported.
+import('./utilities/analytics')
+  .then(({ initAnalytics }) => initAnalytics(app))
+  .catch(() => {/* analytics is best-effort */});
 
 const appCheckSiteKey = process.env.REACT_APP_FIREBASE_APP_CHECK_SITE_KEY;
 const appCheckDebugToken = process.env.REACT_APP_FIREBASE_APP_CHECK_DEBUG_TOKEN;
