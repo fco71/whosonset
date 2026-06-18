@@ -17,6 +17,9 @@ import { EmailService } from "./emailService";
 // during account deletion). Defined in its own module; re-exported so Firebase deploys it.
 export { cleanupUserWorkspaces } from "./cleanupUserWorkspaces";
 export { onAuthUserDeleted } from "./onAuthUserDeleted";
+// Dynamic rendering: serves crawlers/social scrapers correct per-URL meta + JSON-LD
+// for /jobs/:id, /blog/:id, /resume/:uid (Hosting rewrites point at this). See prerender.ts.
+export { prerender } from "./prerender";
 export { respondToWorkspaceInvitation } from "./workspaceInvitations";
 export { setWorkspaceSupervisorMode } from "./workspaceSupervisors";
 // Student-initiated "request to join a group" + the server-maintained classDirectory that

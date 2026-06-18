@@ -16,6 +16,17 @@ firebase-debug.*.log*
 bundle-analysis.html
 
 # Firebase config
+# Service-account keys — NEVER commit these (they grant full project access)
+serviceAccount.json
+*firebase-adminsdk*.json
+*-service-account*.json
+
+# Firebase Auth export (contains emails + password hashes — keep local)
+auth-users.json
+*auth-export*.json
+
+# Generated audience reports
+audience-report/
 
 # Uncomment this if you'd like others to create their own Firebase project.
 # For a team working on the same Firebase project(s), it is recommended to leave

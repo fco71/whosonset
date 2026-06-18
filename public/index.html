@@ -3,6 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#1d4ed8" />
+  <link rel="icon" href="/my-icon.png" />
+
+  <!-- Satoshi (display/headings) is self-hosted and bundled via src/styles/fonts/satoshi.css -->
+
+  <!--
+    The two <meta name="prerender-managed"> tags below bracket the SEO block that the
+    `prerender` Cloud Function swaps with per-URL tags when a crawler or social scraper
+    requests a job, blog post, or public resume. Meta markers are used (not HTML comments)
+    because the production build strips comments. Humans always get the SPA unchanged.
+  -->
+  <meta name="prerender-managed" content="start" />
   <title>My Film Jobs | Film Industry Jobs and Crew Networking</title>
   <meta
     name="description"
@@ -12,12 +24,7 @@
     name="robots"
     content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
   />
-  <meta name="theme-color" content="#1d4ed8" />
-
-  <link rel="icon" href="/my-icon.png" />
   <link rel="canonical" href="https://myfilmjobs.com/" />
-
-  <!-- Satoshi (display/headings) is self-hosted and bundled via src/styles/fonts/satoshi.css -->
 
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="My Film Jobs" />
@@ -41,6 +48,7 @@
   />
   <meta name="twitter:image" content="https://myfilmjobs.com/og-image.jpg" />
   <meta name="twitter:image:alt" content="My Film Jobs crew networking dashboard preview" />
+  <meta name="prerender-managed" content="end" />
 </head>
 <body>
   <div id="root"></div>
