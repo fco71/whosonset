@@ -36,8 +36,12 @@ const ELEMENT_WIDTHS: Record<ScreenplayElementType, number> = {
   transition: 60
 };
 
-// Standard screenplay page ≈ 55 lines of text at standard margins.
-export const LINES_PER_PAGE = 55;
+// A US Letter screenplay page is ~54 text lines (1in margins, 12pt Courier @ 6 lines/in).
+// We use 53 as the *effective* lines/page to approximate page-break waste (elements pushed
+// to the next page leave slack a tight linear count misses). Calibrated against a real
+// 70-page Highland export: wrap widths matched the rendered lines exactly, and 53 lands the
+// count on 70. See git history / fountain.test for the calibration.
+export const LINES_PER_PAGE = 53;
 
 // Blank lines that precede an element in standard screenplay layout. A blank line
 // separates element blocks (this is what the old heuristic missed for action/transition,
@@ -149,7 +153,7 @@ export function parseFountain(source: string): ParsedElement[] {
  * Estimate how many pages the source fills. Heuristic, not a true layout engine:
  *  - each element wraps at an element-specific character width
  *  - a blank line is reserved before each scene heading and character cue
- *  - 55 wrapped lines ≈ 1 page
+ *  - 53 wrapped lines ≈ 1 page
  */
 export function computePageCount(source: string): number {
   const elements = parseFountain(source);
@@ -182,7 +186,7 @@ export interface PaginatedElement extends ParsedElement {
 /**
  * Annotate each element with the page it starts on. Same heuristic as computePageCount:
  * element-specific wrap widths, a reserved blank line before scene headings + character
- * cues, 55 wrapped lines per page.
+ * cues, 53 wrapped lines per page.
  */
 export function paginateElements(source: string): PaginatedElement[] {
   const elements = parseFountain(source);

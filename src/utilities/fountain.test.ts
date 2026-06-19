@@ -122,10 +122,11 @@ describe('computePageCount', () => {
 
   it('counts blank separators between action paragraphs', () => {
     // 110 single-line action paragraphs (each < 60 chars => 1 wrapped line),
-    // separated by blanks: 110 text lines + 109 separators = 219 layout lines.
+    // separated by blanks: 110 text lines + 109 separators = 219 layout lines,
+    // which spans 5 effective 53-line pages.
     const actionLines = Array.from({ length: 110 }, (_, i) => `Action paragraph number ${i}.`);
     const source = actionLines.join('\n\n');
-    expect(computePageCount(source)).toBe(4);
+    expect(computePageCount(source)).toBe(5);
   });
 
   it('wraps long action lines into multiple counted lines', () => {
@@ -282,8 +283,8 @@ describe('element type cycling', () => {
 });
 
 describe('constants', () => {
-  it('uses 55 lines per page', () => {
-    expect(LINES_PER_PAGE).toBe(55);
+  it('uses 53 effective lines per page', () => {
+    expect(LINES_PER_PAGE).toBe(53);
   });
 });
 
