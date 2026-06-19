@@ -1,5 +1,7 @@
 import * as admin from "firebase-admin";
 import { onRequest } from "firebase-functions/v2/https";
+import * as fs from "fs";
+import * as path from "path";
 
 /**
  * Dynamic rendering for crawlers and social-link scrapers.
@@ -137,23 +139,54 @@ function injectHead(template: string, head: string): string {
 }
 
 // ---- index.html template cache (self-updating across deploys) ----
-let templateCache: { html: string; at: number } | null = null;
-const TEMPLATE_TTL_MS = 10 * 60 * 1000;
+// Template source. The ONLY reliable source is the copy of index.html bundled WITH the
+// function at deploy time (scripts/copy-template-to-functions.cjs). Its asset hashes always
+// match the hosting build it shipped alongside, so it can never cause a script-mismatch
+// blank page — and there's no runtime network dependency. A fetch of the *requesting site's
+// own* shell is kept only as a last resort if the bundled copy is somehow missing. We never
+// fetch a different origin (doing so served prod's script hashes onto dev = blank page).
+function loadBundledTemplate(): string | null {
+  for (const p of [
+    path.join(__dirname, "prerender-template.html"),
+    path.join(__dirname, "..", "prerender-template.html"),
+  ]) {
+    try {
+      if (fs.existsSync(p)) return fs.readFileSync(p, "utf8");
+    } catch {
+      /* try next candidate */
+    }
+  }
+  console.error("[prerender] bundled template not found; will fall back to same-origin fetch");
+  return null;
+}
 
-async function getTemplate(origin: string): Promise<string | null> {
-  const now = Date.now();
-  if (templateCache && now - templateCache.at < TEMPLATE_TTL_MS) return templateCache.html;
+const BUNDLED_TEMPLATE: string | null = loadBundledTemplate();
+let fetchedFallback: string | null = null;
+
+async function getTemplate(reqHost?: string): Promise<string | null> {
+  // Bundled copy first — always matches this deploy's assets.
+  if (BUNDLED_TEMPLATE) return BUNDLED_TEMPLATE;
+  if (fetchedFallback) return fetchedFallback;
+
+  // Last resort only: fetch the shell from the SAME host that's being requested, so the
+  // script hashes still match (never a hard-coded/cross origin).
   try {
+    const origin = reqHost ? `https://${reqHost}` : "https://myfilmjobs.com";
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 2500);
     const resp = await fetch(`${origin}/index.html`, {
       headers: { "user-agent": "prerender-template-fetch", "cache-control": "no-cache" },
+      signal: controller.signal,
     });
+    clearTimeout(timer);
     if (!resp.ok) throw new Error(`template fetch ${resp.status}`);
     const html = await resp.text();
-    templateCache = { html, at: now };
+    if (!html.includes('id="root"')) throw new Error("fetched template missing app root");
+    fetchedFallback = html;
     return html;
   } catch (e) {
-    console.error("[prerender] template fetch failed:", (e as Error).message);
-    return templateCache?.html ?? null; // serve last-good if available
+    console.error("[prerender] no bundled template and same-origin fetch failed:", (e as Error).message);
+    return null;
   }
 }
 
@@ -309,8 +342,9 @@ async function buildResume(db: admin.firestore.Firestore, uid: string): Promise<
     200
   );
   const image = c.profileImageUrl ? absUrl(c.profileImageUrl) : DEFAULT_OG_IMAGE;
-  // The /resume/:uid route is the public profile surface; honor an explicit opt-out only.
-  const isPublic = c.isPublic !== false && c.profileVisibility !== "private";
+  // Only index/preview profiles that are public-readable (isPublished), matching the
+  // crewProfiles security rule (allow read if signedIn() || isPublished == true).
+  const isPublic = c.isPublished === true;
 
   const jsonLd: Record<string, unknown> = {
     "@context": "https://schema.org",
@@ -337,17 +371,17 @@ async function buildResume(db: admin.firestore.Firestore, uid: string): Promise<
 }
 
 export const prerender = onRequest({ region: "us-central1", invoker: "public" }, async (req, res) => {
-  const host = req.headers.host || "myfilmjobs.com";
-  const fetchOrigin = `https://${host}`;
-  const template = await getTemplate(fetchOrigin);
+  const template = await getTemplate(req.headers.host);
 
-  // Fast path: humans (or no template) get the SPA shell unchanged, no Firestore read.
+  // Fast path: humans (or, defensively, a missing template) get the SPA shell unchanged.
+  // `template` is backed by the index.html copy bundled with the function, so it is
+  // effectively never null — this is what prevents the previous blank-page failure mode.
   if (!isBot(req.headers["user-agent"]) || !template) {
     res
       .status(200)
       .set("Content-Type", "text/html; charset=utf-8")
       .set("Cache-Control", "public, max-age=0, s-maxage=120")
-      .send(template || "<!doctype html><title>My Film Jobs</title><div id=\"root\"></div>");
+      .send(template || BUNDLED_TEMPLATE || "<!doctype html><title>My Film Jobs</title><div id=\"root\"></div>");
     return;
   }
 

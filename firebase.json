@@ -95,6 +95,27 @@
           }
         },
         {
+          "source": "jobs/**",
+          "function": {
+            "functionId": "prerender",
+            "region": "us-central1"
+          }
+        },
+        {
+          "source": "blog/**",
+          "function": {
+            "functionId": "prerender",
+            "region": "us-central1"
+          }
+        },
+        {
+          "source": "resume/**",
+          "function": {
+            "functionId": "prerender",
+            "region": "us-central1"
+          }
+        },
+        {
           "source": "**",
           "destination": "/index.html"
         }

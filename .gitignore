@@ -88,6 +88,8 @@ node_modules
 # Build output
 dist/
 build/
+# Generated at build time and bundled with the prerender function (see scripts/copy-template-to-functions.cjs)
+functions/prerender-template.html
 public/*.bundle.js
 public/*.bundle.js.map
 public/*.chunk.js
