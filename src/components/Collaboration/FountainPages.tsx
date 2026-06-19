@@ -13,13 +13,16 @@ interface FountainPagesProps {
    * of elements (let html2pdf paginate physically), no on-screen page-number badges.
    */
   printMode?: boolean;
+  /** Render at a fixed true page width (US Letter @96dpi) so the preview shows real
+   *  page proportions instead of reflowing with the pane width. */
+  pageAccurate?: boolean;
 }
 
 // Presentational, screenplay-formatted render of Fountain source. Groups elements into
 // pages (per the line-count heuristic) and draws each as a white "sheet" with the page
 // number in the top-right corner — the standard screenplay convention (page 1 unnumbered).
 // Shared by FountainViewer (read), FountainEditor (live preview), and the PDF export.
-const FountainPages: React.FC<FountainPagesProps> = ({ source, innerRef, compact, printMode }) => {
+const FountainPages: React.FC<FountainPagesProps> = ({ source, innerRef, compact, printMode, pageAccurate }) => {
   const { t } = useTranslation();
 
   const elementsFlat = useMemo(() => paginateElements(source), [source]);
@@ -48,7 +51,7 @@ const FountainPages: React.FC<FountainPagesProps> = ({ source, innerRef, compact
   if (pages.length === 0) {
     return (
       <div ref={innerRef} style={stackStyle(compact)}>
-        <div style={pageSheetStyle(compact)}>
+        <div style={pageSheetStyle(compact, pageAccurate)}>
           <div style={{ color: '#94a3b8', fontStyle: 'italic' }}>{t('fountain.emptyDraft')}</div>
         </div>
       </div>
@@ -58,7 +61,7 @@ const FountainPages: React.FC<FountainPagesProps> = ({ source, innerRef, compact
   return (
     <div ref={innerRef} style={stackStyle(compact)}>
       {pages.map(([pageNumber, elements]) => (
-        <div key={pageNumber} style={pageSheetStyle(compact)} data-page={pageNumber} className="fountain-page-sheet">
+        <div key={pageNumber} style={pageSheetStyle(compact, pageAccurate)} data-page={pageNumber} className="fountain-page-sheet">
           {/* Screenplay page number: top-right, "N." — omitted on page 1 by convention. */}
           {pageNumber > 1 && <div style={pageNumberStyle}>{pageNumber}.</div>}
           {elements.map((element, index) => (
@@ -89,15 +92,16 @@ function stackStyle(compact?: boolean): React.CSSProperties {
   };
 }
 
-function pageSheetStyle(compact?: boolean): React.CSSProperties {
+function pageSheetStyle(compact?: boolean, pageAccurate?: boolean): React.CSSProperties {
   return {
     position: 'relative',
     background: '#ffffff',
-    width: '100%',
-    maxWidth: 680,
+    width: pageAccurate ? 816 : '100%',
+    maxWidth: pageAccurate ? 'none' : 680,
+    flexShrink: 0,
     margin: '0 auto',
     boxShadow: '0 8px 22px rgba(15, 23, 42, 0.16)',
-    padding: compact ? '48px 56px' : '64px clamp(48px, 9%, 96px)',
+    padding: pageAccurate ? '72px 96px' : (compact ? '48px 56px' : '64px clamp(48px, 9%, 96px)'),
     fontFamily: '"Courier Prime", "Courier New", Courier, monospace',
     fontSize: 15,
     lineHeight: 1.5,

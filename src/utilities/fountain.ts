@@ -39,6 +39,20 @@ const ELEMENT_WIDTHS: Record<ScreenplayElementType, number> = {
 // Standard screenplay page ≈ 55 lines of text at standard margins.
 export const LINES_PER_PAGE = 55;
 
+// Blank lines that precede an element in standard screenplay layout. A blank line
+// separates element blocks (this is what the old heuristic missed for action/transition,
+// causing a ~25-30% page undercount); scene headings get a double space; dialogue and
+// parentheticals continue the character's block with no separator.
+function leadingBlanks(
+  type: ScreenplayElementType,
+  prevType: ScreenplayElementType | null
+): number {
+  if (prevType === null) return 0;
+  if (type === 'dialogue' || type === 'parenthetical') return 0;
+  if (type === 'scene_heading') return 2; // double-space before a new scene
+  return 1; // action, character, transition each begin a new block
+}
+
 // Tab cycles element types in this order (matches Final Draft / Highland muscle memory).
 const TAB_CYCLE: ScreenplayElementType[] = [
   'action',
@@ -145,9 +159,7 @@ export function computePageCount(source: string): number {
   let prevType: ScreenplayElementType | null = null;
 
   for (const element of elements) {
-    if ((element.type === 'scene_heading' || element.type === 'character') && prevType !== null) {
-      totalLines += 1; // blank-line separator before the block
-    }
+    totalLines += leadingBlanks(element.type, prevType);
     const width = ELEMENT_WIDTHS[element.type];
     const stripped = element.text.replace(/^[.>@]/, '');
     const wrapped = Math.max(1, Math.ceil(stripped.length / width));
@@ -179,9 +191,7 @@ export function paginateElements(source: string): PaginatedElement[] {
   let prevType: ScreenplayElementType | null = null;
 
   for (const element of elements) {
-    if ((element.type === 'scene_heading' || element.type === 'character') && prevType !== null) {
-      totalLines += 1;
-    }
+    totalLines += leadingBlanks(element.type, prevType);
     const page = Math.floor(totalLines / LINES_PER_PAGE) + 1;
     const width = ELEMENT_WIDTHS[element.type];
     const stripped = element.text.replace(/^[.>@]/, '');

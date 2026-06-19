@@ -61,9 +61,10 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, projectId, 
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [activeType, setActiveType] = useState<ScreenplayElementType>('action');
   const [currentPage, setCurrentPage] = useState(1);
-  const [showPreview, setShowPreview] = useState(true);
+  const [showPreview, setShowPreview] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [activeSceneLine, setActiveSceneLine] = useState<number | null>(null);
   const [editorPanePct, setEditorPanePct] = useState(50); // width % of the editor pane when preview is shown
   const printRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -453,6 +454,12 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, projectId, 
             <div style={sceneNavigatorHeaderStyle}>
               {t('fountain.sceneNavigator')} ({sceneDescriptors.length})
             </div>
+            <style>{`
+              .mfj-scene-btn { background: transparent; transition: background 0.12s ease; }
+              .mfj-scene-btn:hover { background: #eef2ff; }
+              .mfj-scene-btn:active { background: #c7d2fe; }
+              .mfj-scene-btn.is-active { background: #e0e7ff; box-shadow: inset 3px 0 0 #6366f1; }
+            `}</style>
             <div style={{ overflowY: 'auto', flex: 1 }}>
               {sceneDescriptors.length === 0 ? (
                 <div style={sceneNavigatorEmptyStyle}>{t('screenplay.scenes.fountainEmpty')}</div>
@@ -461,7 +468,8 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, projectId, 
                   <button
                     key={`${descriptor.lineIndex}-${descriptor.heading}`}
                     type="button"
-                    onClick={() => jumpToScene(descriptor.lineIndex)}
+                    className={`mfj-scene-btn${descriptor.lineIndex === activeSceneLine ? ' is-active' : ''}`}
+                    onClick={() => { setActiveSceneLine(descriptor.lineIndex); jumpToScene(descriptor.lineIndex); }}
                     style={sceneNavigatorButtonStyle}
                     title={descriptor.heading}
                   >
@@ -479,9 +487,13 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, projectId, 
           </nav>
           <div
             style={{
-              flex: showPreview ? `0 0 ${editorPanePct}%` : '1 1 100%',
+              flex: '1 1 100%',
               minWidth: 0,
-              display: 'flex',
+              // Window-switch: the editor stays mounted (keeps the textarea ref + cursor)
+              // but hides while previewing — so the writing canvas is full-width when
+              // writing and the preview is full-width when reviewing, never squeezed
+              // side by side.
+              display: showPreview ? 'none' : 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               background: '#ffffff',
@@ -501,19 +513,9 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, projectId, 
             />
           </div>
           {showPreview && (
-            <>
-              <div
-                style={dividerStyle}
-                onMouseDown={startResize}
-                role="separator"
-                aria-orientation="vertical"
-                aria-label={t('fountain.resizeHandle')}
-                title={t('fountain.resizeHandle')}
-              />
-              <div style={previewPaneStyle}>
-                <FountainPages source={source} compact />
-              </div>
-            </>
+            <div style={previewPaneStyle}>
+              <FountainPages source={source} pageAccurate />
+            </div>
           )}
         </div>
 
@@ -586,7 +588,6 @@ const sceneNavigatorButtonStyle: React.CSSProperties = {
   width: '100%',
   border: 'none',
   borderBottom: '1px solid #eef2f7',
-  background: 'transparent',
   padding: '7px 8px',
   color: '#334155',
   cursor: 'pointer',
@@ -605,7 +606,7 @@ const sceneNavigatorNumberStyle: React.CSSProperties = {
 const previewPaneStyle: React.CSSProperties = {
   flex: 1,
   minWidth: 0,
-  overflowY: 'auto',
+  overflow: 'auto', // scroll both axes: page-accurate sheets are a fixed width
   background: '#e5e7eb'
 };
 

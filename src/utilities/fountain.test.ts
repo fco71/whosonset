@@ -120,14 +120,12 @@ describe('computePageCount', () => {
     expect(computePageCount(source)).toBe(1);
   });
 
-  it('grows roughly one page per ~55 lines of action', () => {
+  it('counts blank separators between action paragraphs', () => {
     // 110 single-line action paragraphs (each < 60 chars => 1 wrapped line),
-    // separated by blanks. ~110 lines / 55 ≈ 2 pages.
+    // separated by blanks: 110 text lines + 109 separators = 219 layout lines.
     const actionLines = Array.from({ length: 110 }, (_, i) => `Action paragraph number ${i}.`);
     const source = actionLines.join('\n\n');
-    const pages = computePageCount(source);
-    expect(pages).toBeGreaterThanOrEqual(2);
-    expect(pages).toBeLessThanOrEqual(3);
+    expect(computePageCount(source)).toBe(4);
   });
 
   it('wraps long action lines into multiple counted lines', () => {
