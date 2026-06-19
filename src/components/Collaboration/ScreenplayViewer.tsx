@@ -2549,10 +2549,13 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                                     const isSingleLine = heightPx < 32;
                                     const verticalPad = isSingleLine ? 4 : 0;
                                     const markerOffset = isSingleLine ? -18 : -20;
-                                    // Supervisor tags use a deeper amber so they pop against regular tags
-                                    // without losing the 🏷️ glyph that distinguishes a tag from an annotation.
-                                    const tagBaseColor = tag.supervisorAtAuthorTime ? '180, 83, 9' : '245, 158, 11';
-                                    const tagPinColor = tag.supervisorAtAuthorTime ? '#b45309' : '#f59e0b';
+                                    // Color each on-page tag by its tag TYPE (tag.color) so the page reads at a
+                                    // glance. Supervisor tags keep the 🏷️ glyph; falls back to amber if unset.
+                                    const tagHexMatch = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(tag.color || '');
+                                    const tagPinColor = tag.color || (tag.supervisorAtAuthorTime ? '#b45309' : '#f59e0b');
+                                    const tagBaseColor = tagHexMatch
+                                      ? `${parseInt(tagHexMatch[1], 16)}, ${parseInt(tagHexMatch[2], 16)}, ${parseInt(tagHexMatch[3], 16)}`
+                                      : (tag.supervisorAtAuthorTime ? '180, 83, 9' : '245, 158, 11');
                                     return (
                                       <React.Fragment key={`tag-${tag.id}`}>
                                         <div

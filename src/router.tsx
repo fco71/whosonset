@@ -54,6 +54,8 @@ const PublicCrewPage = React.lazy(() => import('./pages/PublicCrewPage'));
 const MyStudentsPage = React.lazy(() => import('./pages/MyStudentsPage'));
 const BlogPage = React.lazy(() => import('./pages/BlogPage'));
 const BlogPostPage = React.lazy(() => import('./pages/BlogPostPage'));
+const DirectoryHubPage = React.lazy(() => import('./pages/DirectoryHubPage'));
+const DirectoryLandingPage = React.lazy(() => import('./pages/DirectoryLandingPage'));
 
 // Import the main App component that will handle the layout
 import App from './App';
@@ -80,6 +82,14 @@ export function createAppRouter() {
         {
           path: 'blog/:postId',
           element: <BlogPostPage />
+        },
+        {
+          path: 'directorio',
+          element: <DirectoryHubPage />
+        },
+        {
+          path: 'directorio/:categorySlug/:regionSlug',
+          element: <DirectoryLandingPage />
         },
         { 
           path: 'crew', 

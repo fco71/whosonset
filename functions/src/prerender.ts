@@ -342,9 +342,10 @@ async function buildResume(db: admin.firestore.Firestore, uid: string): Promise<
     200
   );
   const image = c.profileImageUrl ? absUrl(c.profileImageUrl) : DEFAULT_OG_IMAGE;
-  // Only index/preview profiles that are public-readable (isPublished), matching the
-  // crewProfiles security rule (allow read if signedIn() || isPublished == true).
-  const isPublic = c.isPublished === true;
+  // Privacy gate: never reveal a non-published profile's identity in a link preview.
+  // Returning null makes the function serve the default site card instead — matching the
+  // crewProfiles security rule (public read only when isPublished == true).
+  if (c.isPublished !== true) return null;
 
   const jsonLd: Record<string, unknown> = {
     "@context": "https://schema.org",
@@ -365,8 +366,7 @@ async function buildResume(db: admin.firestore.Firestore, uid: string): Promise<
     canonical: `${CANONICAL_ORIGIN}/resume/${encodeURIComponent(uid)}`,
     ogType: "profile",
     image,
-    robots: isPublic ? undefined : "noindex, nofollow",
-    jsonLd: isPublic ? jsonLd : undefined,
+    jsonLd,
   };
 }
 

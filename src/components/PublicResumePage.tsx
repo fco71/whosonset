@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+import { useAuth } from '../contexts/AuthContext';
 import ResumeView from './ResumeView';
 import CrewProfileHeader from './CrewProfileHeader';
 
@@ -29,6 +30,8 @@ type LoadingState = typeof LOADING_STATES[keyof typeof LOADING_STATES];
 const PublicResumePage: React.FC<PublicResumePageProps> = () => {
   const { uid } = useParams<{ uid: string }>();
   const { t } = useTranslation();
+  const { currentUser } = useAuth();
+  const isOwnProfile = !!currentUser?.uid && currentUser.uid === uid;
   const [profile, setProfile] = useState<CrewProfile | null>(null);
   const [status, setStatus] = useState<LoadingState>(LOADING_STATES.LOADING);
   const [error, setError] = useState<string | null>(null);
@@ -62,7 +65,9 @@ const PublicResumePage: React.FC<PublicResumePageProps> = () => {
           profileData: { ...profileData, profileImageUrl: '...' }
         });
 
-        if (!profileData.isPublished) {
+        // Owners can always view their own profile (even while it's private);
+        // everyone else only sees published profiles.
+        if (!profileData.isPublished && !isOwnProfile) {
           throw new Error('Profile is not published');
         }
 
@@ -76,7 +81,7 @@ const PublicResumePage: React.FC<PublicResumePageProps> = () => {
     };
 
     fetchResume();
-  }, [uid]);
+  }, [uid, isOwnProfile]);
 
 
   // Always call hooks in the same order

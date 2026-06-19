@@ -8,6 +8,7 @@ const filesToCopy = [
   'robots.txt',
   'sitemap.xml',
   'sitemap-static.xml',
+  'sitemap-directory.xml',
   'googlebc4b6f0f06687f39.html',
   'my-icon.png',
   'og-image.jpg',
