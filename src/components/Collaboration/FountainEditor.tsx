@@ -17,7 +17,7 @@ import {
   nextElementType,
   prevElementType
 } from '../../utilities/fountain';
-import { exportElementToPdf } from '../../utilities/exportFountainPdf';
+import { exportFountainSourceToPdf } from '../../utilities/exportFountainPdf';
 import FountainPages from './FountainPages';
 
 interface FountainEditorProps {
@@ -289,10 +289,9 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, projectId, 
   }, []);
 
   const handleDownloadPdf = async () => {
-    if (!printRef.current) return;
     setExporting(true);
     try {
-      await exportElementToPdf(printRef.current, screenplay.name);
+      await exportFountainSourceToPdf(source, screenplay.name);
     } catch (err) {
       console.error('PDF export failed:', err);
       toast.error(t('fountain.pdfError'));

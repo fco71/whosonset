@@ -4,7 +4,7 @@ import { db } from '../../firebase';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 import { computePageCount } from '../../utilities/fountain';
-import { exportElementToPdf } from '../../utilities/exportFountainPdf';
+import { exportFountainSourceToPdf } from '../../utilities/exportFountainPdf';
 import FountainPages from './FountainPages';
 
 interface FountainViewerProps {
@@ -52,10 +52,9 @@ const FountainViewer: React.FC<FountainViewerProps> = ({
   const pageCount = useMemo(() => computePageCount(source), [source]);
 
   const handleDownloadPdf = async () => {
-    if (!printRef.current) return;
     setExporting(true);
     try {
-      await exportElementToPdf(printRef.current, screenplayName || 'screenplay');
+      await exportFountainSourceToPdf(source, screenplayName || 'screenplay');
     } catch (err) {
       console.error('PDF export failed:', err);
       toast.error(t('fountain.pdfError'));
