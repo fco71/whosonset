@@ -22,7 +22,7 @@ export async function exportElementToPdf(element: HTMLElement, name: string): Pr
     image: { type: 'jpeg', quality: 0.98 },
     html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
     jsPDF: { unit: 'pt', format: 'letter', orientation: 'portrait' },
-    pagebreak: { mode: ['css', 'legacy'] }
+    pagebreak: { mode: ['css', 'legacy'], avoid: '.mfj-screenplay-el' }
   } as Parameters<ReturnType<typeof html2pdf>['set']>[0];
 
   // Render to a jsPDF instance, stamp screenplay-style page numbers (top-right "N.",

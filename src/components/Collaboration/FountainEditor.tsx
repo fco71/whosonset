@@ -335,6 +335,12 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, projectId, 
     const end = start + (lines[lineIndex]?.length || 0);
     textarea.focus();
     textarea.setSelectionRange(start, end);
+    // focus() + setSelectionRange alone often doesn't scroll the caret into view on the
+    // first click (the "needs a double-click" bug). Scroll explicitly to the scene's line.
+    requestAnimationFrame(() => {
+      const frac = lines.length > 1 ? lineIndex / lines.length : 0;
+      textarea.scrollTop = Math.max(0, frac * textarea.scrollHeight - textarea.clientHeight * 0.3);
+    });
     setActiveType('scene_heading');
     setCurrentPage(computePageAtCaret(source, start));
   };

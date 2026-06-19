@@ -42,7 +42,15 @@ const FountainPages: React.FC<FountainPagesProps> = ({ source, innerRef, compact
     return (
       <div ref={innerRef} style={printSheetStyle}>
         {elementsFlat.map((element, index) => (
-          <div key={index} style={elementStyle(element.type)}>{element.text}</div>
+          <div
+            key={index}
+            className="mfj-screenplay-el"
+            // Never let a page break fall inside an element — this is what stops the PDF
+            // from slicing through the middle of a line/paragraph.
+            style={{ ...elementStyle(element.type), pageBreakInside: 'avoid', breakInside: 'avoid' }}
+          >
+            {element.text}
+          </div>
         ))}
       </div>
     );
@@ -135,11 +143,13 @@ const printSheetStyle: React.CSSProperties = {
 function elementStyle(type: ScreenplayElementType): React.CSSProperties {
   switch (type) {
     case 'scene_heading':
-      return { fontWeight: 700, textTransform: 'uppercase', margin: '1.5em 0 0.5em' };
+      // Keep a scene heading attached to the action/line that follows it.
+      return { fontWeight: 700, textTransform: 'uppercase', margin: '1.5em 0 0.5em', pageBreakAfter: 'avoid' };
     case 'character':
-      return { textTransform: 'uppercase', marginLeft: '38%', marginTop: '1em' };
+      // A character cue must not be orphaned at the foot of a page without its dialogue.
+      return { textTransform: 'uppercase', marginLeft: '38%', marginTop: '1em', pageBreakAfter: 'avoid' };
     case 'parenthetical':
-      return { marginLeft: '30%', fontStyle: 'italic', color: '#475569' };
+      return { marginLeft: '30%', fontStyle: 'italic', color: '#475569', pageBreakAfter: 'avoid' };
     case 'dialogue':
       return { marginLeft: '20%', marginRight: '20%' };
     case 'transition':
