@@ -1,4 +1,9 @@
 {
+  "share": {
+    "button": "Compartir",
+    "copied": "Enlace copiado",
+    "copyPrompt": "Copia este enlace:"
+  },
   "nav": {
     "home": "Inicio",
     "crew": "Equipo",

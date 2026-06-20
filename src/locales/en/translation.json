@@ -1,4 +1,9 @@
 {
+  "share": {
+    "button": "Share",
+    "copied": "Link copied",
+    "copyPrompt": "Copy this link:"
+  },
   "nav": {
     "home": "Home",
     "crew": "Crew",

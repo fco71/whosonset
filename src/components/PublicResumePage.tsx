@@ -6,6 +6,7 @@ import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import ResumeView from './ResumeView';
 import CrewProfileHeader from './CrewProfileHeader';
+import ShareButton from './ShareButton';
 
 // Define a more specific type for the profile data
 interface CrewProfile {
@@ -156,6 +157,13 @@ const PublicResumePage: React.FC<PublicResumePageProps> = () => {
   return (
     <>
       <div className="max-w-3xl mx-auto px-4 pt-8">
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+          <ShareButton
+            url={`https://myfilmjobs.com/resume/${uid}`}
+            title={(profile as any).name ? `${(profile as any).name} — My Film Jobs` : 'My Film Jobs'}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#fff', color: '#1e293b', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+          />
+        </div>
         <CrewProfileHeader profile={profile} />
         <ResumeView profile={profile as any} isOwnResume={false} />
       </div>
