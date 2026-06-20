@@ -98,6 +98,12 @@ const JobApplicationForm: React.FC = () => {
     e.preventDefault();
     
     if (!validateForm() || !job) return;
+
+    // Closed/filled jobs no longer accept applications (defends the direct /apply link).
+    if (job.status !== 'active' && job.status !== 'published') {
+      setError('This position is no longer accepting applications.');
+      return;
+    }
     
     try {
       setIsSubmitting(true);

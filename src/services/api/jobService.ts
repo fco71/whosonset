@@ -120,7 +120,7 @@ export const createJobPosting = async (
 };
 
 // Update an existing job posting
-export const updateJobPosting = async (jobId: string, jobData: Partial<JobPostingBase>): Promise<void> => {
+export const updateJobPosting = async (jobId: string, jobData: Partial<JobPostingBase> & { status?: JobPosting['status'] }): Promise<void> => {
   try {
     const jobRef = doc(db, 'jobPostings', jobId);
     const updateData: Partial<FirestoreJobPosting> = {

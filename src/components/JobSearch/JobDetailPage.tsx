@@ -7,6 +7,7 @@ import { JobPosting } from '../../types/JobApplication';
 import { toast } from 'react-hot-toast';
 import FirebaseDiagnostic from './FirebaseDiagnostic';
 import { SavedJobsService } from '../../services/savedJobsService';
+import { updateJobPosting } from '../../services/api/jobService';
 import { removeStructuredData, setPageSeo, setStructuredData } from '../../utilities/seo';
 
 const JOB_POSTING_SCHEMA_ID = 'job-posting-structured-data';
@@ -338,6 +339,36 @@ const JobDetailPage: React.FC = () => {
     }
   };
 
+  // Mark the job filled/closed (stops new applications) or reopen it. The job stays
+  // publicly visible either way — closed is a showcase state, not a delete.
+  const handleToggleFilled = async () => {
+    if (!job) return;
+    const next = isPublicJobStatus(job.status) ? 'closed' : 'published';
+    try {
+      await updateJobPosting(job.id, { status: next });
+      setJob({ ...job, status: next });
+      toast.success(next === 'closed' ? 'Marked as filled — no longer accepting applications' : 'Job reopened');
+    } catch (err) {
+      console.error('Failed to update job status:', err);
+      toast.error('Could not update the job status. Please try again.');
+    }
+  };
+
+  // Archive hides the job from public listings, search, the sitemap and Google (opt-in);
+  // unarchive restores it. Completed jobs stay visible by default — archiving is a choice.
+  const handleArchive = async () => {
+    if (!job) return;
+    const next = job.status === 'archived' ? 'published' : 'archived';
+    try {
+      await updateJobPosting(job.id, { status: next });
+      setJob({ ...job, status: next });
+      toast.success(next === 'archived' ? 'Job archived — hidden from listings and search' : 'Job restored to listings');
+    } catch (err) {
+      console.error('Failed to archive job:', err);
+      toast.error('Could not update the job. Please try again.');
+    }
+  };
+
   const handleShareJob = async () => {
     const shareUrl = `${window.location.origin}/jobs/${jobId}`;
     
@@ -465,6 +496,25 @@ const JobDetailPage: React.FC = () => {
   // Determine if the current user is the job poster
   const isJobPoster = job && auth.currentUser && (job.postedById === auth.currentUser.uid);
 
+  // Archived jobs are hidden from the public; only the poster can still open one (to unarchive).
+  if (job.status === 'archived' && !isJobPoster) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-6xl mb-4 opacity-20">🗄</div>
+          <h2 className="text-2xl font-light text-gray-900 mb-2">This listing is no longer available</h2>
+          <p className="text-gray-600 mb-4">The producer has archived this posting.</p>
+          <button
+            onClick={() => navigate('/jobs')}
+            className="px-6 py-3 bg-gray-900 text-white font-light rounded-lg hover:bg-gray-800 transition-colors"
+          >
+            Back to Jobs
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header with breadcrumb */}
@@ -574,6 +624,20 @@ const JobDetailPage: React.FC = () => {
                   className="px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   📊 View Stats
+                </button>
+                <button
+                  onClick={handleToggleFilled}
+                  className="px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  title={isPublicJobStatus(job.status) ? 'Stop accepting applications; the posting stays visible' : 'Reopen to applicants'}
+                >
+                  {isPublicJobStatus(job.status) ? '✓ Mark as Filled' : '↩ Reopen'}
+                </button>
+                <button
+                  onClick={handleArchive}
+                  className="px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  title={job.status === 'archived' ? 'Restore to public listings' : 'Hide from listings and search (reversible)'}
+                >
+                  {job.status === 'archived' ? '↩ Unarchive' : '🗄 Archive'}
                 </button>
                 {job.applicationsCount > 0 && (
                   <Link
@@ -742,12 +806,18 @@ const JobDetailPage: React.FC = () => {
                   </p>
                 </div>
                 <div className="space-y-3">
-                  <Link
-                    to={`/jobs/${job.id}/apply`}
-                    className="w-full px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors text-center block"
-                  >
-                    Apply Now
-                  </Link>
+                  {isPublicJobStatus(job.status) ? (
+                    <Link
+                      to={`/jobs/${job.id}/apply`}
+                      className="w-full px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors text-center block"
+                    >
+                      Apply Now
+                    </Link>
+                  ) : (
+                    <div className="w-full px-6 py-3 bg-gray-100 text-gray-500 font-medium rounded-lg text-center">
+                      ✓ This position has been filled
+                    </div>
+                  )}
                   <button
                     onClick={handleSaveJob}
                     className={`w-full px-6 py-3 border rounded-lg transition-colors ${

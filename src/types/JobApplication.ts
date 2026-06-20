@@ -78,7 +78,7 @@ export interface JobPosting {
   postedById: string;
   postedAt: any;
   deadline?: string;
-  status: 'active' | 'closed' | 'draft' | 'published';
+  status: 'active' | 'closed' | 'draft' | 'published' | 'archived';
   applicationsCount: number;
   tags: string[];
   // Enhanced job posting features
