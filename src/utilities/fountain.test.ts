@@ -240,10 +240,13 @@ describe('applyElementType', () => {
     expect(caret).toBe(out.length - 1);
   });
 
-  it('formats a transition ending in TO:', () => {
+  it('formats a transition with the Fountain ">" marker (case-preserving, reversible)', () => {
     const source = 'smash cut';
     const { source: out } = applyElementType(source, source.length, 'transition');
-    expect(out).toBe('SMASH CUT TO:');
+    expect(out).toBe('> smash cut');
+    // Converting back to action strips the marker and restores the original text.
+    const back = applyElementType(out, out.length, 'action');
+    expect(back.source).toBe('smash cut');
   });
 
   it('only transforms the current line, not the whole document', () => {

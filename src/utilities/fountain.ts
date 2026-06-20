@@ -129,13 +129,15 @@ export function parseFountain(source: string): ParsedElement[] {
     const next = lines[i + 1];
 
     if (isSceneHeading(line)) {
-      elements.push({ type: 'scene_heading', text: trimmed, lineIndex: i });
+      // Strip the forced "." marker so it never shows in the render/export.
+      elements.push({ type: 'scene_heading', text: trimmed.replace(/^\./, '').trim(), lineIndex: i });
       inDialogueBlock = false;
     } else if (isTransition(line)) {
-      elements.push({ type: 'transition', text: trimmed, lineIndex: i });
+      // Strip the forced ">" marker (Fountain right-aligned transition).
+      elements.push({ type: 'transition', text: trimmed.replace(/^>\s*/, '').trim(), lineIndex: i });
       inDialogueBlock = false;
     } else if (isCharacter(line, next)) {
-      elements.push({ type: 'character', text: trimmed, lineIndex: i });
+      elements.push({ type: 'character', text: trimmed.replace(/^@/, '').trim(), lineIndex: i });
       inDialogueBlock = true;
     } else if (inDialogueBlock && isParenthetical(line)) {
       elements.push({ type: 'parenthetical', text: trimmed, lineIndex: i });
@@ -385,8 +387,11 @@ export function applyElementType(
       break;
     }
     case 'transition': {
-      const body = content.replace(/^>/, '').toUpperCase().replace(/\s*TO:$/, '').trim();
-      newLine = body ? `${body} TO:` : 'CUT TO:';
+      // Fountain forced transition: a leading ">" right-aligns ANY text (matches Highland's
+      // ">"-converts-to-transition behavior). Keep the author's wording AND case so the line
+      // stays editable and converting back to action is lossless (the ">" is just stripped).
+      const body = content.replace(/^>\s*/, '').replace(/\s*TO:$/i, '').trim();
+      newLine = body ? `> ${body}` : '> CUT TO:';
       caretInLine = newLine.length;
       break;
     }
@@ -399,8 +404,9 @@ export function applyElementType(
     case 'dialogue':
     case 'action':
     default: {
-      // Plain text: strip any forced-element marker, keep the author's casing.
-      newLine = content.replace(/^[.>@]/, '');
+      // Plain text: strip any forced-element marker (and its trailing space), keep casing.
+      // This is what makes "Transition → Action" reversible: ">" goes, original case stays.
+      newLine = content.replace(/^[.>@]\s?/, '');
       caretInLine = newLine.length;
       break;
     }

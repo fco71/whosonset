@@ -2182,13 +2182,15 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
           <h2>{t('collaboration.myScreenplays.title')}</h2>
           <p>{t('collaboration.myScreenplays.subtitle')}</p>
         </div>
-        <div className="screenplays-content">
+        <div className="screenplays-content" style={{ display: 'flex', flexDirection: 'column' }}>
           {supervisesAnyWorkspace && (
-            <section className="sp-zone" aria-label={t('collaboration.studentZone.label')}>
-              <h3 className="sp-zone-label">
+            // Student/collaboration work is moved below the teacher's own work (order: 2) and
+            // collapsed by default (<details>) so the page stays focused on personal work.
+            <details className="sp-zone" style={{ order: 2 }} aria-label={t('collaboration.studentZone.label')}>
+              <summary className="sp-zone-label" style={{ cursor: 'pointer' }}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                 {t('collaboration.studentZone.label')}
-              </h3>
+              </summary>
 
               <div className="review-inbox">
                 <div className="review-inbox__head">
@@ -2245,15 +2247,15 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                   />
                 )}
               </div>
-            </section>
+            </details>
           )}
           {supervisesAnyWorkspace && (
-            <h3 className="sp-zone-label sp-zone-label--personal">
+            <h3 className="sp-zone-label sp-zone-label--personal" style={{ order: 1 }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
               {t('collaboration.personalZone.label')}
             </h3>
           )}
-          <div className="screenplay-upload-card bg-white rounded-lg shadow-md p-6 mb-6">
+          <div className="screenplay-upload-card bg-white rounded-lg shadow-md p-6 mb-6" style={{ order: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
               <button
                 type="button"
@@ -2305,7 +2307,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
               {t('collaboration.myScreenplays.groupHint')}
             </p>
           </div>
-          <div className="screenplays-list bg-white rounded-lg shadow-md p-6">
+          <div className="screenplays-list bg-white rounded-lg shadow-md p-6" style={{ order: 1 }}>
             <section className="screenplay-section">
               <h3 style={{ margin: 0 }}>{t('collaboration.personalNoWorkspace')}</h3>
               {personalScreenplays.length === 0 ? (

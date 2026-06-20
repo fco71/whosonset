@@ -69,6 +69,9 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, projectId, 
   const printRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const resizingRef = useRef(false);
+  const undoStack = useRef<string[]>([]);
+  const redoStack = useRef<string[]>([]);
+  const lastSnapAt = useRef(0);
 
   const saveTimer = useRef<number | null>(null);
   const pendingCaret = useRef<number | null>(null);
@@ -235,9 +238,22 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, projectId, 
     setCurrentPage(computePageAtCaret(el.value, el.selectionStart));
   }, []);
 
+  // Undo/redo history. The controlled textarea kills native undo, so we keep our own
+  // stack: button/format actions snapshot every time; typing is coalesced into ~0.6s chunks.
+  const pushHistory = useCallback((prev: string) => {
+    const stack = undoStack.current;
+    if (stack[stack.length - 1] === prev) return;
+    stack.push(prev);
+    if (stack.length > 200) stack.shift();
+    redoStack.current = [];
+  }, []);
+
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     const caret = e.target.selectionStart;
+    const now = Date.now();
+    if (now - lastSnapAt.current > 600) pushHistory(source);
+    lastSnapAt.current = now;
     hasLocalEdit.current = true;
     setSource(value);
     scheduleSave(value);
@@ -248,6 +264,8 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, projectId, 
   const applyType = useCallback((type: ScreenplayElementType) => {
     const el = textareaRef.current;
     if (!el) return;
+    pushHistory(el.value);
+    lastSnapAt.current = Date.now();
     const caret = el.selectionStart;
     const result = applyElementType(el.value, caret, type);
     hasLocalEdit.current = true;
@@ -256,6 +274,32 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, projectId, 
     scheduleSave(result.source);
     setActiveType(type);
     setCurrentPage(computePageAtCaret(result.source, result.caret));
+  }, [scheduleSave, pushHistory]);
+
+  const undo = useCallback(() => {
+    if (undoStack.current.length === 0) return;
+    const cur = latestSource.current;
+    const prev = undoStack.current.pop() as string;
+    redoStack.current.push(cur);
+    hasLocalEdit.current = true;
+    pendingCaret.current = prev.length;
+    setSource(prev);
+    scheduleSave(prev);
+    setActiveType(detectLineType(prev, prev.length));
+    requestAnimationFrame(() => textareaRef.current?.focus());
+  }, [scheduleSave]);
+
+  const redo = useCallback(() => {
+    if (redoStack.current.length === 0) return;
+    const cur = latestSource.current;
+    const next = redoStack.current.pop() as string;
+    undoStack.current.push(cur);
+    hasLocalEdit.current = true;
+    pendingCaret.current = next.length;
+    setSource(next);
+    scheduleSave(next);
+    setActiveType(detectLineType(next, next.length));
+    requestAnimationFrame(() => textareaRef.current?.focus());
   }, [scheduleSave]);
 
   // Draggable divider between the textarea and the preview. Updates the editor pane's
@@ -303,6 +347,19 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, projectId, 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     const el = textareaRef.current;
     if (!el) return;
+
+    // Undo / redo — the controlled textarea has no working native undo.
+    if ((e.metaKey || e.ctrlKey) && (e.key === 'z' || e.key === 'Z')) {
+      e.preventDefault();
+      if (e.shiftKey) redo();
+      else undo();
+      return;
+    }
+    if ((e.metaKey || e.ctrlKey) && (e.key === 'y' || e.key === 'Y')) {
+      e.preventDefault();
+      redo();
+      return;
+    }
 
     // Tab / Shift+Tab cycle the current line's element type.
     if (e.key === 'Tab') {
@@ -434,6 +491,26 @@ const FountainEditor: React.FC<FountainEditorProps> = ({ screenplay, projectId, 
 
         {/* Format toolbar */}
         <div style={toolbarStyle}>
+          <button
+            type="button"
+            onClick={undo}
+            disabled={undoStack.current.length === 0}
+            style={toolbarButtonStyle(false)}
+            title={`${t('fountain.undo', { defaultValue: 'Undo' })} (${modLabel}Z)`}
+            aria-label="Undo"
+          >
+            <span style={{ fontWeight: 700, fontSize: '1.1em' }}>↶</span>
+          </button>
+          <button
+            type="button"
+            onClick={redo}
+            disabled={redoStack.current.length === 0}
+            style={toolbarButtonStyle(false)}
+            title={`${t('fountain.redo', { defaultValue: 'Redo' })} (${modLabel}⇧Z)`}
+            aria-label="Redo"
+          >
+            <span style={{ fontWeight: 700, fontSize: '1.1em' }}>↷</span>
+          </button>
           {TOOLBAR.map(item => {
             const active = activeType === item.type;
             return (
