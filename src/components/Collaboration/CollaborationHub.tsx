@@ -2268,7 +2268,7 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  background: '#1976d2',
+                  background: 'var(--primary-600)',
                   color: '#fff',
                   padding: '0.75rem 2rem',
                   borderRadius: '6px',

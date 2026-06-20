@@ -704,7 +704,7 @@
 
               .channel-stats {
                 .online-count {
-                  color: #28a745;
+                  color: var(--success-600);
                   font-size: 0.875rem;
                   font-weight: 500;
                 }
@@ -794,7 +794,7 @@
 
                 .document-type {
                   background: #e3f2fd;
-                  color: #1976d2;
+                  color: var(--primary-600);
                   padding: 0.25rem 0.5rem;
                   border-radius: 4px;
                   font-weight: 500;

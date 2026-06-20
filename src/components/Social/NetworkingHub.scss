@@ -157,7 +157,7 @@
 
           .tag {
             background: #ecf0f1;
-            color: #34495e;
+            color: var(--neutral-700);
             padding: 4px 12px;
             border-radius: 15px;
             font-size: 0.8rem;
@@ -478,7 +478,7 @@
 
           .tag {
             background: #ecf0f1;
-            color: #34495e;
+            color: var(--neutral-700);
             padding: 4px 10px;
             border-radius: 12px;
             font-size: 0.75rem;

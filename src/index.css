@@ -103,7 +103,7 @@ body {
   box-shadow: 0 0 0 2px #2563eb22;
 }
 .location-dropdown:hover {
-  border-color: #a5b4fc; /* blue-200 */
+  border-color: var(--primary-200); /* blue-200 */
 }
 
 .register-form {
