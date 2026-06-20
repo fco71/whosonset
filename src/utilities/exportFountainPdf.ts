@@ -1,5 +1,5 @@
 import { jsPDF } from 'jspdf';
-import { parseFountain, ParsedElement, ScreenplayElementType } from './fountain';
+import { parseFountain, ParsedElement, ScreenplayElementType, LINES_PER_PAGE } from './fountain';
 
 // Turn a screenplay name into a safe PDF filename slug.
 export function screenplayPdfFilename(name: string): string {
@@ -12,10 +12,12 @@ export function screenplayPdfFilename(name: string): string {
 }
 
 // US Letter @ 72pt/in. Standard screenplay geometry (12pt Courier, 6 lines/in).
-const PAGE_BOTTOM = 720; // 11in - 1in bottom margin
 const TOP = 72; // 1in top margin
 const LINE = 12; // pt per single line of 12pt Courier
 const CW = 7.2; // Courier 12pt character width (0.6em)
+// Use the SAME usable lines/page as the on-screen counter so the exported page count
+// matches the preview exactly (LINES_PER_PAGE is the calibrated effective lines/page).
+const PAGE_BOTTOM = TOP + LINES_PER_PAGE * LINE;
 
 interface ElementLayout {
   x: number; // left margin (or right edge for right-aligned) in pt
