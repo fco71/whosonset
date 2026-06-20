@@ -123,12 +123,17 @@ describe('ScenesPanel category filtering', () => {
 
     fireEvent.click(screen.getByText('KITCHEN'));
 
-    expect(screen.getByRole('button', { name: 'screenplay.scenes.allCategories 2/3' })).toBeInTheDocument();
+    const allCategoriesButton = screen.getByRole('button', { name: 'screenplay.scenes.allCategories 2/3' });
+    expect(allCategoriesButton).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Props 1/1' })).toBeInTheDocument();
+
+    fireEvent.click(allCategoriesButton);
+
     expect(screen.getAllByText('Hero')).toHaveLength(2);
     expect(screen.getAllByText('Knife')).toHaveLength(2);
     expect(screen.getByText('Car')).toBeInTheDocument();
 
+    fireEvent.click(screen.getByRole('button', { name: /screenplay\.scenes\.categoriesPane/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Props 1/1' }));
 
     expect(screen.queryByText('Hero')).not.toBeInTheDocument();
