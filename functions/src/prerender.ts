@@ -138,13 +138,10 @@ function injectHead(template: string, head: string): string {
   return template.replace(/<\/head>/i, `  ${head}\n</head>`);
 }
 
-// ---- index.html template cache (self-updating across deploys) ----
-// Template source. The ONLY reliable source is the copy of index.html bundled WITH the
-// function at deploy time (scripts/copy-template-to-functions.cjs). Its asset hashes always
-// match the hosting build it shipped alongside, so it can never cause a script-mismatch
-// blank page — and there's no runtime network dependency. A fetch of the *requesting site's
-// own* shell is kept only as a last resort if the bundled copy is somehow missing. We never
-// fetch a different origin (doing so served prod's script hashes onto dev = blank page).
+// ---- index.html template ----
+// loadBundledTemplate() reads the copy of index.html bundled WITH the function at deploy
+// (scripts/copy-template-to-functions.cjs). It is the FALLBACK getTemplate() uses when the
+// live same-origin fetch is unavailable — always a valid scripted shell, no network needed.
 function loadBundledTemplate(): string | null {
   for (const p of [
     path.join(__dirname, "prerender-template.html"),
@@ -161,33 +158,42 @@ function loadBundledTemplate(): string | null {
 }
 
 const BUNDLED_TEMPLATE: string | null = loadBundledTemplate();
-let fetchedFallback: string | null = null;
+let liveCache: { host: string; html: string; at: number } | null = null;
+const LIVE_TTL_MS = 5 * 60 * 1000;
 
+// PRIMARY source is the LIVE shell fetched from the REQUESTING host, so its asset hashes
+// always match the currently-deployed hosting — a hosting-only deploy can no longer leave a
+// stale bundle and break /resume etc. The bundled copy is the guaranteed fallback when the
+// live fetch is unavailable. Fetching the requesting host (not a hard-coded origin) keeps dev
+// on dev and prod on prod. Worst case equals the old bundled-first behavior — it can't regress.
 async function getTemplate(reqHost?: string): Promise<string | null> {
-  // Bundled copy first — always matches this deploy's assets.
-  if (BUNDLED_TEMPLATE) return BUNDLED_TEMPLATE;
-  if (fetchedFallback) return fetchedFallback;
-
-  // Last resort only: fetch the shell from the SAME host that's being requested, so the
-  // script hashes still match (never a hard-coded/cross origin).
-  try {
-    const origin = reqHost ? `https://${reqHost}` : "https://myfilmjobs.com";
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 2500);
-    const resp = await fetch(`${origin}/index.html`, {
-      headers: { "user-agent": "prerender-template-fetch", "cache-control": "no-cache" },
-      signal: controller.signal,
-    });
-    clearTimeout(timer);
-    if (!resp.ok) throw new Error(`template fetch ${resp.status}`);
-    const html = await resp.text();
-    if (!html.includes('id="root"')) throw new Error("fetched template missing app root");
-    fetchedFallback = html;
-    return html;
-  } catch (e) {
-    console.error("[prerender] no bundled template and same-origin fetch failed:", (e as Error).message);
-    return null;
+  if (reqHost) {
+    const now = Date.now();
+    if (liveCache && liveCache.host === reqHost && now - liveCache.at < LIVE_TTL_MS) {
+      return liveCache.html;
+    }
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 2500);
+      const resp = await fetch(`https://${reqHost}/index.html`, {
+        headers: { "user-agent": "prerender-template-fetch", "cache-control": "no-cache" },
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
+      if (resp.ok) {
+        const html = await resp.text();
+        // Only trust a fetched shell that actually looks like our app.
+        if (html.includes('id="root"')) {
+          liveCache = { host: reqHost, html, at: now };
+          return html;
+        }
+      }
+    } catch (e) {
+      console.error("[prerender] live template fetch failed, using bundled copy:", (e as Error).message);
+    }
   }
+  // Fallback: the copy bundled with the function (always a valid scripted shell).
+  return BUNDLED_TEMPLATE ?? liveCache?.html ?? null;
 }
 
 // ---- route parsing ----
@@ -371,7 +377,10 @@ async function buildResume(db: admin.firestore.Firestore, uid: string): Promise<
 }
 
 export const prerender = onRequest({ region: "us-central1", invoker: "public" }, async (req, res) => {
-  const template = await getTemplate(req.headers.host);
+  // Firebase Hosting forwards the original domain in x-forwarded-host; req.headers.host is the
+  // Cloud Run host. Prefer the forwarded one so the live fetch hits the actual site.
+  const fwdHost = String(req.headers["x-forwarded-host"] || "").split(",")[0].trim();
+  const template = await getTemplate(fwdHost || req.headers.host);
 
   // Fast path: humans (or, defensively, a missing template) get the SPA shell unchanged.
   // `template` is backed by the index.html copy bundled with the function, so it is
