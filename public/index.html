@@ -24,7 +24,13 @@
     name="robots"
     content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
   />
-  <link rel="canonical" href="https://myfilmjobs.com/" />
+  <!--
+    No hardcoded canonical here on purpose. This static shell is served verbatim for every
+    NON-prerendered route (homepage, /directorio/*, the job/crew list pages). A fixed
+    canonical would wrongly point all of them at the homepage. Canonical is set per route
+    instead: by the prerender function for jobs/blog/resume, and by setPageSeo() client-side
+    everywhere else. Pre-JS each URL self-canonicalizes, which is the safe default.
+  -->
 
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="My Film Jobs" />

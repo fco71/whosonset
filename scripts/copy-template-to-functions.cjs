@@ -17,3 +17,15 @@ if (!fs.existsSync(src)) {
 
 fs.copyFileSync(src, dest);
 console.log('[copy-template-to-functions] Copied dist/index.html -> functions/prerender-template.html');
+
+// Also ship the directory taxonomy (single source of truth in src/data) into the function so
+// the prerender's buildDirectory() can resolve category/region slugs + labels server-side.
+// Read at runtime via fs (see functions/src/prerender.ts loadTaxonomy()).
+const taxSrc = path.join(root, 'src', 'data', 'directoryTaxonomy.json');
+const taxDest = path.join(root, 'functions', 'directoryTaxonomy.json');
+if (fs.existsSync(taxSrc)) {
+  fs.copyFileSync(taxSrc, taxDest);
+  console.log('[copy-template-to-functions] Copied src/data/directoryTaxonomy.json -> functions/directoryTaxonomy.json');
+} else {
+  console.warn('[copy-template-to-functions] directoryTaxonomy.json not found — directory prerender will be skipped.');
+}

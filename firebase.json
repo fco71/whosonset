@@ -76,6 +76,20 @@
           }
         },
         {
+          "source": "directorio",
+          "function": {
+            "functionId": "prerender",
+            "region": "us-central1"
+          }
+        },
+        {
+          "source": "directorio/**",
+          "function": {
+            "functionId": "prerender",
+            "region": "us-central1"
+          }
+        },
+        {
           "source": "**",
           "destination": "/index.html"
         }
@@ -131,6 +145,20 @@
         },
         {
           "source": "resume/**",
+          "function": {
+            "functionId": "prerender",
+            "region": "us-central1"
+          }
+        },
+        {
+          "source": "directorio",
+          "function": {
+            "functionId": "prerender",
+            "region": "us-central1"
+          }
+        },
+        {
+          "source": "directorio/**",
           "function": {
             "functionId": "prerender",
             "region": "us-central1"

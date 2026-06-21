@@ -88,6 +88,64 @@ function decode(s: string): string {
   }
 }
 
+// ---- directory taxonomy (programmatic Spanish SEO pages) ----
+// SAME source of truth as the frontend: src/data/directoryTaxonomy.json, copied into
+// functions/ at build (scripts/copy-template-to-functions.cjs). The crew-matching logic
+// below MIRRORS src/utilities/directory.ts — keep the two in sync if either changes.
+interface DirCategory { slug: string; es: string; en: string; department: string }
+interface DirRegion { slug: string; label: string; national?: boolean; cities: string[] }
+interface Taxonomy { categories: DirCategory[]; regions: DirRegion[] }
+
+function loadTaxonomy(): Taxonomy | null {
+  for (const p of [
+    path.join(__dirname, "directoryTaxonomy.json"),
+    path.join(__dirname, "..", "directoryTaxonomy.json"),
+  ]) {
+    try {
+      if (fs.existsSync(p)) return JSON.parse(fs.readFileSync(p, "utf8")) as Taxonomy;
+    } catch {
+      /* try next candidate */
+    }
+  }
+  console.error("[prerender] directoryTaxonomy.json not found; directory prerender disabled");
+  return null;
+}
+const TAXONOMY: Taxonomy | null = loadTaxonomy();
+
+function dirNormalize(value: unknown): string {
+  return String(value ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "") // strip accents so "Samaná" matches "samana"
+    .trim();
+}
+
+interface CrewLike {
+  name?: string;
+  city?: string;
+  country?: string;
+  jobTitles?: Array<{ department?: string; title?: string }>;
+}
+
+function crewMatchesCategory(crew: CrewLike, category: DirCategory): boolean {
+  const titles = Array.isArray(crew.jobTitles) ? crew.jobTitles : [];
+  return titles.some((t) => dirNormalize(t?.department) === dirNormalize(category.department));
+}
+
+function crewMatchesRegion(crew: CrewLike, region: DirRegion): boolean {
+  if (region.national) {
+    const country = dirNormalize(crew.country);
+    return !country || country.includes("repu") || country === "do" || country.includes("dominican");
+  }
+  const city = dirNormalize(crew.city);
+  if (!city) return false;
+  if (city === dirNormalize(region.label)) return true;
+  return region.cities.some((c) => {
+    const n = dirNormalize(c);
+    return city === n || city.includes(n) || n.includes(city);
+  });
+}
+
 interface Meta {
   title: string;
   description: string;
@@ -208,6 +266,15 @@ function parseEntity(pathname: string): { type: "job" | "blog" | "resume"; id: s
   if (seg === "blog") return id === "page" ? null : { type: "blog", id };
   if (seg === "resume") return { type: "resume", id };
   return null;
+}
+
+type DirRoute = { kind: "hub" } | { kind: "landing"; categorySlug: string; regionSlug: string };
+function parseDirectory(pathname: string): DirRoute | null {
+  const parts = pathname.split("/").filter(Boolean).map(decode);
+  if (parts[0] !== "directorio") return null;
+  if (parts.length === 1) return { kind: "hub" };
+  if (parts.length === 3) return { kind: "landing", categorySlug: parts[1], regionSlug: parts[2] };
+  return null; // /directorio/x (incomplete) or deeper → let the SPA handle it
 }
 
 // ---- entity → meta builders ----
@@ -376,6 +443,82 @@ async function buildResume(db: admin.firestore.Firestore, uid: string): Promise<
   };
 }
 
+function buildDirectoryHub(): Meta {
+  const canonical = `${CANONICAL_ORIGIN}/directorio`;
+  return {
+    title: `Directorio de Crew de Cine en República Dominicana | ${SITE_NAME}`,
+    description:
+      "Encuentra crew de cine y producción audiovisual en República Dominicana por departamento y ciudad: cámara, sonido, eléctrica, arte, producción, postproducción y más.",
+    canonical,
+    ogType: "website",
+    image: DEFAULT_OG_IMAGE,
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      name: "Directorio de Crew de Cine en República Dominicana",
+      description: "Crew de cine y producción audiovisual en República Dominicana por departamento y ciudad.",
+      url: canonical,
+      publisher: { "@type": "Organization", name: SITE_NAME, url: CANONICAL_ORIGIN },
+    },
+  };
+}
+
+async function buildDirectory(
+  db: admin.firestore.Firestore,
+  categorySlug: string,
+  regionSlug: string
+): Promise<Meta | null> {
+  if (!TAXONOMY) return null;
+  const category = TAXONOMY.categories.find((c) => c.slug === categorySlug);
+  const region = TAXONOMY.regions.find((r) => r.slug === regionSlug);
+  if (!category || !region) return null; // unknown slug → serve the default site card
+
+  const title = `${category.es} en ${region.label} | Crew de Cine | ${SITE_NAME}`;
+  const description = `Encuentra y contrata profesionales de ${category.es.toLowerCase()} en ${region.label}, República Dominicana. Directorio de crew de cine y producción audiovisual en My Film Jobs.`;
+  const canonical = `${CANONICAL_ORIGIN}/directorio/${encodeURIComponent(categorySlug)}/${encodeURIComponent(regionSlug)}`;
+
+  // Reproduce the page's query + the ≥3-crew anti-doorway threshold (mirror of
+  // DirectoryLandingPage.tsx). Public read requires isPublished == true (firestore.rules).
+  const matched: Array<{ id: string; name: string }> = [];
+  try {
+    const snap = await db.collection("crewProfiles").where("isPublished", "==", true).limit(300).get();
+    snap.forEach((doc) => {
+      const c = (doc.data() || {}) as CrewLike;
+      if (crewMatchesCategory(c, category) && crewMatchesRegion(c, region)) {
+        matched.push({ id: doc.id, name: c.name || "Crew" });
+      }
+    });
+  } catch (e) {
+    console.error("[prerender] directory crew query failed:", (e as Error).message);
+    // On a read failure, fall through as thin (noindex) rather than indexing an empty page.
+  }
+
+  const indexable = matched.length >= 3;
+  const jsonLd = indexable
+    ? {
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        name: title,
+        itemListElement: matched.slice(0, 25).map((c, i) => ({
+          "@type": "ListItem",
+          position: i + 1,
+          url: `${CANONICAL_ORIGIN}/resume/${encodeURIComponent(c.id)}`,
+          name: c.name,
+        })),
+      }
+    : undefined;
+
+  return {
+    title,
+    description,
+    canonical,
+    ogType: "website",
+    image: DEFAULT_OG_IMAGE,
+    robots: indexable ? undefined : "noindex, follow",
+    jsonLd,
+  };
+}
+
 export const prerender = onRequest({ region: "us-central1", invoker: "public" }, async (req, res) => {
   // Firebase Hosting forwards the original domain in x-forwarded-host; req.headers.host is the
   // Cloud Run host. Prefer the forwarded one so the live fetch hits the actual site.
@@ -396,12 +539,16 @@ export const prerender = onRequest({ region: "us-central1", invoker: "public" },
 
   try {
     const entity = parseEntity(req.path);
+    const dir = entity ? null : parseDirectory(req.path);
     let meta: Meta | null = null;
     if (entity) {
       const db = admin.firestore();
       if (entity.type === "job") meta = await buildJob(db, entity.id);
       else if (entity.type === "blog") meta = await buildBlog(db, entity.id);
       else if (entity.type === "resume") meta = await buildResume(db, entity.id);
+    } else if (dir) {
+      if (dir.kind === "hub") meta = buildDirectoryHub();
+      else meta = await buildDirectory(admin.firestore(), dir.categorySlug, dir.regionSlug);
     }
     const html = meta ? injectHead(template, renderHead(meta)) : template;
     res
