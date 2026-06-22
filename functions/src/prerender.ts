@@ -92,9 +92,11 @@ function decode(s: string): string {
 // SAME source of truth as the frontend: src/data/directoryTaxonomy.json, copied into
 // functions/ at build (scripts/copy-template-to-functions.cjs). The crew-matching logic
 // below MIRRORS src/utilities/directory.ts — keep the two in sync if either changes.
-interface DirCategory { slug: string; es: string; en: string; department: string }
-interface DirRegion { slug: string; label: string; national?: boolean; cities: string[] }
+interface DirCategory { slug: string; enSlug: string; es: string; en: string; department: string }
+interface DirRegion { slug: string; enSlug: string; label: string; en: string; national?: boolean; cities: string[] }
 interface Taxonomy { categories: DirCategory[]; regions: DirRegion[] }
+
+type DirLang = "es" | "en";
 
 function loadTaxonomy(): Taxonomy | null {
   for (const p of [
@@ -154,6 +156,9 @@ interface Meta {
   image: string;
   robots?: string;
   jsonLd?: Record<string, unknown> | Array<Record<string, unknown>>;
+  // Explicit per-language alternates (bilingual directory). Other meta types leave
+  // this undefined → no hreflang emitted, matching prior behavior.
+  alternates?: { es?: string; en?: string; xDefault?: string };
 }
 
 function renderHead(m: Meta): string {
@@ -175,6 +180,11 @@ function renderHead(m: Meta): string {
     `<meta name="twitter:description" content="${escapeHtml(m.description)}" />`,
     `<meta name="twitter:image" content="${escapeHtml(m.image)}" />`,
   ];
+  if (m.alternates) {
+    if (m.alternates.es) tags.push(`<link rel="alternate" hreflang="es" href="${escapeHtml(m.alternates.es)}" />`);
+    if (m.alternates.en) tags.push(`<link rel="alternate" hreflang="en" href="${escapeHtml(m.alternates.en)}" />`);
+    if (m.alternates.xDefault) tags.push(`<link rel="alternate" hreflang="x-default" href="${escapeHtml(m.alternates.xDefault)}" />`);
+  }
   const blocks = m.jsonLd ? (Array.isArray(m.jsonLd) ? m.jsonLd : [m.jsonLd]) : [];
   for (const b of blocks) {
     // Strip undefined values; escape </script> breakouts.
@@ -268,12 +278,15 @@ function parseEntity(pathname: string): { type: "job" | "blog" | "resume"; id: s
   return null;
 }
 
-type DirRoute = { kind: "hub" } | { kind: "landing"; categorySlug: string; regionSlug: string };
+type DirRoute =
+  | { kind: "hub"; lang: DirLang }
+  | { kind: "landing"; lang: DirLang; categorySlug: string; regionSlug: string };
 function parseDirectory(pathname: string): DirRoute | null {
   const parts = pathname.split("/").filter(Boolean).map(decode);
-  if (parts[0] !== "directorio") return null;
-  if (parts.length === 1) return { kind: "hub" };
-  if (parts.length === 3) return { kind: "landing", categorySlug: parts[1], regionSlug: parts[2] };
+  const lang: DirLang | null = parts[0] === "directorio" ? "es" : parts[0] === "directory" ? "en" : null;
+  if (!lang) return null;
+  if (parts.length === 1) return { kind: "hub", lang };
+  if (parts.length === 3) return { kind: "landing", lang, categorySlug: parts[1], regionSlug: parts[2] };
   return null; // /directorio/x (incomplete) or deeper → let the SPA handle it
 }
 
@@ -443,20 +456,32 @@ async function buildResume(db: admin.firestore.Firestore, uid: string): Promise<
   };
 }
 
-function buildDirectoryHub(): Meta {
-  const canonical = `${CANONICAL_ORIGIN}/directorio`;
+const DIR_HUB_ES = `${CANONICAL_ORIGIN}/directorio`;
+const DIR_HUB_EN = `${CANONICAL_ORIGIN}/directory`;
+
+function buildDirectoryHub(lang: DirLang): Meta {
+  const isEn = lang === "en";
+  const canonical = isEn ? DIR_HUB_EN : DIR_HUB_ES;
+  const title = isEn
+    ? `Film Crew Directory — Dominican Republic | ${SITE_NAME}`
+    : `Directorio de Crew de Cine en República Dominicana | ${SITE_NAME}`;
+  const description = isEn
+    ? "Find film, TV and video production crew in the Dominican Republic by department and city: camera, sound, grip & electric, art, production, post-production and more."
+    : "Encuentra crew de cine y producción audiovisual en República Dominicana por departamento y ciudad: cámara, sonido, eléctrica, arte, producción, postproducción y más.";
   return {
-    title: `Directorio de Crew de Cine en República Dominicana | ${SITE_NAME}`,
-    description:
-      "Encuentra crew de cine y producción audiovisual en República Dominicana por departamento y ciudad: cámara, sonido, eléctrica, arte, producción, postproducción y más.",
+    title,
+    description,
     canonical,
     ogType: "website",
     image: DEFAULT_OG_IMAGE,
+    alternates: { es: DIR_HUB_ES, en: DIR_HUB_EN, xDefault: DIR_HUB_ES },
     jsonLd: {
       "@context": "https://schema.org",
       "@type": "CollectionPage",
-      name: "Directorio de Crew de Cine en República Dominicana",
-      description: "Crew de cine y producción audiovisual en República Dominicana por departamento y ciudad.",
+      name: isEn ? "Film Crew Directory — Dominican Republic" : "Directorio de Crew de Cine en República Dominicana",
+      description: isEn
+        ? "Film, TV and video production crew in the Dominican Republic by department and city."
+        : "Crew de cine y producción audiovisual en República Dominicana por departamento y ciudad.",
       url: canonical,
       publisher: { "@type": "Organization", name: SITE_NAME, url: CANONICAL_ORIGIN },
     },
@@ -465,17 +490,26 @@ function buildDirectoryHub(): Meta {
 
 async function buildDirectory(
   db: admin.firestore.Firestore,
+  lang: DirLang,
   categorySlug: string,
   regionSlug: string
 ): Promise<Meta | null> {
   if (!TAXONOMY) return null;
-  const category = TAXONOMY.categories.find((c) => c.slug === categorySlug);
-  const region = TAXONOMY.regions.find((r) => r.slug === regionSlug);
+  const isEn = lang === "en";
+  const category = TAXONOMY.categories.find((c) => (isEn ? c.enSlug : c.slug) === categorySlug);
+  const region = TAXONOMY.regions.find((r) => (isEn ? r.enSlug : r.slug) === regionSlug);
   if (!category || !region) return null; // unknown slug → serve the default site card
 
-  const title = `${category.es} en ${region.label} | Crew de Cine | ${SITE_NAME}`;
-  const description = `Encuentra y contrata profesionales de ${category.es.toLowerCase()} en ${region.label}, República Dominicana. Directorio de crew de cine y producción audiovisual en My Film Jobs.`;
-  const canonical = `${CANONICAL_ORIGIN}/directorio/${encodeURIComponent(categorySlug)}/${encodeURIComponent(regionSlug)}`;
+  const title = isEn
+    ? `${category.en} in ${region.en} — Dominican Republic | Film Crew | ${SITE_NAME}`
+    : `${category.es} en ${region.label} | Crew de Cine | ${SITE_NAME}`;
+  const description = isEn
+    ? `Find and hire ${category.en.toLowerCase()} professionals in ${region.en}, Dominican Republic. Directory of film and TV crew for your next production.`
+    : `Encuentra y contrata profesionales de ${category.es.toLowerCase()} en ${region.label}, República Dominicana. Directorio de crew de cine y producción audiovisual en My Film Jobs.`;
+  // Self canonical in the page's own language; alternates point at BOTH languages.
+  const esUrl = `${CANONICAL_ORIGIN}/directorio/${encodeURIComponent(category.slug)}/${encodeURIComponent(region.slug)}`;
+  const enUrl = `${CANONICAL_ORIGIN}/directory/${encodeURIComponent(category.enSlug)}/${encodeURIComponent(region.enSlug)}`;
+  const canonical = isEn ? enUrl : esUrl;
 
   // Reproduce the page's query + the ≥3-crew anti-doorway threshold (mirror of
   // DirectoryLandingPage.tsx). Public read requires isPublished == true (firestore.rules).
@@ -515,6 +549,7 @@ async function buildDirectory(
     ogType: "website",
     image: DEFAULT_OG_IMAGE,
     robots: indexable ? undefined : "noindex, follow",
+    alternates: { es: esUrl, en: enUrl, xDefault: esUrl },
     jsonLd,
   };
 }
@@ -547,8 +582,8 @@ export const prerender = onRequest({ region: "us-central1", invoker: "public" },
       else if (entity.type === "blog") meta = await buildBlog(db, entity.id);
       else if (entity.type === "resume") meta = await buildResume(db, entity.id);
     } else if (dir) {
-      if (dir.kind === "hub") meta = buildDirectoryHub();
-      else meta = await buildDirectory(admin.firestore(), dir.categorySlug, dir.regionSlug);
+      if (dir.kind === "hub") meta = buildDirectoryHub(dir.lang);
+      else meta = await buildDirectory(admin.firestore(), dir.lang, dir.categorySlug, dir.regionSlug);
     }
     const html = meta ? injectHead(template, renderHead(meta)) : template;
     res

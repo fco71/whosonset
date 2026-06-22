@@ -5,6 +5,7 @@ import taxonomy from '../data/directoryTaxonomy.json';
 
 export interface DirectoryCategory {
   slug: string;
+  enSlug: string;
   es: string;
   en: string;
   department: string;
@@ -12,10 +13,14 @@ export interface DirectoryCategory {
 
 export interface DirectoryRegion {
   slug: string;
+  enSlug: string;
   label: string;
+  en: string;
   national?: boolean;
   cities: string[];
 }
+
+export type DirectoryLang = 'es' | 'en';
 
 export const CATEGORIES: DirectoryCategory[] = taxonomy.categories;
 export const REGIONS: DirectoryRegion[] = taxonomy.regions as DirectoryRegion[];
@@ -36,6 +41,64 @@ export function directoryPath(categorySlug: string, regionSlug: string): string 
 
 export function directoryCanonical(categorySlug: string, regionSlug: string): string {
   return `${BASE_URL}${directoryPath(categorySlug, regionSlug)}`;
+}
+
+// ---- English mirror (/directory) ----------------------------------------
+// English uses EXPLICIT slugs from the taxonomy (c.enSlug / r.enSlug) so the
+// client route and the prerender resolve the SAME URL — never slugify at runtime
+// in two places, or the two would diverge.
+
+export function getCategoryByEnSlug(slug?: string): DirectoryCategory | undefined {
+  return CATEGORIES.find((c) => c.enSlug === slug);
+}
+
+export function getRegionByEnSlug(slug?: string): DirectoryRegion | undefined {
+  return REGIONS.find((r) => r.enSlug === slug);
+}
+
+export function enCategorySlug(c: DirectoryCategory): string {
+  return c.enSlug;
+}
+
+export function enRegionSlug(r: DirectoryRegion): string {
+  return r.enSlug;
+}
+
+export function directoryPathEn(catEnSlug: string, regionEnSlug: string): string {
+  return `/directory/${catEnSlug}/${regionEnSlug}`;
+}
+
+export function directoryCanonicalEn(catEnSlug: string, regionEnSlug: string): string {
+  return `${BASE_URL}${directoryPathEn(catEnSlug, regionEnSlug)}`;
+}
+
+/** Language-aware visible labels. */
+export function categoryLabel(c: DirectoryCategory, lang: DirectoryLang): string {
+  return lang === 'en' ? c.en : c.es;
+}
+
+export function regionLabel(r: DirectoryRegion, lang: DirectoryLang): string {
+  return lang === 'en' ? r.en : r.label;
+}
+
+/**
+ * The path for the SAME category+region in the OTHER language. Used by hreflang
+ * and by the global EN/ES nav toggle to switch the directory between its two URLs.
+ */
+export function counterpartPath(
+  lang: DirectoryLang,
+  category: DirectoryCategory,
+  region: DirectoryRegion
+): string {
+  // `lang` is the language we are switching TO.
+  return lang === 'en'
+    ? directoryPathEn(category.enSlug, region.enSlug)
+    : directoryPath(category.slug, region.slug);
+}
+
+/** Hub counterpart path for the OTHER language (en→/directory, es→/directorio). */
+export function hubCounterpartPath(lang: DirectoryLang): string {
+  return lang === 'en' ? '/directory' : '/directorio';
 }
 
 function normalize(value: unknown): string {

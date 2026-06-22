@@ -14,6 +14,13 @@ export interface SeoConfig {
   ogImage?: string;
   ogImageAlt?: string;
   twitterCard?: 'summary' | 'summary_large_image';
+  /**
+   * Explicit per-language alternates. When provided, these EXACT URLs are emitted
+   * as <link rel="alternate" hreflang="es|en|x-default"> INSTEAD of the default
+   * ?lang= variants — used by the bilingual directory (/directorio ↔ /directory),
+   * where the two languages live at distinct, self-canonical URLs.
+   */
+  alternates?: { es?: string; en?: string; xDefault?: string };
 }
 
 function upsertMetaTag(
@@ -104,6 +111,17 @@ function setDefaultHreflangLinks(canonicalUrl: string): void {
   }
 }
 
+function setExplicitHreflangLinks(alternates: { es?: string; en?: string; xDefault?: string }): void {
+  try {
+    removeManagedAlternateLinks();
+    if (alternates.es) upsertAlternateLink('es', alternates.es);
+    if (alternates.en) upsertAlternateLink('en', alternates.en);
+    if (alternates.xDefault) upsertAlternateLink('x-default', alternates.xDefault);
+  } catch (error) {
+    console.error('[seo] Failed to set explicit hreflang links:', error);
+  }
+}
+
 function removeMetaTag(
   key: string,
   attribute: 'name' | 'property' = 'name'
@@ -124,6 +142,7 @@ export function setPageSeo(config: SeoConfig): void {
     ogImage = DEFAULT_OG_IMAGE_URL,
     ogImageAlt = DEFAULT_OG_IMAGE_ALT,
     twitterCard = 'summary_large_image',
+    alternates,
   } = config;
   const resolvedOgImage = ogImage || DEFAULT_OG_IMAGE_URL;
   const resolvedOgImageAlt = ogImageAlt || DEFAULT_OG_IMAGE_ALT;
@@ -152,7 +171,13 @@ export function setPageSeo(config: SeoConfig): void {
   upsertMetaTag('twitter:title', title);
   upsertMetaTag('twitter:description', description);
   upsertCanonicalLink(canonicalUrl);
-  setDefaultHreflangLinks(canonicalUrl);
+  if (alternates) {
+    // Explicit per-language URLs (e.g. the bilingual directory). Emit exactly
+    // these and skip the default ?lang= variants.
+    setExplicitHreflangLinks(alternates);
+  } else {
+    setDefaultHreflangLinks(canonicalUrl);
+  }
 }
 
 export function setPaginationLinks(config: { prevUrl?: string; nextUrl?: string }): void {

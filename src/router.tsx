@@ -85,11 +85,19 @@ export function createAppRouter() {
         },
         {
           path: 'directorio',
-          element: <DirectoryHubPage />
+          element: <DirectoryHubPage lang="es" />
         },
         {
           path: 'directorio/:categorySlug/:regionSlug',
-          element: <DirectoryLandingPage />
+          element: <DirectoryLandingPage lang="es" />
+        },
+        {
+          path: 'directory',
+          element: <DirectoryHubPage lang="en" />
+        },
+        {
+          path: 'directory/:categorySlug/:regionSlug',
+          element: <DirectoryLandingPage lang="en" />
         },
         { 
           path: 'crew', 

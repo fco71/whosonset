@@ -24,9 +24,19 @@ function urlEntry(loc, priority, changefreq) {
   ].join('\n');
 }
 
-const urls = [urlEntry(`${BASE}/directorio`, '0.8', 'weekly')];
+const NATIONAL_EN = 'dominican-republic';
+
+const urls = [
+  urlEntry(`${BASE}/directorio`, '0.8', 'weekly'),
+  urlEntry(`${BASE}/directory`, '0.8', 'weekly'),
+];
+// Spanish national pages per department.
 for (const c of taxonomy.categories) {
   urls.push(urlEntry(`${BASE}/directorio/${c.slug}/${NATIONAL}`, '0.6', 'weekly'));
+}
+// English national pages per department (mirror under /directory).
+for (const c of taxonomy.categories) {
+  urls.push(urlEntry(`${BASE}/directory/${c.enSlug}/${NATIONAL_EN}`, '0.6', 'weekly'));
 }
 
 const xml = [
