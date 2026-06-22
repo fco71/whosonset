@@ -27,6 +27,7 @@ type EducationEntry = string | {
 };
 
 interface CrewProfileData {
+  uid?: string;
   name: string;
   profileImageUrl?: string;
   photoURL?: string; // Fallback for legacy data
@@ -57,10 +58,12 @@ interface ResumeViewProps {
   profile: CrewProfileData;
   editable?: boolean; // for future use
   isOwnResume?: boolean; // indicates if this is the user's own resume
+  /** The profile owner's user id — used to route the "message" CTA when no public contact is shown. */
+  profileUserId?: string;
 }
 
 const ResumeView: React.FC<ResumeViewProps> = (props) => {
-  const { profile, isOwnResume = false } = props;
+  const { profile, isOwnResume = false, profileUserId } = props;
   const { t } = useTranslation();
   // Fallback: use photoURL if profileImageUrl is missing
   const managedProfileImageUrl = useManagedUrl(profile?.profileImageUrl || profile?.photoURL);
@@ -592,24 +595,50 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
             )}
 
             {/* Contact Info */}
-            {(profile.contactInfo?.email || profile.contactInfo?.phone || profile.contactInfo?.website || profile.contactInfo?.instagram) && (
-              <div style={sectionStyle}>
-                <h2 style={sectionTitleStyle}>{t('resume.sections.contactInformation')}</h2>
-                <ul style={contactListStyle}>
-                  {/* Show email if: it's own resume OR email is not private */}
-                  {profile.contactInfo.email && (isOwnResume || !profile.contactInfo.emailPrivate) && (
-                    <li style={contactItemStyle}>📧 {profile.contactInfo.email}</li>
-                  )}
-                  {/* Show phone if: it's own resume OR phone is not private */}
-                  {profile.contactInfo.phone && (isOwnResume || !profile.contactInfo.phonePrivate) && (
-                    <li style={contactItemStyle}>📞 {profile.contactInfo.phone}</li>
-                  )}
-                  {/* Always show website and social media */}
-                  {profile.contactInfo.website && <li style={contactItemStyle}>🌐 {profile.contactInfo.website}</li>}
-                  {profile.contactInfo.instagram && <li style={contactItemStyle}>📷 {formatInstagramHandle(profile.contactInfo.instagram)}</li>}
-                </ul>
-              </div>
-            )}
+            {(() => {
+              // Email/phone are only present in the (public) profile doc when the
+              // owner has opted in — see EditCrewProfile. So display them purely
+              // on presence; no separate private flag check is needed anymore.
+              const hasEmail = !!profile.contactInfo?.email;
+              const hasPhone = !!profile.contactInfo?.phone;
+              const hasWebsite = !!profile.contactInfo?.website;
+              const hasInstagram = !!profile.contactInfo?.instagram;
+              const messageTargetUid = profileUserId || profile.uid;
+              // Show a "message" CTA when there's no public email/phone to reach
+              // this person by and the viewer isn't looking at their own resume.
+              const showMessageCta = !isOwnResume && !hasEmail && !hasPhone && !!messageTargetUid;
+
+              if (!hasEmail && !hasPhone && !hasWebsite && !hasInstagram && !showMessageCta) {
+                return null;
+              }
+
+              return (
+                <div style={sectionStyle}>
+                  <h2 style={sectionTitleStyle}>{t('resume.sections.contactInformation')}</h2>
+                  <ul style={contactListStyle}>
+                    {hasEmail && (
+                      <li style={contactItemStyle}>📧 {profile.contactInfo!.email}</li>
+                    )}
+                    {hasPhone && (
+                      <li style={contactItemStyle}>📞 {profile.contactInfo!.phone}</li>
+                    )}
+                    {/* Always show website and social media */}
+                    {hasWebsite && <li style={contactItemStyle}>🌐 {profile.contactInfo!.website}</li>}
+                    {hasInstagram && <li style={contactItemStyle}>📷 {formatInstagramHandle(profile.contactInfo!.instagram!)}</li>}
+                    {showMessageCta && (
+                      <li style={contactItemStyle}>
+                        <a
+                          href={`/chat?user=${encodeURIComponent(messageTargetUid!)}`}
+                          style={{ color: '#0e7490', fontWeight: 600, textDecoration: 'none' }}
+                        >
+                          💬 {t('resume.sections.messageOnMyFilmJobs', { defaultValue: 'Message on My Film Jobs' })}
+                        </a>
+                      </li>
+                    )}
+                  </ul>
+                </div>
+              );
+            })()}
 
             {/* Other Info */}
             {profile.otherInfo && sectionVisible('otherInfo') && (

@@ -57,8 +57,9 @@ const ProjectCrewManagement: React.FC<ProjectCrewManagementProps> = ({
         
         return {
           id: doc.id,
-          displayName: crewData.name || crewData.displayName || crewData.email?.split('@')[0] || 'Crew Member',
-          email: crewData.email,
+          // email is no longer public on crewProfiles — fall back to username/name only
+          displayName: crewData.name || crewData.username || crewData.displayName || 'Crew Member',
+          email: undefined,
           photoURL: photoURL || null
         };
       });

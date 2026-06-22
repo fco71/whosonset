@@ -30,17 +30,17 @@ export class UserUtils {
         const crewData = crewDoc.data();
         const profile: UserProfile = {
           id: userId,
-          displayName: crewData.name || crewData.firstName || `Crew Member ${userId.slice(-4)}`,
+          displayName: crewData.name || crewData.username || crewData.firstName || `Crew Member ${userId.slice(-4)}`,
           firstName: crewData.firstName,
           lastName: crewData.lastName,
-          email: crewData.email,
+          // email intentionally NOT read from crewProfiles (PII is no longer public there)
           avatarUrl: crewData.profileImageUrl, // Use only profileImageUrl from crewProfiles
           bio: crewData.bio,
           location: crewData.residences?.[0]?.city || crewData.location,
           jobTitle: crewData.jobTitles?.[0]?.title || crewData.jobTitle,
           company: crewData.company
         };
-        
+
         this.userCache.set(userId, profile);
         return profile;
       }
@@ -107,10 +107,10 @@ export class UserUtils {
               const crewData = crewDoc.data();
               const profile: UserProfile = {
                 id: userId,
-                displayName: crewData.name || crewData.firstName || `Crew Member ${userId.slice(-4)}`,
+                displayName: crewData.name || crewData.username || crewData.firstName || `Crew Member ${userId.slice(-4)}`,
                 firstName: crewData.firstName,
                 lastName: crewData.lastName,
-                email: crewData.email,
+                // email intentionally NOT read from crewProfiles (PII is no longer public there)
                 avatarUrl: crewData.profileImageUrl, // Use only profileImageUrl from crewProfiles
                 bio: crewData.bio,
                 location: crewData.residences?.[0]?.city || crewData.location,

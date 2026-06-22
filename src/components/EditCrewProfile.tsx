@@ -2,9 +2,10 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 // --- MODIFIED: Added onAuthStateChanged for robust user checking ---
 import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
-import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs, deleteField, FieldValue } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
+import { getPrivateContact, savePrivateContact } from '../services/contactService';
 import { ProjectEntry } from '../types/ProjectEntry';
 import { JobTitleEntry } from '../types/JobTitleEntry';
 import { 
@@ -127,7 +128,8 @@ const EditCrewProfile: React.FC = () => {
     languages: [],
     otherInfo: '',
     isPublished: false,
-    availability: 'available'
+    availability: 'available',
+    showPublicContact: false
   });
 
   const [form, setForm] = useState<CrewProfileFormData>(getInitialFormData());
@@ -363,9 +365,26 @@ const EditCrewProfile: React.FC = () => {
             languages: data.languages?.length ? data.languages : [],
             otherInfo: data.otherInfo || '',
             isPublished: data.isPublished || false,
-            availability: data.availability || 'available'
+            availability: data.availability || 'available',
+            showPublicContact: data.showPublicContact === true
           };
-          
+
+          // Email/phone now live in the owner-only private contact doc, NOT the public
+          // profile. Hydrate the form from there so the editor always shows the real
+          // values even after they've been stripped from the public doc.
+          try {
+            const priv = await getPrivateContact(user.uid);
+            if (priv && (priv.email || priv.phone)) {
+              formData.contactInfo = {
+                ...(formData.contactInfo || {}),
+                email: priv.email || formData.contactInfo?.email || '',
+                phone: priv.phone || formData.contactInfo?.phone || '',
+              };
+            }
+          } catch (e) {
+            console.warn('[EditCrewProfile] Could not load private contact:', e);
+          }
+
           const loadedPublished = data.isPublished || false;
           const loadedSnapshot = getSaveSnapshot(formData, loadedPublished);
           lastSavedSnapshotRef.current = loadedSnapshot;
@@ -859,6 +878,12 @@ const EditCrewProfile: React.FC = () => {
     if (obj === null || obj === undefined) {
       return null;
     }
+    // Preserve Firestore FieldValue sentinels (e.g. deleteField()) untouched.
+    // Recursing into them via Object.entries would silently destroy the
+    // sentinel and the public email/phone would never be removed.
+    if (obj instanceof FieldValue) {
+      return obj;
+    }
     if (Array.isArray(obj)) {
       return obj.map(removeUndefinedValues).filter(item => item !== null);
     }
@@ -956,6 +981,39 @@ const EditCrewProfile: React.FC = () => {
             })
             .filter(Boolean)
         : [];
+
+      // --- CONTACT PRIVACY -----------------------------------------------
+      // The public crewProfiles doc is world-readable when published, so
+      // email/phone must NOT live there unless the user explicitly opts in.
+      // Students can never opt in (client-side gate).
+      const studentProfile = profileType === 'student';
+      const canShowContact = formToSave.showPublicContact === true && !studentProfile;
+
+      // Canonical contact is ALWAYS preserved privately (owner-only doc), so the
+      // app/Functions can still reach the user regardless of the public toggle.
+      await savePrivateContact(user.uid, {
+        email: user.email || formToSave.contactInfo?.email || '',
+        phone: formToSave.contactInfo?.phone || ''
+      });
+
+      // Because the doc is saved with { merge: true }, omitting a field does NOT
+      // remove it from an existing doc. So when contact is NOT public we must
+      // explicitly delete the public copies with deleteField(). The top-level
+      // `email` is NEVER written publicly — always deleted.
+      const cleanInstagram = getCleanInstagramHandle(formToSave.contactInfo?.instagram || '');
+      const publicContactInfo: Record<string, unknown> = {
+        website: formToSave.contactInfo?.website ?? '',
+        instagram: cleanInstagram,
+        emailPrivate: formToSave.contactInfo?.emailPrivate,
+        phonePrivate: formToSave.contactInfo?.phonePrivate,
+        email: canShowContact
+          ? (formToSave.contactInfo?.email || user.email || '')
+          : deleteField(),
+        phone: canShowContact
+          ? (formToSave.contactInfo?.phone || '')
+          : deleteField(),
+      };
+
       const dataToSave = {
         ...formToSave,
         name: safeName,
@@ -976,12 +1034,10 @@ const EditCrewProfile: React.FC = () => {
         selectedTeacherIds,
         selectedTeachers,
         // Note: uid field is intentionally omitted since document ID should be the UID
-        email: user.email || formToSave.contactInfo?.email || '', // Use auth email as primary, fallback to contact info
-        contactInfo: {
-          ...formToSave.contactInfo,
-          email: user.email || formToSave.contactInfo?.email || '', // Ensure email is in contact info
-          instagram: getCleanInstagramHandle(formToSave.contactInfo?.instagram || ''), // Clean Instagram handle before saving
-        },
+        // Top-level public `email` is never written — strip any legacy copy.
+        email: deleteField(),
+        contactInfo: publicContactInfo,
+        showPublicContact: canShowContact,
         languages: formToSave.languages || [],
         isPublished: publishedToSave, // Save publish state
         updatedAt: new Date()
@@ -2011,102 +2067,36 @@ const EditCrewProfile: React.FC = () => {
                   </p>
                   <h3 className="text-xl font-medium text-gray-900 mb-5 tracking-tight">{t('resume.builder.contactInformationOptional')}</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Email with Privacy Toggle */}
+                    {/* Email — stored privately; the "Show on public profile" checkbox below controls visibility */}
                     <div className="space-y-2">
                       <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
                         {t('resume.builder.email')}
                       </label>
-                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
-                        <input
-                          type="email"
-                          placeholder={t('resume.builder.emailPlaceholder')}
-                          value={form.contactInfo?.email || ''}
-                          onChange={e =>
-                            setForm(f => ({ ...f, contactInfo: { ...(f.contactInfo || {}), email: e.target.value } }))
-                          }
-                          className={`${fieldInputClassName} flex-1`}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setForm(f => ({
-                            ...f,
-                            contactInfo: {
-                              ...(f.contactInfo || {}),
-                              emailPrivate: !(f.contactInfo?.emailPrivate)
-                            }
-                          }))}
-                          className={`${iconButtonClassName} self-start sm:mt-[4px] sm:shrink-0`}
-                          title={form.contactInfo?.emailPrivate ? t('resume.builder.emailPrivateTitle') : t('resume.builder.emailPublicTitle')}
-                        >
-                          {form.contactInfo?.emailPrivate ? (
-                            <EyeOff className="w-5 h-5 text-gray-600" />
-                          ) : (
-                            <Eye className="w-5 h-5 text-gray-600" />
-                          )}
-                        </button>
-                      </div>
-                      <p className="flex items-start gap-1 text-xs text-gray-500">
-                        {form.contactInfo?.emailPrivate ? (
-                          <>
-                            <EyeOff className="mt-0.5 h-3 w-3 shrink-0" />
-                            <span>{t('resume.builder.privateContactHint')}</span>
-                          </>
-                        ) : (
-                          <>
-                            <Eye className="mt-0.5 h-3 w-3 shrink-0" />
-                            <span>{t('resume.builder.publicContactHint')}</span>
-                          </>
-                        )}
-                      </p>
+                      <input
+                        type="email"
+                        placeholder={t('resume.builder.emailPlaceholder')}
+                        value={form.contactInfo?.email || ''}
+                        onChange={e =>
+                          setForm(f => ({ ...f, contactInfo: { ...(f.contactInfo || {}), email: e.target.value } }))
+                        }
+                        className={fieldInputClassName}
+                      />
                     </div>
 
-                    {/* Phone with Privacy Toggle */}
+                    {/* Phone — stored privately; the "Show on public profile" checkbox below controls visibility */}
                     <div className="space-y-2">
                       <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
                         {t('resume.builder.phone')}
                       </label>
-                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
-                        <input
-                          type="tel"
-                          placeholder={t('resume.builder.phonePlaceholder')}
-                          value={form.contactInfo?.phone || ''}
-                          onChange={e =>
-                            setForm(f => ({ ...f, contactInfo: { ...(f.contactInfo || {}), phone: e.target.value } }))
-                          }
-                          className={`${fieldInputClassName} flex-1`}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setForm(f => ({
-                            ...f,
-                            contactInfo: {
-                              ...(f.contactInfo || {}),
-                              phonePrivate: !(f.contactInfo?.phonePrivate)
-                            }
-                          }))}
-                          className={`${iconButtonClassName} self-start sm:mt-[4px] sm:shrink-0`}
-                          title={form.contactInfo?.phonePrivate ? t('resume.builder.phonePrivateTitle') : t('resume.builder.phonePublicTitle')}
-                        >
-                          {form.contactInfo?.phonePrivate ? (
-                            <EyeOff className="w-5 h-5 text-gray-600" />
-                          ) : (
-                            <Eye className="w-5 h-5 text-gray-600" />
-                          )}
-                        </button>
-                      </div>
-                      <p className="flex items-start gap-1 text-xs text-gray-500">
-                        {form.contactInfo?.phonePrivate ? (
-                          <>
-                            <EyeOff className="mt-0.5 h-3 w-3 shrink-0" />
-                            <span>{t('resume.builder.privateContactHint')}</span>
-                          </>
-                        ) : (
-                          <>
-                            <Eye className="mt-0.5 h-3 w-3 shrink-0" />
-                            <span>{t('resume.builder.publicContactHint')}</span>
-                          </>
-                        )}
-                      </p>
+                      <input
+                        type="tel"
+                        placeholder={t('resume.builder.phonePlaceholder')}
+                        value={form.contactInfo?.phone || ''}
+                        onChange={e =>
+                          setForm(f => ({ ...f, contactInfo: { ...(f.contactInfo || {}), phone: e.target.value } }))
+                        }
+                        className={fieldInputClassName}
+                      />
                     </div>
 
                     <div>
@@ -2138,6 +2128,39 @@ const EditCrewProfile: React.FC = () => {
                       />
                     </div>
                   </div>
+
+                  {/*
+                    Opt-in to exposing email & phone on the PUBLIC profile.
+                    Default OFF. Hidden entirely for students (they cannot opt
+                    in). When off, email/phone stay only in the owner-only
+                    private contact doc and are stripped from the public doc.
+                  */}
+                  {form.profileType !== 'student' && (
+                    <div className="mfj-vv-card mt-6">
+                      <label className="flex items-start gap-3">
+                        <input
+                          type="checkbox"
+                          checked={form.showPublicContact === true}
+                          onChange={e =>
+                            setForm(f => ({ ...f, showPublicContact: e.target.checked }))
+                          }
+                          className="mt-0.5 h-5 w-5 shrink-0 rounded border-gray-300 bg-white text-gray-600 focus:ring-2 focus:ring-gray-500"
+                        />
+                        <span>
+                          <span className="block font-medium text-gray-900">
+                            {t('resume.builder.contact.showPublicContact', {
+                              defaultValue: 'Show my email & phone on my public profile'
+                            })}
+                          </span>
+                          <span className="mt-1 block text-xs text-amber-700">
+                            {t('resume.builder.contact.showPublicContactWarning', {
+                              defaultValue: 'Anyone — including people without an account — will be able to see them.'
+                            })}
+                          </span>
+                        </span>
+                      </label>
+                    </div>
+                  )}
                 </section>
 
                 {/* Other Info Section */}

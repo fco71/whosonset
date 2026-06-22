@@ -84,8 +84,9 @@ const EnhancedTasksHub: React.FC<EnhancedTasksHubProps> = ({ projectId }) => {
           const crewData = doc.data();
           usersData[doc.id] = {
             id: doc.id,
-            name: crewData.name || crewData.displayName || (crewData.email ? crewData.email.split('@')[0] : 'Crew Member'),
-            email: crewData.email || '',
+            // email is no longer public on crewProfiles — fall back to username/name only
+            name: crewData.name || crewData.username || crewData.displayName || 'Crew',
+            email: '',
             avatar: crewData.profileImageUrl || crewData.photoURL
           };
         });

@@ -1953,7 +1953,8 @@
       "selectedProjects": "Proyectos Seleccionados",
       "education": "Educación",
       "contactInformation": "Información de Contacto",
-      "additionalInformation": "Información Adicional"
+      "additionalInformation": "Información Adicional",
+      "messageOnMyFilmJobs": "Enviar mensaje en My Film Jobs"
     },
     "labels": {
       "present": "Presente",
@@ -2069,10 +2070,14 @@
       "otherRelevantInformation": "Otra información relevante (opcional)",
       "otherRelevantInformationPlaceholder": "Agrega otras habilidades, certificaciones, membresías, etc.",
       "publishVisibility": "Publicación y visibilidad",
-      "publishResumePublicly": "Publicar currículum públicamente",
-      "publishedHint": "Tu currículum será visible mediante un enlace público después de guardar.",
-      "privateHint": "Tu currículum es privado y solo tú puedes verlo.",
-      "publishedWarning": "Una vez publicado, cualquier persona con el enlace podrá acceder a tu currículum.",
+      "publishResumePublicly": "Publicar — haz tu perfil público y compartible (cualquiera con el enlace puede verlo)",
+      "publishedHint": "Tu perfil es público. Cualquiera con el enlace puede verlo, sin necesidad de cuenta.",
+      "privateHint": "Tu perfil es privado y solo tú puedes verlo.",
+      "publishedWarning": "Una vez publicado, tu perfil será accesible para cualquier persona con el enlace, incluso quienes no tengan cuenta.",
+      "contact": {
+        "showPublicContact": "Mostrar mi email y teléfono en mi perfil público",
+        "showPublicContactWarning": "Cualquier persona —incluso quienes no tengan cuenta— podrá verlos."
+      },
       "availabilityStatus": "Estado de disponibilidad",
       "availableForWork": "Disponible para trabajar",
       "availableSoon": "Disponible pronto",

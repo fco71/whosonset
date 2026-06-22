@@ -124,6 +124,11 @@ const ApplicationMessaging: React.FC<ApplicationMessagingProps> = ({
               location: profileData.location || 'Not specified',
               skills: profileData.skills || [],
               availability: profileData.availability || 'Not specified',
+              // TODO: applicant email/phone are no longer public on crewProfiles
+              // (PII moved to the owner-only private contact doc). These are
+              // typically undefined now; the proper fix is to capture applicant
+              // contact on the application doc at submission time. Not rendered
+              // here, so this degrades gracefully.
               phone: profileData.phone,
               email: profileData.email
             });

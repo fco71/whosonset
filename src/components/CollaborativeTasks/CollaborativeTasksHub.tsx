@@ -67,8 +67,9 @@ const CollaborativeTasksHub: React.FC<CollaborativeTasksHubProps> = ({ projectId
       snapshot.docs.forEach(doc => {
         const crewData = doc.data();
         usersData[doc.id] = {
-          name: crewData.name || crewData.displayName || crewData.email || 'Unknown Crew Member',
-          email: crewData.email || '',
+          // email is no longer public on crewProfiles — fall back to username/name only
+          name: crewData.name || crewData.username || crewData.displayName || 'Crew',
+          email: '',
           avatar: crewData.profileImageUrl || crewData.photoURL || undefined
         };
       });

@@ -113,6 +113,13 @@ export interface CrewProfile {
   isPublished: boolean;
   availability?: 'available' | 'unavailable' | 'soon';
   languages?: string[];
+  /**
+   * When true (and the profile is not a student), the owner has opted in to
+   * mirroring their email/phone into the public, world-readable crewProfiles
+   * doc. Default false — PII otherwise lives only in the owner-only
+   * crewProfiles/{uid}/private/contact subcollection.
+   */
+  showPublicContact?: boolean;
 }
 
 // Supporting interfaces
@@ -160,4 +167,6 @@ export interface CrewProfileFormData {
   isPublished?: boolean;
   availability?: 'available' | 'unavailable' | 'soon';
   languages?: string[];
-} 
+  /** Opt-in to showing email/phone publicly. Default false; ignored for students. */
+  showPublicContact?: boolean;
+}

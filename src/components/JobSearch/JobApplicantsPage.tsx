@@ -243,6 +243,10 @@ const JobApplicantsPage: React.FC<JobApplicantsPageProps> = ({ jobId: propJobId 
               availability: profileData.availability || 'Not specified',
               expectedSalary: profileData.expectedSalary,
               portfolio: profileData.portfolio,
+              // TODO: applicant contact (email/phone) is no longer public on
+              // crewProfiles. The proper fix is to capture the applicant's
+              // contact on the application doc at submission time. Until then
+              // these are typically undefined and the UI degrades gracefully.
               phone: profileData.phone,
               email: profileData.email,
               profileImageUrl: profileData.profileImageUrl || profileData.photoURL || profileData.avatarUrl
@@ -817,13 +821,19 @@ const JobApplicantsPage: React.FC<JobApplicantsPageProps> = ({ jobId: propJobId 
                   <div>
                     <h3 className="font-medium text-gray-900 mb-2">Contact Information</h3>
                     <div className="space-y-2 text-sm">
+                      {/*
+                        Applicant email/phone are no longer public on crewProfiles.
+                        Show them when available, otherwise hint to use in-app
+                        messaging instead of an empty/"Not provided" dead end.
+                        TODO: capture applicant contact on the application doc.
+                      */}
                       <div className="flex items-center gap-2">
                         <Mail className="w-4 h-4 text-gray-400" />
-                        <span>{applicantProfiles[selectedApplication.applicantId]?.email || 'Not provided'}</span>
+                        <span>{applicantProfiles[selectedApplication.applicantId]?.email || 'Contact via messaging'}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Phone className="w-4 h-4 text-gray-400" />
-                        <span>{applicantProfiles[selectedApplication.applicantId]?.phone || 'Not provided'}</span>
+                        <span>{applicantProfiles[selectedApplication.applicantId]?.phone || 'Contact via messaging'}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <MapPin className="w-4 h-4 text-gray-400" />

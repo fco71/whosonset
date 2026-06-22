@@ -69,13 +69,17 @@ async function resolveRegisteredRecipientEmail(
 ): Promise<string | null> {
   const normalizedRequested = requestedEmail.trim().toLowerCase();
   if (recipientUserId) {
-    const [userDoc, crewDoc] = await Promise.all([
+    // Prefer the signed-in-readable users/{uid}.email and the owner-only private
+    // contact doc; legacy crewProfiles fields are checked last (un-migrated docs).
+    const [userDoc, privateContactDoc, crewDoc] = await Promise.all([
       admin.firestore().collection("users").doc(recipientUserId).get(),
+      admin.firestore().collection("crewProfiles").doc(recipientUserId).collection("private").doc("contact").get(),
       admin.firestore().collection("crewProfiles").doc(recipientUserId).get(),
     ]);
     const candidates = [
       userDoc.data()?.email,
       userDoc.data()?.contactInfo?.email,
+      privateContactDoc.data()?.email,
       crewDoc.data()?.email,
       crewDoc.data()?.contactInfo?.email,
     ].filter((value): value is string => typeof value === "string");
@@ -116,102 +120,83 @@ async function consumeEmailSendQuota(uid: string): Promise<"ok" | "rate" | "dail
   });
 }
 
-// Helper function to get user data from crewProfiles first, then users
+// Helper function to get user data + a reachable email for a user.
+//
+// Email source of truth is the signed-in-readable users/{uid}.email (NOT the
+// world-readable crewProfiles doc, which no longer carries PII). We also read
+// the owner-only private contact doc crewProfiles/{uid}/private/contact as a
+// fallback, then legacy crewProfiles fields last (for un-migrated profiles).
+// The returned object still spreads crewProfiles data so callers keep access to
+// display fields (name, etc.).
 async function getUserData(userId: string) {
   try {
     console.log(`[getUserData] Looking up user with ID: ${userId}`);
-    
-    // Try crewProfiles first since it's more likely to have the email
-    const crewDoc = await admin.firestore().collection('crewProfiles').doc(userId).get();
-    if (crewDoc.exists) {
-      const crewData = crewDoc.data();
-      console.log(`[getUserData] Found user in 'crewProfiles' collection`);
-      
-      // Check multiple possible locations for email
-      const email = crewData?.email || 
-                  crewData?.contactInfo?.email || 
-                  crewData?.notificationPreferences?.email ||
-                  null;
-                  
-      console.log(`[getUserData] Extracted email from crewProfiles: ${email}`);
-      
-      // Always update the users collection with the email from crewProfiles if found
-      if (email) {
-        console.log(`[getUserData] Updating users collection with email from crewProfiles`);
-        try {
-          await admin.firestore().collection('users').doc(userId).set(
-            { 
-              email, 
-              contactInfo: { email },
-              notificationPreferences: {
-                emailNotifications: {
-                  general: true,
-                  projects: true,
-                  chat: true,
-                  jobs: true
-                },
-                inAppNotifications: {
-                  general: true,
-                  projects: true,
-                  chat: true,
-                  jobs: true
-                },
-                emailFrequency: {
-                  jobs: 'daily',
-                  general: 'daily',
-                  projects: 'daily',
-                  chat: 'daily'
-                }
-              }
-            },
-            { merge: true }
-          );
-          console.log(`[getUserData] Successfully updated users collection with email`);
-        } catch (updateError) {
-          console.error('[getUserData] Error updating users collection:', updateError);
-        }
-      }
-      
-      return { 
-        ...crewData,
-        email,
-        collection: 'crewProfiles'
-      };
+
+    const [userDoc, crewDoc, privateContactDoc] = await Promise.all([
+      admin.firestore().collection('users').doc(userId).get(),
+      admin.firestore().collection('crewProfiles').doc(userId).get(),
+      admin.firestore().collection('crewProfiles').doc(userId).collection('private').doc('contact').get(),
+    ]);
+
+    const userData = userDoc.exists ? userDoc.data() : undefined;
+    const crewData = crewDoc.exists ? crewDoc.data() : undefined;
+    const privateContact = privateContactDoc.exists ? privateContactDoc.data() : undefined;
+
+    if (!userData && !crewData && !privateContact) {
+      console.log(`[getUserData] No user found with ID: ${userId} in any source`);
+      return null;
     }
-    
-    // If not found in crewProfiles, try users collection
-    const userDoc = await admin.firestore().collection('users').doc(userId).get();
-    if (userDoc.exists) {
-      const userData = userDoc.data();
-      console.log(`[getUserData] Found user in 'users' collection`);
-      
-      // Check multiple possible locations for email
-      const email = userData?.email || 
-                   userData?.contactInfo?.email || 
-                   userData?.notificationPreferences?.email ||
-                   null;
-                   
-      console.log(`[getUserData] Extracted email from users collection: ${email}`);
-      
-      // If email notifications are explicitly disabled, return null for email
-      if (userData?.notificationPreferences?.emailNotifications?.general === false) {
-        console.log(`[getUserData] Email notifications are disabled for user: ${userId}`);
-        return {
-          ...userData,
-          email: null,
-          collection: 'users'
-        };
+
+    // Resolve email, preferring users/{uid}.email.
+    const email =
+      userData?.email ||
+      userData?.contactInfo?.email ||
+      userData?.notificationPreferences?.email ||
+      privateContact?.email ||
+      crewData?.email ||
+      crewData?.contactInfo?.email ||
+      null;
+
+    console.log(`[getUserData] Resolved email for ${userId}: ${email}`);
+
+    // Keep the users doc in sync with the resolved email (legacy behavior).
+    if (email && userData?.email !== email) {
+      try {
+        await admin.firestore().collection('users').doc(userId).set(
+          {
+            email,
+            contactInfo: { email },
+            notificationPreferences: {
+              emailNotifications: { general: true, projects: true, chat: true, jobs: true },
+              inAppNotifications: { general: true, projects: true, chat: true, jobs: true },
+              emailFrequency: { jobs: 'daily', general: 'daily', projects: 'daily', chat: 'daily' },
+            },
+          },
+          { merge: true }
+        );
+        console.log(`[getUserData] Synced users/${userId} with resolved email`);
+      } catch (updateError) {
+        console.error('[getUserData] Error updating users collection:', updateError);
       }
-      
-      return { 
+    }
+
+    // Respect an explicit email-notifications opt-out on the users doc.
+    if (userData?.notificationPreferences?.emailNotifications?.general === false) {
+      console.log(`[getUserData] Email notifications are disabled for user: ${userId}`);
+      return {
+        ...crewData,
         ...userData,
-        email,
-        collection: 'users'
+        email: null,
+        collection: userData ? 'users' : 'crewProfiles',
       };
     }
 
-    console.log(`[getUserData] No user found with ID: ${userId} in either collection`);
-    return null;
+    return {
+      ...crewData,
+      ...userData,
+      email,
+      collection: userData ? 'users' : 'crewProfiles',
+    };
   } catch (error) {
     console.error(`[getUserData] Error fetching user ${userId}:`, error);
     return null;

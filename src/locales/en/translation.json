@@ -1988,7 +1988,8 @@
       "selectedProjects": "Selected Projects",
       "education": "Education",
       "contactInformation": "Contact Information",
-      "additionalInformation": "Additional Information"
+      "additionalInformation": "Additional Information",
+      "messageOnMyFilmJobs": "Message on My Film Jobs"
     },
     "labels": {
       "present": "Present"
@@ -2102,10 +2103,14 @@
       "otherRelevantInformation": "Other Relevant Information (Optional)",
       "otherRelevantInformationPlaceholder": "Add any other skills, certifications, memberships, etc.",
       "publishVisibility": "Publish & Visibility",
-      "publishResumePublicly": "Publish Resume Publicly",
-      "publishedHint": "Your resume will be visible via a public link once saved.",
-      "privateHint": "Your resume is private and only visible to you.",
-      "publishedWarning": "Once published, your resume will be accessible to anyone with the link.",
+      "publishResumePublicly": "Publish — make your profile public & shareable (anyone with the link can view it)",
+      "publishedHint": "Your profile is public. Anyone with the link can view it — no account needed.",
+      "privateHint": "Your profile is private and only visible to you.",
+      "publishedWarning": "Once published, your profile is accessible to anyone with the link, including people without an account.",
+      "contact": {
+        "showPublicContact": "Show my email & phone on my public profile",
+        "showPublicContactWarning": "Anyone — including people without an account — will be able to see them."
+      },
       "availabilityStatus": "Availability Status",
       "availableForWork": "Available for work",
       "availableSoon": "Available soon",

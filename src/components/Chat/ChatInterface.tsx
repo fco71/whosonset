@@ -325,22 +325,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     try {
       console.log('[ChatInterface] Getting email for user:', userId);
       
-      // Try users collection first
+      // Read from the users collection only. The crewProfiles doc no longer
+      // carries email (it's public when published); the signed-in-readable
+      // users/{uid}.email is the recipient source for notifications.
       const userDoc = await getDoc(doc(db, 'users', userId));
       if (userDoc.exists()) {
         const email = userDoc.data()?.email;
         console.log('[ChatInterface] Found email in users collection:', email);
         return email || null;
       }
-      
-      // Try crewProfiles collection if not found in users
-      const crewDoc = await getDoc(doc(db, 'crewProfiles', userId));
-      if (crewDoc.exists()) {
-        const email = crewDoc.data()?.email;
-        console.log('[ChatInterface] Found email in crewProfiles collection:', email);
-        return email || null;
-      }
-      
+
       console.log('[ChatInterface] No email found for user:', userId);
       return null;
     } catch (error) {
