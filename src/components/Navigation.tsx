@@ -173,14 +173,14 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between h-16">
                         {/* Logo */}
-                        <div className="flex items-center">
-                            <Link 
-                                to="/" 
+                        <div className="flex items-center shrink-0">
+                            <Link
+                                to="/"
                                 className="group flex items-center space-x-2"
                                 onClick={closeAllMenus}
                             >
                                 <div className="relative">
-                                    <div className="text-lg font-bold bg-gradient-to-r from-gray-900 via-gray-700 to-gray-900 bg-clip-text text-transparent tracking-tight">
+                                    <div className="text-lg font-bold bg-gradient-to-r from-gray-900 via-gray-700 to-gray-900 bg-clip-text text-transparent tracking-tight whitespace-nowrap">
                                         My Film Jobs
                                     </div>
                                     <div className="absolute -inset-1 bg-gradient-to-r from-blue-600/10 to-purple-600/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-sm -z-10"></div>
