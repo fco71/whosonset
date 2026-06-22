@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ProjectEntry } from '../types/ProjectEntry';
 import { JobTitleEntry } from '../types/JobTitleEntry';
@@ -6,6 +6,8 @@ import { Residence, ContactInfo } from '../types/CrewProfile';
 import { useManagedUrl } from '../hooks/useBlobUrl';
 import { imageErrorFallback } from '../utilities/imageErrorFallback';
 import { formatInstagramHandle } from '../lib/utils';
+import { useAuth } from '../contexts/AuthContext';
+import { getPrivateContact } from '../services/contactService';
 
 // Import html2pdf using require to bypass TypeScript issues
 const html2pdf = require('html2pdf.js');
@@ -64,6 +66,25 @@ interface ResumeViewProps {
 
 const ResumeView: React.FC<ResumeViewProps> = (props) => {
   const { profile, isOwnResume = false, profileUserId } = props;
+
+  // Signed-in members can see a crew member's contact — it lives in the member-readable
+  // private contact doc. Anonymous visitors/scrapers can't read it, so they only ever get
+  // whatever the owner chose to make fully public, plus the Message CTA. This preserves the
+  // long-standing "members can see my info" expectation while keeping it off the open web.
+  const { currentUser } = useAuth();
+  const contactTargetUid = profileUserId || (profile as any).uid;
+  const [memberContact, setMemberContact] = useState<{ email?: string; phone?: string } | null>(null);
+  useEffect(() => {
+    let active = true;
+    if (currentUser && contactTargetUid) {
+      getPrivateContact(contactTargetUid)
+        .then((c) => { if (active) setMemberContact(c); })
+        .catch(() => { /* not a member / denied — fall back to public + CTA */ });
+    } else {
+      setMemberContact(null);
+    }
+    return () => { active = false; };
+  }, [currentUser, contactTargetUid]);
   const { t } = useTranslation();
   // Fallback: use photoURL if profileImageUrl is missing
   const managedProfileImageUrl = useManagedUrl(profile?.profileImageUrl || profile?.photoURL);
@@ -596,11 +617,13 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
 
             {/* Contact Info */}
             {(() => {
-              // Email/phone are only present in the (public) profile doc when the
-              // owner has opted in — see EditCrewProfile. So display them purely
-              // on presence; no separate private flag check is needed anymore.
-              const hasEmail = !!profile.contactInfo?.email;
-              const hasPhone = !!profile.contactInfo?.phone;
+              // Public doc carries email/phone only when fully opted-in; signed-in
+              // members additionally get them from the private doc (memberContact).
+              // Anonymous viewers see neither — only the Message CTA.
+              const email = profile.contactInfo?.email || memberContact?.email || '';
+              const phone = profile.contactInfo?.phone || memberContact?.phone || '';
+              const hasEmail = !!email;
+              const hasPhone = !!phone;
               const hasWebsite = !!profile.contactInfo?.website;
               const hasInstagram = !!profile.contactInfo?.instagram;
               const messageTargetUid = profileUserId || profile.uid;
@@ -617,10 +640,10 @@ const ResumeView: React.FC<ResumeViewProps> = (props) => {
                   <h2 style={sectionTitleStyle}>{t('resume.sections.contactInformation')}</h2>
                   <ul style={contactListStyle}>
                     {hasEmail && (
-                      <li style={contactItemStyle}>📧 {profile.contactInfo!.email}</li>
+                      <li style={contactItemStyle}>📧 {email}</li>
                     )}
                     {hasPhone && (
-                      <li style={contactItemStyle}>📞 {profile.contactInfo!.phone}</li>
+                      <li style={contactItemStyle}>📞 {phone}</li>
                     )}
                     {/* Always show website and social media */}
                     {hasWebsite && <li style={contactItemStyle}>🌐 {profile.contactInfo!.website}</li>}

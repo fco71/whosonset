@@ -617,11 +617,14 @@ service cloud.firestore {
         allow create: if false;
       }
 
-      // Owner-only private contact (email/phone). The parent crewProfiles doc is
-      // world-readable when published, so PII lives here instead. Cloud Functions
-      // use the Admin SDK and bypass these rules.
+      // Private contact (email/phone). The parent crewProfiles doc is world-readable
+      // when published, so PII lives here instead. Any SIGNED-IN member may READ it
+      // (so members can reach crew for work); only the owner may WRITE. Anonymous
+      // visitors and scrapers cannot read it at all — that is the protection as the
+      // public site gains web visibility. Cloud Functions use the Admin SDK and bypass.
       match /private/{doc} {
-        allow read, write: if request.auth != null && request.auth.uid == profileId;
+        allow read: if request.auth != null;
+        allow write: if request.auth != null && request.auth.uid == profileId;
       }
     }
 

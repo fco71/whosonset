@@ -2149,12 +2149,12 @@ const EditCrewProfile: React.FC = () => {
                         <span>
                           <span className="block font-medium text-gray-900">
                             {t('resume.builder.contact.showPublicContact', {
-                              defaultValue: 'Show my email & phone on my public profile'
+                              defaultValue: 'Also show my email & phone to non-members (anyone on the web)'
                             })}
                           </span>
                           <span className="mt-1 block text-xs text-amber-700">
                             {t('resume.builder.contact.showPublicContactWarning', {
-                              defaultValue: 'Anyone — including people without an account — will be able to see them.'
+                              defaultValue: 'Signed-in members can already see your contact. This also exposes it to anyone on the internet, including scrapers.'
                             })}
                           </span>
                         </span>
