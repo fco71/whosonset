@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Film, 
@@ -15,10 +15,22 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { trackConversion } from '../utilities/conversionTracking';
+import { setPageSeo } from '../utilities/seo';
 
 const HomePage: React.FC = () => {
   const { t } = useTranslation();
   const { currentUser } = useAuth();
+
+  // Self-referential canonical so http/https, www/non-www, ?lang variants and the
+  // .web.app mirror all consolidate to one URL. The static index.html no longer carries
+  // a hardcoded canonical (it was poisoning sub-pages), so the homepage sets its own here.
+  useEffect(() => {
+    setPageSeo({
+      title: 'My Film Jobs | Film Industry Jobs and Crew Networking',
+      description: 'Find film industry jobs, connect with crew members, and grow your production network on My Film Jobs.',
+      canonicalUrl: 'https://myfilmjobs.com/',
+    });
+  }, []);
 
   const features = [
     {
