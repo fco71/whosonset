@@ -7,12 +7,18 @@ import { useAuth } from '../contexts/AuthContext';
 import ResumeView from './ResumeView';
 import CrewProfileHeader from './CrewProfileHeader';
 import ShareButton from './ShareButton';
+import { DEFAULT_OG_IMAGE_URL, setPageSeo } from '../utilities/seo';
 
 // Define a more specific type for the profile data
 interface CrewProfile {
   isPublished: boolean;
   name: string;
-  jobTitles: string[];
+  jobTitles?: Array<string | { name?: string; title?: string }>;
+  primaryRole?: string;
+  headline?: string;
+  city?: string;
+  country?: string;
+  profileImageUrl?: string;
   [key: string]: any; // For other properties we might not know about
 }
 
@@ -27,6 +33,12 @@ const LOADING_STATES = {
 } as const;
 
 type LoadingState = typeof LOADING_STATES[keyof typeof LOADING_STATES];
+
+function getProfileRole(profile: CrewProfile): string {
+  const firstTitle = Array.isArray(profile.jobTitles) ? profile.jobTitles[0] : undefined;
+  if (typeof firstTitle === 'string') return firstTitle;
+  return firstTitle?.name || firstTitle?.title || profile.primaryRole || profile.headline || 'Film Crew';
+}
 
 const PublicResumePage: React.FC<PublicResumePageProps> = () => {
   const { uid } = useParams<{ uid: string }>();
@@ -95,6 +107,43 @@ const PublicResumePage: React.FC<PublicResumePageProps> = () => {
       });
     }
   }, [profile, uid]);
+
+  useEffect(() => {
+    const canonicalUrl = `https://myfilmjobs.com/resume/${encodeURIComponent(uid || '')}`;
+
+    if (status === LOADING_STATES.ERROR) {
+      setPageSeo({
+        title: 'Profile Not Available | My Film Jobs',
+        description: 'This crew profile is not publicly available on My Film Jobs.',
+        canonicalUrl,
+        robots: 'noindex, nofollow',
+      });
+      return;
+    }
+
+    if (status !== LOADING_STATES.SUCCESS || !profile) {
+      return;
+    }
+
+    const role = getProfileRole(profile);
+    const place = [profile.city, profile.country].filter(Boolean).join(', ');
+    const title = `${profile.name || 'Film Crew Member'}${role ? ` - ${role}` : ''} | My Film Jobs`;
+    const description = [
+      profile.name || 'Film crew member',
+      role ? `${role}` : '',
+      place ? `based in ${place}` : '',
+      'View profile, credits, and connect on My Film Jobs.',
+    ].filter(Boolean).join(' ');
+
+    setPageSeo({
+      title,
+      description,
+      canonicalUrl,
+      ogType: 'profile',
+      ogImage: profile.profileImageUrl || DEFAULT_OG_IMAGE_URL,
+      robots: profile.isPublished ? undefined : 'noindex, nofollow',
+    });
+  }, [profile, status, uid]);
 
   if (status === LOADING_STATES.LOADING) {
     return (
@@ -197,4 +246,4 @@ const PublicResumePage: React.FC<PublicResumePageProps> = () => {
   );
 };
 
-export default PublicResumePage; 
+export default PublicResumePage;

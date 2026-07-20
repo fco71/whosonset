@@ -30,6 +30,42 @@
       ],
       "headers": [
         {
+          "source": "@(login|register|verify-email|forgot-password|reset-password|crew|projects|my-students|my-projects|saved-crew|saved-projects|collections|social|chat|collaboration|settings|edit-profile|post-job|applications|debug-jobs|email-test|email-integration-test|password-reset-test)",
+          "headers": [
+            {
+              "key": "X-Robots-Tag",
+              "value": "noindex, nofollow"
+            }
+          ]
+        },
+        {
+          "source": "@(projects|my-projects|saved-crew|saved-projects|collections|social|chat|collaboration|settings|applications)/**",
+          "headers": [
+            {
+              "key": "X-Robots-Tag",
+              "value": "noindex, nofollow"
+            }
+          ]
+        },
+        {
+          "source": "jobs/@(posted|applied|saved|analytics)",
+          "headers": [
+            {
+              "key": "X-Robots-Tag",
+              "value": "noindex, nofollow"
+            }
+          ]
+        },
+        {
+          "source": "jobs/*/@(apply|applications)",
+          "headers": [
+            {
+              "key": "X-Robots-Tag",
+              "value": "noindex, nofollow"
+            }
+          ]
+        },
+        {
           "source": "**",
           "headers": [
             {
@@ -118,6 +154,42 @@
         "**/node_modules/**"
       ],
       "headers": [
+        {
+          "source": "@(login|register|verify-email|forgot-password|reset-password|crew|projects|my-students|my-projects|saved-crew|saved-projects|collections|social|chat|collaboration|settings|edit-profile|post-job|applications|debug-jobs|email-test|email-integration-test|password-reset-test)",
+          "headers": [
+            {
+              "key": "X-Robots-Tag",
+              "value": "noindex, nofollow"
+            }
+          ]
+        },
+        {
+          "source": "@(projects|my-projects|saved-crew|saved-projects|collections|social|chat|collaboration|settings|applications)/**",
+          "headers": [
+            {
+              "key": "X-Robots-Tag",
+              "value": "noindex, nofollow"
+            }
+          ]
+        },
+        {
+          "source": "jobs/@(posted|applied|saved|analytics)",
+          "headers": [
+            {
+              "key": "X-Robots-Tag",
+              "value": "noindex, nofollow"
+            }
+          ]
+        },
+        {
+          "source": "jobs/*/@(apply|applications)",
+          "headers": [
+            {
+              "key": "X-Robots-Tag",
+              "value": "noindex, nofollow"
+            }
+          ]
+        },
         {
           "source": "**",
           "headers": [

@@ -26,6 +26,7 @@ const SITE_NAME = "My Film Jobs";
 const CANONICAL_ORIGIN = "https://myfilmjobs.com";
 const DEFAULT_OG_IMAGE = `${CANONICAL_ORIGIN}/og-image.jpg`;
 const DEFAULT_ROBOTS = "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1";
+const NOINDEX_ROBOTS = "noindex, nofollow";
 
 // Crawlers + social unfurlers that need server-rendered meta (they don't run JS).
 const BOT_UA = new RegExp(
@@ -78,6 +79,11 @@ function absUrl(path: unknown): string {
   if (/^https?:\/\//i.test(p)) return p;
   if (!p) return DEFAULT_OG_IMAGE;
   return `${CANONICAL_ORIGIN}${p.startsWith("/") ? "" : "/"}${p}`;
+}
+
+function canonicalUrlForPath(pathname: string): string {
+  const pathValue = pathname || "/";
+  return `${CANONICAL_ORIGIN}${pathValue.startsWith("/") ? "" : "/"}${pathValue}`;
 }
 
 function decode(s: string): string {
@@ -267,6 +273,24 @@ async function getTemplate(reqHost?: string): Promise<string | null> {
 // ---- route parsing ----
 const RESERVED_JOBS = new Set(["posted", "saved", "applied", "analytics", "new", "create"]);
 
+function isNoindexAppRoute(pathname: string): boolean {
+  const parts = pathname.split("/").filter(Boolean).map(decode);
+  if (parts[0] !== "jobs") return false;
+  if (parts.length === 2 && RESERVED_JOBS.has(parts[1])) return true;
+  return parts.length === 3 && (parts[2] === "apply" || parts[2] === "applications");
+}
+
+function buildNoindexMeta(pathname: string, title = `Page Not Available | ${SITE_NAME}`): Meta {
+  return {
+    title,
+    description: "This page is not meant to appear in public search results.",
+    canonical: canonicalUrlForPath(pathname),
+    ogType: "website",
+    image: DEFAULT_OG_IMAGE,
+    robots: NOINDEX_ROBOTS,
+  };
+}
+
 function parseEntity(pathname: string): { type: "job" | "blog" | "resume"; id: string } | null {
   const parts = pathname.split("/").filter(Boolean).map(decode);
   if (parts.length !== 2) return null; // only single-segment detail pages
@@ -301,7 +325,9 @@ const EMPLOYMENT_TYPE_MAP: Record<string, string> = {
 
 async function buildJob(db: admin.firestore.Firestore, id: string): Promise<Meta | null> {
   const snap = await db.collection("jobPostings").doc(id).get();
-  if (!snap.exists) return null;
+  if (!snap.exists) {
+    return buildNoindexMeta(`/jobs/${encodeURIComponent(id)}`, `Job Not Found | ${SITE_NAME}`);
+  }
   const j: any = snap.data() || {};
 
   const department = j.department || "Film";
@@ -364,14 +390,16 @@ async function buildJob(db: admin.firestore.Firestore, id: string): Promise<Meta
     canonical: `${CANONICAL_ORIGIN}/jobs/${encodeURIComponent(id)}`,
     ogType: "article",
     image: DEFAULT_OG_IMAGE,
-    robots: indexable ? undefined : "noindex, nofollow",
+    robots: indexable ? undefined : NOINDEX_ROBOTS,
     jsonLd,
   };
 }
 
 async function buildBlog(db: admin.firestore.Firestore, id: string): Promise<Meta | null> {
   const snap = await db.collection("blogPosts").doc(id).get();
-  if (!snap.exists) return null;
+  if (!snap.exists) {
+    return buildNoindexMeta(`/blog/${encodeURIComponent(id)}`, `Blog Post Not Found | ${SITE_NAME}`);
+  }
   const b: any = snap.data() || {};
 
   const isPublic = b.isPublic === true;
@@ -405,14 +433,16 @@ async function buildBlog(db: admin.firestore.Firestore, id: string): Promise<Met
     canonical: `${CANONICAL_ORIGIN}/blog/${encodeURIComponent(id)}`,
     ogType: "article",
     image,
-    robots: isPublic ? undefined : "noindex, nofollow",
+    robots: isPublic ? undefined : NOINDEX_ROBOTS,
     jsonLd,
   };
 }
 
 async function buildResume(db: admin.firestore.Firestore, uid: string): Promise<Meta | null> {
   const snap = await db.collection("crewProfiles").doc(uid).get();
-  if (!snap.exists) return null;
+  if (!snap.exists) {
+    return buildNoindexMeta(`/resume/${encodeURIComponent(uid)}`, `Profile Not Found | ${SITE_NAME}`);
+  }
   const c: any = snap.data() || {};
 
   const role =
@@ -429,9 +459,9 @@ async function buildResume(db: admin.firestore.Firestore, uid: string): Promise<
   );
   const image = c.profileImageUrl ? absUrl(c.profileImageUrl) : DEFAULT_OG_IMAGE;
   // Privacy gate: never reveal a non-published profile's identity in a link preview.
-  // Returning null makes the function serve the default site card instead — matching the
-  // crewProfiles security rule (public read only when isPublished == true).
-  if (c.isPublished !== true) return null;
+  if (c.isPublished !== true) {
+    return buildNoindexMeta(`/resume/${encodeURIComponent(uid)}`, `Profile Not Available | ${SITE_NAME}`);
+  }
 
   const jsonLd: Record<string, unknown> = {
     "@context": "https://schema.org",
@@ -576,7 +606,9 @@ export const prerender = onRequest({ region: "us-central1", invoker: "public" },
     const entity = parseEntity(req.path);
     const dir = entity ? null : parseDirectory(req.path);
     let meta: Meta | null = null;
-    if (entity) {
+    if (isNoindexAppRoute(req.path)) {
+      meta = buildNoindexMeta(req.path);
+    } else if (entity) {
       const db = admin.firestore();
       if (entity.type === "job") meta = await buildJob(db, entity.id);
       else if (entity.type === "blog") meta = await buildBlog(db, entity.id);

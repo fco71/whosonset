@@ -1,37 +1,7 @@
 User-agent: *
 Allow: /
 
-# Authentication and account pages
-Disallow: /login
-Disallow: /register
-Disallow: /verify-email
-Disallow: /forgot-password
-Disallow: /reset-password
-
-# Private in-app areas
-Disallow: /chat
-Disallow: /collaboration
-Disallow: /settings
-Disallow: /my-projects
-Disallow: /saved-crew
-Disallow: /saved-projects
-Disallow: /collections
-
-# Private workflows and dashboards
-Disallow: /post-job
-Disallow: /projects/create
-Disallow: /projects/*/manage
-Disallow: /applications/
-Disallow: /jobs/applied
-Disallow: /jobs/saved
-Disallow: /jobs/posted
-Disallow: /jobs/analytics
-Disallow: /jobs/*/apply
-Disallow: /jobs/*/applications
-
-# Internal/test pages
-Disallow: /email-test
-Disallow: /email-integration-test
-Disallow: /password-reset-test
+# Page indexing is controlled with robots meta tags and X-Robots-Tag headers.
+# Do not block page routes here; crawlers need access to see noindex directives.
 
 Sitemap: https://myfilmjobs.com/sitemap.xml
