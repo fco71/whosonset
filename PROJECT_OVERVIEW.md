@@ -122,6 +122,36 @@ classes (10 active groups, 27 unique class-directory members across those two do
 index was required. Hosting deploys through the production Actions pipeline on the feature
 commit push.
 
+## SEO noindex triage + Firebase SDK bump — 2026-07-21 (partially SHIPPED; owner action + deploy pending)
+
+**Trigger:** Google Search Console alert "Excluded by 'noindex' tag — Some of your pages are still affected." Five URLs surfaced:
+
+| URL | Verdict |
+|---|---|
+| `/directory/sound/dominican-republic` | **Working as designed.** `functions/src/prerender.ts:581` noindex when `matched.length < 3` (anti-doorway guard). Fewer than 3 published Sound crew in DR right now. Auto-indexes when 3+ published. Do NOT lower the threshold unless owner accepts the doorway-page SEO risk. |
+| `/directorio/casting/republica-dominicana` | Same guard, Spanish side, Casting × DR. Same auto-recovery. |
+| `/blog/2026-02-23-a79b3a881fb4` | Blog doc has `isPublic !== true`. Owner action: set `isPublic: true` in Firestore Console if it should be public; otherwise dismiss in Search Console. |
+| `/blog/2026-07-20-0906874a0122` | Same as above. |
+| `/login` | Correctly noindex-ed in both `firebase.json` X-Robots-Tag AND `src/utilities/routeSeo.ts` NOINDEX_ROUTE_PATTERNS. Auth pages must never be indexed. Owner should REMOVE `/login` from the "expected to be indexed" list in Search Console — it should never validate. |
+
+**Full noindex map audited (all rules confirmed intentional and correctly guarded):**
+- Static: auth flows, private app (`/crew`, `/projects`, `/settings`, `/edit-profile`, `/post-job`, `/applications`, etc.), job workflows (`/jobs/{posted,applied,saved,analytics}` + `/jobs/*/{apply,applications}`), debug/test.
+- Dynamic (via `functions/src/prerender.ts`): jobs → noindex if not public status OR expired; blog → noindex if `isPublic !== true`; resume → noindex if `isPublished !== true`; directory landings → noindex if <3 matching published crew.
+- Sitemaps (`sitemap-jobs.xml`, `sitemap-blog.xml`) served through Cloud Functions, so they should list only currently-indexable docs; if they list unpublished blog posts, that's the source of the Search Console mismatch — spot-check next time this alert fires.
+
+**Firebase JS SDK bump — 11.7.0 → 11.10.0 (uncommitted, unlockfile'd):**
+- Same trigger: user reports of `FIRESTORE (11.7.0) INTERNAL ASSERTION FAILED: Unexpected state (ID: b815) CONTEXT: {"ec": "TypeError: Cannot use 'in' operator to sei…`. Stack originates inside Firestore's channel/queue code (`vendor.firebase.*.js`), not user code. The `b815` family of assertions has had several fixes in the 11.8/11.9/11.10 patches.
+- **Change made:** `package.json` `"firebase": "11.7.0"` → `"11.10.0"`. Minor+patch bump in the same major = semver-safe, no API changes.
+- **NOT done in sandbox** (npm install would exceed sandbox timeout): `package-lock.json` and `node_modules/firebase` still show 11.7.0. Owner must run `npm install` on their Mac to regenerate the lockfile.
+- **CI implication:** the GitHub Actions workflow uses `npm ci` which respects the lockfile — so a deploy from `main` without a refreshed lockfile will still ship 11.7.0. The lockfile MUST be committed.
+
+**Owner action checklist for this section:**
+1. In Firestore Console: check the two blog docs (`2026-02-23-a79b3a881fb4`, `2026-07-20-0906874a0122`) — publish (`isPublic: true`) or leave.
+2. In Google Search Console: remove `/login` from the URLs submitted for indexing validation.
+3. On Mac: `cd ~/Documents/websites_local/whosonset && npm install && npx tsc --noEmit && npm run test:run && npm run test:rules` — verify the SDK bump doesn't break anything.
+4. If green, commit `package.json` + `package-lock.json` and push to main; GH Actions handles the deploy + release-integrity checks.
+5. Verify the b815 error stops appearing in user-facing error reports over the next few days. If it doesn't, next step is to wrap Firestore listeners in a diagnostic try/catch that logs the exact query/doc when b815 fires.
+
 ## Current Product State
 
 - Collaboration is group-centric (2026-06-11): `/collaboration` lists the user's groups (workspaces) plus a personal "My screenplays" tab and a supervisor review queue; each group has its own page at `/collaboration/:workspaceId` (`WorkspaceDetailPage`) with the group's screenplays, upload/start-writing, members, activity feed, invite (owner), supervisor self-toggle, and the grading CSV export. The old workspace-card "Open" button used to only show a fake "Successfully joined workspace" toast; it now navigates to the group page. Group uploads happen on the group page; the hub upload is personal-only. Visible nav/tab strings say "Groups"/"Grupos"; deeper strings (settings modal, invitation notifications) still say "workspace". No Firestore schema or rules changes — purely client navigation/IA.
