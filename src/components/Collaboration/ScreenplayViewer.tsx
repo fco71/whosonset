@@ -2763,6 +2763,14 @@ const ScreenplayViewer: React.FC<ScreenplayViewerProps> = ({ screenplay, project
                         {t(`collaboration.reviewStatus.labels.${reviewStatus}`)}
                       </div>
                     </div>
+                    <button
+                      type="button"
+                      onClick={exportTagReport}
+                      title={t('screenplay.export.button')}
+                      style={{ padding: '4px 10px', fontSize: '0.78em', border: '1px solid #cbd5e1', background: '#ffffff', color: '#1e293b', borderRadius: 6, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, alignSelf: 'flex-start' }}
+                    >
+                      ⬇ {t('screenplay.export.buttonShort')}
+                    </button>
                   </div>
                   <p style={{ margin: '8px 0 0', color: '#475569', fontSize: '0.85rem', lineHeight: 1.4 }}>
                     {t(`collaboration.reviewStatus.descriptions.${reviewStatus}`)}
