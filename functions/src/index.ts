@@ -2227,7 +2227,7 @@ export const notifyScreenplayReviewStatus = onDocumentUpdated({
           titleKey: 'screenplay.notifications.reviewApproved.title',
           bodyKey: 'screenplay.notifications.reviewApproved.body',
           i18nParams: { reviewer: actorName, screenplay: screenplayName },
-          link: '/collaboration', relatedId: screenplayId, senderId: updatedBy, senderName: actorName, metadata: meta
+          link: `/collaboration?tab=screenplays&screenplay=${screenplayId}`, relatedId: screenplayId, senderId: updatedBy, senderName: actorName, metadata: meta
         });
       }
     } else if (afterStatus === 'changes_requested') {
@@ -2239,7 +2239,7 @@ export const notifyScreenplayReviewStatus = onDocumentUpdated({
           titleKey: 'screenplay.notifications.reviewChangesRequested.title',
           bodyKey: note ? 'screenplay.notifications.reviewChangesRequested.bodyWithNote' : 'screenplay.notifications.reviewChangesRequested.body',
           i18nParams: { reviewer: actorName, screenplay: screenplayName, note },
-          link: '/collaboration', relatedId: screenplayId, senderId: updatedBy, senderName: actorName, metadata: meta
+          link: `/collaboration?tab=screenplays&screenplay=${screenplayId}`, relatedId: screenplayId, senderId: updatedBy, senderName: actorName, metadata: meta
         });
       }
     } else if (afterStatus === 'submitted') {
@@ -2252,7 +2252,7 @@ export const notifyScreenplayReviewStatus = onDocumentUpdated({
           titleKey: 'screenplay.notifications.reviewReopened.title',
           bodyKey: 'screenplay.notifications.reviewReopened.body',
           i18nParams: { reviewer: actorName, screenplay: screenplayName },
-          link: '/collaboration', relatedId: screenplayId, senderId: updatedBy, senderName: actorName, metadata: meta
+          link: `/collaboration?tab=screenplays&screenplay=${screenplayId}`, relatedId: screenplayId, senderId: updatedBy, senderName: actorName, metadata: meta
         });
       } else if (workspaceId) {
         // Author submitted for feedback -> notify the workspace's supervisors.
@@ -2271,7 +2271,7 @@ export const notifyScreenplayReviewStatus = onDocumentUpdated({
             titleKey: 'screenplay.notifications.reviewSubmitted.title',
             bodyKey: 'screenplay.notifications.reviewSubmitted.body',
             i18nParams: { author: actorName, screenplay: screenplayName },
-            link: '/collaboration', relatedId: screenplayId, senderId: updatedBy, senderName: actorName, metadata: meta
+            link: `/collaboration?tab=screenplays&screenplay=${screenplayId}`, relatedId: screenplayId, senderId: updatedBy, senderName: actorName, metadata: meta
           });
         }
       }
@@ -2621,7 +2621,7 @@ export const addScreenplayCollaborator = onCall({
     type: 'collaborator_added',
     title: 'Added as Collaborator',
     body: `${actorName} added you as a collaborator to ${screenplayName}.`,
-    link: '/collaboration',
+    link: `/collaboration?tab=screenplays&screenplay=${screenplayId}`,
     relatedId: screenplayId,
     senderId: actorId,
     senderName: actorName,

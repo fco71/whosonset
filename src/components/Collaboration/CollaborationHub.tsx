@@ -213,6 +213,10 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
 
   const [userScreenplays, setUserScreenplays] = useState<Screenplay[]>([]);
+  // Screenplays shared with me directly (I'm in teamMembers) — these can live in
+  // groups I'm not a member of, so they never arrive via the workspace/uploadedBy
+  // subscriptions below. Kept separate so the teacher's review lists are untouched.
+  const [sharedScreenplays, setSharedScreenplays] = useState<Screenplay[]>([]);
   // Resolved member display profiles (crewProfiles doc-id == uid), cached for the card avatars.
   const [memberProfilesById, setMemberProfilesById] = useState<Record<string, { name: string; avatar: string; disabled?: boolean }>>({});
   const [showStartWritingModal, setShowStartWritingModal] = useState(false);
@@ -222,6 +226,20 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
   const [unresolvedCountByScreenplay, setUnresolvedCountByScreenplay] = useState<Record<string, number>>({});
   const [unresolvedFromTeacherCountByScreenplay, setUnresolvedFromTeacherCountByScreenplay] = useState<Record<string, number>>({});
   const [selectedScreenplayId, setSelectedScreenplayId] = useState<string | null>(null);
+
+  // Deep link: a notification like ".../collaboration?tab=screenplays&screenplay=<id>"
+  // opens that screenplay directly. We consume the param once and strip it so closing
+  // the modal (or a refresh) doesn't reopen it.
+  const requestedScreenplayId = searchParams.get('screenplay');
+  useEffect(() => {
+    if (!requestedScreenplayId) return;
+    setSelectedScreenplayId(requestedScreenplayId);
+    setShowScreenplayModal(true);
+    const next = new URLSearchParams(searchParams);
+    next.delete('screenplay');
+    setSearchParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requestedScreenplayId]);
   // "All student work" status filter on the teacher review tab; 'all' shows everything.
   const [studentWorkFilter, setStudentWorkFilter] = useState<'all' | ScreenplayReviewStatus>('all');
   // Which class card's color menu is open (Classes tab); null = all closed.
@@ -586,6 +604,27 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
       unsubscribes.forEach(fn => fn());
     };
   }, [currentUser, accessibleWorkspaceIdsKey]);
+
+  // "Shared with me": screenplays where I'm listed in teamMembers. Permitted by
+  // `allow list: if isScreenplayTeamMemberData(resource.data)` in firestore.rules —
+  // every returned doc contains my uid, so each satisfies that rule. This surfaces
+  // work shared for collaboration/review that lives outside my own groups.
+  useEffect(() => {
+    if (!currentUser) {
+      setSharedScreenplays([]);
+      return;
+    }
+    const unsubscribe = onSnapshot(
+      query(collection(db, 'screenplays'), where('teamMembers', 'array-contains', currentUser.uid)),
+      snapshot => {
+        setSharedScreenplays(snapshot.docs.map(documentSnapshot =>
+          normalizeScreenplay(documentSnapshot.id, documentSnapshot.data())
+        ));
+      },
+      err => console.error('Error subscribing to shared screenplays:', err)
+    );
+    return () => unsubscribe();
+  }, [currentUser]);
 
   const userScreenplaysKey = [...userScreenplays].map(item => item.id).sort().join(',');
 
@@ -2131,6 +2170,15 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
     // (no-group) work plus, for supervisors, a cross-group queue of submissions.
     const personalScreenplays = userScreenplays.filter(screenplay => !screenplay.workspaceId);
 
+    // "Shared with me": work others shared with me (I'm a team member) that isn't
+    // already surfaced through my own groups/uploads — i.e. the screenplays that were
+    // previously unreachable from this hub. Deduped against everything I already see.
+    const ownScreenplayIds = new Set(userScreenplays.map(screenplay => screenplay.id));
+    const sharedWithMe = sharedScreenplays
+      .filter(screenplay => screenplay.uploadedBy !== currentUser?.uid && !ownScreenplayIds.has(screenplay.id))
+      .slice()
+      .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
     // Everything across the workspaces this user supervises — the teacher's full
     // picture, not just the screenplays students explicitly submitted for review.
     const supervisedWorkspaceIds = new Set(
@@ -2348,6 +2396,26 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
               )}
             </section>
           </div>
+          {sharedWithMe.length > 0 && (
+            <div className="screenplays-list bg-white rounded-lg shadow-md p-6" style={{ order: 1 }}>
+              <section className="screenplay-section">
+                <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                  </svg>
+                  {t('collaboration.sharedWithMe.title')}
+                </h3>
+                <p className="student-work-card__sub" style={{ marginTop: 4 }}>
+                  {t('collaboration.sharedWithMe.subtitle')}
+                </p>
+                <ScreenplayList
+                  screenplays={sharedWithMe}
+                  workspaceLabel={getWorkspaceLabel}
+                  {...listProps}
+                />
+              </section>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -2641,7 +2709,8 @@ const CollaborationHub: React.FC<CollaborationHubProps> = ({ projectId }) => {
 
         {/* Full-Screen Screenplay Modal */}
         {showScreenplayModal && selectedScreenplayId && (() => {
-          const selectedScreenplay = userScreenplays.find(s => s.id === selectedScreenplayId);
+          const selectedScreenplay = userScreenplays.find(s => s.id === selectedScreenplayId)
+            || sharedScreenplays.find(s => s.id === selectedScreenplayId);
           if (!selectedScreenplay) return null;
           return (
             <ScreenplayViewerModal

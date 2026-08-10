@@ -361,10 +361,16 @@ describe('security rules guardrails', () => {
     expect(viewer).toMatch(/currentUser\?\.uid,\s*screenplay\.id,\s*screenplayWorkspaceId/);
   });
 
-  it('does not run the denied screenplay teamMembers collection query', () => {
+  it('scopes the "shared with me" teamMembers query to the current user so every doc satisfies the rule', () => {
+    const rules = readRepoFile('firestore.rules');
     const hub = readRepoFile('src/components/Collaboration/CollaborationHub.tsx');
 
-    expect(hub).not.toMatch(/where\('teamMembers',\s*'array-contains'/);
+    // The screenplays list rule permits reading docs where the caller is a team member.
+    expect(rules).toMatch(/allow list: if isScreenplayTeamMemberData\(resource\.data\)/);
+
+    // The hub's "shared with me" query must filter by the caller's own uid, so Firestore
+    // only ever returns docs that pass isScreenplayTeamMemberData (no denied broad query).
+    expect(hub).toMatch(/where\('teamMembers',\s*'array-contains',\s*currentUser\.uid\)/);
   });
 
   it('keeps supervisor self-election gated by admin-granted teacherRoles, not user-writable profile fields', () => {

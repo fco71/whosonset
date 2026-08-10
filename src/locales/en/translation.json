@@ -1086,6 +1086,10 @@
       }
     },
     "personalNoWorkspace": "Personal / no workspace",
+    "sharedWithMe": {
+      "title": "Shared with me",
+      "subtitle": "Screenplays others shared with you for collaboration or review, from groups you're not a member of."
+    },
     "uploadToWorkspace": "Upload to workspace",
     "uploadHelp": "Upload now, or invite collaborators later. Workspace access can be updated at any time.",
     "inviteMembersOptional": "Invite members (optional)",

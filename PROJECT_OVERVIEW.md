@@ -469,11 +469,43 @@ Risks and gotchas:
   Keep the empty-string case working until that helper is removed, because Phase 1
   rules intentionally allowed empty links for this path.
 
+## Shared with me + notification deep-link — READY 2026-08-10 (deploy pending)
+
+Problem (teacher-reported): a screenplay shared *with* the user (they're in `teamMembers`) but
+living in a group they're **not** a member of was unreachable from the hub — the hub only loads
+screenplays via `uploadedBy` + workspace-scoped queries. And the share/review notifications
+linked to a generic `/collaboration` with no screenplay target, so clicking them just opened the
+hub, not the screenplay. Both symptoms, one root cause: no surface listed "screenplays shared
+with me," and the one pointer (the notification) didn't deep-link.
+
+**Fix (client + functions; NO firestore.rules / index change):**
+- `CollaborationHub.tsx`: new separate `sharedScreenplays` state fed by
+  `onSnapshot(query(screenplays, where('teamMembers','array-contains', currentUser.uid)))` —
+  kept **separate** from `userScreenplays` so the teacher's review-inbox / student-work
+  aggregations are untouched (zero blast radius). A "Shared with me" section renders in the
+  Screenplays tab (`sharedWithMe` = shared docs I didn't upload AND that aren't already in my
+  own groups/uploads — deduped so it only shows the previously-unreachable work). The viewer
+  modal now opens from `userScreenplays` **or** `sharedScreenplays`; the viewer already loads its
+  own annotations/tags, so a shared screenplay opens fully.
+- Deep link: a new effect consumes `?screenplay=<id>` (opens the modal, then strips the param so
+  closing/refresh doesn't reopen). `functions/src/index.ts`: all 5 screenplay notifications
+  (`review_approved` / `review_changes_requested` / `review_reopened` / `review_submitted` +
+  `collaborator_added`) now link to `/collaboration?tab=screenplays&screenplay=${screenplayId}`.
+- Rule was already live (`148b9b76`, 2026-05-31); `array-contains` on one field needs no
+  composite index. Guard test `src/securityRules.test.ts` rewritten: was "does not run the denied
+  teamMembers query," now asserts the rule exists AND the hub query is scoped to `currentUser.uid`.
+- EN/ES `collaboration.sharedWithMe.{title,subtitle}`.
+- Verified: app `tsc --noEmit` clean, `functions` build clean, webpack build OK, 25/25 security
+  tests pass, both locale JSONs valid.
+- DEPLOY: **push client first** (Hosting auto-deploys), then the notification-link change needs a
+  **manual functions deploy** (the "Deploy Firebase Functions" workflow builds from origin/main —
+  push before triggering). No new callable, so no invoker/IAM step. No rules/index deploy.
+
 ## Known Gaps
 
 - Most collaboration UI behavior is still covered by manual QA. Core notification and permission behavior now has Firestore emulator coverage.
 - Member search still scans all crew profiles client-side.
-- The supplemental screenplay `teamMembers` collection subscription was removed because Firestore denied that broad list query; current collaboration loading relies on `uploadedBy` and workspace-scoped screenplay queries.
+- ~~The supplemental screenplay `teamMembers` collection subscription was removed because Firestore denied that broad list query.~~ RESOLVED 2026-08-10 (see "Shared with me + notification deep-link" below): the `allow list: if isScreenplayTeamMemberData(resource.data)` rule (added 2026-05-31, `148b9b76`) permits a `where('teamMembers','array-contains', uid)` query — every returned doc contains the caller's uid, so each satisfies the rule. Re-enabled as the "Shared with me" surface.
 - Public `crewProfiles` reads and authenticated `users/{userId}` reads are intentional current behavior but should be reviewed before broader launch if contact info needs tighter privacy.
 - A restore drill has not been performed against Firestore backups. Backups are configured, but a restore into a throwaway database would prove the process.
 - Join-request / add-student approval re-elevation edge — FIXED 2026-06-15 (`70826fd5`; functions deployed via run 27590435137): `grantWorkspaceMembershipInTx` in `functions/src/workspaceJoinRequests.ts` now mirrors the trusted `respondToWorkspaceInvitation`, reconciling `supervisorIds`/`viewerIds` with role-aware arrayUnion/arrayRemove — so granting `member` clears any stale supervisor/viewer entry that would otherwise silently re-elevate the user on rejoin. (Found in the 2026-06-15 review.) ALSO FIXED 2026-06-15 from the same review: join-request notification throttle (`ddd3b8b6`, functions deployed via run 27590964083 — only the first pending request from a requester notifies the owner, so a direct-write loop can't keep pinging), and the student "Other groups in your class" panel no longer fails silently (`c2861ef3`, hosting deploy run 27590787962 — shows the `noOtherGroups` message when there's nothing to request, and a load-error message if the directory read fails).

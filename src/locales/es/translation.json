@@ -1051,6 +1051,10 @@
       }
     },
     "personalNoWorkspace": "Personal / sin espacio de trabajo",
+    "sharedWithMe": {
+      "title": "Compartido conmigo",
+      "subtitle": "Guiones que otras personas compartieron contigo para colaborar o revisar, de grupos de los que no eres miembro."
+    },
     "uploadToWorkspace": "Subir a espacio de trabajo",
     "uploadHelp": "Sube ahora o invita colaboradores más tarde. El acceso al espacio puede actualizarse en cualquier momento.",
     "inviteMembersOptional": "Invitar miembros (opcional)",
