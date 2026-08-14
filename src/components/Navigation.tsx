@@ -9,7 +9,8 @@ import NotificationSettings from './NotificationSettings';
 import { useTranslation } from 'react-i18next';
 import { trackConversion } from '../utilities/conversionTracking';
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { app, db } from '../firebase';
 
 interface NavigationProps {
     authUser: any;
@@ -107,6 +108,36 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
     const closeAllMenus = () => {
         setIsMobileMenuOpen(false);
         setIsUserMenuOpen(false);
+    };
+
+    // "Pro" → the Coproduction tool (separate app at /copro on its own Firebase
+    // project). For a signed-in MyFilmJobs user we mint a coproduction-tool token
+    // and hand it off via same-origin sessionStorage (never a URL), so the tool
+    // signs them in silently — no second login. Best-effort: if minting fails, or
+    // the user is signed out, we just open /copro and the tool shows its own login.
+    const handleProNav = async (event: React.MouseEvent<HTMLAnchorElement>) => {
+        closeAllMenus();
+        // Let new-tab / modifier / middle clicks behave normally (no pre-auth handoff).
+        if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
+            return;
+        }
+        if (!authUser) {
+            return; // not signed in — allow the plain anchor navigation to /copro
+        }
+        event.preventDefault();
+        try {
+            const functions = getFunctions(app, 'us-central1');
+            const mint = httpsCallable<unknown, { token?: string }>(functions, 'mintCoproductionToken');
+            const result = await mint();
+            const token = result.data?.token;
+            if (token) {
+                sessionStorage.setItem('copro_sso_token', token);
+            }
+        } catch (err) {
+            // Non-fatal: fall through to the tool's own sign-in.
+            console.warn('[Coproduction SSO] handoff failed; opening tool without pre-auth', err);
+        }
+        window.location.assign('/copro');
     };
 
     const isActive = (path: string) => {
@@ -275,7 +306,7 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                             <a
                                 href="/copro"
                                 className="relative px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 text-gray-700 hover:text-gray-900 hover:bg-gray-50/80"
-                                onClick={closeAllMenus}
+                                onClick={handleProNav}
                             >
                                 {t('nav.pro', 'Pro')}
                             </a>
@@ -532,7 +563,7 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                             <a
                                 href="/copro"
                                 className="block px-4 py-3 rounded-lg font-medium transition-colors text-gray-700 hover:text-gray-900 hover:bg-gray-50"
-                                onClick={closeAllMenus}
+                                onClick={handleProNav}
                             >
                                 {t('nav.pro', 'Pro')}
                             </a>

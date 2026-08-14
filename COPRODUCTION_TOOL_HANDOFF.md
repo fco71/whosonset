@@ -147,19 +147,44 @@ MyFilmJobs side (additive, reversible; review + dev-site test before prod deploy
 Exit criteria: visiting `myfilmjobs.com/copro` (direct or via "Pro") loads the
 tool; edits prompt the tool's login; MyFilmJobs data provably untouched.
 
-### Phase 2 — Seamless single sign-on (no second login)
-- [ ] Cloud Function (in `my-film-jobs` Functions) that verifies the caller's
-      MyFilmJobs ID token and mints a **`coproduction-tool` custom token** for the
-      same uid (needs a `coproduction-tool` service-account key stored as a secret).
-- [ ] MyFilmJobs launchpad requests the token and hands it to the tool (short-lived,
-      via a secure handoff — e.g. postMessage or one-time code, NOT a URL query per
-      the privacy rule).
-- [ ] Tool calls `signInWithCustomToken` on load when a handoff token is present;
-      falls back to its own Google sign-in otherwise.
-- [ ] Verify tool Firestore rules still key on `request.auth.uid` (they do) so data
-      is per-user under the bridged identity.
-Exit criteria: clicking into the tool from MyFilmJobs signs the user in silently;
-no second login prompt.
+### Phase 2 — Seamless single sign-on (no second login)  — CODE DONE, needs SA key + deploy
+Design: **mint-in-MyFilmJobs + same-origin sessionStorage handoff** (chosen because
+MyFilmJobs uses BOTH email/password and Google — a custom-token bridge is
+provider-agnostic — and because same-origin `/copro` makes the handoff clean; no
+App Check enforcement on callables, confirmed). Flow: click "Pro" → MyFilmJobs mints
+a coproduction-tool token → stashes it in `sessionStorage` → tool exchanges it via
+`signInWithCustomToken` and clears it. Direct `/copro` visits (not via "Pro") just
+show the tool's own login. The tool's Firestore rules key on `request.auth.uid`, so
+data is per-user under the bridged MyFilmJobs identity. No account migration (fresh
+start, per Francisco).
+
+Implemented (code, typechecked):
+- [x] `functions/src/coproductionAuthBridge.ts` — `mintCoproductionToken` onCall
+      (us-central1). Verifies `request.auth`, lazily inits a NAMED admin app for
+      `coproduction-tool` from secret `COPRODUCTION_TOOL_SA`, returns a custom token.
+      Exported from `functions/src/index.ts`. ✅
+- [x] MyFilmJobs `Navigation.tsx` — "Pro" anchors call `handleProNav`: for a
+      signed-in user, mint via `httpsCallable('mintCoproductionToken')`, save to
+      `sessionStorage['copro_sso_token']`, then navigate to `/copro`. Best-effort
+      (falls back to tool's own login). Modifier/middle clicks pass through. ✅
+- [x] Tool `src/lib/coproSso.ts` (`consumeSsoHandoff`) + wired into `App.tsx` auth
+      effect — reads & clears the token, `signInWithCustomToken`. Rebuilt into
+      `public/copro/`. ✅
+
+REMAINING — Francisco (needs the coproduction-tool project owner):
+- [ ] Generate a **coproduction-tool service-account key**: coproduction-tool
+      Firebase console → Project settings → Service accounts → *Generate new private
+      key* (downloads JSON).
+- [ ] Store it as a Functions secret (in the my-film-jobs repo):
+      `firebase functions:secrets:set COPRODUCTION_TOOL_SA` (paste the JSON), under
+      `iam@myfilmjobs.com`.
+- [ ] Enable **Custom token / Anonymous** is NOT needed; custom-token sign-in works
+      by default. But ensure the coproduction-tool **Authentication** product is
+      enabled (it is, since Google sign-in already works there).
+- [ ] Deploy: `firebase deploy --only functions:mintCoproductionToken` then rebuild
+      + deploy Hosting (`npm run build && firebase deploy --only hosting`).
+Exit criteria: a signed-in MyFilmJobs user clicks "Pro" and lands in the tool
+already signed in (no login prompt); "LOCAL ONLY" becomes cloud-synced.
 
 ### Housekeeping (optional, additive)
 - [ ] Fix or delete the broken `backup-firestore*.sh` scripts (see backup note).
@@ -213,6 +238,20 @@ delete live data.
   launchpad. **Next:** build the Phase-1 MyFilmJobs launchpad page + route + nav
   entry (additive, pending Francisco's go-ahead), and Francisco to deploy the tool
   to the subdomain.
+- **2026-08-13** — Built Phase 1 host-side: `public/copro/` (tool build),
+  `scripts/copy-copro-app.cjs` wired into build, `/copro` rewrite in firebase.json
+  (both targets), "Pro" nav in `Navigation.tsx` (+ `nav.pro` en/es). Verified the
+  tool renders under `/copro/` locally. (Francisco subsequently committed +
+  deployed Phase 1; confirmed `/copro` loads. Noted the expected two-login gap →
+  Phase 2.)
+- **2026-08-13** — Confirmed MyFilmJobs auth = email/password + Google; no App
+  Check enforcement on callables. Built Phase 2 SSO bridge (mint-in-MFJ + same-origin
+  sessionStorage handoff): `mintCoproductionToken` Cloud Function, `handleProNav`
+  in `Navigation.tsx`, tool `coproSso.ts` + `App.tsx` wiring. Tool typechecks
+  (`tsc --noEmit`) + functions build (`tsc`) both clean; tool re-verified in
+  browser (no console errors, no-token path is a silent no-op). **Blocked on
+  Francisco:** generate coproduction-tool service-account key → set
+  `COPRODUCTION_TOOL_SA` secret → deploy the function + Hosting.
 
 ## Deploy & verify (Francisco, under iam@myfilmjobs.com)
 

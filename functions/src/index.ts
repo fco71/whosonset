@@ -21,6 +21,9 @@ export { onAuthUserDeleted } from "./onAuthUserDeleted";
 // for /jobs/:id, /blog/:id, /resume/:uid (Hosting rewrites point at this). See prerender.ts.
 export { prerender } from "./prerender";
 export { respondToWorkspaceInvitation } from "./workspaceInvitations";
+// Coproduction Tool SSO bridge: mints a coproduction-tool custom token for a
+// verified MyFilmJobs user (myfilmjobs.com/copro). See coproductionAuthBridge.ts.
+export { mintCoproductionToken } from "./coproductionAuthBridge";
 export { setWorkspaceSupervisorMode } from "./workspaceSupervisors";
 // Student-initiated "request to join a group" + the server-maintained classDirectory that
 // lets students discover the other groups in their class. See workspaceJoinRequests.ts.
