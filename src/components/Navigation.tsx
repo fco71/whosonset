@@ -270,8 +270,17 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                                     </Link>
                                 );
                             })}
+                            {/* Coproduction tool — separate static app served by Hosting at /copro,
+                                so it's a real anchor (full navigation), not a router <Link>. Open to all. */}
+                            <a
+                                href="/copro"
+                                className="relative px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 text-gray-700 hover:text-gray-900 hover:bg-gray-50/80"
+                                onClick={closeAllMenus}
+                            >
+                                {t('nav.pro', 'Pro')}
+                            </a>
                             {authUser && authenticatedLinks.map((link) => (
-                                <Link 
+                                <Link
                                     key={link.to}
                                     to={link.to} 
                                     className={`relative px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
@@ -519,6 +528,14 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                                     {link.label}
                                 </Link>
                             ))}
+                            {/* Coproduction tool — Hosting-served static app at /copro (real anchor). */}
+                            <a
+                                href="/copro"
+                                className="block px-4 py-3 rounded-lg font-medium transition-colors text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+                                onClick={closeAllMenus}
+                            >
+                                {t('nav.pro', 'Pro')}
+                            </a>
                         </div>
 
                         {authUser && (

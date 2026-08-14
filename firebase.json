@@ -140,6 +140,10 @@
           }
         },
         {
+          "source": "/copro",
+          "destination": "/copro/index.html"
+        },
+        {
           "source": "**",
           "destination": "/index.html"
         }
@@ -263,6 +267,10 @@
             "functionId": "prerender",
             "region": "us-central1"
           }
+        },
+        {
+          "source": "/copro",
+          "destination": "/copro/index.html"
         },
         {
           "source": "**",
