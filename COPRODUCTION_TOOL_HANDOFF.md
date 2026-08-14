@@ -276,6 +276,35 @@ Notes:
   `src/locales/{en,es}/translation.json`, new `scripts/copy-copro-app.cjs`, new
   `public/copro/**`. (Plus this doc.)
 
+## Budget data import (2026-08-13)
+
+Francisco's real budget ("De Espacio") was loaded. Two data sources existed:
+- The stripped-down copy in the coproduction-tool DB (names genericized to "Rol A/B",
+  amounts = tax-inclusive Totals). Extracted via `scripts/extract-budgets.cjs` in the
+  tool repo (READ-ONLY; run with the coproduction-tool service-account key — pull it
+  from the secret with `firebase functions:secrets:access COPRODUCTION_TOOL_SA
+  --account iam@myfilmjobs.com`).
+- **The authoritative DGCINE spreadsheet** (`~/Desktop|Downloads/Untitled.csv`) — real
+  names, qty, unit cost, Sub-Total, ITBIS 18%, Total. **This is what we imported.**
+
+Converter: `scratchpad/build-import.cjs` parsed the DGCINE CSV → tool import format
+(`category,name,budget_value`), value = **Total incl. ITBIS**, label = **code + role +
+person**. Output: 285 line items / 30 categories, sum **RD$74,998,074.09 = the source
+grand TOTAL exactly** (validated). File: tool repo `budget-exports/
+De_Espacio_from_DGCINE_source.csv`. Imported via the tool UI (Budget → Import CSV,
+Replace) under Francisco's MyFilmJobs identity — NOT written to the DB directly.
+
+Note: only 30 of 36 categories carry amounts (6 are all-zero in this budget).
+
+## Future TODO (product ideas)
+
+- **Fringe / ITBIS column** (Francisco's idea, 2026-08-13): let a line item carry an
+  optional fringe/tax on top of a base amount — a column before the total to name the
+  fringe (e.g. "ITBIS", "union") and enter a percentage or flat value, applied in live
+  calculations. Useful when negotiating with a co-producer who quotes a base figure
+  that actually needs a fringe added. Not needed now (the imported Totals already
+  include ITBIS); logged for later.
+
 ## Open questions
 
 1. Where is the coproduction tool source, and what is it built with?
