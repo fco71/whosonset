@@ -1,7 +1,7 @@
 // src/components/Navigation.tsx
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, User, ChevronDown, Bell, Settings } from 'lucide-react';
+import { Menu, X, User, ChevronDown, Bell, Settings, Sparkles } from 'lucide-react';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from './ui/DropdownMenu';
 import { useNotifications } from '../hooks/useNotifications';
 import NotificationCenter from './NotificationCenter';
@@ -164,6 +164,9 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
         { to: `/resume/${authUser?.uid ?? ''}`, label: t('nav.myProfile') },
         { to: '/edit-profile', label: t('nav.resumeBuilder') },
     ];
+    // Desktop top bar omits "My Profile" to reduce clutter — it stays in the
+    // account (name) dropdown and the mobile menu.
+    const topBarAuthLinks = authenticatedLinks.filter((link) => !link.to.startsWith('/resume/'));
 
     const jobManagementLinks = [
         { to: '/jobs/posted', label: t('nav.myPostedJobs') },
@@ -305,15 +308,16 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                                 so it's a real anchor (full navigation), not a router <Link>. Open to all. */}
                             <a
                                 href="/copro"
-                                className="relative px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 text-gray-700 hover:text-gray-900 hover:bg-gray-50/80"
+                                className="relative flex items-center gap-1.5 px-3.5 py-2 rounded-full font-semibold text-sm text-white bg-gradient-to-r from-amber-500 to-orange-500 shadow-sm hover:from-amber-600 hover:to-orange-600 transition-all duration-200"
                                 onClick={handleProNav}
                             >
+                                <Sparkles size={15} className="text-white/90" />
                                 {t('nav.pro', 'Pro')}
                             </a>
-                            {authUser && authenticatedLinks.map((link) => (
+                            {authUser && topBarAuthLinks.map((link) => (
                                 <Link
                                     key={link.to}
-                                    to={link.to} 
+                                    to={link.to}
                                     className={`relative px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
                                         isActive(link.to)
                                             ? 'text-blue-600 bg-blue-50/80 shadow-sm'
@@ -562,9 +566,10 @@ const Navigation: React.FC<NavigationProps> = ({ authUser, userSignOut }) => {
                             {/* Coproduction tool — Hosting-served static app at /copro (real anchor). */}
                             <a
                                 href="/copro"
-                                className="block px-4 py-3 rounded-lg font-medium transition-colors text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+                                className="flex items-center gap-2 px-4 py-3 rounded-lg font-semibold transition-colors text-white bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
                                 onClick={handleProNav}
                             >
+                                <Sparkles size={16} className="text-white/90" />
                                 {t('nav.pro', 'Pro')}
                             </a>
                         </div>
