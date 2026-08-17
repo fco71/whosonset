@@ -65,7 +65,13 @@ const BlogPage: React.FC = () => {
 
   const previewImage = posts.find((item) => Boolean(item.imageUrl))?.imageUrl || DEFAULT_OG_IMAGE_URL;
 
+  const isOutOfRangePage = !loading && !error && currentPage > 1 && posts.length === 0;
+
   useEffect(() => {
+    if (loading) {
+      return;
+    }
+
     const pageTitle = currentPage === 1
       ? 'Film Industry News Blog | Jobs and Collaboration Insights'
       : `Film Industry News Blog | Page ${currentPage} | Jobs and Collaboration Insights`;
@@ -75,8 +81,9 @@ const BlogPage: React.FC = () => {
       description: 'Read film industry news and turn insights into action with job opportunities and collaboration tools on My Film Jobs.',
       canonicalUrl,
       ogImage: previewImage,
+      robots: isOutOfRangePage ? 'noindex, follow' : undefined,
     });
-  }, [canonicalUrl, currentPage, previewImage]);
+  }, [canonicalUrl, currentPage, previewImage, loading, isOutOfRangePage]);
 
   useEffect(() => {
     const previousPath = currentPage > 1 ? getBlogPagePath(currentPage - 1) : undefined;
