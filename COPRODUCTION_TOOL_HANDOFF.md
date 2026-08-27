@@ -296,6 +296,32 @@ Replace) under Francisco's MyFilmJobs identity — NOT written to the DB directl
 
 Note: only 30 of 36 categories carry amounts (6 are all-zero in this budget).
 
+## iPad PWA (2026-08-27)
+
+Added an installable-app layer directly on top of the served `/copro` static
+build, so Francisco can add it to an iPad home screen and open it fullscreen
+at presentations with no browser chrome and no host-site navigation:
+
+- `public/copro/manifest.json` — name "Coproduction Reality Check", `start_url`/`scope`
+  `/copro`, `display: standalone`, orange theme (`#f97316`).
+- `public/copro/icon-192.png`, `icon-512.png`, `apple-touch-icon.png` — generated
+  orange gradient (amber-500 → orange-500, matching the "Pro" nav pill) with a
+  white "Co" mark.
+- `public/copro/index.html` — added `<link rel="manifest">`, `<link rel="apple-touch-icon">`,
+  and `apple-mobile-web-app-*` meta tags.
+- Login: unchanged — the installed PWA opens straight to the tool's own sign-in
+  screen (no SSO handoff, since that only fires from the host nav's `handleProNav`).
+
+**Caveat:** these files live in `public/copro/` (the copied build output), not in
+the tool's own source repo (`/Users/fco/antigravity/Coproduction-Reality-Check`).
+The next time that tool is rebuilt with Vite and its `dist/` is copied over
+`public/copro/` (per the update instructions above), these PWA additions will be
+clobbered and need to be reapplied — or better, ported into the source app's
+`index.html`/`public/` so they survive rebuilds.
+
+To install on iPad: open `myfilmjobs.com/copro` in Safari → Share → **Add to
+Home Screen**. Chrome on iOS cannot install PWAs; must be Safari.
+
 ## Future TODO (product ideas)
 
 - **Fringe / ITBIS column** (Francisco's idea, 2026-08-13): let a line item carry an
