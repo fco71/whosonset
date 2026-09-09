@@ -183,6 +183,18 @@ REMAINING — Francisco (needs the coproduction-tool project owner):
       enabled (it is, since Google sign-in already works there).
 - [ ] Deploy: `firebase deploy --only functions:mintCoproductionToken` then rebuild
       + deploy Hosting (`npm run build && firebase deploy --only hosting`).
+
+### Direct /copro access + project links (implemented 2026-09-09)
+
+- The tool's direct email/password sign-in now authenticates against the
+  MyFilmJobs Firebase Auth project, then exchanges the verified session through
+  `mintCoproductionToken`. The password is never sent to the coproduction
+  Firebase project or placed in a URL.
+- Project sharing stores additive `collaboratorEmails` on a coproduction
+  project. The project manager can copy `/copro?project=<id>` for a listed
+  MyFilmJobs account; after direct sign-in, that project opens automatically.
+- The coproduction project's Firestore rules must be deployed from the source
+  app as well, so listed collaborator emails can read/update shared projects.
 Exit criteria: a signed-in MyFilmJobs user clicks "Pro" and lands in the tool
 already signed in (no login prompt); "LOCAL ONLY" becomes cloud-synced.
 
