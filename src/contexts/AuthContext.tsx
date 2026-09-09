@@ -7,6 +7,7 @@ import {
   createUserWithEmailAndPassword, 
   signOut,
   updateProfile,
+  updatePassword,
   GoogleAuthProvider,
   signInWithPopup,
   OAuthProvider,
@@ -33,6 +34,7 @@ interface AuthContextType {
   sendEmailVerification: () => Promise<void>;
   sendPasswordReset: (email: string) => Promise<void>;
   confirmPasswordResetAction: (oobCode: string, newPassword: string) => Promise<void>;
+  updateUserPassword: (currentPassword: string, newPassword: string) => Promise<void>;
   resendVerificationEmail: () => Promise<void>;
 }
 
@@ -305,6 +307,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     
     await sendPasswordResetEmail(auth, email, actionCodeSettings);
     console.log('[AuthContext] Password reset email sent');
+  };
+
+  const updateUserPassword = async (currentPassword: string, newPassword: string) => {
+    if (!currentUser) {
+      throw new Error('No user is currently signed in');
+    }
+    if (!currentUser.email) {
+      throw new Error('User does not have an email address');
+    }
+
+    const credential = EmailAuthProvider.credential(currentUser.email, currentPassword);
+    await reauthenticateWithCredential(currentUser, credential);
+    await updatePassword(currentUser, newPassword);
+    console.log('[AuthContext] Password updated successfully');
   };
 
   const confirmPasswordResetAction = async (oobCode: string, newPassword: string) => {
@@ -1129,6 +1145,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           sendEmailVerification: sendEmailVerificationToUser,
       sendPasswordReset,
       confirmPasswordResetAction,
+      updateUserPassword,
       resendVerificationEmail
   };
 

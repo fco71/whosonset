@@ -3,11 +3,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { updateProfile } from 'firebase/auth';
 import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
-import { Camera, ExternalLink, Loader2, Save, UserRound } from 'lucide-react';
+import { AlertCircle, Camera, CheckCircle2, ExternalLink, KeyRound, Loader2, Lock, Mail, Save, ShieldCheck, UserRound } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { db, storage } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { imageErrorFallback } from '../utilities/imageErrorFallback';
+import { validatePassword } from '../utilities/passwordValidation';
 import { JobTitleEntry } from '../types/JobTitleEntry';
 
 type Availability = 'available' | 'soon' | 'unavailable';
@@ -69,7 +70,7 @@ const normalizeJobTitle = (jobTitle: unknown): JobTitleEntry | null => {
 };
 
 const SettingsPage: React.FC = () => {
-  const { currentUser, deleteAccount } = useAuth();
+  const { currentUser, deleteAccount, updateUserPassword, sendPasswordReset } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [isDeleting, setIsDeleting] = useState(false);
@@ -84,6 +85,19 @@ const SettingsPage: React.FC = () => {
   const [profileUploading, setProfileUploading] = useState(false);
   const [profileMessage, setProfileMessage] = useState<string | null>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
+
+  // Password change state
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [passwordUpdating, setPasswordUpdating] = useState(false);
+  const [passwordResetSending, setPasswordResetSending] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+
+  const isPasswordProvider = currentUser?.providerData?.some(
+    provider => provider.providerId === 'password'
+  ) ?? false;
 
   useEffect(() => {
     let cancelled = false;
@@ -263,6 +277,71 @@ const SettingsPage: React.FC = () => {
       setProfileError(t('settingsPage.profileSaveError'));
     } finally {
       setProfileSaving(false);
+    }
+  };
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordMessage(null);
+    setPasswordError(null);
+
+    if (!currentPassword) {
+      setPasswordError(t('settingsPage.enterCurrentPassword'));
+      return;
+    }
+
+    if (!newPassword) {
+      setPasswordError(t('settingsPage.enterNewPassword'));
+      return;
+    }
+
+    const validation = validatePassword(newPassword);
+    if (!validation.isValid) {
+      setPasswordError(validation.errors[0] || t('settingsPage.enterNewPassword'));
+      return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      setPasswordError(t('settingsPage.passwordsDoNotMatch'));
+      return;
+    }
+
+    setPasswordUpdating(true);
+    try {
+      await updateUserPassword(currentPassword, newPassword);
+      setPasswordMessage(t('settingsPage.passwordUpdatedSuccess'));
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmNewPassword('');
+    } catch (err: any) {
+      console.error('Password update error:', err);
+      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+        setPasswordError('Incorrect current password. Please check and try again.');
+      } else if (err.code === 'auth/weak-password') {
+        setPasswordError('Password is too weak. Please choose a stronger password.');
+      } else {
+        setPasswordError(err.message || 'Failed to update password. Please try again.');
+      }
+    } finally {
+      setPasswordUpdating(false);
+    }
+  };
+
+  const handleSendResetEmail = async () => {
+    if (!currentUser?.email) return;
+
+    setPasswordMessage(null);
+    setPasswordError(null);
+    setPasswordResetSending(true);
+
+    try {
+      await sendPasswordReset(currentUser.email);
+      setPasswordMessage(t('settingsPage.resetEmailSentSuccess'));
+    } catch (err: any) {
+      console.error('Reset email error:', err);
+      setPasswordError(err.message || 'Failed to send password reset email.');
+    } finally {
+      setPasswordResetSending(false);
     }
   };
 
@@ -513,6 +592,128 @@ const SettingsPage: React.FC = () => {
                       )}
                       {profileSaving ? t('settingsPage.saving') : t('settingsPage.saveBasicProfile')}
                     </button>
+                  </div>
+                </div>
+              )}
+            </section>
+
+            {/* Password & Security Section */}
+            <section className="border-b border-gray-200 pb-8 pt-2">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-5 w-5 text-gray-700" aria-hidden="true" />
+                <h2 className="text-lg font-medium text-gray-900">{t('settingsPage.securityTitle')}</h2>
+              </div>
+              <p className="mt-1 text-sm text-gray-500">
+                {t('settingsPage.securityDescription')}
+              </p>
+
+              {(passwordError || passwordMessage) && (
+                <div
+                  className={`mt-4 rounded-md border p-3 text-sm flex items-center gap-2 ${
+                    passwordError
+                      ? 'border-red-200 bg-red-50 text-red-700'
+                      : 'border-green-200 bg-green-50 text-green-700'
+                  }`}
+                >
+                  {passwordError ? (
+                    <AlertCircle className="h-4 w-4 shrink-0" />
+                  ) : (
+                    <CheckCircle2 className="h-4 w-4 shrink-0" />
+                  )}
+                  <span>{passwordError || passwordMessage}</span>
+                </div>
+              )}
+
+              {isPasswordProvider ? (
+                <div className="mt-6 space-y-6">
+                  <form onSubmit={handleUpdatePassword} className="space-y-4 max-w-xl">
+                    <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                      <KeyRound className="h-4 w-4 text-gray-500" />
+                      {t('settingsPage.changePasswordTitle')}
+                    </h3>
+
+                    <div>
+                      <label htmlFor="current-password" className="block text-sm font-medium text-gray-700">
+                        {t('settingsPage.currentPassword')}
+                      </label>
+                      <input
+                        type="password"
+                        id="current-password"
+                        autoComplete="current-password"
+                        value={currentPassword}
+                        onChange={e => setCurrentPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div>
+                        <label htmlFor="new-password" className="block text-sm font-medium text-gray-700">
+                          {t('settingsPage.newPassword')}
+                        </label>
+                        <input
+                          type="password"
+                          id="new-password"
+                          autoComplete="new-password"
+                          value={newPassword}
+                          onChange={e => setNewPassword(e.target.value)}
+                          placeholder="••••••••"
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="confirm-new-password" className="block text-sm font-medium text-gray-700">
+                          {t('settingsPage.confirmNewPassword')}
+                        </label>
+                        <input
+                          type="password"
+                          id="confirm-new-password"
+                          autoComplete="new-password"
+                          value={confirmNewPassword}
+                          onChange={e => setConfirmNewPassword(e.target.value)}
+                          placeholder="••••••••"
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="pt-2 flex flex-wrap items-center gap-3">
+                      <button
+                        type="submit"
+                        disabled={passwordUpdating}
+                        className="inline-flex items-center justify-center gap-2 rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {passwordUpdating ? (
+                          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                        ) : (
+                          <Lock className="h-4 w-4" aria-hidden="true" />
+                        )}
+                        {passwordUpdating ? t('settingsPage.updatingPassword') : t('settingsPage.updatePasswordBtn')}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleSendResetEmail}
+                        disabled={passwordResetSending}
+                        className="inline-flex items-center justify-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {passwordResetSending ? (
+                          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                        ) : (
+                          <Mail className="h-4 w-4" aria-hidden="true" />
+                        )}
+                        {passwordResetSending ? t('settingsPage.sendingResetEmail') : t('settingsPage.sendResetEmailBtn')}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              ) : (
+                <div className="mt-4 rounded-md border border-blue-100 bg-blue-50 p-4 text-sm text-blue-800 flex items-start gap-3">
+                  <ShieldCheck className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium">{t('settingsPage.googleAuthNotice')}</p>
                   </div>
                 </div>
               )}
