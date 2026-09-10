@@ -73,10 +73,27 @@ export const mintCoproductionToken = onCall(
     // Carry the MyFilmJobs email through as a claim so the tool can display it.
     // (Purely informational; the tool's Firestore rules key on request.auth.uid.)
     const email = request.auth?.token?.email;
+    const displayName = request.auth?.token?.name as string | undefined;
     const claims = email ? { mfjEmail: email } : undefined;
 
     try {
-      const token = await getCoproductionAuth().createCustomToken(uid, claims);
+      const auth = getCoproductionAuth();
+
+      // A custom-token sign-in alone leaves the coproduction-tool user record's
+      // email/displayName empty, so the tool's UI falls back to "Guest" even
+      // though the uid is correctly authenticated. Mirror those fields onto the
+      // matching user record so the tool shows the real name/email.
+      try {
+        await auth.updateUser(uid, { email, displayName });
+      } catch (err) {
+        if ((err as { code?: string }).code === "auth/user-not-found") {
+          await auth.createUser({ uid, email, displayName });
+        } else {
+          throw err;
+        }
+      }
+
+      const token = await auth.createCustomToken(uid, claims);
       return { token };
     } catch (err) {
       console.error("[mintCoproductionToken] failed to mint token", err);
