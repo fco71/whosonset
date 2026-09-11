@@ -73,35 +73,39 @@ export const mintCoproductionToken = onCall(
     // Carry the MyFilmJobs email through as a claim so the tool can display it.
     // (Purely informational; the tool's Firestore rules key on request.auth.uid.)
     const email = request.auth?.token?.email;
-    const displayName = request.auth?.token?.name as string | undefined;
     const claims = email ? { mfjEmail: email } : undefined;
+
+    // Only sync displayName — NOT email. Email is unique per-user in Firebase
+    // Auth, so setting it here throws auth/email-already-exists whenever this
+    // uid's email happens to already belong to a different (stray/unrelated)
+    // account in the coproduction-tool project, which previously broke sign-in
+    // entirely. displayName has no such constraint. Fall back to the email's
+    // local part so the tool never shows a bare "Guest" for a real user.
+    const displayName =
+      (request.auth?.token?.name as string | undefined) ||
+      (email ? email.split("@")[0] : undefined);
 
     const auth = getCoproductionAuth();
 
-    // A custom-token sign-in alone leaves the coproduction-tool user record's
-    // email/displayName empty, so the tool's UI falls back to "Guest" even
-    // though the uid is correctly authenticated. Mirror those fields onto the
-    // matching user record so the tool shows the real name/email. This is
-    // PURELY cosmetic — never let it block issuing the token, e.g. when the
-    // email is already claimed by a different uid in the coproduction-tool
-    // project (from earlier/unrelated signups there).
-    try {
-      await auth.updateUser(uid, { email, displayName });
-    } catch (err) {
-      if ((err as { code?: string }).code === "auth/user-not-found") {
-        try {
-          await auth.createUser({ uid, email, displayName });
-        } catch (createErr) {
+    if (displayName) {
+      try {
+        await auth.updateUser(uid, { displayName });
+      } catch (err) {
+        if ((err as { code?: string }).code === "auth/user-not-found") {
+          try {
+            await auth.createUser({ uid, displayName });
+          } catch (createErr) {
+            console.warn(
+              "[mintCoproductionToken] could not create display profile (continuing sign-in)",
+              createErr
+            );
+          }
+        } else {
           console.warn(
-            "[mintCoproductionToken] could not create display profile (continuing sign-in)",
-            createErr
+            "[mintCoproductionToken] could not sync display profile (continuing sign-in)",
+            err
           );
         }
-      } else {
-        console.warn(
-          "[mintCoproductionToken] could not sync display profile (continuing sign-in)",
-          err
-        );
       }
     }
 
