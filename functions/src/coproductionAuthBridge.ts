@@ -76,23 +76,36 @@ export const mintCoproductionToken = onCall(
     const displayName = request.auth?.token?.name as string | undefined;
     const claims = email ? { mfjEmail: email } : undefined;
 
+    const auth = getCoproductionAuth();
+
+    // A custom-token sign-in alone leaves the coproduction-tool user record's
+    // email/displayName empty, so the tool's UI falls back to "Guest" even
+    // though the uid is correctly authenticated. Mirror those fields onto the
+    // matching user record so the tool shows the real name/email. This is
+    // PURELY cosmetic — never let it block issuing the token, e.g. when the
+    // email is already claimed by a different uid in the coproduction-tool
+    // project (from earlier/unrelated signups there).
     try {
-      const auth = getCoproductionAuth();
-
-      // A custom-token sign-in alone leaves the coproduction-tool user record's
-      // email/displayName empty, so the tool's UI falls back to "Guest" even
-      // though the uid is correctly authenticated. Mirror those fields onto the
-      // matching user record so the tool shows the real name/email.
-      try {
-        await auth.updateUser(uid, { email, displayName });
-      } catch (err) {
-        if ((err as { code?: string }).code === "auth/user-not-found") {
+      await auth.updateUser(uid, { email, displayName });
+    } catch (err) {
+      if ((err as { code?: string }).code === "auth/user-not-found") {
+        try {
           await auth.createUser({ uid, email, displayName });
-        } else {
-          throw err;
+        } catch (createErr) {
+          console.warn(
+            "[mintCoproductionToken] could not create display profile (continuing sign-in)",
+            createErr
+          );
         }
+      } else {
+        console.warn(
+          "[mintCoproductionToken] could not sync display profile (continuing sign-in)",
+          err
+        );
       }
+    }
 
+    try {
       const token = await auth.createCustomToken(uid, claims);
       return { token };
     } catch (err) {
