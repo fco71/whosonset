@@ -35,6 +35,10 @@ const NOINDEX_FOLLOW_ROBOTS = "noindex, follow";
 const BOT_UA = new RegExp(
   [
     "googlebot", "google-inspectiontool", "googleother", "storebot-google", "mediapartners-google",
+    // Firebase Hosting sometimes forwards Googlebot's UA with "Googlebot" rewritten to
+    // "Google-Firebase" (seen 2026-10-23: ~40% of Googlebot requests). Without this,
+    // those requests got the default shell — wrong title/robots on every prerendered page.
+    "google-firebase",
     "bingbot", "bingpreview", "adidxbot", "duckduckbot", "baiduspider", "yandex", "slurp", "sogou",
     "facebookexternalhit", "facebot", "twitterbot", "linkedinbot", "pinterest", "slackbot",
     "slack-imgproxy", "telegrambot", "whatsapp", "discordbot", "redditbot", "applebot",

@@ -135,7 +135,7 @@ Recommended direction (owner to pick):
 3. Fill the directory and jobs: get class cohorts and past users to publish profiles so DR department pages pass 3 crew; seed real DR/LatAm crew calls.
 4. Repeat what worked: schools/classes, DGCINE, festivals, local film Facebook/WhatsApp groups.
 
-### Step 1 built — curated noindex + original posts — 2026-10-22 (READY, not deployed, not committed)
+### Step 1 — curated noindex + original posts — SHIPPED 2026-10-23 (commit 1280cb51 + bot-UA fix)
 
 Owner checks Search Console → Performance → Pages containing `/blog/` before deploying. Any curated post with real clicks becomes noindex once this ships.
 
@@ -149,7 +149,10 @@ Owner checks Search Console → Performance → Pages containing `/blog/` before
 - **First article, both languages (2026-10-23):** `content/blog/como-trabajar-en-cine-en-republica-dominicana.md` (es) and `content/blog/how-to-work-in-film-in-the-dominican-republic.md` (en), linked to each other through the front-matter `translation:` field (stored as `translationSlug`). Edited by Francisco. Publish with `--apply` only AFTER the functions + hosting deploy below; the old code would show them as broken curated cards.
 - **Bilingual originals:** prerender and client emit es/en/x-default hreflang (x-default → Spanish) only when the other version exists and is a public original. The post page renders its chrome, date and comments in the article's language, sets `<html lang>`, and shows a "Read in English / Leer en español" link. `/blog` Guides shows only the UI-language version when both exist. The blog index, headline cards, post page and comments are now translated (`blog.*` in both locale files). Curated headline-specific labels ("Read Article", "Source:") stay English.
 - `publish-original-post.cjs` pins a bare `publishedAt` date to noon Santo Domingo time; before, it showed the previous day.
-- **Deploy order:** `firebase deploy --only firestore:indexes` → `--only functions:prerender,functions:blogSitemap` → hosting. Then request recrawl of `sitemap-blog.xml` in Search Console.
+- **Live 2026-10-23:** index deployed via CLI, hosting via push, functions via the `Deploy Firebase Functions` workflow. Both guides published with `--apply` and verified live (Googlebot gets the full article, BlogPosting, es/en/x-default hreflang; the sitemap lists `/blog` plus the 2 guides).
+- **Bot-UA bug found and fixed (pre-existing, affected ALL prerendered pages):** Firebase Hosting forwards some Googlebot requests with the UA rewritten to `Google-Firebase/2.1`. `BOT_UA` didn't match it, so about 40% of Googlebot hits got the default shell (homepage title, `index`). Diagnosed from Cloud Run request logs (`httpRequest.userAgent`). Added `google-firebase` to `BOT_UA` plus a guardrail test.
+- **Next owner step:** Search Console → resubmit `sitemap-blog.xml`, and run URL Inspection on both guide URLs.
+- **Deploy order (for reference):** `firebase deploy --only firestore:indexes` → `--only functions:prerender,functions:blogSitemap` → hosting. Then request recrawl of `sitemap-blog.xml` in Search Console.
 
 ## SEO noindex triage + Firebase SDK bump — 2026-07-21 (partially SHIPPED; owner action + deploy pending)
 

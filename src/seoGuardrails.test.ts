@@ -57,6 +57,8 @@ describe('SEO crawl guardrails', () => {
     expect(prerender).toMatch(/const isOriginal = b\.postType === "original"/);
     expect(prerender).toMatch(/if \(!isPublic \|\| !isOriginal\)/);
     expect(prerender).toMatch(/function isBlogArchivePage/);
+    // Firebase Hosting can rewrite Googlebot's UA to "Google-Firebase" before the function.
+    expect(prerender).toMatch(/"google-firebase"/);
     expect(functionsIndex).toMatch(/\.where\("postType", "==", "original"\)/);
   });
 
