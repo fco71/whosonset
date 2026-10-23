@@ -2214,5 +2214,59 @@
       "institution": "Institution",
       "classes": "Classes"
     }
+  },
+  "blog": {
+    "breadcrumb": "Blog",
+    "categories": {
+      "careers": "Careers",
+      "industry": "Industry",
+      "business": "Business",
+      "technology": "Technology"
+    },
+    "readIn": {
+      "en": "Read in English",
+      "es": "Leer en español"
+    },
+    "loadingPost": "Loading post...",
+    "notFoundTitle": "Post not found",
+    "notFoundBody": "This post is not available.",
+    "loadError": "Could not load this post right now.",
+    "backToBlog": "Back to Blog",
+    "ctaTitle": "Grow Faster With My Film Jobs",
+    "ctaBody": "Find relevant roles, connect with crew, and collaborate on production work from one platform.",
+    "exploreJobs": "Explore Jobs",
+    "openCollaboration": "Open Collaboration Tools",
+    "moreFromBlog": "More From the Blog",
+    "guides": "Guides",
+    "headlines": "Industry Headlines",
+    "comments": {
+      "title": "Comments",
+      "placeholder": "Share your thoughts about this story...",
+      "posting": "Posting...",
+      "post": "Post Comment",
+      "signIn": "Sign in",
+      "signInSuffix": "to join the discussion.",
+      "signInRequired": "Please sign in to post a comment.",
+      "loading": "Loading comments...",
+      "empty": "No comments yet.",
+      "loadError": "Could not load comments right now.",
+      "postError": "Could not post comment."
+    },
+    "pageTitle": "Film Industry News and Insights",
+    "pageIntro": "Fresh film-industry updates with practical takeaways for your next job, project, or collaboration.",
+    "browseJobs": "Browse Film Jobs",
+    "exploreCollaboration": "Explore Collaboration",
+    "loadingPosts": "Loading posts...",
+    "loadPostsError": "Could not load industry updates right now.",
+    "noPosts": "No posts available yet.",
+    "paginationLabel": "Blog pagination",
+    "previous": "Previous",
+    "next": "Next",
+    "footerTitle": "Turn Insights Into Opportunities",
+    "footerBody": "Use the latest industry signals to find jobs faster, connect with collaborators, and build momentum for your next production.",
+    "findOpenRoles": "Find Open Roles",
+    "discoverCrew": "Discover Crew",
+    "hideComments": "Hide Comments",
+    "commentsCount": "Comments ({{count}})"
   }
 }

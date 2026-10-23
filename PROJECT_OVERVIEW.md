@@ -122,6 +122,35 @@ classes (10 active groups, 27 unique class-directory members across those two do
 index was required. Hosting deploys through the production Actions pipeline on the feature
 commit push.
 
+## Growth audit (no new users) — 2026-10-22 (analysis only, nothing changed)
+
+Findings from the live site:
+- Signups come in bursts from direct outreach (Aug 2025 launch ~150, May 2026 class ~45), not from organic search. 209 accounts as of the June audience report.
+- Blog = 780 auto-curated posts, exactly 3/day since 2026-02-09 (`BLOG_MAX_POSTS_PER_DAY` in `functions/src/index.ts`). Each post is a headline from IndieWire/Frame.io/etc. + one template sentence ("X reports on film industry developments.") + a link out. The Googlebot prerender has title/meta/JSON-LD but no body text. Google sees this as thin, scaled aggregator content: unlikely to rank, and it may drag down how the whole domain is rated.
+- Other indexable surface is almost empty: jobs sitemap has 0 job posts (only `/jobs`), directory sitemap has only `/directory` + `/directorio` (every department/country landing is below the 3-crew noindex threshold).
+
+Recommended direction (owner to pick):
+1. Keep the curated feed as an in-app news feed but `noindex` it. Add an indexable "original" post type, 1–2 real articles/week, Spanish first (DR/LatAm crew: rates, how to break in by department, Ley 108-10 incentives, call sheet/budget templates). Check Search Console's `/blog/` clicks before noindexing.
+2. Use the free tools (coproduction tool, screenplay editor) as public no-login landing pages that ask for signup only to save/export.
+3. Fill the directory and jobs: get class cohorts and past users to publish profiles so DR department pages pass 3 crew; seed real DR/LatAm crew calls.
+4. Repeat what worked: schools/classes, DGCINE, festivals, local film Facebook/WhatsApp groups.
+
+### Step 1 built — curated noindex + original posts — 2026-10-22 (READY, not deployed, not committed)
+
+Owner checks Search Console → Performance → Pages containing `/blog/` before deploying. Any curated post with real clicks becomes noindex once this ships.
+
+- **Model (additive, no migration):** `blogPosts.postType === "original"` marks our own articles (`bodyHtml`, `lang`, `authorName`, `contentPolicy: "original"`). Missing/other `postType` = curated. The daily RSS curation is unchanged.
+- **Prerender (`functions/src/prerender.ts`):** curated → `noindex, follow`, no JSON-LD. Original → indexable, `BlogPosting` JSON-LD, `<html lang>`, and the article HTML placed inside `#root` for crawlers. `/blog/page/N` → `noindex, follow`.
+- **Sitemap (`blogSitemap`):** only `/blog` + public originals (no more 43 archive pages / 780 curated URLs).
+- **Client:** `BlogPostPage` renders originals (author, body, no "Read Article") and sets matching robots. `BlogPage` page 1 shows a "Guides" section of originals above the headline feed. The feed excludes originals. `/blog/page/N` is noindex. List JSON-LD covers originals only.
+- **Authoring:** write `content/blog/<slug>.md` (copy `content/blog/_TEMPLATE.md`), then `node scripts/publish-original-post.cjs content/blog/<slug>.md` (dry run) → `--apply`. Writes only `blogPosts/<slug>`. Refuses to overwrite a non-original doc and rejects raw HTML and non-http links. Re-publishing keeps `createdAt`/`commentsCount`. `marked@13.0.3` added as a devDependency.
+- **Index:** new composite `blogPosts (isPublic, postType, publishedAt desc)` in `firestore.indexes.json`. The client falls back to an equality-only query while it builds.
+- **Verified:** prerender and sitemap against the Firestore emulator (curated / original / draft / missing / archive / job routes), dev site in the browser (curated post + archive robots), `BlogPostPage.test.tsx`, new guardrail in `seoGuardrails.test.ts`, full vitest 111/111 plus the new tests, functions `tsc`.
+- **First article, both languages (2026-10-23):** `content/blog/como-trabajar-en-cine-en-republica-dominicana.md` (es) and `content/blog/how-to-work-in-film-in-the-dominican-republic.md` (en), linked to each other through the front-matter `translation:` field (stored as `translationSlug`). Edited by Francisco. Publish with `--apply` only AFTER the functions + hosting deploy below; the old code would show them as broken curated cards.
+- **Bilingual originals:** prerender and client emit es/en/x-default hreflang (x-default → Spanish) only when the other version exists and is a public original. The post page renders its chrome, date and comments in the article's language, sets `<html lang>`, and shows a "Read in English / Leer en español" link. `/blog` Guides shows only the UI-language version when both exist. The blog index, headline cards, post page and comments are now translated (`blog.*` in both locale files). Curated headline-specific labels ("Read Article", "Source:") stay English.
+- `publish-original-post.cjs` pins a bare `publishedAt` date to noon Santo Domingo time; before, it showed the previous day.
+- **Deploy order:** `firebase deploy --only firestore:indexes` → `--only functions:prerender,functions:blogSitemap` → hosting. Then request recrawl of `sitemap-blog.xml` in Search Console.
+
 ## SEO noindex triage + Firebase SDK bump — 2026-07-21 (partially SHIPPED; owner action + deploy pending)
 
 **Trigger:** Google Search Console alert "Excluded by 'noindex' tag — Some of your pages are still affected." Five URLs surfaced:

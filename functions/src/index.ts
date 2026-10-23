@@ -371,7 +371,6 @@ interface CuratedArticlePreview {
 
 const BLOG_TIMEZONE = "America/Los_Angeles";
 const BLOG_MAX_POSTS_PER_DAY = 3;
-const BLOG_ARCHIVE_PAGE_SIZE = 18;
 const BLOG_LOOKBACK_HOURS = 72;
 const BLOG_RECENT_DEDUP_DAYS = 7;
 const BLOG_FEED_CONFIG_COLLECTION = "blogConfig";
@@ -1461,8 +1460,11 @@ export const blogSitemap = onRequest({
   }
 
   try {
+    // Only original articles are indexable; curated headlines and the /blog/page/N
+    // archive are noindex (see prerender.ts), so they stay out of the sitemap.
     const snapshot = await db.collection("blogPosts")
       .where("isPublic", "==", true)
+      .where("postType", "==", "original")
       .get();
 
     const postEntries = snapshot.docs
@@ -1479,22 +1481,12 @@ export const blogSitemap = onRequest({
       })
       .sort((a, b) => b.lastmod.getTime() - a.lastmod.getTime());
 
-    const archivePageCount = Math.max(1, Math.ceil(postEntries.length / BLOG_ARCHIVE_PAGE_SIZE));
-    const defaultLastmod = postEntries[0]?.lastmod || new Date();
-    const archiveEntries = Array.from({length: archivePageCount}, (_, index) => {
-      const pageNumber = index + 1;
-      const loc = pageNumber === 1
-        ? "https://myfilmjobs.com/blog"
-        : `https://myfilmjobs.com/blog/page/${pageNumber}`;
-      const pageLastmod = postEntries[index * BLOG_ARCHIVE_PAGE_SIZE]?.lastmod || defaultLastmod;
-
-      return {
-        loc,
-        lastmod: pageLastmod,
-        changefreq: "daily",
-        priority: pageNumber === 1 ? "0.9" : "0.6",
-      };
-    });
+    const archiveEntries = [{
+      loc: "https://myfilmjobs.com/blog",
+      lastmod: postEntries[0]?.lastmod || new Date(),
+      changefreq: "daily",
+      priority: "0.9",
+    }];
 
     const urls = [...archiveEntries, ...postEntries]
       .map((entry) => {

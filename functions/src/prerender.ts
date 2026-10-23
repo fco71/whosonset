@@ -27,6 +27,9 @@ const CANONICAL_ORIGIN = "https://myfilmjobs.com";
 const DEFAULT_OG_IMAGE = `${CANONICAL_ORIGIN}/og-image.jpg`;
 const DEFAULT_ROBOTS = "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1";
 const NOINDEX_ROBOTS = "noindex, nofollow";
+// Curated blog headlines (link-outs to other publishers) and the archive pages that list
+// them: keep out of the index, but let crawlers follow links through to the rest of the site.
+const NOINDEX_FOLLOW_ROBOTS = "noindex, follow";
 
 // Crawlers + social unfurlers that need server-rendered meta (they don't run JS).
 const BOT_UA = new RegExp(
@@ -165,6 +168,11 @@ interface Meta {
   // Explicit per-language alternates (bilingual directory). Other meta types leave
   // this undefined → no hreflang emitted, matching prior behavior.
   alternates?: { es?: string; en?: string; xDefault?: string };
+  // Server-rendered article content placed inside #root (original blog posts only), so
+  // crawlers that don't run JS still see the text. React replaces it on mount.
+  bodyHtml?: string;
+  // Swaps <html lang> when the page isn't English.
+  lang?: "es" | "en";
 }
 
 function renderHead(m: Meta): string {
@@ -210,6 +218,13 @@ function injectHead(template: string, head: string): string {
   if (SEO_BLOCK.test(template)) return template.replace(SEO_BLOCK, replacement);
   // Fallback if markers are missing for any reason: inject before </head>.
   return template.replace(/<\/head>/i, `  ${head}\n</head>`);
+}
+
+function injectBody(html: string, m: Meta): string {
+  let out = html;
+  if (m.bodyHtml) out = out.replace(/<div id="?root"?>\s*<\/div>/i, () => `<div id="root">${m.bodyHtml}</div>`);
+  if (m.lang && m.lang !== "en") out = out.replace(/<html lang="?en"?/i, `<html lang="${m.lang}"`);
+  return out;
 }
 
 // ---- index.html template ----
@@ -403,38 +418,91 @@ async function buildBlog(db: admin.firestore.Firestore, id: string): Promise<Met
   const b: any = snap.data() || {};
 
   const isPublic = b.isPublic === true;
+  // Only our own articles are indexable. Curated headlines (no postType, or anything
+  // else) are link-outs to other publishers — thin content Google won't rank.
+  const isOriginal = b.postType === "original";
+  const canonical = `${CANONICAL_ORIGIN}/blog/${encodeURIComponent(id)}`;
   const title = `${b.title || "Film Industry News"} | ${SITE_NAME}`;
   const description = clip(b.summary || `Read "${b.title || ""}" on My Film Jobs.`, 200);
   const image = b.imageUrl ? absUrl(b.imageUrl) : DEFAULT_OG_IMAGE;
   const published = toIso(b.publishedAt) || toIso(b.createdAt);
+  const lang: "es" | "en" = b.lang === "es" ? "es" : "en";
 
-  const jsonLd = isPublic
-    ? {
-        "@context": "https://schema.org",
-        "@type": "NewsArticle",
-        headline: clip(b.title || "", 110),
-        image: [image],
-        datePublished: published,
-        dateModified: toIso(b.updatedAt) || published,
-        author: { "@type": "Organization", name: SITE_NAME },
-        publisher: {
-          "@type": "Organization",
-          name: SITE_NAME,
-          logo: { "@type": "ImageObject", url: `${CANONICAL_ORIGIN}/my-icon.png` },
-        },
-        mainEntityOfPage: `${CANONICAL_ORIGIN}/blog/${encodeURIComponent(id)}`,
-        ...(b.sourceUrl ? { isBasedOn: b.sourceUrl } : {}),
-      }
-    : undefined;
+  if (!isPublic || !isOriginal) {
+    return {
+      title,
+      description,
+      canonical,
+      ogType: "article",
+      image,
+      robots: isPublic ? NOINDEX_FOLLOW_ROBOTS : NOINDEX_ROBOTS,
+    };
+  }
+
+  const bodyHtml = typeof b.bodyHtml === "string" ? b.bodyHtml : "";
+
+  // es ↔ en versions of the same article link to each other via hreflang, but only
+  // when the other version exists and is a public original (never point at a 404).
+  let alternates: Meta["alternates"];
+  const translationSlug = typeof b.translationSlug === "string" ? b.translationSlug : "";
+  if (translationSlug && translationSlug !== id) {
+    const tSnap = await db.collection("blogPosts").doc(translationSlug).get();
+    const t: any = tSnap.exists ? tSnap.data() || {} : null;
+    if (t && t.isPublic === true && t.postType === "original") {
+      const otherUrl = `${CANONICAL_ORIGIN}/blog/${encodeURIComponent(translationSlug)}`;
+      const esUrl = lang === "es" ? canonical : otherUrl;
+      const enUrl = lang === "es" ? otherUrl : canonical;
+      alternates = { es: esUrl, en: enUrl, xDefault: esUrl };
+    }
+  }
 
   return {
     title,
     description,
-    canonical: `${CANONICAL_ORIGIN}/blog/${encodeURIComponent(id)}`,
+    canonical,
     ogType: "article",
     image,
-    robots: isPublic ? undefined : NOINDEX_ROBOTS,
-    jsonLd,
+    lang,
+    alternates,
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "BlogPosting",
+      headline: clip(b.title || "", 110),
+      description,
+      image: [image],
+      inLanguage: lang,
+      datePublished: published,
+      dateModified: toIso(b.updatedAt) || published,
+      author: b.authorName
+        ? { "@type": "Person", name: clip(b.authorName, 100) }
+        : { "@type": "Organization", name: SITE_NAME },
+      publisher: {
+        "@type": "Organization",
+        name: SITE_NAME,
+        logo: { "@type": "ImageObject", url: `${CANONICAL_ORIGIN}/my-icon.png` },
+      },
+      mainEntityOfPage: canonical,
+    },
+    // bodyHtml is written only by scripts/publish-original-post.cjs via the Admin SDK
+    // (rules forbid client writes) and is built from Markdown with raw HTML rejected.
+    bodyHtml: `<article><h1>${escapeHtml(b.title || "")}</h1>${bodyHtml}</article>`,
+  };
+}
+
+// /blog/page/N lists curated headlines only — follow, don't index.
+function isBlogArchivePage(pathname: string): boolean {
+  const parts = pathname.split("/").filter(Boolean).map(decode);
+  return parts.length === 3 && parts[0] === "blog" && parts[1] === "page" && /^\d+$/.test(parts[2]);
+}
+
+function buildBlogArchiveMeta(pathname: string): Meta {
+  return {
+    title: `Film Industry Blog Archive | ${SITE_NAME}`,
+    description: "Archived film industry headlines from around the web.",
+    canonical: canonicalUrlForPath(pathname),
+    ogType: "website",
+    image: DEFAULT_OG_IMAGE,
+    robots: NOINDEX_FOLLOW_ROBOTS,
   };
 }
 
@@ -608,6 +676,8 @@ export const prerender = onRequest({ region: "us-central1", invoker: "public" },
     let meta: Meta | null = null;
     if (isNoindexAppRoute(req.path)) {
       meta = buildNoindexMeta(req.path);
+    } else if (isBlogArchivePage(req.path)) {
+      meta = buildBlogArchiveMeta(req.path);
     } else if (entity) {
       const db = admin.firestore();
       if (entity.type === "job") meta = await buildJob(db, entity.id);
@@ -617,7 +687,7 @@ export const prerender = onRequest({ region: "us-central1", invoker: "public" },
       if (dir.kind === "hub") meta = buildDirectoryHub(dir.lang);
       else meta = await buildDirectory(admin.firestore(), dir.lang, dir.categorySlug, dir.regionSlug);
     }
-    const html = meta ? injectHead(template, renderHead(meta)) : template;
+    const html = meta ? injectBody(injectHead(template, renderHead(meta)), meta) : template;
     res
       .status(200)
       .set("Content-Type", "text/html; charset=utf-8")

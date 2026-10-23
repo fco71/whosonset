@@ -2181,5 +2181,59 @@
       "institution": "Institución",
       "classes": "Clases"
     }
+  },
+  "blog": {
+    "breadcrumb": "Blog",
+    "categories": {
+      "careers": "Carreras",
+      "industry": "Industria",
+      "business": "Negocios",
+      "technology": "Tecnología"
+    },
+    "readIn": {
+      "en": "Read in English",
+      "es": "Leer en español"
+    },
+    "loadingPost": "Cargando artículo...",
+    "notFoundTitle": "Artículo no encontrado",
+    "notFoundBody": "Este artículo no está disponible.",
+    "loadError": "No pudimos cargar este artículo en este momento.",
+    "backToBlog": "Volver al blog",
+    "ctaTitle": "Crece con My Film Jobs",
+    "ctaBody": "Encuentra oportunidades, conecta con crew y colabora en tus producciones desde una sola plataforma.",
+    "exploreJobs": "Explorar trabajos",
+    "openCollaboration": "Abrir herramientas de colaboración",
+    "moreFromBlog": "Más del blog",
+    "guides": "Guías",
+    "headlines": "Titulares de la industria",
+    "comments": {
+      "title": "Comentarios",
+      "placeholder": "Comparte lo que piensas sobre este artículo...",
+      "posting": "Publicando...",
+      "post": "Publicar comentario",
+      "signIn": "Inicia sesión",
+      "signInSuffix": "para unirte a la conversación.",
+      "signInRequired": "Inicia sesión para publicar un comentario.",
+      "loading": "Cargando comentarios...",
+      "empty": "Todavía no hay comentarios.",
+      "loadError": "No pudimos cargar los comentarios en este momento.",
+      "postError": "No pudimos publicar tu comentario."
+    },
+    "pageTitle": "Noticias y guías de la industria del cine",
+    "pageIntro": "Novedades de la industria del cine con ideas prácticas para tu próximo trabajo, proyecto o colaboración.",
+    "browseJobs": "Ver trabajos de cine",
+    "exploreCollaboration": "Explorar colaboración",
+    "loadingPosts": "Cargando artículos...",
+    "loadPostsError": "No pudimos cargar las novedades en este momento.",
+    "noPosts": "Todavía no hay artículos.",
+    "paginationLabel": "Paginación del blog",
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "footerTitle": "Convierte lo que aprendes en oportunidades",
+    "footerBody": "Usa lo que pasa en la industria para encontrar trabajo más rápido, conectar con colaboradores y darle impulso a tu próxima producción.",
+    "findOpenRoles": "Buscar oportunidades",
+    "discoverCrew": "Descubrir crew",
+    "hideComments": "Ocultar comentarios",
+    "commentsCount": "Comentarios ({{count}})"
   }
 }

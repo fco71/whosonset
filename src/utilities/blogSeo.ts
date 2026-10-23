@@ -4,6 +4,14 @@ const BLOG_BASE_URL = 'https://myfilmjobs.com';
 const POLICY_SUFFIX_PATTERN = /\s*links to the original publisher for full context\.?$/i;
 const MAX_META_DESCRIPTION_LENGTH = 160;
 
+// Curated headlines link out to other publishers; only our own articles get indexed.
+// Keep in sync with NOINDEX_FOLLOW_ROBOTS in functions/src/prerender.ts.
+export const CURATED_BLOG_ROBOTS = 'noindex, follow';
+
+export function getBlogPostRobots(post: Pick<BlogPost, 'postType'>): string | undefined {
+  return post.postType === 'original' ? undefined : CURATED_BLOG_ROBOTS;
+}
+
 function trimWithEllipsis(value: string, maxLength: number): string {
   if (value.length <= maxLength) {
     return value;
@@ -90,6 +98,41 @@ export function buildBlogListStructuredData(
 export function buildBlogPostStructuredData(post: BlogPost): Record<string, unknown> {
   const publishedAt = toIsoDate(post.publishedAt);
   const modifiedAt = toIsoDate(post.updatedAt || post.createdAt || post.publishedAt);
+  const publisher = {
+    '@type': 'Organization',
+    name: 'My Film Jobs',
+    url: BLOG_BASE_URL,
+    logo: {
+      '@type': 'ImageObject',
+      url: `${BLOG_BASE_URL}/my-icon.png`,
+    },
+  };
+
+  if (post.postType === 'original') {
+    const original: Record<string, unknown> = {
+      '@context': 'https://schema.org',
+      '@type': 'BlogPosting',
+      headline: post.title,
+      description: buildBlogMetaDescription(post),
+      datePublished: publishedAt,
+      dateModified: modifiedAt,
+      inLanguage: post.lang || 'en',
+      articleSection: post.category,
+      isAccessibleForFree: true,
+      mainEntityOfPage: getBlogPostCanonicalUrl(post.id),
+      url: getBlogPostCanonicalUrl(post.id),
+      publisher,
+      author: post.authorName
+        ? { '@type': 'Person', name: post.authorName }
+        : { '@type': 'Organization', name: 'My Film Jobs', url: BLOG_BASE_URL },
+      keywords: post.tags.join(', '),
+    };
+    if (post.imageUrl) {
+      original.image = [post.imageUrl];
+    }
+    return original;
+  }
+
   const schema: Record<string, unknown> = {
     '@context': 'https://schema.org',
     '@type': 'BlogPosting',

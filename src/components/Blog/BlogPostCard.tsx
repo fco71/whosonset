@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { BlogPost } from '../../types/blog';
 import { sanitizeBlogSummary } from '../../utilities/blogSeo';
 import { trackConversion } from '../../utilities/conversionTracking';
@@ -17,6 +18,7 @@ const categoryStyles: Record<string, string> = {
 };
 
 const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, expanded, onToggleComments }) => {
+  const { t } = useTranslation();
   const summary = sanitizeBlogSummary(post.summary || '');
   const commentsRegionId = `blog-comments-${post.id}`;
   const [imageFailed, setImageFailed] = useState(false);
@@ -35,7 +37,7 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, expanded, onToggleCom
     <article className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
       <div className="flex flex-wrap items-center gap-2">
         <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${categoryStyles[post.category] || categoryStyles.industry}`}>
-          {post.category}
+          {t(`blog.categories.${post.category}`, { defaultValue: post.category })}
         </span>
         <span className="text-xs text-gray-500">{post.publishedAt.toLocaleDateString()}</span>
       </div>
@@ -119,7 +121,7 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, expanded, onToggleCom
           aria-expanded={expanded}
           aria-controls={commentsRegionId}
         >
-          {expanded ? 'Hide Comments' : `Comments (${post.commentsCount || 0})`}
+          {expanded ? t('blog.hideComments') : t('blog.commentsCount', { count: post.commentsCount || 0 })}
         </button>
       </div>
     </article>

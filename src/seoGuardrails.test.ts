@@ -49,6 +49,17 @@ describe('SEO crawl guardrails', () => {
     expect(prerender).toMatch(/parts\[2\] === "apply" \|\| parts\[2\] === "applications"/);
   });
 
+  it('indexes only original blog posts; curated headlines and the archive stay noindex', () => {
+    const prerender = readRepoFile('functions/src/prerender.ts');
+    const functionsIndex = readRepoFile('functions/src/index.ts');
+
+    expect(prerender).toMatch(/const NOINDEX_FOLLOW_ROBOTS = "noindex, follow"/);
+    expect(prerender).toMatch(/const isOriginal = b\.postType === "original"/);
+    expect(prerender).toMatch(/if \(!isPublic \|\| !isOriginal\)/);
+    expect(prerender).toMatch(/function isBlogArchivePage/);
+    expect(functionsIndex).toMatch(/\.where\("postType", "==", "original"\)/);
+  });
+
   it('submits only always-indexable directory hubs in the directory sitemap', () => {
     const sitemap = readRepoFile('public/sitemap-directory.xml');
     const locs = extractLocs(sitemap);

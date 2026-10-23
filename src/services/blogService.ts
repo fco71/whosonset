@@ -28,6 +28,7 @@ function toDate(value: any): Date | undefined {
 }
 
 function mapBlogPostData(postId: string, data: Record<string, any>): BlogPost {
+  const isOriginal = data.postType === 'original';
   return {
     id: postId,
     title: data.title || 'Untitled update',
@@ -45,17 +46,28 @@ function mapBlogPostData(postId: string, data: Record<string, any>): BlogPost {
     curatedDate: data.curatedDate || '',
     commentsCount: typeof data.commentsCount === 'number' ? data.commentsCount : 0,
     isPublic: data.isPublic === true,
-    contentPolicy: data.contentPolicy === 'metadata_only' ? 'metadata_only' : 'metadata_only',
+    postType: isOriginal ? 'original' : 'curated',
+    contentPolicy: isOriginal ? 'original' : 'metadata_only',
+    bodyHtml: isOriginal && typeof data.bodyHtml === 'string' ? data.bodyHtml : undefined,
+    lang: data.lang === 'es' ? 'es' : data.lang === 'en' ? 'en' : undefined,
+    authorName: typeof data.authorName === 'string' ? data.authorName : undefined,
+    translationSlug: isOriginal && typeof data.translationSlug === 'string' && data.translationSlug
+      ? data.translationSlug
+      : undefined,
   } as BlogPost;
 }
 
-function mapBlogPostsFromSnapshot(snapshot: any, maxPosts: number): BlogPost[] {
+function mapBlogPostsFromSnapshot(
+  snapshot: any,
+  maxPosts: number,
+  filter: (post: BlogPost) => boolean = () => true
+): BlogPost[] {
   return snapshot.docs
     .map((docSnap: any) => {
       const data = docSnap.data() as Record<string, any>;
       return mapBlogPostData(docSnap.id, data);
     })
-    .filter((post: BlogPost) => post.isPublic)
+    .filter((post: BlogPost) => post.isPublic && filter(post))
     .sort((a: BlogPost, b: BlogPost) => b.publishedAt.getTime() - a.publishedAt.getTime())
     .slice(0, maxPosts);
 }
@@ -93,10 +105,49 @@ export async function fetchBlogPosts(maxPosts = 30): Promise<BlogPost[]> {
   }
 }
 
+export async function fetchOriginalBlogPosts(maxPosts = 12): Promise<BlogPost[]> {
+  const postsRef = collection(db, BLOG_POSTS_COLLECTION);
+  const isOriginal = (post: BlogPost) => post.postType === 'original';
+
+  try {
+    const postsQuery = query(
+      postsRef,
+      where('isPublic', '==', true),
+      where('postType', '==', 'original'),
+      orderBy('publishedAt', 'desc'),
+      limit(maxPosts)
+    );
+    const snapshot = await getDocs(postsQuery);
+    return mapBlogPostsFromSnapshot(snapshot, maxPosts, isOriginal);
+  } catch (error: any) {
+    const code = String(error?.code || '');
+    const message = String(error?.message || '');
+    const missingIndex = code === 'failed-precondition' || /index/i.test(message);
+
+    if (!missingIndex) {
+      throw error;
+    }
+
+    // Equality-only fallback needs no composite index; sorted client-side.
+    const fallbackQuery = query(
+      postsRef,
+      where('isPublic', '==', true),
+      where('postType', '==', 'original'),
+      limit(MAX_POST_RESULTS)
+    );
+    const fallbackSnapshot = await getDocs(fallbackQuery);
+    return mapBlogPostsFromSnapshot(fallbackSnapshot, maxPosts, isOriginal);
+  }
+}
+
 export async function fetchBlogPostsPage(
   pageNumber = 1,
-  pageSize = 18
+  pageSize = 18,
+  options: { excludeOriginals?: boolean } = {}
 ): Promise<{ posts: BlogPost[]; hasNextPage: boolean }> {
+  const filter = options.excludeOriginals
+    ? (post: BlogPost) => post.postType !== 'original'
+    : undefined;
   const safePageNumber = Math.max(1, Math.floor(pageNumber));
   const safePageSize = Math.min(Math.max(Math.floor(pageSize), 1), 30);
   const startIndex = (safePageNumber - 1) * safePageSize;
@@ -117,7 +168,7 @@ export async function fetchBlogPostsPage(
       limit(queryLimit)
     );
     const snapshot = await getDocs(postsQuery);
-    return buildResult(mapBlogPostsFromSnapshot(snapshot, queryLimit));
+    return buildResult(mapBlogPostsFromSnapshot(snapshot, queryLimit, filter));
   } catch (error: any) {
     const code = String(error?.code || '');
     const message = String(error?.message || '');
@@ -133,7 +184,7 @@ export async function fetchBlogPostsPage(
       limit(queryLimit)
     );
     const fallbackSnapshot = await getDocs(fallbackQuery);
-    return buildResult(mapBlogPostsFromSnapshot(fallbackSnapshot, queryLimit));
+    return buildResult(mapBlogPostsFromSnapshot(fallbackSnapshot, queryLimit, filter));
   }
 }
 

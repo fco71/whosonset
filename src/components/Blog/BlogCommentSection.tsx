@@ -1,14 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { BlogComment } from '../../types/blog';
 import { addBlogComment, fetchBlogComments } from '../../services/blogService';
 
 interface BlogCommentSectionProps {
   postId: string;
   currentUser: any;
+  // Renders in this language instead of the UI language (original articles).
+  lang?: string;
 }
 
-const BlogCommentSection: React.FC<BlogCommentSectionProps> = ({ postId, currentUser }) => {
+const BlogCommentSection: React.FC<BlogCommentSectionProps> = ({ postId, currentUser, lang }) => {
+  const { i18n } = useTranslation();
+  const t = i18n.getFixedT(lang || i18n.language);
   const [comments, setComments] = useState<BlogComment[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -22,7 +27,7 @@ const BlogCommentSection: React.FC<BlogCommentSectionProps> = ({ postId, current
       setComments(items);
     } catch (loadError) {
       console.error('[BlogCommentSection] Failed to load comments:', loadError);
-      setError('Could not load comments right now.');
+      setError(t('blog.comments.loadError'));
     } finally {
       setLoading(false);
     }
@@ -37,7 +42,7 @@ const BlogCommentSection: React.FC<BlogCommentSectionProps> = ({ postId, current
     setError('');
 
     if (!currentUser) {
-      setError('Please sign in to post a comment.');
+      setError(t('blog.comments.signInRequired'));
       return;
     }
 
@@ -54,7 +59,7 @@ const BlogCommentSection: React.FC<BlogCommentSectionProps> = ({ postId, current
       await loadComments();
     } catch (submitError: any) {
       console.error('[BlogCommentSection] Failed to post comment:', submitError);
-      setError(submitError?.message || 'Could not post comment.');
+      setError(submitError?.message || t('blog.comments.postError'));
     } finally {
       setSubmitting(false);
     }
@@ -62,14 +67,14 @@ const BlogCommentSection: React.FC<BlogCommentSectionProps> = ({ postId, current
 
   return (
     <section className="mt-6 border-t border-gray-200 pt-6">
-      <h4 className="text-lg font-semibold text-gray-900">Comments</h4>
+      <h4 className="text-lg font-semibold text-gray-900">{t('blog.comments.title')}</h4>
 
       {currentUser ? (
         <form className="mt-4 space-y-3" onSubmit={handleSubmit}>
           <textarea
             value={newComment}
             onChange={(event) => setNewComment(event.target.value)}
-            placeholder="Share your thoughts about this story..."
+            placeholder={t('blog.comments.placeholder')}
             rows={3}
             maxLength={1000}
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
@@ -81,16 +86,16 @@ const BlogCommentSection: React.FC<BlogCommentSectionProps> = ({ postId, current
               disabled={submitting || !newComment.trim()}
               className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
             >
-              {submitting ? 'Posting...' : 'Post Comment'}
+              {submitting ? t('blog.comments.posting') : t('blog.comments.post')}
             </button>
           </div>
         </form>
       ) : (
         <div className="mt-4 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
           <Link to="/login" className="font-medium underline">
-            Sign in
+            {t('blog.comments.signIn')}
           </Link>{' '}
-          to join the discussion.
+          {t('blog.comments.signInSuffix')}
         </div>
       )}
 
@@ -99,9 +104,9 @@ const BlogCommentSection: React.FC<BlogCommentSectionProps> = ({ postId, current
       )}
 
       {loading ? (
-        <p className="mt-4 text-sm text-gray-500">Loading comments...</p>
+        <p className="mt-4 text-sm text-gray-500">{t('blog.comments.loading')}</p>
       ) : comments.length === 0 ? (
-        <p className="mt-4 text-sm text-gray-500">No comments yet.</p>
+        <p className="mt-4 text-sm text-gray-500">{t('blog.comments.empty')}</p>
       ) : (
         <ul className="mt-4 space-y-4">
           {comments.map((comment) => (
